@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import InvalidOperation
 from typing import Any
@@ -423,27 +424,106 @@ def _storage_policy_equal(
     return True
 
 
+@dataclass(frozen=True, slots=True)
+class _NativeAllocationReconcileRequest:
+    profile: TenantResourceProfile
+    resource_profile_version: int
+    allocation_customized: bool
+    capacity_decision_id: int | None
+    quota_hard: dict[str, str]
+    limit_defaults: dict[str, dict[str, str]]
+    storage_policy: dict[str, str]
+    operation: str
+    expected_observed_hash: str | None
+    failure_status: str
+
+
+@dataclass(frozen=True, slots=True)
+class _PreparedNativeAllocationReconcile:
+    api: Any
+    managed: bool
+    quota: dict[str, str]
+    limits: dict[str, dict[str, str]]
+    storage: dict[str, str]
+    before: dict[str, Any]
+    quota_expected: dict[str, str] | None
+    limit_expected: dict[str, str] | None
+
+
+@dataclass(frozen=True, slots=True)
+class _NativeAllocationMutationResult:
+    quota_name: str
+    limit_name: str
+    after: dict[str, Any]
+
+
+def _legacy_reconcile_request(options: dict[str, Any]) -> _NativeAllocationReconcileRequest:
+    required = {
+        'profile',
+        'resource_profile_version',
+        'allocation_customized',
+        'capacity_decision_id',
+        'quota_hard',
+        'limit_defaults',
+    }
+    allowed = required | {'storage_policy', 'operation', 'expected_observed_hash', 'failure_status'}
+    unknown = sorted(set(options) - allowed)
+    missing = sorted(required - set(options))
+    if unknown:
+        raise TypeError('Unexpected allocation reconciliation options: ' + ', '.join(unknown) + '.')
+    if missing:
+        raise TypeError('Missing allocation reconciliation options: ' + ', '.join(missing) + '.')
+
+    profile = options['profile']
+    if not isinstance(profile, TenantResourceProfile):
+        raise TypeError('Allocation reconciliation requires a TenantResourceProfile.')
+
+    return _NativeAllocationReconcileRequest(
+        profile=profile,
+        resource_profile_version=int(options['resource_profile_version']),
+        allocation_customized=bool(options['allocation_customized']),
+        capacity_decision_id=options['capacity_decision_id'],
+        quota_hard=dict(options['quota_hard']),
+        limit_defaults={
+            str(field): dict(values)
+            for field, values in dict(options['limit_defaults']).items()
+        },
+        storage_policy=dict(options.get('storage_policy') or {}),
+        operation=str(options.get('operation') or 'allocation_reconcile'),
+        expected_observed_hash=(
+            str(options['expected_observed_hash'])
+            if options.get('expected_observed_hash') not in (None, '')
+            else None
+        ),
+        failure_status=str(options.get('failure_status') or 'failed'),
+    )
+
+
 def reconcile_adopted_native_allocation(
     record: TenantNamespace,
     *,
-    profile: TenantResourceProfile,
-    resource_profile_version: int,
-    allocation_customized: bool,
-    capacity_decision_id: int | None,
-    quota_hard: dict[str, str],
-    limit_defaults: dict[str, dict[str, str]],
-    storage_policy: dict[str, str] | None = None,
-    operation: str = 'allocation_reconcile',
-    expected_observed_hash: str | None = None,
-    failure_status: str = 'failed',
+    request: _NativeAllocationReconcileRequest | None = None,
+    **legacy_options: Any,
 ) -> TenantNamespace:
+    """Reconcile Native allocation through one typed request while preserving legacy keyword callers."""
+
+    if request is not None and legacy_options:
+        raise TypeError('Pass either request or legacy allocation reconciliation options, not both.')
+    resolved = request or _legacy_reconcile_request(legacy_options)
+    return _reconcile_adopted_native_allocation(record, resolved)
+
+
+def _prepare_native_allocation_reconcile(
+    record: TenantNamespace,
+    request: _NativeAllocationReconcileRequest,
+) -> _PreparedNativeAllocationReconcile:
     eligibility = build_allocation_cutover_state(record)
     managed = allocation_control_state(record) == 'kaori_managed'
     if not managed and not eligibility['supported']:
         raise ValueError(str(eligibility['reason']))
 
-    quota, limits = validate_profile_spec(quota_hard, limit_defaults)
-    storage = validate_storage_policy(storage_policy or {})
+    quota, limits = validate_profile_spec(request.quota_hard, request.limit_defaults)
+    storage = validate_storage_policy(request.storage_policy)
     cluster = db.session.get(Cluster, record.cluster_id)
     if cluster is None:
         raise ValueError('Tenant namespace cluster no longer exists.')
@@ -452,8 +532,9 @@ def reconcile_adopted_native_allocation(
     before = observe_native_namespace_allocation(api, record.namespace)
     if before['control_state'] != 'observed':
         raise ValueError(before['control_reason'])
-    if expected_observed_hash:
-        if str(before['effective_hash']) != str(expected_observed_hash):
+
+    if request.expected_observed_hash:
+        if str(before['effective_hash']) != request.expected_observed_hash:
             raise ValueError(
                 'Live provider allocation changed again after the committed drift observation; sync before retrying.'
             )
@@ -467,111 +548,151 @@ def reconcile_adopted_native_allocation(
             )
         quota_expected = _expected_source(record, 'ResourceQuota')
         limit_expected = _expected_source(record, 'LimitRange')
-    mutation_started = False
-    try:
-        quota_probe_name = str((quota_expected or {}).get('name') or _DEFAULT_QUOTA_NAME)
-        limit_probe_name = str((limit_expected or {}).get('name') or _DEFAULT_LIMIT_RANGE_NAME)
-        _verify_existing(
-            _read_quota(api, namespace=record.namespace, name=quota_probe_name),
-            quota_expected,
-            kind='ResourceQuota',
-            managed=managed,
-        )
-        _verify_existing(
-            _read_limit_range(api, namespace=record.namespace, name=limit_probe_name),
-            limit_expected,
-            kind='LimitRange',
-            managed=managed,
-        )
 
-        mutation_started = True
-        _mutate_namespace_ownership(
-            api,
-            record,
-            profile=profile,
-        )
-        quota_name = _mutate_quota(
-            api,
-            record,
-            desired=quota,
-            expected=quota_expected,
-            managed=managed,
-            profile=profile,
-        )
-        limit_name = _mutate_limit_range(
-            api,
-            record,
-            desired=limits,
-            storage_policy=storage,
-            expected=limit_expected,
-            managed=managed,
-            profile=profile,
-        )
+    return _PreparedNativeAllocationReconcile(
+        api=api,
+        managed=managed,
+        quota=quota,
+        limits=limits,
+        storage=storage,
+        before=before,
+        quota_expected=quota_expected,
+        limit_expected=limit_expected,
+    )
 
-        after = observe_native_namespace_allocation(api, record.namespace)
-        if after['control_state'] != 'observed':
-            raise ValueError(
-                'Provider mutation completed but effective allocation authority is no longer unambiguous; '
-                'KAORI will not mark cutover successful.'
-            )
-        if (
-            not _quota_equal(dict(after['quota']), quota)
-            or not _limits_equal(dict(after['limits']), limits)
-            or not _storage_policy_equal(dict(after.get('storage_policy') or {}), storage)
-        ):
-            raise ValueError(
-                'Provider read-back does not match the proposed allocation/storage policy; '
-                'KAORI will not mark allocation control managed.'
-            )
-    except (ApiException, ValueError) as exc:
-        failed_at = datetime.now(UTC)
-        evidence = dict(record.provisioning_evidence_json or {})
-        evidence['allocation_reconcile_failure'] = {
-            'operation': operation,
-            'at': failed_at.isoformat(),
-            'control_state': allocation_control_state(record),
-            'provider': 'native_kubernetes',
-            'provider_mutation_may_have_started': mutation_started,
-            'error': str(exc)[:1000],
-            'proposed': {
-                'resource_profile_id': profile.public_id,
-                'resource_profile_version': resource_profile_version,
-                'quota': quota,
-                'limits': limits,
-                'storage_policy': storage,
-            },
-            'secret_material_persisted': False,
-        }
-        record.provisioning_evidence_json = evidence
-        record.provisioning_status = failure_status
-        record.provisioning_message = str(exc)[:1000]
-        record.last_reconciled_at = failed_at
-        raise
 
+def _verify_reconcile_sources(
+    record: TenantNamespace,
+    prepared: _PreparedNativeAllocationReconcile,
+) -> None:
+    quota_probe_name = str((prepared.quota_expected or {}).get('name') or _DEFAULT_QUOTA_NAME)
+    limit_probe_name = str((prepared.limit_expected or {}).get('name') or _DEFAULT_LIMIT_RANGE_NAME)
+    _verify_existing(
+        _read_quota(prepared.api, namespace=record.namespace, name=quota_probe_name),
+        prepared.quota_expected,
+        kind='ResourceQuota',
+        managed=prepared.managed,
+    )
+    _verify_existing(
+        _read_limit_range(prepared.api, namespace=record.namespace, name=limit_probe_name),
+        prepared.limit_expected,
+        kind='LimitRange',
+        managed=prepared.managed,
+    )
+
+
+def _mutate_native_allocation(
+    record: TenantNamespace,
+    request: _NativeAllocationReconcileRequest,
+    prepared: _PreparedNativeAllocationReconcile,
+) -> _NativeAllocationMutationResult:
+    _mutate_namespace_ownership(
+        prepared.api,
+        record,
+        profile=request.profile,
+    )
+    quota_name = _mutate_quota(
+        prepared.api,
+        record,
+        desired=prepared.quota,
+        expected=prepared.quota_expected,
+        managed=prepared.managed,
+        profile=request.profile,
+    )
+    limit_name = _mutate_limit_range(
+        prepared.api,
+        record,
+        desired=prepared.limits,
+        storage_policy=prepared.storage,
+        expected=prepared.limit_expected,
+        managed=prepared.managed,
+        profile=request.profile,
+    )
+
+    after = observe_native_namespace_allocation(prepared.api, record.namespace)
+    if after['control_state'] != 'observed':
+        raise ValueError(
+            'Provider mutation completed but effective allocation authority is no longer unambiguous; '
+            'KAORI will not mark cutover successful.'
+        )
+    if (
+        not _quota_equal(dict(after['quota']), prepared.quota)
+        or not _limits_equal(dict(after['limits']), prepared.limits)
+        or not _storage_policy_equal(dict(after.get('storage_policy') or {}), prepared.storage)
+    ):
+        raise ValueError(
+            'Provider read-back does not match the proposed allocation/storage policy; '
+            'KAORI will not mark allocation control managed.'
+        )
+    return _NativeAllocationMutationResult(
+        quota_name=quota_name,
+        limit_name=limit_name,
+        after=after,
+    )
+
+
+def _record_native_allocation_reconcile_failure(
+    record: TenantNamespace,
+    request: _NativeAllocationReconcileRequest,
+    prepared: _PreparedNativeAllocationReconcile,
+    exc: ApiException | ValueError,
+    *,
+    mutation_started: bool,
+) -> None:
+    failed_at = datetime.now(UTC)
+    evidence = dict(record.provisioning_evidence_json or {})
+    evidence['allocation_reconcile_failure'] = {
+        'operation': request.operation,
+        'at': failed_at.isoformat(),
+        'control_state': allocation_control_state(record),
+        'provider': 'native_kubernetes',
+        'provider_mutation_may_have_started': mutation_started,
+        'error': str(exc)[:1000],
+        'proposed': {
+            'resource_profile_id': request.profile.public_id,
+            'resource_profile_version': request.resource_profile_version,
+            'quota': prepared.quota,
+            'limits': prepared.limits,
+            'storage_policy': prepared.storage,
+        },
+        'secret_material_persisted': False,
+    }
+    record.provisioning_evidence_json = evidence
+    record.provisioning_status = request.failure_status
+    record.provisioning_message = str(exc)[:1000]
+    record.last_reconciled_at = failed_at
+
+
+def _commit_native_allocation_reconcile(
+    record: TenantNamespace,
+    request: _NativeAllocationReconcileRequest,
+    prepared: _PreparedNativeAllocationReconcile,
+    mutation: _NativeAllocationMutationResult,
+) -> TenantNamespace:
     now = datetime.now(UTC)
     evidence = dict(record.provisioning_evidence_json or {})
     previous_allocation = evidence.get('allocation')
     previous_provenance = (
         str(previous_allocation.get('provenance') or '') if isinstance(previous_allocation, dict) else ''
-    ) or ('kaori_managed' if managed else 'adopted_observed')
+    ) or ('kaori_managed' if prepared.managed else 'adopted_observed')
     history = list(evidence.get('allocation_history') or [])
     history.append(
         {
-            'event': operation,
+            'event': request.operation,
             'at': now.isoformat(),
             'from': {
                 'control_state': allocation_control_state(record),
                 'effective_hash': record.effective_hash,
-                'quota': before['quota'],
-                'limits': before['limits'],
-                'storage_policy': before.get('storage_policy') or {},
+                'quota': prepared.before['quota'],
+                'limits': prepared.before['limits'],
+                'storage_policy': prepared.before.get('storage_policy') or {},
             },
             'to': {
                 'control_state': 'kaori_managed',
-                'effective_hash': after['effective_hash'],
-                'quota': after['quota'],
-                'limits': after['limits'],
-                'storage_policy': after.get('storage_policy') or {},
+                'effective_hash': mutation.after['effective_hash'],
+                'quota': mutation.after['quota'],
+                'limits': mutation.after['limits'],
+                'storage_policy': mutation.after.get('storage_policy') or {},
             },
         }
     )
@@ -579,16 +700,16 @@ def reconcile_adopted_native_allocation(
         {
             'allocation_control_state': 'kaori_managed',
             'managed_resource_names': {
-                'quota': quota_name,
-                'limit_range': limit_name,
+                'quota': mutation.quota_name,
+                'limit_range': mutation.limit_name,
             },
             'allocation': {
-                **after,
+                **mutation.after,
                 'provenance': 'kaori_managed',
                 'previous_provenance': previous_provenance,
-                'resource_profile_id': profile.public_id,
-                'resource_profile_version': resource_profile_version,
-                'capacity_decision_id': capacity_decision_id,
+                'resource_profile_id': request.profile.public_id,
+                'resource_profile_version': request.resource_profile_version,
+                'capacity_decision_id': request.capacity_decision_id,
             },
             'allocation_history': history,
             'provider_mutation_performed': True,
@@ -598,17 +719,17 @@ def reconcile_adopted_native_allocation(
     evidence.pop('allocation_drift', None)
     evidence.pop('allocation_reconcile_failure', None)
     record.ownership_status = TenantOwnershipStatus.MANAGED.value
-    record.resource_profile = profile
-    record.resource_profile_id = profile.id
-    record.resource_profile_version = resource_profile_version
-    record.allocation_quota_json = quota
-    record.allocation_limit_defaults_json = limits
-    record.allocation_storage_policy_json = storage
-    record.allocation_customized = allocation_customized
-    record.capacity_decision_id = capacity_decision_id
+    record.resource_profile = request.profile
+    record.resource_profile_id = request.profile.id
+    record.resource_profile_version = request.resource_profile_version
+    record.allocation_quota_json = prepared.quota
+    record.allocation_limit_defaults_json = prepared.limits
+    record.allocation_storage_policy_json = prepared.storage
+    record.allocation_customized = request.allocation_customized
+    record.capacity_decision_id = request.capacity_decision_id
     record.provisioning_evidence_json = evidence
-    record.desired_hash = str(after['effective_hash'])
-    record.effective_hash = str(after['effective_hash'])
+    record.desired_hash = str(mutation.after['effective_hash'])
+    record.effective_hash = str(mutation.after['effective_hash'])
     record.last_reconciled_at = now
     record.provisioning_status = 'ready'
     record.provisioning_message = (
@@ -616,3 +737,25 @@ def reconcile_adopted_native_allocation(
         'Adoption origin remains retained in evidence.'
     )
     return record
+
+
+def _reconcile_adopted_native_allocation(
+    record: TenantNamespace,
+    request: _NativeAllocationReconcileRequest,
+) -> TenantNamespace:
+    prepared = _prepare_native_allocation_reconcile(record, request)
+    mutation_started = False
+    try:
+        _verify_reconcile_sources(record, prepared)
+        mutation_started = True
+        mutation = _mutate_native_allocation(record, request, prepared)
+    except (ApiException, ValueError) as exc:
+        _record_native_allocation_reconcile_failure(
+            record,
+            request,
+            prepared,
+            exc,
+            mutation_started=mutation_started,
+        )
+        raise
+    return _commit_native_allocation_reconcile(record, request, prepared, mutation)
