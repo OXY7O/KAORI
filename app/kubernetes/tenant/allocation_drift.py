@@ -41,6 +41,25 @@ def _quantity_equal(key: str, left: str, right: str) -> bool:
         return left == right
 
 
+def _quota_value_changed(key: str, desired: str, observed: str) -> bool:
+    if desired == observed:
+        return False
+    if not desired or not observed:
+        return True
+    return not _quantity_equal(key, desired, observed)
+
+
+def _quantity_value_changed(desired: str, observed: str) -> bool:
+    if desired == observed:
+        return False
+    if not desired or not observed:
+        return True
+    try:
+        return parse_quantity(desired) != parse_quantity(observed)
+    except (InvalidOperation, TypeError, ValueError):
+        return desired != observed
+
+
 def _dimension_rows(
     desired_quota: Mapping[str, str],
     desired_limits: Mapping[str, Mapping[str, str]],
@@ -53,9 +72,7 @@ def _dimension_rows(
     for key in sorted(set(desired_quota) | set(observed_quota)):
         desired = str(desired_quota.get(key) or '')
         observed = str(observed_quota.get(key) or '')
-        if desired and observed and _quantity_equal(key, desired, observed):
-            continue
-        if desired == observed:
+        if not _quota_value_changed(key, desired, observed):
             continue
         rows.append(
             {
@@ -72,14 +89,7 @@ def _dimension_rows(
         for key in sorted(set(desired_values) | set(observed_values)):
             desired = str(desired_values.get(key) or '')
             observed = str(observed_values.get(key) or '')
-            if desired and observed:
-                try:
-                    if parse_quantity(desired) == parse_quantity(observed):
-                        continue
-                except (InvalidOperation, TypeError, ValueError):
-                    if desired == observed:
-                        continue
-            elif desired == observed:
+            if not _quantity_value_changed(desired, observed):
                 continue
             rows.append(
                 {
@@ -91,14 +101,7 @@ def _dimension_rows(
     for field in sorted(set(desired_storage) | set(observed_storage)):
         desired = str(desired_storage.get(field) or '')
         observed = str(observed_storage.get(field) or '')
-        if desired and observed:
-            try:
-                if parse_quantity(desired) == parse_quantity(observed):
-                    continue
-            except (InvalidOperation, TypeError, ValueError):
-                if desired == observed:
-                    continue
-        elif desired == observed:
+        if not _quantity_value_changed(desired, observed):
             continue
         rows.append(
             {
@@ -556,6 +559,31 @@ def _profile_matches_observation(
     )
 
 
+def _managed_resource_name(observation: Mapping[str, Any], kind: str) -> str:
+    for item in observation.get('source_resources') or []:
+        if isinstance(item, Mapping) and item.get('kind') == kind:
+            return str(item.get('name') or '')
+    return ''
+
+
+def _managed_resource_names(observation: Mapping[str, Any]) -> dict[str, str]:
+    return {
+        'quota': _managed_resource_name(observation, 'ResourceQuota'),
+        'limit_range': _managed_resource_name(observation, 'LimitRange'),
+    }
+
+
+def _provider_state_profile_sync_enabled(profile: TenantResourceProfile) -> bool:
+    description = str(profile.description or '')
+    return profile.profile_class == 'custom' and description.startswith(
+        (
+            'Explicit governance-cutover profile materialized',
+            'Provider-equivalent namespaced',
+            'Provider-equivalent Capsule',
+        )
+    )
+
+
 def accept_provider_allocation_state(record: TenantNamespace) -> TenantNamespace:
     action = build_allocation_drift_action_state(record)
     if not action['accept_supported']:
@@ -607,24 +635,7 @@ def accept_provider_allocation_state(record: TenantNamespace) -> TenantNamespace
         }
     )
 
-    managed_names = {
-        'quota': next(
-            (
-                str(item.get('name') or '')
-                for item in live.get('source_resources') or []
-                if isinstance(item, Mapping) and item.get('kind') == 'ResourceQuota'
-            ),
-            '',
-        ),
-        'limit_range': next(
-            (
-                str(item.get('name') or '')
-                for item in live.get('source_resources') or []
-                if isinstance(item, Mapping) and item.get('kind') == 'LimitRange'
-            ),
-            '',
-        ),
-    }
+    managed_names = _managed_resource_names(live)
     evidence.update(
         {
             'allocation_control_state': 'kaori_managed',
@@ -645,13 +656,7 @@ def accept_provider_allocation_state(record: TenantNamespace) -> TenantNamespace
     evidence.pop('allocation_drift', None)
     evidence.pop('allocation_reconcile_failure', None)
 
-    description = str(profile.description or '')
-    auto_imported_profile = profile.profile_class == 'custom' and (
-        description.startswith('Explicit governance-cutover profile materialized')
-        or description.startswith('Provider-equivalent namespaced')
-        or description.startswith('Provider-equivalent Capsule')
-    )
-    if auto_imported_profile:
+    if _provider_state_profile_sync_enabled(profile):
         profile.quota_hard_json = quota
         profile.limit_defaults_json = limits
         profile.storage_policy_json = storage_policy

@@ -169,36 +169,19 @@ def _finish_evidence(
     return enriched
 
 
-@shared_task(
-    bind=True,
-    name='app.kubernetes.tenant.tasks.sync_tenant_inventory',
-    acks_late=True,
-    reject_on_worker_lost=True,
-)
-def sync_tenant_inventory_task(
-    self,
-    *,
-    requested_by_user_id: int | None,
-    trigger_type: str,
-    job_execution_id: int | None = None,
-) -> dict[str, Any]:
-    """Materialize committed Tenant inventory correlation on the inventory worker."""
+def _build_tenant_sync_snapshot() -> dict[str, Any]:
+    snapshot = build_tenant_inventory_snapshot()
+    missing_namespace_drift_ids = apply_missing_namespace_drift_from_inventory()
+    allocation_drift = apply_managed_allocation_drift_observation()
+    provider_policy_mirror = apply_provider_mirrored_policy_observation()
+    capsule_shared_drift = apply_managed_capsule_shared_allocation_drift_observation()
+    capsule_tenant_quota_drift = apply_managed_capsule_tenant_quota_drift_observation()
 
-    context = JobExecutionContext(
-        task_id=str(self.request.id),
-        job_execution_id=job_execution_id,
-    )
-    context.start(message='Preparing Tenant inventory synchronization.', total=100)
-    try:
-        context.checkpoint(
-            current=20,
-            total=100,
-            message='Reading committed Tenant ownership and Kubernetes inventory evidence.',
-        )
-        snapshot = build_tenant_inventory_snapshot()
-        missing_namespace_drift_ids = apply_missing_namespace_drift_from_inventory()
-        allocation_drift = apply_managed_allocation_drift_observation()
-        provider_policy_mirror = apply_provider_mirrored_policy_observation()
+    allocation_drift_ids = list(allocation_drift['drifted_namespace_ids'])
+    drifted_namespace_ids = sorted(set(missing_namespace_drift_ids + allocation_drift_ids))
+    snapshot['drifted_namespace_count'] = len(drifted_namespace_ids)
+    snapshot['drifted_namespace_ids'] = drifted_namespace_id        snapshot = _build_tenant_sync_snapshot()
+provider_mirrored_policy_observation()
         capsule_shared_drift = apply_managed_capsule_shared_allocation_drift_observation()
         capsule_tenant_quota_drift = apply_managed_capsule_tenant_quota_drift_observation()
 
