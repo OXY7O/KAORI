@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from copy import deepcopy
 from typing import Any
 
@@ -50,8 +50,10 @@ def _read_live_tenant(
     *,
     expected_source: Mapping[str, Any],
     require_resource_version_match: bool,
+    cluster_client: Callable[[Tenant], tuple[Any, Any]] | None = None,
 ) -> tuple[dict[str, Any], dict[str, str], Any]:
-    _cluster, client = _cluster_client(tenant)
+    resolve_cluster_client = cluster_client or _cluster_client
+    _cluster, client = resolve_cluster_client(tenant)
     api = client.custom_objects_api()
     name = str(expected_source.get('name') or tenant.provider_reference or '').strip()
     api_version = str(

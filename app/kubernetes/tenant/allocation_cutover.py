@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import InvalidOperation
-from typing import Any
+from typing import Any, cast
 
 from kubernetes.client import (
     V1DeleteOptions,
@@ -474,9 +474,7 @@ def _legacy_reconcile_request(options: dict[str, Any]) -> _NativeAllocationRecon
     if missing:
         raise TypeError('Missing allocation reconciliation options: ' + ', '.join(missing) + '.')
 
-    profile = options['profile']
-    if not isinstance(profile, TenantResourceProfile):
-        raise TypeError('Allocation reconciliation requires a TenantResourceProfile.')
+    profile = cast(TenantResourceProfile, options['profile'])
 
     return _NativeAllocationReconcileRequest(
         profile=profile,

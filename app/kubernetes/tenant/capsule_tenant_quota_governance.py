@@ -18,11 +18,12 @@ from app.kubernetes.tenant.capsule_tenant_quota_contract import (
     _CONTROL_MANAGED,
 )
 from app.kubernetes.tenant.capsule_tenant_quota_provider import (
+    _cluster_client as _provider_cluster_client,
     _live_allocation,
     _patch_resource_quotas,
     _prove_mutation_capability,
     _prove_read_capability,
-    _read_live_tenant,
+    _read_live_tenant as _read_live_tenant_impl,
     _verify_effective,
 )
 from app.kubernetes.tenant.capsule_tenant_quota_support import (
@@ -52,6 +53,22 @@ from app.kubernetes.tenant.capsule_tenant_quota_support import (
 from app.kubernetes.tenant.providers import TenantProviderState
 from app.kubernetes.tenant.service import _validate_resource_profile_attachment_controls
 from app.models.tenant import Tenant, TenantLifecycleStatus
+
+_cluster_client = _provider_cluster_client
+
+
+def _read_live_tenant(
+    tenant: Tenant,
+    *,
+    expected_source: Mapping[str, Any],
+    require_resource_version_match: bool,
+) -> tuple[dict[str, Any], dict[str, str], Any]:
+    return _read_live_tenant_impl(
+        tenant,
+        expected_source=expected_source,
+        require_resource_version_match=require_resource_version_match,
+        cluster_client=_cluster_client,
+    )
 
 
 class CapsuleTenantQuotaStateConflictError(RuntimeError):

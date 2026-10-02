@@ -136,7 +136,7 @@ def evaluate_allocation_preflight(
     proposed_allocation: CapacityVector,
     capacity_evidence_available: bool,
 ) -> AllocationPreflightDecision:
-    positive_change = _has_positive_change(current_allocation, proposed_allocation, budget=budget)
+    positive_change = _has_positive_change(current_allocation, proposed_allocation)
 
     if not capacity_evidence_available:
         return _decision(
@@ -306,16 +306,10 @@ def _dimension_positive_change(current: Decimal | None, proposed: Decimal | None
 def _has_positive_change(
     current: CapacityVector,
     proposed: CapacityVector,
-    *,
-    budget: CapacityVector,
 ) -> bool:
     return any(
-        limit is not None and _dimension_positive_change(current_value, proposed_value)
-        for (current_value, proposed_value), limit in zip(
-            _paired_dimensions(current, proposed),
-            _vector_dimensions(budget),
-            strict=True,
-        )
+        _dimension_positive_change(current_value, proposed_value)
+        for current_value, proposed_value in _paired_dimensions(current, proposed)
     )
 
 

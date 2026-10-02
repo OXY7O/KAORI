@@ -475,7 +475,7 @@ def resource_profile_attachment_controls(
     tenant: Tenant,
 ) -> dict[str, dict[str, Any]]:
     return evaluate_resource_profile_advanced_controls(
-        profile.advanced_controls_json or {},
+        getattr(profile, 'advanced_controls_json', None) or {},
         provider_key=tenant.provider_key,
         capability_statuses=_tenant_capability_statuses(tenant),
     )
