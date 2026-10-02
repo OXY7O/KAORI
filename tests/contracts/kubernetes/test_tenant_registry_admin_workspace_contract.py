@@ -1488,8 +1488,8 @@ def test_adopted_allocation_cutover_is_explicit_provider_verified_and_separate_f
     assert 'Control Unavailable' in cutover_ui
     assert 'Namespace lifecycle ownership stays adopted.' in cutover_ui
 
-    assert 'KAORI-Managed Allocation' in allocation_change
-    assert 'Select KAORI-managed allocation' in allocation_change
+    assert 'Managed Contract Comparison' in allocation_change
+    assert 'Select managed Namespace' in allocation_change
     assert 'KAORI Managed' in namespace_registry
 
 
@@ -1662,7 +1662,8 @@ def test_capsule_tenant_resource_quotas_are_bidirectionally_governed_without_nat
     assert "_capsule_capability_state(tenant, _CAPABILITY) != 'available'" in governance
     assert 'def cutover_capsule_tenant_resource_quota' in governance
     assert 'def change_capsule_tenant_resource_quota' in governance
-    assert "'spec': {'resourceQuotas':" in governance
+    assert '_desired_resource_quotas(' in governance
+    assert '_patch_resource_quotas(' in governance
     assert "dry_run='All'" in governance
     assert 'Capsule Tenant resourceVersion changed' in governance
     assert 'Capsule Tenant UID changed' in governance
