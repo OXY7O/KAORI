@@ -25,8 +25,11 @@ def test_operational_dashboards_share_the_same_outer_workspace_grammar() -> None
         assert 'components/operational_dashboard_workspace.html' in source
         assert 'dashboard_workspace.controller(' in source
         assert 'dashboard_workspace.navigation(' in source
-        assert source.count('dashboard_workspace.panel(') == 4
         assert 'hx-trigger="revealed"' in source
+
+    assert kubernetes.count('dashboard_workspace.panel(') == 4
+    assert '{% for tab_key, tab_label, tab_icon in dashboard_workspace.standard_tabs %}' in object_storage
+    assert object_storage.count('dashboard_workspace.panel(') == 1
 
     for token in (
         "('overview', 'Operations Overview', 'activity')",

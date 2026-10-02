@@ -186,7 +186,8 @@ def test_recommendation_titles_and_workspace_labels_are_title_case() -> None:
     ):
         assert title in catalog
 
-    assert "page_hero.intro('brain-circuit', 'Infrastructure Intelligence', 'sparkles')" in template
+    assert "page_hero.intro('brain-circuit', 'Intelligence', 'sparkles')" in template
+    assert '<h1 class="{{ page_hero.title_classes() }}">Recommendations</h1>' in template
     assert 'Intelligence Posture' in template
     records = read('app/templates/intelligence/partials/_recommendation_records.html')
     assert 'Recommendation Workspace' in template

@@ -19,7 +19,7 @@ def test_object_storage_dashboard_uses_kaori_alert_cases_not_raw_source_rows() -
     assert "AlertCase.workflow_state != 'closed'" in shared
     assert "'source_label': 'Alert Intelligence'" in service
     assert "'source_detail': 'Active AlertCase records'" in service
-    assert 'Active KAORI AlertCase posture and recent cases.' in alerts
+    assert 'Active KAORI AlertCase posture and up to five recent cases.' in alerts
     assert "url_for('alert_intelligence.index'" in alerts
     actions = read('app/templates/storage/object_storage/dashboard/partials/_recommended_actions.html')
     assert "url_for('intelligence.recommendation_details'" in actions
@@ -44,7 +44,7 @@ def test_topology_details_matches_notification_deck_desktop_width() -> None:
     visualization = read('app/templates/components/visualization_workspace.html')
     notification_deck = read('app/templates/components/navigation/_notification_center.html')
 
-    assert "'right-0 border-l max-w-lg'" in visualization
+    assert "'right-0 border-l max-w-2xl'" in visualization
     assert 'w-full max-w-none flex-col' in notification_deck
     assert 'sm:max-w-lg' in notification_deck
 

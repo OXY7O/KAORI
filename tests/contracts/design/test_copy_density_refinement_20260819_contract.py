@@ -55,7 +55,7 @@ def test_metrics_source_validation_copy_keeps_provider_consumer_boundary_concise
     )
 
     assert (
-        'Core API evidence determines provider readiness; consumer capabilities stay outside this registry.'
+        'Core API evidence sets provider readiness; consumer evidence stays binding-scoped.'
         in validation
     )
     assert (

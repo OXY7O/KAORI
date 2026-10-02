@@ -197,8 +197,8 @@ def test_dashboard_copy_uses_canonical_casing() -> None:
     assert 'What This Summary Means' not in all_source
     assert 'Cluster Signals Available' in all_source
     assert 'Select a Cluster for Detailed Signals' in all_source
-    assert 'approved output' in all_source
-    assert 'stored artifact' in all_source
+    assert 'Generated output' in all_source
+    assert 'Preserve the artifact' in all_source
 
 
 def test_dashboard_uses_local_skeletons_and_section_owned_loading_bar() -> None:
@@ -251,10 +251,12 @@ def test_dashboard_restores_card_grid_freshness_and_visible_action_flows() -> No
 
 def test_dashboard_tabs_support_canonical_keyboard_navigation() -> None:
     source = read('app/templates/kubernetes/dashboard/partials/_content.html')
+    framework = read('app/templates/components/operational_dashboard_workspace.html')
     tabs = read('app/templates/components/workspace_tabs.html')
     contract = read('docs/design/components/WORKSPACE_TABS.md')
 
-    assert 'moveTab(currentTab, direction, prefix)' in source
+    assert 'components/operational_dashboard_workspace.html' in source
+    assert 'moveTab(currentTab, direction, prefix)' in framework
     assert '@keydown.arrow-right.prevent' in tabs
     assert '@keydown.arrow-left.prevent' in tabs
     assert '@keydown.home.prevent' in tabs
@@ -281,7 +283,7 @@ def test_dashboard_pattern_is_locked_by_documentation_and_quality_gate() -> None
     audit = read('docs/design/audits/KUBERNETES_OPERATIONS_DASHBOARD_ALIGNMENT_AUDIT_2026_08.md')
     quality_gate = read('scripts/quality_gate.sh')
 
-    assert '# KAORI Operational Dashboard Pattern v1.5' in standard
+    assert '# KAORI Operational Dashboard Pattern v1.7' in standard
     assert '**Status:** Locked reference pattern' in standard
     assert 'No visual redesign is required' in audit
     assert 'python scripts/verify_operational_dashboard_standard.py' in quality_gate
@@ -294,5 +296,5 @@ def test_reporting_activity_is_capped_at_four_records() -> None:
 
     assert 'query_all(Report, selected_cluster_id, limit=4)' in reporting_service
     assert 'reporting.latest_reports[:4]' in reporting_workspace
-    assert 'Before use.' in reporting_workspace
+    assert 'Review before reuse.' in reporting_workspace
     assert '<span class="font-semibold text-content-primary">Recurring</span> · Schedule' in reporting_workspace
