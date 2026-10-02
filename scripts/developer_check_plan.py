@@ -40,11 +40,7 @@ class ValidationPlan:
     def normalized_test_paths(self) -> list[str]:
         paths = set(self.test_paths)
         if 'tests/contracts' in paths:
-            paths = {
-                path
-                for path in paths
-                if path == 'tests/contracts' or not path.startswith('tests/contracts/')
-            }
+            paths = {path for path in paths if path == 'tests/contracts' or not path.startswith('tests/contracts/')}
         return sorted(paths)
 
     def summary(self) -> str:
@@ -80,10 +76,7 @@ def _is_wide_authority(path: str) -> bool:
         'docs/engineering/KAORI_DELIVERY_WORKFLOW.md',
     }
     return (
-        path.startswith(prefixes)
-        or path in exact
-        or path.startswith('Dockerfile')
-        or path.startswith('docker-compose')
+        path.startswith(prefixes) or path in exact or path.startswith('Dockerfile') or path.startswith('docker-compose')
     )
 
 
@@ -139,9 +132,7 @@ def build_plan(changed_paths: list[str]) -> ValidationPlan:
 
         if path.endswith('.py'):
             plan.python = True
-        if path.startswith('app/templates/') or (
-            path.startswith('app/') and '/templates/' in path
-        ):
+        if path.startswith('app/templates/') or (path.startswith('app/') and '/templates/' in path):
             plan.templates = True
         if (
             path.startswith('app/static/')
@@ -149,11 +140,7 @@ def build_plan(changed_paths: list[str]) -> ValidationPlan:
             or path in {'package.json', 'package-lock.json'}
         ):
             plan.frontend = True
-        if (
-            path.startswith('migrations/')
-            or path.endswith('/models.py')
-            or '/models/' in path
-        ):
+        if path.startswith('migrations/') or path.endswith('/models.py') or '/models/' in path:
             plan.migrations = True
             plan.contracts = True
 
@@ -189,8 +176,7 @@ def build_plan(changed_paths: list[str]) -> ValidationPlan:
             plan.contracts = True
             plan.add_test_path('tests/platform_operations')
         elif (
-            path.startswith(('app/reports/', 'tests/reports/'))
-            or path == 'scripts/verify_analytics_pdf_publication.py'
+            path.startswith(('app/reports/', 'tests/reports/')) or path == 'scripts/verify_analytics_pdf_publication.py'
         ):
             plan.capabilities.add('reports')
             plan.reports = True
@@ -276,9 +262,7 @@ def main() -> int:
     args = parse_args()
     if args.changed_file:
         changed_paths = [
-            line.strip()
-            for line in args.changed_file.read_text(encoding='utf-8').splitlines()
-            if line.strip()
+            line.strip() for line in args.changed_file.read_text(encoding='utf-8').splitlines() if line.strip()
         ]
     else:
         changed_paths = git_changed_paths(args.base, args.head)
