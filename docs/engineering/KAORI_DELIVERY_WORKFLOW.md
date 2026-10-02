@@ -1,6 +1,6 @@
 # KAORI Application Delivery Workflow
 
-**Governance Version:** 2.1  
+**Governance Version:** 2.2  
 **Scope:** KAORI application repository  
 **Authority:** Application-local baseline  
 **Future Authority:** Platform Governance / Platform Workflow standards when formally adopted
@@ -13,11 +13,20 @@ Idea / Request
   -> Backlog / Refinement
   -> Ready
   -> issue-linked work branch from kaori/staging
-  -> Draft PR to kaori/staging
-  -> path-aware Developer Check / targeted validation
-  -> collect review + Developer Check findings
-  -> batch repair
-  -> Pre-Ready cheap gate
+  -> choose one inner development track
+     -> Local-First / Dev Container
+        -> implement + local review
+        -> shared Developer Check plan + targeted local validation
+        -> collect findings + batch repair
+     -> OR GitHub-First
+        -> Draft PR to kaori/staging
+        -> path-aware Developer Check / targeted validation
+        -> collect review + Developer Check findings
+        -> batch repair
+  -> converge on one candidate
+     -> Draft PR to kaori/staging exists
+     -> path-aware Developer Check PASS
+     -> Pre-Ready cheap gate
   -> Ready for Review + frozen final candidate
   -> exact-head Developer Check PASS
   -> one governed Full Admission on the exact frozen head
@@ -45,9 +54,22 @@ KAORI uses a closed-loop delivery model. Product ideas, operational findings, de
 
 The essential delivery rule is:
 
-> **Develop cheaply in Draft, freeze a targeted-green candidate at Ready, pay Full Admission once for that exact candidate, then reuse the immutable evidence through staging and promotion when lineage remains valid.**
+> **Develop cheaply in the context-appropriate Local-First or GitHub-First loop, converge on one targeted-green candidate, freeze it at Ready, pay Full Admission once for that exact candidate, then reuse immutable evidence through staging and promotion when lineage remains valid.**
 
 Draft work-branch validation is intentionally bounded. Ready is the governed final-candidate boundary: Full Admission runs once on the exact frozen head, while later staging/promotion transitions reuse that immutable evidence when lineage remains valid.
+
+### Engineering Evolution v2 development tracks
+
+The two tracks are development-feedback choices, not separate delivery outcomes.
+
+**Local-First / Dev Container** is appropriate when feature breadth, visual iteration, provider/infrastructure behavior, or refactoring would make repeated CI round-trips the dominant feedback cost. Local work uses the canonical Dev Container and the repository-owned `scripts/developer_check_plan.py` authority to resolve the same changed-path validation plan consumed by GitHub Actions.
+
+**GitHub-First** remains appropriate for bounded fixes, documentation, small refactors, and narrow changes where Draft PR Developer Check is already the cheapest useful loop.
+
+Both tracks converge before Ready. A Local-First change must still have a governed Draft PR, pass the authoritative exact-head Developer Check, freeze the final candidate, pass Full Admission, integrate through `kaori/staging`, receive applicable UAT, and follow the same promotion/release rules. Local evidence accelerates development; it never substitutes for repository admission evidence.
+
+Developer Check planning follows **capability impact with fail-safe widening**. A known capability may select its owning tests and explicit dependent contracts. Shared, CI, release-authority, migration, or uncertain changes widen validation rather than assuming isolation. Full Admission remains comprehensive at the frozen-candidate boundary.
+
 
 ## Human-Readable GitHub Standard
 
