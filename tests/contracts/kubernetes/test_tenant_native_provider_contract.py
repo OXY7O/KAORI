@@ -8,7 +8,11 @@ def _read(relative: str) -> str:
 
 
 def _discovery_source() -> str:
-    return _read('app/kubernetes/tenant/discovery_service.py') + '\n' + _read('app/kubernetes/tenant/discovery_adoption.py')
+    return (
+        _read('app/kubernetes/tenant/discovery_service.py')
+        + '\n'
+        + _read('app/kubernetes/tenant/discovery_adoption.py')
+    )
 
 
 def test_kubernetes_discovery_exposes_optional_tenant_mutation_capabilities() -> None:

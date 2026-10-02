@@ -20,11 +20,17 @@ def tenant_service_source() -> str:
 
 
 def capacity_governance_source() -> str:
-    return read('app/kubernetes/tenant/capacity_governance.py') + '\n' + read('app/kubernetes/tenant/capacity_governance_support.py')
+    return (
+        read('app/kubernetes/tenant/capacity_governance.py')
+        + '\n'
+        + read('app/kubernetes/tenant/capacity_governance_support.py')
+    )
 
 
 def tenant_discovery_source() -> str:
-    return read('app/kubernetes/tenant/discovery_service.py') + '\n' + read('app/kubernetes/tenant/discovery_adoption.py')
+    return (
+        read('app/kubernetes/tenant/discovery_service.py') + '\n' + read('app/kubernetes/tenant/discovery_adoption.py')
+    )
 
 
 def test_resource_profiles_use_server_owned_kaori_content_tabs_and_snapshot_stats() -> None:

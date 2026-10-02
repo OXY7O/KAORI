@@ -19,17 +19,25 @@ def combined(root: Path) -> str:
 def test_operational_dashboards_share_the_same_outer_workspace_grammar() -> None:
     kubernetes = read('app/templates/kubernetes/dashboard/partials/_content.html')
     object_storage = read('app/templates/storage/object_storage/dashboard/partials/_content.html')
+    framework = read('app/templates/components/operational_dashboard_workspace.html')
 
     for source in (kubernetes, object_storage):
-        assert 'components/workspace_tabs.html' in source
-        assert "('overview', 'Operations Overview', 'activity')" in source
-        assert "('capacity', 'Capacity & Demand', 'gauge')" in source
-        assert "('signals', 'Signals & Actions', 'bell-ring')" in source
-        assert "('reporting', 'Reporting', 'file-text')" in source
-        assert 'moveTab(currentTab, direction, prefix)' in source
-        assert "url.searchParams.set('tab', tab)" in source
-        assert "window.history.replaceState({}, '', url)" in source
+        assert 'components/operational_dashboard_workspace.html' in source
+        assert 'dashboard_workspace.controller(' in source
+        assert 'dashboard_workspace.navigation(' in source
+        assert source.count('dashboard_workspace.panel(') == 4
         assert 'hx-trigger="revealed"' in source
+
+    for token in (
+        "('overview', 'Operations Overview', 'activity')",
+        "('capacity', 'Capacity & Demand', 'gauge')",
+        "('signals', 'Signals & Actions', 'bell-ring')",
+        "('reporting', 'Reporting', 'file-text')",
+        'moveTab(currentTab, direction, prefix)',
+        "url.searchParams.set('tab', tab)",
+        "window.history.replaceState({}, '', url)",
+    ):
+        assert token in framework
 
     assert 'kubernetes/dashboard/partials/_hero.html' in kubernetes
     assert 'kubernetes/dashboard/partials/_signal_overview.html' in kubernetes
@@ -63,13 +71,15 @@ def test_kubernetes_dashboard_blocked_onboarding_uses_shared_integration_contrac
 def test_operational_dashboards_share_peer_grid_and_reporting_proportions() -> None:
     kubernetes = combined(KUBERNETES)
     object_storage = combined(OBJECT_STORAGE)
+    reporting_workspace = read('app/templates/components/reporting_dashboard_workspace.html')
 
     for source in (kubernetes, object_storage):
         assert source.count('peer_content_grid.layout_classes()') >= 4
         assert "column_classes('primary', 'seven-five')" in source
         assert "column_classes('secondary', 'seven-five')" in source
-        assert 'Controlled Reporting Flow' in source
         assert 'Controlled Response Flow' in source
+
+    assert 'Governed Reporting Flow' in reporting_workspace
 
 
 def test_operational_dashboard_family_uses_canonical_palette_and_typography() -> None:
@@ -114,12 +124,13 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
     assert 'Worker-node CPU, memory, and pod headroom; control-plane nodes excluded.' in kubernetes_capacity
     assert 'Apply the approved capacity/workload change' in kubernetes_capacity
     assert 'KAORI Alert Intelligence case evidence is temporarily unavailable.' in kubernetes_alerts
-    assert 'Validate reporting activity and follow the governed KAORI workflow.' in kubernetes_reporting
-    assert 'Validate reporting activity and follow the governed KAORI workflow.' in object_reporting
-    assert "operational_callout.render('Reporting Control'" in kubernetes_reporting
-    assert "operational_callout.render('Reporting Control'" in object_reporting
-    assert kubernetes_reporting.index('Reporting Control') < kubernetes_reporting.index('Controlled Reporting Flow')
-    assert object_reporting.index('Reporting Control') < object_reporting.index('Controlled Reporting Flow')
+    reporting_workspace = read('app/templates/components/reporting_dashboard_workspace.html')
+    assert 'components/reporting_dashboard_workspace.html' in kubernetes_reporting
+    assert 'components/reporting_dashboard_workspace.html' in object_reporting
+    assert "'Committed cluster evidence'" in kubernetes_reporting
+    assert "'Committed Object Storage evidence'" in object_reporting
+    assert 'Governed Reporting Flow' in reporting_workspace
+    assert 'Review before reuse.' in reporting_workspace
     assert 'Committed capacity, usage, headroom, and response path.' in object_capacity
     assert (
         'Capacity uses the committed Object Storage Analytics snapshot; no live provider query is issued.'
@@ -130,19 +141,18 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
         in object_alert_guidance
     )
     assert 'Low-risk operational signal. Validate relevance, recurrence, and scope.' in object_alert_guidance
-    assert 'Object Storage report output, definitions, schedules, and recent generation activity.' in object_summary
+    assert 'components/reporting_dashboard_workspace.html' in object_summary
 
     kubernetes_response = read('app/templates/kubernetes/dashboard/partials/_alert_response_guidance.html')
     kubernetes_summary = read('app/templates/kubernetes/dashboard/partials/_reporting_summary.html')
     assert (
-        'Run the approved response for the confirmed scope within permission and safety guardrails.'
-        in kubernetes_response
+        'Run the approved response for the confirmed scope within safety guardrails.' in kubernetes_response
     )
     assert (
         'Run the approved storage response for the confirmed scope within safety guardrails.' in object_alert_guidance
     )
-    assert 'Recurring plans for automatic report generation.' in kubernetes_summary
-    assert 'Recurring plans for automatic report generation.' in object_summary
+    assert 'components/reporting_dashboard_workspace.html' in kubernetes_summary
+    assert 'components/reporting_dashboard_workspace.html' in object_summary
 
     forbidden = (
         'Committed analytics snapshot available',
@@ -183,7 +193,7 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
         assert token not in all_source
 
 
-def test_response_and_reporting_flows_reuse_numbered_governance_sequence() -> None:
+def test_response_and_reporting_flows_use_current_shared_governance_owners() -> None:
     kubernetes_response = read('app/templates/kubernetes/dashboard/partials/_alert_response_guidance.html')
     object_response = read('app/templates/storage/object_storage/dashboard/partials/_alert_response_guidance.html')
     kubernetes_reporting = read('app/templates/kubernetes/dashboard/partials/_reporting_guidance.html')
@@ -203,48 +213,49 @@ def test_response_and_reporting_flows_reuse_numbered_governance_sequence() -> No
         for step in ('Validate', 'Triage', 'Investigate', 'Respond', 'Verify', 'Record'):
             assert f"'{step}'" in source
 
+    reporting_workspace = read('app/templates/components/reporting_dashboard_workspace.html')
     for source in (kubernetes_reporting, object_reporting):
-        assert 'components/numbered_governance_steps.html' in source
+        assert 'components/reporting_dashboard_workspace.html' in source
+        assert 'reporting_workspace.guidance(' in source
         assert 'components/operational_flow_steps.html' not in source
-        assert 'reporting_steps' in source
-        assert 'committed evidence freshness' in source
-        assert 'generation intent' in source
-        assert 'retention or audit evidence' in source
-        for step in ('Validate', 'Select', 'Create', 'Generate', 'Schedule', 'Retain'):
-            assert f"'{step}'" in source
+
+    assert 'reporting_steps' in reporting_workspace
+    assert 'Governed Reporting Flow' in reporting_workspace
+    for step in ('Validate', 'Select', 'Create', 'Generate', 'Schedule', 'Retain'):
+        assert f"'{step}'" in reporting_workspace
 
 
-def test_recent_report_activity_is_bounded_to_five_in_both_reference_dashboards() -> None:
+def test_recent_report_activity_is_bounded_to_four_in_both_reference_dashboards() -> None:
     kubernetes_summary = read('app/templates/kubernetes/dashboard/partials/_reporting_summary.html')
     kubernetes_builder = read('app/kubernetes/dashboard/sections/reporting.py')
     object_summary = read('app/templates/storage/object_storage/dashboard/partials/_reporting_summary.html')
     object_service = read('app/storage/object_storage/dashboard/service.py')
+    reporting_workspace = read('app/templates/components/reporting_dashboard_workspace.html')
 
-    assert 'Up to five latest generated report records.' in kubernetes_summary
-    assert 'reporting.latest_reports[:5]' in kubernetes_summary
-    assert 'query_all(Report, selected_cluster_id, limit=5)' in kubernetes_builder
+    assert 'components/reporting_dashboard_workspace.html' in kubernetes_summary
+    assert 'components/reporting_dashboard_workspace.html' in object_summary
+    assert 'reporting.latest_reports[:4]' in reporting_workspace
+    assert 'query_all(Report, selected_cluster_id, limit=4)' in kubernetes_builder
+    assert 'recent = reports_query.order_by(Report.created_at.desc()).limit(4).all()' in object_service
 
-    assert 'Up to five latest generated Object Storage report records.' in object_summary
-    assert 'reporting.latest_reports[:5]' in object_summary
-    assert 'recent = reports_query.order_by(Report.created_at.desc()).limit(5).all()' in object_service
-
-    for source in (kubernetes_summary, kubernetes_builder, object_summary):
-        assert 'three latest generated' not in source
-        assert 'limit=3' not in source
+    for source in (reporting_workspace, kubernetes_builder, object_service):
+        assert 'limit=5' not in source
+        assert 'latest_reports[:5]' not in source
 
 
 def test_operational_dashboard_standard_is_family_owned() -> None:
     standard = read('docs/design/patterns/OPERATIONAL_DASHBOARD.md')
     audit = read('docs/design/audits/OPERATIONAL_DASHBOARD_FAMILY_FAST_TRACK_ALIGNMENT_AUDIT_2026_09_29.md')
 
-    assert '# KAORI Operational Dashboard Pattern v1.6' in standard
+    assert '# KAORI Operational Dashboard Pattern v1.7' in standard
     assert 'Kubernetes Operations Dashboard and Object Storage Operations Dashboard' in standard
     assert 'Dashboard family consistency' in standard
     assert 'Registry/Harbor and Source Control/GitHub' in standard
-    assert 'components/numbered_governance_steps.html' in standard
+    assert 'components/operational_dashboard_workspace.html' in standard
+    assert 'components/reporting_dashboard_workspace.html' in standard
     assert 'same four workspace tabs' in audit
     assert 'Registry/Harbor and Source Control/GitHub' in audit
     assert 'Tenant Governance Flow' in audit
     assert 'Issue #758' in audit
-    assert 'five-record preview' in audit
-    assert 'five-record Recent Report Activity preview boundary' in audit
+    assert 'five-record Alerts Summary preview boundary' in audit
+    assert 'four-record Recent Report Activity preview boundary' in audit
