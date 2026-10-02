@@ -125,6 +125,7 @@ def _capability_active_key(capability_key: str, endpoint: str) -> str:
 
     return _CAPABILITY_ACTIVE_DEFAULTS.get(capability_key, 'overview')
 
+
 def _preserved_context(
     query_args: Mapping[str, Any] | None,
     keys: tuple[str, ...],
@@ -319,6 +320,7 @@ def _active_capability_key(workspace_key: str, endpoint: str) -> str:
             return key
 
     return _WORKSPACE_ACTIVE_DEFAULTS.get(workspace_key, 'overview')
+
 
 def build_sidebar_navigation(
     endpoint: str | None,
