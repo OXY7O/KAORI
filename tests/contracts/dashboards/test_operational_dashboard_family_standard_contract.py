@@ -145,9 +145,7 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
 
     kubernetes_response = read('app/templates/kubernetes/dashboard/partials/_alert_response_guidance.html')
     kubernetes_summary = read('app/templates/kubernetes/dashboard/partials/_reporting_summary.html')
-    assert (
-        'Run the approved response for the confirmed scope within safety guardrails.' in kubernetes_response
-    )
+    assert 'Run the approved response for the confirmed scope within safety guardrails.' in kubernetes_response
     assert (
         'Run the approved storage response for the confirmed scope within safety guardrails.' in object_alert_guidance
     )
