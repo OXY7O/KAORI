@@ -1,6 +1,7 @@
 {% import "components/action_button.html" as action_button %}
 {% import "components/form_field.html" as form_field %}
 {% import "components/info_tip.html" as info_tip %}
+{% import "components/table_label.html" as table_label %}
 {% import "components/numbered_governance_steps.html" as numbered_steps %}
 {% set grant_flow = [('users-round', 'Membership', 'Start from one active Membership that identifies the principal and fixes its Tenant boundary.'), ('shield-check', 'Profile', 'Choose a versioned least-privilege access contract.'), ('scope', 'Scope', 'Target Tenant, environment, or namespace explicitly.')] %}
 <div class="space-y-5">
@@ -155,7 +156,7 @@
                     </label>
                     <div data-access-provider-warning
                          hidden
-                         class="flex items-start gap-2.5 rounded-lg border border-status-warning-border bg-status-warning-soft px-3.5 py-3 text-status-warning-text">
+                         class="flex items-start gap-2.5 rounded-lg border {{ table_label.tone_border_classes('warning') }} bg-status-warning-soft px-3.5 py-3 text-status-warning-text">
                         <i data-lucide="shield-alert"
                            class="mt-0.5 h-4 w-4 shrink-0"
                            aria-hidden="true"></i>
@@ -180,28 +181,28 @@
                     </div>
                     <dl class="grid gap-px bg-kaori-primary/15 sm:grid-cols-2">
                         <div class="min-w-0 bg-surface-card/85 px-4 py-3">
-                            <dt class="text-[10px] font-semibold uppercase tracking-wider text-content-muted">Principal</dt>
+                            <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Principal</dt>
                             <dd class="mt-1 truncate text-xs font-semibold text-content-primary"
                                 data-access-context-principal>
                                 Select Membership
                             </dd>
                         </div>
                         <div class="min-w-0 bg-surface-card/85 px-4 py-3">
-                            <dt class="text-[10px] font-semibold uppercase tracking-wider text-content-muted">Tenant</dt>
+                            <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Tenant</dt>
                             <dd class="mt-1 truncate text-xs font-semibold text-content-primary"
                                 data-access-context-tenant>
                                 Not resolved
                             </dd>
                         </div>
                         <div class="min-w-0 bg-surface-card/85 px-4 py-3">
-                            <dt class="text-[10px] font-semibold uppercase tracking-wider text-content-muted">Profile</dt>
+                            <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Profile</dt>
                             <dd class="mt-1 truncate text-xs font-semibold text-content-primary"
                                 data-access-context-profile>
                                 —
                             </dd>
                         </div>
                         <div class="min-w-0 bg-surface-card/85 px-4 py-3">
-                            <dt class="text-[10px] font-semibold uppercase tracking-wider text-content-muted">Effective Scope</dt>
+                            <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Effective Scope</dt>
                             <dd class="mt-1 truncate text-xs font-semibold text-content-primary"
                                 data-access-context-scope>
                                 Namespace · target pending

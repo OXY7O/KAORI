@@ -161,16 +161,16 @@ def test_tenant_adoption_preflight_is_compact_and_pvc_bounds_are_explicit() -> N
 
 
 def test_managed_adoption_imports_storage_policy_and_verifies_native_takeover() -> None:
-    discovery = _discovery_source()
+    adoption = _read('app/kubernetes/tenant/discovery_adoption.py')
     cutover = _read('app/kubernetes/tenant/allocation_cutover.py')
     drift = _read('app/kubernetes/tenant/allocation_drift.py')
     tasks = _read('app/kubernetes/tenant/tasks.py')
 
-    native_start = discovery.index("if provider_key == 'native_kubernetes':")
-    capsule_start = discovery.index('    else:', native_start)
-    native = discovery[native_start:capsule_start]
+    native_start = adoption.index('def _native_namespace_record(')
+    capsule_start = adoption.index('def _capsule_namespace_records(', native_start)
+    native = adoption[native_start:capsule_start]
 
-    assert "namespace_record.allocation_storage_policy_json = dict(allocation.get('storage_policy') or {})" in native
+    assert "record.allocation_storage_policy_json = dict(allocation.get('storage_policy') or {})" in native
     assert 'storage_policy=dict(profile.storage_policy_json or {})' in native
     assert "operation='adoption_takeover'" in native
     assert "'provider_mutation_performed': True" in native
@@ -183,3 +183,5 @@ def test_managed_adoption_imports_storage_policy_and_verifies_native_takeover() 
     assert 'def accept_provider_allocation_state(' in drift
     assert 'def apply_provider_mirrored_policy_observation()' in drift
     assert 'apply_provider_mirrored_policy_observation()' in tasks
+
+

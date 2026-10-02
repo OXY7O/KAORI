@@ -184,6 +184,7 @@ def test_dashboard_page_templates_have_no_local_typography_or_shell_drift() -> N
 
 def test_dashboard_copy_uses_canonical_casing() -> None:
     all_source = '\n'.join(path.read_text(encoding='utf-8') for path in sorted(DASHBOARD_TEMPLATES.rglob('*.html')))
+    reporting_workspace = read('app/templates/components/reporting_dashboard_workspace.html')
 
     assert 'Live Signals Enabled' not in all_source
     assert 'Select a Cluster for Live Signals' not in all_source
@@ -197,8 +198,8 @@ def test_dashboard_copy_uses_canonical_casing() -> None:
     assert 'What This Summary Means' not in all_source
     assert 'Cluster Signals Available' in all_source
     assert 'Select a Cluster for Detailed Signals' in all_source
-    assert 'Generated output' in all_source
-    assert 'Preserve the artifact' in all_source
+    assert 'Generated output' in reporting_workspace
+    assert 'Preserve the artifact' in reporting_workspace
 
 
 def test_dashboard_uses_local_skeletons_and_section_owned_loading_bar() -> None:

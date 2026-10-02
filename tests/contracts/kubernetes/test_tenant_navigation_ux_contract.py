@@ -104,7 +104,7 @@ def test_sidebar_authority_documents_tenant_capability_v21() -> None:
     assert 'Level 1 — Workspace / Domain' in standard
     assert 'Level 2 — Capability' in standard
     assert 'Tenant' in standard
-    assert "key='tenant'" in _navigation_source()
+    assert "'tenant', 'Tenant', 'building-2', 'tenant.index'" in _navigation_source()
     assert 'two-level Workspace -> Capability sidebar' in verifier
 
 
@@ -172,8 +172,8 @@ def test_namespace_allocation_selector_is_not_limited_by_visible_page() -> None:
     service = _tenant_service_source()
     allocation = (ROOT / 'app/templates/kubernetes/tenant/partials/_allocation_change.html').read_text(encoding='utf-8')
 
-    assert "'namespace_options': namespace_options" in service
-    assert '{% for item in namespace_options %}' in allocation
+    assert "'namespace_allocation_options': namespace_allocation_options" in service
+    assert '{% for item in namespace_allocation_options %}' in allocation
     assert '{% for item in namespaces %}' not in allocation
 
 
@@ -181,17 +181,16 @@ def test_tenant_blocked_state_reuses_general_kubernetes_prerequisite_family() ->
     base = (ROOT / 'app/templates/kubernetes/tenant/base.html').read_text(encoding='utf-8')
 
     blocked_index = base.index('{% if not native_available %}')
-    terminal_index = base.rindex('{% if not native_available %}')
-    else_index = base.index('{% else %}', terminal_index)
-    content_index = base.index('{% block tenant_content %}', terminal_index)
+    onboarding_index = base.index('{% if registered_cluster_count == 0 %}')
+    content_index = base.index('{% block tenant_content %}')
 
     assert 'components/cluster/_hero_blocked_context.html' in base
-    assert 'components/cluster/_onboarding_banner.html' in base[terminal_index:else_index]
+    assert 'components/cluster/_onboarding_banner.html' in base[onboarding_index:content_index]
     assert 'components/states/_blocked_state.html' not in base
     assert 'Tenant capability is blocked' not in base
     assert 'Return to Tenant' not in base
     assert "page_hero.context_card('Tenant context'" in base
-    assert blocked_index < terminal_index < else_index < content_index
+    assert blocked_index < onboarding_index < content_index
 
     blocked_hero = base[blocked_index : base.index('{% else %}', blocked_index)]
     assert "page_hero.context_card('Tenant context'" not in blocked_hero
@@ -209,7 +208,8 @@ def test_tenant_readiness_matches_runtime_fallback_and_blocker_distinguishes_val
 
     assert 'tenant_workspace_connection_available' in service
     assert "frozenset({'ready', 'degraded'})" in native_provider
-    assert "return 'ready' if str(getattr(cluster, 'status', '')" in native_provider
+    assert 'def effective_native_connection_readiness(' in native_provider
+    assert "== 'connected' else 'validation_required'" in native_provider
     assert 'effective_native_connection_readiness(connection)' in native_provider
     assert 'tenant_workspace_connection_available(cluster.kubernetes_connection)' in discovery
     assert 'Metrics Source' not in service
@@ -230,3 +230,5 @@ def test_tenant_readiness_matches_runtime_fallback_and_blocker_distinguishes_val
     assert 'Open Cluster Integrations' in onboarding
     assert 'Validate Cluster' in onboarding
     assert 'Confirm Ready' in onboarding
+
+
