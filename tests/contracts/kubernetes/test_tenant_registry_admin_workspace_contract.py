@@ -193,7 +193,7 @@ def test_access_grants_use_setup_style_form_guidance_and_full_registry() -> None
     assert 'Membership fixes the Tenant boundary.' not in workspace
     assert 'Targets are filtered automatically.' not in workspace
     assert 'Effective RBAC remains provider-verified.' not in workspace
-    assert 'Tenant and scope are validated before commit.' in workspace
+    assert 'KAORI validates Tenant and scope before commit.' in workspace
     assert 'Namespace scope requires one target.' in workspace
     assert 'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3' in workspace
     assert 'Start from one active Membership that identifies the principal and fixes its Tenant boundary.' in workspace
@@ -385,7 +385,7 @@ def test_access_grant_uses_tenant_setup_two_card_composition() -> None:
     assert 'Tenant uses no target. Environment or Namespace requires exactly one matching target.' in workspace
     assert 'Provider Authority' in workspace
     assert 'Secret Boundary' in workspace
-    assert 'Tenant and scope are validated before commit.' in workspace
+    assert 'KAORI validates Tenant and scope before commit.' in workspace
 
 
 def test_tenant_identity_is_immutable_and_htmx_feedback_uses_oob_toast() -> None:
@@ -477,39 +477,45 @@ def test_namespace_access_security_boundary_matches_peer_surface() -> None:
 def test_operational_attention_peer_cards_preserve_bounded_alignment() -> None:
     overview = read('app/templates/kubernetes/tenant/overview.html')
 
-    assert 'xl:items-start' in overview
+    assert 'xl:items-stretch' in overview
     assert overview.count("extra_classes='flex h-full flex-col'") >= 2
     assert overview.count("body_classes='flex flex-1 flex-col p-0'") >= 2
     assert 'Showing {{ tenant_attention_rows|length }} prioritized condition' in overview
     assert 'Showing {{ tenant_recent_activity_rows|length }} latest committed event' in overview
 
 
-def test_kaori_info_tip_uses_desktop_hover_and_native_dialog_activation() -> None:
+def test_kaori_info_tip_uses_shared_anchored_popover_for_all_input_modes() -> None:
     component = read('app/templates/components/info_tip.html')
     docs = read('docs/design/components/INFO_TIP.md')
+    controller = read('app/static/js/info_tips.js')
 
     assert (
         "macro render(id, title, text='', items=None, placement='left', button_text=None, button_classes=None)"
         in component
     )
-    assert 'data-kaori-dialog-open' in component
-    assert 'data-dialog-target="{{ id }}-dialog"' in component
-    assert 'aria-haspopup="dialog"' in component
-    assert 'dialog id="{{ id }}-dialog"' in component
-    assert 'data-kaori-native-dialog' in component
+    assert 'data-kaori-info-tip' in component
+    assert 'data-kaori-info-tip-trigger' in component
+    assert 'data-kaori-info-tip-preview' in component
     assert 'role="tooltip"' in component
-    assert 'sm:group-hover:block' in component
-    assert 'group-focus-within:block' not in component
+    assert 'aria-expanded="false"' in component
+    assert 'data-kaori-native-dialog' not in component
+    assert 'data-kaori-dialog-open' not in component
+    assert 'sm:group-hover:block' not in component
     assert 'fixed inset-x-4 bottom-4' not in component
     assert 'button_classes if button_classes else action_button.classes' in component
     assert 'focus-visible:ring-2' in component
     assert 'h-6 w-6' in component
     assert 'circle-help' in component
 
-    assert 'desktop pointer hover' in docs
-    assert 'click, touch, or keyboard activation' in docs
-    assert 'native `<dialog>` top layer' in docs
-    assert 'table_ui.action_classes()' in docs
+    assert 'document.body.appendChild(preview)' in controller
+    assert "event.key === 'Escape'" in controller
+    assert "document.addEventListener('htmx:beforeSwap'" in controller
+
+    assert 'one non-modal anchored popover' in docs
+    assert '**desktop hover**' in docs
+    assert '**click/touch**' in docs
+    assert 'temporarily portals the popover' in docs
+    assert 'does not trap focus' in docs
     assert 'Do **not** hide validation errors' in docs
 
 
@@ -667,7 +673,8 @@ def test_resource_profile_editability_allocation_change_and_capacity_decisions_f
     assert 'namespace-provisioning-contract-tip' in namespace_form
     assert '<h2 class="text-base font-semibold text-content-primary">Provision Namespace</h2>' in namespace_form
     assert 'KAORI will not overwrite a Namespace owned by another controller.' not in namespace_form
-    assert 'Profile Snapshot · Read Only' in namespace_form
+    assert "table_label.special_label('Profile Snapshot', 'maintenance', 'lock-keyhole')" in namespace_form
+    assert 'Read-only profile snapshot that will be frozen on successful provisioning.' in namespace_form
     assert 'Effective Allocation Preview' in namespace_form
     assert 'Advanced Controls Preview' in namespace_form
     assert 'Basic Resources' in namespace_form
@@ -825,9 +832,13 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
     assert '_take_over_capsule_allocation(' in service
     assert 'cutover_capsule_global_quota_allocation(' in service
     assert 'cutover_capsule_tenant_resource_quota(' in service
-    assert "'provider_mutation_performed': shared_profile is not None" in service
+    capsule_takeover = service[
+        service.index('def _finalize_capsule_takeover(') : service.index('def _adopt_capsule(')
+    ]
+    assert "'provider_mutation_performed': True" in capsule_takeover
     assert 'TenantOwnershipStatus.ADOPTED.value' in service
-    assert 'record.ownership_status = TenantOwnershipStatus.MANAGED.value' in cutover
+    assert 'record.ownership_status = TenantOwnershipStatus.MANAGED.value' not in cutover
+    assert 'record.ownership_status != TenantOwnershipStatus.ADOPTED.value' in cutover
 
     assert 'Tenant Discovery' in template
     assert 'Live Status' in template
@@ -1027,7 +1038,7 @@ def test_tenant_sync_marks_fresh_missing_namespaces_as_observational_drift() -> 
     assert 'Namespace Provider Drift' in drift_registry
     assert "special_label('Drifted', 'warning', 'triangle-alert')" in drift_registry
     assert "url_for('tenant.reconcile_namespace_route', namespace_id=item.id)" in drift_registry
-    assert 'Sync observes drift only.' in drift_registry
+    assert "special_label('Observe Only', 'unknown', 'eye')" in drift_registry
     assert 'Reconcile' in drift_registry
 
 
@@ -1087,11 +1098,12 @@ def test_live_discovery_surfaces_missing_managed_provider_objects() -> None:
 
 
 def test_adoption_modal_uses_wide_review_geometry_and_compact_live_copy() -> None:
-    discovery = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
+    preflight = read('app/templates/kubernetes/tenant/partials/_tenant_adoption_preflight.html')
     live = read('app/kubernetes/tenant/live_connection.py')
 
-    assert 'max-w-5xl' in discovery
-    assert 'md:grid-cols-2 xl:grid-cols-3' in discovery
+    assert 'max-w-5xl' in preflight
+    assert 'lg:grid-cols-2' in preflight
+    assert 'grid grid-cols-3 gap-px border-t border-outline-subtle bg-outline-subtle' in preflight
     assert "description = 'Live Kubernetes API is reachable.'" in live
 
 
@@ -1142,7 +1154,7 @@ def test_access_grant_form_filters_targets_and_profiles_from_selected_membership
     )
     assert 'Filtered by Membership Tenant' in workspace
     assert 'Tenant scope still uses namespaced RBAC' in workspace
-    assert 'Select Membership first' in workspace
+    assert "'select Membership first'" in scope_js
     assert 'tenant_access_grant_form.js' in page
 
     assert 'filterTenantOptions' in scope_js
@@ -1276,7 +1288,7 @@ def test_tenant_setup_and_membership_guidance_use_compact_uat_copy() -> None:
     assert 'Reactivation restores membership only; old grants stay revoked.' not in memberships
 
 
-def test_info_tip_uses_title_level_registry_guidance_and_mobile_top_layer() -> None:
+def test_info_tip_uses_title_level_registry_guidance_and_viewport_portal() -> None:
     component = read('app/templates/components/info_tip.html')
     docs = read('docs/design/components/INFO_TIP.md')
     table = read('app/templates/components/table.html')
@@ -1291,8 +1303,8 @@ def test_info_tip_uses_title_level_registry_guidance_and_mobile_top_layer() -> N
     assert 'data-kaori-info-tip-trigger' in component
     assert 'data-kaori-info-tip-preview' in component
     assert 'sm:group-hover:block' not in component
-    assert 'data-kaori-native-dialog' in component
-    assert 'data-kaori-dialog-close' in component
+    assert 'data-kaori-native-dialog' not in component
+    assert 'data-kaori-dialog-close' not in component
     assert 'fixed inset-x-4 bottom-4' not in component
 
     assert "title_extra=''" in table
@@ -1321,8 +1333,9 @@ def test_info_tip_uses_title_level_registry_guidance_and_mobile_top_layer() -> N
     assert "document.addEventListener('htmx:beforeSwap'" in positioning
 
     assert 'beside the registry title' in docs
-    assert 'temporarily portals the preview to `document.body`' in docs
-    assert 'native `<dialog>` top layer' in docs
+    assert 'temporarily portals the popover' in docs
+    assert 'one non-modal anchored popover' in docs
+    assert 'native <dialog> top layer' not in docs
 
 
 def test_credential_issuance_binds_transient_objects_to_tenant_before_validation() -> None:
@@ -1385,13 +1398,11 @@ def test_credential_material_delivery_is_one_time_non_cached_and_not_routine_inv
     assert 'data-kaori-download-button' in clipboard
 
 
-def test_legacy_allocation_adoption_is_observed_and_held_until_cutover() -> None:
+def test_managed_adoption_preserves_observed_evidence_and_lifecycle_separation() -> None:
     observer = allocation_observation_source()
-    discovery_service = tenant_discovery_source()
-    discovery = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
+    adoption = tenant_discovery_source()
     namespace_registry = read('app/templates/kubernetes/tenant/partials/_namespace_registry.html')
     allocation_change = read('app/templates/kubernetes/tenant/partials/_allocation_change.html')
-    service = tenant_service_source()
     architecture = read('docs/architecture/kubernetes-tenant-resource-profiles.md')
     readme = read('app/kubernetes/tenant/README.md')
 
@@ -1399,43 +1410,29 @@ def test_legacy_allocation_adoption_is_observed_and_held_until_cutover() -> None
     assert 'observe_capsule_tenant_allocation' in observer
     assert "'provenance': 'adopted_observed'" in observer
     assert "'provider_mutation_performed': False" in observer
-    assert "'control_state': 'control_unavailable'" in observer
+    assert "control_state = 'observed' if not unsupported and not ambiguous else 'control_unavailable'" in observer
+    assert "'control_state': control_state" in observer
     assert 'profile_lineage_for_observed_allocation' in observer
     assert 'GlobalResourceQuota' in observer
 
-    assert 'allocation = observe_native_namespace_allocation' in discovery_service
-    assert 'allocation = observe_capsule_tenant_allocation' in discovery_service
-    assert 'namespace_record.desired_hash = None' in discovery_service
-    assert "namespace_record.effective_hash = str(allocation['effective_hash'])" in discovery_service
-    assert 'def _create_adopted_baseline_profile(' not in discovery_service
-    assert 'namespace_record.allocation_storage_policy_json' in discovery_service
-    assert 'def _materialize_adopted_baseline_profile(' in service
-    assert "profile_selector == 'adopted_baseline'" in service
-    assert "'allocation_baseline': allocation" in discovery_service
-    assert 'TenantOwnershipStatus.ADOPTED.value' in discovery_service
+    assert 'def _take_over_native_allocation(' in adoption
+    assert 'reconcile_adopted_native_allocation(' in adoption
+    assert "'allocation_control_state': 'kaori_managed'" in adoption
+    assert "'provider_mutation_performed': True" in adoption
+    assert 'TenantOwnershipStatus.ADOPTED.value' in adoption
+    assert "'allocation_control_state': 'provider_mirrored_policy'" in adoption
 
-    assert 'Observed Allocation Baseline' in discovery
-    assert 'Adopted Baseline · Observed' in discovery
-    assert 'Control Unavailable' in discovery
-    assert 'Provider authority remains external until an explicit governance cutover is accepted.' in discovery
-
-    assert 'Adopted Baseline · Observed' in namespace_registry
-    assert "item.ownership_status == 'adopted'" in namespace_registry
-    assert 'Control Unavailable' in namespace_registry
-    assert 'Read Only' in namespace_registry
-
-    assert 'namespace_allocation_options' in service
-    assert 'record.ownership_status == TenantOwnershipStatus.MANAGED.value' in service
-    assert (
-        'Adopted Baseline allocations are read-only until explicit Allocation Governance Cutover is completed.'
-    ) in service
+    assert "special_label('KAORI Managed', 'normal', 'shield-check')" in namespace_registry
+    assert "special_label('Awaiting Managed Takeover', 'info', 'clock-3')" in namespace_registry
     assert 'namespace_allocation_options' in allocation_change
+    assert '{% for item in namespace_allocation_options %}' in allocation_change
     assert '{% for item in namespace_options %}' not in allocation_change
 
-    assert 'During #768 governed adoption' in architecture
-    assert 'governed mutation fails closed' in architecture
-    assert 'The resulting Namespace is **Adopted Baseline · Observed**' in readme
-    assert 'never turns observed provider state into KAORI-authored desired intent' in readme
+    assert '#777 managed adoption' in architecture
+    assert 'provider-equivalent managed takeover' in architecture
+    assert 'Existing Adopted / Observed records' in architecture
+    assert 'provider-equivalent managed takeover' in readme
+    assert 'Namespace lifecycle ownership stays Adopted' in readme
 
 
 def test_adopted_allocation_cutover_is_explicit_provider_verified_and_separate_from_namespace_ownership() -> None:
