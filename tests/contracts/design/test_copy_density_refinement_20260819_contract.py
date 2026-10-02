@@ -54,10 +54,7 @@ def test_metrics_source_validation_copy_keeps_provider_consumer_boundary_concise
         'app/templates/integrations/observability/metrics_source/partials/_detail_validation_content.html'
     )
 
-    assert (
-        'Core API evidence sets provider readiness; consumer evidence stays binding-scoped.'
-        in validation
-    )
+    assert 'Core API evidence sets provider readiness; consumer evidence stays binding-scoped.' in validation
     assert (
         'Validate provider compatibility and Prometheus HTTP API v1 / PromQL core. Consumer contracts stay in Bindings & Consumers.'
         in validation

@@ -150,7 +150,10 @@ def test_live_target_selectors_keep_consistent_helper_context() -> None:
     secret_delete = read('app/templates/kubernetes/operations/secrets/delete.html')
     secret_reveal = read('app/templates/kubernetes/operations/secrets/reveal.html')
 
-    assert 'Select one registered cluster, one live namespace, and a create-only Kubernetes object name.' in configmap_create
+    assert (
+        'Select one registered cluster, one live namespace, and a create-only Kubernetes object name.'
+        in configmap_create
+    )
     assert 'No live namespace is available for the selected cluster.' in configmap_workspace
     assert 'No ConfigMap currently exists in this live namespace.' in configmap_workspace
     assert 'Bind this create-only request to one live namespace and a new Kubernetes Secret name.' in secret_create
