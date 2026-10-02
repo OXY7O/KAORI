@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from typing import Any
 
 from sqlalchemy.exc import SQLAlchemyError
@@ -19,6 +19,7 @@ from app.kubernetes.tenant.capacity import (
     quota_request_vector,
 )
 from app.kubernetes.tenant.capacity_governance_support import (
+    _GIB,
     _budget,
     _budget_json,
     _committed_evidence_reason,
@@ -31,6 +32,7 @@ from app.kubernetes.tenant.capacity_governance_support import (
     _optional_positive_quantity,
     _percent,
     _policy_json,
+    _quantity_gib_text,
     _snapshot_cutoff,
     _state_reason,
     _text,
