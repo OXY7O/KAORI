@@ -1630,6 +1630,7 @@ def test_capsule_global_resource_quota_joins_canonical_allocation_governance() -
 
 def test_capsule_tenant_resource_quotas_are_bidirectionally_governed_without_native_bypass() -> None:
     provider = read('app/kubernetes/tenant/capsule_provider.py')
+    quota_provider = read('app/kubernetes/tenant/capsule_tenant_quota_provider.py')
     observer = allocation_observation_source()
     adoption = tenant_discovery_source()
     governance = read('app/kubernetes/tenant/capsule_tenant_quota_governance.py')
@@ -1664,9 +1665,9 @@ def test_capsule_tenant_resource_quotas_are_bidirectionally_governed_without_nat
     assert 'def change_capsule_tenant_resource_quota' in governance
     assert '_desired_resource_quotas(' in governance
     assert '_patch_resource_quotas(' in governance
-    assert "dry_run='All'" in governance
-    assert 'Capsule Tenant resourceVersion changed' in governance
-    assert 'Capsule Tenant UID changed' in governance
+    assert "dry_run='All'" in quota_provider
+    assert 'Capsule Tenant resourceVersion changed' in quota_provider
+    assert 'Capsule Tenant UID changed' in quota_provider
     assert 'def apply_managed_capsule_tenant_quota_drift_observation' in governance
     assert 'def reapply_capsule_tenant_quota_intent' in governance
     assert 'def accept_capsule_tenant_provider_state' in governance
