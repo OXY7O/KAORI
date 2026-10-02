@@ -89,7 +89,7 @@ def test_validation_operational_gate_copy_is_compact_for_every_provider() -> Non
 
     assert 'Resolve required API or RBAC gaps.' in combined
     assert 'Full Validation owns API and RBAC evidence; Runtime Refresh owns live API health.' in combined
-    assert 'Revalidate after Kubernetes, API, or RBAC changes.' in combined
+    assert 'Revalidate after Kubernetes upgrades, served-API changes, or RBAC policy changes.' in combined
     assert 'Core Metrics Source APIs are usable.' in combined
     assert 'Core Alertmanager APIs are usable.' in combined
     assert 'Required MinIO S3 contracts are usable.' in combined
