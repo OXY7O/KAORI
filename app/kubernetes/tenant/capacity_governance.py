@@ -713,8 +713,9 @@ def _aggregate_committed_allocation(
         if any(value is None for value in values[:3]):
             unbounded.append(label)
         for index, value in enumerate(values):
-            if totals[index] is not None:
-                totals[index] = totals[index] + value if value is not None else None
+            current = totals[index]
+            if current is not None:
+                totals[index] = current + value if value is not None else None
 
     for row in rows:
         tenant_id = str(row.environment.tenant_id)

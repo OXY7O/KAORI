@@ -788,10 +788,10 @@ def change_native_namespace_allocation_committed(source: Mapping[str, Any]) -> T
 
 def _materialize_adopted_baseline_profile(record: TenantNamespace) -> TenantResourceProfile:
     evidence = record.provisioning_evidence_json or {}
-    allocation = evidence.get('allocation')
-    allocation = dict(allocation) if isinstance(allocation, Mapping) else {}
-    lineage = allocation.get('profile_lineage')
-    lineage = dict(lineage) if isinstance(lineage, Mapping) else {}
+    allocation_value = evidence.get('allocation')
+    allocation: dict[str, Any] = dict(allocation_value) if isinstance(allocation_value, Mapping) else {}
+    lineage_value = allocation.get('profile_lineage')
+    lineage: dict[str, Any] = dict(lineage_value) if isinstance(lineage_value, Mapping) else {}
 
     profile = TenantResourceProfile()
     profile.public_id = str(uuid.uuid4())
