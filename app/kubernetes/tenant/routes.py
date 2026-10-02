@@ -1088,14 +1088,6 @@ def tenant_adoption_preflight_route():
             'kubernetes/tenant/partials/_tenant_adoption_preflight_error.html',
             tenant_adoption_preflight_error=str(exc),
         )
-    except Exception:
-        current_app.logger.exception('Tenant Adoption Preflight live read failed.')
-        rendered = render_template(
-            'kubernetes/tenant/partials/_tenant_adoption_preflight_error.html',
-            tenant_adoption_preflight_error=(
-                'The live provider preflight could not be completed. Refresh Discovery and retry.'
-            ),
-        )
     else:
         rendered = render_template(
             'kubernetes/tenant/partials/_tenant_adoption_preflight.html',

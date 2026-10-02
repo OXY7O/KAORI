@@ -157,6 +157,16 @@ def _analytics_items(endpoint: str) -> list[BreadcrumbItem]:
     ]
 
 
+def _platform_kubernetes_items(endpoint: str) -> list[BreadcrumbItem]:
+    items = [
+        BreadcrumbItem('Operations Center', 'workflow'),
+        BreadcrumbItem('Kubernetes Admin'),
+    ]
+    if endpoint != 'platform_operations.kubernetes.index':
+        items.append(BreadcrumbItem(_leaf(endpoint, 'Secret Reveal')))
+    return items
+
+
 def build_navigation_breadcrumb(
     endpoint: str | None,
     path: str = '',
@@ -241,12 +251,7 @@ def build_navigation_breadcrumb(
             BreadcrumbItem('Data Lifecycle'),
         ]
     elif endpoint.startswith('platform_operations.kubernetes.'):
-        items = [
-            BreadcrumbItem('Operations Center', 'workflow'),
-            BreadcrumbItem('Kubernetes Admin'),
-        ]
-        if endpoint != 'platform_operations.kubernetes.index':
-            items.append(BreadcrumbItem(_leaf(endpoint, 'Secret Reveal')))
+        items = _platform_kubernetes_items(endpoint)
     elif endpoint.startswith(('integrations.', 'notification_channels.')):
         leaf = {
             'integrations.overview': 'Overview',

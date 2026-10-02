@@ -810,11 +810,8 @@ def _tenant_capability_statuses(tenant: Tenant) -> dict[str, str]:
         connection = cluster.kubernetes_connection if cluster is not None else None
         if connection is None:
             return {}
-        try:
-            provider = NativeKubernetesTenantProvider(connection=connection)
-            return {item.key: item.status.value for item in provider.capabilities(cluster_id=str(tenant.cluster_id))}
-        except Exception:
-            return {}
+        provider = NativeKubernetesTenantProvider(connection=connection)
+        return {item.key: item.status.value for item in provider.capabilities(cluster_id=str(tenant.cluster_id))}
 
     evidence = tenant.provider_evidence_json or {}
     capsule = evidence.get('capsule') if isinstance(evidence, Mapping) else None

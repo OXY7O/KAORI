@@ -265,20 +265,7 @@ def runtime_history_view(
             }
         )
 
-    health_counts = {'healthy': 0, 'degraded': 0, 'unhealthy': 0}
-    posture_counts = {'ready': 0, 'attention': 0, 'blocked': 0, 'not_observed': 0}
-    for row in rendered_source_rows:
-        if row.health_status in health_counts:
-            health_counts[row.health_status] += 1
-        posture = _effective_runtime_posture(row.health_status, row.readiness)
-        if posture == 'ready':
-            posture_counts['ready'] += 1
-        elif posture == 'blocked':
-            posture_counts['blocked'] += 1
-        elif posture in {'degraded', 'validation_required'}:
-            posture_counts['attention'] += 1
-        else:
-            posture_counts['not_observed'] += 1
+    health_counts, posture_counts = _runtime_history_counts(rendered_source_rows)
 
     latest = rendered_source_rows[0] if rendered_source_rows else None
     return {
@@ -293,6 +280,26 @@ def runtime_history_view(
         'health_counts': health_counts,
         'posture_counts': posture_counts,
     }
+
+
+def _runtime_history_counts(
+    rows: list[IntegrationRuntimeObservation],
+) -> tuple[dict[str, int], dict[str, int]]:
+    health_counts = {'healthy': 0, 'degraded': 0, 'unhealthy': 0}
+    posture_counts = {'ready': 0, 'attention': 0, 'blocked': 0, 'not_observed': 0}
+    for row in rows:
+        if row.health_status in health_counts:
+            health_counts[row.health_status] += 1
+        posture = _effective_runtime_posture(row.health_status, row.readiness)
+        if posture == 'ready':
+            posture_counts['ready'] += 1
+        elif posture == 'blocked':
+            posture_counts['blocked'] += 1
+        elif posture in {'degraded', 'validation_required'}:
+            posture_counts['attention'] += 1
+        else:
+            posture_counts['not_observed'] += 1
+    return health_counts, posture_counts
 
 
 def _effective_runtime_posture(health_status: str | None, readiness: str | None) -> str:

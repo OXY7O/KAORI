@@ -1,515 +1,21 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass
 from typing import Any
 
 from flask import url_for
 
-
-@dataclass(frozen=True)
-class WorkspaceCapabilityDefinition:
-    key: str
-    label: str
-    icon: str
-    endpoint: str
-    permissions: tuple[str, ...] = ()
-
-
-@dataclass(frozen=True)
-class WorkspaceDefinition:
-    key: str
-    label: str
-    icon: str
-    section: str
-    capabilities: tuple[WorkspaceCapabilityDefinition, ...]
-
-
-@dataclass(frozen=True)
-class CapabilityViewDefinition:
-    key: str
-    label: str
-    icon: str
-    endpoint: str
-    permissions: tuple[str, ...] = ()
-
-
-_KUBERNETES_CONFIGMAP_PERMISSIONS = (
-    'kubernetes_configmaps.view',
-    'kubernetes_configmaps.create',
-    'kubernetes_configmaps.update',
-    'kubernetes_configmaps.delete',
+from app.common.workspace_navigation_catalog import (
+    WORKSPACES,
+    CapabilityViewDefinition,
+    WorkspaceCapabilityDefinition,
+    WorkspaceDefinition,
+    _CAPABILITY_CONTEXT_KEYS,
+    _CAPABILITY_VIEWS,
+    _KUBERNETES_CONFIGMAP_PERMISSIONS,
+    _SECTION_ORDER,
+    _WORKSPACE_CONTEXT_KEYS,
 )
-
-_KUBERNETES_SECRET_PERMISSIONS = (
-    'kubernetes_secrets.view',
-    'kubernetes_secrets.create',
-    'kubernetes_secrets.replace',
-    'kubernetes_secrets.delete',
-    'kubernetes_secrets.reveal',
-    'kubernetes_secrets.approve_reveal',
-    'kubernetes_secrets.rotate_tls',
-    'kubernetes_secrets.bulk_rotate_tls',
-)
-
-_KUBERNETES_OPERATION_PERMISSIONS = _KUBERNETES_CONFIGMAP_PERMISSIONS + _KUBERNETES_SECRET_PERMISSIONS
-
-_KUBERNETES_GOVERNANCE_PERMISSIONS = (
-    'governance.view',
-    'tls_certificates.view',
-)
-
-_OPERATIONS_CENTER_PERMISSIONS = (
-    'jobs.view',
-    'platform_operations.view_data_lifecycle',
-    'kubernetes_secrets.manage_reveal',
-)
-
-_ACCESS_PERMISSIONS = (
-    'users.view',
-    'users.manage',
-    'identity_providers.view',
-    'roles.view',
-    'activity_audit.view',
-)
-
-WORKSPACES: tuple[WorkspaceDefinition, ...] = (
-    WorkspaceDefinition(
-        key='kubernetes',
-        label='Kubernetes',
-        icon='boxes',
-        section='Infrastructure',
-        capabilities=(
-            WorkspaceCapabilityDefinition(
-                'overview', 'Overview', 'layout-dashboard', 'kubernetes_dashboard.index', ('dashboard.view',)
-            ),
-            WorkspaceCapabilityDefinition('inventory', 'Inventory', 'boxes', 'inventory.overview', ('inventory.view',)),
-            WorkspaceCapabilityDefinition(
-                'operations',
-                'Operations',
-                'wrench',
-                'kubernetes_operations.secret_management',
-                _KUBERNETES_OPERATION_PERMISSIONS,
-            ),
-            WorkspaceCapabilityDefinition(
-                'governance', 'Governance', 'shield-check', 'governance.overview', _KUBERNETES_GOVERNANCE_PERMISSIONS
-            ),
-            WorkspaceCapabilityDefinition(
-                'tenant', 'Tenant', 'building-2', 'tenant.index', ('tenant.view', 'tenant.manage')
-            ),
-            WorkspaceCapabilityDefinition(
-                'analytics',
-                'Analytics',
-                'chart-column',
-                'analytics.overview',
-                ('analytics.view',),
-            ),
-        ),
-    ),
-    WorkspaceDefinition(
-        key='object_storage',
-        label='Object Storage',
-        icon='database',
-        section='Infrastructure',
-        capabilities=(
-            WorkspaceCapabilityDefinition(
-                'overview', 'Overview', 'layout-dashboard', 'object_storage_dashboard.index', ('dashboard.view',)
-            ),
-            WorkspaceCapabilityDefinition(
-                'inventory',
-                'Inventory',
-                'database',
-                'object_storage_inventory.overview',
-                ('object_storage_inventory.view',),
-            ),
-            WorkspaceCapabilityDefinition(
-                'analytics',
-                'Analytics',
-                'chart-column',
-                'analytics.object_storage_overview',
-                ('object_storage_analytics.view',),
-            ),
-        ),
-    ),
-    WorkspaceDefinition(
-        key='intelligence',
-        label='Intelligence',
-        icon='brain-circuit',
-        section='Insights',
-        capabilities=(
-            WorkspaceCapabilityDefinition(
-                'overview',
-                'Overview',
-                'layout-dashboard',
-                'intelligence.index',
-                ('intelligence.view',),
-            ),
-            WorkspaceCapabilityDefinition(
-                'recommendations', 'Recommendations', 'sparkles', 'intelligence.recommendations', ('intelligence.view',)
-            ),
-            WorkspaceCapabilityDefinition(
-                'alert_intelligence',
-                'Alert Intelligence',
-                'triangle-alert',
-                'alert_intelligence.index',
-                ('intelligence.view',),
-            ),
-            WorkspaceCapabilityDefinition(
-                'catalog',
-                'Rule Catalog',
-                'list-checks',
-                'intelligence.catalog',
-                ('intelligence.view',),
-            ),
-            WorkspaceCapabilityDefinition(
-                'automation_control',
-                'Automation Control',
-                'workflow',
-                'automation_control.index',
-                ('intelligence.view',),
-            ),
-        ),
-    ),
-    WorkspaceDefinition(
-        key='reports',
-        label='Reports',
-        icon='file-text',
-        section='Insights',
-        capabilities=(
-            WorkspaceCapabilityDefinition(
-                'overview',
-                'Overview',
-                'layout-dashboard',
-                'reports.overview',
-                ('reports.view',),
-            ),
-            WorkspaceCapabilityDefinition(
-                'generate',
-                'Generate',
-                'file-plus-2',
-                'reports.generate_report',
-                ('reports.generate',),
-            ),
-            WorkspaceCapabilityDefinition(
-                'generated',
-                'Generated',
-                'files',
-                'reports.generated_reports',
-                ('reports.view',),
-            ),
-            WorkspaceCapabilityDefinition(
-                'templates', 'Templates', 'layout-template', 'reports.report_templates', ('reports.manage_templates',)
-            ),
-            WorkspaceCapabilityDefinition(
-                'storage',
-                'Storage',
-                'hard-drive',
-                'reports.storage',
-                ('reports.manage_storage',),
-            ),
-            WorkspaceCapabilityDefinition(
-                'schedules', 'Schedules', 'calendar-clock', 'reports.schedules', ('reports.manage_schedules',)
-            ),
-        ),
-    ),
-    WorkspaceDefinition(
-        key='operations_center',
-        label='Operations Center',
-        icon='workflow',
-        section='Platform',
-        capabilities=(
-            WorkspaceCapabilityDefinition(
-                'overview',
-                'Overview',
-                'layout-dashboard',
-                'platform_operations.overview.index',
-                _OPERATIONS_CENTER_PERMISSIONS,
-            ),
-            WorkspaceCapabilityDefinition('jobs', 'Jobs', 'list-checks', 'jobs.executions', ('jobs.view',)),
-            WorkspaceCapabilityDefinition(
-                'data_lifecycle',
-                'Data Lifecycle',
-                'archive-restore',
-                'platform_operations.data_lifecycle.index',
-                ('platform_operations.view_data_lifecycle',),
-            ),
-            WorkspaceCapabilityDefinition(
-                'kubernetes_admin',
-                'Kubernetes Admin',
-                'server-cog',
-                'platform_operations.kubernetes.index',
-                ('kubernetes_secrets.manage_reveal',),
-            ),
-        ),
-    ),
-    WorkspaceDefinition(
-        key='integrations',
-        label='Integrations',
-        icon='blocks',
-        section='Platform',
-        capabilities=(
-            WorkspaceCapabilityDefinition(
-                'overview',
-                'Overview',
-                'layout-grid',
-                'integrations.overview',
-                ('integrations.manage',),
-            ),
-            WorkspaceCapabilityDefinition(
-                'orchestration', 'Orchestration', 'workflow', 'integrations.orchestration', ('integrations.manage',)
-            ),
-            WorkspaceCapabilityDefinition(
-                'observability', 'Observability', 'activity', 'integrations.observability', ('integrations.manage',)
-            ),
-            WorkspaceCapabilityDefinition(
-                'storage',
-                'Storage',
-                'database',
-                'integrations.storage',
-                ('integrations.manage',),
-            ),
-            WorkspaceCapabilityDefinition(
-                'notifications',
-                'Notification Channels',
-                'send',
-                'notification_channels.index',
-                ('integrations.manage',),
-            ),
-        ),
-    ),
-    WorkspaceDefinition(
-        key='access',
-        label='Access',
-        icon='shield-check',
-        section='Administration',
-        capabilities=(
-            WorkspaceCapabilityDefinition(
-                'overview',
-                'Overview',
-                'layout-dashboard',
-                'access.overview.index',
-                _ACCESS_PERMISSIONS,
-            ),
-            WorkspaceCapabilityDefinition('users', 'Users', 'users-round', 'users.index', ('users.view',)),
-            WorkspaceCapabilityDefinition(
-                'identity_providers',
-                'Identity Providers',
-                'fingerprint',
-                'identity_providers.index',
-                ('identity_providers.view',),
-            ),
-            WorkspaceCapabilityDefinition('roles', 'Roles', 'badge-check', 'access.roles.index', ('roles.view',)),
-            WorkspaceCapabilityDefinition(
-                'permissions',
-                'Permissions',
-                'key-round',
-                'access.permissions.index',
-                ('roles.view',),
-            ),
-            WorkspaceCapabilityDefinition(
-                'activity_audit',
-                'Activity Audit',
-                'history',
-                'access.activity_audit.index',
-                ('activity_audit.view',),
-            ),
-        ),
-    ),
-    WorkspaceDefinition(
-        key='settings',
-        label='Settings',
-        icon='settings',
-        section='Administration',
-        capabilities=(
-            WorkspaceCapabilityDefinition('general', 'General', 'settings', 'settings.general'),
-            WorkspaceCapabilityDefinition('account', 'Account', 'user', 'settings.account'),
-        ),
-    ),
-)
-
-_SECTION_ORDER = ('Main', 'Infrastructure', 'Operations', 'Assurance', 'Insights', 'Platform', 'Administration')
-
-_WORKSPACE_CONTEXT_KEYS: dict[str, tuple[str, ...]] = {
-    'kubernetes': ('cluster_id',),
-    'object_storage': ('system_id',),
-}
-
-_CAPABILITY_CONTEXT_KEYS: dict[str, tuple[str, ...]] = {
-    'kubernetes_inventory': ('cluster_id',),
-    'kubernetes_operations': ('cluster_id', 'namespace'),
-    'kubernetes_governance': ('cluster_id',),
-    'kubernetes_tenant': ('cluster_id',),
-    'kubernetes_analytics': ('cluster_id', 'time_range'),
-    'object_storage_inventory': ('system_id',),
-    'object_storage_analytics': ('system_id', 'time_range'),
-}
-
-
-_CAPABILITY_VIEWS: dict[str, tuple[CapabilityViewDefinition, ...]] = {
-    'kubernetes_inventory': (
-        CapabilityViewDefinition('overview', 'Overview', 'layout-grid', 'inventory.overview', ('inventory.view',)),
-        CapabilityViewDefinition('topology', 'Topology', 'waypoints', 'inventory.topology', ('inventory.view',)),
-        CapabilityViewDefinition('nodes', 'Nodes', 'server', 'inventory.nodes', ('inventory.view',)),
-        CapabilityViewDefinition('namespaces', 'Namespaces', 'folders', 'inventory.namespaces', ('inventory.view',)),
-        CapabilityViewDefinition('workloads', 'Workloads', 'boxes', 'inventory.workloads', ('inventory.view',)),
-        CapabilityViewDefinition('pods', 'Pods', 'box', 'inventory.pods', ('inventory.view',)),
-        CapabilityViewDefinition('services', 'Services', 'network', 'inventory.services', ('inventory.view',)),
-        CapabilityViewDefinition('ingresses', 'Ingresses', 'route', 'inventory.ingresses', ('inventory.view',)),
-        CapabilityViewDefinition('storage', 'Storage', 'hard-drive', 'inventory.storage', ('inventory.view',)),
-        CapabilityViewDefinition(
-            'configuration', 'Configuration', 'file-key-2', 'inventory.configuration', ('inventory.view',)
-        ),
-    ),
-    'kubernetes_operations': (
-        CapabilityViewDefinition(
-            'configmaps',
-            'ConfigMaps',
-            'file-cog',
-            'kubernetes_operations.configmap_management',
-            _KUBERNETES_CONFIGMAP_PERMISSIONS,
-        ),
-        CapabilityViewDefinition(
-            'secrets',
-            'Secrets',
-            'key-round',
-            'kubernetes_operations.secret_management',
-            _KUBERNETES_SECRET_PERMISSIONS,
-        ),
-    ),
-    'kubernetes_governance': (
-        CapabilityViewDefinition(
-            'overview',
-            'Overview',
-            'layout-dashboard',
-            'governance.overview',
-            ('governance.view',),
-        ),
-        CapabilityViewDefinition(
-            'tls_certificates',
-            'TLS Certificates',
-            'badge-check',
-            'governance.tls_certificates',
-            ('tls_certificates.view',),
-        ),
-    ),
-    'kubernetes_tenant': (
-        CapabilityViewDefinition(
-            'overview',
-            'Overview',
-            'layout-dashboard',
-            'tenant.index',
-            ('tenant.view', 'tenant.manage'),
-        ),
-        CapabilityViewDefinition(
-            'tenants',
-            'Tenants',
-            'building-2',
-            'tenant.tenants',
-            ('tenant.view', 'tenant.manage'),
-        ),
-        CapabilityViewDefinition(
-            'resource_profiles',
-            'Resource Profiles',
-            'layers-3',
-            'tenant.resource_profiles',
-            ('tenant.view', 'tenant.manage'),
-        ),
-        CapabilityViewDefinition(
-            'namespace_provisioning',
-            'Namespace Provisioning',
-            'folder-plus',
-            'tenant.namespace_provisioning',
-            ('tenant.view', 'tenant.manage'),
-        ),
-        CapabilityViewDefinition(
-            'operations', 'Operations', 'activity', 'tenant.operations', ('tenant.view', 'tenant.manage')
-        ),
-    ),
-    'kubernetes_analytics': (
-        CapabilityViewDefinition('overview', 'Overview', 'layout-dashboard', 'analytics.overview', ('analytics.view',)),
-        CapabilityViewDefinition('utilization', 'Usage', 'activity', 'analytics.utilization', ('analytics.view',)),
-        CapabilityViewDefinition('capacity', 'Capacity', 'gauge', 'analytics.capacity', ('analytics.view',)),
-        CapabilityViewDefinition('workloads', 'Workloads', 'boxes', 'analytics.workload', ('analytics.view',)),
-        CapabilityViewDefinition('storage', 'Storage', 'hard-drive', 'analytics.storage', ('analytics.view',)),
-        CapabilityViewDefinition('consumers', 'Consumers', 'users', 'analytics.top_consumers', ('analytics.view',)),
-        CapabilityViewDefinition('forecast', 'Forecast', 'line-chart', 'analytics.forecast', ('analytics.view',)),
-        CapabilityViewDefinition(
-            'alerts',
-            'Alerts & Anomalies',
-            'triangle-alert',
-            'analytics.alerts',
-            ('analytics.view',),
-        ),
-    ),
-    'object_storage_inventory': (
-        CapabilityViewDefinition(
-            'overview',
-            'Overview',
-            'layout-grid',
-            'object_storage_inventory.overview',
-            ('object_storage_inventory.view',),
-        ),
-        CapabilityViewDefinition(
-            'systems',
-            'Systems',
-            'server',
-            'object_storage_inventory.systems',
-            ('object_storage_inventory.view',),
-        ),
-        CapabilityViewDefinition(
-            'buckets',
-            'Buckets & Containers',
-            'container',
-            'object_storage_inventory.buckets',
-            ('object_storage_inventory.view',),
-        ),
-    ),
-    'object_storage_analytics': (
-        CapabilityViewDefinition(
-            'overview',
-            'Overview',
-            'layout-dashboard',
-            'analytics.object_storage_overview',
-            ('object_storage_analytics.view',),
-        ),
-        CapabilityViewDefinition(
-            'capacity',
-            'Capacity & Usage',
-            'database',
-            'analytics.object_storage_capacity',
-            ('object_storage_analytics.view',),
-        ),
-        CapabilityViewDefinition(
-            'performance',
-            'Performance',
-            'activity',
-            'analytics.object_storage_performance',
-            ('object_storage_analytics.view',),
-        ),
-        CapabilityViewDefinition(
-            'forecast',
-            'Forecast',
-            'line-chart',
-            'analytics.object_storage_forecast',
-            ('object_storage_analytics.view',),
-        ),
-        CapabilityViewDefinition(
-            'consumers',
-            'Top Consumers',
-            'users',
-            'analytics.object_storage_top_consumers',
-            ('object_storage_analytics.view',),
-        ),
-        CapabilityViewDefinition(
-            'alerts',
-            'Alerts & Anomalies',
-            'triangle-alert',
-            'analytics.object_storage_alerts',
-            ('object_storage_analytics.view',),
-        ),
-    ),
-}
-
 
 def _capability_key(endpoint: str) -> str | None:
     if endpoint.startswith('inventory.'):
@@ -541,91 +47,83 @@ def _capability_label(capability_key: str) -> str:
     }[capability_key]
 
 
+_CAPABILITY_ACTIVE_EXACT: dict[str, dict[str, str]] = {
+    'kubernetes_inventory': {
+        'inventory.nodes': 'nodes',
+        'inventory.node_details': 'nodes',
+        'inventory.namespaces': 'namespaces',
+        'inventory.namespace_details': 'namespaces',
+        'inventory.workloads': 'workloads',
+        'inventory.workload_details': 'workloads',
+        'inventory.pods': 'pods',
+        'inventory.pod_details': 'pods',
+        'inventory.services': 'services',
+        'inventory.service_details': 'services',
+        'inventory.ingresses': 'ingresses',
+        'inventory.ingress_details': 'ingresses',
+        'inventory.storage': 'storage',
+        'inventory.storage_details': 'storage',
+        'inventory.configuration': 'configuration',
+        'inventory.configuration_details': 'configuration',
+    },
+    'kubernetes_operations': {
+        'kubernetes_operations.create_configmap': 'configmaps',
+        'kubernetes_operations.update_configmap': 'configmaps',
+        'kubernetes_operations.delete_configmap': 'configmaps',
+    },
+    'kubernetes_tenant': {
+        'tenant.tenants': 'tenants',
+        'tenant.resource_profiles': 'resource_profiles',
+        'tenant.namespace_provisioning': 'namespace_provisioning',
+        'tenant.operations': 'operations',
+    },
+    'kubernetes_analytics': {
+        'analytics.capacity': 'capacity',
+        'analytics.forecast': 'forecast',
+    },
+    'object_storage_inventory': {
+        'object_storage_inventory.systems': 'systems',
+        'object_storage_inventory.system_details': 'systems',
+        'object_storage_inventory.buckets': 'buckets',
+        'object_storage_inventory.bucket_details': 'buckets',
+    },
+    'object_storage_analytics': {
+        'analytics.object_storage_capacity': 'capacity',
+        'analytics.object_storage_performance': 'performance',
+        'analytics.object_storage_forecast': 'forecast',
+        'analytics.object_storage_top_consumers': 'consumers',
+    },
+}
+
+_CAPABILITY_ACTIVE_PREFIXES: dict[str, tuple[tuple[str, str], ...]] = {
+    'kubernetes_inventory': (('inventory.topology', 'topology'),),
+    'kubernetes_operations': (('kubernetes_operations.configmap', 'configmaps'),),
+    'kubernetes_governance': (('governance.tls_certificates', 'tls_certificates'),),
+    'kubernetes_analytics': (
+        ('analytics.utilization', 'utilization'),
+        ('analytics.workload', 'workloads'),
+        ('analytics.storage', 'storage'),
+        ('analytics.top_consumers', 'consumers'),
+        ('analytics.alerts', 'alerts'),
+    ),
+    'object_storage_analytics': (('analytics.object_storage_alert', 'alerts'),),
+}
+
+_CAPABILITY_ACTIVE_DEFAULTS = {
+    'kubernetes_operations': 'secrets',
+}
+
+
 def _capability_active_key(capability_key: str, endpoint: str) -> str:
-    if capability_key == 'kubernetes_inventory':
-        if endpoint.startswith('inventory.topology'):
-            return 'topology'
-        if endpoint in {'inventory.nodes', 'inventory.node_details'}:
-            return 'nodes'
-        if endpoint in {'inventory.namespaces', 'inventory.namespace_details'}:
-            return 'namespaces'
-        if endpoint in {'inventory.workloads', 'inventory.workload_details'}:
-            return 'workloads'
-        if endpoint in {'inventory.pods', 'inventory.pod_details'}:
-            return 'pods'
-        if endpoint in {'inventory.services', 'inventory.service_details'}:
-            return 'services'
-        if endpoint in {'inventory.ingresses', 'inventory.ingress_details'}:
-            return 'ingresses'
-        if endpoint in {'inventory.storage', 'inventory.storage_details'}:
-            return 'storage'
-        if endpoint in {'inventory.configuration', 'inventory.configuration_details'}:
-            return 'configuration'
-        return 'overview'
+    exact = _CAPABILITY_ACTIVE_EXACT.get(capability_key, {})
+    if endpoint in exact:
+        return exact[endpoint]
 
-    if capability_key == 'kubernetes_operations':
-        operation_endpoint = endpoint.removeprefix('kubernetes_operations.')
-        if operation_endpoint.startswith('configmap') or operation_endpoint in {
-            'create_configmap',
-            'update_configmap',
-            'delete_configmap',
-        }:
-            return 'configmaps'
-        return 'secrets'
+    for prefix, key in _CAPABILITY_ACTIVE_PREFIXES.get(capability_key, ()):
+        if endpoint.startswith(prefix):
+            return key
 
-    if capability_key == 'kubernetes_governance':
-        return 'tls_certificates' if endpoint.startswith('governance.tls_certificates') else 'overview'
-
-    if capability_key == 'kubernetes_tenant':
-        if endpoint == 'tenant.tenants':
-            return 'tenants'
-        if endpoint == 'tenant.resource_profiles':
-            return 'resource_profiles'
-        if endpoint == 'tenant.namespace_provisioning':
-            return 'namespace_provisioning'
-        if endpoint == 'tenant.operations':
-            return 'operations'
-        return 'overview'
-
-    if capability_key == 'kubernetes_analytics':
-        if endpoint.startswith('analytics.utilization'):
-            return 'utilization'
-        if endpoint == 'analytics.capacity':
-            return 'capacity'
-        if endpoint.startswith('analytics.workload'):
-            return 'workloads'
-        if endpoint.startswith('analytics.storage'):
-            return 'storage'
-        if endpoint.startswith('analytics.top_consumers'):
-            return 'consumers'
-        if endpoint == 'analytics.forecast':
-            return 'forecast'
-        if endpoint.startswith('analytics.alerts'):
-            return 'alerts'
-        return 'overview'
-
-    if capability_key == 'object_storage_inventory':
-        if endpoint in {'object_storage_inventory.systems', 'object_storage_inventory.system_details'}:
-            return 'systems'
-        if endpoint in {'object_storage_inventory.buckets', 'object_storage_inventory.bucket_details'}:
-            return 'buckets'
-        return 'overview'
-
-    if capability_key == 'object_storage_analytics':
-        if endpoint == 'analytics.object_storage_capacity':
-            return 'capacity'
-        if endpoint == 'analytics.object_storage_performance':
-            return 'performance'
-        if endpoint == 'analytics.object_storage_forecast':
-            return 'forecast'
-        if endpoint == 'analytics.object_storage_top_consumers':
-            return 'consumers'
-        if endpoint.startswith('analytics.object_storage_alert'):
-            return 'alerts'
-        return 'overview'
-
-    return 'overview'
-
+    return _CAPABILITY_ACTIVE_DEFAULTS.get(capability_key, 'overview')
 
 def _preserved_context(
     query_args: Mapping[str, Any] | None,
@@ -735,112 +233,92 @@ def _workspace_key(endpoint: str) -> str | None:
     return None
 
 
+_WORKSPACE_ACTIVE_EXACT: dict[str, dict[str, str]] = {
+    'settings': {'settings.account': 'account'},
+    'integrations': {
+        'integrations.observability': 'observability',
+        'integrations.storage': 'storage',
+        'integrations.orchestration': 'orchestration',
+    },
+}
+
+_WORKSPACE_ACTIVE_PREFIXES: dict[str, tuple[tuple[str, str], ...]] = {
+    'kubernetes': (
+        ('kubernetes_dashboard.', 'overview'),
+        ('inventory.', 'inventory'),
+        ('kubernetes_operations.', 'operations'),
+        ('governance.', 'governance'),
+        ('tenant.', 'tenant'),
+    ),
+    'object_storage': (
+        ('object_storage_dashboard.', 'overview'),
+        ('object_storage_inventory.', 'inventory'),
+    ),
+    'intelligence': (
+        ('alert_intelligence.', 'alert_intelligence'),
+        ('automation_control.', 'automation_control'),
+        ('intelligence.catalog', 'catalog'),
+        ('intelligence.recommendation', 'recommendations'),
+    ),
+    'reports': (
+        ('reports.generated_', 'generated'),
+        ('reports.download_', 'generated'),
+        ('reports.archive_', 'generated'),
+        ('reports.restore_', 'generated'),
+        ('reports.bulk_archive_', 'generated'),
+        ('reports.report_templates', 'templates'),
+        ('reports.create_report_template', 'templates'),
+        ('reports.update_report_template', 'templates'),
+        ('reports.delete_report_template', 'templates'),
+        ('reports.duplicate_', 'templates'),
+        ('reports.storage', 'storage'),
+        ('reports.schedules', 'schedules'),
+        ('reports.create_schedule', 'schedules'),
+        ('reports.update_schedule', 'schedules'),
+        ('reports.toggle_schedule', 'schedules'),
+        ('reports.delete_schedule', 'schedules'),
+        ('reports.run_schedule', 'schedules'),
+        ('reports.generate_report', 'generate'),
+    ),
+    'operations_center': (
+        ('jobs.', 'jobs'),
+        ('platform_operations.data_lifecycle.', 'data_lifecycle'),
+        ('platform_operations.kubernetes.', 'kubernetes_admin'),
+    ),
+    'integrations': (
+        ('notification_channels.', 'notifications'),
+        ('metrics.', 'observability'),
+        ('alertmanager.', 'observability'),
+        ('minio.', 'storage'),
+        ('cluster.', 'orchestration'),
+        ('integrations.kubernetes', 'orchestration'),
+    ),
+    'access': (
+        ('users.', 'users'),
+        ('identity_providers.', 'identity_providers'),
+        ('access.roles.', 'roles'),
+        ('access.permissions.', 'permissions'),
+        ('access.activity_audit.', 'activity_audit'),
+    ),
+}
+
+_WORKSPACE_ACTIVE_DEFAULTS = {
+    'kubernetes': 'analytics',
+    'object_storage': 'analytics',
+    'settings': 'general',
+}
+
+
 def _active_capability_key(workspace_key: str, endpoint: str) -> str:
-    if workspace_key == 'kubernetes':
-        if endpoint.startswith('kubernetes_dashboard.'):
-            return 'overview'
-        if endpoint.startswith('inventory.'):
-            return 'inventory'
-        if endpoint.startswith('kubernetes_operations.'):
-            return 'operations'
-        if endpoint.startswith('governance.'):
-            return 'governance'
-        if endpoint.startswith('tenant.'):
-            return 'tenant'
-        return 'analytics'
+    exact = _WORKSPACE_ACTIVE_EXACT.get(workspace_key, {})
+    if endpoint in exact:
+        return exact[endpoint]
 
-    if workspace_key == 'object_storage':
-        if endpoint.startswith('object_storage_dashboard.'):
-            return 'overview'
-        if endpoint.startswith('object_storage_inventory.'):
-            return 'inventory'
-        return 'analytics'
+    for prefix, key in _WORKSPACE_ACTIVE_PREFIXES.get(workspace_key, ()):
+        if endpoint.startswith(prefix):
+            return key
 
-    if workspace_key == 'intelligence':
-        if endpoint.startswith('alert_intelligence.'):
-            return 'alert_intelligence'
-        if endpoint.startswith('automation_control.'):
-            return 'automation_control'
-        if endpoint.startswith('intelligence.catalog'):
-            return 'catalog'
-        if endpoint.startswith('intelligence.recommendation'):
-            return 'recommendations'
-        return 'overview'
-
-    if workspace_key == 'reports':
-        if endpoint.startswith(
-            ('reports.generated_', 'reports.download_', 'reports.archive_', 'reports.restore_', 'reports.bulk_archive_')
-        ):
-            return 'generated'
-        if endpoint.startswith(
-            (
-                'reports.report_templates',
-                'reports.create_report_template',
-                'reports.update_report_template',
-                'reports.delete_report_template',
-                'reports.duplicate_',
-            )
-        ):
-            return 'templates'
-        if endpoint.startswith('reports.storage'):
-            return 'storage'
-        if endpoint.startswith(
-            (
-                'reports.schedules',
-                'reports.create_schedule',
-                'reports.update_schedule',
-                'reports.toggle_schedule',
-                'reports.delete_schedule',
-                'reports.run_schedule',
-            )
-        ):
-            return 'schedules'
-        if endpoint.startswith('reports.generate_report'):
-            return 'generate'
-        return 'overview'
-
-    if workspace_key == 'operations_center':
-        if endpoint.startswith('jobs.'):
-            return 'jobs'
-        if endpoint.startswith('platform_operations.data_lifecycle.'):
-            return 'data_lifecycle'
-        if endpoint.startswith('platform_operations.kubernetes.'):
-            return 'kubernetes_admin'
-        return 'overview'
-
-    if workspace_key == 'integrations':
-        if endpoint.startswith('notification_channels.'):
-            return 'notifications'
-        if endpoint.startswith(('metrics.', 'alertmanager.')) or endpoint == 'integrations.observability':
-            return 'observability'
-        if endpoint.startswith('minio.') or endpoint == 'integrations.storage':
-            return 'storage'
-        if (
-            endpoint.startswith('cluster.')
-            or endpoint.startswith('integrations.kubernetes')
-            or endpoint == 'integrations.orchestration'
-        ):
-            return 'orchestration'
-        return 'overview'
-
-    if workspace_key == 'access':
-        if endpoint.startswith('users.'):
-            return 'users'
-        if endpoint.startswith('identity_providers.'):
-            return 'identity_providers'
-        if endpoint.startswith('access.roles.'):
-            return 'roles'
-        if endpoint.startswith('access.permissions.'):
-            return 'permissions'
-        if endpoint.startswith('access.activity_audit.'):
-            return 'activity_audit'
-        return 'overview'
-
-    if workspace_key == 'settings':
-        return 'account' if endpoint == 'settings.account' else 'general'
-
-    return 'overview'
-
+    return _WORKSPACE_ACTIVE_DEFAULTS.get(workspace_key, 'overview')
 
 def build_sidebar_navigation(
     endpoint: str | None,
