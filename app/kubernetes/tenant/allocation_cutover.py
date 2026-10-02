@@ -711,7 +711,6 @@ def _commit_native_allocation_reconcile(
     )
     evidence.pop('allocation_drift', None)
     evidence.pop('allocation_reconcile_failure', None)
-    record.ownership_status = TenantOwnershipStatus.MANAGED.value
     record.resource_profile = request.profile
     record.resource_profile_id = request.profile.id
     record.resource_profile_version = request.resource_profile_version
