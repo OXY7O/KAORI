@@ -1694,13 +1694,16 @@ def test_capsule_tenant_resource_quotas_are_bidirectionally_governed_without_nat
     assert 'Adopted Baseline · Observed' in adoption_preflight_ui
     assert 'PVC Storage Constraint' in adoption_preflight_ui
     assert "constraint.constraint_type == 'pvc_storage_limit_range'" in adoption_preflight_ui
-    assert 'generated Namespace constraints remain provider-mirrored unless Capsule exposes an admitted source control.' in adoption_preflight_ui
+    assert (
+        'generated Namespace constraints remain provider-mirrored unless Capsule exposes an admitted source control.'
+        in adoption_preflight_ui
+    )
     assert 'authority_unsupported_dimensions' in adoption_preflight_ui
     assert '_capsule_tenant_quota_cutover.html' in namespace_page
     assert 'tenant-capsule-tenant-quota-state' in namespace_page
     assert 'Capsule Tenant Quota Governance' in cutover_ui
     assert 'Tenant.spec.resourceQuotas' in cutover_ui
-    assert 'Take Over Allocation Governance' in cutover_ui
+    assert 'Take Over Governance' in cutover_ui
     assert 'Change Governed Allocation' in cutover_ui
     assert 'Native ResourceQuota' in cutover_ui
     assert 'data-tenant-quota-allocation-form' in script
