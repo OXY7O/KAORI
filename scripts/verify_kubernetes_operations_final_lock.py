@@ -427,7 +427,11 @@ def main() -> int:
         errors,
     )
     require(
-        'components/info_tip.html' in info_tip or 'aria-haspopup="dialog"' in info_tip,
+        'data-kaori-info-tip-trigger' in info_tip
+        and 'aria-expanded="false"' in info_tip
+        and 'aria-controls="{{ id }}-tooltip"' in info_tip
+        and 'role="tooltip"' in info_tip
+        and 'data-kaori-info-tip-preview' in info_tip,
         'Shared Info Tip component is unavailable.',
         errors,
     )
@@ -454,8 +458,8 @@ def main() -> int:
             errors,
         )
     require(
-        'surface_shell_classes(form_context.main_classes(), true)'
-        in read('app/templates/kubernetes/operations/secrets/create.html'),
+        'surface_shell_classes(form_context.main_classes(),true)'
+        in ''.join(secret_create.split()),
         'Secret Create must allow its header Info Tip to escape the card boundary.',
         errors,
     )
