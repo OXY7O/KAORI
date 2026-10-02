@@ -801,10 +801,9 @@ def _materialize_adopted_baseline_profile(record: TenantNamespace) -> TenantReso
     profile.base_preset_class = (
         str(lineage.get('profile_class') or '').strip() if lineage.get('kind') == 'kaori_preset' else None
     )
+    profile_version = lineage.get('profile_version')
     profile.base_preset_version = (
-        int(lineage.get('profile_version'))
-        if profile.base_preset_class and lineage.get('profile_version') is not None
-        else None
+        int(profile_version) if profile.base_preset_class and profile_version is not None else None
     )
     profile.description = (
         'Explicit governance-cutover profile materialized from the adopted provider baseline. '
