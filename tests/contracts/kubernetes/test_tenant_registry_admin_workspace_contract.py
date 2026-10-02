@@ -7,10 +7,42 @@ def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
 
 
+def tenant_routes_source() -> str:
+    return '\n'.join(
+        read(path)
+        for path in (
+            'app/kubernetes/tenant/routes.py',
+            'app/kubernetes/tenant/route_common.py',
+            'app/kubernetes/tenant/routes_access.py',
+            'app/kubernetes/tenant/routes_credentials.py',
+        )
+    )
+
+
+def tenant_service_source() -> str:
+    return '\n'.join(
+        read(path)
+        for path in (
+            'app/kubernetes/tenant/service.py',
+            'app/kubernetes/tenant/service_contracts.py',
+            'app/kubernetes/tenant/registry_context.py',
+            'app/kubernetes/tenant/resource_profile_controls.py',
+        )
+    )
+
+
+def tenant_discovery_source() -> str:
+    return read('app/kubernetes/tenant/discovery_service.py') + '\n' + read('app/kubernetes/tenant/discovery_adoption.py')
+
+
+def allocation_observation_source() -> str:
+    return read('app/kubernetes/tenant/allocation_observation.py') + '\n' + read('app/kubernetes/tenant/capsule_allocation_observation.py')
+
+
 def test_tenants_page_keeps_summary_above_the_tabbed_workspace() -> None:
     page = read('app/templates/kubernetes/tenant/tenants.html')
     admin = read('app/templates/kubernetes/tenant/partials/_tenant_admin_workspace.html')
-    routes = read('app/kubernetes/tenant/routes.py')
+    routes = tenant_routes_source()
 
     assert "'Multi-Cluster Posture'" in page
     assert "'Tenant Estate'" in page
@@ -38,7 +70,7 @@ def test_tenants_page_keeps_summary_above_the_tabbed_workspace() -> None:
 
 def test_tenant_registry_uses_canonical_server_registry_contract() -> None:
     registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
-    service = read('app/kubernetes/tenant/service.py')
+    service = tenant_service_source()
 
     assert 'components/table.html' in registry
     assert 'components/table_registry.html' in registry
@@ -351,8 +383,8 @@ def test_access_grant_uses_tenant_setup_two_card_composition() -> None:
 
 
 def test_tenant_identity_is_immutable_and_htmx_feedback_uses_oob_toast() -> None:
-    routes = read('app/kubernetes/tenant/routes.py')
-    service = read('app/kubernetes/tenant/service.py')
+    routes = tenant_routes_source()
+    service = tenant_service_source()
     registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
     setup = read('app/templates/kubernetes/tenant/partials/_tenant_setup_workspace.html')
     readme = read('app/kubernetes/tenant/README.md')
@@ -489,7 +521,7 @@ def test_tenant_administration_retires_monolithic_uat_partials() -> None:
 
 
 def test_tenant_mutations_return_to_the_relevant_administration_section() -> None:
-    routes = read('app/kubernetes/tenant/routes.py')
+    routes = tenant_routes_source()
 
     assert "_tenant_section_redirect('tenant-setup')" in routes
     assert routes.count("_tenant_section_redirect('memberships')") >= 4
@@ -578,7 +610,7 @@ def test_governed_tenant_decommission_is_async_provider_verified_and_fail_closed
 
 
 def test_tenant_registry_distinguishes_active_namespaces_from_retained_history() -> None:
-    service = read('app/kubernetes/tenant/service.py')
+    service = tenant_service_source()
     registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
 
     assert 'namespace_history_count_map' in service
@@ -612,8 +644,8 @@ def test_resource_profile_editability_allocation_change_and_capacity_decisions_f
     namespace_form = read('app/templates/kubernetes/tenant/partials/_namespace_form.html')
     allocation = read('app/templates/kubernetes/tenant/partials/_allocation_change.html')
     decisions = read('app/templates/kubernetes/tenant/partials/_capacity_decisions.html')
-    service = read('app/kubernetes/tenant/service.py')
-    routes = read('app/kubernetes/tenant/routes.py')
+    service = tenant_service_source()
+    routes = tenant_routes_source()
 
     assert 'KAORI Preset · Fixed' in profile_form
     assert 'Fixed · Read Only' in profile_form
@@ -697,14 +729,14 @@ def test_resource_profile_editability_allocation_change_and_capacity_decisions_f
 
 
 def test_committed_tenant_snapshot_is_separate_from_lazy_live_provider_connectivity() -> None:
-    routes = read('app/kubernetes/tenant/routes.py')
+    routes = tenant_routes_source()
     live_service = read('app/kubernetes/tenant/live_connection.py')
     live_partial = read('app/templates/kubernetes/tenant/partials/_live_connection_snapshot.html')
     live_loader = read('app/templates/kubernetes/tenant/partials/_live_connection_loader.html')
     committed_partial = read('app/templates/kubernetes/tenant/partials/_collection_snapshot_context.html')
     sync_workspace = read('app/templates/kubernetes/tenant/partials/_sync_workspace.html')
     base = read('app/templates/kubernetes/tenant/base.html')
-    service = read('app/kubernetes/tenant/service.py')
+    service = tenant_service_source()
 
     assert 'version_api().get_code(_request_timeout=3)' in live_service
     assert "@tenant_bp.get('/live-provider-connectivity')" in routes
@@ -744,9 +776,9 @@ def test_committed_tenant_snapshot_is_separate_from_lazy_live_provider_connectiv
 
 
 def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_preflight() -> None:
-    routes = read('app/kubernetes/tenant/routes.py')
+    routes = tenant_routes_source()
     admin = read('app/templates/kubernetes/tenant/partials/_tenant_admin_workspace.html')
-    service = read('app/kubernetes/tenant/discovery_service.py')
+    service = tenant_discovery_source()
     cutover = read('app/kubernetes/tenant/allocation_cutover.py')
     template = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
     preflight = read('app/templates/kubernetes/tenant/partials/_tenant_adoption_preflight.html')
@@ -881,7 +913,7 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
 
 def test_decommissioned_tenant_and_namespace_identity_can_be_recreated_as_new_generation() -> None:
     models = read('app/models/tenant.py')
-    service = read('app/kubernetes/tenant/service.py')
+    service = tenant_service_source()
     migration = read('migrations/versions/20260928_tenant_namespace_generation.py')
 
     assert "UniqueConstraint('cluster_id', 'slug', 'generation'" in models
@@ -898,7 +930,7 @@ def test_decommissioned_tenant_and_namespace_identity_can_be_recreated_as_new_ge
 
 def test_same_tenant_slug_is_scoped_by_cluster() -> None:
     models = read('app/models/tenant.py')
-    service = read('app/kubernetes/tenant/service.py')
+    service = tenant_service_source()
 
     assert "UniqueConstraint('cluster_id', 'slug', 'generation'" in models
     assert 'Tenant.query.filter_by(cluster_id=cluster.id, slug=slug)' in service
@@ -957,8 +989,8 @@ def test_tenant_setup_explains_capsule_adoption_boundary() -> None:
 def test_tenant_sync_marks_fresh_missing_namespaces_as_observational_drift() -> None:
     sync = read('app/kubernetes/tenant/sync_service.py')
     tasks = read('app/kubernetes/tenant/tasks.py')
-    service = read('app/kubernetes/tenant/service.py')
-    routes = read('app/kubernetes/tenant/routes.py')
+    service = tenant_service_source()
+    routes = tenant_routes_source()
     operations = read('app/templates/kubernetes/tenant/operations.html')
     drift_registry = read('app/templates/kubernetes/tenant/partials/_operations_drift_registry.html')
 
@@ -995,7 +1027,7 @@ def test_tenant_sync_marks_fresh_missing_namespaces_as_observational_drift() -> 
 
 def test_tenant_setup_enables_capability_gated_capsule_direct_create() -> None:
     form = read('app/templates/kubernetes/tenant/partials/_tenant_form.html')
-    service = read('app/kubernetes/tenant/service.py')
+    service = tenant_service_source()
     capsule = read('app/kubernetes/tenant/capsule_tenant.py')
     page = read('app/templates/kubernetes/tenant/tenants.html')
     provider_js = read('app/static/js/tenant_setup_provider.js')
@@ -1037,7 +1069,7 @@ def test_tenant_setup_enables_capability_gated_capsule_direct_create() -> None:
 
 
 def test_live_discovery_surfaces_missing_managed_provider_objects() -> None:
-    service = read('app/kubernetes/tenant/discovery_service.py')
+    service = tenant_discovery_source()
     template = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
 
     assert 'observed_native_names' in service
@@ -1315,7 +1347,7 @@ def test_credential_material_delivery_is_one_time_non_cached_and_not_routine_inv
     registry = read('app/templates/kubernetes/tenant/partials/_credential_registry.html')
     material = read('app/templates/kubernetes/tenant/credential_material.html')
     component = read('app/templates/components/one_time_secret.html')
-    routes = read('app/kubernetes/tenant/routes.py')
+    routes = tenant_routes_source()
     service = read('app/kubernetes/tenant/credential_service.py')
     script = read('app/static/js/tenant_credential_material.js')
     clipboard = read('app/static/js/clipboard.js')
@@ -1348,12 +1380,12 @@ def test_credential_material_delivery_is_one_time_non_cached_and_not_routine_inv
 
 
 def test_legacy_allocation_adoption_is_observed_and_held_until_cutover() -> None:
-    observer = read('app/kubernetes/tenant/allocation_observation.py')
-    discovery_service = read('app/kubernetes/tenant/discovery_service.py')
+    observer = allocation_observation_source()
+    discovery_service = tenant_discovery_source()
     discovery = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
     namespace_registry = read('app/templates/kubernetes/tenant/partials/_namespace_registry.html')
     allocation_change = read('app/templates/kubernetes/tenant/partials/_allocation_change.html')
-    service = read('app/kubernetes/tenant/service.py')
+    service = tenant_service_source()
     architecture = read('docs/architecture/kubernetes-tenant-resource-profiles.md')
     readme = read('app/kubernetes/tenant/README.md')
 
@@ -1402,8 +1434,8 @@ def test_legacy_allocation_adoption_is_observed_and_held_until_cutover() -> None
 
 def test_adopted_allocation_cutover_is_explicit_provider_verified_and_separate_from_namespace_ownership() -> None:
     cutover = read('app/kubernetes/tenant/allocation_cutover.py')
-    service = read('app/kubernetes/tenant/service.py')
-    routes = read('app/kubernetes/tenant/routes.py')
+    service = tenant_service_source()
+    routes = tenant_routes_source()
     page = read('app/templates/kubernetes/tenant/namespace_provisioning.html')
     cutover_ui = read('app/templates/kubernetes/tenant/partials/_allocation_cutover.html')
     allocation_change = read('app/templates/kubernetes/tenant/partials/_allocation_change.html')
@@ -1465,7 +1497,7 @@ def test_adopted_allocation_cutover_is_explicit_provider_verified_and_separate_f
 def test_managed_allocation_drift_is_observation_only_and_bidirectionally_reconciled() -> None:
     drift = read('app/kubernetes/tenant/allocation_drift.py')
     tasks = read('app/kubernetes/tenant/tasks.py')
-    routes = read('app/kubernetes/tenant/routes.py')
+    routes = tenant_routes_source()
     registry = read('app/templates/kubernetes/tenant/partials/_operations_drift_registry.html')
     architecture = read('docs/architecture/kubernetes-tenant-resource-profiles.md')
     readme = read('app/kubernetes/tenant/README.md')
@@ -1517,13 +1549,13 @@ def test_managed_allocation_drift_is_observation_only_and_bidirectionally_reconc
 
 
 def test_capsule_global_resource_quota_joins_canonical_allocation_governance() -> None:
-    adoption = read('app/kubernetes/tenant/discovery_service.py')
+    adoption = tenant_discovery_source()
     qualifier = read('app/kubernetes/tenant/capsule_tenant.py')
     governance = read('app/kubernetes/tenant/capsule_allocation_governance.py')
     advanced = read('app/kubernetes/tenant/capsule_advanced.py')
     capacity = read('app/kubernetes/tenant/capacity_governance.py')
     tasks = read('app/kubernetes/tenant/tasks.py')
-    routes = read('app/kubernetes/tenant/routes.py')
+    routes = tenant_routes_source()
     namespace_page = read('app/templates/kubernetes/tenant/namespace_provisioning.html')
     cutover_ui = read('app/templates/kubernetes/tenant/partials/_capsule_shared_allocation_cutover.html')
     operations_page = read('app/templates/kubernetes/tenant/operations.html')
@@ -1599,12 +1631,12 @@ def test_capsule_global_resource_quota_joins_canonical_allocation_governance() -
 
 def test_capsule_tenant_resource_quotas_are_bidirectionally_governed_without_native_bypass() -> None:
     provider = read('app/kubernetes/tenant/capsule_provider.py')
-    observer = read('app/kubernetes/tenant/allocation_observation.py')
-    adoption = read('app/kubernetes/tenant/discovery_service.py')
+    observer = allocation_observation_source()
+    adoption = tenant_discovery_source()
     governance = read('app/kubernetes/tenant/capsule_tenant_quota_governance.py')
     capacity = read('app/kubernetes/tenant/capacity_governance.py')
     tasks = read('app/kubernetes/tenant/tasks.py')
-    routes = read('app/kubernetes/tenant/routes.py')
+    routes = tenant_routes_source()
     discovery_ui = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
     adoption_preflight_ui = read('app/templates/kubernetes/tenant/partials/_tenant_adoption_preflight.html')
     namespace_page = read('app/templates/kubernetes/tenant/namespace_provisioning.html')

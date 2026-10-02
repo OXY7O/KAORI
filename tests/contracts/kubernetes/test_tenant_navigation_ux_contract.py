@@ -4,8 +4,32 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 
 
+def _read(relative: str) -> str:
+    return (ROOT / relative).read_text(encoding='utf-8')
+
+
+def _navigation_source() -> str:
+    return _read('app/common/workspace_navigation.py') + '\n' + _read('app/common/workspace_navigation_catalog.py')
+
+
+def _tenant_service_source() -> str:
+    return '\n'.join(
+        _read(path)
+        for path in (
+            'app/kubernetes/tenant/service.py',
+            'app/kubernetes/tenant/service_contracts.py',
+            'app/kubernetes/tenant/registry_context.py',
+            'app/kubernetes/tenant/resource_profile_controls.py',
+        )
+    )
+
+
+def _tenant_discovery_source() -> str:
+    return _read('app/kubernetes/tenant/discovery_service.py') + '\n' + _read('app/kubernetes/tenant/discovery_adoption.py')
+
+
 def test_tenant_is_a_kubernetes_sidebar_capability_under_v21() -> None:
-    model = (ROOT / 'app/common/workspace_navigation.py').read_text(encoding='utf-8')
+    model = _navigation_source()
     sidebar = (ROOT / 'app/templates/components/navigation/sidebar.html').read_text(encoding='utf-8')
 
     assert "key='kubernetes'" in model
@@ -76,12 +100,12 @@ def test_sidebar_authority_documents_tenant_capability_v21() -> None:
     assert 'Level 1 — Workspace / Domain' in standard
     assert 'Level 2 — Capability' in standard
     assert 'Tenant' in standard
-    assert "key='tenant'" in (ROOT / 'app/common/workspace_navigation.py').read_text(encoding='utf-8')
+    assert "key='tenant'" in _navigation_source()
     assert 'two-level Workspace -> Capability sidebar' in verifier
 
 
 def test_tenant_primary_navigation_preserves_provider_neutral_boundary() -> None:
-    model = (ROOT / 'app/common/workspace_navigation.py').read_text(encoding='utf-8')
+    model = _navigation_source()
     base = (ROOT / 'app/templates/kubernetes/tenant/base.html').read_text(encoding='utf-8')
     readme = (ROOT / 'app/kubernetes/tenant/README.md').read_text(encoding='utf-8')
 
@@ -92,7 +116,7 @@ def test_tenant_primary_navigation_preserves_provider_neutral_boundary() -> None
 
 
 def test_tenant_registry_pages_use_shared_default_five_pagination() -> None:
-    service = (ROOT / 'app/kubernetes/tenant/service.py').read_text(encoding='utf-8')
+    service = _tenant_service_source()
     tenant_registry = (ROOT / 'app/templates/kubernetes/tenant/partials/_tenant_registry.html').read_text(
         encoding='utf-8'
     )
@@ -141,7 +165,7 @@ def test_tenant_registry_pages_use_shared_default_five_pagination() -> None:
 
 
 def test_namespace_allocation_selector_is_not_limited_by_visible_page() -> None:
-    service = (ROOT / 'app/kubernetes/tenant/service.py').read_text(encoding='utf-8')
+    service = _tenant_service_source()
     allocation = (ROOT / 'app/templates/kubernetes/tenant/partials/_allocation_change.html').read_text(encoding='utf-8')
 
     assert "'namespace_options': namespace_options" in service
@@ -171,13 +195,13 @@ def test_tenant_blocked_state_reuses_general_kubernetes_prerequisite_family() ->
 
 
 def test_tenant_readiness_matches_runtime_fallback_and_blocker_distinguishes_validation() -> None:
-    service = (ROOT / 'app/kubernetes/tenant/service.py').read_text(encoding='utf-8')
+    service = _tenant_service_source()
     base = (ROOT / 'app/templates/kubernetes/tenant/base.html').read_text(encoding='utf-8')
     hero_blocker = (ROOT / 'app/templates/components/cluster/_hero_blocked_context.html').read_text(encoding='utf-8')
     onboarding = (ROOT / 'app/templates/components/cluster/_onboarding_banner.html').read_text(encoding='utf-8')
 
     native_provider = (ROOT / 'app/kubernetes/tenant/native_provider.py').read_text(encoding='utf-8')
-    discovery = (ROOT / 'app/kubernetes/tenant/discovery_service.py').read_text(encoding='utf-8')
+    discovery = _tenant_discovery_source()
 
     assert 'tenant_workspace_connection_available' in service
     assert "frozenset({'ready', 'degraded'})" in native_provider

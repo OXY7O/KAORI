@@ -7,10 +7,30 @@ def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
 
 
+def tenant_service_source() -> str:
+    return '\n'.join(
+        read(path)
+        for path in (
+            'app/kubernetes/tenant/service.py',
+            'app/kubernetes/tenant/service_contracts.py',
+            'app/kubernetes/tenant/registry_context.py',
+            'app/kubernetes/tenant/resource_profile_controls.py',
+        )
+    )
+
+
+def capacity_governance_source() -> str:
+    return read('app/kubernetes/tenant/capacity_governance.py') + '\n' + read('app/kubernetes/tenant/capacity_governance_support.py')
+
+
+def tenant_discovery_source() -> str:
+    return read('app/kubernetes/tenant/discovery_service.py') + '\n' + read('app/kubernetes/tenant/discovery_adoption.py')
+
+
 def test_resource_profiles_use_server_owned_kaori_content_tabs_and_snapshot_stats() -> None:
     page = read('app/templates/kubernetes/tenant/resource_profiles.html')
     routes = read('app/kubernetes/tenant/routes.py')
-    service = read('app/kubernetes/tenant/service.py')
+    service = tenant_service_source()
 
     assert 'components/section_intro.html' in page
     assert 'components/resource_posture_grid.html' in page
@@ -44,7 +64,7 @@ def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None
     management = read('app/templates/kubernetes/tenant/partials/_resource_profile_management_dialogs.html')
     advanced = read('app/templates/kubernetes/tenant/partials/_resource_profile_advanced_controls.html')
     script = read('app/static/js/tenant_resource_profile_presets.js')
-    service = read('app/kubernetes/tenant/service.py')
+    service = tenant_service_source()
     form_field = read('app/templates/components/form_field.html')
 
     assert 'Create Resource Profile' in form
@@ -156,7 +176,7 @@ def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None
 
 def test_resource_profile_registry_uses_canonical_htmx_filters_and_pagination() -> None:
     registry = read('app/templates/kubernetes/tenant/partials/_resource_profile_registry.html')
-    service = read('app/kubernetes/tenant/service.py')
+    service = tenant_service_source()
 
     assert 'components/table_registry.html' in registry
     assert 'registry_ui.filter_form' in registry
@@ -208,7 +228,7 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     page = read('app/templates/kubernetes/tenant/resource_profiles.html')
     script = read('app/static/js/tenant_resource_profile_presets.js')
     routes = read('app/kubernetes/tenant/routes.py')
-    service = read('app/kubernetes/tenant/service.py')
+    service = tenant_service_source()
 
     assert 'components/table_registry.html' in capacity
     assert 'registry_ui.filter_form' in capacity
@@ -273,7 +293,7 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert 'button_classes=table_ui.action_classes()' not in capacity
     assert 'status_detail_dialog' not in capacity
 
-    governance = read('app/kubernetes/tenant/capacity_governance.py')
+    governance = capacity_governance_source()
     assert "'tenant_storage_budget_gib': _quantity_gib_text(policy.tenant_storage_budget)" in governance
     assert 'logical_budget = _logical_storage_budget_vector(policy)' in governance
     assert 'logical_headroom = _headroom(logical_budget, committed)' in governance
@@ -287,7 +307,7 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
 
 
 def test_capacity_commitment_excludes_deprovisioned_history_and_preserves_unknowns() -> None:
-    governance = read('app/kubernetes/tenant/capacity_governance.py')
+    governance = capacity_governance_source()
 
     assert 'TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value' in governance
     assert 'def _committed_evidence_reason(' in governance
@@ -301,7 +321,7 @@ def test_capacity_commitment_excludes_deprovisioned_history_and_preserves_unknow
 
 
 def test_resource_profile_revision_preserves_fixed_preset_values_and_dependency_authority() -> None:
-    service = read('app/kubernetes/tenant/service.py')
+    service = tenant_service_source()
     routes = read('app/kubernetes/tenant/routes.py')
     model = read('app/models/tenant.py')
     docs = read('docs/architecture/kubernetes-tenant-resource-profiles.md')
@@ -334,7 +354,7 @@ def test_resource_profile_revision_preserves_fixed_preset_values_and_dependency_
 
 
 def test_resource_profile_registry_context_exposes_dependency_counts_for_actions() -> None:
-    service = read('app/kubernetes/tenant/service.py')
+    service = tenant_service_source()
 
     assert "'profile_dependencies': profile_dependencies" in service
     assert "'profile_rollout_targets': profile_rollout_targets" in service
@@ -379,7 +399,7 @@ def test_resource_profile_advanced_controls_are_real_profile_intent_and_placemen
     namespace_form = read('app/templates/kubernetes/tenant/partials/_namespace_form.html')
     namespace_page = read('app/templates/kubernetes/tenant/namespace_provisioning.html')
     script = read('app/static/js/tenant_resource_profile_presets.js')
-    service = read('app/kubernetes/tenant/service.py')
+    service = tenant_service_source()
     model = read('app/models/tenant.py')
     migration = read('migrations/versions/20261001_profile_adv_controls.py')
     docs = read('docs/architecture/kubernetes-tenant-resource-profiles.md')
@@ -497,12 +517,12 @@ def test_tenant_provider_unavailable_copy_is_compact_and_uses_standard_hero_acti
 def test_resource_profile_storage_policy_is_persisted_and_bidirectional() -> None:
     model = read('app/models/tenant.py')
     migration = read('migrations/versions/20261001_profile_storage_policy.py')
-    service = read('app/kubernetes/tenant/service.py')
+    service = tenant_service_source()
     provisioning = read('app/kubernetes/tenant/provisioning.py')
     observation = read('app/kubernetes/tenant/allocation_observation.py')
     cutover = read('app/kubernetes/tenant/allocation_cutover.py')
     drift = read('app/kubernetes/tenant/allocation_drift.py')
-    adoption = read('app/kubernetes/tenant/discovery_service.py')
+    adoption = tenant_discovery_source()
     form = read('app/templates/kubernetes/tenant/partials/_resource_profile_form.html')
     dialogs = read('app/templates/kubernetes/tenant/partials/_resource_profile_management_dialogs.html')
 

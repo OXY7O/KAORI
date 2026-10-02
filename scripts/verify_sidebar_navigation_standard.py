@@ -5,6 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SIDEBAR = ROOT / 'app' / 'templates' / 'components' / 'navigation' / 'sidebar.html'
 MODEL = ROOT / 'app' / 'common' / 'workspace_navigation.py'
+CATALOG = ROOT / 'app' / 'common' / 'workspace_navigation_catalog.py'
 LAYOUT = ROOT / 'app' / 'templates' / 'layouts' / 'app.html'
 PRESENTATION = ROOT / 'app' / 'bootstrap' / 'presentation.py'
 BREADCRUMB = ROOT / 'app' / 'common' / 'navigation.py'
@@ -28,6 +29,8 @@ def _require(source: str, tokens: tuple[str, ...], owner: str) -> None:
 def verify() -> None:
     sidebar = _read(SIDEBAR)
     model = _read(MODEL)
+    catalog = _read(CATALOG)
+    semantic_model = f'{model}\n{catalog}'
     layout = _read(LAYOUT)
     presentation = _read(PRESENTATION)
     breadcrumb = _read(BREADCRUMB)
@@ -83,7 +86,7 @@ def verify() -> None:
             raise AssertionError(f'legacy sidebar include remains active: {legacy}')
 
     _require(
-        model,
+        semantic_model,
         (
             'class WorkspaceCapabilityDefinition:',
             'capabilities: tuple[WorkspaceCapabilityDefinition, ...]',
@@ -95,10 +98,10 @@ def verify() -> None:
             '_visible_capabilities',
             '_resolved_capability_endpoint',
             '_active_capability_key',
-            "operation_endpoint = endpoint.removeprefix('kubernetes_operations.')",
-            "'create_configmap'",
-            "'update_configmap'",
-            "'delete_configmap'",
+            "'kubernetes_operations.create_configmap': 'configmaps'",
+            "'kubernetes_operations.update_configmap': 'configmaps'",
+            "'kubernetes_operations.delete_configmap': 'configmaps'",
+            "'kubernetes_operations': 'secrets'",
             '_WORKSPACE_CONTEXT_KEYS',
             '_CAPABILITY_CONTEXT_KEYS',
             '_preserved_context',
@@ -125,7 +128,7 @@ def verify() -> None:
         "key='automation'",
         "key='backup_recovery'",
     ):
-        if future_placeholder in model:
+        if future_placeholder in semantic_model:
             raise AssertionError(f'reserved future workspace rendered as placeholder: {future_placeholder}')
 
     _require(
