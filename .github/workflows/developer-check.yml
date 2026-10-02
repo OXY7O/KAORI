@@ -54,7 +54,7 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           set -Eeuo pipefail
-          python scripts/developer_check_plan.py \
+          python3 scripts/developer_check_plan.py \
             --base "$BASE_SHA" \
             --head "$KAORI_SOURCE_SHA" \
             --github-output "$GITHUB_OUTPUT"
