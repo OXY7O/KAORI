@@ -146,7 +146,8 @@ def test_platform_operations_operating_boundaries_are_permission_scoped() -> Non
     template = read('app/templates/platform_operations/overview/index.html')
     presentation = read('app/platform_operations/overview/presentation.py')
 
-    assert '<h1 class="{{ page_hero.title_classes() }}">Platform Overview</h1>' in template
+    assert "page_hero.intro('workflow', 'Operations Center', 'panels-top-left')" in template
+    assert '<h1 class="{{ page_hero.title_classes() }}">Overview</h1>' in template
     assert '{% for workspace in platform_overview.workspaces %}' in template
     assert '{{ workspace.boundary_title }}' in template
     assert '{{ workspace.boundary_description }}' in template
