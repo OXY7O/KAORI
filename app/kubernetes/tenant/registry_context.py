@@ -36,6 +36,7 @@ from app.models.tenant import (
     TenantResourceProfileClass,
 )
 
+
 def get_ready_native_clusters() -> list[Cluster]:
     clusters = (
         Cluster.query.join(KubernetesConnection, KubernetesConnection.cluster_id == Cluster.id)

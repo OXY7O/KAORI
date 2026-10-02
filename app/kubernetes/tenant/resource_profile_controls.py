@@ -16,6 +16,7 @@ from app.models import Cluster
 from app.models.tenant import Tenant, TenantResourceProfile
 from app.models.tenant_managed_resource import TenantManagedResourceMode
 
+
 def _control_contract_present(source: Mapping[str, Any]) -> bool:
     return _text(source, 'control_contract_present').lower() in _CONTROL_TRUE_VALUES
 

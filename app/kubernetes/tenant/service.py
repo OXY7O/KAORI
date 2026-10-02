@@ -1,17 +1,14 @@
 from __future__ import annotations
 
-import json
 import re
 import uuid
 from collections.abc import Mapping
 from typing import Any
 
 from kubernetes.client.rest import ApiException
-from sqlalchemy import case, func, or_
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from app.common.pagination import paginate_query
-from app.common.presentation import present_user_datetime
 from app.extensions.db import db
 from app.kubernetes.tenant.allocation_cutover import (
     allocation_control_state,
@@ -19,7 +16,6 @@ from app.kubernetes.tenant.allocation_cutover import (
     reconcile_adopted_native_allocation,
 )
 from app.kubernetes.tenant.capacity_governance import (
-    build_capacity_governance_summary,
     enforce_existing_namespace_allocation_preflight,
     enforce_namespace_allocation_preflight,
 )
@@ -27,11 +23,7 @@ from app.kubernetes.tenant.capsule_tenant import (
     compensate_capsule_tenant_create,
     create_capsule_tenant,
 )
-from app.kubernetes.tenant.domain_exposure import normalize_domain_pattern
-from app.kubernetes.tenant.native_provider import (
-    NativeKubernetesTenantProvider,
-    tenant_workspace_connection_available,
-)
+from app.kubernetes.tenant.native_provider import tenant_workspace_connection_available
 from app.kubernetes.tenant.provisioning import create_namespace_intent, reconcile_native_namespace
 from app.kubernetes.tenant.resource_profile_controls import (
     _advanced_profile_controls as _advanced_profile_controls,
@@ -74,7 +66,6 @@ from app.models.tenant import (
     Tenant,
     TenantCapacityDecision,
     TenantEnvironment,
-    TenantEnvironmentName,
     TenantLifecycleStatus,
     TenantNamespace,
     TenantNamespaceProvisioningStatus,
@@ -82,7 +73,7 @@ from app.models.tenant import (
     TenantResourceProfile,
     TenantResourceProfileClass,
 )
-from app.models.tenant_managed_resource import TenantManagedResourceMode
+
 
 class TenantStateConflictError(RuntimeError):
     """Committed Tenant state changed while a mutation transaction was applying."""
