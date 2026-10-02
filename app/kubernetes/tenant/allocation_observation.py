@@ -286,9 +286,7 @@ def profile_lineage_for_observed_allocation(
             for field, values in dict(preset['limits']).items()
         }
         preset_storage = validate_storage_policy(preset.get('storage_policy') or {})
-        quota_and_limits_match = _mapping_equivalent(quota, preset_quota) and _limits_equivalent(
-            limits, preset_limits
-        )
+        quota_and_limits_match = _mapping_equivalent(quota, preset_quota) and _limits_equivalent(limits, preset_limits)
         if quota_and_limits_match and _mapping_equivalent(storage_policy or {}, preset_storage):
             return {
                 'kind': 'kaori_preset',
