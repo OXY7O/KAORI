@@ -223,9 +223,7 @@ def _build_tenant_sync_snapshot() -> dict[str, Any]:
         {
             'cluster_id': '',
             'namespace': f'Tenant/{item.get("tenant_id", "")}',
-            'reason': (
-                'Capsule shared allocation observation failed: ' + str(item.get('reason') or 'unknown error')
-            ),
+            'reason': ('Capsule shared allocation observation failed: ' + str(item.get('reason') or 'unknown error')),
         }
         for item in capsule_shared_drift['observation_errors']
     ]
