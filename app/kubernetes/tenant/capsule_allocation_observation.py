@@ -221,8 +221,6 @@ def _capsule_global_resource_quotas(custom_api: Any, tenant_name: str) -> dict[s
     }
 
 
-
-
 def observe_capsule_tenant_resource_quota(tenant_item: Mapping[str, Any]) -> dict[str, Any] | None:
     """Normalize the legacy Capsule Tenant.spec.resourceQuotas authority without provider mutation."""
 
@@ -279,8 +277,10 @@ def _shared_authority_sources(
         for namespace in namespace_state['rows']
         if namespace['allocation'].get('quota')
     ]
-    native_quota_matches_shared = bool(shared_quota) and bool(observed_quota_rows) and all(
-        _mapping_equivalent(quota, shared_quota) for quota in observed_quota_rows
+    native_quota_matches_shared = (
+        bool(shared_quota)
+        and bool(observed_quota_rows)
+        and all(_mapping_equivalent(quota, shared_quota) for quota in observed_quota_rows)
     )
 
     authority_paths: list[str] = []
@@ -288,9 +288,7 @@ def _shared_authority_sources(
         authority_paths.append('capsule_tenant_resource_quotas')
     if global_quota_present:
         authority_paths.append('capsule_global_resource_quota')
-    native_only = (
-        bool(namespace_state['native_quota_present']) and not native_quota_matches_shared
-    ) or (
+    native_only = (bool(namespace_state['native_quota_present']) and not native_quota_matches_shared) or (
         not tenant_quota_present
         and not global_quota_present
         and (bool(namespace_state['native_quota_present']) or bool(namespace_state['native_limits_present']))
@@ -393,12 +391,20 @@ def _constraint_state(
         'multiple_reason': multiple_reason,
         'unsupported': sorted(set(global_unsupported + tenant_unsupported + namespace['unsupported'])),
         'ambiguous': sorted(
-            set(correlation + global_ambiguous + tenant_ambiguous + namespace['ambiguous'] + ([multiple_reason] if multiple_reason else []))
+            set(
+                correlation
+                + global_ambiguous
+                + tenant_ambiguous
+                + namespace['ambiguous']
+                + ([multiple_reason] if multiple_reason else [])
+            )
         ),
     }
 
 
-def _authority_constraints(allocation_authority: str, state: Mapping[str, Any], tenant_quota: Any) -> dict[str, list[str]]:
+def _authority_constraints(
+    allocation_authority: str, state: Mapping[str, Any], tenant_quota: Any
+) -> dict[str, list[str]]:
     unsupported: list[str] = []
     ambiguous: list[str] = []
     external: list[str] = []

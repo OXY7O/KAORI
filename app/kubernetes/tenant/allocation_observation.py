@@ -232,6 +232,7 @@ def _merge_limit_sources(
 
     return limits, storage_policy, unsupported, ambiguous, source_refs, external_constraints
 
+
 def _quantity_equivalent(key: str, left: str, right: str) -> bool:
     if key in COUNT_QUOTA_KEYS:
         try:
@@ -434,4 +435,3 @@ def observe_capsule_tenant_allocation(
     from app.kubernetes.tenant.capsule_allocation_observation import observe_capsule_tenant_allocation as _impl
 
     return _impl(client, tenant_name=tenant_name, tenant_item=tenant_item)
-
