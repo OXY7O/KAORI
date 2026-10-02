@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from copy import deepcopy
 from datetime import UTC, datetime
 from typing import Any
 
@@ -39,7 +38,6 @@ from app.kubernetes.tenant.capsule_tenant_quota_support import (
     _managed_state,
     _namespace_count,
     _profile,
-    _profile_matches_quota,
     _quota_contract_from_observation,
     _quota_differences,
     _quota_for_profile,
@@ -49,13 +47,7 @@ from app.kubernetes.tenant.capsule_tenant_quota_support import (
 )
 from app.kubernetes.tenant.providers import TenantProviderState
 from app.kubernetes.tenant.service import _validate_resource_profile_attachment_controls
-from app.kubernetes.tenant.validation import validate_profile_spec
-from app.models.tenant import (
-    Tenant,
-    TenantLifecycleStatus,
-    TenantResourceProfile,
-)
-
+from app.models.tenant import Tenant, TenantLifecycleStatus
 
 
 class CapsuleTenantQuotaStateConflictError(RuntimeError):
