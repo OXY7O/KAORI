@@ -3,8 +3,7 @@
 
 This module is the single path-routing authority for both GitHub Developer Check
 and the Local-First Dev Container feedback loop. It selects existing validators
-and pytest boundaries; it does not replace those validators.
-'''
+and pytest boundaries; it does not replace those validators.\n"""
 
 from __future__ import annotations
 
