@@ -50,14 +50,14 @@
                 {% if presentation == 'steps' %}
                     <dl class="grid gap-3 sm:grid-cols-[minmax(12rem,0.7fr)_minmax(0,1.3fr)]">
                         <div class="rounded-xl border border-outline-subtle bg-surface-elevated px-5 py-4">
-                            <dt class="text-[10px] font-semibold uppercase tracking-wider text-content-muted">Target</dt>
+                            <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Target</dt>
                             <dd data-destructive-target-name
                                 class="mt-2 break-words text-base font-semibold text-content-primary [overflow-wrap:anywhere]">
                                 {{ target_name or 'Selected Resource' }}
                             </dd>
                         </div>
                         <div class="rounded-xl border border-outline-subtle bg-surface-elevated px-5 py-4">
-                            <dt class="text-[10px] font-semibold uppercase tracking-wider text-content-muted">Scope</dt>
+                            <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Scope</dt>
                             <dd data-destructive-target-scope
                                 class="mt-2 break-words text-sm font-medium leading-5 text-content-secondary [overflow-wrap:anywhere]">
                                 {{ scope_value }}
@@ -94,7 +94,7 @@
                                                   aria-hidden="true">
                                                 <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
                                             </span>
-                                            <span class="text-[10px] font-semibold tracking-wider text-content-muted">{{ '%02d'|format(loop.index) }}</span>
+                                            <span class="text-xs font-semibold tracking-wider text-content-muted">{{ '%02d'|format(loop.index) }}</span>
                                         </div>
                                         <p class="mt-3 text-sm font-semibold text-content-primary">{{ item_title }}</p>
                                         <p class="mt-1.5 text-xs leading-5 text-content-muted">{{ item_detail }}</p>
