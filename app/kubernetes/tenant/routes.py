@@ -90,6 +90,7 @@ from app.kubernetes.tenant.workspace import (
 from app.models import User
 from app.platform_operations.notifications.service import queue_transient_feedback
 
+
 @tenant_bp.get('/')
 @any_permission_required('tenant.view', 'tenant.manage')
 def index():
