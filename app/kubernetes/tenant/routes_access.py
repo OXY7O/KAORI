@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from flask import request
 from flask_login import current_user
+from kubernetes.client.rest import ApiException
 
 from app.access.rbac.decorators import permission_required
 from app.kubernetes.tenant.access_service import (
@@ -28,9 +29,6 @@ from app.kubernetes.tenant.route_common import (
     _tenant_section_redirect,
     tenant_bp,
 )
-from app.models import User
-
-
 @tenant_bp.post('/groups')
 @permission_required('tenant.manage')
 def create_group_route():

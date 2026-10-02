@@ -16,7 +16,6 @@ from app.kubernetes.tenant.allocation_observation import (
 )
 from app.kubernetes.tenant.capsule_provider import discover_capsule
 from app.models import Cluster
-from app.models.cluster import ClusterStatus
 from app.models.kubernetes import KubernetesConnection
 from app.models.tenant import (
     Tenant,
@@ -25,7 +24,6 @@ from app.models.tenant import (
     TenantLifecycleStatus,
     TenantNamespace,
     TenantNamespaceProvisioningStatus,
-    TenantOwnershipStatus,
 )
 
 _SYSTEM_NAMESPACES = frozenset({'default', 'kube-system', 'kube-public', 'kube-node-lease'})

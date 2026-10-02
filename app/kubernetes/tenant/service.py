@@ -10,6 +10,9 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.extensions.db import db
+from app.kubernetes.tenant import registry_context as _registry_context
+from app.kubernetes.tenant import resource_profile_controls as _resource_profile_controls
+from app.kubernetes.tenant import service_contracts as _service_contracts
 from app.kubernetes.tenant.allocation_cutover import (
     allocation_control_state,
     build_allocation_cutover_state,
@@ -25,39 +28,6 @@ from app.kubernetes.tenant.capsule_tenant import (
 )
 from app.kubernetes.tenant.native_provider import tenant_workspace_connection_available
 from app.kubernetes.tenant.provisioning import create_namespace_intent, reconcile_native_namespace
-from app.kubernetes.tenant.resource_profile_controls import (
-    _advanced_profile_controls as _advanced_profile_controls,
-    _control_contract_present as _control_contract_present,
-    _control_enabled as _control_enabled,
-    _tenant_capability_statuses as _tenant_capability_statuses,
-    _validate_resource_profile_attachment_controls as _validate_resource_profile_attachment_controls,
-    _validate_resource_profile_base_controls as _validate_resource_profile_base_controls,
-    evaluate_resource_profile_advanced_controls as evaluate_resource_profile_advanced_controls,
-    resource_profile_attachment_controls as resource_profile_attachment_controls,
-    resource_profile_base_control_state as resource_profile_base_control_state,
-)
-from app.kubernetes.tenant.registry_context import (
-    _resource_profile_rollout_targets as _resource_profile_rollout_targets,
-    get_capacity_decision_registry_context as get_capacity_decision_registry_context,
-    get_namespace_registry_context as get_namespace_registry_context,
-    get_ready_native_clusters as get_ready_native_clusters,
-    get_resource_profile_registry_context as get_resource_profile_registry_context,
-    get_tenant_context as get_tenant_context,
-    get_tenant_registry_context as get_tenant_registry_context,
-)
-from app.kubernetes.tenant.service_contracts import (
-    RESOURCE_PROFILE_ADVANCED_CONTROLS as RESOURCE_PROFILE_ADVANCED_CONTROLS,
-    RESOURCE_PROFILE_PRESETS as RESOURCE_PROFILE_PRESETS,
-    _ALLOWED_ENVIRONMENTS as _ALLOWED_ENVIRONMENTS,
-    _ALLOWED_PROFILE_CLASSES as _ALLOWED_PROFILE_CLASSES,
-    _ALLOWED_TENANT_PROVIDERS as _ALLOWED_TENANT_PROVIDERS,
-    _CONTROL_TRUE_VALUES as _CONTROL_TRUE_VALUES,
-    _PROFILE_LIMIT_FIELDS as _PROFILE_LIMIT_FIELDS,
-    _PROFILE_QUOTA_FIELDS as _PROFILE_QUOTA_FIELDS,
-    _PROFILE_STORAGE_FIELDS as _PROFILE_STORAGE_FIELDS,
-    _TENANT_SLUG_RE as _TENANT_SLUG_RE,
-    _text as _text,
-)
 from app.kubernetes.tenant.validation import validate_profile_spec, validate_storage_policy
 from app.models import Cluster
 from app.models.cluster import ClusterStatus
@@ -73,6 +43,39 @@ from app.models.tenant import (
     TenantResourceProfile,
     TenantResourceProfileClass,
 )
+
+
+_advanced_profile_controls = _resource_profile_controls._advanced_profile_controls
+_control_contract_present = _resource_profile_controls._control_contract_present
+_control_enabled = _resource_profile_controls._control_enabled
+_tenant_capability_statuses = _resource_profile_controls._tenant_capability_statuses
+_validate_resource_profile_attachment_controls = (
+    _resource_profile_controls._validate_resource_profile_attachment_controls
+)
+_validate_resource_profile_base_controls = _resource_profile_controls._validate_resource_profile_base_controls
+evaluate_resource_profile_advanced_controls = _resource_profile_controls.evaluate_resource_profile_advanced_controls
+resource_profile_attachment_controls = _resource_profile_controls.resource_profile_attachment_controls
+resource_profile_base_control_state = _resource_profile_controls.resource_profile_base_control_state
+
+_resource_profile_rollout_targets = _registry_context._resource_profile_rollout_targets
+get_capacity_decision_registry_context = _registry_context.get_capacity_decision_registry_context
+get_namespace_registry_context = _registry_context.get_namespace_registry_context
+get_ready_native_clusters = _registry_context.get_ready_native_clusters
+get_resource_profile_registry_context = _registry_context.get_resource_profile_registry_context
+get_tenant_context = _registry_context.get_tenant_context
+get_tenant_registry_context = _registry_context.get_tenant_registry_context
+
+RESOURCE_PROFILE_ADVANCED_CONTROLS = _service_contracts.RESOURCE_PROFILE_ADVANCED_CONTROLS
+RESOURCE_PROFILE_PRESETS = _service_contracts.RESOURCE_PROFILE_PRESETS
+_ALLOWED_ENVIRONMENTS = _service_contracts._ALLOWED_ENVIRONMENTS
+_ALLOWED_PROFILE_CLASSES = _service_contracts._ALLOWED_PROFILE_CLASSES
+_ALLOWED_TENANT_PROVIDERS = _service_contracts._ALLOWED_TENANT_PROVIDERS
+_CONTROL_TRUE_VALUES = _service_contracts._CONTROL_TRUE_VALUES
+_PROFILE_LIMIT_FIELDS = _service_contracts._PROFILE_LIMIT_FIELDS
+_PROFILE_QUOTA_FIELDS = _service_contracts._PROFILE_QUOTA_FIELDS
+_PROFILE_STORAGE_FIELDS = _service_contracts._PROFILE_STORAGE_FIELDS
+_TENANT_SLUG_RE = _service_contracts._TENANT_SLUG_RE
+_text = _service_contracts._text
 
 
 class TenantStateConflictError(RuntimeError):
