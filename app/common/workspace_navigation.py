@@ -6,16 +6,16 @@ from typing import Any
 from flask import url_for
 
 from app.common.workspace_navigation_catalog import (
-    WORKSPACES,
-    CapabilityViewDefinition,
-    WorkspaceCapabilityDefinition,
-    WorkspaceDefinition,
     _CAPABILITY_CONTEXT_KEYS,
     _CAPABILITY_VIEWS,
     _KUBERNETES_CONFIGMAP_PERMISSIONS,
     _SECTION_ORDER,
     _WORKSPACE_CONTEXT_KEYS,
+    WORKSPACES,
+    WorkspaceCapabilityDefinition,
+    WorkspaceDefinition,
 )
+
 
 def _capability_key(endpoint: str) -> str | None:
     if endpoint.startswith('inventory.'):
