@@ -27,6 +27,9 @@ def test_release_registry_closes_navigation_and_blueprint_inventory() -> None:
     assert next(surface for surface in SURFACES if surface.key == 'intelligence').lock_state == 'BASELINE LOCKED'
     assert next(surface for surface in SURFACES if surface.key == 'health').lock_state == 'SYSTEM LOCKED'
     assert next(surface for surface in SURFACES if surface.key == 'tenant').lock_state == 'BASELINE LOCKED'
+    assert next(surface for surface in SURFACES if surface.key == 'welcome').navigation_source == (
+        'app/common/workspace_navigation.py'
+    )
 
 
 def test_general_release_titles_stay_short() -> None:
