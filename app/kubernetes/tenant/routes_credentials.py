@@ -6,6 +6,7 @@ from typing import cast
 
 from flask import abort, make_response, render_template, request
 from flask_login import current_user
+from kubernetes.client.rest import ApiException
 
 from app.access.rbac.decorators import permission_required
 from app.kubernetes.tenant.credential_service import (
@@ -29,6 +30,7 @@ from app.kubernetes.tenant.route_common import (
     _record,
     _required_int,
     _tenant_section_redirect,
+    _tenant_workspace_context,
     tenant_bp,
 )
 from app.models import User
