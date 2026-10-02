@@ -44,7 +44,9 @@ def test_resource_identity_and_line_semantics_are_separate() -> None:
     shared_chart = read('app/templates/components/forecast_projection_chart.html')
     interactive = read('app/templates/kubernetes/analytics/components/_interactive_forecast_chart.html')
 
-    assert 'aria-label="Resource Color Legend"' in shared_chart
+    legend = read('app/templates/components/resource_series_legend.html')
+    assert "resource_series_legend.render_series(series, aria_label='Resource Color Legend')" in shared_chart
+    assert 'aria-label="{{ aria_label }}"' in legend
     assert 'aria-label="Forecast Line and Threshold Legend"' in shared_chart
     assert '>Historical</span>' in shared_chart
     assert '>Forecast</span>' in shared_chart

@@ -63,7 +63,8 @@ def test_intelligence_overview_surfaces_alert_operations_posture() -> None:
 def test_intelligence_overview_uses_standard_kaori_hero_contract() -> None:
     template = read('app/templates/intelligence/overview.html')
 
-    assert "page_hero.intro('brain-circuit', 'Infrastructure Intelligence', 'scan-search')" in template
+    assert "page_hero.intro('brain-circuit', 'Intelligence', 'scan-search')" in template
+    assert '<h1 class="{{ page_hero.title_classes() }}">Overview</h1>' in template
     assert "page_hero.context_card('Intelligence posture'" in template
     assert "page_hero.meta_label('database', 'Committed Evidence')" in template
     assert "page_hero.meta_label('shield-check', 'Operator Governed')" in template
