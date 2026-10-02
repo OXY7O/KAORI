@@ -6,7 +6,6 @@ from collections.abc import Mapping
 from decimal import InvalidOperation
 from typing import Any
 
-from kubernetes.client.rest import ApiException
 from kubernetes.utils.quantity import parse_quantity
 
 from app.kubernetes.tenant.validation import (
