@@ -130,6 +130,24 @@ EMPTY_INVENTORY_OVERVIEW = {
 }
 
 
+EMPTY_INTELLIGENCE_OVERVIEW = {
+    'posture': {
+        'label': 'No Active Evidence',
+        'tone': 'info',
+        'helper': 'No committed Intelligence evidence is loaded for this isolated browser test.',
+    },
+    'summary': {
+        'findings': 0,
+    },
+    'alerts': {
+        'active': 0,
+    },
+    'kpi_cards': [],
+    'posture_items': [],
+    'workspaces': [],
+}
+
+
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     if 'kaori_viewport' not in metafunc.fixturenames:
         return
@@ -248,6 +266,10 @@ def kaori_authenticated_base_url() -> Iterator[str]:
         patch(
             'app.kubernetes.analytics.materialization.requests._list_cluster_references',
             return_value=[],
+        ),
+        patch(
+            'app.intelligence.routes.get_intelligence_overview_payload',
+            return_value=EMPTY_INTELLIGENCE_OVERVIEW,
         ),
     ):
         server = make_server('127.0.0.1', 0, app, threaded=True)
