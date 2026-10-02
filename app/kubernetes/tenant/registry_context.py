@@ -16,10 +16,10 @@ from app.kubernetes.tenant.resource_profile_controls import (
     evaluate_resource_profile_advanced_controls,
 )
 from app.kubernetes.tenant.service_contracts import (
-    RESOURCE_PROFILE_ADVANCED_CONTROLS,
-    RESOURCE_PROFILE_PRESETS,
     _ALLOWED_ENVIRONMENTS,
     _ALLOWED_PROFILE_CLASSES,
+    RESOURCE_PROFILE_ADVANCED_CONTROLS,
+    RESOURCE_PROFILE_PRESETS,
 )
 from app.models import Cluster
 from app.models.cluster import ClusterStatus
@@ -28,6 +28,7 @@ from app.models.tenant import (
     Tenant,
     TenantCapacityDecision,
     TenantEnvironment,
+    TenantEnvironmentName,
     TenantLifecycleStatus,
     TenantNamespace,
     TenantNamespaceProvisioningStatus,
@@ -102,6 +103,9 @@ def _resource_profile_rollout_targets(profile_ids: list[int]) -> dict[int, list[
             }
         )
     return result
+
+
+_ALLOWED_PAGE_SIZES = (5, 10, 25, 50)
 
 
 def _paged_context(query: Any, *, page: int, per_page: int) -> tuple[list[Any], dict[str, Any]]:
