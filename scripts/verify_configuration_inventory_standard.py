@@ -140,8 +140,11 @@ def main() -> int:
     )
     require('Age ' not in table, 'Age must remain in Configuration detail rather than the compact table.', errors)
     require(
-        'Reference Evidence Gaps' in summary and 'Pod Reference Collection' in summary,
-        'Configuration summary must expose Pod reference evidence gaps.',
+        'Reference Evidence Gaps' in summary
+        and 'ConfigMap Collection' not in summary
+        and 'Secret Collection' not in summary
+        and 'Pod Reference Collection' not in summary,
+        'Configuration summary must expose evidence gaps without retired collection-state cards.',
         errors,
     )
 
