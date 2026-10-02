@@ -32,7 +32,7 @@ from app.kubernetes.tenant.capacity_governance_support import (
     _optional_positive_quantity,
     _percent,
     _policy_json,
-    _quantity_gib_text,
+    _quantity_gib_text as _quantity_gib_text,
     _snapshot_cutoff,
     _state_reason,
     _text,
