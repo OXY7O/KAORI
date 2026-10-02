@@ -141,13 +141,12 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
         in object_alert_guidance
     )
     assert 'Low-risk operational signal. Validate relevance, recurrence, and scope.' in object_alert_guidance
-    assert 'Object Storage report output, definitions, schedules, and recent generation activity.' in object_summary
+    assert 'components/reporting_dashboard_workspace.html' in object_summary
 
     kubernetes_response = read('app/templates/kubernetes/dashboard/partials/_alert_response_guidance.html')
     kubernetes_summary = read('app/templates/kubernetes/dashboard/partials/_reporting_summary.html')
     assert (
-        'Run the approved response for the confirmed scope within permission and safety guardrails.'
-        in kubernetes_response
+        'Run the approved response for the confirmed scope within safety guardrails.' in kubernetes_response
     )
     assert (
         'Run the approved storage response for the confirmed scope within safety guardrails.' in object_alert_guidance
@@ -194,7 +193,7 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
         assert token not in all_source
 
 
-def test_response_and_reporting_flows_reuse_numbered_governance_sequence() -> None:
+def test_response_and_reporting_flows_use_current_shared_governance_owners() -> None:
     kubernetes_response = read('app/templates/kubernetes/dashboard/partials/_alert_response_guidance.html')
     object_response = read('app/templates/storage/object_storage/dashboard/partials/_alert_response_guidance.html')
     kubernetes_reporting = read('app/templates/kubernetes/dashboard/partials/_reporting_guidance.html')
@@ -242,6 +241,8 @@ def test_recent_report_activity_is_bounded_to_four_in_both_reference_dashboards(
     for source in (reporting_workspace, kubernetes_builder, object_service):
         assert 'limit=5' not in source
         assert 'latest_reports[:5]' not in source
+
+
 def test_operational_dashboard_standard_is_family_owned() -> None:
     standard = read('docs/design/patterns/OPERATIONAL_DASHBOARD.md')
     audit = read('docs/design/audits/OPERATIONAL_DASHBOARD_FAMILY_FAST_TRACK_ALIGNMENT_AUDIT_2026_09_29.md')
