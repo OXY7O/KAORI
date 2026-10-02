@@ -67,7 +67,11 @@ def test_data_lifecycle_navigation_and_breadcrumb_are_platform_owned() -> None:
     assert "'jobs', 'Jobs'" in operations
     assert "'data_lifecycle'" in operations
     assert "'kubernetes_admin'" in operations
-    assert operations.index("'jobs', 'Jobs'") < operations.index("'data_lifecycle'") < operations.index("'kubernetes_admin'")
+    assert (
+        operations.index("'jobs', 'Jobs'")
+        < operations.index("'data_lifecycle'")
+        < operations.index("'kubernetes_admin'")
+    )
     assert "'platform_operations.data_lifecycle.index'" in operations
     assert "'platform_operations.view_data_lifecycle'" in operations
     assert 'Data Lifecycle' not in settings_menu
