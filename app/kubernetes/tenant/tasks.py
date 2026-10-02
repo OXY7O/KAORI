@@ -169,6 +169,93 @@ def _finish_evidence(
     return enriched
 
 
+def _build_tenant_sync_snapshot() -> dict[str, Any]:
+    snapshot = build_tenant_inventory_snapshot()
+    missing_namespace_drift_ids = apply_missing_namespace_drift_from_inventory()
+    allocation_drift = apply_managed_allocation_drift_observation()
+    provider_policy_mirror = apply_provider_mirrored_policy_observation()
+    capsule_shared_drift = apply_managed_capsule_shared_allocation_drift_observation()
+    capsule_tenant_quota_drift = apply_managed_capsule_tenant_quota_drift_observation()
+
+    allocation_drift_ids = list(allocation_drift['drifted_namespace_ids'])
+    drifted_namespace_ids = sorted(set(missing_namespace_drift_ids + allocation_drift_ids))
+    snapshot['drifted_namespace_count'] = len(drifted_namespace_ids)
+    snapshot['drifted_namespace_ids'] = drifted_namespace_ids
+    snapshot['missing_namespace_drift_count'] = len(missing_namespace_drift_ids)
+    snapshot['allocation_drift_count'] = len(allocation_drift_ids)
+    snapshot['allocation_observation_error_count'] = len(allocation_drift['observation_errors'])
+    snapshot['provider_mirrored_policy_count'] = len(provider_policy_mirror['mirrored_namespace_ids'])
+    snapshot['provider_mirrored_policy_updated_count'] = len(provider_policy_mirror['updated_namespace_ids'])
+    snapshot['provider_mirrored_policy_error_count'] = len(provider_policy_mirror['observation_errors'])
+    snapshot['capsule_shared_allocation_drift_count'] = len(capsule_shared_drift['drifted_intent_ids'])
+    snapshot['capsule_shared_allocation_drift_ids'] = capsule_shared_drift['drifted_intent_ids']
+    snapshot['capsule_shared_allocation_restored_ids'] = capsule_shared_drift['restored_intent_ids']
+    snapshot['capsule_shared_allocation_observation_error_count'] = len(capsule_shared_drift['observation_errors'])
+    snapshot['capsule_tenant_quota_drift_count'] = len(capsule_tenant_quota_drift['drifted_tenant_ids'])
+    snapshot['capsule_tenant_quota_drift_ids'] = capsule_tenant_quota_drift['drifted_tenant_ids']
+    snapshot['capsule_tenant_quota_observation_error_count'] = len(capsule_tenant_quota_drift['observation_errors'])
+
+    allocation_exceptions = [
+        {
+            'cluster_id': item.get('cluster_id', ''),
+            'namespace': item.get('namespace', ''),
+            'reason': item.get('reason', 'Allocation drift requires review.'),
+        }
+        for item in allocation_drift['drifted_namespaces']
+    ]
+    observation_exceptions = [
+        {
+            'cluster_id': '',
+            'namespace': item.get('namespace', ''),
+            'reason': f'Allocation observation failed: {item.get("reason", "unknown error")}',
+        }
+        for item in allocation_drift['observation_errors']
+    ]
+    provider_policy_exceptions = [
+        {
+            'cluster_id': '',
+            'namespace': item.get('namespace', ''),
+            'reason': f'Provider policy mirror failed: {item.get("reason", "unknown error")}',
+        }
+        for item in provider_policy_mirror['observation_errors']
+    ]
+    capsule_shared_exceptions = [
+        {
+            'cluster_id': '',
+            'namespace': f'Tenant/{item.get("tenant_id", "")}',
+            'reason': (
+                'Capsule shared allocation observation failed: ' + str(item.get('reason') or 'unknown error')
+            ),
+        }
+        for item in capsule_shared_drift['observation_errors']
+    ]
+    capsule_tenant_quota_exceptions = [
+        {
+            'cluster_id': '',
+            'namespace': f'Tenant/{item.get("tenant_id", "")}',
+            'reason': ('Capsule Tenant quota observation failed: ' + str(item.get('reason') or 'unknown error')),
+        }
+        for item in capsule_tenant_quota_drift['observation_errors']
+    ]
+    snapshot['exceptions'] = (
+        list(snapshot.get('exceptions') or [])
+        + allocation_exceptions
+        + observation_exceptions
+        + provider_policy_exceptions
+        + capsule_shared_exceptions
+        + capsule_tenant_quota_exceptions
+    )[:25]
+    snapshot['exception_count'] = (
+        int(snapshot.get('exception_count') or 0)
+        + len(allocation_exceptions)
+        + len(observation_exceptions)
+        + len(provider_policy_exceptions)
+        + len(capsule_shared_exceptions)
+        + len(capsule_tenant_quota_exceptions)
+    )
+    return snapshot
+
+
 @shared_task(
     bind=True,
     name='app.kubernetes.tenant.tasks.sync_tenant_inventory',
@@ -195,89 +282,7 @@ def sync_tenant_inventory_task(
             total=100,
             message='Reading committed Tenant ownership and Kubernetes inventory evidence.',
         )
-        snapshot = build_tenant_inventory_snapshot()
-        missing_namespace_drift_ids = apply_missing_namespace_drift_from_inventory()
-        allocation_drift = apply_managed_allocation_drift_observation()
-        provider_policy_mirror = apply_provider_mirrored_policy_observation()
-        capsule_shared_drift = apply_managed_capsule_shared_allocation_drift_observation()
-        capsule_tenant_quota_drift = apply_managed_capsule_tenant_quota_drift_observation()
-
-        allocation_drift_ids = list(allocation_drift['drifted_namespace_ids'])
-        drifted_namespace_ids = sorted(set(missing_namespace_drift_ids + allocation_drift_ids))
-        snapshot['drifted_namespace_count'] = len(drifted_namespace_ids)
-        snapshot['drifted_namespace_ids'] = drifted_namespace_ids
-        snapshot['missing_namespace_drift_count'] = len(missing_namespace_drift_ids)
-        snapshot['allocation_drift_count'] = len(allocation_drift_ids)
-        snapshot['allocation_observation_error_count'] = len(allocation_drift['observation_errors'])
-        snapshot['provider_mirrored_policy_count'] = len(provider_policy_mirror['mirrored_namespace_ids'])
-        snapshot['provider_mirrored_policy_updated_count'] = len(provider_policy_mirror['updated_namespace_ids'])
-        snapshot['provider_mirrored_policy_error_count'] = len(provider_policy_mirror['observation_errors'])
-        snapshot['capsule_shared_allocation_drift_count'] = len(capsule_shared_drift['drifted_intent_ids'])
-        snapshot['capsule_shared_allocation_drift_ids'] = capsule_shared_drift['drifted_intent_ids']
-        snapshot['capsule_shared_allocation_restored_ids'] = capsule_shared_drift['restored_intent_ids']
-        snapshot['capsule_shared_allocation_observation_error_count'] = len(capsule_shared_drift['observation_errors'])
-        snapshot['capsule_tenant_quota_drift_count'] = len(capsule_tenant_quota_drift['drifted_tenant_ids'])
-        snapshot['capsule_tenant_quota_drift_ids'] = capsule_tenant_quota_drift['drifted_tenant_ids']
-        snapshot['capsule_tenant_quota_observation_error_count'] = len(capsule_tenant_quota_drift['observation_errors'])
-
-        allocation_exceptions = [
-            {
-                'cluster_id': item.get('cluster_id', ''),
-                'namespace': item.get('namespace', ''),
-                'reason': item.get('reason', 'Allocation drift requires review.'),
-            }
-            for item in allocation_drift['drifted_namespaces']
-        ]
-        observation_exceptions = [
-            {
-                'cluster_id': '',
-                'namespace': item.get('namespace', ''),
-                'reason': f'Allocation observation failed: {item.get("reason", "unknown error")}',
-            }
-            for item in allocation_drift['observation_errors']
-        ]
-        provider_policy_exceptions = [
-            {
-                'cluster_id': '',
-                'namespace': item.get('namespace', ''),
-                'reason': f'Provider policy mirror failed: {item.get("reason", "unknown error")}',
-            }
-            for item in provider_policy_mirror['observation_errors']
-        ]
-        capsule_shared_exceptions = [
-            {
-                'cluster_id': '',
-                'namespace': f'Tenant/{item.get("tenant_id", "")}',
-                'reason': (
-                    'Capsule shared allocation observation failed: ' + str(item.get('reason') or 'unknown error')
-                ),
-            }
-            for item in capsule_shared_drift['observation_errors']
-        ]
-        capsule_tenant_quota_exceptions = [
-            {
-                'cluster_id': '',
-                'namespace': f'Tenant/{item.get("tenant_id", "")}',
-                'reason': ('Capsule Tenant quota observation failed: ' + str(item.get('reason') or 'unknown error')),
-            }
-            for item in capsule_tenant_quota_drift['observation_errors']
-        ]
-        snapshot['exceptions'] = (
-            list(snapshot.get('exceptions') or [])
-            + allocation_exceptions
-            + observation_exceptions
-            + provider_policy_exceptions
-            + capsule_shared_exceptions
-            + capsule_tenant_quota_exceptions
-        )[:25]
-        snapshot['exception_count'] = (
-            int(snapshot.get('exception_count') or 0)
-            + len(allocation_exceptions)
-            + len(observation_exceptions)
-            + len(provider_policy_exceptions)
-            + len(capsule_shared_exceptions)
-            + len(capsule_tenant_quota_exceptions)
-        )
+        snapshot = _build_tenant_sync_snapshot()
         db.session.commit()
         context.checkpoint(
             current=80,
