@@ -105,8 +105,10 @@ def _is_authority_path(path: str) -> bool:
     if path.startswith(AUTHORITY_PREFIXES):
         return True
     name = Path(path).name
-    return name.startswith('Dockerfile') or name.startswith('docker-compose') or (
-        name.startswith('compose') and name.endswith(('.yml', '.yaml'))
+    return (
+        name.startswith('Dockerfile')
+        or name.startswith('docker-compose')
+        or (name.startswith('compose') and name.endswith(('.yml', '.yaml')))
     )
 
 
