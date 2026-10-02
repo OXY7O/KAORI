@@ -32,13 +32,15 @@ from app.kubernetes.tenant.capacity_governance_support import (
     _optional_positive_quantity,
     _percent,
     _policy_json,
-    _quantity_gib_text as _quantity_gib_text,
     _snapshot_cutoff,
     _state_reason,
     _text,
     _unknown_evidence_decision,
     _vector_display,
     _vector_json,
+)
+from app.kubernetes.tenant.capacity_governance_support import (
+    _quantity_gib_text as _quantity_gib_text,
 )
 from app.models import Cluster
 from app.models.tenant import (
