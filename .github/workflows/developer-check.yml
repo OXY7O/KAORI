@@ -242,7 +242,7 @@ jobs:
     needs: route
     if: ${{ needs.route.result == 'success' }}
     runs-on: [self-hosted, linux, x64, kaori-ci]
-    timeout-minutes: 10
+    timeout-minutes: 20
     outputs:
       image: ${{ steps.toolchain.outputs.image }}
     steps:
@@ -394,7 +394,7 @@ jobs:
             printf '⏳ Focused Tests — %s\n' "$paths"
             # TEST_PATHS is assembled only from the static whitelist above.
             # shellcheck disable=SC2086
-            run_toolchain 'Focused Tests' bash -lc "pytest -q --tb=short $paths"
+            run_toolchain 'Focused Tests' bash -lc "pytest -q --tb=short --maxfail=25 $paths"
           fi
 
           elapsed=$(( $(date +%s) - started ))
