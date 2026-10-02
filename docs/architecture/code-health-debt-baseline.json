@@ -103,6 +103,6 @@
     "app/kubernetes/tenant/access_service.py": 967,
     "app/kubernetes/tenant/credential_service.py": 863,
     "app/kubernetes/tenant/routes.py": 1373,
-    "app/kubernetes/tenant/service.py": 961
+    "app/kubernetes/tenant/service.py": 960
   }
 }
