@@ -1703,7 +1703,7 @@ def test_capsule_tenant_resource_quotas_are_bidirectionally_governed_without_nat
     assert 'tenant-capsule-tenant-quota-state' in namespace_page
     assert 'Capsule Tenant Quota Governance' in cutover_ui
     assert 'Tenant.spec.resourceQuotas' in cutover_ui
-    assert 'Take Over Allocation Governance' in cutover_ui
+    assert 'Take Over Governance' in cutover_ui
     assert 'Change Governed Allocation' in cutover_ui
     assert 'Native ResourceQuota' in cutover_ui
     assert 'data-tenant-quota-allocation-form' in script
