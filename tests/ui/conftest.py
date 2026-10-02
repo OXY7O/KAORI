@@ -72,6 +72,37 @@ HIDDEN_CLUSTER_ONBOARDING = {
     'database_ready': True,
 }
 
+EMPTY_INVENTORY_OVERVIEW = {
+    'total_clusters': 0,
+    'total_nodes': 0,
+    'total_namespaces': 0,
+    'total_workloads': 0,
+    'total_pods': 0,
+    'total_services': 0,
+    'total_ingresses': 0,
+    'total_storage': 0,
+    'total_configuration': 0,
+    'inventory_total': 0,
+    'asset_catalog': [],
+    'active_signal_count': 0,
+    'clusters': [],
+    'inventory_summary': {},
+    'health': {
+        'connected_clusters': 0,
+        'healthy_clusters': 0,
+        'never_synced': 0,
+        'stale_synced': 0,
+        'fresh_synced': 0,
+        'synced_clusters': 0,
+        'disconnected_clusters': 0,
+        'last_sync': None,
+    },
+    'posture': {
+        'status': 'Unknown',
+        'tone': 'unknown',
+    },
+}
+
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     if 'kaori_viewport' not in metafunc.fixturenames:
@@ -179,6 +210,10 @@ def kaori_authenticated_base_url() -> Iterator[str]:
         patch(
             'app.platform_operations.notifications.routes.get_notification_center_page_context',
             return_value=EMPTY_NOTIFICATION_CENTER,
+        ),
+        patch(
+            'app.kubernetes.inventory.routes.get_inventory_overview',
+            return_value=EMPTY_INVENTORY_OVERVIEW,
         ),
     ):
         server = make_server('127.0.0.1', 0, app, threaded=True)
