@@ -11,6 +11,10 @@ def _read(path: str) -> str:
     return (ROOT / path).read_text(encoding='utf-8')
 
 
+def _navigation_source() -> str:
+    return _read('app/common/workspace_navigation.py') + '\n' + _read('app/common/workspace_navigation_catalog.py')
+
+
 def test_sidebar_navigation_standard_is_enforced() -> None:
     result = subprocess.run(
         [sys.executable, 'scripts/verify_sidebar_navigation_standard.py'],
@@ -26,7 +30,7 @@ def test_sidebar_navigation_standard_is_enforced() -> None:
 
 def test_sidebar_v21_uses_two_real_levels_below_section_groups() -> None:
     sidebar = _read('app/templates/components/navigation/sidebar.html')
-    model = _read('app/common/workspace_navigation.py')
+    model = _navigation_source()
 
     assert '<details class="sidebar-menu space-y-1"' in sidebar
     assert 'data-kaori-sidebar-workspace="{{ item[\'key\'] }}"' in sidebar
@@ -54,7 +58,7 @@ def test_sidebar_mapping_access_avoids_jinja_dict_method_collisions() -> None:
 
 
 def test_current_workspace_capabilities_are_sidebar_children() -> None:
-    model = _read('app/common/workspace_navigation.py')
+    model = _navigation_source()
 
     for workspace in (
         "key='kubernetes'",
@@ -110,7 +114,7 @@ def test_app_shell_renders_only_page_level_integrated_route_navigation() -> None
 
 
 def test_level_three_detail_navigation_replaces_sidebar_level_three() -> None:
-    model = _read('app/common/workspace_navigation.py')
+    model = _navigation_source()
     layout = _read('app/templates/layouts/app.html')
 
     for capability in (
@@ -136,16 +140,15 @@ def test_level_three_detail_navigation_replaces_sidebar_level_three() -> None:
 
 
 def test_kubernetes_operations_workflows_keep_the_correct_active_detail_tab() -> None:
-    model = _read('app/common/workspace_navigation.py')
+    model = _navigation_source()
 
-    assert "operation_endpoint = endpoint.removeprefix('kubernetes_operations.')" in model
-    assert "operation_endpoint.startswith('configmap')" in model
     for endpoint in ('create_configmap', 'update_configmap', 'delete_configmap'):
-        assert f"'{endpoint}'" in model
+        assert f"'kubernetes_operations.{endpoint}': 'configmaps'" in model
+    assert "'kubernetes_operations': 'secrets'" in model
 
 
 def test_navigation_context_is_preserved_without_becoming_navigation_identity() -> None:
-    model = _read('app/common/workspace_navigation.py')
+    model = _navigation_source()
     presentation = _read('app/bootstrap/presentation.py')
 
     assert "'kubernetes': ('cluster_id',)" in model
@@ -159,7 +162,7 @@ def test_navigation_context_is_preserved_without_becoming_navigation_identity() 
 
 
 def test_analytics_overview_keeps_route_navigation_and_subordinate_summary_tabs() -> None:
-    model = _read('app/common/workspace_navigation.py')
+    model = _navigation_source()
     overview = _read('app/templates/kubernetes/analytics/overview/index.html')
 
     assert "capability_key == 'kubernetes_analytics' and resolved_endpoint == 'analytics.overview'" not in model
@@ -216,7 +219,7 @@ def test_level_three_integrated_workspace_tabs_do_not_float() -> None:
 
 def test_kubernetes_analytics_overview_always_uses_layout_route_navigation() -> None:
     layout = _read('app/templates/layouts/app.html')
-    model = _read('app/common/workspace_navigation.py')
+    model = _navigation_source()
     overview = _read('app/templates/kubernetes/analytics/overview/index.html')
 
     assert '{% block page_capability_navigation %}' in layout
