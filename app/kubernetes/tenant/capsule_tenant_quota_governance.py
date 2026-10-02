@@ -19,12 +19,16 @@ from app.kubernetes.tenant.capsule_tenant_quota_contract import (
 )
 from app.kubernetes.tenant.capsule_tenant_quota_provider import (
     _cluster_client as _provider_cluster_client,
+)
+from app.kubernetes.tenant.capsule_tenant_quota_provider import (
     _live_allocation,
     _patch_resource_quotas,
     _prove_mutation_capability,
     _prove_read_capability,
-    _read_live_tenant as _read_live_tenant_impl,
     _verify_effective,
+)
+from app.kubernetes.tenant.capsule_tenant_quota_provider import (
+    _read_live_tenant as _read_live_tenant_impl,
 )
 from app.kubernetes.tenant.capsule_tenant_quota_support import (
     _allocation_baseline,
