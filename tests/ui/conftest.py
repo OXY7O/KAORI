@@ -245,6 +245,10 @@ def kaori_authenticated_base_url() -> Iterator[str]:
             'app.kubernetes.inventory.routes.get_inventory_freshness_context',
             return_value=EMPTY_INVENTORY_FRESHNESS,
         ),
+        patch(
+            'app.kubernetes.analytics.materialization.requests._list_cluster_references',
+            return_value=[],
+        ),
     ):
         server = make_server('127.0.0.1', 0, app, threaded=True)
         thread = Thread(target=server.serve_forever, daemon=True)
