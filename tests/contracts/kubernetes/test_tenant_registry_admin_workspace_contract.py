@@ -1691,7 +1691,7 @@ def test_capsule_tenant_resource_quotas_are_bidirectionally_governed_without_nat
 
     assert 'data-tenant-adoption-load' in discovery_ui
     assert 'Provider Constraints' in adoption_preflight_ui
-    assert 'Observed · Preserved' in adoption_preflight_ui
+    assert 'Adopted Baseline · Observed' in adoption_preflight_ui
     assert 'PVC Storage Constraint' in adoption_preflight_ui
     assert "constraint.constraint_type == 'pvc_storage_limit_range'" in adoption_preflight_ui
     assert 'Known PVC policy · preserved, not Tenant-quota authority.' in adoption_preflight_ui
