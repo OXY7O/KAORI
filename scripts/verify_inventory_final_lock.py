@@ -181,8 +181,13 @@ def main() -> int:
     blocked_hero = read('app/templates/components/cluster/_hero_blocked_context.html')
     require(
         'page_hero.blocked_context_body(' in blocked_hero
-        and "('boxes', 'Connected Clusters', '0', 'No Kubernetes connection available')" in blocked_hero
-        and "('circle-dot-dashed', blocked_state_label, 'Blocked', 'Cluster access is required'" in blocked_hero,
+        and "cluster_blocked_cluster_label|default('Connected Clusters')" in blocked_hero
+        and "cluster_blocked_cluster_value|default('0')" in blocked_hero
+        and "cluster_blocked_cluster_supporting|default('No Kubernetes connection available')" in blocked_hero
+        and "cluster_blocked_state_value|default('Blocked')" in blocked_hero
+        and "cluster_blocked_state_supporting|default('Cluster access is required')" in blocked_hero
+        and "('boxes', blocked_cluster_label, blocked_cluster_value, blocked_cluster_supporting)" in blocked_hero
+        and "('circle-dot-dashed', blocked_state_label, blocked_state_value, blocked_state_supporting" in blocked_hero,
         'Inventory must inherit the canonical Kubernetes setup-blocked Hero context.',
         errors,
     )
