@@ -31,14 +31,8 @@ def test_builtin_preset_ignores_submitted_resource_overrides() -> None:
         },
     )
 
-    assert quota == {
-        'requests.cpu': RESOURCE_PROFILE_PRESETS['standard']['quota']['requests.cpu'],
-    }
-    assert limits == {
-        'default': {
-            'cpu': RESOURCE_PROFILE_PRESETS['standard']['limits']['default']['cpu'],
-        }
-    }
+    assert quota == RESOURCE_PROFILE_PRESETS['standard']['quota']
+    assert limits == RESOURCE_PROFILE_PRESETS['standard']['limits']
     assert version == RESOURCE_PROFILE_PRESETS['standard']['version']
     assert base_class is None
     assert base_version is None
@@ -79,8 +73,14 @@ def test_namespace_allocation_rehydrates_committed_builtin_mask_from_canonical_v
 
     quota, limits, storage_policy, customized = _namespace_allocation_values(profile)
 
-    assert quota == RESOURCE_PROFILE_PRESETS['standard']['quota']
-    assert limits == RESOURCE_PROFILE_PRESETS['standard']['limits']
+    assert quota == {
+        'requests.cpu': RESOURCE_PROFILE_PRESETS['standard']['quota']['requests.cpu'],
+    }
+    assert limits == {
+        'default': {
+            'cpu': RESOURCE_PROFILE_PRESETS['standard']['limits']['default']['cpu'],
+        }
+    }
     assert storage_policy == RESOURCE_PROFILE_PRESETS['standard']['storage_policy']
     assert customized is False
 
