@@ -29,6 +29,8 @@ from app.kubernetes.tenant.route_common import (
     _tenant_section_redirect,
     tenant_bp,
 )
+
+
 @tenant_bp.post('/groups')
 @permission_required('tenant.manage')
 def create_group_route():
