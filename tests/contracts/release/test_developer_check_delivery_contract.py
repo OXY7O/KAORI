@@ -58,8 +58,8 @@ def test_work_branch_developer_check_is_separate_from_governed_admission() -> No
 def test_developer_check_normalizes_parent_child_test_paths() -> None:
     source = read(PLANNER)
 
-    assert 'if "tests/contracts" in paths:' in source
-    assert 'not path.startswith("tests/contracts/")' in source
+    assert "if 'tests/contracts' in paths:" in source
+    assert "not path.startswith('tests/contracts/')" in source
     assert 'return sorted(paths)' in source
 
 
@@ -104,30 +104,30 @@ def test_developer_check_routes_changed_paths_and_fails_safe_for_authority_chang
 
     assert 'python3 scripts/developer_check_plan.py' in workflow
     for token in (
-        '".github/"',
-        '"requirements/"',
-        '"scripts/ci_admission.py"',
-        '"scripts/ci_admission_policy.py"',
-        '"scripts/developer_check_plan.py"',
-        '"scripts/quality_gate.sh"',
-        '"scripts/verify_analytics_pdf_publication.py"',
-        '"scripts/verify_pre_release_type_safety.py"',
-        '"scripts/verify_code_health.py"',
-        '"scripts/verify_code_health_baseline_integrity.py"',
-        '"docs/architecture/code-health-debt-baseline.json"',
-        '"docs/engineering/KAORI_DELIVERY_WORKFLOW.md"',
+        "'.github/'",
+        "'requirements/'",
+        "'scripts/ci_admission.py'",
+        "'scripts/ci_admission_policy.py'",
+        "'scripts/developer_check_plan.py'",
+        "'scripts/quality_gate.sh'",
+        "'scripts/verify_analytics_pdf_publication.py'",
+        "'scripts/verify_pre_release_type_safety.py'",
+        "'scripts/verify_code_health.py'",
+        "'scripts/verify_code_health_baseline_integrity.py'",
+        "'docs/architecture/code-health-debt-baseline.json'",
+        "'docs/engineering/KAORI_DELIVERY_WORKFLOW.md'",
         'plan.wide = True',
         'plan.reports = True',
-        'plan.add_test_path("tests/contracts")',
-        'plan.add_test_path("tests/migrations")',
-        'plan.add_test_path("tests/reports")',
-        '"tests/contracts/reports"',
-        '"tests/contracts/analytics"',
-        '"tests/contracts/platform_operations"',
-        'plan.add_test_path("tests/kubernetes")',
-        'plan.add_test_path("tests/kubernetes/tenant")',
-        'plan.add_test_path("tests/storage")',
-        'plan.add_test_path("tests/access")',
+        "plan.add_test_path('tests/contracts')",
+        "plan.add_test_path('tests/migrations')",
+        "plan.add_test_path('tests/reports')",
+        "'tests/contracts/reports'",
+        "'tests/contracts/analytics'",
+        "'tests/contracts/platform_operations'",
+        "plan.add_test_path('tests/kubernetes')",
+        "plan.add_test_path('tests/kubernetes/tenant')",
+        "plan.add_test_path('tests/storage')",
+        "plan.add_test_path('tests/access')",
     ):
         assert token in source
 
