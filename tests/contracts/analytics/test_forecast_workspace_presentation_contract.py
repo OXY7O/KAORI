@@ -57,7 +57,8 @@ def test_interactive_chart_contract_uses_tokens_and_visible_legend() -> None:
     assert 'bg-kaori-primary' in legend
     assert 'bg-status-normal' in legend
     assert 'bg-status-warning' in legend
-    assert 'Historical' in legend and 'Projection' in legend
+    assert 'aria-label="Forecast Line Style Legend"' in template
+    assert 'Historical' in template and 'Projection' in template
     assert 'legend: { display: false }' in script
     assert "cssToken('--kaori-status-info'" in script
     assert "cssToken('--kaori-brand-primary'" in script

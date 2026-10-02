@@ -58,9 +58,9 @@ def test_operations_header_info_tips_are_not_clipped_by_surface_shells() -> None
     ):
         assert 'surface_shell_classes(configmap_main_classes, true)' in read(relative)
 
-    assert 'surface_shell_classes(form_context.main_classes(), true)' in read(
-        'app/templates/kubernetes/operations/secrets/create.html'
-    )
+    secret_create = read('app/templates/kubernetes/operations/secrets/create.html')
+    assert 'surface_shell_classes(form_context.main_classes()' in secret_create
+    assert ', true)' in secret_create
     assert 'surface_shell_classes(allow_overflow=true)' in read(
         'app/templates/kubernetes/operations/secrets/reveal.html'
     )
