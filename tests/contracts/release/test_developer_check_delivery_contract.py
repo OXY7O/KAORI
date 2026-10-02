@@ -101,7 +101,7 @@ def test_developer_check_routes_changed_paths_and_fails_safe_for_authority_chang
     workflow = read(DEVELOPER_WORKFLOW)
     source = read(PLANNER)
 
-    assert 'python scripts/developer_check_plan.py' in workflow
+    assert 'python3 scripts/developer_check_plan.py' in workflow
     for token in (
         '".github/"',
         '"requirements/"',
