@@ -18,9 +18,10 @@ def test_object_storage_dashboard_is_registered_and_visible_beside_kubernetes() 
     assert "url_for('object_storage_dashboard.index')" in navigation
     assert '>Object Storage</span>' in navigation
     assert "request.endpoint.startswith('object_storage_dashboard.')" in navigation
-    assert "endpoint.startswith(('kubernetes_dashboard.', 'object_storage_dashboard.'))" in breadcrumbs
-    assert "'object_storage_dashboard': 'Object Storage Operations'" in breadcrumbs
-    assert 'BreadcrumbItem(dashboard_label)' in breadcrumbs
+    assert "elif endpoint.startswith('kubernetes_dashboard.'):" in breadcrumbs
+    assert "elif endpoint.startswith('object_storage_dashboard.'):" in breadcrumbs
+    assert "BreadcrumbItem('Object Storage', 'database')" in breadcrumbs
+    assert "BreadcrumbItem('Overview')" in breadcrumbs
     assert "navigation_endpoints=('kubernetes_dashboard.index', 'object_storage_dashboard.index')" in release_registry
     assert "blueprint_vars=('kubernetes_dashboard_bp', 'object_storage_dashboard_bp')" in release_registry
 

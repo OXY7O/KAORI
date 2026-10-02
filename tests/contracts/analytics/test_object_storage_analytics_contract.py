@@ -83,7 +83,8 @@ def test_object_storage_analytics_uses_dedicated_rbac_and_sidebar_visibility() -
     routes = read('app/storage/object_storage/analytics/routes.py')
     access = yaml.safe_load(read('app/definitions/catalogs/access/rbac/access.yaml'))
     defaults = read('app/access/rbac/defaults.py')
-    sidebar = read('app/templates/components/navigation/sidebar.html')
+    navigation = read('app/common/workspace_navigation.py')
+    navigation_catalog = read('app/common/workspace_navigation_catalog.py')
     menu = read('app/templates/components/navigation/analytics_menu.html')
     migration = read('migrations/versions/20260814_object_storage_rbac_split.py')
 
@@ -93,7 +94,9 @@ def test_object_storage_analytics_uses_dedicated_rbac_and_sidebar_visibility() -
     assert routes.count("@permission_required('object_storage_analytics.view')") == 10
     assert object_storage_permission['module'] == 'storage_analytics'
     assert "load_definition_document('access/rbac/access.yaml'" in defaults
-    assert "has_permission('object_storage_analytics.view')" in sidebar
+    assert "key='object_storage'" in navigation_catalog
+    assert "('object_storage_analytics.view',)" in navigation_catalog
+    assert '_visible_capabilities(workspace, user)' in navigation
     assert '{% if can_object_storage_analytics %}' in menu
     assert '{% if can_kubernetes_analytics %}' in menu
     assert "'analytics.view'" in migration
