@@ -20,7 +20,7 @@ def _routes_source() -> str:
 
 
 def _discovery_source() -> str:
-    return _discovery_source() + '\n' + _read('app/kubernetes/tenant/discovery_adoption.py')
+    return _read('app/kubernetes/tenant/discovery_service.py') + '\n' + _read('app/kubernetes/tenant/discovery_adoption.py')
 
 
 def test_tenant_workspace_uses_only_approved_sidebar_destinations() -> None:
