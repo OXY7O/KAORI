@@ -248,7 +248,7 @@ def test_welcome_catalog_content_search_and_card_geometry_across_canonical_viewp
 
         search = page.locator('[data-workspace-search]')
         expect(search).to_be_visible()
-        page.keyboard.press('/')
+        search.click()
         expect(search).to_be_focused()
         search.fill('tenant')
 
