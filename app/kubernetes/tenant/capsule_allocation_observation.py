@@ -17,6 +17,7 @@ from app.kubernetes.tenant.allocation_observation import (
     observe_native_namespace_allocation,
 )
 
+
 def _capsule_status_namespace_names(tenant_item: Mapping[str, Any]) -> set[str]:
     status = tenant_item.get('status') or {}
     if not isinstance(status, Mapping):
