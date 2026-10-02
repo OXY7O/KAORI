@@ -371,7 +371,17 @@ def test_capsule_provider_mirrored_pvc_policy_updates_committed_profile_without_
     fake_query = SimpleNamespace(
         filter=lambda *args, **kwargs: SimpleNamespace(order_by=lambda *order: SimpleNamespace(all=lambda: [record]))
     )
-    monkeypatch.setattr(allocation_drift.TenantNamespace, 'query', fake_query)
+    tenant_namespace_model = allocation_drift.TenantNamespace
+    monkeypatch.setattr(
+        allocation_drift,
+        'TenantNamespace',
+        SimpleNamespace(
+            query=fake_query,
+            provisioning_status=tenant_namespace_model.provisioning_status,
+            cluster_id=tenant_namespace_model.cluster_id,
+            id=tenant_namespace_model.id,
+        ),
+    )
 
     fake_cluster = SimpleNamespace(id='cluster-a')
     monkeypatch.setattr(
