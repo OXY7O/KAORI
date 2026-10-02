@@ -553,7 +553,7 @@ def test_resource_profile_storage_policy_is_persisted_and_bidirectional() -> Non
 
     assert 'def _storage_policy_equal(' in cutover
     assert 'not _storage_policy_equal' in cutover
-    assert 'record.allocation_storage_policy_json = storage' in cutover
+    assert 'record.allocation_storage_policy_json = prepared.storage' in cutover
 
     assert 'dict(record.allocation_storage_policy_json or {})' in drift
     assert 'storage_policy=dict(record.allocation_storage_policy_json or {})' in drift

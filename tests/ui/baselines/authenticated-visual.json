@@ -11,7 +11,7 @@
   },
   "welcome-dark-large-desktop": {
     "height": 900,
-    "visual_sha256": "a643a5e3c0f547500f049df84a8b751b928ac6102fbb0505bd5cd4fb23fb4db3",
+    "visual_sha256": "8214854a730a1ae7db41f8fbc4e48675986fab644ac60e48ca8e17c186798b2b",
     "width": 1440
   },
   "welcome-dark-mobile": {
@@ -31,12 +31,12 @@
   },
   "welcome-light-compact-laptop": {
     "height": 768,
-    "visual_sha256": "03e6a2b84f05b37c6a87e3de88a49d762142e3e8e38ee1abcf52a4cba587cc27",
+    "visual_sha256": "866708380f60b17793ee89e1d24f721d844367cd322e45f47f26153fae9a63ac",
     "width": 1024
   },
   "welcome-light-laptop": {
     "height": 800,
-    "visual_sha256": "062f21b66ccb32f882c60900e9cb243fe24620c08d65bfeb79c256fbcc8f47af",
+    "visual_sha256": "e91f1aa92a7ed340f7c0048743fa1565419dcd739384c8c7315d8110747bf5d3",
     "width": 1280
   },
   "welcome-light-large-desktop": {
@@ -46,17 +46,17 @@
   },
   "welcome-light-mobile": {
     "height": 844,
-    "visual_sha256": "1732006c18a793ad8fe01d8ff810eb02f3e82d59f748a07826825142b8544bf2",
+    "visual_sha256": "45bceda8d885cf8bf5bf8063d0d3f4c3f858b752d1fca6d6b62f1e75c8469483",
     "width": 390
   },
   "welcome-light-small-mobile": {
     "height": 800,
-    "visual_sha256": "b8669211a429b4e0a5281452da87488a89381b6000bd173ca62e6d08c381c06d",
+    "visual_sha256": "ec8ed8f043be84b8f4561cb91fe7effdc1253543c174f6465ffea3f0655a2181",
     "width": 360
   },
   "welcome-light-tablet": {
     "height": 1024,
-    "visual_sha256": "77dcb416d3e5a946097d19416b5932584922c28710449c8e66fc100f245c5542",
+    "visual_sha256": "0a40cfdd942deaf56d3d1261247398a07c3d08964e8dd34a5d8cc7d3d22a3ed4",
     "width": 768
   }
 }

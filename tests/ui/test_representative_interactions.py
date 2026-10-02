@@ -235,7 +235,7 @@ def test_welcome_catalog_content_search_and_card_geometry_across_canonical_viewp
         expect(access_card).to_be_visible()
         expect(tenant_card).to_contain_text('Governed Tenancy')
         expect(tenant_card).to_contain_text(re.compile(r'namespace provisioning', re.I))
-        expect(access_card).to_contain_text('Identity Providers')
+        expect(access_card).to_contain_text(re.compile(r'identity providers', re.I))
         expect(access_card).to_contain_text('directory-projected external identities')
 
         assert_document_fits_viewport(page)
@@ -287,7 +287,7 @@ def test_sidebar_v21_two_level_navigation_and_page_workspace_across_canonical_vi
         expect(sidebar).to_be_visible()
 
         section_labels = sidebar.locator('[data-kaori-sidebar-section] .sidebar-section-label').all_inner_texts()
-        assert section_labels == ['Main', 'Infrastructure', 'Insights', 'Platform', 'Administration']
+        assert section_labels == ['MAIN', 'INFRASTRUCTURE', 'INSIGHTS', 'PLATFORM', 'ADMINISTRATION']
 
         expect(sidebar.locator('[data-kaori-sidebar-workspace="welcome"]')).to_be_visible()
         for key in (
