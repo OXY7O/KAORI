@@ -72,6 +72,32 @@ HIDDEN_CLUSTER_ONBOARDING = {
     'database_ready': True,
 }
 
+EMPTY_INVENTORY_FRESHNESS = {
+    'latest_collected_at': None,
+    'oldest_collected_at': None,
+    'cluster_count': 0,
+    'committed_count': 0,
+    'missing_count': 0,
+    'stale_count': 0,
+    'collection_exception_count': 0,
+    'collection_exceptions': [],
+    'freshness_window_hours': 24,
+    'scope_label': '0 Clusters',
+    'scope_supporting': 'No active scope',
+    'latest_supporting': 'No committed timestamp',
+    'status': 'Unknown',
+    'tone': 'unknown',
+    'description': 'No committed inventory snapshot is available for this isolated browser test.',
+    'source_label': 'Committed Inventory Snapshot',
+    'coverage_label': '0 / 0',
+    'coverage_supporting': 'No active scope',
+    'coverage_tone': 'unknown',
+    'exception_label': 'No Exceptions',
+    'exceptions_supporting': 'No issues detected',
+    'exceptions_tone': 'normal',
+}
+
+
 EMPTY_INVENTORY_OVERVIEW = {
     'total_clusters': 0,
     'total_nodes': 0,
@@ -214,6 +240,10 @@ def kaori_authenticated_base_url() -> Iterator[str]:
         patch(
             'app.kubernetes.inventory.routes.get_inventory_overview',
             return_value=EMPTY_INVENTORY_OVERVIEW,
+        ),
+        patch(
+            'app.kubernetes.inventory.routes.get_inventory_freshness_context',
+            return_value=EMPTY_INVENTORY_FRESHNESS,
         ),
     ):
         server = make_server('127.0.0.1', 0, app, threaded=True)
