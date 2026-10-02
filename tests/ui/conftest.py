@@ -148,6 +148,15 @@ EMPTY_INTELLIGENCE_OVERVIEW = {
 }
 
 
+EMPTY_OBJECT_STORAGE_OVERVIEW = {
+    'setup': {
+        'is_blocked': True,
+        'registered_systems': 0,
+        'state': 'setup_required',
+    },
+}
+
+
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     if 'kaori_viewport' not in metafunc.fixturenames:
         return
@@ -270,6 +279,10 @@ def kaori_authenticated_base_url() -> Iterator[str]:
         patch(
             'app.intelligence.routes.get_intelligence_overview_payload',
             return_value=EMPTY_INTELLIGENCE_OVERVIEW,
+        ),
+        patch(
+            'app.storage.object_storage.inventory.routes.build_overview',
+            return_value=EMPTY_OBJECT_STORAGE_OVERVIEW,
         ),
     ):
         server = make_server('127.0.0.1', 0, app, threaded=True)
