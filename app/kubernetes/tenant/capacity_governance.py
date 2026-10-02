@@ -21,6 +21,25 @@ from app.kubernetes.tenant.capacity import (
     evaluate_allocation_preflight,
     quota_request_vector,
 )
+from app.kubernetes.tenant.capacity_governance_support import (
+    _budget,
+    _budget_json,
+    _datetime_text,
+    _headroom,
+    _logical_storage_budget_vector,
+    _nonnegative_integer,
+    _nonnegative_quantity,
+    _optional_positive_gib_quantity,
+    _optional_positive_quantity,
+    _percent,
+    _policy_json,
+    _snapshot_cutoff,
+    _state_reason,
+    _text,
+    _unknown_evidence_decision,
+    _vector_display,
+    _vector_json,
+)
 from app.models import Cluster
 from app.models.tenant import (
     Tenant,
@@ -57,6 +76,16 @@ class _DecisionEvidenceContext:
     proposed: CapacityVector
     committed_count: int
     snapshot_result: SnapshotResult
+
+
+@dataclass(frozen=True, slots=True)
+class _AllocationRequest:
+    profile: TenantResourceProfile
+    namespace: str
+    current: CapacityVector
+    proposed: CapacityVector
+    operation: str
+    allocation_scope: str = 'namespace'
 
 
 def upsert_capacity_policy(source: Mapping[str, Any]) -> TenantCapacityPolicy:
@@ -203,11 +232,13 @@ def enforce_namespace_allocation_preflight(
 ) -> TenantCapacityDecision:
     return _enforce_allocation_preflight(
         tenant_environment=tenant_environment,
-        profile=profile,
-        namespace=namespace,
-        current=CapacityVector(cpu=_ZERO, memory_bytes=_ZERO, pods=_ZERO, storage_bytes=_ZERO),
-        proposed=quota_request_vector(quota_hard),
-        operation='create',
+        request=_AllocationRequest(
+            profile=profile,
+            namespace=namespace,
+            current=CapacityVector(cpu=_ZERO, memory_bytes=_ZERO, pods=_ZERO, storage_bytes=_ZERO),
+            proposed=quota_request_vector(quota_hard),
+            operation='create',
+        ),
     )
 
 
@@ -222,11 +253,13 @@ def enforce_existing_namespace_allocation_preflight(
     operation = classify_allocation_change(current=current, proposed=proposed)
     return _enforce_allocation_preflight(
         tenant_environment=record.environment,
-        profile=profile,
-        namespace=record.namespace,
-        current=current,
-        proposed=proposed,
-        operation=operation,
+        request=_AllocationRequest(
+            profile=profile,
+            namespace=record.namespace,
+            current=current,
+            proposed=proposed,
+            operation=operation,
+        ),
     )
 
 
@@ -269,13 +302,15 @@ def enforce_shared_tenant_allocation_preflight(
     return _enforce_allocation_preflight(
         tenant_environment=None,
         tenant=tenant,
-        profile=profile,
-        namespace=f'@tenant:{tenant.slug}',
-        current=current,
-        proposed=proposed,
-        operation=operation,
+        request=_AllocationRequest(
+            profile=profile,
+            namespace=f'@tenant:{tenant.slug}',
+            current=current,
+            proposed=proposed,
+            operation=operation,
+            allocation_scope='tenant_shared',
+        ),
         committed_state=committed_state,
-        allocation_scope='tenant_shared',
     )
 
 
@@ -388,29 +423,26 @@ def enforce_capsule_tenant_resource_quota_preflight(
     return _enforce_allocation_preflight(
         tenant_environment=None,
         tenant=tenant,
-        profile=profile,
-        namespace=f'@tenant:{tenant.slug}:resource-quotas',
-        current=current,
-        proposed=proposed,
-        operation=operation,
-        committed_state=committed_state,
-        allocation_scope=(
-            'tenant_shared' if str(proposed_scope or 'Tenant') == 'Tenant' else 'tenant_namespace_template'
+        request=_AllocationRequest(
+            profile=profile,
+            namespace=f'@tenant:{tenant.slug}:resource-quotas',
+            current=current,
+            proposed=proposed,
+            operation=operation,
+            allocation_scope=(
+                'tenant_shared' if str(proposed_scope or 'Tenant') == 'Tenant' else 'tenant_namespace_template'
+            ),
         ),
+        committed_state=committed_state,
     )
 
 
 def _enforce_allocation_preflight(
     *,
     tenant_environment: TenantEnvironment | None,
-    profile: TenantResourceProfile,
-    namespace: str,
-    current: CapacityVector,
-    proposed: CapacityVector,
-    operation: str,
+    request: _AllocationRequest,
     tenant: Tenant | None = None,
     committed_state: tuple[CapacityVector, int, list[str]] | None = None,
-    allocation_scope: str = 'namespace',
 ) -> TenantCapacityDecision:
     resolved_tenant = tenant or (tenant_environment.tenant if tenant_environment is not None else None)
     if resolved_tenant is None:
@@ -422,23 +454,23 @@ def _enforce_allocation_preflight(
     policy = TenantCapacityPolicy.query.filter_by(cluster_id=cluster_id).first()
     snapshot_result = _read_capacity_snapshot(cluster_id)
     capacity, capacity_reason = _capacity_vector(snapshot_result)
-    positive_change = operation in {'create', 'increase'}
+    positive_change = request.operation in {'create', 'increase'}
 
     budget: TenantAllocationBudget | None = None
     if policy is None:
         pure = _unknown_evidence_decision(
             reason='Tenant Capacity Governance policy is not configured for the selected cluster.',
             committed=committed,
-            current=current,
-            proposed=proposed,
+            current=request.current,
+            proposed=request.proposed,
             positive_change=positive_change,
         )
     elif capacity is None:
         pure = _unknown_evidence_decision(
             reason=capacity_reason,
             committed=committed,
-            current=current,
-            proposed=proposed,
+            current=request.current,
+            proposed=request.proposed,
             positive_change=positive_change,
         )
     else:
@@ -452,16 +484,16 @@ def _enforce_allocation_preflight(
             pure = _unknown_evidence_decision(
                 reason=commitment_reason,
                 committed=committed,
-                current=current,
-                proposed=proposed,
+                current=request.current,
+                proposed=request.proposed,
                 positive_change=positive_change,
             )
         else:
             pure = evaluate_allocation_preflight(
                 budget=budget.available,
                 committed_before=committed,
-                current_allocation=current,
-                proposed_allocation=proposed,
+                current_allocation=request.current,
+                proposed_allocation=request.proposed,
                 capacity_evidence_available=True,
             )
 
@@ -469,20 +501,19 @@ def _enforce_allocation_preflight(
         cluster_id=cluster_id,
         tenant_environment=tenant_environment,
         tenant=resolved_tenant,
-        profile=profile,
-        namespace=namespace,
-        operation=operation,
+        request=request,
+        
         pure=pure,
         evidence=_DecisionEvidenceContext(
             policy=policy,
             budget=budget,
             committed_before=committed,
-            current=current,
-            proposed=proposed,
+            current=request.current,
+            proposed=request.proposed,
             committed_count=committed_count,
             snapshot_result=snapshot_result,
         ),
-        allocation_scope=allocation_scope,
+        
     )
     if not pure.allowed:
         db.session.commit()
@@ -495,27 +526,24 @@ def _persist_decision(
     cluster_id: str,
     tenant_environment: TenantEnvironment | None,
     tenant: Tenant,
-    profile: TenantResourceProfile,
-    namespace: str,
-    operation: str,
+    request: _AllocationRequest,
     pure: AllocationPreflightDecision,
     evidence: _DecisionEvidenceContext,
-    allocation_scope: str,
 ) -> TenantCapacityDecision:
     record = TenantCapacityDecision()
     record.cluster_id = cluster_id
     record.tenant_environment_id = tenant_environment.id if tenant_environment is not None else None
-    record.resource_profile_id = profile.id
-    record.resource_profile_version = profile.version
-    record.namespace = namespace
-    record.operation = operation
+    record.resource_profile_id = request.profile.id
+    record.resource_profile_version = request.profile.version
+    record.namespace = request.namespace
+    record.operation = request.operation
     record.decision = pure.decision
     record.capacity_state = pure.state
     record.data_cutoff = _snapshot_cutoff(evidence.snapshot_result)
     record.evidence_json = {
         'version': 1,
         'authority': 'tenant_capacity_governance',
-        'allocation_scope': allocation_scope,
+        'allocation_scope': request.allocation_scope,
         'tenant_id': tenant.id,
         'decision': pure.decision,
         'state': pure.state,
@@ -768,254 +796,3 @@ def _committed_evidence_reason(
         f'At least one active Tenant allocation has unbounded or missing governed {dimensions} commitment; '
         'Committed and Headroom cannot be proven until the allocation contract is bounded.'
     )
-
-
-def _budget(policy: TenantCapacityPolicy, capacity: CapacityVector) -> TenantAllocationBudget:
-    storage_budget = _quantity(policy.tenant_storage_budget) if policy.tenant_storage_budget not in (None, '') else None
-    return build_tenant_allocation_budget(
-        allocatable=capacity,
-        reserve=CapacityVector(
-            cpu=_quantity(policy.platform_reserve_cpu),
-            memory_bytes=_quantity(policy.platform_reserve_memory),
-            pods=Decimal(policy.platform_reserve_pods),
-        ),
-        safety_headroom_percent=Decimal(policy.safety_headroom_percent),
-        unmanaged=CapacityVector(
-            cpu=_quantity(policy.unmanaged_commitment_cpu),
-            memory_bytes=_quantity(policy.unmanaged_commitment_memory),
-            pods=Decimal(policy.unmanaged_commitment_pods),
-        ),
-        logical_storage_budget=storage_budget,
-    )
-
-
-def _unknown_evidence_decision(
-    *,
-    reason: str,
-    committed: CapacityVector,
-    current: CapacityVector,
-    proposed: CapacityVector,
-    positive_change: bool,
-) -> AllocationPreflightDecision:
-    projected = _project(committed, current, proposed)
-    return AllocationPreflightDecision(
-        allowed=not positive_change,
-        decision='block' if positive_change else 'allow',
-        state='Unknown',
-        reason=(
-            reason
-            if positive_change
-            else f'{reason} This non-increasing allocation change is allowed because it does not add commitment.'
-        ),
-        projected_committed=projected,
-        projected_headroom=CapacityVector(cpu=None, memory_bytes=None, pods=None, storage_bytes=None),
-        shortfall=CapacityVector(cpu=None, memory_bytes=None, pods=None, storage_bytes=None),
-        positive_change=positive_change,
-    )
-
-
-def _project(
-    committed: CapacityVector,
-    current: CapacityVector,
-    proposed: CapacityVector,
-) -> CapacityVector:
-    return CapacityVector(
-        cpu=_project_dimension(committed.cpu, current.cpu, proposed.cpu),
-        memory_bytes=_project_dimension(committed.memory_bytes, current.memory_bytes, proposed.memory_bytes),
-        pods=_project_dimension(committed.pods, current.pods, proposed.pods),
-        storage_bytes=_project_dimension(
-            committed.storage_bytes,
-            current.storage_bytes,
-            proposed.storage_bytes,
-        ),
-    )
-
-
-def _project_dimension(
-    committed: Decimal | None,
-    current: Decimal | None,
-    proposed: Decimal | None,
-) -> Decimal | None:
-    if committed is None or current is None or proposed is None:
-        return None
-    return max(committed - current + proposed, _ZERO)
-
-
-def _headroom(budget: CapacityVector, committed: CapacityVector) -> CapacityVector:
-    return CapacityVector(
-        cpu=_difference(budget.cpu, committed.cpu),
-        memory_bytes=_difference(budget.memory_bytes, committed.memory_bytes),
-        pods=_difference(budget.pods, committed.pods),
-        storage_bytes=_difference(budget.storage_bytes, committed.storage_bytes),
-    )
-
-
-def _difference(left: Decimal | None, right: Decimal | None) -> Decimal | None:
-    if left is None or right is None:
-        return None
-    return left - right
-
-
-def _nonnegative_quantity(value: object | None, *, label: str) -> str:
-    rendered = str(value or '0').strip() or '0'
-    try:
-        parsed = Decimal(parse_quantity(rendered))
-    except (InvalidOperation, TypeError, ValueError) as exc:
-        raise ValueError(f'{label} must be a valid Kubernetes resource quantity.') from exc
-    if parsed < _ZERO:
-        raise ValueError(f'{label} cannot be negative.')
-    return rendered
-
-
-def _optional_positive_gib_quantity(value: object | None, *, label: str) -> str | None:
-    rendered = str(value or '').strip()
-    if not rendered:
-        return None
-    try:
-        parsed = Decimal(rendered)
-    except (InvalidOperation, TypeError, ValueError) as exc:
-        raise ValueError(f'{label} must be a positive numeric GiB value.') from exc
-    if parsed <= _ZERO:
-        raise ValueError(f'{label} must be greater than zero when configured.')
-    return f'{format(parsed.normalize(), "f")}Gi'
-
-
-def _quantity_gib_text(value: object | None) -> str | None:
-    if value in (None, ''):
-        return None
-    gib = _quantity(value) / _GIB
-    return format(gib.normalize(), 'f')
-
-
-def _logical_storage_budget_vector(policy: TenantCapacityPolicy) -> CapacityVector:
-    storage_budget = _quantity(policy.tenant_storage_budget) if policy.tenant_storage_budget not in (None, '') else None
-    return CapacityVector(
-        cpu=None,
-        memory_bytes=None,
-        pods=None,
-        storage_bytes=storage_budget,
-    )
-
-
-def _optional_positive_quantity(value: object | None, *, label: str) -> str | None:
-    rendered = str(value or '').strip()
-    if not rendered:
-        return None
-    try:
-        parsed = Decimal(parse_quantity(rendered))
-    except (InvalidOperation, TypeError, ValueError) as exc:
-        raise ValueError(f'{label} must be a valid Kubernetes resource quantity.') from exc
-    if parsed <= _ZERO:
-        raise ValueError(f'{label} must be greater than zero when configured.')
-    return rendered
-
-
-def _nonnegative_integer(value: object | None, *, label: str) -> int:
-    rendered = str(value or '0').strip() or '0'
-    if not rendered.isdigit():
-        raise ValueError(f'{label} must be a non-negative integer.')
-    return int(rendered)
-
-
-def _quantity(value: object) -> Decimal:
-    try:
-        return Decimal(parse_quantity(str(value).strip()))
-    except (InvalidOperation, TypeError, ValueError) as exc:
-        raise ValueError('Stored Tenant Capacity Governance policy contains an invalid quantity.') from exc
-
-
-def _percent(value: object | None) -> int:
-    rendered = str(value or '').strip()
-    if not rendered.isdigit():
-        raise ValueError('Safety headroom must be a whole percentage from 0 to 99.')
-    parsed = int(rendered)
-    if parsed < 0 or parsed >= 100:
-        raise ValueError('Safety headroom must be a whole percentage from 0 to 99.')
-    return parsed
-
-
-def _policy_json(policy: TenantCapacityPolicy) -> dict[str, Any]:
-    return {
-        'cluster_id': policy.cluster_id,
-        'platform_reserve_cpu': policy.platform_reserve_cpu,
-        'platform_reserve_memory': policy.platform_reserve_memory,
-        'platform_reserve_pods': policy.platform_reserve_pods,
-        'safety_headroom_percent': policy.safety_headroom_percent,
-        'unmanaged_commitment_cpu': policy.unmanaged_commitment_cpu,
-        'unmanaged_commitment_memory': policy.unmanaged_commitment_memory,
-        'unmanaged_commitment_pods': policy.unmanaged_commitment_pods,
-        'tenant_storage_budget': policy.tenant_storage_budget,
-        'tenant_storage_budget_gib': _quantity_gib_text(policy.tenant_storage_budget),
-    }
-
-
-def _budget_json(budget: TenantAllocationBudget) -> dict[str, Any]:
-    return {
-        'allocatable': _vector_json(budget.allocatable),
-        'reserve': _vector_json(budget.reserve),
-        'safety_headroom': _vector_json(budget.safety_headroom),
-        'unmanaged': _vector_json(budget.unmanaged),
-        'logical_storage_budget_bytes': _decimal_text(budget.logical_storage_budget),
-        'available': _vector_json(budget.available),
-    }
-
-
-def _vector_json(vector: CapacityVector) -> dict[str, str | None]:
-    return {
-        'cpu': _decimal_text(vector.cpu),
-        'memory_bytes': _decimal_text(vector.memory_bytes),
-        'pods': _decimal_text(vector.pods),
-        'storage_bytes': _decimal_text(vector.storage_bytes),
-    }
-
-
-def _vector_display(vector: CapacityVector) -> dict[str, str]:
-    return {
-        'cpu': _display_cpu(vector.cpu),
-        'memory': _display_memory(vector.memory_bytes),
-        'pods': _display_pods(vector.pods),
-        'storage': _display_storage(vector.storage_bytes),
-    }
-
-
-def _display_cpu(value: Decimal | None) -> str:
-    return 'N/A' if value is None else f'{value.quantize(Decimal("0.01"))} cores'
-
-
-def _display_memory(value: Decimal | None) -> str:
-    return 'N/A' if value is None else f'{(value / _GIB).quantize(Decimal("0.01"))} GiB'
-
-
-def _display_pods(value: Decimal | None) -> str:
-    return 'N/A' if value is None else f'{value.quantize(Decimal("1"))} pods'
-
-
-def _display_storage(value: Decimal | None) -> str:
-    return 'Not Governed' if value is None else f'{(value / _GIB).quantize(Decimal("0.01"))} GiB'
-
-
-def _decimal_text(value: Decimal | None) -> str | None:
-    return None if value is None else format(value, 'f')
-
-
-def _snapshot_cutoff(result: SnapshotResult) -> datetime | None:
-    return result.snapshot.generated_at if result.snapshot is not None else None
-
-
-def _datetime_text(value: datetime | None) -> str | None:
-    return value.isoformat() if value is not None else None
-
-
-def _state_reason(state: str) -> str:
-    return {
-        'Healthy': 'Governed Tenant allocation retains more than 40% capacity-budget headroom.',
-        'Near Capacity': 'Governed Tenant allocation has 40% or less capacity-budget headroom.',
-        'Critical': 'Governed Tenant allocation has 15% or less capacity-budget headroom.',
-        'Exhausted': 'Governed Tenant allocation has no remaining capacity-budget headroom.',
-        'Overcommitted': 'Committed Tenant allocation exceeds the governed capacity budget.',
-        'Unknown': 'Required capacity or commitment evidence is incomplete.',
-    }[state]
-
-
-def _text(source: Mapping[str, Any], key: str) -> str:
-    return str(source.get(key) or '').strip()
