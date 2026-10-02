@@ -11,6 +11,18 @@ python scripts/verify_final_release.py --all --runtime
 
 Use the narrowest owning test first, then broaden the evidence before release.
 
+### Developer Check validation plan
+
+Before running broader development validation, resolve the same changed-path plan used by GitHub Actions:
+
+```bash
+python scripts/developer_check_plan.py --base kaori/staging --head HEAD
+```
+
+The planner is the path/test-selection authority for both Local-First Dev Container work and GitHub Developer Check. It classifies direct capability impact, preserves existing shared/contract widening, and returns deterministic focused pytest paths. Unknown or shared impact widens rather than silently omitting coverage.
+
+Current capability-aware pilot: `app/kubernetes/tenant/**` selects Tenant behavior tests and existing Tenant-owned Kubernetes contracts instead of automatically selecting the entire Kubernetes behavior suite. Full Admission remains comprehensive at the frozen-candidate boundary.
+
 ### Targeted regression
 
 ```bash
