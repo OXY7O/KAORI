@@ -9,6 +9,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.common.pagination import paginate_sequence
 from app.extensions.db import db
+from app.kubernetes.tenant.allocation_observation import observe_capsule_tenant_resource_quota
 from app.kubernetes.tenant.capacity_governance import enforce_capsule_tenant_resource_quota_preflight
 from app.kubernetes.tenant.capsule_tenant_quota_contract import (
     _AUTHORITY,
@@ -25,15 +26,14 @@ from app.kubernetes.tenant.capsule_tenant_quota_provider import (
     _verify_effective,
 )
 from app.kubernetes.tenant.capsule_tenant_quota_support import (
-    _GovernanceCommitContext,
     _allocation_baseline,
     _baseline_source,
     _baseline_tenant_quota,
     _canonical_hash,
     _capsule_capability_state,
-    _commit_governance as _commit_governance_impl,
     _desired_resource_quotas,
     _governance,
+    _GovernanceCommitContext,
     _lineage_profile,
     _managed_state,
     _namespace_count,
@@ -44,6 +44,10 @@ from app.kubernetes.tenant.capsule_tenant_quota_support import (
     _record_failure,
     _resource_quota_authority_context,
     _resource_quotas,
+    _tenant_evidence,
+)
+from app.kubernetes.tenant.capsule_tenant_quota_support import (
+    _commit_governance as _commit_governance_impl,
 )
 from app.kubernetes.tenant.providers import TenantProviderState
 from app.kubernetes.tenant.service import _validate_resource_profile_attachment_controls
