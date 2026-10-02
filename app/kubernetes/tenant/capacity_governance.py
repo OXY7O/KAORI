@@ -2,11 +2,9 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
-from datetime import datetime
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 from typing import Any
 
-from kubernetes.utils.quantity import parse_quantity
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions.db import db
@@ -15,7 +13,6 @@ from app.kubernetes.tenant.capacity import (
     AllocationPreflightDecision,
     CapacityVector,
     TenantAllocationBudget,
-    build_tenant_allocation_budget,
     classify_allocation_change,
     classify_capacity_state,
     evaluate_allocation_preflight,
@@ -55,7 +52,6 @@ from app.models.tenant_advanced import (
     TenantAdvancedCapabilityStatus,
 )
 
-_GIB = Decimal(1024**3)
 _ZERO = Decimal('0')
 
 
@@ -275,11 +271,13 @@ def enforce_observed_namespace_allocation_preflight(
     operation = classify_allocation_change(current=current, proposed=proposed)
     return _enforce_allocation_preflight(
         tenant_environment=record.environment,
-        profile=profile,
-        namespace=record.namespace,
-        current=current,
-        proposed=proposed,
-        operation=operation,
+        request=_AllocationRequest(
+            profile=profile,
+            namespace=record.namespace,
+            current=current,
+            proposed=proposed,
+            operation=operation,
+        ),
     )
 
 
@@ -502,7 +500,6 @@ def _enforce_allocation_preflight(
         tenant_environment=tenant_environment,
         tenant=resolved_tenant,
         request=request,
-        
         pure=pure,
         evidence=_DecisionEvidenceContext(
             policy=policy,
@@ -513,7 +510,6 @@ def _enforce_allocation_preflight(
             committed_count=committed_count,
             snapshot_result=snapshot_result,
         ),
-        
     )
     if not pure.allowed:
         db.session.commit()
