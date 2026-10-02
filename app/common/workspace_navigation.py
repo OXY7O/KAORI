@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any
+from typing import Any, cast
 
 from flask import url_for
 
@@ -176,7 +176,10 @@ def build_capability_navigation(
                 None,
                 url_for(
                     view.endpoint,
-                    **_preserved_context(query_args, _CAPABILITY_CONTEXT_KEYS.get(capability_key, ())),
+                    **cast(
+                        dict[str, Any],
+                        _preserved_context(query_args, _CAPABILITY_CONTEXT_KEYS.get(capability_key, ())),
+                    ),
                 ),
             )
             for view in visible_views
@@ -364,7 +367,7 @@ def build_sidebar_navigation(
                 'icon': capability.icon,
                 'href': url_for(
                     _resolved_capability_endpoint(workspace.key, capability, user),
-                    **context,
+                    **cast(dict[str, Any], context),
                 ),
                 'active': (active_workspace == workspace.key and capability.key == active_capability),
             }

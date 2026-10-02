@@ -300,7 +300,11 @@ def _write_custom_object(api, intent: TenantAdvancedCapabilityIntent, descriptor
         if expected_rv and current_rv and expected_rv != current_rv:
             raise ValueError('Capsule provider resourceVersion changed; refresh provider evidence before mutation.')
         if current_rv:
-            body.setdefault('metadata', {})['resourceVersion'] = current_rv
+            metadata_body = body.get('metadata')
+            if not isinstance(metadata_body, dict):
+                metadata_body = {}
+                body['metadata'] = metadata_body
+            metadata_body['resourceVersion'] = current_rv
 
     if descriptor.namespaced:
         namespace = _namespace_name(intent)
