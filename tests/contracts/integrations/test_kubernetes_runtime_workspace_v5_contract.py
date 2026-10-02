@@ -38,7 +38,9 @@ def test_runtime_decision_separates_runtime_and_validation_evidence():
     assert 'Runtime Posture' in source
     assert 'Validation Readiness' in source
     assert 'Observation Context' in source
-    assert 'Runtime health gates current operation; Full Validation readiness remains independently evaluated.' in source
+    assert (
+        'Runtime health gates current operation; Full Validation readiness remains independently evaluated.' in source
+    )
     assert 'Runtime Snapshot' not in source
 
 
