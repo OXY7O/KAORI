@@ -164,7 +164,8 @@ def test_setup_blockers_preserve_page_identity_from_kubernetes_to_object_storage
     object_storage_buckets = _read('app/templates/storage/object_storage/inventory/buckets/partials/_hero.html')
     object_storage_analytics = _read('app/templates/storage/object_storage/analytics/partials/_hero.html')
 
-    assert 'Kubernetes Operations Dashboard' in dashboard
+    assert "page_hero.operational_dashboard('Kubernetes Operations'" in dashboard
+    assert "'Dashboard'," in dashboard
     assert '{{ materialization_title }}' in k8s_analytics
     assert 'Kubernetes Governance Workspace' in governance
     assert 'TLS Certificate Governance' in tls_governance
