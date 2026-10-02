@@ -9,6 +9,8 @@ from kubernetes.client.rest import ApiException
 
 from app.access.rbac.decorators import any_permission_required, permission_required
 from app.common.pagination import paginate_sequence
+from app.kubernetes.tenant import routes_access as _routes_access
+from app.kubernetes.tenant import routes_credentials as _routes_credentials
 from app.kubernetes.tenant.admin_workspace import (
     get_access_grant_registry_context,
     get_tenant_summary_context,
@@ -56,6 +58,7 @@ from app.kubernetes.tenant.overview import dispatch_tenant_inventory_sync
 from app.kubernetes.tenant.route_common import (
     _csrf,
     _record,
+    _required_int,
     _tenant_active_section_context,
     _tenant_admin_section,
     _tenant_section_redirect,
@@ -72,7 +75,6 @@ from app.kubernetes.tenant.service import (
     get_capacity_decision_registry_context,
     get_namespace_registry_context,
     get_resource_profile_registry_context,
-    get_tenant_context,
     get_tenant_registry_context,
     provision_native_namespace_committed,
     reconcile_managed_native_namespace_committed,
@@ -1345,34 +1347,26 @@ def reconcile_namespace_route(namespace_id: int):
     return redirect(url_for('tenant.operations', tab='drift-reconcile'))
 
 
+create_group_route = _routes_access.create_group_route
+edit_tenant_group_route = _routes_access.edit_tenant_group_route
+retire_tenant_group_route = _routes_access.retire_tenant_group_route
+reactivate_tenant_group_route = _routes_access.reactivate_tenant_group_route
+add_user_membership_route = _routes_access.add_user_membership_route
+add_group_membership_route = _routes_access.add_group_membership_route
+reactivate_membership_route = _routes_access.reactivate_membership_route
+revoke_membership_route = _routes_access.revoke_membership_route
+create_access_grant_route = _routes_access.create_access_grant_route
+inspect_access_grant_route = _routes_access.inspect_access_grant_route
+reconcile_access_grant_route = _routes_access.reconcile_access_grant_route
+revoke_access_grant_route = _routes_access.revoke_access_grant_route
+create_human_credential_route = _routes_credentials.create_human_credential_route
+create_deployer_credential_route = _routes_credentials.create_deployer_credential_route
+_credential_feedback = _routes_credentials._credential_feedback
+generate_credential_material_route = _routes_credentials.generate_credential_material_route
+renew_credential_route = _routes_credentials.renew_credential_route
+suspend_credential_route = _routes_credentials.suspend_credential_route
+resume_credential_route = _routes_credentials.resume_credential_route
+revoke_credential_route = _routes_credentials.revoke_credential_route
 
-
-from app.kubernetes.tenant.routes_access import (
-    create_group_route as create_group_route,
-    edit_tenant_group_route as edit_tenant_group_route,
-    retire_tenant_group_route as retire_tenant_group_route,
-    reactivate_tenant_group_route as reactivate_tenant_group_route,
-    add_user_membership_route as add_user_membership_route,
-    add_group_membership_route as add_group_membership_route,
-    reactivate_membership_route as reactivate_membership_route,
-    revoke_membership_route as revoke_membership_route,
-    create_access_grant_route as create_access_grant_route,
-    inspect_access_grant_route as inspect_access_grant_route,
-    reconcile_access_grant_route as reconcile_access_grant_route,
-    revoke_access_grant_route as revoke_access_grant_route,
-    register_access_routes as register_access_routes,
-)
-from app.kubernetes.tenant.routes_credentials import (
-    create_human_credential_route as create_human_credential_route,
-    create_deployer_credential_route as create_deployer_credential_route,
-    _credential_feedback as _credential_feedback,
-    generate_credential_material_route as generate_credential_material_route,
-    renew_credential_route as renew_credential_route,
-    suspend_credential_route as suspend_credential_route,
-    resume_credential_route as resume_credential_route,
-    revoke_credential_route as revoke_credential_route,
-    register_credential_routes as register_credential_routes,
-)
-
-register_access_routes()
-register_credential_routes()
+_routes_access.register_access_routes()
+_routes_credentials.register_credential_routes()
