@@ -156,7 +156,7 @@ def test_revoked_membership_reactivation_preserves_grant_history_and_fails_close
     assert 'Reactivate' in registry
     assert "grant.status == 'active' or grant.reconciliation_status != 'revoked'" in grant_registry
     assert "url_for('tenant.reconcile_access_grant_route', grant_id=grant.id)" in grant_registry
-    assert 'old grants stay revoked' in workspace
+    assert 'Reactivation does not restore old grants.' in workspace
 
     assert 'Previous Access Grants remain revoked permanently' in docs
     assert 'new Access Grant' in docs

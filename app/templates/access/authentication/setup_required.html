@@ -3,6 +3,7 @@
 {% import "components/operational_callout.html" as operational_callout %}
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/table_primitives.html" as surface_ui %}
 {% import "components/terminal_command.html" as terminal_command %}
 {% block title %}Database Setup Required · KAORI{% endblock title %}
 {% block content %}
@@ -112,7 +113,7 @@
                             <span class="font-semibold">Encryption Key Requirement.</span>
                             Changing this value later can make stored integration credentials unreadable.
                         {% endcall %}
-                        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+                        <section class="{{ surface_ui.block_classes() }}"
                                  aria-label="Setup details">
                             <details data-kaori-setup-manual-commands>
                                 <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 text-sm font-semibold text-content-primary">

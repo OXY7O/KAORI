@@ -47,8 +47,8 @@ def test_auth_setup_workspace_uses_canonical_operational_hierarchy() -> None:
     assert '{% import "components/table_label.html" as table_label %}' in source
     assert '{% import "components/info_flow.html" as info_flow %}' in source
     assert '{% import "components/operational_section_card.html" as operational_section_card %}' in source
-    assert 'table_label.status_indicator_label("PostgreSQL Reachable", "normal")' in source
-    assert 'table_label.status_indicator_label("Schema Missing", "warning")' in source
+    assert "table_label.status_indicator_label('PostgreSQL Reachable', 'normal')" in source
+    assert "table_label.status_indicator_label('Schema Missing', 'warning')" in source
     assert 'operational_section_card.render(' in source
     assert 'info_flow.render(' in source
     assert '<ol ' not in source

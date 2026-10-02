@@ -95,7 +95,7 @@ def test_style_drift_verifier_matches_the_committed_baseline() -> None:
         ROOT,
         ROOT / 'docs' / 'architecture' / 'ui-style-debt-baseline.json',
     )
-    assert errors == []
+    assert errors == [], '\n'.join(errors)
 
 
 def test_static_quality_gate_runs_the_style_drift_verifier() -> None:

@@ -49,12 +49,15 @@ def test_forecast_workspace_uses_capacity_surface_grammar() -> None:
 
 def test_interactive_chart_contract_uses_tokens_and_visible_legend() -> None:
     template = read('app/templates/kubernetes/analytics/components/_interactive_forecast_chart.html')
+    legend = read('app/templates/components/resource_series_legend.html')
     script = read('app/static/js/kubernetes/analytics/forecast_chart.js')
-    assert 'bg-status-info' in template
-    assert 'bg-kaori-primary' in template
-    assert 'bg-status-normal' in template
-    assert 'bg-status-warning' in template
-    assert 'Historical' in template and 'Projection' in template
+    assert 'resource_series_legend.marker(' in template
+    assert 'resource_series_legend.render_all(' in template
+    assert 'bg-status-info' in legend
+    assert 'bg-kaori-primary' in legend
+    assert 'bg-status-normal' in legend
+    assert 'bg-status-warning' in legend
+    assert 'Historical' in legend and 'Projection' in legend
     assert 'legend: { display: false }' in script
     assert "cssToken('--kaori-status-info'" in script
     assert "cssToken('--kaori-brand-primary'" in script

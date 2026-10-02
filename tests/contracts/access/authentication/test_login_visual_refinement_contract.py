@@ -93,7 +93,7 @@ def test_login_sso_region_has_explicit_zero_one_two_provider_geometry() -> None:
     assert 'data-kaori-sso-provider-grid' in form
     assert '{% if sso_provider_rows|length > 1 %}sm:grid-cols-2{% endif %}' in form
     assert 'data-kaori-sso-provider="{{ provider.provider_key }}"' in form
-    assert 'class="inline-flex h-11 min-w-0 items-center justify-center' in form
+    assert 'class="inline-flex h-11 w-full min-w-0 items-center justify-center' in form
     assert '<span class="min-w-0 truncate">{{ provider.display_name }}</span>' in form
     assert 'aria-label="Continue with {{ provider.display_name }}"' in form
 
