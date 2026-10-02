@@ -248,7 +248,7 @@ def test_overview_hero_uses_canonical_lazy_context_card_body() -> None:
 
     for template in (source, loading):
         assert 'page_hero.context_card_body(' in template
-        assert "'Manage Clusters'" in template
+        assert "'Open Cluster Integrations'" in template
         assert template.count("('") >= 2
         assert 'context_posture_header' not in template
         assert 'context_posture_note' not in template

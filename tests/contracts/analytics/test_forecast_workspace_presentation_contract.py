@@ -25,7 +25,7 @@ def test_forecast_hero_uses_canonical_context_card() -> None:
     assert 'page_hero.context_card(' in content
     assert "('gauge', 'Highest Projection'" in content
     assert "('list-checks', 'Actionable'" in content
-    assert "'Manage Clusters'" in content
+    assert "'Open Cluster Integrations'" in content
     assert 'context_posture_header' not in content
     assert 'context_posture_note' not in content
     assert 'context_bottom_notice' not in content

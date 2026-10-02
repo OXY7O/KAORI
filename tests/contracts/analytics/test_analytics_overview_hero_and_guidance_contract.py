@@ -1,7 +1,7 @@
 from pathlib import Path
 
 
-def test_analytics_overview_hero_caps_metadata_and_uses_manage_clusters_action():
+def test_analytics_overview_hero_caps_metadata_and_uses_cluster_integrations_action():
     hero = Path('app/templates/kubernetes/analytics/overview/partials/_hero.html').read_text()
     assert "page_hero.analytics_metadata('server'" in hero
     assert 'hero_secondary_icon = "clock-3"' in hero
@@ -15,7 +15,7 @@ def test_analytics_overview_hero_caps_metadata_and_uses_manage_clusters_action()
     assert "'Analytics Status'" in posture
     assert 'metrics[:2]' in Path('app/templates/components/page_hero.html').read_text()
     assert "url_for('integrations.kubernetes')" in posture
-    assert 'Manage Clusters' in posture
+    assert 'Open Cluster Integrations' in posture
     assert 'context_bottom_notice' not in posture
 
 
