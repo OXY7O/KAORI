@@ -121,7 +121,7 @@ def test_developer_check_routes_changed_paths_and_fails_safe_for_authority_chang
         'docs/architecture/code-health-debt-baseline.json',
         'tests/contracts/release/',
         'docs/engineering/KAORI_DELIVERY_WORKFLOW.md',
-        "SOURCE_TEST_DOMAINS",
+        'SOURCE_TEST_DOMAINS',
         "'kubernetes': 'kubernetes'",
         "domain_root = f'tests/{test_domain}'",
         'tests/contracts/release',
