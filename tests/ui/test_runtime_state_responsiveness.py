@@ -39,7 +39,10 @@ def test_authentication_readiness_state_is_responsive_and_traceable(
         expect(page.get_by_role('heading', name='Database Setup Required')).to_be_visible()
         state_marker = page.get_by_text(STATE_MARKERS[state], exact=True)
         if state == 'database_unavailable':
-            state_marker = page.locator('span').filter(has_text=STATE_MARKERS[state])
+            state_marker = page.get_by_label('Database recovery context').get_by_text(
+                STATE_MARKERS[state],
+                exact=True,
+            )
         expect(state_marker).to_be_visible()
 
         layout = page.evaluate(
