@@ -211,6 +211,8 @@ _TENANT_SECTION_CONTEXT_BUILDERS = {
 def _tenant_active_section_context(section: str) -> dict[str, Any]:
     builder = _TENANT_SECTION_CONTEXT_BUILDERS.get(section)
     return builder() if builder is not None else {}
+
+
 def _required_int(name: str) -> int:
     value = str(request.form.get(name) or '').strip()
     if not value:
