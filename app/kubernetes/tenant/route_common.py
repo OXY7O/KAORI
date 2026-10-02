@@ -24,7 +24,6 @@ from app.kubernetes.tenant.workspace import (
 )
 from app.platform_operations.notifications.service import record_operational_activity
 
-
 tenant_bp = Blueprint('tenant', __name__, url_prefix='/kubernetes/tenant')
 
 
