@@ -484,16 +484,11 @@ def _legacy_reconcile_request(options: dict[str, Any]) -> _NativeAllocationRecon
         allocation_customized=bool(options['allocation_customized']),
         capacity_decision_id=options['capacity_decision_id'],
         quota_hard=dict(options['quota_hard']),
-        limit_defaults={
-            str(field): dict(values)
-            for field, values in dict(options['limit_defaults']).items()
-        },
+        limit_defaults={str(field): dict(values) for field, values in dict(options['limit_defaults']).items()},
         storage_policy=dict(options.get('storage_policy') or {}),
         operation=str(options.get('operation') or 'allocation_reconcile'),
         expected_observed_hash=(
-            str(options['expected_observed_hash'])
-            if options.get('expected_observed_hash') not in (None, '')
-            else None
+            str(options['expected_observed_hash']) if options.get('expected_observed_hash') not in (None, '') else None
         ),
         failure_status=str(options.get('failure_status') or 'failed'),
     )
