@@ -314,6 +314,7 @@ jobs:
           if [[ "$CHECK_PYTHON" == "true" ]]; then
             run_toolchain 'Ruff Check' python -m ruff check app migrations tests scripts
             run_toolchain 'Ruff Format' python -m ruff format --check app migrations tests scripts
+            run_toolchain 'UI Style Diagnostic' bash -lc 'python scripts/verify_ui_style.py || true'
           fi
 
           if [[ "$CHECK_PYTHON" == "true" && ( "$CHECK_WIDE" == "true" || "$CHECK_CONTRACTS" == "true" ) ]]; then
