@@ -31,8 +31,14 @@ def test_builtin_preset_ignores_submitted_resource_overrides() -> None:
         },
     )
 
-    assert quota == RESOURCE_PROFILE_PRESETS['standard']['quota']
-    assert limits == RESOURCE_PROFILE_PRESETS['standard']['limits']
+    assert quota == {
+        'requests.cpu': RESOURCE_PROFILE_PRESETS['standard']['quota']['requests.cpu'],
+    }
+    assert limits == {
+        'default': {
+            'cpu': RESOURCE_PROFILE_PRESETS['standard']['limits']['default']['cpu'],
+        }
+    }
     assert version == RESOURCE_PROFILE_PRESETS['standard']['version']
     assert base_class is None
     assert base_version is None
@@ -63,7 +69,7 @@ def test_blank_custom_profile_dimensions_are_explicitly_unbounded() -> None:
     assert limits == {}
 
 
-def test_namespace_allocation_uses_canonical_builtin_snapshot() -> None:
+def test_namespace_allocation_rehydrates_committed_builtin_mask_from_canonical_values() -> None:
     profile = SimpleNamespace(
         profile_class='standard',
         quota_hard_json={'requests.cpu': '99'},

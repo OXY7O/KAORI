@@ -554,9 +554,9 @@ def test_missing_compute_snapshot_keeps_logical_storage_budget_visible(monkeypat
     )
 
     monkeypatch.setattr(
-        capacity_governance.TenantCapacityPolicy,
-        'query',
-        SimpleNamespace(filter_by=lambda **kwargs: SimpleNamespace(first=lambda: policy)),
+        capacity_governance,
+        'TenantCapacityPolicy',
+        SimpleNamespace(query=SimpleNamespace(filter_by=lambda **kwargs: SimpleNamespace(first=lambda: policy))),
     )
     monkeypatch.setattr(
         capacity_governance,

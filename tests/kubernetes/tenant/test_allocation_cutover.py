@@ -95,7 +95,7 @@ def test_successful_control_state_is_separate_from_namespace_ownership():
 
     state = build_allocation_cutover_state(record)
 
-    assert record.ownership_status == 'managed'
+    assert record.ownership_status == 'adopted'
     assert allocation_control_state(record) == 'kaori_managed'
     assert state['supported'] is False
     assert state['state'] == 'kaori_managed'
@@ -242,7 +242,7 @@ def test_verified_native_cutover_transfers_namespace_and_allocation_control_to_k
         operation='allocation_governance_cutover',
     )
 
-    assert record.ownership_status == 'managed'
+    assert record.ownership_status == 'adopted'
     assert allocation_control_state(record) == 'kaori_managed'
     assert record.desired_hash == 'after-hash'
     assert record.effective_hash == 'after-hash'
@@ -414,5 +414,5 @@ def test_storage_only_takeover_keeps_limit_range_and_pvc_policy(monkeypatch) -> 
     assert pvc_items[0].min == {'storage': '1Gi'}
     assert pvc_items[0].max == {'storage': '10Gi'}
     assert record.allocation_storage_policy_json == {'min': '1Gi', 'max': '10Gi'}
-    assert record.ownership_status == 'managed'
+    assert record.ownership_status == 'adopted'
     assert allocation_control_state(record) == 'kaori_managed'
