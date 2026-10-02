@@ -174,7 +174,7 @@ def main() -> int:
         'components/table_label.html',
         'components/operational_section_card.html',
         'Operations Center',
-        'Platform Overview',
+        '>Overview</h1>',
         'Platform Posture',
         'Workspace Posture',
         'Operating Boundaries',
