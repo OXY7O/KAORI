@@ -18,7 +18,10 @@ from app.kubernetes.tenant.admin_workspace import (
 )
 from app.kubernetes.tenant.discovery_service import get_tenant_discovery_context
 from app.kubernetes.tenant.service import get_tenant_context, get_tenant_registry_context
-from app.kubernetes.tenant.workspace import get_tenant_sync_workspace_context, get_tenant_workspace_context
+from app.kubernetes.tenant.workspace import (
+    get_tenant_sync_workspace_context,
+    get_tenant_workspace_context,
+)
 from app.platform_operations.notifications.service import record_operational_activity
 
 
