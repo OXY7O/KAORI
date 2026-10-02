@@ -20,6 +20,8 @@ Use the template that owns the runtime you are configuring:
 
 The Dev Container contract is intentionally comprehensive because engineering needs supported settings to be discoverable and directly overridable during development.
 
+`WAIT_FOR_SCHEMA` is a development/Dev Container orchestration control. The committed development template documents it as `false`, while the Dev Container worker and Beat service definitions override it to `true` so background processing waits for the exact current Alembic migration head. It is not a production application setting; production keeps the governed backup/migration/start sequence.
+
 The disposable RC-image example is intentionally minimal because it runs an already-admitted production image. It overrides only release identity, disposable local credentials/bootstrap values, localhost publication, and proxy trust; reviewed safe application defaults remain owned by application source and the image.
 
 Production is intentionally split by responsibility so portable application policy, runtime secrets, deployment-adapter settings, and generated immutable release identity can change independently without recreating a monolithic environment file.
