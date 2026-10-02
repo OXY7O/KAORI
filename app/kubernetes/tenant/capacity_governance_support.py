@@ -269,3 +269,35 @@ def _state_reason(state: str) -> str:
 
 def _text(source: Mapping[str, Any], key: str) -> str:
     return str(source.get(key) or '').strip()
+
+
+def _committed_evidence_reason(
+    committed: CapacityVector,
+    unbounded_namespaces: list[str] | None = None,
+    *,
+    budget: CapacityVector | None = None,
+) -> str | None:
+    governed = budget or CapacityVector(cpu=_ZERO, memory_bytes=_ZERO)
+    required = (
+        ('CPU', governed.cpu, committed.cpu),
+        ('memory', governed.memory_bytes, committed.memory_bytes),
+        ('Pods', governed.pods, committed.pods),
+        ('storage', governed.storage_bytes, committed.storage_bytes),
+    )
+    missing = [label for label, limit, value in required if limit is not None and value is None]
+    if not missing:
+        return None
+
+    names = list(unbounded_namespaces or [])
+    dimensions = ', '.join(missing)
+    if names:
+        visible = ', '.join(names[:3])
+        suffix = f' +{len(names) - 3} more' if len(names) > 3 else ''
+        return (
+            f'Unbounded or missing governed {dimensions} commitment on active Namespace(s): '
+            f'{visible}{suffix}. Apply a bounded Resource Profile allocation before positive changes.'
+        )
+    return (
+        f'At least one active Tenant allocation has unbounded or missing governed {dimensions} commitment; '
+        'Committed and Headroom cannot be proven until the allocation contract is bounded.'
+    )
