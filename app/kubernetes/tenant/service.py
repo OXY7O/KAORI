@@ -44,7 +44,6 @@ from app.models.tenant import (
     TenantResourceProfileClass,
 )
 
-
 _advanced_profile_controls = _resource_profile_controls._advanced_profile_controls
 _control_contract_present = _resource_profile_controls._control_contract_present
 _control_enabled = _resource_profile_controls._control_enabled
