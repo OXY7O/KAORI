@@ -25,7 +25,11 @@ def _tenant_service_source() -> str:
 
 
 def _tenant_discovery_source() -> str:
-    return _read('app/kubernetes/tenant/discovery_service.py') + '\n' + _read('app/kubernetes/tenant/discovery_adoption.py')
+    return (
+        _read('app/kubernetes/tenant/discovery_service.py')
+        + '\n'
+        + _read('app/kubernetes/tenant/discovery_adoption.py')
+    )
 
 
 def test_tenant_is_a_kubernetes_sidebar_capability_under_v21() -> None:
