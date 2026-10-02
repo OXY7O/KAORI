@@ -5,6 +5,8 @@ ROOT = Path(__file__).resolve().parents[3]
 NODE_VERSION = '22.23.2'
 NPM_VERSION = '10.9.9'
 PYRIGHT_VERSION = '1.1.414'
+URLLIB3_VERSION = '2.8.0'
+OAUTHLIB_VERSION = '4.0.0'
 
 
 def read(path: str) -> str:
@@ -44,6 +46,21 @@ def test_pyright_is_reproducibly_pinned() -> None:
     assert f'pyright=={PYRIGHT_VERSION}' in dev_lock
     assert 'pyright>=1.1.400,<2' not in dev_in
     assert 'pyright>=1.1.400,<2' not in dev_lock
+
+
+def test_runtime_security_dependency_floor_is_reproducibly_pinned() -> None:
+    base_in = read('requirements/base.in')
+    base_lock = read('requirements/base.txt')
+
+    assert f'urllib3=={URLLIB3_VERSION}' in base_in
+    assert f'urllib3=={URLLIB3_VERSION}' in base_lock
+    assert 'urllib3==2.7.0' not in base_in
+    assert 'urllib3==2.7.0' not in base_lock
+
+    assert f'oauthlib=={OAUTHLIB_VERSION}' in base_in
+    assert f'oauthlib=={OAUTHLIB_VERSION}' in base_lock
+    assert 'oauthlib==3.3.1' not in base_in
+    assert 'oauthlib==3.3.1' not in base_lock
 
 
 def test_frontend_dependency_lock_remains_package_manager_owned() -> None:
