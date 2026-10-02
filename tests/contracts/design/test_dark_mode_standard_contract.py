@@ -29,7 +29,7 @@ def test_dark_mode_document_is_registered_as_authoritative() -> None:
     assert 'locked neutral-first dark surface' in entrypoint
     assert '80% neutral operational surfaces' in standard
     assert 'The only approved exception is the canonical dark Hero gradient' in standard
-    assert 'Deep Violet contextual surfaces' in standard
+    assert 'Soft Violet contextual surfaces' in standard
     assert 'components/related_page_card.html' in standard
 
 
@@ -38,11 +38,19 @@ def test_obsolete_raw_slate_topbar_is_removed() -> None:
     assert not obsolete.exists()
 
 
-def test_related_page_card_uses_the_global_deep_violet_context_surface() -> None:
+def test_related_page_card_uses_the_global_soft_violet_context_surface() -> None:
     component = (ROOT / 'app' / 'templates' / 'components' / 'related_page_card.html').read_text(encoding='utf-8')
+    styles = (ROOT / 'frontend' / 'styles.css').read_text(encoding='utf-8')
     standard = (ROOT / 'docs' / 'design' / 'components' / 'RELATED_PAGE_CARD.md').read_text(encoding='utf-8')
 
-    assert 'kaori-brand-domain-panel' in component
-    assert 'dark:bg-surface-card' not in component
-    assert '#2F1A4F' in standard
-    assert 'do not add page-local `dark:bg-*` overrides' in standard
+    assert 'data-kaori-related-workspace-card' in component
+    assert 'bg-kaori-soft' in component
+    assert 'border-kaori-primary/20' in component
+    assert 'text-content-primary' in component
+    assert 'text-content-secondary' in component
+    assert 'bg-kaori-primary' in component
+    assert 'kaori-brand-domain-panel' not in component
+    assert '--kaori-brand-domain-panel' not in styles
+    assert '.kaori-brand-domain-panel' not in styles
+    assert 'soft Violet contextual' in standard
+    assert 'full solid/deep Violet panel' in standard

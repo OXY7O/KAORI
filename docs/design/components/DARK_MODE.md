@@ -6,7 +6,7 @@
 
 This document is the authoritative contract for dark-mode color, surface hierarchy, brand emphasis, contrast, and shared-shell behavior across authenticated KAORI pages.
 
-Dark mode is not a direct inversion of light mode. It uses layered neutral surfaces for operational readability, reserves bright Violet for identity, focus, selection, and primary interaction, and permits a sparse deep-Violet contextual surface for explicit workspace/domain handoffs.
+Dark mode is not a direct inversion of light mode. It uses layered neutral surfaces for operational readability and reserves Violet for identity, focus, selection, primary interaction, and restrained soft contextual emphasis.
 
 ## Core principle
 
@@ -106,7 +106,6 @@ Dark brand tokens:
 | Primary pressed/dark | `#6D28D9` |
 | Accent | `#C4B5FD` |
 | Soft selected surface | Violet at 12–14% opacity |
-| Contextual Violet surface | `#2F1A4F` via `.kaori-brand-domain-panel` |
 
 Bright Violet is permitted for:
 
@@ -128,25 +127,19 @@ Bright Violet is prohibited as the default color for:
 - operational health, warning, critical, or unknown state;
 - large repeated surfaces below the Hero.
 
-### Deep Violet contextual surfaces
+### Soft Violet contextual surfaces
 
-A solid deep-Violet surface is allowed below the Hero only when the component represents an explicit **workspace/domain relationship**, not ordinary content. The canonical implementation is `.kaori-brand-domain-panel`, which resolves to `#2F1A4F` in dark mode.
+A contextual workspace handoff may use the shared **soft Violet** treatment when relationship context needs KAORI identity without competing with the Hero or operational state.
 
-Approved uses:
+The canonical Related Workspace implementation is `components/related_page_card.html`:
 
-- `components/related_page_card.html` for one related KAORI destination;
-- the internal domain panel of a catalog/grouping component such as `components/welcome_capability_group.html`.
+- `bg-kaori-soft` for the contextual surface;
+- controlled Violet border/icon/eyebrow emphasis;
+- normal `content-primary` / `content-secondary` typography;
+- `surface-card` for the optional authority-boundary callout;
+- solid `bg-kaori-primary` only for the primary relationship action.
 
-Rules:
-
-- use the shared `.kaori-brand-domain-panel`; never create a page-local dark Violet hex or gradient;
-- keep on-brand text through `brand-foreground` / `brand-foreground-muted`;
-- internal supporting boxes use `brand-surface` / `brand-surface-strong`;
-- the surface is contextual navigation/identity, never health or status;
-- keep it sparse: normally one contextual Violet card in a right rail or one domain panel within a grouped section;
-- ordinary cards, tables, forms, modals, drawers, and repeated records remain neutral.
-
-This is a controlled deep-Violet exception, not permission to make supporting operational surfaces Bright Violet.
+The retired `.kaori-brand-domain-panel` / `--kaori-brand-domain-panel` solid/deep-Violet treatment must not return. Contextual identity is never an operational health/status color and page-local Violet variants remain prohibited.
 
 ## Pre-paint shell bootstrap
 
@@ -237,7 +230,7 @@ Dark card hover behavior:
 - shadow remains restrained;
 - an ordinary/repeated card must not become Violet.
 
-Large catalog grouping panels use `surface-card`. On the Welcome product landing page only, the capability-group anchor uses the exact shared Hero surface through `.kaori-hero-shell`, including the canonical dark Hero gradient, so category orientation and page identity stay visually consistent. This Welcome-only exception must remain smaller and action-free and must not be copied into ordinary content. `Related Page Card` continues to use the controlled deep-Violet `.kaori-brand-domain-panel` because it is explicit contextual navigation rather than an ordinary content card.
+Large catalog grouping panels use `surface-card`. On the Welcome product landing page only, the capability-group anchor uses the exact shared Hero surface through `.kaori-hero-shell`, including the canonical dark Hero gradient, so category orientation and page identity stay visually consistent. This Welcome-only exception must remain smaller and action-free and must not be copied into ordinary content. `Related Page Card` uses the shared soft-Violet contextual treatment from #751 rather than a full solid/deep-Violet panel.
 
 ## Semantic status colors
 
@@ -291,7 +284,7 @@ Required outcomes:
 - WCAG AA text contrast;
 - surface layers are distinguishable without relying on shadows;
 - primary content remains readable during long operational sessions;
-- no large region uses Bright Violet except the controlled Hero identity surface; sparse contextual navigation/domain surfaces may use the documented deep-Violet `.kaori-brand-domain-panel`;
+- no large region uses Bright Violet except the controlled Hero identity surface; contextual workspace handoffs use the documented soft-Violet treatment;
 - dark mode does not expose raw light-only surfaces.
 
 ## Prohibited patterns
