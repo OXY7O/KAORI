@@ -457,9 +457,10 @@ def main() -> int:
             f'{relative} must allow its header Info Tip to escape the card boundary.',
             errors,
         )
+    secret_create_surface = 'surface_shell_classes(form_context.main_classes(),true)'
+    compact_secret_create = ''.join(secret_create.split())
     require(
-        'surface_shell_classes(form_context.main_classes(),true)'
-        in ''.join(secret_create.split()),
+        secret_create_surface in compact_secret_create,
         'Secret Create must allow its header Info Tip to escape the card boundary.',
         errors,
     )
