@@ -54,6 +54,11 @@
                 activeElement instanceof HTMLTextAreaElement ||
                 activeElement?.isContentEditable
 
+            if (event.key === '/' && !editingText) {
+                event.preventDefault()
+                searchInput.focus()
+            }
+
             if (event.key === 'Escape' && activeElement === searchInput) {
                 searchInput.value = ''
                 updateResults()
