@@ -134,3 +134,34 @@ The common Security workspace therefore never assumes that ECR, Google Artifact 
 Signature presence and trust are deliberately separate facts. A signature accessory may be observed while `trust_state` remains `not_evaluated`. This prevents KAORI from implying policy verification it did not perform.
 
 Vulnerability findings remain committed evidence. They are not copied one-for-one into Alert Intelligence. Escalation belongs to later cross-domain intelligence where severity, fixability, runtime deployment, policy sensitivity, and other operational context can be correlated.
+
+
+## Kubernetes runtime correlation
+
+Issue #897 materializes cross-domain bindings from committed Artifact Registry and Kubernetes inventory. No correlation page performs a live Registry or Kubernetes API request.
+
+```text
+committed RegistryArtifact(digest)
+        +
+committed PodInventory container image/imageID evidence
+        ↓
+RegistryWorkloadBinding
+        ↓
+Runtime Usage / blast radius
+```
+
+Matching precedence is conservative:
+
+1. A digest from Kubernetes `imageID` or the image reference is preferred.
+2. When a repository path is present, it must agree with the canonical Registry project/repository path.
+3. When an explicit registry host is present, it must agree with provider-normalized `registry_hosts` evidence.
+4. A unique digest match is `authoritative`.
+5. Only when no digest exists may a unique repository + tag match be recorded as `weak`.
+6. Multiple candidates are recorded as ambiguous with no canonical artifact binding.
+7. Unmatched references remain visible as evidence; KAORI does not invent a Registry identity.
+
+Harbor publishes normalized registry host aliases during its normal inventory collection. Future Registry adapters should publish equivalent host aliases without changing correlation logic.
+
+Each materialized row preserves both evidence sides: Registry provider/source and Registry observation time, Kubernetes cluster/namespace/Pod/container and Kubernetes observation time, plus the original image reference and runtime image ID.
+
+The Runtime Usage view is protected by `artifact_registry.runtime_correlation.view`, which depends on both `artifact_registry.view` and `inventory.view`. Vulnerability rows can drill into an artifact-scoped runtime blast radius without weakening this cross-domain authorization boundary.
