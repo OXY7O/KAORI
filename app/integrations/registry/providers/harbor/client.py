@@ -90,6 +90,9 @@ class HarborClient:
         repository_name: str,
         page: int = 1,
         page_size: int = 100,
+        with_scan_overview: bool = False,
+        with_signature: bool = False,
+        with_accessory: bool = False,
     ) -> list[dict[str, Any]]:
         project_scope = str(project_name_or_id).strip()
         repository_scope = str(repository_name).strip()
@@ -103,14 +106,73 @@ class HarborClient:
                 'page': page,
                 'page_size': page_size,
                 'with_tag': 'true',
-                'with_scan_overview': 'false',
-                'with_signature': 'false',
+                'with_scan_overview': str(bool(with_scan_overview)).lower(),
+                'with_signature': str(bool(with_signature)).lower(),
                 'with_immutable_status': 'false',
                 'with_label': 'false',
-                'with_accessory': 'false',
+                'with_accessory': str(bool(with_accessory)).lower(),
             },
         )
         return self._object_list(payload, 'artifacts')
+
+    def get_artifact(
+        self,
+        *,
+        project_name_or_id: str | int,
+        repository_name: str,
+        reference: str,
+        with_scan_overview: bool = True,
+        with_signature: bool = True,
+        with_accessory: bool = True,
+    ) -> dict[str, Any]:
+        project_scope = str(project_name_or_id).strip()
+        repository_scope = str(repository_name).strip()
+        artifact_reference = str(reference).strip()
+        if not project_scope or not repository_scope or not artifact_reference:
+            raise HarborResponseError('Harbor project, repository, and artifact reference are required.')
+        encoded_project = quote(project_scope, safe='')
+        encoded_repository = quote(repository_scope, safe='')
+        encoded_reference = quote(artifact_reference, safe='')
+        payload = self._request_json(
+            f'/api/v2.0/projects/{encoded_project}/repositories/{encoded_repository}/artifacts/{encoded_reference}',
+            params={
+                'with_tag': 'true',
+                'with_scan_overview': str(bool(with_scan_overview)).lower(),
+                'with_signature': str(bool(with_signature)).lower(),
+                'with_immutable_status': 'false',
+                'with_label': 'false',
+                'with_accessory': str(bool(with_accessory)).lower(),
+            },
+        )
+        if not isinstance(payload, dict):
+            raise HarborResponseError('Harbor artifact response is not an object.')
+        return payload
+
+    def get_artifact_addition(
+        self,
+        *,
+        project_name_or_id: str | int,
+        repository_name: str,
+        reference: str,
+        addition: str,
+    ) -> dict[str, Any]:
+        project_scope = str(project_name_or_id).strip()
+        repository_scope = str(repository_name).strip()
+        artifact_reference = str(reference).strip()
+        addition_scope = str(addition).strip()
+        if not project_scope or not repository_scope or not artifact_reference or not addition_scope:
+            raise HarborResponseError('Harbor artifact addition scope is incomplete.')
+        encoded_project = quote(project_scope, safe='')
+        encoded_repository = quote(repository_scope, safe='')
+        encoded_reference = quote(artifact_reference, safe='')
+        encoded_addition = quote(addition_scope, safe='')
+        payload = self._request_json(
+            f'/api/v2.0/projects/{encoded_project}/repositories/{encoded_repository}/artifacts/'
+            f'{encoded_reference}/additions/{encoded_addition}'
+        )
+        if not isinstance(payload, dict):
+            raise HarborResponseError('Harbor artifact addition response is not an object.')
+        return payload
 
     @staticmethod
     def _object_list(payload: Any, label: str) -> list[dict[str, Any]]:

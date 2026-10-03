@@ -47,6 +47,11 @@ from app.models.notification_channel import NotificationChannel, NotificationDel
 from app.models.object_storage import ObjectStorageBucket, ObjectStorageSystem
 from app.models.object_storage_analytics import ObjectStorageAnalyticsSnapshot, ObjectStorageForecastSnapshot
 from app.models.rbac import Permission, Role, RolePermission
+from app.models.registry_security import (
+    RegistryArtifactSecuritySnapshot,
+    RegistrySecurityCollectionState,
+    RegistryVulnerabilityFinding,
+)
 from app.models.registry_artifact import (
     RegistryArtifact,
     RegistryCollectionState,
@@ -199,6 +204,9 @@ __all__ = [
     'RegistryRepository',
     'RegistryArtifact',
     'RegistryTag',
+    'RegistrySecurityCollectionState',
+    'RegistryArtifactSecuritySnapshot',
+    'RegistryVulnerabilityFinding',
     'WorkloadInventory',
     'PodInventory',
     'ServiceInventory',
