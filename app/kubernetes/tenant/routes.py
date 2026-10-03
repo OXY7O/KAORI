@@ -374,8 +374,6 @@ def namespace_provisioning():
     )
 
 
-@tenant_bp.get('/operations')
-@any_permission_required('tenant.view', 'tenant.manage')
 def _operations_active_tab() -> str:
     active_tab = str(request.args.get('tab') or 'provisioning')
     if active_tab not in {'provisioning', 'runs-evidence', 'drift-reconcile', 'activity'}:
