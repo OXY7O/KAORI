@@ -288,6 +288,10 @@ A lazy right-side context partial may update only its owned context region while
 
 ## Empty, Blocked, and Degraded behavior
 
+Provider-prerequisite blocking follows the locked cross-domain contract in `PROVIDER_PREREQUISITE.md`.
+A missing provider does not change route navigation, Hero identity, or profile metadata roles. The Hero-right
+blocked context is readiness-only; the below-Hero provider setup blocker owns the full remediation action.
+
 The Hero remains visible when no records exist or a dependency is blocked/degraded.
 
 Blocked state communicates setup/readiness and does not pretend normal operational evidence is available. Degraded state preserves the usable workspace and expresses dependency degradation through status/context. For operational profiles, persistent metadata remains present in normal, blocked, and degraded states. Full remediation workflows remain below the Hero.

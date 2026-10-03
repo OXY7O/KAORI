@@ -35,6 +35,10 @@ Operational Content
 
 A page with no peer detailed views renders no level-3 navigation.
 
+Provider absence, setup-required state, validation-required state, and degraded provider readiness do **not**
+remove level-3 navigation. Route navigation expresses information architecture, not evidence availability.
+A blocked route may render only its Hero plus canonical setup blocker after the navigation row.
+
 There is **no global Domain Workspace horizontal strip** between breadcrumb and page content.
 
 ## Shared Component Ownership

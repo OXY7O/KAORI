@@ -16,13 +16,14 @@ The approved Tenant destinations are:
 
 ### Cluster prerequisite and committed-read boundary
 
-Tenant distinguishes installation/setup absence from temporary provider unavailability:
+Tenant follows the shared #894 Provider Prerequisite Blocking contract while preserving #774 committed-read behavior.
 
-- **No Kubernetes cluster registered** — Tenant is terminally blocked at the shared Kubernetes setup state. The level-3 Tenant navigation and normal Tenant page content are hidden until a cluster is registered. The canonical Hero identity remains visible and the shared onboarding flow owns remediation.
+- **No Kubernetes cluster registered** — Tenant is terminally blocked after the Hero. The canonical level-3 Tenant navigation remains visible for orientation, the normal Hero identity/metadata vocabulary remains stable, and the shared Kubernetes setup blocker owns remediation. Page-specific Tenant operational content is not rendered.
 - **At least one cluster registered** — committed KAORI Tenant state remains readable even when live Kubernetes operations are restricted, validation is required, or the provider is temporarily unreachable. Live provider connectivity is presented separately and provider-backed mutations continue to fail closed.
 - Zero-registration blocking must not be implemented from `native_available` alone. Registration existence and live/provider readiness are separate authorities.
+- Provider absence must not hide route-level navigation; navigation expresses information architecture rather than evidence availability.
 
-This preserves #750 zero-cluster terminal setup behavior and #774 committed-state read availability without making normal Tenant pages depend on live provider requests.
+This preserves #750 terminal zero-cluster content blocking, #774 committed-state read availability, and #894 cross-domain navigation/Hero consistency without making normal Tenant pages depend on live provider requests.
 
 ### Resource Profile lifecycle
 

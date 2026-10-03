@@ -11,13 +11,12 @@ def _read(relative: str) -> str:
 
 def test_shared_cluster_blocked_hero_preserves_dashboard_semantics() -> None:
     shared = _read('app/templates/components/cluster/_hero_blocked_context.html')
+    provider = _read('app/templates/components/provider_prerequisite/_hero_context.html')
 
-    assert 'page_hero.blocked_context_body(' in shared
-    assert "'Connected Clusters'" in shared
-    assert "'Workspace State'" in shared
-    assert "'Blocked'" in shared
+    assert 'components/provider_prerequisite/_hero_context.html' in shared
     assert "cluster_blocked_state_label|default('Workspace State')" in shared
-    assert 'blocked_info' in shared
+    assert "cluster_blocked_cluster_label|default('Connected Clusters')" in shared
+    assert 'page_hero.blocked_context_body(' in provider
     assert 'page_hero.context_panel_metrics_classes()' not in shared
 
 
@@ -45,12 +44,12 @@ def test_shared_zero_cluster_onboarding_uses_one_canonical_integration_flow() ->
     dashboard = _read('app/templates/kubernetes/dashboard/partials/_content.html')
     operations = _read('app/templates/kubernetes/operations/cluster_required.html')
 
-    assert 'blocked_state_steps = ["Open Cluster Integrations", "Register Cluster", "Run Sync"]' in onboarding
-    assert "blocked_state_action_url = url_for('integrations.kubernetes')" in onboarding
-    assert 'blocked_state_action_label = "Open Cluster Integrations"' in onboarding
-    assert 'blocked_state_action_icon = "plug-zap"' in onboarding
+    assert 'provider_prerequisite_steps = ["Open Cluster Integrations", "Register Cluster", "Run Sync"]' in onboarding
+    assert "provider_prerequisite_action_url = url_for('integrations.kubernetes')" in onboarding
+    assert 'provider_prerequisite_action_label = "Open Cluster Integrations"' in onboarding
+    assert 'provider_prerequisite_action_icon = "plug-zap"' in onboarding
+    assert 'components/provider_prerequisite/_setup_blocker.html' in onboarding
     assert "url_for('cluster.add_cluster')" not in onboarding
-    assert 'blocked_state_action_label = "Add Cluster"' not in onboarding
 
     for consumer in (dashboard, operations):
         assert 'components/cluster/_onboarding_banner.html' in consumer
@@ -64,9 +63,7 @@ def test_tenant_zero_cluster_state_is_terminal_but_registered_committed_state_re
     tenant_base = _read('app/templates/kubernetes/tenant/base.html')
 
     assert '{% set registered_cluster_count = cluster_onboarding.cluster_count|default(0) %}' in tenant_base
-    assert '{% block page_capability_navigation %}' in tenant_base
-    assert '{% if registered_cluster_count > 0 %}' in tenant_base
-    assert '{{ super() }}' in tenant_base
+    assert '{% block page_capability_navigation %}' not in tenant_base
 
     zero_cluster_branch = tenant_base.split('{% if registered_cluster_count == 0 %}', 1)[1].split(
         '{% else %}',
@@ -136,7 +133,7 @@ def test_dashboard_blocked_hero_is_fully_owned_by_canonical_profile() -> None:
     assert 'context_header_status(' in component
 
 
-def test_inventory_blocked_hero_metadata_does_not_present_zero_counts_as_evidence() -> None:
+def test_inventory_blocked_hero_metadata_keeps_normal_roles() -> None:
     resources = (
         'overview',
         'nodes',
@@ -152,9 +149,9 @@ def test_inventory_blocked_hero_metadata_does_not_present_zero_counts_as_evidenc
     for resource in resources:
         source = _read(f'app/templates/kubernetes/inventory/{resource}/partials/_hero.html')
         metadata = source.split('page_hero.metadata_row_classes()', 1)[1].split('</div>', 1)[0]
-        assert 'cluster_onboarding.is_blocked' in metadata, resource
-        assert 'Committed Inventory' in metadata, resource
-        assert 'Cluster Setup Required' in metadata, resource
+        assert 'cluster_onboarding.is_blocked' not in metadata, resource
+        assert 'Committed Inventory' not in metadata, resource
+        assert 'Cluster Setup Required' not in metadata, resource
 
 
 def test_tls_governance_cluster_setup_precedes_schema_readiness() -> None:

@@ -68,6 +68,14 @@ repository-list capability. The probe remains GET-only and does not mutate Harbo
 These are focused local checks only. They do not replace Developer Check, Full Admission,
 staging UAT, or the governed promotion flow.
 
+## Provider-prerequisite UI contract
+
+This foundation workspace is the Registry setup destination, so it does not block itself behind a provider
+prerequisite. Future provider-backed Registry operational pages (inventory, governance, operations,
+analytics, correlation, or other consumers) must use the shared #894 Provider Prerequisite Blocking
+contract. Harbor-specific pages may supply Registry nouns, routes, permissions, and setup steps, but must
+not create Harbor-specific blocker geometry.
+
 ## Foundation exclusions
 
 Artifact inventory, vulnerability findings, webhook workflows, cross-domain Registry
