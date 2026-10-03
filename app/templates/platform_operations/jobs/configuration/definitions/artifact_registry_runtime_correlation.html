@@ -6,11 +6,11 @@
 {% set can_configure = current_user.has_permission(definition.configure_permission) %}
 {% set overview_metrics = [
     ('calendar-clock', 'Automatic Policy', selected_job.interval_label, 'Saved scheduler cadence'),
-    ('waypoints', 'Correlation Readiness', selected_job.'1' if selected_job.eligible_target_count else '0', 'Committed evidence prerequisites'),
+    ('waypoints', 'Correlation Readiness', 'Ready' if selected_job.eligible_target_count else 'Blocked', 'Committed evidence prerequisites'),
     ('clock-3', 'Next Automatic Run', policy.next_run_at|user_datetime if policy.next_run_at else 'Not Scheduled', 'Next policy dispatch'),
     ('history', 'Latest Execution', selected_job.latest_job.status_label if selected_job.latest_job else 'No History', selected_job.latest_job.queued_at if selected_job.latest_job else 'No execution recorded')
 ] %}
-{% set overview_notice = ('Runtime correlation is blocked until committed Registry artifacts and Kubernetes Pod inventory are both available.') if selected_job.blocked_source_count else 'Successful runs rebuild committed digest-first runtime bindings. Tag-only matches remain explicitly weaker.' %}
+{% set overview_notice = 'Successful runs rebuild committed digest-first runtime bindings. Tag-only matches remain explicitly weaker.' if selected_job.eligible_target_count else 'Runtime correlation is blocked until committed Registry artifacts and Kubernetes Pod inventory are both available.' %}
 <div class="space-y-5">
     {% include "platform_operations/jobs/configuration/_job_overview.html" %}
     <section class="{{ operational_section.shell_classes() }}">
