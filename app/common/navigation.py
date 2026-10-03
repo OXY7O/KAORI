@@ -42,6 +42,8 @@ _ENDPOINT_LABELS: dict[str, str] = {
     'artifact_registry.projects': 'Projects',
     'artifact_registry.repositories': 'Repositories',
     'artifact_registry.artifacts': 'Artifacts',
+    'artifact_registry.security_vulnerabilities': 'Vulnerabilities',
+    'artifact_registry.security_supply_chain': 'Supply Chain',
     # Analytics
     'analytics.overview': 'Overview',
     'analytics.utilization': 'Utilization',
@@ -207,6 +209,8 @@ def build_navigation_breadcrumb(
         items = [BreadcrumbItem('Artifact Registry', 'package-search')]
         if endpoint == 'artifact_registry.overview':
             items.append(BreadcrumbItem('Overview'))
+        elif endpoint.startswith('artifact_registry.security_'):
+            items.extend([BreadcrumbItem('Security'), BreadcrumbItem(_leaf(endpoint, 'Vulnerabilities'))])
         else:
             items.extend([BreadcrumbItem('Inventory'), BreadcrumbItem(_leaf(endpoint, 'Projects'))])
     elif endpoint.startswith('object_storage_inventory.'):
