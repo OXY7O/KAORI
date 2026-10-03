@@ -3,7 +3,7 @@ from __future__ import annotations
 from app.definitions.loader import DefinitionError, load_definition_document
 from app.definitions.validation import require_list, require_mapping, require_str, string_tuple, unique_by
 
-_ALLOWED_DOMAINS = {'kubernetes', 'object_storage', 'server', 'hci'}
+_ALLOWED_DOMAINS = {'kubernetes', 'object_storage', 'registry', 'server', 'hci'}
 _ALLOWED_SEVERITIES = {'critical', 'warning', 'info'}
 _ALLOWED_STATUSES = {'available', 'reserved', 'imported_signal'}
 _ALLOWED_RISK_EXCEPTION_SCOPES = {'rule_asset', 'finding_keys'}

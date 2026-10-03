@@ -168,6 +168,13 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
                 'artifact_registry.governance',
                 ('artifact_registry.view',),
             ),
+            WorkspaceCapabilityDefinition(
+                'analytics',
+                'Analytics',
+                'chart-column',
+                'artifact_registry.analytics',
+                ('artifact_registry.view',),
+            ),
         ),
     ),
     WorkspaceDefinition(

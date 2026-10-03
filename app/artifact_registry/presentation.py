@@ -493,3 +493,145 @@ def build_governance() -> dict[str, Any]:
         'webhook_rows': webhook_rows,
         'metrics_by_id': metrics_by_id,
     }
+
+
+
+def build_analytics() -> dict[str, Any]:
+    from app.intelligence.service import get_active_recommendation_findings
+    from app.models.registry import RegistryAnalyticsSnapshot
+
+    overview = build_overview()
+    identities = _providers()
+    latest_rows: list[dict[str, Any]] = []
+    aggregate = {
+        'projects': 0,
+        'repositories': 0,
+        'artifacts': 0,
+        'total_size_bytes': 0,
+        'stale_candidates': 0,
+        'critical_findings': 0,
+        'high_findings': 0,
+        'critical_runtime_artifacts': 0,
+        'tag_only_bindings': 0,
+        'runtime_scan_gaps': 0,
+        'metrics_ready': 0,
+    }
+    forecast_rows: list[dict[str, Any]] = []
+
+    for identity in identities:
+        snapshot = (
+            RegistryAnalyticsSnapshot.query.filter_by(
+                integration_instance_id=identity.id,
+                status='ready',
+            )
+            .order_by(
+                RegistryAnalyticsSnapshot.generated_at.desc(),
+                RegistryAnalyticsSnapshot.id.desc(),
+            )
+            .first()
+        )
+        if snapshot is None or not isinstance(snapshot.payload_json, dict):
+            latest_rows.append(
+                {
+                    'identity': identity,
+                    'snapshot': None,
+                    'status_label': 'Not Materialized',
+                    'tone': 'unknown',
+                }
+            )
+            continue
+        payload = snapshot.payload_json
+        inventory = payload.get('inventory') if isinstance(payload.get('inventory'), dict) else {}
+        security = payload.get('security') if isinstance(payload.get('security'), dict) else {}
+        runtime = payload.get('runtime') if isinstance(payload.get('runtime'), dict) else {}
+        metrics = payload.get('metrics') if isinstance(payload.get('metrics'), dict) else {}
+        capacity = payload.get('capacity') if isinstance(payload.get('capacity'), dict) else {}
+
+        aggregate['projects'] += int(inventory.get('projects') or 0)
+        aggregate['repositories'] += int(inventory.get('repositories') or 0)
+        aggregate['artifacts'] += int(inventory.get('artifacts') or 0)
+        aggregate['total_size_bytes'] += int(inventory.get('total_size_bytes') or 0)
+        aggregate['stale_candidates'] += int(inventory.get('stale_candidate_count') or 0)
+        aggregate['critical_findings'] += int(security.get('critical_findings') or 0)
+        aggregate['high_findings'] += int(security.get('high_findings') or 0)
+        aggregate['critical_runtime_artifacts'] += int(runtime.get('critical_runtime_artifacts') or 0)
+        aggregate['tag_only_bindings'] += int(runtime.get('tag_only_bindings') or 0)
+        aggregate['runtime_scan_gaps'] += int(runtime.get('runtime_scan_gaps') or 0)
+        aggregate['metrics_ready'] += int(metrics.get('status') == 'ready')
+
+        expires_at = snapshot.expires_at
+        is_stale = False
+        if expires_at is not None:
+            compare_expiry = expires_at if expires_at.tzinfo is not None else expires_at.replace(tzinfo=UTC)
+            is_stale = datetime.now(UTC) > compare_expiry
+        latest_rows.append(
+            {
+                'identity': identity,
+                'snapshot': snapshot,
+                'status_label': 'Stale Snapshot' if is_stale else 'Current Snapshot',
+                'tone': 'warning' if is_stale else 'normal',
+                'inventory': inventory,
+                'security': security,
+                'runtime': runtime,
+                'metrics': metrics,
+                'growth': payload.get('growth') if isinstance(payload.get('growth'), dict) else {},
+            }
+        )
+        for forecast in capacity.get('project_forecasts') or []:
+            if not isinstance(forecast, dict):
+                continue
+            forecast_rows.append(
+                {
+                    'registry_name': identity.name,
+                    'provider_key': identity.provider_key,
+                    **forecast,
+                }
+            )
+
+    recommendations = get_active_recommendation_findings(domain='registry', limit=5)
+    recommendation_rows = [
+        {
+            'rule_key': str(item.get('rule_key') or ''),
+            'title': str(item.get('title') or 'Registry recommendation'),
+            'severity': str(item.get('severity') or 'info'),
+            'severity_label': str(item.get('severity') or 'info').title(),
+            'summary': str(item.get('summary') or ''),
+            'asset_key': str((item.get('evidence') or {}).get('asset_key') or '')
+            if isinstance(item.get('evidence'), dict)
+            else '',
+        }
+        for item in recommendations
+    ]
+    active_signal_count = (
+        aggregate['critical_runtime_artifacts']
+        + aggregate['tag_only_bindings']
+        + aggregate['runtime_scan_gaps']
+        + aggregate['stale_candidates']
+    )
+    if not latest_rows or not any(row.get('snapshot') for row in latest_rows):
+        posture = {'label': 'Materialization Required', 'tone': 'warning'}
+    elif aggregate['critical_runtime_artifacts']:
+        posture = {'label': 'Critical Runtime Exposure', 'tone': 'critical'}
+    elif active_signal_count:
+        posture = {'label': 'Review Required', 'tone': 'warning'}
+    else:
+        posture = {'label': 'No Active Analytics Signals', 'tone': 'normal'}
+
+    return {
+        'setup': overview['setup'],
+        'provider_count': len(identities),
+        'snapshot_count': sum(bool(row.get('snapshot')) for row in latest_rows),
+        'aggregate': aggregate,
+        'latest_rows': latest_rows,
+        'forecast_rows': sorted(
+            forecast_rows,
+            key=lambda row: (
+                row.get('days_to_quota') is None,
+                float(row.get('days_to_quota') or 1e18),
+            ),
+        ),
+        'recommendations': recommendation_rows,
+        'recommendation_count': len(recommendation_rows),
+        'active_signal_count': active_signal_count,
+        'posture': posture,
+    }

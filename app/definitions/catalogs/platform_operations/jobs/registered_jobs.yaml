@@ -99,6 +99,34 @@ jobs:
   execution_summary: Run Registry reconciliation and monitor the canonical execution without querying providers from operational pages.
   recent_execution_summary: Latest scheduled and manual Artifact Registry reconciliation runs.
   legacy_module: artifact_registry_inventory_sync
+- key: artifact_registry.analytics.materialize
+  name: Artifact Registry Analytics Data Refresh
+  domain: Artifact Registry
+  description: Materialize reusable Registry analytics from committed inventory, security, governance, runtime, and optional Metrics Source evidence.
+  icon: chart-column
+  queue_name: analytics-batch
+  workload_class: analytics
+  job_type: artifact_registry_analytics
+  operation: materialize_artifact_registry_analytics
+  scope_type: registry_analytics_fleet
+  scope_key: all
+  configure_permission: jobs.configure
+  execute_permission: jobs.execute
+  domain_execute_permission: artifact_registry.view
+  dispatcher_path: app.artifact_registry.analytics_job_adapter:dispatch_registry_analytics_materialization
+  context_builder_path: app.artifact_registry.analytics_job_adapter:build_registry_analytics_context
+  configuration_template: platform_operations/jobs/configuration/definitions/artifact_registry_analytics_refresh.html
+  default_enabled: true
+  default_interval_minutes: 15
+  minimum_interval_minutes: 5
+  maximum_interval_minutes: 1440
+  safety_summary: Analytics reads committed Registry evidence and qualified Metrics Source bindings, then commits reusable snapshots before pages can consume them.
+  execution_summary: Refresh Artifact Registry analytics without issuing provider queries from user page requests.
+  recent_execution_summary: Latest scheduled and manual Artifact Registry analytics materialization runs.
+  default_configuration:
+    freshness_minutes: 15
+    stale_grace_minutes: 1440
+  legacy_module: artifact_registry_analytics_refresh
 - key: object_storage.analytics.materialize
   name: Object Storage Analytics Data Refresh
   domain: Object Storage Analytics
