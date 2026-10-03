@@ -171,10 +171,9 @@ def _narrow_candidates(
     narrowed = candidates
     if parsed.repository_path:
         by_repository = [item for item in narrowed if item.repository_path == parsed.repository_path]
-        if by_repository:
-            narrowed = by_repository
-        elif parsed.registry_host:
+        if not by_repository:
             return []
+        narrowed = by_repository
     if parsed.registry_host:
         by_host = [item for item in narrowed if parsed.registry_host in item.registry_hosts]
         if by_host:
