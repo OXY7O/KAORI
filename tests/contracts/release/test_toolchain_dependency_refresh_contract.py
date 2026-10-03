@@ -5,6 +5,7 @@ ROOT = Path(__file__).resolve().parents[3]
 NODE_VERSION = '22.23.2'
 NPM_VERSION = '10.9.9'
 PYRIGHT_VERSION = '1.1.414'
+PARCEL_WATCHER_VERSION = '2.6.0'
 URLLIB3_VERSION = '2.8.0'
 OAUTHLIB_VERSION = '4.0.0'
 
@@ -68,6 +69,22 @@ def test_frontend_dependency_lock_remains_package_manager_owned() -> None:
     package_lock = json.loads(read('package-lock.json'))
 
     assert package['devDependencies'] == package_lock['packages']['']['devDependencies']
+
+
+def test_tailwind_watcher_security_override_is_exact_and_prunes_vulnerable_chain() -> None:
+    package = json.loads(read('package.json'))
+    package_lock = json.loads(read('package-lock.json'))
+    packages = package_lock['packages']
+    watcher = packages['node_modules/@parcel/watcher']
+
+    assert package['devDependencies']['@tailwindcss/cli'] == '4.3.1'
+    assert package['devDependencies']['tailwindcss'] == '4.3.1'
+    assert package['overrides']['@parcel/watcher'] == PARCEL_WATCHER_VERSION
+    assert watcher['version'] == PARCEL_WATCHER_VERSION
+    assert watcher['dependencies']['picomatch'].startswith('^4.')
+    assert 'micromatch' not in watcher['dependencies']
+    assert 'node_modules/micromatch' not in packages
+    assert 'node_modules/braces' not in packages
 
 
 def test_npm_12_major_upgrade_is_deliberately_deferred() -> None:
