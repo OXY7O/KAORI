@@ -86,6 +86,8 @@ def test_current_workspace_capabilities_are_sidebar_children() -> None:
         "'generate',",
         "'data_lifecycle',",
         "'identity_providers',",
+        "'registry',",
+        "'integrations.registry'",
     ):
         assert capability in model
 

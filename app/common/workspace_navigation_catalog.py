@@ -265,6 +265,13 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
                 ('integrations.manage',),
             ),
             WorkspaceCapabilityDefinition(
+                'registry',
+                'Registry',
+                'package',
+                'integrations.registry',
+                ('integrations.manage',),
+            ),
+            WorkspaceCapabilityDefinition(
                 'notifications',
                 'Notification Channels',
                 'send',

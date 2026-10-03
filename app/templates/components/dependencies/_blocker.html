@@ -7,7 +7,7 @@
     {% set blocked_state_label = 'Capability Incomplete' if dependency_blocker.kind in dependency_capability_kinds else ('Setup Required' if blocker_tone == 'warning' else 'Unavailable') %}
     {% set blocked_state_title = dependency_blocker.title %}
     {% set blocked_state_description = dependency_blocker.description %}
-    {% set blocked_step = dependency_blocker.stage|int %}
+    {% set blocked_step = dependency_blocked_step|default(dependency_blocker.stage|int) %}
     {% set analytics_steps = dependency_steps|default([
             {
                 "label": "Kubernetes",

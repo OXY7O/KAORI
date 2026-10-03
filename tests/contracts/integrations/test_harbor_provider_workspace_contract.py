@@ -132,3 +132,27 @@ def test_harbor_optional_capabilities_do_not_count_as_required_readiness_gaps() 
     assert 'Required Capability Coverage' in validation
     assert 'Required Gaps' in validation
     assert 'Optional Observed' in validation
+
+
+def test_registry_is_exposed_in_canonical_integrations_sidebar_capabilities() -> None:
+    catalog = read('app/common/workspace_navigation_catalog.py')
+
+    integrations_section = catalog.split("key='integrations'", 1)[1].split("key='access'", 1)[0]
+    assert "'registry'," in integrations_section
+    assert "'Registry'," in integrations_section
+    assert "'package'," in integrations_section
+    assert "'integrations.registry'," in integrations_section
+    assert "('integrations.manage',)" in integrations_section
+
+
+def test_object_storage_analytics_dependency_path_keeps_metrics_and_alert_evidence_visible() -> None:
+    blocker = read('app/templates/storage/object_storage/analytics/partials/_dependency_blocker.html')
+    shared = read('app/templates/components/dependencies/_blocker.html')
+
+    assert '"Metrics Source"' in blocker
+    assert '"Alert Source"' in blocker
+    assert 'Alertmanager or qualified metrics-backed alert evidence' in blocker
+    assert 'Object Storage → Metrics Source → Alert Source' in blocker
+    assert 'Object Storage → Metrics Source → Alert Source → Analytics Snapshot' in blocker
+    assert 'dependency_blocked_step = 4' in blocker
+    assert 'dependency_blocked_step|default(dependency_blocker.stage|int)' in shared
