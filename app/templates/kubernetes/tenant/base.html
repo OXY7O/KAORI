@@ -15,6 +15,11 @@
 {% endif %}
 {% set registered_cluster_count = cluster_onboarding.cluster_count|default(0) %}
 {% block title %}{{ tenant_page_title }} · Tenant{% endblock title %}
+{% block page_capability_navigation %}
+    {% if registered_cluster_count > 0 %}
+        {{ super() }}
+    {% endif %}
+{% endblock page_capability_navigation %}
 {% block dashboard_content %}
     <div class="space-y-6" data-tenant-workspace="{{ tenant_page }}">
         <section class="{{ page_hero.shell_classes() }}">
@@ -73,17 +78,18 @@
                 {% endif %}
             </div>
         </section>
-        {% if tenant_page != 'overview' and tenant_collection_snapshot is defined %}
-            {% include "kubernetes/tenant/partials/_collection_snapshot_context.html" %}
-        {% endif %}
-        {% if tenant_page != 'overview' and registered_cluster_count > 0 %}
-            {% include "kubernetes/tenant/partials/_live_connection_loader.html" %}
-        {% endif %}
         {% if registered_cluster_count == 0 %}
             {% include "components/cluster/_onboarding_banner.html" %}
+        {% else %}
+            {% if tenant_page != 'overview' and tenant_collection_snapshot is defined %}
+                {% include "kubernetes/tenant/partials/_collection_snapshot_context.html" %}
+            {% endif %}
+            {% if tenant_page != 'overview' %}
+                {% include "kubernetes/tenant/partials/_live_connection_loader.html" %}
+            {% endif %}
+            {% block tenant_content %}
+            {% endblock tenant_content %}
         {% endif %}
-        {% block tenant_content %}
-        {% endblock tenant_content %}
     </div>
 {% endblock dashboard_content %}
 {% block scripts %}

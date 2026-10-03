@@ -14,6 +14,16 @@ The approved Tenant destinations are:
 - **Namespace Provisioning** — namespace creation, allocation changes, ResourceQuota/LimitRange evidence, and capacity decisions.
 - **Operations** — provisioning status, runs/evidence, drift/reconciliation, and Activity through internal Content Tabs.
 
+### Cluster prerequisite and committed-read boundary
+
+Tenant distinguishes installation/setup absence from temporary provider unavailability:
+
+- **No Kubernetes cluster registered** — Tenant is terminally blocked at the shared Kubernetes setup state. The level-3 Tenant navigation and normal Tenant page content are hidden until a cluster is registered. The canonical Hero identity remains visible and the shared onboarding flow owns remediation.
+- **At least one cluster registered** — committed KAORI Tenant state remains readable even when live Kubernetes operations are restricted, validation is required, or the provider is temporarily unreachable. Live provider connectivity is presented separately and provider-backed mutations continue to fail closed.
+- Zero-registration blocking must not be implemented from `native_available` alone. Registration existence and live/provider readiness are separate authorities.
+
+This preserves #750 zero-cluster terminal setup behavior and #774 committed-state read availability without making normal Tenant pages depend on live provider requests.
+
 ### Resource Profile lifecycle
 
 Resource Profile administration preserves the approved #113 allocation authority while avoiding profile sprawl:
