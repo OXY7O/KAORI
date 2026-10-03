@@ -8,6 +8,7 @@ from sqlalchemy.orm import joinedload
 
 from app.common.pagination import paginate_sequence
 from app.models.cluster import Cluster
+from app.models.inventory import PodInventory
 from app.models.registry_artifact import RegistryArtifact, RegistryProject, RegistryRepository
 from app.models.registry_correlation import RegistryCorrelationState, RegistryWorkloadBinding
 
@@ -138,9 +139,14 @@ def build_runtime_usage(filters: RuntimeUsageFilters) -> dict[str, Any]:
     page_rows, pagination = paginate_sequence(filtered, page=filters.page, per_page=filters.per_page)
 
     matched = [row for row in filtered if row['artifact_id'] is not None]
+    artifact_count = RegistryArtifact.query.count()
+    pod_inventory_count = PodInventory.query.count()
     return {
         'rows': page_rows,
         'pagination': pagination,
+        'artifact_count': artifact_count,
+        'pod_inventory_count': pod_inventory_count,
+        'is_blocked': not bool(artifact_count and pod_inventory_count),
         'total': len(filtered),
         'state': state,
         'freshness': _freshness(state.observed_at if state is not None else None),
