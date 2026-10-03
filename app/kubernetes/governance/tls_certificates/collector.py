@@ -12,7 +12,7 @@ from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_a
     tls_policy_for_cluster,
 )
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls import weak_tls_context
-from app.integrations.registry import get_integration
+from app.integrations.kernel.registry import get_integration
 from app.kubernetes.governance.tls_certificates.certificate import (
     TLSValidityPolicy,
     decode_secret_data,
