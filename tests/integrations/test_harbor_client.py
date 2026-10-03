@@ -39,6 +39,10 @@ def test_harbor_client_discovers_identity_and_read_capabilities(monkeypatch) -> 
             return _Response(200, [{'name': 'library'}])
         if url.endswith('/api/v2.0/projects/library/repositories'):
             return _Response(200, [])
+        if url.endswith('/api/v2.0/projects/library/repositories/nginx/artifacts/sha256%3Aabc/additions/vulnerabilities'):
+            return _Response(200, {'vulnerabilities': [{'id': 'CVE-2026-0001', 'severity': 'High'}]})
+        if url.endswith('/api/v2.0/projects/library/repositories/nginx/artifacts/sha256%3Aabc'):
+            return _Response(200, {'digest': 'sha256:abc', 'scan_overview': {'report': {'severity': 'High'}}})
         if url.endswith('/api/v2.0/projects/library/repositories/nginx/artifacts'):
             return _Response(200, [{'digest': 'sha256:abc', 'tags': [{'name': 'latest'}]}])
         raise AssertionError(url)
@@ -58,6 +62,17 @@ def test_harbor_client_discovers_identity_and_read_capabilities(monkeypatch) -> 
     projects = client.list_projects()
     repositories = client.list_repositories(project_name_or_id='library')
     artifacts = client.list_artifacts(project_name_or_id='library', repository_name='nginx')
+    artifact = client.get_artifact(
+        project_name_or_id='library',
+        repository_name='nginx',
+        reference='sha256:abc',
+    )
+    vulnerabilities = client.get_artifact_addition(
+        project_name_or_id='library',
+        repository_name='nginx',
+        reference='sha256:abc',
+        addition='vulnerabilities',
+    )
 
     assert connection['version'] == 'v2.15.2-abc123'
     assert connection['registry_url'] == 'registry.example.test'
@@ -65,6 +80,8 @@ def test_harbor_client_discovers_identity_and_read_capabilities(monkeypatch) -> 
     assert projects == [{'name': 'library'}]
     assert repositories == []
     assert artifacts == [{'digest': 'sha256:abc', 'tags': [{'name': 'latest'}]}]
+    assert artifact['digest'] == 'sha256:abc'
+    assert vulnerabilities['vulnerabilities'][0]['id'] == 'CVE-2026-0001'
     assert {url.rsplit('/', 1)[-1] for url, _ in calls} >= {
         'systeminfo',
         'health',
@@ -111,8 +128,15 @@ def test_harbor_client_uses_get_only_for_foundation_probes(monkeypatch) -> None:
     client.list_projects()
     client.list_repositories(project_name_or_id='library')
     client.list_artifacts(project_name_or_id='library', repository_name='nginx')
+    client.get_artifact(project_name_or_id='library', repository_name='nginx', reference='sha256:abc')
+    client.get_artifact_addition(
+        project_name_or_id='library',
+        repository_name='nginx',
+        reference='sha256:abc',
+        addition='vulnerabilities',
+    )
 
-    assert methods == ['GET', 'GET', 'GET', 'GET']
+    assert methods == ['GET', 'GET', 'GET', 'GET', 'GET', 'GET']
 
 
 def test_harbor_client_normalizes_transport_failure_without_exposing_raw_exception(monkeypatch) -> None:
