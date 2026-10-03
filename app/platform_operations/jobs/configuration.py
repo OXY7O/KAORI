@@ -82,6 +82,15 @@ def _execution_presentation(definition: JobDefinition, selected_context: dict[st
                 f'{selected_context.get("eligible_source_count", 0)} sources with committed inventory'
             ),
         },
+        'artifact_registry.runtime_correlation.materialize': {
+            'manual_action_label': 'Rebuild Runtime Correlation',
+            'manual_action_icon': 'waypoints',
+            'execution_scope_label': 'Committed Registry + Kubernetes Inventory',
+            'execution_scope_detail': (
+                f'{selected_context.get("artifact_count", 0)} artifacts · '
+                f'{selected_context.get("pod_count", 0)} Pods'
+            ),
+        },
         'governance.tls_certificates.sync': {
             'manual_action_label': 'Sync TLS',
             'manual_action_icon': 'refresh-cw',
