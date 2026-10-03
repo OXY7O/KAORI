@@ -13,6 +13,7 @@ def register_blueprints(app: Flask) -> None:
     from app.integrations.delivery.notification_channels.routes import notification_channels_bp
     from app.integrations.observability.alert_source.providers.alertmanager.application.routes import alertmanager_bp
     from app.integrations.observability.metrics_source.application.routes import metrics_bp
+    from app.integrations.registry.providers.harbor.application.routes import harbor_bp
     from app.integrations.routes import integrations_bp
     from app.integrations.storage.object_storage.providers.minio.application.routes import minio_bp
     from app.intelligence.alert_intelligence.routes import alert_intelligence_bp
@@ -59,6 +60,7 @@ def register_blueprints(app: Flask) -> None:
         platform_operations_bp,
         reports_bp,
         metrics_bp,
+        harbor_bp,
         minio_bp,
         settings_bp,
         users_bp,

@@ -17,7 +17,7 @@ from app.models.harbor import HarborInstance
 
 def _detail_url(instance: HarborInstance, section: str) -> str:
     suffix = f'#{section}' if section else ''
-    return f'/integrations/registry{suffix}'
+    return f'/integrations/registry/harbor/instances/{instance.id}{suffix}'
 
 
 def _record_failure(instance: HarborInstance, error: Exception) -> None:
@@ -35,7 +35,7 @@ integration_module = IntegrationModule(
     capability_key='registry',
     icon='package',
     description='Provider-neutral OCI Registry connectivity, readiness, and committed evidence.',
-    workspace_endpoint='integrations.registry',
+    workspace_endpoint='harbor.index',
     module_path='app.integrations.registry.providers.harbor',
     worker_queue='integration-runtime',
     worker_domain='registry-provider',
@@ -58,7 +58,7 @@ integration_module = IntegrationModule(
     capability_keys=CORE_CAPABILITY_KEYS,
     compatibility_profiles=COMPATIBILITY_PROFILES,
     runtime_label='Registry',
-    navigation_endpoint_prefixes=('integrations.registry',),
+    navigation_endpoint_prefixes=('harbor.',),
 )
 
 provider_implementation = IntegrationImplementation(
