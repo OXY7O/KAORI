@@ -1,5 +1,6 @@
 from datetime import UTC, datetime
 
+from app.artifact_registry.collectors import register_registry_collector
 from app.common.integration_errors import describe_integration_failure
 from app.integrations.kernel.registry import (
     IntegrationImplementation,
@@ -9,6 +10,7 @@ from app.integrations.kernel.registry import (
     registry,
 )
 from app.integrations.registry.providers.harbor.adapter import runtime_adapter
+from app.integrations.registry.providers.harbor.inventory import collector as inventory_collector
 from app.integrations.registry.providers.harbor.capabilities import (
     COMPATIBILITY_PROFILES,
     CORE_CAPABILITY_KEYS,
@@ -83,3 +85,4 @@ provider_implementation = IntegrationImplementation(
 
 registry.register(integration_module)
 registry.register_implementation(provider_implementation)
+register_registry_collector(inventory_collector)

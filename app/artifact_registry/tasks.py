@@ -9,7 +9,7 @@ from celery import shared_task
 
 from app.artifact_registry.sync import sync_registry_inventory
 from app.extensions.db import db
-from app.models.harbor import HarborInstance
+from app.models.integration import IntegrationInstance
 from app.platform_operations.jobs.execution import JobExecutionContext
 from app.platform_operations.notifications.service import create_notification
 
@@ -51,6 +51,7 @@ def sync_all_registry_task(
     try:
         for index, target in enumerate(targets, start=1):
             instance_name = target['instance_name']
+            canonical_id = int(target['integration_instance_id'])
             context.checkpoint(
                 current=index - 1,
                 total=total,
@@ -60,18 +61,21 @@ def sync_all_registry_task(
                 message=f'Collecting committed Registry evidence from {instance_name}.',
             )
             try:
-                instance = db.session.get(HarborInstance, int(target['instance_id']))
-                if instance is None:
-                    raise LookupError('The Harbor connection was deleted after the inventory job was admitted.')
-                result = sync_registry_inventory(instance)
+                identity = db.session.get(IntegrationInstance, canonical_id)
+                if identity is None:
+                    raise LookupError(
+                        'The Registry integration was deleted after the inventory job was admitted.'
+                    )
+                result = sync_registry_inventory(identity)
                 synced += 1
                 artifact_count += int(result.get('artifacts') or 0)
             except Exception as exc:
                 db.session.rollback()
                 failures.append(
                     {
-                        'instance_id': target['instance_id'],
+                        'integration_instance_id': str(canonical_id),
                         'instance_name': instance_name,
+                        'provider_key': str(target.get('provider_key') or ''),
                         'error_type': type(exc).__name__,
                         'message': str(exc),
                     }
@@ -89,7 +93,11 @@ def sync_all_registry_task(
         status = 'error' if failures and not synced else ('warning' if failures else 'success')
         result = {
             'status': status,
-            'title': 'Artifact Registry Inventory Sync Completed' if status != 'error' else 'Artifact Registry Inventory Sync Failed',
+            'title': (
+                'Artifact Registry Inventory Sync Completed'
+                if status != 'error'
+                else 'Artifact Registry Inventory Sync Failed'
+            ),
             'message': f'{synced} Registry provider(s) synchronized; {len(failures)} failed.',
             'detail': (
                 'Failed providers retained their previous committed snapshots.'
@@ -116,7 +124,11 @@ def sync_all_registry_task(
                 action_url='/artifact-registry/',
                 metadata={'task_id': task_id, 'job_execution_id': job_execution_id, **result},
             )
-        context.succeed(result_summary=result, result_type='artifact_registry_inventory_sync', partial=bool(failures))
+        context.succeed(
+            result_summary=result,
+            result_type='artifact_registry_inventory_sync',
+            partial=bool(failures),
+        )
         return result
     except Exception as exc:
         db.session.rollback()

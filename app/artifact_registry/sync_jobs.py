@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from app.common.job_execution_contract import ARTIFACT_REGISTRY_INVENTORY_SYNC_OPERATION
-from app.models.harbor import HarborInstance
+from app.models.integration import IntegrationInstance
 from app.models.job import JobExecution
 from app.platform_operations.jobs.constants import WORKLOAD_STANDARD
 from app.platform_operations.jobs.dispatcher import enqueue_canonical_job
@@ -15,17 +15,22 @@ class NoEligibleRegistryTargets(RuntimeError):
 
 def build_registry_inventory_targets() -> list[dict[str, str]]:
     targets: list[dict[str, str]] = []
-    for instance in HarborInstance.query.order_by(HarborInstance.id.asc()).all():
-        canonical = instance.integration_instance
-        if not canonical.enabled or canonical.lifecycle_status != 'active':
-            continue
-        if instance.readiness_status != 'ready':
-            continue
+    identities = (
+        IntegrationInstance.query.filter(
+            IntegrationInstance.integration_type == 'registry',
+            IntegrationInstance.enabled.is_(True),
+            IntegrationInstance.lifecycle_status == 'active',
+            IntegrationInstance.readiness_status == 'ready',
+        )
+        .order_by(IntegrationInstance.id.asc())
+        .all()
+    )
+    for identity in identities:
         targets.append(
             {
-                'instance_id': str(instance.id),
-                'instance_name': instance.name,
-                'integration_instance_id': str(instance.integration_instance_id),
+                'integration_instance_id': str(identity.id),
+                'instance_name': identity.name,
+                'provider_key': identity.provider_key,
             }
         )
     return targets
@@ -40,7 +45,9 @@ def enqueue_all_registry_inventory_sync(
 
     targets = build_registry_inventory_targets()
     if not targets:
-        raise NoEligibleRegistryTargets('No Registry provider is enabled and Ready for inventory synchronization.')
+        raise NoEligibleRegistryTargets(
+            'No Registry provider is enabled and Ready for inventory synchronization.'
+        )
     return enqueue_canonical_job(
         task=sync_all_registry_task,
         task_kwargs={'requested_by_user_id': requested_by_user_id, 'targets': targets},
