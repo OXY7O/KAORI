@@ -160,6 +160,50 @@ class HarborClient:
         )
 
 
+
+    def get_project(self, *, project_name_or_id: str | int) -> dict[str, Any]:
+        scope = quote(str(project_name_or_id).strip(), safe='')
+        payload = self._request_json(f'/api/v2.0/projects/{scope}')
+        if not isinstance(payload, dict):
+            raise HarborResponseError('Harbor project response is not an object.')
+        return payload
+
+    def get_retention(self, retention_id: str | int) -> dict[str, Any]:
+        retention_scope = quote(str(retention_id).strip(), safe='')
+        payload = self._request_json(f'/api/v2.0/retentions/{retention_scope}')
+        if not isinstance(payload, dict):
+            raise HarborResponseError('Harbor retention response is not an object.')
+        return payload
+
+    def list_immutability_rules(self, *, project_name_or_id: str | int) -> list[dict[str, Any]]:
+        scope = quote(str(project_name_or_id).strip(), safe='')
+        payload = self._request_json(
+            f'/api/v2.0/projects/{scope}/immutabletagrules',
+            params={'page': 1, 'page_size': 100},
+        )
+        return self._object_list(payload, 'immutability rules')
+
+    def list_webhook_policies(self, *, project_name_or_id: str | int) -> list[dict[str, Any]]:
+        scope = quote(str(project_name_or_id).strip(), safe='')
+        payload = self._request_json(
+            f'/api/v2.0/projects/{scope}/webhook/policies',
+            params={'page': 1, 'page_size': 100},
+        )
+        return self._object_list(payload, 'webhook policies')
+
+    def list_replication_policies(self, *, page: int = 1, page_size: int = 100) -> list[dict[str, Any]]:
+        payload = self._request_json(
+            '/api/v2.0/replication/policies',
+            params={'page': page, 'page_size': page_size},
+        )
+        return self._object_list(payload, 'replication policies')
+
+    def list_all_replication_policies(self, *, page_size: int = 100) -> list[dict[str, Any]]:
+        return self._paged(
+            lambda page, size: self.list_replication_policies(page=page, page_size=size),
+            page_size=page_size,
+        )
+
     def get_vulnerability_report(
         self,
         *,

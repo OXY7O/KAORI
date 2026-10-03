@@ -25,6 +25,7 @@ from app.integrations.kernel.registry import get_integration
 from app.integrations.runtime.presentation import runtime_history_view, runtime_state_view
 from app.integrations.runtime.repository import paginate_runtime_history
 from app.models import Cluster, MetricsSource, ObjectStorageSystem
+from app.models.integration import IntegrationInstance
 from app.models.integration import IntegrationBinding
 
 _CORE_CAPABILITIES = set(PROVIDER_CAPABILITY_KEYS)
@@ -424,6 +425,11 @@ def _binding_row(binding: IntegrationBinding, source: MetricsSource) -> dict[str
         if binding.asset_type == 'object_storage_system'
         else None
     )
+    registry_instance = (
+        db.session.get(IntegrationInstance, int(binding.asset_key))
+        if binding.asset_type == 'registry_instance' and str(binding.asset_key).isdigit()
+        else None
+    )
     profile = get_binding_validation_profile(source.adapter_key, binding.asset_type)
     selector_values = selector_form_values(binding.selector_json)
     source_readiness = source.readiness_status or 'validation_required'
@@ -436,7 +442,7 @@ def _binding_row(binding: IntegrationBinding, source: MetricsSource) -> dict[str
     scope_label = (
         cluster.name
         if cluster is not None
-        else (object_storage.name if object_storage is not None else binding.asset_key)
+        else (object_storage.name if object_storage is not None else (registry_instance.name if registry_instance is not None else binding.asset_key))
     )
     scope_type_label = (
         'Kubernetes Cluster'
@@ -444,7 +450,7 @@ def _binding_row(binding: IntegrationBinding, source: MetricsSource) -> dict[str
         else (
             'Object Storage System'
             if binding.asset_type == 'object_storage_system'
-            else binding.asset_type.replace('_', ' ').title()
+            else ('Registry Instance' if binding.asset_type == 'registry_instance' else binding.asset_type.replace('_', ' ').title())
         )
     )
     routing_policy = normalize_routing_policy(binding.routing_policy)

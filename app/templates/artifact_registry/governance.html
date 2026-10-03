@@ -1,0 +1,64 @@
+{% extends "layouts/app.html" %}
+{% block title %}Artifact Registry Governance{% endblock title %}
+{% block dashboard_content %}
+    {% import "components/page_hero.html" as page_hero %}
+    {% import "components/table_label.html" as table_label %}
+    <div class="space-y-6">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('shield-check', 'Artifact Registry · Governance', 'scale') %}
+                        <h1 class="{{ page_hero.title_classes() }}">Governance</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Review committed retention, immutability, replication, webhook, and observability evidence without granting Registry mutation authority.</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('folder-kanban', governance.project_count ~ ' Projects') }}
+                            {{ page_hero.meta_label('git-compare-arrows', governance.replication_count ~ ' Replication Policies') }}
+                            {{ page_hero.meta_label('radio-tower', governance.webhook_ready_count ~ ' Webhooks Ready') }}
+                        </div>
+                    {% endcall %}
+                </div>
+                {{ page_hero.context_card('Registry governance posture',
+                    'Independent Evidence Planes',
+                    'Governance Posture',
+                    governance.posture.label,
+                    governance.posture.tone,
+                    [
+                        ('database-backup', 'Inventory Ready', governance.inventory_ready_count ~ '/' ~ governance.provider_count, 'Committed Registry snapshots'),
+                        ('activity', 'Metrics Ready', governance.metrics_ready_count ~ '/' ~ governance.provider_count, 'Validated Metrics Source bindings')
+                    ],
+                    'Open Registry Integrations',
+                    url_for('integrations.registry'),
+                    action_icon='package-search'
+                ) }}
+            </div>
+        </section>
+        {% if governance.setup.is_blocked %}
+            {% include "artifact_registry/components/_setup_blocker.html" %}
+        {% else %}
+            <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                {% for item in governance.readiness_cards %}
+                    <article class="rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm">
+                        <div class="flex items-start justify-between gap-3"><div><p class="text-xs font-semibold uppercase tracking-wide text-content-muted">{{ item.label }}</p><p class="mt-2 text-lg font-semibold text-content-primary">{{ item.value }}</p></div>{{ table_label.status_indicator_label(item.status_label, item.tone) }}</div>
+                        <p class="mt-2 text-xs leading-5 text-content-secondary">{{ item.detail }}</p>
+                    </article>
+                {% endfor %}
+            </section>
+
+            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+                <header class="border-b border-outline-subtle px-5 py-4"><p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Policy Evidence</p><h2 class="mt-1 text-base font-semibold text-content-primary">Project Governance</h2><p class="mt-1 text-xs text-content-muted">Provider-native policies are normalized as read-only posture. KAORI does not mutate retention or immutability here.</p></header>
+                <div class="overflow-x-auto"><table class="min-w-full divide-y divide-outline-subtle text-sm"><thead class="bg-surface-hover text-left text-xs font-semibold text-content-muted"><tr><th class="px-5 py-3">Project</th><th class="px-5 py-3">Provider</th><th class="px-5 py-3">Retention</th><th class="px-5 py-3">Immutability</th><th class="px-5 py-3">Observed</th></tr></thead><tbody class="divide-y divide-outline-subtle">{% for row in governance.project_rows %}<tr><td class="px-5 py-3 font-semibold text-content-primary">{{ row.project }}</td><td class="px-5 py-3 text-content-secondary">{{ row.provider_label }}</td><td class="px-5 py-3">{{ table_label.status_indicator_label(row.retention_label, row.retention_tone) }}</td><td class="px-5 py-3">{{ table_label.status_indicator_label(row.immutability_label, row.immutability_tone) }}</td><td class="px-5 py-3 text-content-muted">{{ row.observed_at|user_datetime }}</td></tr>{% else %}<tr><td colspan="5" class="px-5 py-8 text-center text-content-muted">No committed governance evidence yet. Run Registry reconciliation.</td></tr>{% endfor %}</tbody></table></div>
+            </section>
+
+            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+                <header class="border-b border-outline-subtle px-5 py-4"><p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Resilience Evidence</p><h2 class="mt-1 text-base font-semibold text-content-primary">Replication</h2></header>
+                <div class="overflow-x-auto"><table class="min-w-full divide-y divide-outline-subtle text-sm"><thead class="bg-surface-hover text-left text-xs font-semibold text-content-muted"><tr><th class="px-5 py-3">Policy</th><th class="px-5 py-3">Provider</th><th class="px-5 py-3">State</th><th class="px-5 py-3">Trigger</th><th class="px-5 py-3">Destination</th></tr></thead><tbody class="divide-y divide-outline-subtle">{% for row in governance.replication_rows %}<tr><td class="px-5 py-3 font-semibold text-content-primary">{{ row.name }}</td><td class="px-5 py-3 text-content-secondary">{{ row.provider_label }}</td><td class="px-5 py-3">{{ table_label.status_indicator_label('Enabled' if row.enabled else ('Disabled' if row.enabled is not none else 'Unknown'), 'normal' if row.enabled else 'warning') }}</td><td class="px-5 py-3 text-content-secondary">{{ row.trigger_type or 'Not Observed' }}</td><td class="px-5 py-3 text-content-secondary">{{ row.destination_registry or 'Not Observed' }}</td></tr>{% else %}<tr><td colspan="5" class="px-5 py-8 text-center text-content-muted">No replication policies are committed for the current Registry estate.</td></tr>{% endfor %}</tbody></table></div>
+            </section>
+
+            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+                <header class="border-b border-outline-subtle px-5 py-4"><p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Near-real-time Fast Path</p><h2 class="mt-1 text-base font-semibold text-content-primary">Webhook Admission</h2><p class="mt-1 text-xs leading-5 text-content-muted">Webhook delivery is authenticated and idempotent. It queues single-provider reconciliation; scheduled reconciliation remains correctness authority.</p></header>
+                <div class="divide-y divide-outline-subtle">{% for row in governance.webhook_rows %}<article class="grid gap-4 px-5 py-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center"><div><div class="flex flex-wrap items-center gap-2"><p class="text-sm font-semibold text-content-primary">{{ row.name }}</p>{{ table_label.status_indicator_label(row.status_label, row.tone) }}</div><p class="mt-1 text-xs text-content-muted">{{ row.url }}</p><p class="mt-1 text-xs text-content-secondary">Last event: {{ row.last_event_at|user_datetime if row.last_event_at else 'No event received' }}</p></div>{% if current_user.has_permission('integrations.manage') %}<div class="flex flex-wrap gap-2">{% if not row.enabled %}<form method="post" action="{{ url_for('artifact_registry.webhook_token', integration_instance_id=row.id) }}" hx-post="{{ url_for('artifact_registry.webhook_token', integration_instance_id=row.id) }}" hx-target="#registry-webhook-token-result" hx-swap="innerHTML"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="inline-flex h-9 items-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white"><i data-lucide="key-round" class="h-3.5 w-3.5"></i>Generate Token</button></form>{% else %}<form method="post" action="{{ url_for('artifact_registry.webhook_disable', integration_instance_id=row.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="inline-flex h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary"><i data-lucide="circle-pause" class="h-3.5 w-3.5"></i>Disable</button></form>{% endif %}</div>{% endif %}</article>{% endfor %}</div>
+                <div id="registry-webhook-token-result" class="border-t border-outline-subtle p-5"></div>
+            </section>
+        {% endif %}
+    </div>
+{% endblock dashboard_content %}

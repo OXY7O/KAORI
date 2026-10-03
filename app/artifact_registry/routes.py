@@ -1,12 +1,19 @@
 from __future__ import annotations
 
-from flask import Blueprint, redirect, render_template, request, url_for
+from flask import Blueprint, jsonify, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
 from app.access.rbac.decorators import permission_required
-from app.artifact_registry.presentation import build_inventory, build_overview, build_runtime_usage, build_security
+from app.extensions import limiter
+from app.artifact_registry.presentation import build_governance, build_inventory, build_overview, build_runtime_usage, build_security
 from app.artifact_registry.sync_jobs import NoEligibleRegistryTargets, enqueue_all_registry_inventory_sync
+from app.artifact_registry.webhooks import (
+    RegistryWebhookAuthError,
+    disable_webhook,
+    generate_webhook_token,
+    ingest_webhook,
+)
 from app.platform_operations.notifications.service import record_operational_activity
 
 artifact_registry_bp = Blueprint('artifact_registry', __name__, url_prefix='/artifact-registry')
@@ -53,6 +60,62 @@ def runtime() -> ResponseReturnValue:
             per_page=request.args.get('per_page', 5, type=int) or 5,
         ),
     )
+
+
+@artifact_registry_bp.get('/governance')
+@permission_required('artifact_registry.view')
+def governance() -> ResponseReturnValue:
+    return render_template('artifact_registry/governance.html', governance=build_governance())
+
+
+@artifact_registry_bp.post('/webhooks/<int:integration_instance_id>/token')
+@permission_required('integrations.manage')
+def webhook_token(integration_instance_id: int) -> ResponseReturnValue:
+    token = generate_webhook_token(integration_instance_id)
+    if request.headers.get('HX-Request') == 'true':
+        return render_template(
+            'artifact_registry/partials/_webhook_token_created.html',
+            webhook_token=token,
+        )
+    return jsonify({'token': token, 'display_once': True})
+
+
+@artifact_registry_bp.post('/webhooks/<int:integration_instance_id>/disable')
+@permission_required('integrations.manage')
+def webhook_disable(integration_instance_id: int) -> ResponseReturnValue:
+    disable_webhook(integration_instance_id)
+    return redirect(url_for('artifact_registry.governance'))
+
+
+@artifact_registry_bp.post('/webhooks/<int:integration_instance_id>')
+@limiter.limit('60 per minute')
+def webhook_receive(integration_instance_id: int) -> ResponseReturnValue:
+    authorization = str(request.headers.get('Authorization') or '').strip()
+    bearer = authorization[7:].strip() if authorization.lower().startswith('bearer ') else ''
+    token = bearer or str(request.headers.get('X-KAORI-Webhook-Token') or '').strip()
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify({'accepted': False, 'error': 'invalid_json'}), 400
+    try:
+        event, created = ingest_webhook(
+            integration_instance_id=integration_instance_id,
+            token=token,
+            payload=payload,
+        )
+    except RegistryWebhookAuthError:
+        return jsonify({'accepted': False, 'error': 'unauthorized'}), 401
+    except LookupError:
+        return jsonify({'accepted': False, 'error': 'registry_not_found'}), 404
+    return jsonify(
+        {
+            'accepted': True,
+            'event_id': event.id,
+            'event_type': event.event_type,
+            'status': event.status,
+            'duplicate': not created,
+            'job_execution_id': event.job_execution_id,
+        }
+    ), 202
 
 
 @artifact_registry_bp.post('/sync')

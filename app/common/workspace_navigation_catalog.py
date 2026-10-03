@@ -154,6 +154,20 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
                 'artifact_registry.security',
                 ('artifact_registry.view',),
             ),
+            WorkspaceCapabilityDefinition(
+                'runtime',
+                'Runtime Usage',
+                'boxes',
+                'artifact_registry.runtime',
+                ('artifact_registry.view',),
+            ),
+            WorkspaceCapabilityDefinition(
+                'governance',
+                'Governance',
+                'scale',
+                'artifact_registry.governance',
+                ('artifact_registry.view',),
+            ),
         ),
     ),
     WorkspaceDefinition(

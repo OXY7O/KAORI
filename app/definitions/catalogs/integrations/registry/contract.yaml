@@ -87,6 +87,17 @@ capabilities:
   impact: Supports governance posture without provider mutation authority.
   remediation:
   - Verify the credential can read applicable retention policies.
+- key: replication_read
+  label: Replication Policy Evidence
+  category: governance
+  description: Read Registry replication policy and topology evidence without starting or changing replication.
+  required: false
+  probe: Harbor API v2.0 replication policy read endpoints
+  success_criteria: Replication policy metadata is readable when configured.
+  configuration_guidance: Keep replication access read-only; provider mutation remains outside Artifact Registry governance.
+  impact: Supports resilience and topology posture without making KAORI the replication engine.
+  remediation:
+  - Verify the configured Registry credential can read replication policy metadata.
 - key: immutability_read
   label: Immutability Evidence
   category: governance

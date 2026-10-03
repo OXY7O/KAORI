@@ -4,6 +4,7 @@ from app.integrations.observability.metrics_source.binding_validators.kubernetes
 from app.integrations.observability.metrics_source.binding_validators.object_storage import (
     validate_object_storage_binding,
 )
+from app.integrations.observability.metrics_source.binding_validators.registry_asset import validate_registry_binding
 from app.integrations.observability.metrics_source.binding_validators.registry import (
     get_binding_validator,
     register_binding_validator,
@@ -14,5 +15,6 @@ PROMETHEUS_HTTP_ADAPTER = 'prometheus_http'
 
 register_binding_validator(PROMETHEUS_HTTP_ADAPTER, KUBERNETES_CLUSTER_SCOPE, validate_kubernetes_binding)
 register_binding_validator(PROMETHEUS_HTTP_ADAPTER, 'object_storage_system', validate_object_storage_binding)
+register_binding_validator(PROMETHEUS_HTTP_ADAPTER, 'registry_instance', validate_registry_binding)
 
 __all__ = ['get_binding_validator', 'register_binding_validator']

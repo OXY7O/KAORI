@@ -280,3 +280,182 @@ class RegistryWorkloadBinding(db.Model):
     observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     artifact: Mapped[RegistryArtifact] = relationship('RegistryArtifact', lazy='joined')
+
+
+
+class RegistryGovernanceState(db.Model):
+    """Committed provider-neutral Registry governance collection boundary."""
+
+    __tablename__ = 'registry_governance_states'
+
+    integration_instance_id: Mapped[int] = mapped_column(
+        ForeignKey('integration_instances.id', ondelete='CASCADE'),
+        primary_key=True,
+    )
+    status: Mapped[str] = mapped_column(String(30), nullable=False, default='not_collected')
+    capability_states: Mapped[dict | None] = mapped_column(db.JSON, nullable=True, default=dict)
+    last_observed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_committed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    metadata_json: Mapped[dict | None] = mapped_column(db.JSON, nullable=True, default=dict)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
+
+
+class RegistryProjectGovernance(db.Model):
+    """Committed policy posture for one canonical Registry project."""
+
+    __tablename__ = 'registry_project_governance'
+    __table_args__ = (
+        UniqueConstraint('project_id', name='uq_registry_project_governance_project'),
+        Index('ix_registry_project_governance_observed', 'observed_at'),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    project_id: Mapped[int] = mapped_column(
+        ForeignKey('registry_projects.id', ondelete='CASCADE'),
+        nullable=False,
+        index=True,
+    )
+    retention_status: Mapped[str] = mapped_column(String(40), nullable=False, default='not_collected')
+    retention_policy_ref: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    retention_summary: Mapped[dict | None] = mapped_column(db.JSON, nullable=True, default=dict)
+    immutability_status: Mapped[str] = mapped_column(String(40), nullable=False, default='not_collected')
+    immutability_rule_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    immutability_summary: Mapped[dict | None] = mapped_column(db.JSON, nullable=True, default=dict)
+    provider_metadata: Mapped[dict | None] = mapped_column(db.JSON, nullable=True, default=dict)
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    project: Mapped[RegistryProject] = relationship('RegistryProject', lazy='joined')
+
+
+class RegistryReplicationPolicy(db.Model):
+    """Committed provider-neutral replication policy evidence."""
+
+    __tablename__ = 'registry_replication_policies'
+    __table_args__ = (
+        UniqueConstraint(
+            'integration_instance_id',
+            'provider_native_id',
+            name='uq_registry_replication_instance_native',
+        ),
+        Index('ix_registry_replication_instance_observed', 'integration_instance_id', 'observed_at'),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    integration_instance_id: Mapped[int] = mapped_column(
+        ForeignKey('integration_instances.id', ondelete='CASCADE'),
+        nullable=False,
+        index=True,
+    )
+    provider_native_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    enabled: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    trigger_type: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    source_registry: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    destination_registry: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    destination_namespace: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    filters_json: Mapped[list | None] = mapped_column(db.JSON, nullable=True, default=list)
+    provider_metadata: Mapped[dict | None] = mapped_column(db.JSON, nullable=True, default=dict)
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class RegistryWebhookEndpoint(db.Model):
+    """KAORI webhook admission posture for one Registry provider instance."""
+
+    __tablename__ = 'registry_webhook_endpoints'
+
+    integration_instance_id: Mapped[int] = mapped_column(
+        ForeignKey('integration_instances.id', ondelete='CASCADE'),
+        primary_key=True,
+    )
+    enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    token_digest: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    last_event_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_status: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
+
+
+class RegistryWebhookEvent(db.Model):
+    """Idempotent normalized Registry event evidence; raw payloads are not retained."""
+
+    __tablename__ = 'registry_webhook_events'
+    __table_args__ = (
+        UniqueConstraint(
+            'integration_instance_id',
+            'dedup_key',
+            name='uq_registry_webhook_event_dedup',
+        ),
+        Index('ix_registry_webhook_events_instance_received', 'integration_instance_id', 'received_at'),
+        Index('ix_registry_webhook_events_status', 'status'),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    integration_instance_id: Mapped[int] = mapped_column(
+        ForeignKey('integration_instances.id', ondelete='CASCADE'),
+        nullable=False,
+        index=True,
+    )
+    dedup_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    provider_event_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    event_type: Mapped[str] = mapped_column(String(120), nullable=False)
+    payload_digest: Mapped[str] = mapped_column(String(128), nullable=False)
+    project_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    repository_name: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    artifact_digest: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    artifact_tag: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    status: Mapped[str] = mapped_column(String(40), nullable=False, default='received')
+    job_execution_id: Mapped[int | None] = mapped_column(
+        ForeignKey('job_executions.id', ondelete='SET NULL'),
+        nullable=True,
+        index=True,
+    )
+    metadata_json: Mapped[dict | None] = mapped_column(db.JSON, nullable=True, default=dict)
+    received_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+    processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class RegistryAnalyticsSnapshot(db.Model):
+    """Persistent Artifact Registry analytics materialized from committed evidence."""
+
+    __tablename__ = 'registry_analytics_snapshots'
+    __table_args__ = (
+        Index('ix_registry_analytics_instance_generated', 'integration_instance_id', 'generated_at'),
+        Index('ix_registry_analytics_freshness', 'status', 'expires_at'),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    integration_instance_id: Mapped[int] = mapped_column(
+        ForeignKey('integration_instances.id', ondelete='CASCADE'),
+        nullable=False,
+        index=True,
+    )
+    time_range: Mapped[str] = mapped_column(String(20), nullable=False, default='current')
+    payload_json: Mapped[dict | None] = mapped_column(db.JSON, nullable=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default='ready', index=True)
+    generated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    freshness_minutes: Mapped[int] = mapped_column(Integer, nullable=False, default=15)
+    stale_grace_minutes: Mapped[int] = mapped_column(Integer, nullable=False, default=1440)
+    last_job_execution_id: Mapped[int | None] = mapped_column(
+        ForeignKey('job_executions.id', ondelete='SET NULL'),
+        nullable=True,
+        index=True,
+    )

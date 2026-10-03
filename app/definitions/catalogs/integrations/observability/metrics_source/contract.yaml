@@ -234,6 +234,14 @@ binding_profiles:
     label: Kubernetes pod identity
   no_match_message: The canonical cluster selector was accepted, but no scoped kube-state-metrics identity series matched. Verify cluster=<stable-cluster-name> is query-visible on the Kubernetes source series and matches the binding value. Direct Prometheus requires a scrape target label; Thanos should preserve the same identity from each source Prometheus external label. Then review kube_node_info, kube_namespace_status_phase, and kube_pod_info.
 - adapter_key: prometheus_http
+  asset_type: registry_instance
+  profile_key: registry-metrics-v1
+  label: Registry Metrics v1
+  validation_strategy: custom
+  consumer_family: metrics
+  probes: []
+  no_match_message: The selector was accepted, but no qualified Registry identity metrics matched. Verify that the Metrics Source selector isolates the intended Registry deployment and that its provider metrics are scraped.
+- adapter_key: prometheus_http
   asset_type: object_storage_system
   profile_key: object-storage-metrics-v1
   label: Object Storage Metrics v1

@@ -7,12 +7,17 @@ from sqlalchemy.orm import joinedload
 
 from app.common.pagination import paginate_sequence
 from app.models.integration import IntegrationInstance
+from app.artifact_registry.observability import registry_metrics_readiness
 from app.models.registry import (
     RegistryArtifact,
     RegistryCollectionState,
     RegistryProject,
     RegistryRepository,
     RegistryWorkloadBinding,
+    RegistryGovernanceState,
+    RegistryProjectGovernance,
+    RegistryReplicationPolicy,
+    RegistryWebhookEndpoint,
 )
 
 FRESHNESS_HOURS = 24
@@ -321,4 +326,170 @@ def build_runtime_usage(*, page: int = 1, per_page: int = 5) -> dict[str, Any]:
         'posture': posture,
         'rows': paged,
         'pagination': pagination,
+    }
+
+
+
+def _policy_state_view(value: str | None) -> dict[str, str]:
+    key = str(value or 'not_collected').strip().lower()
+    if key == 'configured':
+        return {'label': 'Configured', 'tone': 'normal'}
+    if key == 'not_configured':
+        return {'label': 'Not Configured', 'tone': 'info'}
+    if key == 'unsupported':
+        return {'label': 'Unsupported', 'tone': 'unknown'}
+    if key == 'unavailable':
+        return {'label': 'Unavailable', 'tone': 'warning'}
+    return {'label': 'Not Collected', 'tone': 'unknown'}
+
+
+def build_governance() -> dict[str, Any]:
+    from flask import url_for
+
+    overview = build_overview()
+    identities = _providers()
+    identity_by_id = {int(item.id): item for item in identities}
+    collection_states = {
+        int(item.integration_instance_id): item
+        for item in RegistryCollectionState.query.all()
+    }
+    governance_states = {
+        int(item.integration_instance_id): item
+        for item in RegistryGovernanceState.query.all()
+    }
+    webhook_endpoints = {
+        int(item.integration_instance_id): item
+        for item in RegistryWebhookEndpoint.query.all()
+    }
+
+    project_rows: list[dict[str, Any]] = []
+    governance_items = RegistryProjectGovernance.query.options(
+        joinedload(RegistryProjectGovernance.project),
+    ).order_by(RegistryProjectGovernance.observed_at.desc()).all()
+    for item in governance_items:
+        identity = identity_by_id.get(int(item.project.integration_instance_id))
+        retention = _policy_state_view(item.retention_status)
+        immutability = _policy_state_view(item.immutability_status)
+        project_rows.append(
+            {
+                'project': item.project.name,
+                'provider_label': str((identity.metadata_json or {}).get('provider_label') or identity.provider_key.title())
+                if identity is not None else 'Registry',
+                'retention_label': retention['label'],
+                'retention_tone': retention['tone'],
+                'immutability_label': immutability['label'],
+                'immutability_tone': immutability['tone'],
+                'observed_at': item.observed_at,
+            }
+        )
+
+    replication_rows: list[dict[str, Any]] = []
+    for item in RegistryReplicationPolicy.query.order_by(RegistryReplicationPolicy.name.asc()).all():
+        identity = identity_by_id.get(int(item.integration_instance_id))
+        replication_rows.append(
+            {
+                'name': item.name,
+                'provider_label': str((identity.metadata_json or {}).get('provider_label') or identity.provider_key.title())
+                if identity is not None else 'Registry',
+                'enabled': item.enabled,
+                'trigger_type': item.trigger_type,
+                'destination_registry': item.destination_registry,
+                'destination_namespace': item.destination_namespace,
+                'observed_at': item.observed_at,
+            }
+        )
+
+    metrics_by_id = {int(identity.id): registry_metrics_readiness(identity) for identity in identities}
+    webhook_rows: list[dict[str, Any]] = []
+    for identity in identities:
+        endpoint = webhook_endpoints.get(int(identity.id))
+        enabled = bool(endpoint and endpoint.enabled and endpoint.token_digest)
+        webhook_rows.append(
+            {
+                'id': int(identity.id),
+                'name': identity.name,
+                'enabled': enabled,
+                'status_label': 'Ready' if enabled else 'Not Configured',
+                'tone': 'normal' if enabled else 'unknown',
+                'last_event_at': endpoint.last_event_at if endpoint else None,
+                'url': url_for(
+                    'artifact_registry.webhook_receive',
+                    integration_instance_id=identity.id,
+                    _external=True,
+                ),
+            }
+        )
+
+    inventory_ready_count = sum(
+        1
+        for identity in identities
+        if (collection_states.get(int(identity.id)) is not None)
+        and collection_states[int(identity.id)].status == 'ready'
+    )
+    governance_ready_count = sum(
+        1
+        for identity in identities
+        if (governance_states.get(int(identity.id)) is not None)
+        and governance_states[int(identity.id)].status == 'ready'
+    )
+    metrics_ready_count = sum(
+        1 for item in metrics_by_id.values() if item.get('status') == 'ready'
+    )
+    webhook_ready_count = sum(1 for row in webhook_rows if row['enabled'])
+
+    readiness_cards = [
+        {
+            'label': 'Provider Readiness',
+            'value': f"{sum(identity.readiness_status == 'ready' for identity in identities)}/{len(identities)} Ready",
+            'status_label': 'Independent',
+            'tone': 'info',
+            'detail': 'Harbor/API provider validation remains separate from inventory, metrics, and webhook readiness.',
+        },
+        {
+            'label': 'Inventory Readiness',
+            'value': f'{inventory_ready_count}/{len(identities)} Ready',
+            'status_label': 'Committed',
+            'tone': 'normal' if inventory_ready_count == len(identities) and identities else 'warning',
+            'detail': 'Scheduled reconciliation commits Registry truth and remains available during metrics outages.',
+        },
+        {
+            'label': 'Metrics Readiness',
+            'value': f'{metrics_ready_count}/{len(identities)} Ready',
+            'status_label': 'Optional Dependency',
+            'tone': 'normal' if metrics_ready_count else 'unknown',
+            'detail': 'Metrics Source binding is independently validated; it never controls Registry provider readiness.',
+        },
+        {
+            'label': 'Webhook Readiness',
+            'value': f'{webhook_ready_count}/{len(identities)} Ready',
+            'status_label': 'Fast Path',
+            'tone': 'normal' if webhook_ready_count else 'unknown',
+            'detail': 'Authenticated idempotent events accelerate refresh; scheduled reconciliation repairs missed events.',
+        },
+    ]
+
+    if not identities:
+        posture = {'label': 'Setup Required', 'tone': 'unknown'}
+    elif inventory_ready_count < len(identities):
+        posture = {'label': 'Inventory Attention', 'tone': 'warning'}
+    elif governance_ready_count < len(identities):
+        posture = {'label': 'Governance Pending', 'tone': 'warning'}
+    else:
+        posture = {'label': 'Committed Evidence Ready', 'tone': 'normal'}
+
+    return {
+        'setup': overview['setup'],
+        'provider_count': len(identities),
+        'project_count': len(project_rows),
+        'replication_count': len(replication_rows),
+        'inventory_ready_count': inventory_ready_count,
+        'governance_ready_count': governance_ready_count,
+        'metrics_ready_count': metrics_ready_count,
+        'webhook_ready_count': webhook_ready_count,
+        'posture': posture,
+        'readiness_cards': readiness_cards,
+        'project_rows': project_rows,
+        'replication_rows': replication_rows,
+        'webhook_rows': webhook_rows,
+        'metrics_by_id': metrics_by_id,
     }

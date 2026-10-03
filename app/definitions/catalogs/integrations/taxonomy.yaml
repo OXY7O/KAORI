@@ -85,3 +85,11 @@ consumer_assets:
   selector_label: job
   selector_placeholder: minio-production
   model_key: object_storage_system
+- asset_type: registry_instance
+  label: Registry Instance
+  plural_label: Registry Instances
+  icon: package
+  selector_label: instance
+  selector_placeholder: harbor-production
+  model_key: integration_instance
+  integration_type: registry
