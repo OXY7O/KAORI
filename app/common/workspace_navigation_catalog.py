@@ -569,6 +569,13 @@ _CAPABILITY_VIEWS: dict[str, tuple[CapabilityViewDefinition, ...]] = {
             'artifact_registry.security_supply_chain',
             ('artifact_registry.view',),
         ),
+        CapabilityViewDefinition(
+            'runtime_usage',
+            'Runtime Usage',
+            'waypoints',
+            'artifact_registry.security_runtime_usage',
+            ('artifact_registry.runtime_correlation.view',),
+        ),
     ),
 
 }
