@@ -147,6 +147,13 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
                 'artifact_registry.projects',
                 ('artifact_registry.view',),
             ),
+            WorkspaceCapabilityDefinition(
+                'security',
+                'Security',
+                'shield-check',
+                'artifact_registry.security_vulnerabilities',
+                ('artifact_registry.view',),
+            ),
         ),
     ),
     WorkspaceDefinition(
@@ -369,6 +376,7 @@ _CAPABILITY_CONTEXT_KEYS: dict[str, tuple[str, ...]] = {
     'object_storage_inventory': ('system_id',),
     'object_storage_analytics': ('system_id', 'time_range'),
     'artifact_registry_inventory': ('source_id',),
+    'artifact_registry_security': ('source_id',),
 }
 
 
@@ -544,6 +552,22 @@ _CAPABILITY_VIEWS: dict[str, tuple[CapabilityViewDefinition, ...]] = {
         ),
         CapabilityViewDefinition(
             'artifacts', 'Artifacts', 'package-search', 'artifact_registry.artifacts', ('artifact_registry.view',)
+        ),
+    ),
+    'artifact_registry_security': (
+        CapabilityViewDefinition(
+            'vulnerabilities',
+            'Vulnerabilities',
+            'shield-alert',
+            'artifact_registry.security_vulnerabilities',
+            ('artifact_registry.view',),
+        ),
+        CapabilityViewDefinition(
+            'supply_chain',
+            'Supply Chain',
+            'badge-check',
+            'artifact_registry.security_supply_chain',
+            ('artifact_registry.view',),
         ),
     ),
 
