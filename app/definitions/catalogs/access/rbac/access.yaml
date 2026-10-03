@@ -73,7 +73,7 @@ permissions:
 - key: artifact_registry.sync
   module: artifact_registry
   action: sync
-  description: Run Artifact Registry inventory synchronization through canonical Job Execution.
+  description: Run Artifact Registry collection and materialization jobs through canonical Job Execution.
 - key: artifact_registry.runtime_correlation.view
   module: artifact_registry
   action: view_runtime_correlation
