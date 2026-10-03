@@ -32,6 +32,8 @@ def _capability_key(endpoint: str) -> str | None:
         return 'kubernetes_analytics'
     if endpoint.startswith('object_storage_inventory.'):
         return 'object_storage_inventory'
+    if endpoint.startswith('artifact_registry.') and endpoint != 'artifact_registry.overview':
+        return 'artifact_registry_inventory'
     return None
 
 
@@ -44,6 +46,7 @@ def _capability_label(capability_key: str) -> str:
         'kubernetes_analytics': 'Analytics',
         'object_storage_inventory': 'Inventory',
         'object_storage_analytics': 'Analytics',
+        'artifact_registry_inventory': 'Inventory',
     }[capability_key]
 
 
@@ -86,6 +89,10 @@ _CAPABILITY_ACTIVE_EXACT: dict[str, dict[str, str]] = {
         'object_storage_inventory.system_details': 'systems',
         'object_storage_inventory.buckets': 'buckets',
         'object_storage_inventory.bucket_details': 'buckets',
+    },
+    'artifact_registry_inventory': {
+        'artifact_registry.repositories': 'repositories',
+        'artifact_registry.artifacts': 'artifacts',
     },
     'object_storage_analytics': {
         'analytics.object_storage_capacity': 'capacity',
@@ -216,6 +223,8 @@ def _workspace_key(endpoint: str) -> str | None:
         return 'object_storage'
     if endpoint.startswith(('object_storage_dashboard.', 'object_storage_inventory.')):
         return 'object_storage'
+    if endpoint.startswith('artifact_registry.'):
+        return 'artifact_registry'
     if endpoint.startswith(
         ('kubernetes_dashboard.', 'inventory.', 'kubernetes_operations.', 'governance.', 'tenant.', 'analytics.')
     ):
@@ -257,6 +266,12 @@ _WORKSPACE_ACTIVE_PREFIXES: dict[str, tuple[tuple[str, str], ...]] = {
     'object_storage': (
         ('object_storage_dashboard.', 'overview'),
         ('object_storage_inventory.', 'inventory'),
+    ),
+    'artifact_registry': (
+        ('artifact_registry.overview', 'overview'),
+        ('artifact_registry.projects', 'inventory'),
+        ('artifact_registry.repositories', 'inventory'),
+        ('artifact_registry.artifacts', 'inventory'),
     ),
     'intelligence': (
         ('alert_intelligence.', 'alert_intelligence'),
