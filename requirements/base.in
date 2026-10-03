@@ -13,6 +13,7 @@ cryptography==50.0.0
 email-validator==2.2.0
 gunicorn==26.0.0
 kubernetes==36.0.2
+oauthlib==4.0.0
 Pillow==12.3.0
 weasyprint==70.0
 psycopg2-binary==2.9.12
@@ -22,5 +23,5 @@ tzdata>=2026.1,<2027
 PyYAML==6.0.3
 redis==6.4.0
 requests==2.34.2
-urllib3==2.7.0
+urllib3==2.8.0
 openpyxl==3.1.5
