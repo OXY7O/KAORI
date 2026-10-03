@@ -55,6 +55,7 @@ from app.models.registry import (
     RegistryScanSnapshot,
     RegistryTag,
     RegistryVulnerability,
+    RegistryWorkloadBinding,
 )
 from app.models.report import Report, ReportSchedule, ReportScheduleRun, ReportTemplate
 from app.models.resolver import (
@@ -229,6 +230,7 @@ __all__ = [
     'RegistryTag',
     'RegistryScanSnapshot',
     'RegistryVulnerability',
+    'RegistryWorkloadBinding',
     'Report',
     'ReportTemplate',
     'ReportSchedule',

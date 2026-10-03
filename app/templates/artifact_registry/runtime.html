@@ -1,0 +1,54 @@
+{% extends "layouts/app.html" %}
+{% block title %}Artifact Registry Runtime Usage{% endblock title %}
+{% block dashboard_content %}
+    {% import "components/page_hero.html" as page_hero %}
+    {% import "components/table_label.html" as table_label %}
+    {% import "components/table_registry.html" as registry %}
+    <div id="artifact-registry-runtime-workspace" class="space-y-6">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('waypoints', 'Artifact Registry · Runtime Correlation', 'git-compare-arrows') %}
+                        <h1 class="{{ page_hero.title_classes() }}">Runtime Usage</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Correlate committed artifact identity with committed Kubernetes Pod image references. Digest matches are stronger than mutable tag matches.</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('link-2', runtime.total ~ ' Bindings') }}
+                            {{ page_hero.meta_label('fingerprint', runtime.digest_matches ~ ' Digest Matches') }}
+                            {{ page_hero.meta_label('tags', runtime.tag_matches ~ ' Tag Matches') }}
+                        </div>
+                    {% endcall %}
+                </div>
+                {{ page_hero.context_card('Artifact Registry runtime context',
+                    'Committed Correlation',
+                    'Runtime Evidence',
+                    runtime.posture.label,
+                    runtime.posture.tone,
+                    [
+                        ('shield-alert', 'Critical Exposures', runtime.critical_exposures, 'Bindings to artifacts with critical findings'),
+                        ('clock-3', 'Evidence Boundary', 'Committed', 'Registry + Kubernetes inventory only')
+                    ],
+                    'Open Security',
+                    url_for('artifact_registry.security'),
+                    action_icon='shield-check'
+                ) }}
+            </div>
+        </section>
+        {% if runtime.setup.is_blocked %}
+            {% include "artifact_registry/components/_setup_blocker.html" %}
+        {% else %}
+            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+                <header class="border-b border-outline-subtle px-5 py-4"><p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Where Used</p><h2 class="mt-1 text-base font-semibold text-content-primary">Artifact → Kubernetes Workload</h2><p class="mt-1 text-xs leading-5 text-content-muted">Correlation is derived from PodInventory.container_images and Registry digest/tag evidence; this page performs no live Kubernetes or Harbor request.</p></header>
+                <div class="overflow-x-auto"><table class="min-w-full divide-y divide-outline-subtle text-sm"><thead class="bg-surface-hover text-left text-xs font-semibold text-content-muted"><tr><th class="px-5 py-3">Artifact</th><th class="px-5 py-3">Match</th><th class="px-5 py-3">Namespace / Workload</th><th class="px-5 py-3">Pod / Container</th><th class="px-5 py-3">Vulnerability</th></tr></thead><tbody class="divide-y divide-outline-subtle">{% for row in runtime.rows %}<tr><td class="px-5 py-3"><p class="font-semibold text-content-primary">{{ row.project }}/{{ row.repository }}</p><p class="font-mono text-xs text-content-muted" title="{{ row.digest }}">{{ row.digest_short }}</p><p class="mt-1 truncate text-xs text-content-muted" title="{{ row.image_reference }}">{{ row.image_reference }}</p></td><td class="px-5 py-3">{{ table_label.status_indicator_label(row.match_label, row.match_tone) }}<p class="mt-1 text-xs text-content-muted">{{ row.confidence|title }} confidence</p></td><td class="px-5 py-3"><p class="font-semibold text-content-primary">{{ row.namespace }}</p><p class="text-xs text-content-muted">{{ row.workload_type|default('Workload', true) }} · {{ row.workload_name|default('Not Resolved', true) }}</p></td><td class="px-5 py-3"><p class="text-content-secondary">{{ row.pod_name }}</p><p class="text-xs text-content-muted">{{ row.container_name|default('Container', true) }}</p></td><td class="px-5 py-3">{{ table_label.status_indicator_label(row.vulnerability_label, row.vulnerability_tone) }}</td></tr>{% else %}<tr><td colspan="5" class="px-5 py-8 text-center text-content-muted">No artifact-to-workload correlation has been materialized yet. Run Kubernetes Inventory Sync, then Artifact Registry Inventory Sync.</td></tr>{% endfor %}</tbody></table></div>
+                {{ registry.footer('artifact_registry.runtime',
+                    'artifact-registry-runtime-workspace',
+                    'artifact-registry-runtime-loading',
+                    runtime.pagination,
+                    {},
+                    [5, 10, 25],
+                    resource_label='Bindings',
+                    control_name='artifact-registry-runtime') }}
+            </section>
+            <div id="artifact-registry-runtime-loading" class="htmx-indicator text-xs text-content-muted">Loading committed runtime correlation…</div>
+        {% endif %}
+    </div>
+{% endblock dashboard_content %}

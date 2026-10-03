@@ -41,6 +41,7 @@ _ENDPOINT_LABELS: dict[str, str] = {
     'artifact_registry.overview': 'Overview',
     'artifact_registry.inventory': 'Inventory',
     'artifact_registry.security': 'Security',
+    'artifact_registry.runtime': 'Runtime Usage',
     # Analytics
     'analytics.overview': 'Overview',
     'analytics.utilization': 'Utilization',

@@ -238,3 +238,45 @@ class RegistryVulnerability(db.Model):
         back_populates='vulnerabilities',
         lazy='joined',
     )
+
+
+
+class RegistryWorkloadBinding(db.Model):
+    """Derived correlation between committed Registry artifacts and committed Pod inventory."""
+
+    __tablename__ = 'registry_workload_bindings'
+    __table_args__ = (
+        UniqueConstraint(
+            'artifact_id',
+            'pod_inventory_id',
+            'image_reference',
+            name='uq_registry_workload_binding_identity',
+        ),
+        Index('ix_registry_workload_bindings_cluster_namespace', 'cluster_id', 'namespace'),
+        Index('ix_registry_workload_bindings_artifact_observed', 'artifact_id', 'observed_at'),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    artifact_id: Mapped[int] = mapped_column(
+        ForeignKey('registry_artifacts.id', ondelete='CASCADE'),
+        nullable=False,
+        index=True,
+    )
+    pod_inventory_id: Mapped[int] = mapped_column(
+        ForeignKey('pod_inventory.id', ondelete='CASCADE'),
+        nullable=False,
+        index=True,
+    )
+    image_reference: Mapped[str] = mapped_column(String(2048), nullable=False)
+    match_type: Mapped[str] = mapped_column(String(30), nullable=False)
+    confidence: Mapped[str] = mapped_column(String(30), nullable=False)
+    cluster_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    namespace: Mapped[str] = mapped_column(String(255), nullable=False)
+    workload_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    workload_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    pod_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    container_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    details: Mapped[dict | None] = mapped_column(db.JSON, nullable=True, default=dict)
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    artifact: Mapped[RegistryArtifact] = relationship('RegistryArtifact', lazy='joined')

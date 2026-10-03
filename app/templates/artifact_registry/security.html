@@ -33,6 +33,7 @@
                 ) }}
             </div>
         </section>
+        <div class="flex justify-end"><a href="{{ url_for('artifact_registry.runtime') }}" class="inline-flex h-10 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-primary hover:bg-surface-hover"><i data-lucide="waypoints" class="h-4 w-4 text-kaori-primary"></i>Runtime Usage</a></div>
         {% if security.setup.is_blocked %}
             {% include "artifact_registry/components/_setup_blocker.html" %}
         {% else %}

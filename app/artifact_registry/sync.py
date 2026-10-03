@@ -485,6 +485,20 @@ def sync_registry_inventory(instance: HarborInstance) -> dict[str, Any]:
         projects = collect_harbor_inventory(instance)
         counts = commit_registry_inventory(instance, projects, observed_at=observed_at)
         db.session.commit()
+        try:
+            from app.artifact_registry.correlation import refresh_registry_workload_bindings
+
+            correlation = refresh_registry_workload_bindings(
+                integration_instance_id=int(instance.integration_instance_id)
+            )
+        except Exception as correlation_exc:
+            db.session.rollback()
+            logger.exception('Artifact Registry runtime correlation failed for Harbor instance %s.', instance.id)
+            correlation = {
+                'status': 'failed',
+                'error_type': type(correlation_exc).__name__,
+                'message': str(correlation_exc)[:1000],
+            }
     except Exception as exc:
         db.session.rollback()
         state = _lock_collection_state(int(instance.integration_instance_id))
@@ -498,5 +512,6 @@ def sync_registry_inventory(instance: HarborInstance) -> dict[str, Any]:
         'instance_id': int(instance.id),
         'instance_name': instance.name,
         'observed_at': observed_at.isoformat(),
+        'correlation': correlation,
         **counts,
     }

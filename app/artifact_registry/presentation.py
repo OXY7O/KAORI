@@ -7,7 +7,13 @@ from sqlalchemy.orm import joinedload
 
 from app.common.pagination import paginate_sequence
 from app.models.integration import IntegrationInstance
-from app.models.registry import RegistryArtifact, RegistryCollectionState, RegistryProject, RegistryRepository
+from app.models.registry import (
+    RegistryArtifact,
+    RegistryCollectionState,
+    RegistryProject,
+    RegistryRepository,
+    RegistryWorkloadBinding,
+)
 
 FRESHNESS_HOURS = 24
 
@@ -240,6 +246,78 @@ def build_security(*, page: int = 1, per_page: int = 5) -> dict[str, Any]:
         'signed': signed,
         'sbom_available': sbom_available,
         'sbom_coverage': sbom_coverage,
+        'posture': posture,
+        'rows': paged,
+        'pagination': pagination,
+    }
+
+
+
+def build_runtime_usage(*, page: int = 1, per_page: int = 5) -> dict[str, Any]:
+    bindings = RegistryWorkloadBinding.query.options(
+        joinedload(RegistryWorkloadBinding.artifact)
+        .joinedload(RegistryArtifact.repository)
+        .joinedload(RegistryRepository.project),
+    ).order_by(
+        RegistryWorkloadBinding.namespace.asc(),
+        RegistryWorkloadBinding.workload_name.asc(),
+        RegistryWorkloadBinding.pod_name.asc(),
+    ).all()
+    rows: list[dict[str, Any]] = []
+    digest_matches = tag_matches = critical_exposures = 0
+    for binding in bindings:
+        artifact = binding.artifact
+        summary = artifact.vulnerability_summary if isinstance(artifact.vulnerability_summary, dict) else {}
+        critical = int(summary.get('critical') or 0)
+        high = int(summary.get('high') or 0)
+        digest_matches += int(binding.match_type == 'digest')
+        tag_matches += int(binding.match_type == 'tag')
+        critical_exposures += int(critical > 0)
+        if critical:
+            vulnerability_label, vulnerability_tone = f'{critical} Critical', 'critical'
+        elif high:
+            vulnerability_label, vulnerability_tone = f'{high} High', 'warning'
+        elif artifact.scan_status:
+            vulnerability_label, vulnerability_tone = 'No Critical/High', 'normal'
+        else:
+            vulnerability_label, vulnerability_tone = 'Not Scanned', 'unknown'
+        rows.append(
+            {
+                'id': binding.id,
+                'project': artifact.repository.project.name,
+                'repository': artifact.repository.name,
+                'digest': artifact.digest,
+                'digest_short': artifact.digest if len(artifact.digest) <= 28 else f'{artifact.digest[:18]}…{artifact.digest[-8:]}',
+                'image_reference': binding.image_reference,
+                'match_label': 'Digest Match' if binding.match_type == 'digest' else 'Tag Match',
+                'match_tone': 'normal' if binding.match_type == 'digest' else 'info',
+                'confidence': binding.confidence,
+                'cluster_id': binding.cluster_id,
+                'namespace': binding.namespace,
+                'workload_type': binding.workload_type,
+                'workload_name': binding.workload_name,
+                'pod_name': binding.pod_name,
+                'container_name': binding.container_name,
+                'vulnerability_label': vulnerability_label,
+                'vulnerability_tone': vulnerability_tone,
+                'observed_at': binding.observed_at,
+            }
+        )
+    paged, pagination = paginate_sequence(rows, page=page, per_page=per_page)
+    if critical_exposures:
+        posture = {'label': 'Critical Runtime Exposure', 'tone': 'critical'}
+    elif rows and tag_matches:
+        posture = {'label': 'Tag-Matched Runtime Evidence', 'tone': 'info'}
+    elif rows:
+        posture = {'label': 'Digest-Correlated', 'tone': 'normal'}
+    else:
+        posture = {'label': 'No Runtime Correlation', 'tone': 'unknown'}
+    return {
+        'setup': build_overview()['setup'],
+        'total': len(rows),
+        'digest_matches': digest_matches,
+        'tag_matches': tag_matches,
+        'critical_exposures': critical_exposures,
         'posture': posture,
         'rows': paged,
         'pagination': pagination,
