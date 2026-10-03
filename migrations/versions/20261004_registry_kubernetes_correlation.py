@@ -41,6 +41,7 @@ def upgrade() -> None:
         sa.Column('unmatched_count', sa.Integer(), nullable=False, server_default='0'),
         sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
         sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
+        sa.CheckConstraint('id = 1', name='ck_registry_correlation_state_singleton'),
         sa.PrimaryKeyConstraint('id'),
     )
     op.create_table(
