@@ -192,7 +192,7 @@ def upgrade() -> None:
     )
     view_id = _ensure_permission(bind, permissions, VIEW_PERMISSION, now)
     sync_id = _ensure_permission(bind, permissions, SYNC_PERMISSION, now)
-    _grant(bind, permission_id=view_id, role_names=('viewer', 'operator', 'editor', 'admin'), now=now)
+    _grant(bind, permission_id=view_id, role_names=('viewer', 'operator', 'editor', 'admin', 'auditor'), now=now)
     _grant(bind, permission_id=sync_id, role_names=('operator', 'editor', 'admin'), now=now)
 
 

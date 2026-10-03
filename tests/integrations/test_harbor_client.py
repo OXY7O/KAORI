@@ -39,6 +39,8 @@ def test_harbor_client_discovers_identity_and_read_capabilities(monkeypatch) -> 
             return _Response(200, [{'name': 'library'}])
         if url.endswith('/api/v2.0/projects/library/repositories'):
             return _Response(200, [])
+        if url.endswith('/api/v2.0/projects/library/repositories/nginx/artifacts'):
+            return _Response(200, [{'digest': 'sha256:abc', 'tags': [{'name': 'latest'}]}])
         raise AssertionError(url)
 
     monkeypatch.setattr('app.integrations.registry.providers.harbor.client.requests.get', fake_get)
@@ -55,17 +57,20 @@ def test_harbor_client_discovers_identity_and_read_capabilities(monkeypatch) -> 
     health = client.get_health()
     projects = client.list_projects()
     repositories = client.list_repositories(project_name_or_id='library')
+    artifacts = client.list_artifacts(project_name_or_id='library', repository_name='nginx')
 
     assert connection['version'] == 'v2.15.2-abc123'
     assert connection['registry_url'] == 'registry.example.test'
     assert health['status'] == 'healthy'
     assert projects == [{'name': 'library'}]
     assert repositories == []
+    assert artifacts == [{'digest': 'sha256:abc', 'tags': [{'name': 'latest'}]}]
     assert {url.rsplit('/', 1)[-1] for url, _ in calls} >= {
         'systeminfo',
         'health',
         'projects',
         'repositories',
+        'artifacts',
     }
 
 
@@ -105,8 +110,9 @@ def test_harbor_client_uses_get_only_for_foundation_probes(monkeypatch) -> None:
     client.test_connection()
     client.list_projects()
     client.list_repositories(project_name_or_id='library')
+    client.list_artifacts(project_name_or_id='library', repository_name='nginx')
 
-    assert methods == ['GET', 'GET', 'GET']
+    assert methods == ['GET', 'GET', 'GET', 'GET']
 
 
 def test_harbor_client_normalizes_transport_failure_without_exposing_raw_exception(monkeypatch) -> None:

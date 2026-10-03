@@ -10,7 +10,7 @@
     ('clock-3', 'Next Automatic Run', policy.next_run_at|user_datetime if policy.next_run_at else 'Not Scheduled', 'Next policy dispatch'),
     ('history', 'Latest Execution', selected_job.latest_job.status_label if selected_job.latest_job else 'No History', selected_job.latest_job.queued_at if selected_job.latest_job else 'No execution recorded')
 ] %}
-{% set overview_notice = (selected_job.blocked_source_count ~ ' Registry source(s) will be skipped until the provider is enabled and Full Validation is Ready.') if selected_job.blocked_source_count else 'Successful runs atomically commit one normalized Registry snapshot per eligible managed system.' %}
+{% set overview_notice = (selected_job.blocked_source_count ~ ' Registry source(s) will be skipped until the provider is enabled and Full Validation is Ready.') if selected_job.blocked_source_count else 'Successful runs atomically commit one normalized Registry snapshot per eligible Registry source.' %}
 <div class="space-y-5">
     {% include "platform_operations/jobs/configuration/_job_overview.html" %}
     <section class="{{ operational_section.shell_classes() }}">

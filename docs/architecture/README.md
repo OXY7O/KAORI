@@ -24,3 +24,5 @@ Domain-specific rules live beside complex code in `app/<domain>/README.md`. Gene
 - [Controlled Refactor Roadmap](refactor-roadmap.md)
 - [`architecture-debt-baseline.json`](architecture-debt-baseline.json) — machine-readable temporary debt ledger
 
+
+- [Artifact Registry Domain](artifact-registry-domain.md) — provider-neutral Registry inventory authority, digest identity, collection, RBAC, and multi-provider boundary.

@@ -64,6 +64,18 @@ Object Storage inventory is registered as `object_storage.inventory.sync`:
 
 The Object Storage executor remains owned by `app.storage.object_storage.inventory`. It resolves the provider through the integration registry and may pass a domain progress callback to `inventory.sync`; `app.platform_operations.jobs` owns orchestration and lifecycle only.
 
+Artifact Registry inventory is registered as `artifact_registry.inventory.sync`:
+
+- queue: `inventory`
+- scope: `registry_fleet:all`
+- schedule: enabled by default every 60 minutes
+- manual execution: supported
+- domain execution permission: `artifact_registry.sync`
+- manual authorization: `jobs.execute` + `artifact_registry.sync`
+- deduplication group: `artifact-registry-inventory:global`
+
+The executor remains owned by `app.artifact_registry.inventory`. Provider adapters collect read-only evidence; the operational Artifact Registry domain normalizes and commits it.
+
 ## RBAC
 
 - `jobs.view`: view executions, queues, and configuration catalog.

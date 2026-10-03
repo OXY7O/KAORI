@@ -61,7 +61,7 @@ Every registered operation has an explicit execution queue. Inline operations
 are construction or state-translation operations that perform no asynchronous
 work.
 
-`worker_domain` is execution routing metadata. The architecture and UI taxonomy
+`worker_domain` is execution routing metadata. Artifact Registry inventory collection uses the canonical `inventory` queue while provider validation/runtime health remain under Integration Kernel queues. The architecture and UI taxonomy
 comes from `domain_key` and `capability_key` registered on `IntegrationModule`.
 
 ## Provider and asset binding architecture
@@ -113,6 +113,7 @@ adapter/profile. See `domain-namespace-and-metrics-source-boundary.md`.
 | `app/inventory/` | Capability root with explicit `kubernetes/` and `object_storage/` domain ownership for committed inventory state. | Mixed-domain implementation at the capability root, provider credentials, or client construction. |
 | `app/analytics/` | Capability root with explicit `kubernetes/` and `object_storage/` domains plus genuinely provider-neutral `shared/` contracts. | Mixed-domain implementation, provider credentials, or provider query/payload semantics in domain services. |
 | `app/kubernetes/operations/` | ConfigMap/Secret operational policy, authorization, confirmation, and audit. | Kubernetes transport construction. |
+| `app/artifact_registry/` | Provider-neutral committed Registry inventory, security, governance, correlation, and analytics composition. | Provider credentials, Harbor-specific canonical models, or provider mutation transport. |
 | `app/kubernetes/governance/` | Governance policy and interpretation. | Kubernetes credential persistence. |
 | `app/integrations/observability/metrics_source/application/` | Metrics Source registration forms, provider selection, domain services, source resolution, bindings UI, and presentation. | Backend transport, query profiles, compatibility implementation, or runtime adapter implementation. |
 | `app/integrations/observability/alert_source/providers/alertmanager/application/` | Alertmanager registration forms, domain services, source resolution, bindings UI, and presentation. | Transport, normalizers, compatibility implementation, or runtime adapter implementation. |
