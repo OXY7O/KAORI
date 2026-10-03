@@ -3,6 +3,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 from app.integrations.registry.providers.harbor import runtime, validation
+from app.integrations.registry.providers.harbor import _record_failure
 from app.integrations.registry.providers.harbor.adapter import HarborRuntimeAdapter
 from app.integrations.registry.providers.harbor.exceptions import HarborAuthError
 
@@ -168,3 +169,17 @@ def test_runtime_refresh_updates_health_without_rebuilding_validation_authority(
     assert source.validation_summary['required_capabilities_observed'] == source.capabilities
     assert commits == [True]
     assert statuses[-1]['status'] == 'connected'
+
+
+def test_failure_recorder_persists_normalized_detail_without_raw_secret() -> None:
+    source = _source()
+    source.timeout = 5
+    raw_secret = 'never-persist-this-secret'
+
+    _record_failure(source, RuntimeError(f'provider exploded around {raw_secret}'))
+
+    assert source.last_status == 'disconnected'
+    assert raw_secret not in (source.last_error or '')
+    assert 'KAORI could not complete the Harbor connection test' in (source.last_error or '')
+    assert source.last_checked_at is not None
+    assert source.last_response_time_ms is None

@@ -1,5 +1,6 @@
 from datetime import UTC, datetime
 
+from app.common.integration_errors import describe_integration_failure
 from app.integrations.kernel.registry import (
     IntegrationImplementation,
     IntegrationModule,
@@ -22,9 +23,16 @@ def _detail_url(instance: HarborInstance, section: str) -> str:
 
 def _record_failure(instance: HarborInstance, error: Exception) -> None:
     now = datetime.now(UTC)
+    failure = describe_integration_failure(
+        error,
+        service_name='Harbor',
+        endpoint=instance.endpoint,
+        request_path='/api/v2.0/health',
+        timeout_seconds=min(max(int(instance.timeout or 5), 1), 30),
+    )
     instance.last_checked_at = now
     instance.last_status = 'disconnected'
-    instance.last_error = str(error)[:1000]
+    instance.last_error = str(failure['detail'])[:1000]
     instance.last_response_time_ms = None
 
 
