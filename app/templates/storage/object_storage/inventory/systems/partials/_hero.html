@@ -6,14 +6,9 @@
                 <h1 class="{{ page_hero.title_classes() }}">Systems</h1>
                 <p class="mt-2 {{ page_hero.description_classes() }}">Review storage systems, provider identity, coverage, and readiness.</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
-                    {% if inventory.setup.is_blocked %}
-                        {{ page_hero.meta_label('database-backup', 'Committed Inventory') }}
-                        {{ page_hero.meta_label('lock-keyhole', 'Object Storage Setup Required') }}
-                    {% else %}
                         {{ page_hero.meta_label('server', inventory.total_systems ~ ' Systems in Scope') }}
                         {{ page_hero.meta_label('database-backup', inventory.inventoried_systems ~ ' Inventoried') }}
                         {{ page_hero.meta_label('circle-check', inventory.ready_systems ~ ' Ready') }}
-                    {% endif %}
                 </div>
             {% endcall %}
         </div>
