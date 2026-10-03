@@ -1,0 +1,72 @@
+{% extends "layouts/app.html" %}
+{% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "integrations/components/_provider_detail_posture.html" as provider_detail_posture %}
+{% block title %}{{ instance.name }} · Harbor Integration · KAORI{% endblock title %}
+{% block dashboard_content %}
+    {% set readiness = instance.readiness_status or "validation_required" %}
+    {% set source_posture = "Ready" if readiness == "ready" else ("Attention" if readiness in ["degraded", "blocked"] else "Configured") %}
+    <div class="kaori-integration-semantic space-y-6"
+         x-data="integrationWorkspaceTabs(['configuration', 'validation', 'runtime'], 'configuration', 'harbor-detail-tabs')"
+         x-on:hashchange.window="syncTab()"
+         x-on:popstate.window="syncTab()">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro("package", "Harbor Integration", "container") %}
+                        <h1 class="{{ page_hero.title_classes() }}">{{ instance.name }}</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Review Harbor connection configuration, Full Validation evidence, and committed runtime observations.</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label("shield-check", readiness|replace("_", " ")|title) }}
+                            {{ page_hero.meta_label("layers-3", (capability_count|string) ~ " Validated Capabilities") }}
+                            {{ page_hero.meta_label("package", instance.environment|default("")|title) }}
+                        </div>
+                    {% endcall %}
+                </div>
+                {{ provider_detail_posture.render("Harbor connection posture",
+                                "Registry API Readiness",
+                                source_posture,
+                                "shield-check",
+                                "Harbor API",
+                                readiness|replace("_", " ")|title,
+                                "Produced by Full Validation",
+                                "layers-3",
+                                "Validated Capabilities",
+                                capability_count,
+                                "Harbor API and provider-owned read contracts",
+                                url_for("harbor.index")) }}
+            </div>
+        </section>
+        <section id="harbor-detail-tabs"
+                 class="rounded-xl border border-outline-default bg-surface-card shadow-sm">
+            {{ framed_workspace_tabs.render([
+                ("configuration", "Configuration", "settings-2", instance.environment|default("")|title),
+                ("validation", "Validation & Capabilities", "scan-search", readiness|replace("_", " ")|title),
+                ("runtime", "Runtime & History", "activity", runtime_state.health_status_label|default("Not Observed"))
+            ], prefix="harbor", aria_label="Harbor Connection Domains") }}
+            <div class="p-4 sm:p-5 lg:p-6">
+                <div id="harbor-panel-configuration"
+                     role="tabpanel"
+                     aria-labelledby="harbor-tab-configuration"
+                     x-show="activeTab === 'configuration'">
+                    {% include "integrations/registry/providers/harbor/partials/_detail_configuration.html" %}
+                </div>
+                <div id="harbor-panel-validation"
+                     role="tabpanel"
+                     aria-labelledby="harbor-tab-validation"
+                     x-show="activeTab === 'validation'"
+                     x-cloak>
+                    {% include "integrations/registry/providers/harbor/partials/_detail_validation.html" %}
+                </div>
+                <div id="harbor-panel-runtime"
+                     role="tabpanel"
+                     aria-labelledby="harbor-tab-runtime"
+                     x-show="activeTab === 'runtime'"
+                     x-cloak
+                     class="space-y-4">
+                    {% include "integrations/registry/providers/harbor/partials/_detail_runtime.html" %}
+                </div>
+            </div>
+        </section>
+    </div>
+{% endblock dashboard_content %}

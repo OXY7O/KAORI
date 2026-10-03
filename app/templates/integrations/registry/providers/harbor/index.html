@@ -1,0 +1,35 @@
+{% extends "layouts/app.html" %}
+{% import "integrations/components/_provider_frontpage.html" as provider_front %}
+{% block title %}Harbor Integrations · KAORI{% endblock title %}
+{% block dashboard_content %}
+    {% set posture_status = "Healthy" if stats.total and not stats.attention else ("Attention" if stats.total else "Not Configured") %}
+    {% set overview_metrics = [
+        {"label": "Registered", "value": stats.total, "description": "Harbor provider connections registered in KAORI.", "icon": "server-cog"},
+        {"label": "Ready", "value": stats.ready, "description": "Connections with current Full Validation readiness.", "icon": "badge-check"},
+        {"label": "Attention", "value": stats.attention, "description": "Connections requiring validation or remediation.", "icon": "triangle-alert"},
+        {"label": "Protocol", "value": "v2.0", "description": "Harbor REST API contract used by this provider.", "icon": "braces"}
+    ] %}
+    <div class="kaori-integration-semantic space-y-6">
+        {{ provider_front.hero("package",
+                    "container",
+                    "Harbor Integrations",
+                    "Register and validate reusable Harbor Registry connections while Harbor remains authoritative for native registry state.",
+                    stats.total,
+                    stats.ready,
+                    0,
+                    posture_status,
+                    url_for("harbor.new_instance"),
+                    register_label="Register Connection") }}
+        {{ provider_front.overview("package-search",
+                    "Harbor Integration Overview",
+                    "Harbor is the first Registry provider. KAORI owns normalized registration, compatibility, committed validation evidence, runtime observation, and audit—not Harbor-native configuration.",
+                    overview_metrics,
+                    "Harbor API v2.0",
+                    "Test Connection proves identity and reachability; Full Validation establishes compatibility and capability readiness.",
+                    "No Consumer Binding Surface Yet",
+                    "Artifact inventory, vulnerability findings, webhooks, correlation, and operational Registry consumers are intentionally outside this foundation slice.",
+                    "Harbor Remains Authoritative",
+                    "KAORI performs read-oriented discovery and health observation. Destructive Registry or provider-policy mutation is not exposed.") }}
+        {% include "integrations/registry/providers/harbor/partials/_registry.html" %}
+    </div>
+{% endblock dashboard_content %}

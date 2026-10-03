@@ -1,0 +1,129 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "integrations/components/_provider_registry.html" as provider_registry %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+<section id="harbor-connection-registry"
+         class="{{ integration_ui.section_shell_classes() }}"
+         aria-labelledby="harbor-connection-registry-title"
+         data-kaori-harbor-connection-registry>
+    {{ provider_registry.registry_header(
+        "Connection Registry",
+        "Review Harbor endpoint identity, Core Validation readiness, compatibility profile, and the latest observed provider state.",
+        "server-cog",
+        "harbor-registry-loading",
+        title_id="harbor-connection-registry-title"
+    ) }}
+    <form method="get"
+          action="{{ url_for('harbor.index') }}"
+          hx-get="{{ url_for('harbor.index') }}"
+          hx-target="#harbor-connection-registry"
+          hx-select="#harbor-connection-registry"
+          hx-swap="outerHTML"
+          hx-indicator="#harbor-registry-loading"
+          hx-push-url="true"
+          hx-trigger="input changed delay:300ms from:#harbor-registry-search, change delay:100ms from:select"
+          class="{{ integration_ui.filter_region_classes() }}">
+        <input type="hidden" name="page" value="1">
+        <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
+        <div class="{{ table_ui.filter_layout_classes() }}">
+            {{ provider_registry.search_field("harbor-registry-search", "q", selected_query, "Search Harbor connections...", label="Search") }}
+            {{ provider_registry.select_field("harbor-registry-environment", "environment", selected_environment, "Environment", environment_options, "All Environments") }}
+            {{ provider_registry.select_field("harbor-registry-readiness", "readiness", selected_readiness, "Core Readiness", readiness_options, "All Readiness States") }}
+            {{ provider_registry.select_field("harbor-registry-compatibility", "compatibility", selected_compatibility, "Compatibility", compatibility_options, "All Profiles") }}
+        </div>
+    </form>
+    <div class="overflow-x-auto">
+        <table class="{{ table_ui.table_classes('min-w-[980px]') }}">
+            <colgroup>
+                <col class="w-[28%]">
+                <col class="w-[25%]">
+                <col class="w-[16%]">
+                <col class="w-[17%]">
+                <col class="w-[8%]">
+                <col class="w-[6%]">
+            </colgroup>
+            <thead class="{{ table_ui.head_classes() }}">
+                <tr>
+                    <th class="{{ table_ui.header_cell_classes() }}">Connection</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Endpoint</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Core Readiness</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Compatibility</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Observed</th>
+                    <th class="{{ table_ui.header_cell_classes(action=true) }}">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="{{ table_ui.body_classes() }}">
+                {% for row in rows %}
+                    <tr class="{{ table_ui.row_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <div class="flex min-w-0 items-start gap-3">
+                                {{ integration_ui.palette_icon("package", "brand", size="sm") }}
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ row.name }}</p>
+                                    <p class="mt-1 text-xs text-content-muted">{{ row.environment|default("Unspecified")|title }} · {{ row.auth_type|replace("_", " ")|title }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <p class="truncate font-mono text-xs font-semibold text-content-primary"
+                               title="{{ row.endpoint }}">{{ row.endpoint }}</p>
+                            <p class="mt-1 text-xs text-content-muted">Harbor API v2.0</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ integration_status(row.readiness_status, display="indicator") }}
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <p class="text-sm font-semibold text-content-primary">{{ row.compatibility_profile or "Validation Required" }}</p>
+                            <p class="mt-1 text-xs text-content-muted">{{ row.detected_version or "Version not validated" }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <p class="text-xs font-medium text-content-secondary">{{ row.last_checked }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes(action=true) }}">
+                            <a href="{{ url_for('harbor.instance_detail', instance_id=row.id) }}"
+                               class="{{ table_ui.action_classes() }}">
+                                <i data-lucide="arrow-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                Open
+                            </a>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="p-0">
+                            {% if has_active_filters %}
+                                {% set empty_state_icon = "search-x" %}
+                                {% set empty_state_label = "No Results" %}
+                                {% set empty_state_title = "No Harbor Connections Match These Filters" %}
+                                {% set empty_state_description = "Adjust the search, environment, readiness, or compatibility filters to broaden the result set." %}
+                            {% else %}
+                                {% set empty_state_icon = "package-plus" %}
+                                {% set empty_state_label = "No Data" %}
+                                {% set empty_state_title = "No Harbor Connections Registered" %}
+                                {% set empty_state_description = "Register a Harbor API connection, verify it with Test Connection, then run Full Validation to establish readiness." %}
+                            {% endif %}
+                            {% set empty_state_min_height = "min-h-[180px]" %}
+                            {% include "components/states/_empty_state.html" %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if pagination.total_items > 0 %}
+        {{ provider_registry.pagination_footer(
+            pagination,
+            "harbor.index",
+            "#harbor-connection-registry",
+            "#harbor-registry-loading",
+            {
+                "q": selected_query,
+                "environment": selected_environment,
+                "readiness": selected_readiness,
+                "compatibility": selected_compatibility
+            },
+            item_label="Connections"
+        ) }}
+    {% endif %}
+</section>
