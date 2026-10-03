@@ -16,7 +16,7 @@ from app.integrations.registry.providers.harbor.exceptions import (
 
 
 class HarborClient:
-    """Read-only Harbor API v2.0 client used by provider readiness flows."""
+    """Read-only Harbor API v2.0 client used by readiness and committed-evidence collectors."""
 
     def __init__(
         self,
@@ -66,6 +66,9 @@ class HarborClient:
         payload = self._request_json('/api/v2.0/projects', params={'page': page, 'page_size': page_size})
         return self._object_list(payload, 'projects')
 
+    def list_all_projects(self, *, page_size: int = 100) -> list[dict[str, Any]]:
+        return self._paged(lambda page, size: self.list_projects(page=page, page_size=size), page_size=page_size)
+
     def list_repositories(
         self,
         *,
@@ -83,14 +86,107 @@ class HarborClient:
         )
         return self._object_list(payload, 'repositories')
 
+    def list_all_repositories(
+        self,
+        *,
+        project_name_or_id: str | int,
+        page_size: int = 100,
+    ) -> list[dict[str, Any]]:
+        return self._paged(
+            lambda page, size: self.list_repositories(
+                project_name_or_id=project_name_or_id,
+                page=page,
+                page_size=size,
+            ),
+            page_size=page_size,
+        )
+
+    def list_artifacts(
+        self,
+        *,
+        project_name_or_id: str | int,
+        repository_name: str,
+        page: int = 1,
+        page_size: int = 100,
+        with_scan_overview: bool = False,
+        with_sbom_overview: bool = False,
+        with_signature: bool = False,
+        with_immutable_status: bool = False,
+    ) -> list[dict[str, Any]]:
+        project_scope = str(project_name_or_id).strip()
+        repository_scope = str(repository_name).strip().strip('/')
+        if not project_scope or not repository_scope:
+            raise HarborResponseError('Harbor project and repository are required for artifact discovery.')
+        encoded_project = quote(project_scope, safe='')
+        encoded_repository = quote(quote(repository_scope, safe=''), safe='')
+        payload = self._request_json(
+            f'/api/v2.0/projects/{encoded_project}/repositories/{encoded_repository}/artifacts',
+            params={
+                'page': page,
+                'page_size': page_size,
+                'with_tag': 'true',
+                'with_label': 'false',
+                'with_scan_overview': str(bool(with_scan_overview)).lower(),
+                'with_sbom_overview': str(bool(with_sbom_overview)).lower(),
+                'with_signature': str(bool(with_signature)).lower(),
+                'with_immutable_status': str(bool(with_immutable_status)).lower(),
+            },
+        )
+        return self._object_list(payload, 'artifacts')
+
+    def list_all_artifacts(
+        self,
+        *,
+        project_name_or_id: str | int,
+        repository_name: str,
+        page_size: int = 100,
+        with_scan_overview: bool = False,
+        with_sbom_overview: bool = False,
+        with_signature: bool = False,
+        with_immutable_status: bool = False,
+    ) -> list[dict[str, Any]]:
+        return self._paged(
+            lambda page, size: self.list_artifacts(
+                project_name_or_id=project_name_or_id,
+                repository_name=repository_name,
+                page=page,
+                page_size=size,
+                with_scan_overview=with_scan_overview,
+                with_sbom_overview=with_sbom_overview,
+                with_signature=with_signature,
+                with_immutable_status=with_immutable_status,
+            ),
+            page_size=page_size,
+        )
+
+    @staticmethod
+    def _paged(fetch_page, *, page_size: int) -> list[dict[str, Any]]:
+        size = max(1, min(int(page_size or 100), 100))
+        page = 1
+        records: list[dict[str, Any]] = []
+        while True:
+            batch = list(fetch_page(page, size))
+            records.extend(batch)
+            if len(batch) < size:
+                return records
+            page += 1
+            if page > 10000:
+                raise HarborResponseError('Harbor pagination exceeded the safety limit.')
+
     @staticmethod
     def _object_list(payload: Any, label: str) -> list[dict[str, Any]]:
         if not isinstance(payload, list):
             raise HarborResponseError(f'Harbor {label} response is not a list.')
         return [item for item in payload if isinstance(item, dict)]
 
-    def _request_json(self, path: str, *, params: dict[str, Any] | None = None) -> Any:
-        response = self._request(path, params=params)
+    def _request_json(
+        self,
+        path: str,
+        *,
+        params: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> Any:
+        response = self._request(path, params=params, headers=headers)
         try:
             return response.json()
         except ValueError as exc:
@@ -99,10 +195,18 @@ class HarborClient:
                 status=response.status_code,
             ) from exc
 
-    def _request(self, path: str, *, params: dict[str, Any] | None = None) -> Response:
+    def _request(
+        self,
+        path: str,
+        *,
+        params: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> Response:
         auth = None
         if self.auth_type == 'basic' and self.username:
             auth = HTTPBasicAuth(self.username, self.password or '')
+        request_headers = {'Accept': 'application/json'}
+        request_headers.update(headers or {})
         try:
             response = requests.get(
                 f'{self.endpoint}{path}',
@@ -110,7 +214,7 @@ class HarborClient:
                 auth=auth,
                 timeout=self.timeout,
                 verify=self.verify_ssl,
-                headers={'Accept': 'application/json'},
+                headers=request_headers,
             )
         except requests.RequestException as exc:
             raise HarborConnectionError(

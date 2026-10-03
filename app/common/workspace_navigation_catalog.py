@@ -128,6 +128,28 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
         ),
     ),
     WorkspaceDefinition(
+        key='artifact_registry',
+        label='Artifact Registry',
+        icon='package',
+        section='Infrastructure',
+        capabilities=(
+            WorkspaceCapabilityDefinition(
+                'overview',
+                'Overview',
+                'layout-dashboard',
+                'artifact_registry.overview',
+                ('artifact_registry.view',),
+            ),
+            WorkspaceCapabilityDefinition(
+                'inventory',
+                'Inventory',
+                'boxes',
+                'artifact_registry.inventory',
+                ('artifact_registry.view',),
+            ),
+        ),
+    ),
+    WorkspaceDefinition(
         key='intelligence',
         label='Intelligence',
         icon='brain-circuit',

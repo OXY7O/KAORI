@@ -37,6 +37,9 @@ _ENDPOINT_LABELS: dict[str, str] = {
     'object_storage_inventory.system_details': 'System Details',
     'object_storage_inventory.buckets': 'Buckets',
     'object_storage_inventory.bucket_details': 'Bucket Details',
+    # Artifact Registry
+    'artifact_registry.overview': 'Overview',
+    'artifact_registry.inventory': 'Inventory',
     # Analytics
     'analytics.overview': 'Overview',
     'analytics.utilization': 'Utilization',
@@ -198,6 +201,11 @@ def build_navigation_breadcrumb(
             BreadcrumbItem(integration_owner['provider_label']),
         ]
         items = _append_workflow(items, endpoint)
+    elif endpoint.startswith('artifact_registry.'):
+        items = [
+            BreadcrumbItem('Artifact Registry', 'package'),
+            BreadcrumbItem(_leaf(endpoint, 'Overview')),
+        ]
     elif endpoint.startswith('object_storage_inventory.'):
         items = [
             BreadcrumbItem('Object Storage', 'database'),

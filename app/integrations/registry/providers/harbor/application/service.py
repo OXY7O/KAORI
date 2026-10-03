@@ -59,6 +59,8 @@ def create_harbor_instance(values: HarborRegistrationInput) -> HarborInstance:
         'provider_label': 'Harbor',
         'protocol': 'harbor_api_v2',
         'auth_type': values.auth_type,
+        'asset_type': 'registry_instance',
+        'asset_key': str(canonical.id),
     }
     try:
         db.session.commit()
@@ -123,6 +125,8 @@ def update_harbor_instance(instance: HarborInstance, values: HarborRegistrationI
         'provider_label': 'Harbor',
         'protocol': 'harbor_api_v2',
         'auth_type': values.auth_type,
+        'asset_type': 'registry_instance',
+        'asset_key': str(canonical.id),
     }
     try:
         db.session.commit()

@@ -1,0 +1,93 @@
+{% extends "layouts/app.html" %}
+{% block title %}Artifact Registry Overview{% endblock title %}
+{% block dashboard_content %}
+    {% import "components/page_hero.html" as page_hero %}
+    {% import "components/table_label.html" as table_label %}
+    <div class="space-y-6">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('package-search', 'Artifact Registry', 'package') %}
+                        <h1 class="{{ page_hero.title_classes() }}">Overview</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Review committed OCI inventory across Registry providers without querying providers from page requests.</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('server', overview.provider_count ~ ' Registry Providers') }}
+                            {{ page_hero.meta_label('boxes', overview.artifact_count ~ ' Artifacts') }}
+                            {{ page_hero.meta_label('database-backup', overview.snapshot_count ~ ' Committed Snapshots') }}
+                        </div>
+                    {% endcall %}
+                </div>
+                {{ page_hero.context_card('Artifact Registry posture',
+                    'Committed Evidence',
+                    'Registry Posture',
+                    overview.posture.label,
+                    overview.posture.tone,
+                    [
+                        ('folder-kanban', 'Projects', overview.project_count, 'Committed namespaces'),
+                        ('package-open', 'Repositories', overview.repository_count, 'Committed repositories')
+                    ],
+                    'Open Inventory',
+                    url_for('artifact_registry.inventory'),
+                    action_icon='boxes'
+                ) }}
+            </div>
+        </section>
+
+        {% if overview.setup.is_blocked %}
+            {% include "artifact_registry/components/_setup_blocker.html" %}
+        {% else %}
+            <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                {% for icon, label, value, helper in [
+                    ('folder-kanban', 'Projects', overview.project_count, 'Provider-neutral namespaces'),
+                    ('package-open', 'Repositories', overview.repository_count, 'Committed repositories'),
+                    ('fingerprint', 'Artifacts', overview.artifact_count, 'Digest-oriented identities'),
+                    ('tags', 'Tags', overview.tag_count, 'Mutable aliases')
+                ] %}
+                    <article class="rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm">
+                        <div class="flex items-center gap-2 text-xs font-semibold text-content-muted">
+                            <i data-lucide="{{ icon }}" class="h-4 w-4 text-kaori-primary"></i>{{ label }}
+                        </div>
+                        <p class="mt-2 text-2xl font-semibold text-content-primary">{{ value }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
+                    </article>
+                {% endfor %}
+            </section>
+
+            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+                <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Collection Authority</p>
+                        <h2 class="mt-1 text-base font-semibold text-content-primary">Registry Providers</h2>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Full Validation proves provider readiness; Inventory Sync commits operational evidence independently.</p>
+                    </div>
+                    {% if current_user.has_permission('artifact_registry.sync') %}
+                        <form method="post" action="{{ url_for('artifact_registry.sync_inventory') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="inline-flex h-10 items-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white shadow-sm hover:bg-kaori-primary-dark">
+                                <i data-lucide="refresh-cw" class="h-4 w-4"></i>Sync Inventory
+                            </button>
+                        </form>
+                    {% endif %}
+                </header>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-outline-subtle text-sm">
+                        <thead class="bg-surface-hover text-left text-xs font-semibold text-content-muted">
+                            <tr><th class="px-5 py-3">Provider</th><th class="px-5 py-3">Environment</th><th class="px-5 py-3">Provider Readiness</th><th class="px-5 py-3">Committed Snapshot</th><th class="px-5 py-3">Observed</th></tr>
+                        </thead>
+                        <tbody class="divide-y divide-outline-subtle">
+                            {% for row in overview.provider_rows %}
+                                <tr>
+                                    <td class="px-5 py-3"><p class="font-semibold text-content-primary">{{ row.name }}</p><p class="text-xs text-content-muted">{{ row.provider_label }}</p></td>
+                                    <td class="px-5 py-3 text-content-secondary">{{ row.environment }}</td>
+                                    <td class="px-5 py-3">{{ table_label.status_indicator_label(row.readiness|replace('_', ' ')|title, 'normal' if row.readiness == 'ready' else 'warning') }}</td>
+                                    <td class="px-5 py-3">{{ table_label.status_indicator_label(row.snapshot.label, row.snapshot.tone) }}</td>
+                                    <td class="px-5 py-3 text-content-muted">{{ row.snapshot.observed_at|user_datetime if row.snapshot.observed_at else 'Not Collected' }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        {% endif %}
+    </div>
+{% endblock dashboard_content %}
