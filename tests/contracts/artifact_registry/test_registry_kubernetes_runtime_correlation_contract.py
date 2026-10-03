@@ -86,6 +86,7 @@ def test_runtime_correlation_uses_canonical_job_execution_and_inventory_queue() 
     config = read('app/config/default.py')
 
     assert 'enqueue_canonical_job(' in jobs
+    assert 'filter_current_generation(PodInventory.query, PodInventory).count()' in jobs
     assert "job_type='artifact_registry_runtime_correlation'" in jobs
     assert "queue_name=INVENTORY_QUEUE" in jobs
     assert "resource_group='artifact-registry-runtime-correlation:global'" in jobs
