@@ -76,6 +76,19 @@ analytics, correlation, or other consumers) must use the shared #894 Provider Pr
 contract. Harbor-specific pages may supply Registry nouns, routes, permissions, and setup steps, but must
 not create Harbor-specific blocker geometry.
 
+
+## Registry provider-agnostic extension gate
+
+Harbor is the first production-qualified Registry provider, not the canonical Registry product identity.
+
+Before the Registry foundation is treated as locked, review the implementation against:
+
+`docs/architecture/registry-provider-extension-gate.md`
+
+That gate requires the second-provider extension path to remain definition/adapter/collector/capability driven without replacing canonical Registry models, Artifact Registry routes/navigation, digest identity, Kubernetes correlation, or source/asset binding architecture.
+
+A Harbor implementation that passes its provider-specific tests but still requires a large domain/UI refactor for ECR, ACR, GAR, GHCR, Docker Hub, or another OCI Registry provider is not considered foundation-complete.
+
 ## Foundation exclusions
 
 Artifact inventory, vulnerability findings, webhook workflows, cross-domain Registry
