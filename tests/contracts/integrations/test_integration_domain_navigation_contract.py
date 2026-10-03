@@ -16,6 +16,7 @@ def test_taxonomy_owns_domain_workspace_routes_and_asset_ownership() -> None:
     assert 'workspace_endpoint: integrations.orchestration' in taxonomy_catalog
     assert 'workspace_endpoint: integrations.observability' in taxonomy_catalog
     assert 'workspace_endpoint: integrations.storage' in taxonomy_catalog
+    assert 'workspace_endpoint: integrations.registry' in taxonomy_catalog
     assert '- kubernetes_cluster' in taxonomy_catalog
     assert '- object_storage_system' in taxonomy_catalog
     assert 'integration_taxonomy_document()' in taxonomy
@@ -49,6 +50,7 @@ def test_builtin_providers_declare_domain_navigation_ownership() -> None:
         'app/integrations/observability/metrics_source/__init__.py': "navigation_endpoint_prefixes=('integrations.metrics_sources', 'metrics.')",
         'app/integrations/observability/alert_source/providers/alertmanager/__init__.py': "navigation_endpoint_prefixes=('integrations.alertmanager', 'alertmanager.')",
         'app/integrations/storage/object_storage/providers/minio/__init__.py': "navigation_endpoint_prefixes=('minio.',)",
+        'app/integrations/registry/providers/harbor/__init__.py': "navigation_endpoint_prefixes=('integrations.registry',)",
     }
     for relative, marker in expected.items():
         assert marker in read(relative)
@@ -62,6 +64,7 @@ def test_domain_landing_routes_share_one_taxonomy_page_builder() -> None:
     assert "@integrations_bp.get('/orchestration')" in routes
     assert "@integrations_bp.get('/observability')" in routes
     assert "@integrations_bp.get('/storage')" in routes
+    assert "@integrations_bp.get('/registry')" in routes
     assert "'integrations/domain.html'" in routes
     assert 'build_integration_domain_page(' in routes
     assert "active_tab=request.args.get('tab', 'registry').strip()" in routes
@@ -169,4 +172,5 @@ def test_breadcrumbs_insert_domain_between_integrations_and_provider() -> None:
     assert "'integrations.orchestration': 'Orchestration'" in navigation
     assert "'integrations.observability': 'Observability'" in navigation
     assert "'integrations.storage': 'Storage'" in navigation
+    assert "'integrations.registry': 'Registry'" in navigation
     assert "'domain_label': module.domain.label" in integration_navigation
