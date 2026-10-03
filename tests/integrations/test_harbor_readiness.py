@@ -29,6 +29,39 @@ class _ReadyClient:
         return []
 
 
+class _ArtifactEvidenceClient(_ReadyClient):
+    def list_repositories(self, *, project_name_or_id, page=1, page_size=1):
+        assert project_name_or_id == 'library'
+        return [{'name': 'library/nginx'}]
+
+    def list_artifacts(
+        self,
+        *,
+        project_name_or_id,
+        repository_name,
+        page=1,
+        page_size=1,
+        with_scan_overview=False,
+        with_signature=False,
+        with_accessory=False,
+    ):
+        assert project_name_or_id == 'library'
+        assert repository_name == 'nginx'
+        assert with_scan_overview is True
+        assert with_signature is True
+        assert with_accessory is True
+        return [
+            {
+                'digest': 'sha256:abc',
+                'scan_overview': {'report': {'scan_status': 'Success', 'severity': 'High'}},
+                'accessories': [
+                    {'artifact_type': 'application/vnd.dev.cosign.simplesigning.v1+json'},
+                    {'artifact_type': 'application/spdx+json'},
+                ],
+            }
+        ]
+
+
 class _MissingRepositoryClient(_ReadyClient):
     def get_health(self):
         return {'status': 'healthy', 'components': []}
@@ -124,6 +157,29 @@ def test_full_validation_keeps_provider_health_signal_distinct_from_readiness(mo
     assert runtime_state.health.status == 'degraded'
     assert commits == [True]
     assert statuses[-1]['status'] == 'connected'
+
+
+def test_full_validation_projects_optional_artifact_security_capabilities_without_changing_core_readiness(monkeypatch) -> None:
+    source = _source()
+    _stub_persistence(monkeypatch, validation)
+    monkeypatch.setattr(validation, 'build_client', lambda _source: _ArtifactEvidenceClient())
+
+    result = validation.validate_source(source, source_label='Harbor Test')
+
+    assert result.readiness_status == 'ready'
+    assert {
+        'artifact_discovery',
+        'vulnerability_read',
+        'signature_metadata',
+        'sbom_metadata',
+    }.issubset(set(result.capabilities))
+    assert source.validation_summary['artifact_probe_count'] == 1
+    assert set(source.validation_summary['optional_capabilities_observed']) >= {
+        'artifact_discovery',
+        'vulnerability_read',
+        'signature_metadata',
+        'sbom_metadata',
+    }
 
 
 def test_full_validation_blocks_when_required_repository_capability_is_missing(monkeypatch) -> None:
