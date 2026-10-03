@@ -58,3 +58,10 @@ def test_harbor_credential_material_is_encrypted_and_not_part_of_validation_evid
     result_dict = contracts.split('class ValidationResult', 1)[1]
     assert "'password'" not in result_dict
     assert "'username'" not in result_dict
+
+
+def test_harbor_migration_extends_current_staging_schema_head() -> None:
+    migration = read('migrations/versions/20261003_registry_harbor.py')
+
+    assert "revision = '20261003_registry_harbor'" in migration
+    assert "down_revision = '20261001_tenant_cap_pod_storage'" in migration

@@ -1,7 +1,7 @@
 """add Harbor Registry provider connection
 
 Revision ID: 20261003_registry_harbor
-Revises: 20260928_tenant_namespace_gen
+Revises: 20261001_tenant_cap_pod_storage
 Create Date: 2026-10-03
 """
 
@@ -9,7 +9,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision = '20261003_registry_harbor'
-down_revision = '20260928_tenant_namespace_gen'
+down_revision = '20261001_tenant_cap_pod_storage'
 branch_labels = None
 depends_on = None
 
