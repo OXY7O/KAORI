@@ -106,6 +106,8 @@ _WORKFLOW_LABELS: tuple[tuple[str, str], ...] = (
     ('alertmanager.instance_detail', 'Connection Details'),
     ('minio.new_instance', 'Register Connection'),
     ('minio.instance_detail', 'Connection Details'),
+    ('harbor.new_instance', 'Register Connection'),
+    ('harbor.instance_detail', 'Connection Details'),
     ('users.create', 'Add User'),
     ('users.edit', 'Edit User'),
     ('users.reset_password', 'Reset Password'),
