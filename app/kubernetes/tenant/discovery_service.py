@@ -679,4 +679,3 @@ def _take_over_capsule_allocation(
             profile_id=profile.id,
         )
     return profile
-
