@@ -142,14 +142,15 @@ def _collect_artifact(
             reference=artifact.digest,
         )
     except HarborResponseError as exc:
-        if exc.status == 404:
+        if exc.status in {403, 404}:
+            evidence_code = 'artifact_forbidden' if exc.status == 403 else 'artifact_not_found'
             return RegistryArtifactSecurityEvidence(
                 artifact_id=artifact.id,
                 vulnerability_state='unavailable',
-                scan_status='artifact_not_found',
+                scan_status=evidence_code,
                 signature_state='unavailable',
                 sbom_state='unavailable',
-                metadata={'provider_evidence': 'artifact_not_found'},
+                metadata={'provider_evidence': evidence_code},
             )
         raise
 
@@ -161,7 +162,7 @@ def _collect_artifact(
             addition='vulnerabilities',
         )
     except HarborResponseError as exc:
-        if exc.status == 404:
+        if exc.status in {403, 404}:
             addition = {}
         else:
             raise
