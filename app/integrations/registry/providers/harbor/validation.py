@@ -55,8 +55,10 @@ def validate_source(source: HarborInstance, *, source_label: str) -> ValidationR
 
     health_summary: dict[str, object] = {}
     projects: list[dict[str, object]] = []
+    repositories: list[dict[str, object]] = []
     project_count = 0
     repository_count = 0
+    artifact_count = 0
 
     try:
         health = client.get_health()
@@ -120,6 +122,77 @@ def validate_source(source: HarborInstance, *, source_label: str) -> ValidationR
         steps.append(ValidationStep('repository_discovery', 'Repository Discovery', 'failed', str(exc)))
         logger.warning('Harbor repository probe failed for %s: %s', source_label, exc)
 
+    if repositories:
+        repository_scope = str(repositories[0].get('name') or '').strip()
+        project_prefix = f'{project_scope}/'
+        if repository_scope.startswith(project_prefix):
+            repository_scope = repository_scope[len(project_prefix) :]
+        if repository_scope:
+            try:
+                artifacts = client.list_artifacts(
+                    project_name_or_id=str(project_scope),
+                    repository_name=repository_scope,
+                    page=1,
+                    page_size=1,
+                    with_scan_overview=True,
+                    with_signature=True,
+                    with_accessory=True,
+                )
+                artifact_count = len(artifacts)
+                capabilities.add('artifact_discovery')
+                steps.append(
+                    ValidationStep(
+                        'artifact_discovery',
+                        'Artifact Discovery',
+                        'success',
+                        f'Harbor artifact metadata is readable for repository {repository_scope}.',
+                    )
+                )
+                if artifacts:
+                    representative = artifacts[0]
+                    scan_overview = representative.get('scan_overview')
+                    if isinstance(scan_overview, dict) and scan_overview:
+                        capabilities.add('vulnerability_read')
+                        steps.append(
+                            ValidationStep(
+                                'vulnerability_read',
+                                'Vulnerability Evidence',
+                                'success',
+                                'Harbor exposes scanner-produced vulnerability metadata for the representative artifact.',
+                            )
+                        )
+                    accessory_text = str(representative.get('accessories') or '').lower()
+                    if any(token in accessory_text for token in ('signature', 'cosign', 'notation', 'notary')):
+                        capabilities.add('signature_metadata')
+                        steps.append(
+                            ValidationStep(
+                                'signature_metadata',
+                                'Signature Metadata',
+                                'success',
+                                'Harbor exposes signature-related accessory metadata for the representative artifact.',
+                            )
+                        )
+                    if any(token in accessory_text for token in ('sbom', 'spdx', 'cyclonedx', 'syft')):
+                        capabilities.add('sbom_metadata')
+                        steps.append(
+                            ValidationStep(
+                                'sbom_metadata',
+                                'SBOM Metadata',
+                                'success',
+                                'Harbor exposes SBOM-related accessory metadata for the representative artifact.',
+                            )
+                        )
+            except HarborError as exc:
+                steps.append(
+                    ValidationStep(
+                        'artifact_discovery',
+                        'Artifact Discovery',
+                        'warning',
+                        str(exc),
+                    )
+                )
+                logger.warning('Harbor optional artifact probe failed for %s: %s', source_label, exc)
+
     version = str(connection.get('version') or 'unknown')
     compatibility = evaluate_compatibility('harbor', version, capabilities=capabilities)
     message = compatibility.message
@@ -133,7 +206,15 @@ def validate_source(source: HarborInstance, *, source_label: str) -> ValidationR
         'provider_health': health_summary,
         'project_probe_count': project_count,
         'repository_probe_count': repository_count,
-        'required_capabilities_observed': sorted(capabilities),
+        'artifact_probe_count': artifact_count,
+        'required_capabilities_observed': sorted(
+            capability for capability in capabilities
+            if capability in {'provider_health', 'system_identity', 'project_discovery', 'repository_discovery'}
+        ),
+        'optional_capabilities_observed': sorted(
+            capability for capability in capabilities
+            if capability not in {'provider_health', 'system_identity', 'project_discovery', 'repository_discovery'}
+        ),
     }
     source.readiness_status = compatibility.readiness
     source.validation_message = message
