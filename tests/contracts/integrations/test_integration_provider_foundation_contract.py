@@ -8,7 +8,7 @@ def read(relative: str) -> str:
 
 
 def test_registry_owns_domain_capability_and_provider_extension_metadata() -> None:
-    registry = read('app/integrations/registry.py')
+    registry = read('app/integrations/kernel/registry.py')
     taxonomy = read('app/integrations/taxonomy.py')
     taxonomy_catalog = read('app/definitions/catalogs/integrations/taxonomy.yaml')
 

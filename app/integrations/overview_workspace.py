@@ -10,7 +10,7 @@ from app.integrations.overview_extensions import (
     load_extension_integration_instances,
     sort_runtime_rows,
 )
-from app.integrations.registry import registry
+from app.integrations.kernel.registry import registry
 from app.integrations.service import (
     _catalog,
     _coverage,

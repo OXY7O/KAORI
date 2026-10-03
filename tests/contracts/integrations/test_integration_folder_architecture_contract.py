@@ -23,6 +23,9 @@ def test_integration_kernel_follows_domain_type_provider_adapter_hierarchy() -> 
     for relative in required:
         assert (ROOT / relative).exists(), relative
 
+    assert (ROOT / 'app/integrations/kernel/registry.py').exists()
+    assert not (ROOT / 'app/integrations/registry.py').exists()
+
     forbidden = (
         'app/integrations/kubernetes',
         'app/integrations/metrics',

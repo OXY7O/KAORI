@@ -87,6 +87,6 @@ def test_domain_instance_loading_does_not_preload_unused_binding_relationship() 
 
     assert 'IntegrationInstance.query.filter(IntegrationInstance.integration_type.in_(integration_types))' in loader
     assert 'selectinload(IntegrationInstance.bindings)' not in loader
-    assert 'detail_url_for_record' in read('app/integrations/registry.py')
+    assert 'detail_url_for_record' in read('app/integrations/kernel/registry.py')
     assert '_resolve_provider_detail_urls(provider_registry_rows)' in service
     assert '_resolve_binding_detail_urls(binding_registry_rows)' in service

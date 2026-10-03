@@ -29,13 +29,23 @@ wire protocol.
 |---|---|
 | `app/integrations/contracts/` | Provider-neutral adapter, capability, result, and exception contracts. |
 | `app/integrations/taxonomy.py` | Canonical integration domain and capability taxonomy used by registry and presentation. |
-| `app/integrations/registry.py` | Provider registration, taxonomy ownership, operation dispatch, provider/canonical record loading, workspace routing, navigation ownership, failure hooks, and operation-to-queue mapping. |
+| `app/integrations/kernel/registry.py` | Provider registration, taxonomy ownership, operation dispatch, provider/canonical record loading, workspace routing, navigation ownership, failure hooks, and operation-to-queue mapping. |
 | `app/integrations/binding_service.py` | Provider-neutral source-to-asset binding entrypoint using canonical `SourceBindingSpec`; domain compatibility wrappers are prohibited. |
 | `app/integrations/navigation.py` | Registry-driven sidebar domain projection and provider endpoint ownership. |
 | `app/integrations/runtime/` | Shared runtime observation, scoring, monitoring, persistence, and presentation. |
 | `app/integrations/validation/` | Canonical asynchronous validation and runtime-refresh orchestration. |
 | `app/integrations/lifecycle.py` | Canonical `IntegrationInstance` and `IntegrationBinding` lifecycle. |
 | `app/integrations/deletion.py` | Provider-neutral dependency and active-job deletion guards. |
+
+### Shared-kernel versus Registry-domain namespace
+
+The shared provider-registration implementation lives under `app/integrations/kernel/registry.py`.
+The provider-neutral Registry product capability owns the separate `app/integrations/registry/`
+namespace. These are different authorities: the kernel registry resolves integration modules and
+providers, while the Registry domain owns OCI registry integrations such as Harbor.
+
+Do not recreate the retired `app/integrations/registry.py` module and do not introduce aliases such
+as `registry_domain` or root product packages to avoid this boundary.
 
 ## Provider modules
 

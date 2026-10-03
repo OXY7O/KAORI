@@ -3,7 +3,7 @@ from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_a
     CAPABILITY_KEYS,
     COMPATIBILITY_PROFILES,
 )
-from app.integrations.registry import (
+from app.integrations.kernel.registry import (
     IntegrationImplementation,
     IntegrationModule,
     canonical_model_loader,

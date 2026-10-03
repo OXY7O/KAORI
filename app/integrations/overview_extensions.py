@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.integrations.registry import registry
+from app.integrations.kernel.registry import registry
 from app.models.alertmanager import AlertmanagerInstance
 from app.models.integration import IntegrationInstance
 from app.models.kubernetes import KubernetesConnection

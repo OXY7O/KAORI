@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from app.integrations.provider_matrix import IntegrationProviderKind, provider_kind
-from app.integrations.registry import get_integration
+from app.integrations.kernel.registry import get_integration
 from app.models.integration import IntegrationInstance
 
 

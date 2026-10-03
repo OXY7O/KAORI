@@ -59,6 +59,8 @@ The MVC persistence-debt baseline is intentionally empty. Direct ORM persistence
 
 ## Physical namespace rules
 
+Shared Integration Kernel infrastructure uses explicit kernel ownership where a capability name would otherwise collide with framework infrastructure. The canonical provider-registration module is `app/integrations/kernel/registry.py`; `app/integrations/registry/` is reserved for the provider-neutral Registry capability and its providers. Do not restore `app/integrations/registry.py` or introduce capability aliases solely to avoid a namespace collision.
+
 Canonical examples:
 
 - `app/access/users/` <-> `app/templates/access/users/`

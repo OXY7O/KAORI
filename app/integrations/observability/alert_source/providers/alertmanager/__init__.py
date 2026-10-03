@@ -3,7 +3,7 @@ from app.integrations.observability.alert_source.providers.alertmanager.capabili
     COMPATIBILITY_PROFILES,
     CORE_CAPABILITY_KEYS,
 )
-from app.integrations.registry import (
+from app.integrations.kernel.registry import (
     IntegrationImplementation,
     IntegrationModule,
     canonical_model_loader,

@@ -7,7 +7,7 @@ from typing import Any
 from flask import current_app, make_response
 
 from app.integrations.contracts import IntegrationInstanceNotFound, IntegrationNotRegistered
-from app.integrations.registry import get_integration
+from app.integrations.kernel.registry import get_integration
 from app.integrations.validation.state import (
     build_validation_snapshot,
     claim_validation_job,

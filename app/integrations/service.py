@@ -26,7 +26,7 @@ from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_a
 )
 from app.integrations.overview_extensions import sort_runtime_rows
 from app.integrations.provider_matrix import provider_kind
-from app.integrations.registry import get_integration, registry
+from app.integrations.kernel.registry import get_integration, registry
 from app.integrations.taxonomy import (
     capability_definitions_for_domain,
     ordered_domain_definitions,

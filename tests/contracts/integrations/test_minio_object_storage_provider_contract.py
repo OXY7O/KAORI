@@ -30,7 +30,7 @@ def test_minio_persistence_uses_provider_neutral_object_storage_asset() -> None:
 
 def test_minio_registry_contract_is_storage_object_storage() -> None:
     registration = read('app/integrations/storage/object_storage/providers/minio/__init__.py')
-    registry = read('app/integrations/registry.py')
+    registry = read('app/integrations/kernel/registry.py')
     compatibility = read('app/integrations/storage/object_storage/providers/minio/compatibility.py')
     capabilities = read('app/integrations/storage/object_storage/providers/minio/capabilities.py')
     provider_catalog = read('app/definitions/catalogs/integrations/storage/object_storage/contract.yaml')

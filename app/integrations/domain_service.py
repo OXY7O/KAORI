@@ -12,7 +12,7 @@ from app.integrations.binding_selectors import selector_summary
 from app.integrations.contracts import IntegrationNotRegistered
 from app.integrations.observability.metrics_source.routing import normalize_routing_policy
 from app.integrations.provider_matrix import provider_kind
-from app.integrations.registry import IntegrationModule, registry
+from app.integrations.kernel.registry import IntegrationModule, registry
 from app.integrations.taxonomy import (
     asset_types_for_domain,
     capability_definitions_for_domain,

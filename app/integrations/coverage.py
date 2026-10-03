@@ -389,7 +389,7 @@ def bound_source_for_scope(
 
 
 def _instances(integration_type: str) -> list[Any]:
-    from app.integrations.registry import get_integration
+    from app.integrations.kernel.registry import get_integration
 
     module = get_integration(integration_type)
     identities = (
