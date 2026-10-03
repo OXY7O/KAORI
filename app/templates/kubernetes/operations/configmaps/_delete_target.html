@@ -22,7 +22,7 @@
             </div>
         </div>
         {% if impact and impact.reported %}
-            {{ related_collection.render('Referenced Workloads', 'Workload references from the latest committed Pod snapshot.', impact.items, impact.count, 'network', 'No Current Workload References', 'No workload reference is represented in the committed Pod snapshot for this object. This reflects only KAORI's currently collected Pod evidence; external consumers or workloads outside the collected snapshot may still depend on it.') }}
+            {{ related_collection.render('Referenced Workloads', 'Workload references from the latest committed Pod snapshot.', impact.items, impact.count, 'network', 'No Current Workload References', 'No workload reference is represented in the committed Pod snapshot for this object. This reflects only KAORI’s currently collected Pod evidence; external consumers or workloads outside the collected snapshot may still depend on it.') }}
                     {% else %}
                         <div class="rounded-xl border border-outline-default bg-status-warning-soft p-4 text-status-warning-text">
                             <div class="flex items-start gap-3">
