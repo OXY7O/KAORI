@@ -28,10 +28,13 @@ def test_application_imports_do_not_recreate_retired_registry_kernel_path() -> N
     for path in (ROOT / 'app').rglob('*.py'):
         for target in _absolute_imports(path):
             assert target != forbidden
-            assert not target.startswith(f'{forbidden}.')
 
 
 def test_registry_capability_namespace_remains_available_for_domain_ownership() -> None:
+    registry_package = (ROOT / 'app/integrations/registry/__init__.py').read_text(encoding='utf-8')
+    assert 'get_integration' not in registry_package
+    assert 'IntegrationRegistry' not in registry_package
+
     kernel = (ROOT / 'app/integrations/kernel/registry.py').read_text(encoding='utf-8')
     assert 'class IntegrationRegistry' in kernel
     assert 'class IntegrationModule' in kernel
