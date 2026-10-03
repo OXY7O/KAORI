@@ -534,7 +534,8 @@ _CAPABILITY_VIEWS: dict[str, tuple[CapabilityViewDefinition, ...]] = {
             'analytics.object_storage_alerts',
             ('object_storage_analytics.view',),
         ),
-    ),    'artifact_registry_inventory': (
+    ),
+    'artifact_registry_inventory': (
         CapabilityViewDefinition(
             'projects', 'Projects', 'folder-tree', 'artifact_registry.projects', ('artifact_registry.view',)
         ),
