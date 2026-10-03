@@ -56,6 +56,16 @@ def test_inventory_blocked_state_preserves_normal_metadata_roles() -> None:
     assert "page_hero.meta_label('database-backup', overview.inventory_coverage" in object_storage
 
 
+    storage_systems = read('app/templates/storage/object_storage/inventory/systems/partials/_hero.html')
+    storage_assets = read('app/templates/storage/object_storage/inventory/buckets/partials/_hero.html')
+    systems_metadata = storage_systems.split('page_hero.metadata_row_classes()', 1)[1].split('</div>', 1)[0]
+    assets_metadata = storage_assets.split('page_hero.metadata_row_classes()', 1)[1].split('</div>', 1)[0]
+    assert 'inventory.setup.is_blocked' not in systems_metadata
+    assert 'Object Storage Setup Required' not in systems_metadata
+    assert 'inventory.setup.is_blocked' not in assets_metadata
+    assert 'Object Storage Setup Required' not in assets_metadata
+
+
 def test_analytics_provider_absence_uses_provider_prerequisite_before_secondary_dependencies() -> None:
     kubernetes_page = read('app/templates/kubernetes/analytics/materialization/blocked.html')
     kubernetes_posture = read('app/templates/kubernetes/analytics/components/_blocked_posture.html')
