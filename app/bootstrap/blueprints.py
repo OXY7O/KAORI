@@ -10,6 +10,7 @@ def register_blueprints(app: Flask) -> None:
     from app.access.identity_providers.routes import bp as identity_providers_bp
     from app.access.users.routes import bp as users_bp
     from app.analytics.routes import analytics_bp
+    from app.artifact_registry.routes import artifact_registry_bp
     from app.integrations.delivery.notification_channels.routes import notification_channels_bp
     from app.integrations.observability.alert_source.providers.alertmanager.application.routes import alertmanager_bp
     from app.integrations.observability.metrics_source.application.routes import metrics_bp
@@ -48,6 +49,7 @@ def register_blueprints(app: Flask) -> None:
         notification_channels_bp,
         alert_intelligence_bp,
         analytics_bp,
+        artifact_registry_bp,
         governance_bp,
         kubernetes_operations_bp,
         tenant_bp,
