@@ -8,6 +8,7 @@ from sqlalchemy.orm import joinedload
 
 from app.common.pagination import paginate_sequence
 from app.models.integration import IntegrationInstance
+from app.models.registry_security import RegistrySecurityCollectionState
 from app.models.registry_artifact import (
     RegistryArtifact,
     RegistryCollectionState,
@@ -85,6 +86,7 @@ def build_overview() -> dict[str, Any]:
     repositories = RegistryRepository.query.count()
     artifacts = RegistryArtifact.query.count()
     tag_count = sum(len(item.tags) for item in RegistryArtifact.query.options(joinedload(RegistryArtifact.tags)).all())
+    security_states = RegistrySecurityCollectionState.query.all()
     provider_distribution: dict[str, int] = {}
     for instance in instances:
         provider_distribution[instance.provider_key] = provider_distribution.get(instance.provider_key, 0) + 1
@@ -99,6 +101,18 @@ def build_overview() -> dict[str, Any]:
         'repository_count': repositories,
         'artifact_count': artifacts,
         'tag_count': tag_count,
+        'security': {
+            'finding_count': sum(item.finding_count for item in security_states),
+            'critical_count': sum(item.critical_count for item in security_states),
+            'high_count': sum(item.high_count for item in security_states),
+            'scanned_artifact_count': sum(item.scanned_artifact_count for item in security_states),
+            'signature_observed_count': sum(item.signature_observed_count for item in security_states),
+            'sbom_observed_count': sum(item.sbom_observed_count for item in security_states),
+            'latest_observed_at': max(
+                (item.observed_at for item in security_states if item.observed_at),
+                default=None,
+            ),
+        },
         'provider_distribution': [
             {'key': key, 'label': key.replace('_', ' ').title(), 'count': count}
             for key, count in sorted(provider_distribution.items())
