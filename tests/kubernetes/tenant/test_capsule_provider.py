@@ -25,7 +25,29 @@ class _ApiClient:
         return {'items': self.crds}
 
 
-def _crd(name, versions=('v1beta2',), *, reported_version='0.14.0'):
+def _crd(
+    name,
+    versions=('v1beta2',),
+    *,
+    reported_version='0.14.0',
+    tenant_quota_schema=True,
+):
+    version_items = []
+    for version in versions:
+        item = {'name': version, 'served': True}
+        if name == 'tenants.capsule.clastix.io' and tenant_quota_schema:
+            item['schema'] = {
+                'openAPIV3Schema': {
+                    'properties': {
+                        'spec': {
+                            'properties': {
+                                'resourceQuotas': {'type': 'object'},
+                            }
+                        }
+                    }
+                }
+            }
+        version_items.append(item)
     return {
         'metadata': {
             'name': name,
@@ -33,7 +55,7 @@ def _crd(name, versions=('v1beta2',), *, reported_version='0.14.0'):
         },
         'spec': {
             'group': 'capsule.clastix.io',
-            'versions': [{'name': version, 'served': True} for version in versions],
+            'versions': version_items,
         },
     }
 
@@ -61,6 +83,7 @@ def test_capsule_discovery_is_capability_aware_not_boolean() -> None:
     assert snapshot.capabilities['admission_enforcement'] is TenantCapabilityStatus.AVAILABLE
     assert snapshot.capabilities['proxy'] is TenantCapabilityStatus.AVAILABLE
     assert snapshot.capabilities['shared_global_quota'] is TenantCapabilityStatus.AVAILABLE
+    assert snapshot.capabilities['tenant_resource_quotas'] is TenantCapabilityStatus.AVAILABLE
     assert snapshot.capabilities['resource_pools'] is TenantCapabilityStatus.AVAILABLE
     assert snapshot.capabilities['replication'] is TenantCapabilityStatus.AVAILABLE
 
@@ -145,3 +168,43 @@ def test_native_recovery_fails_when_native_equivalent_is_unavailable() -> None:
             materialized_capabilities=set(native),
             verified=True,
         )
+
+
+def test_capsule_tenant_resource_quota_capability_requires_served_crd_schema_path() -> None:
+    crds = _full_crds()
+    crds[0] = _crd(
+        'tenants.capsule.clastix.io',
+        tenant_quota_schema=False,
+    )
+    snapshot = discover_capsule(
+        _ApiClient(crds),
+        probes={'admission_enforcement': True},
+    )
+
+    assert snapshot.capabilities['tenant_controller'] is TenantCapabilityStatus.AVAILABLE
+    assert snapshot.capabilities['tenant_resource_quotas'] is TenantCapabilityStatus.UNAVAILABLE
+
+
+def test_capsule_tenant_resource_quota_capability_is_version_specific() -> None:
+    tenant = _crd(
+        'tenants.capsule.clastix.io',
+        versions=('v1beta2', 'v1beta1'),
+        tenant_quota_schema=False,
+    )
+    tenant['spec']['versions'][0]['schema'] = {
+        'openAPIV3Schema': {
+            'properties': {
+                'spec': {
+                    'properties': {
+                        'resourceQuotas': {'type': 'object'},
+                    }
+                }
+            }
+        }
+    }
+    snapshot = discover_capsule(
+        _ApiClient([tenant]),
+        probes={'admission_enforcement': True},
+    )
+
+    assert snapshot.capabilities['tenant_resource_quotas'] is TenantCapabilityStatus.AVAILABLE

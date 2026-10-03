@@ -225,3 +225,86 @@ def test_hero_context_panel_footer_variants_share_one_precise_row_rhythm() -> No
     assert "mt-auto grid min-h-10 gap-2 {{ 'grid-cols-2' if columns == 2 else 'grid-cols-1' }}" in source
     assert 'mt-3 grid grid-cols-2 gap-2' not in source
     assert 'mt-auto grid gap-2 pt-3' not in source
+
+
+def test_intelligence_overview_uses_non_redundant_hero_identity() -> None:
+    source = (ROOT / 'app' / 'templates' / 'intelligence' / 'overview.html').read_text(encoding='utf-8')
+
+    assert "page_hero.intro('brain-circuit', 'Intelligence', 'scan-search')" in source
+    assert '<h1 class="{{ page_hero.title_classes() }}">Overview</h1>' in source
+    assert 'Infrastructure Intelligence' not in source
+    assert '>Intelligence Overview</h1>' not in source
+
+
+def test_kubernetes_blocker_families_are_locked_to_general_and_analytics() -> None:
+    standard = (ROOT / 'docs' / 'design' / 'components' / 'HERO.md').read_text(encoding='utf-8')
+    tenant = (ROOT / 'app' / 'templates' / 'kubernetes' / 'tenant' / 'base.html').read_text(encoding='utf-8')
+    analytics = (ROOT / 'app' / 'templates' / 'kubernetes' / 'analytics' / 'overview' / 'index.html').read_text(
+        encoding='utf-8'
+    )
+
+    assert 'Kubernetes has exactly two prerequisite blocker families' in standard
+    assert 'components/cluster/_hero_blocked_context.html' in tenant
+    assert 'components/cluster/_onboarding_banner.html' in tenant
+    assert 'components/states/_blocked_state.html' not in tenant
+    assert '{% block page_capability_navigation %}' in analytics
+    assert '{% if dependency_blocker %}' in analytics
+
+
+def test_active_hero_families_use_navigation_owned_non_redundant_identity() -> None:
+    expected = {
+        'app/templates/kubernetes/inventory/overview/partials/_hero.html': ('Kubernetes Inventory', 'Overview'),
+        'app/templates/kubernetes/inventory/nodes/partials/_hero.html': ('Kubernetes Inventory', 'Nodes'),
+        'app/templates/kubernetes/governance/overview/index.html': ('Kubernetes Governance', 'Overview'),
+        'app/templates/kubernetes/governance/tls_certificates/partials/_hero.html': (
+            'Kubernetes Governance',
+            'TLS Certificates',
+        ),
+        'app/templates/kubernetes/analytics/capacity/partials/_hero.html': ('Kubernetes Analytics', 'Capacity'),
+        'app/templates/storage/object_storage/inventory/overview/partials/_hero.html': (
+            'Object Storage Inventory',
+            'Overview',
+        ),
+        'app/templates/access/overview/index.html': ('Access', 'Overview'),
+        'app/templates/platform_operations/overview/index.html': ('Operations Center', 'Overview'),
+    }
+
+    for relative, (eyebrow, title) in expected.items():
+        source = (ROOT / relative).read_text(encoding='utf-8')
+        assert eyebrow in source, relative
+        assert f'>{title}</h1>' in source, relative
+
+
+def test_reports_and_integrations_hero_identity_follow_sidebar_vocabulary() -> None:
+    report_expectations = {
+        'overview/index.html': ('Reports', 'Overview'),
+        'generate/index.html': ('Reports', 'Generate'),
+        'generated/index.html': ('Reports', 'Generated'),
+        'report_templates/index.html': ('Reports', 'Templates'),
+        'storage/index.html': ('Reports', 'Storage'),
+        'schedules/index.html': ('Reports', 'Schedules'),
+    }
+    base = ROOT / 'app' / 'templates' / 'reports'
+    for relative, (eyebrow, title) in report_expectations.items():
+        source = (base / relative).read_text(encoding='utf-8')
+        assert f"'{eyebrow}'" in source, relative
+        assert f'>{title}</h1>' in source, relative
+
+    integration_overview = (ROOT / 'app/templates/integrations/overview.html').read_text(encoding='utf-8')
+    integration_domain = (ROOT / 'app/templates/integrations/domain.html').read_text(encoding='utf-8')
+    assert '{% set badge = "Integrations" %}' in integration_overview
+    assert '{% set title = "Overview" %}' in integration_overview
+    assert 'page_hero.intro(domain.icon, "Integrations", domain.icon)' in integration_domain
+    assert '>{{ domain.label }}</h1>' in integration_domain
+
+    general = (ROOT / 'app/templates/settings/general/partials/_hero.html').read_text(encoding='utf-8')
+    account = (ROOT / 'app/templates/settings/account/partials/_hero.html').read_text(encoding='utf-8')
+    assert "page_hero.intro('settings-2', 'Settings'," in general
+    assert '>General</h1>' in general
+    assert "page_hero.intro('settings-2', 'Settings'," in account
+    assert '>Account</h1>' in account
+
+    object_storage_pages = (ROOT / 'app/storage/object_storage/analytics/pages.py').read_text(encoding='utf-8')
+    assert object_storage_pages.count("'Object Storage Analytics',") == 6
+    for title in ('Overview', 'Capacity & Usage', 'Performance', 'Forecast', 'Top Consumers', 'Alerts & Anomalies'):
+        assert f"        '{title}'," in object_storage_pages

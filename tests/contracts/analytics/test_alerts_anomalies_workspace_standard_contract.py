@@ -37,7 +37,7 @@ def test_alerts_hero_uses_canonical_context_card_and_evidence_semantics() -> Non
     assert 'evidence_incomplete' in hero
     assert re.search(r'posture_status\s*=\s*["\']Watch["\']', hero)
     assert re.search(r'posture_tone\s*=\s*["\']warning["\']', hero)
-    assert "'Manage Clusters'" in hero
+    assert "'Open Cluster Integrations'" in hero
     assert 'context_posture_header' not in hero
     assert 'context_posture_note' not in hero
     assert 'context_bottom_notice' not in hero

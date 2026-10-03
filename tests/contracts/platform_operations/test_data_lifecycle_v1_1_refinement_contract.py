@@ -96,4 +96,5 @@ def test_dark_sidebar_active_parent_has_no_separate_left_edge_violet_accent() ->
 
     assert 'box-shadow: inset 3px 0 0 var(--kaori-brand-primary)' not in styles
     assert 'box-shadow: 0 8px 20px rgba(5, 3, 9, 0.24)' in styles
-    assert 'dark mode keeps the active Violet surface without a separate left-edge accent' in sidebar_doc
+    assert 'active workspace uses canonical `sidebar-parent-active`' in sidebar_doc
+    assert 'never use the same solid Violet fill as the level-1 parent' in sidebar_doc

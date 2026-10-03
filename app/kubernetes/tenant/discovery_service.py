@@ -5,14 +5,15 @@ from datetime import UTC, datetime
 from typing import Any, cast
 
 from kubernetes.client.rest import ApiException
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.common.pagination import paginate_sequence
 from app.common.presentation import present_user_datetime
 from app.extensions.db import db
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
+from app.kubernetes.tenant.allocation_observation import observe_native_namespace_allocation
+from app.kubernetes.tenant.capsule_allocation_observation import observe_capsule_tenant_allocation
+from app.kubernetes.tenant.capsule_provider import discover_capsule
 from app.models import Cluster
-from app.models.cluster import ClusterStatus
 from app.models.kubernetes import KubernetesConnection
 from app.models.tenant import (
     Tenant,
@@ -21,7 +22,6 @@ from app.models.tenant import (
     TenantLifecycleStatus,
     TenantNamespace,
     TenantNamespaceProvisioningStatus,
-    TenantOwnershipStatus,
 )
 
 _SYSTEM_NAMESPACES = frozenset({'default', 'kube-system', 'kube-public', 'kube-node-lease'})
@@ -130,6 +130,48 @@ def _capsule_items(client) -> tuple[str | None, list[dict[str, Any]]]:
         items = payload.get('items') if isinstance(payload, dict) else None
         return version, [item for item in (items or []) if isinstance(item, dict)]
     return None, []
+
+
+def _apply_capsule_allocation_capability_state(
+    allocation: dict[str, Any],
+    *,
+    provider_state: str,
+    capability_evidence: Mapping[str, Any],
+    preview_only: bool = False,
+) -> None:
+    capabilities = capability_evidence.get('capabilities')
+    capabilities = capabilities if isinstance(capabilities, Mapping) else {}
+    if not preview_only and provider_state != 'capsule':
+        return
+    if allocation.get('authority_unsupported_dimensions') or allocation.get('authority_ambiguous_dimensions'):
+        return
+
+    authority = str(allocation.get('allocation_authority') or '')
+    capability = ''
+    label = ''
+    if authority == 'capsule_global_resource_quota':
+        capability = 'shared_global_quota'
+        label = 'Capsule GlobalResourceQuota'
+    elif authority == 'capsule_tenant_resource_quotas':
+        capability = 'tenant_resource_quotas'
+        label = 'Capsule Tenant.spec.resourceQuotas'
+    if not capability or str(capabilities.get(capability) or '') != 'available':
+        return
+
+    allocation['control_state'] = 'observed'
+    allocation['control_reason'] = (
+        (
+            f'{label} authority and the {capability} CRD/schema capability are observed. '
+            'Adoption revalidates the admission path before committing governance evidence.'
+        )
+        if preview_only
+        else (
+            f'{label} authority is observed and the {capability} capability is admitted. '
+            'Provider state remains read-only until explicit governance cutover.'
+        )
+    )
+    allocation['admitted_capability'] = capability if not preview_only else None
+    allocation['capability_preview'] = capability if preview_only else None
 
 
 def get_tenant_discovery_context(
@@ -373,6 +415,135 @@ def get_tenant_discovery_context(
     }
 
 
+def get_tenant_adoption_preflight_context(
+    *,
+    cluster_id: str,
+    provider_key: str,
+    resource_name: str,
+) -> dict[str, Any]:
+    """Build one deep, live Adoption Preflight only after explicit operator review."""
+
+    normalized_cluster = str(cluster_id or '').strip()
+    normalized_provider = str(provider_key or '').strip().lower()
+    normalized_resource = str(resource_name or '').strip()
+    if normalized_provider not in {'native_kubernetes', 'capsule'}:
+        raise ValueError('Unsupported Tenant discovery provider.')
+    if not normalized_cluster or not normalized_resource:
+        raise ValueError('Select a discovered provider object.')
+
+    cluster = (
+        Cluster.query.join(KubernetesConnection, KubernetesConnection.cluster_id == Cluster.id)
+        .filter(Cluster.id == normalized_cluster)
+        .first()
+    )
+    if cluster is None:
+        raise ValueError('The selected Kubernetes cluster is no longer available.')
+
+    client = runtime_adapter.build_client(cluster)
+
+    if normalized_provider == 'native_kubernetes':
+        try:
+            item = client.core_api().read_namespace(normalized_resource, _request_timeout=5)
+        except ApiException as exc:
+            if exc.status == 404:
+                raise ValueError('The discovered namespace is no longer present in Kubernetes.') from exc
+            raise
+
+        metadata = getattr(item, 'metadata', None)
+        labels = dict(getattr(metadata, 'labels', None) or {})
+        managed_record = _managed_namespace_map([normalized_cluster]).get((normalized_cluster, normalized_resource))
+        provider_status = _namespace_phase(item)
+        management_status, eligibility = _native_management(
+            namespace=normalized_resource,
+            labels=labels,
+            managed_record=managed_record,
+        )
+        if managed_record is None and provider_status == 'Terminating':
+            management_status = 'Blocked'
+            eligibility = 'Namespace is terminating and cannot enter governed adoption.'
+        if management_status != 'Discovered':
+            raise ValueError(eligibility)
+
+        allocation = observe_native_namespace_allocation(
+            client.core_api(),
+            normalized_resource,
+        )
+        row = {
+            'cluster': cluster,
+            'cluster_id': normalized_cluster,
+            'provider_key': 'native_kubernetes',
+            'provider_label': 'Native Kubernetes',
+            'resource_kind': 'Namespace',
+            'resource_name': normalized_resource,
+            'provider_status': provider_status,
+            'provider_tone': _tone(provider_status),
+            'management_status': management_status,
+            'management_tone': 'info',
+            'tenant_name': None,
+            'tenant_id': None,
+            'eligibility': eligibility,
+            'provider_reference': str(getattr(metadata, 'uid', None) or normalized_resource),
+            'allocation_preflight': allocation,
+        }
+    else:
+        capsule_version, item = _read_capsule_tenant(client, normalized_resource)
+        tenant = _managed_capsule_map([normalized_cluster]).get((normalized_cluster, normalized_resource))
+        provider_status = _capsule_phase(item)
+        management_status = (
+            'Managed' if tenant is not None else ('Blocked' if provider_status == 'Terminating' else 'Discovered')
+        )
+        eligibility = (
+            'Already governed by KAORI.'
+            if tenant is not None
+            else (
+                'Capsule Tenant is terminating and cannot be adopted.'
+                if management_status == 'Blocked'
+                else 'Candidate for governed Capsule adoption preflight; provider authority remains Capsule.'
+            )
+        )
+        if management_status != 'Discovered':
+            raise ValueError(eligibility)
+
+        allocation = observe_capsule_tenant_allocation(
+            client,
+            tenant_name=normalized_resource,
+            tenant_item=item,
+        )
+        capsule_snapshot = discover_capsule(client.custom_objects_api().api_client)
+        capsule_capability_evidence = capsule_snapshot.as_dict()
+        _apply_capsule_allocation_capability_state(
+            allocation,
+            provider_state='preview',
+            capability_evidence=capsule_capability_evidence,
+            preview_only=True,
+        )
+        metadata = item.get('metadata') or {}
+        row = {
+            'cluster': cluster,
+            'cluster_id': normalized_cluster,
+            'provider_key': 'capsule',
+            'provider_label': 'Capsule',
+            'resource_kind': 'Tenant CR',
+            'resource_name': normalized_resource,
+            'provider_status': provider_status,
+            'provider_tone': _tone(provider_status),
+            'management_status': management_status,
+            'management_tone': 'info',
+            'tenant_name': None,
+            'tenant_id': None,
+            'eligibility': eligibility,
+            'provider_reference': str(metadata.get('uid') or normalized_resource),
+            'provider_api_version': capsule_version,
+            'allocation_preflight': allocation,
+            'capsule_capability_preflight': capsule_capability_evidence,
+        }
+
+    return {
+        'tenant_adoption_row': row,
+        'tenant_adoption_checked_at': present_user_datetime(datetime.now(UTC)),
+    }
+
+
 def _adoption_environment(value: str) -> str:
     normalized = str(value or '').strip().lower()
     allowed = {item.value for item in TenantEnvironmentName}
@@ -423,173 +594,88 @@ def _read_capsule_tenant(client, name: str) -> tuple[str, dict[str, Any]]:
     raise ValueError('The Capsule Tenant is no longer present in the provider.')
 
 
-def adopt_discovered_tenant_committed(
-    source: Mapping[str, Any],
-) -> tuple[Tenant, TenantEnvironment, TenantNamespace | None]:
-    """Adopt an existing provider object without mutating Kubernetes or Capsule."""
+def _materialize_capsule_adoption_profile(
+    tenant: Tenant,
+    allocation: Mapping[str, Any],
+):
+    from app.models.tenant import TenantResourceProfile, TenantResourceProfileClass
 
-    cluster_id = str(source.get('cluster_id') or '').strip()
-    provider_key = str(source.get('provider_key') or '').strip().lower()
-    resource_name = str(source.get('resource_name') or '').strip()
-    tenant_name = str(source.get('tenant_name') or resource_name).strip()
-    environment_name = _adoption_environment(str(source.get('environment') or ''))
-
-    if provider_key not in {'native_kubernetes', 'capsule'}:
-        raise ValueError('Unsupported Tenant discovery provider.')
-    if not resource_name:
-        raise ValueError('Select a discovered provider object.')
-    if not tenant_name or len(tenant_name) > 120:
-        raise ValueError('Tenant name is required and must be at most 120 characters.')
-
-    cluster = (
-        Cluster.query.join(KubernetesConnection, KubernetesConnection.cluster_id == Cluster.id)
-        .filter(
-            Cluster.id == cluster_id,
-            Cluster.status == ClusterStatus.CONNECTED.value,
-            KubernetesConnection.readiness_status == 'ready',
-        )
-        .first()
+    quota = dict(allocation.get('shared_quota') or {})
+    profile = TenantResourceProfile()
+    profile.name = f'Adopted {tenant.name} Allocation · {tenant.id}'
+    profile.profile_class = TenantResourceProfileClass.CUSTOM.value
+    profile.version = 1
+    profile.description = (
+        'Provider-equivalent Capsule allocation baseline imported during managed adoption. '
+        'Effective provider values are preserved while KAORI takes governance ownership.'
     )
-    if cluster is None:
-        raise ValueError('The selected Kubernetes cluster is no longer available for Tenant adoption.')
+    profile.quota_hard_json = quota
+    profile.limit_defaults_json = {}
+    profile.storage_policy_json = {}
+    profile.advanced_controls_json = {}
+    profile.enabled = True
+    db.session.add(profile)
+    db.session.flush()
+    return profile
 
-    client = runtime_adapter.build_client(cluster)
-    now = datetime.now(UTC)
 
-    # Import here to reuse the canonical KAORI slug contract without making
-    # discovery a provider-specific clone of Tenant creation logic.
-    from app.kubernetes.tenant.service import normalize_tenant_slug
+def _materialize_capsule_namespace_policy_profile(
+    tenant: Tenant,
+    record: TenantNamespace,
+    observation: Mapping[str, Any],
+):
+    from app.models.tenant import TenantResourceProfile, TenantResourceProfileClass
 
-    slug = normalize_tenant_slug(str(source.get('tenant_slug') or tenant_name))
-    tenant_generation = _next_tenant_generation(cluster_id=str(cluster.id), slug=slug)
+    profile = TenantResourceProfile()
+    profile.name = f'Adopted {tenant.name}/{record.namespace} Policy · {record.id}'
+    profile.profile_class = TenantResourceProfileClass.CUSTOM.value
+    profile.version = 1
+    profile.description = (
+        'Provider-equivalent namespaced Container/PVC policy imported during Capsule adoption. '
+        'Capsule remains authoritative for Tenant quota.'
+    )
+    profile.quota_hard_json = {}
+    profile.limit_defaults_json = dict(observation.get('limits') or {})
+    profile.storage_policy_json = dict(observation.get('storage_policy') or {})
+    profile.advanced_controls_json = {}
+    profile.enabled = True
+    db.session.add(profile)
+    db.session.flush()
+    return profile
 
-    tenant = Tenant()
-    tenant.cluster_id = cluster.id
-    tenant.name = tenant_name
-    tenant.slug = slug
-    tenant.generation = tenant_generation
-    tenant.description = f'Adopted from live {provider_key.replace("_", " ")} discovery.'
-    tenant.lifecycle_status = TenantLifecycleStatus.READY.value
-    tenant.ownership_status = TenantOwnershipStatus.ADOPTED.value
 
-    namespace_record: TenantNamespace | None = None
+def _take_over_capsule_allocation(
+    *,
+    tenant: Tenant,
+    allocation: Mapping[str, Any],
+):
+    authority = str(allocation.get('allocation_authority') or '')
+    shared_quota = dict(allocation.get('shared_quota') or {})
 
-    if provider_key == 'native_kubernetes':
-        try:
-            item = client.core_api().read_namespace(resource_name, _request_timeout=5)
-        except ApiException as exc:
-            if exc.status == 404:
-                raise ValueError('The discovered namespace is no longer present in Kubernetes.') from exc
-            raise
-
-        metadata = getattr(item, 'metadata', None)
-        labels = dict(getattr(metadata, 'labels', None) or {})
-        provider_status = _namespace_phase(item)
-        management_status, reason = _native_management(
-            namespace=resource_name,
-            labels=labels,
-            managed_record=_managed_namespace_map([str(cluster.id)]).get((str(cluster.id), resource_name)),
+    if authority == 'none_observed' and not shared_quota:
+        return None
+    if authority not in {'capsule_global_resource_quota', 'capsule_tenant_resource_quotas'}:
+        raise ValueError(
+            'Capsule adoption requires one admitted Capsule quota authority before KAORI can take full governance.'
         )
-        if provider_status == 'Terminating':
-            raise ValueError('The discovered namespace is terminating and cannot be adopted.')
-        if management_status != 'Discovered':
-            raise ValueError(reason)
 
-        namespace_generation = _next_namespace_generation(
-            cluster_id=str(cluster.id),
-            namespace=resource_name,
+    profile = _materialize_capsule_adoption_profile(tenant, allocation)
+    if authority == 'capsule_global_resource_quota':
+        from app.kubernetes.tenant.capsule_allocation_governance import (
+            cutover_capsule_global_quota_allocation,
         )
-        provider_uid = str(getattr(metadata, 'uid', None) or resource_name)
-        resource_version = str(getattr(metadata, 'resource_version', None) or '')
 
-        tenant.provider_key = 'native_kubernetes'
-        tenant.provider_state = 'native'
-        tenant.reconciliation_authority = 'native_kubernetes'
-        tenant.provider_reference = resource_name
-        tenant.provider_evidence_json = {
-            'source': 'tenant_discovery_adoption',
-            'provider': 'native_kubernetes',
-            'resource_kind': 'Namespace',
-            'resource_name': resource_name,
-            'provider_uid': provider_uid,
-            'resource_version': resource_version,
-            'adopted_at': now.isoformat(),
-            'provider_mutation_performed': False,
-            'secret_material_persisted': False,
-        }
-
-        db.session.add(tenant)
-
-        environment = TenantEnvironment()
-        environment.tenant = tenant
-        environment.environment = environment_name
-        db.session.add(environment)
-
-        namespace_record = TenantNamespace()
-        namespace_record.environment = environment
-        namespace_record.cluster_id = cluster.id
-        namespace_record.namespace = resource_name
-        namespace_record.generation = namespace_generation
-        namespace_record.ownership_status = TenantOwnershipStatus.ADOPTED.value
-        namespace_record.provisioning_status = TenantNamespaceProvisioningStatus.READY.value
-        namespace_record.provisioning_message = 'Existing Kubernetes namespace adopted without provider mutation.'
-        namespace_record.provider_reference = provider_uid
-        namespace_record.last_reconciled_at = now
-        namespace_record.provisioning_evidence_json = {
-            'source': 'tenant_discovery_adoption',
-            'provider': 'native_kubernetes',
-            'provider_uid': provider_uid,
-            'resource_version': resource_version,
-            'observed_present': True,
-            'adopted_at': now.isoformat(),
-            'provider_mutation_performed': False,
-            'secret_material_persisted': False,
-        }
-        db.session.add(namespace_record)
-
+        cutover_capsule_global_quota_allocation(
+            tenant_id=tenant.id,
+            profile_id=profile.id,
+        )
     else:
-        capsule_version, item = _read_capsule_tenant(client, resource_name)
-        status = _capsule_phase(item)
-        if status == 'Terminating':
-            raise ValueError('The Capsule Tenant is terminating and cannot be adopted.')
-        if _managed_capsule_map([str(cluster.id)]).get((str(cluster.id), resource_name)) is not None:
-            raise ValueError('This Capsule Tenant is already governed by KAORI.')
+        from app.kubernetes.tenant.capsule_tenant_quota_governance import (
+            cutover_capsule_tenant_resource_quota,
+        )
 
-        metadata = item.get('metadata') or {}
-        provider_uid = str(metadata.get('uid') or resource_name)
-        resource_version = str(metadata.get('resourceVersion') or '')
-
-        tenant.provider_key = 'capsule'
-        tenant.provider_state = 'capsule'
-        tenant.reconciliation_authority = 'capsule'
-        tenant.provider_reference = resource_name
-        tenant.provider_evidence_json = {
-            'source': 'tenant_discovery_adoption',
-            'provider': 'capsule',
-            'provider_api_version': capsule_version,
-            'resource_kind': 'Tenant',
-            'resource_name': resource_name,
-            'provider_uid': provider_uid,
-            'resource_version': resource_version,
-            'provider_status': status,
-            'adopted_at': now.isoformat(),
-            'provider_mutation_performed': False,
-            'secret_material_persisted': False,
-        }
-
-        db.session.add(tenant)
-
-        environment = TenantEnvironment()
-        environment.tenant = tenant
-        environment.environment = environment_name
-        db.session.add(environment)
-
-    try:
-        db.session.commit()
-        return tenant, environment, namespace_record
-    except IntegrityError as exc:
-        db.session.rollback()
-        raise ValueError('Tenant adoption conflicted with committed KAORI state. Refresh Discovery and retry.') from exc
-    except SQLAlchemyError:
-        db.session.rollback()
-        raise
+        cutover_capsule_tenant_resource_quota(
+            tenant_id=tenant.id,
+            profile_id=profile.id,
+        )
+    return profile

@@ -1,4 +1,5 @@
 {% import "components/loading_bar.html" as loading_bar %}
+{% import "components/table_label.html" as table_label %}
 {#
   KAORI shared table presentation contract.
 
@@ -6,8 +7,8 @@
   routes, HTMX parameters, filters, sorting, data, and authorization.
 #}
 {% import "components/table_primitives.html" as table_primitives %}
-{% macro block_classes() -%}
-    {{ table_primitives.block_classes() }}{%- endmacro %}
+{% macro block_classes(allow_overflow=false) -%}
+    {{ table_primitives.block_classes(allow_overflow) }}{%- endmacro %}
     {% macro block_header_classes() -%}
         {{ table_primitives.block_header_classes() }}{%- endmacro %}
         {% macro block_icon_classes() -%}
@@ -71,6 +72,26 @@
                                                                                         </div>
                                                                                     </div>
                                                                                 {%- endmacro %}
+                                                                                {% macro cluster_identity_with_status(name, environment='', status_text='', status_tone='info') -%}
+                                                                                    {% set environment_label = environment|environment_name(empty='Environment not specified') %}
+                                                                                    <div class="flex min-w-[12rem] items-start gap-2.5">
+                                                                                        <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
+                                                                                              aria-hidden="true">
+                                                                                            <i data-lucide="server" class="h-4 w-4"></i>
+                                                                                        </span>
+                                                                                        <div class="min-w-0">
+                                                                                            <p class="truncate text-sm font-semibold leading-5 text-content-primary"
+                                                                                               title="{{ name }}">{{ name }}</p>
+                                                                                            <div class="mt-0.5 flex min-w-0 flex-wrap items-center gap-2">
+                                                                                                <span class="truncate text-xs leading-5 text-content-muted"
+                                                                                                      title="{{ environment_label }}">{{ environment_label }}</span>
+                                                                                                {% if status_text %}
+                                                                                                    {{ table_label.status_indicator_label(status_text, status_tone) }}
+                                                                                                {% endif %}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                {%- endmacro %}
                                                                                 {% macro namespaced_scope_identity(cluster_name, cluster_environment, namespace) -%}
                                                                                     <div class="min-w-[12rem]">
                                                                                         {{ cluster_identity(cluster_name, cluster_environment) }}
@@ -80,7 +101,7 @@
                                                                                         </div>
                                                                                     </div>
                                                                                 {%- endmacro %}
-                                                                                {% macro inventory_block_header(icon, title, description, loading_id, loading_label, action_href, action_label='Open Cluster Integrations', header_actions='') -%}
+                                                                                {% macro inventory_block_header(icon, title, description, loading_id, loading_label, action_href, action_label='Open Cluster Integrations', header_actions='', title_extra='') -%}
                                                                                     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
                                                                                         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                                                                             <div class="flex min-w-0 items-start gap-3">
@@ -88,7 +109,10 @@
                                                                                                     <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
                                                                                                 </span>
                                                                                                 <div class="min-w-0">
-                                                                                                    <h2 class="{{ block_title_classes() }}">{{ title }}</h2>
+                                                                                                    <div class="inline-flex min-h-6 items-center gap-1.5">
+                                                                                                        <h2 class="{{ block_title_classes() }}">{{ title }}</h2>
+                                                                                                        {% if title_extra %}{{ title_extra }}{% endif %}
+                                                                                                    </div>
                                                                                                     <p class="{{ block_description_classes() }}">{{ description }}</p>
                                                                                                 </div>
                                                                                             </div>

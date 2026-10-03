@@ -15,13 +15,14 @@ Content Tabs are the canonical compact tab treatment for switching several close
 
 Use Content Tabs when all views:
 
+- are subordinate content states or sections **inside one established route/page**;
 - share one page, scope, and analysis context;
 - are subordinate to an existing workspace heading;
 - benefit from compact pill-like navigation;
 - may have four or more peer content views;
 - do not require the stronger page-level hierarchy of Integrated or Framed Workspace Tabs.
 
-Do not use Content Tabs for a full Integration parent workspace or a two-view local visualization toggle. Protected Secret Reveal is an approved security-sensitive exception because it preserves a real URL fallback while adopting the established Analytics visual treatment.
+Do not use Content Tabs for Sidebar v2.1 route-level level-3 navigation; those peer routes use Integrated Workspace Tabs. Do not use Content Tabs for a full Integration parent workspace or a two-view local visualization toggle. Protected Secret Reveal is an approved security-sensitive exception because it preserves a real URL fallback while adopting the established Analytics visual treatment.
 
 ## Geometry
 

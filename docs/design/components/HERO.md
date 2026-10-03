@@ -133,7 +133,7 @@ KUBERNETES TENANT → Kubernetes Tenant Overview
 
 Do not repeat domain/capability wording already carried by the eyebrow merely to make the title longer. When an eyebrow already establishes the domain, prefer a concise destination title such as `Overview`, `Capacity`, `Users`, or `Operations`. Titles remain stable across normal, blocked, degraded, and empty states. A title may be more descriptive than the sidebar label only when standalone page identity would otherwise be ambiguous.
 
-This is a semantic rule, not a typography preference. New or materially redesigned Heroes must satisfy it. Legacy surfaces that still duplicate eyebrow/title wording are tracked as UI-standard drift and must not be used as precedent.
+This is a semantic rule, not a typography preference. New or materially redesigned Heroes must satisfy it. Active authenticated surfaces are progressively migrated to the navigation-owned vocabulary and deterministic static eyebrow/H1 pairs are verifier-audited for repeated semantic tokens. Legacy surfaces that still duplicate eyebrow/title wording are tracked as UI-standard drift and must not be used as precedent.
 
 ## Operational Dashboard Hero Profile
 
@@ -193,6 +193,15 @@ Analytics uses:
 Blocked Analytics still renders the profile's three metadata labels through `page_hero.analytics_metadata(...)`. The Kubernetes Storage Analysis regression case is authoritative: readiness may change, but metadata remains visible beside it.
 
 The Hero does not prioritize generic `Current Step` / `Progress` values. Detailed dependency progress is owned by the shared `Analytics Setup Path` surface below the Hero, which shows Complete / Current Blocker / Pending states and the authoritative next action.
+
+## Kubernetes blocker-family lock
+
+Kubernetes has exactly two prerequisite blocker families:
+
+1. **General Kubernetes prerequisite** — Dashboard, Inventory, Operations, Governance, Tenant, and equivalent operational workspaces use the shared cluster blocked Hero context plus the shared cluster onboarding banner. The Hero explains readiness but does not duplicate the remediation CTA; the onboarding banner owns `Open Cluster Integrations → Register Cluster → Run Sync`.
+2. **Analytics dependency blocker** — Kubernetes/Object Storage Analytics use `Analytics Readiness` in the Hero plus the shared dependency/setup-path surface below it. Route-level Analytics navigation remains available while blocked so operators can understand the analytical workspace family; normal Kubernetes Analytics Overview may suppress that route row only because its internal summary Content Tabs already own the same peer vocabulary.
+
+A domain must not introduce a third blocked-state geometry or a page-local remediation sequence for equivalent semantics.
 
 ## Theme and surface contract
 

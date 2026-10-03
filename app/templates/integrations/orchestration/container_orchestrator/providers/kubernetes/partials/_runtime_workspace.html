@@ -3,6 +3,7 @@
 {% import "integrations/components/_provider_job_status.html" as provider_job_status %}
 {% import "integrations/components/_validation_poller.html" as validation_poller %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/table_primitives.html" as surface_ui %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
@@ -29,7 +30,7 @@
     ) }}
     {% call connection_validation_header.render(
         'Runtime Health & Diagnostics',
-        'Review persisted runtime evidence, diagnostics, lifecycle context, and the boundary between Runtime Refresh and Full Validation.',
+        'Review persisted runtime health, diagnostics, lifecycle context, and validation boundaries.',
         icon='activity',
         loading_id='kubernetes-runtime-validation-loading',
         loading_active=validation_job and validation_job.is_active,
@@ -93,7 +94,7 @@
                 <article class="bg-surface-card px-4 py-4 sm:px-5">
                     <p class="text-xs font-semibold text-content-muted">Current Runtime Gate</p>
                     <p class="mt-2 text-sm font-semibold text-content-primary">{{ runtime_gate_label }}</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Health gate only; validation remains independent.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Runtime health gates current operation; Full Validation readiness remains independently evaluated.</p>
                 </article>
                 <article class="bg-surface-card px-4 py-4 sm:px-5">
                     <p class="text-xs font-semibold text-content-muted">Validation Readiness</p>
@@ -150,7 +151,15 @@
                             {{ integration_ui.palette_icon('scan-line', 'brand', size='sm') }}
                             <div class="min-w-0 flex-1">
                                 <p class="text-xs font-semibold text-content-muted">Primary Finding</p>
-                                <p class="mt-2 text-sm font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ runtime_state.summary }}</p>
+                                <div class="mt-2 flex min-w-0 items-start gap-1.5">
+                                    <p class="min-w-0 text-sm font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ runtime_state.summary }}</p>
+                                    {% if runtime_state.lifecycle_context and runtime_state.lifecycle_context.readiness_reasons %}
+                                        {{ info_tip.render('kubernetes-runtime-primary-finding-info',
+                                                                                'Lifecycle and capability detail',
+                                                                                items=runtime_state.lifecycle_context.readiness_reasons,
+                                                                                placement='right') }}
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
                     </section>

@@ -26,7 +26,7 @@
     <div class="{{ page_hero.layout_classes() }}">
         <div class="{{ page_hero.content_classes() }}">
             {% call page_hero.intro('activity', 'Kubernetes Analytics', 'chart-no-axes-combined') %}
-                <h1 class="{{ page_hero.title_classes() }}">Resource Utilization</h1>
+                <h1 class="{{ page_hero.title_classes() }}">Usage</h1>
                 <p class="mt-2 {{ page_hero.description_classes() }}">Review utilization, worker pressure, and resource balance.</p>
                 {{ page_hero.analytics_metadata('server',
                                 selected_cluster_name,
@@ -52,7 +52,7 @@
             ('gauge', 'Highest Pressure', presentation.highest_value_display|default('N/A'), presentation.highest_label|default('No evidence')),
             ('list-checks', 'Actionable', recommendation_count|default(0), 'Prioritized recommendations')
             ],
-            'Manage Clusters',
+            'Open Cluster Integrations',
             url_for('integrations.kubernetes'),
             'server-cog'
             ) }}

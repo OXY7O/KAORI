@@ -26,8 +26,8 @@
         {% endif %}
     {% endset %}
     {{ table_ui.inventory_block_header('refresh-cw',
-        'Namespace Provider Drift',
-        'Sync observes drift only. Explicit Reconcile is available only when committed ownership and provider authority admit recovery.',
+        'Namespace & Allocation Drift',
+        'Sync observes provider state only. Recovery requires an explicit human reconciliation decision.',
         loading_id,
         'Refreshing Namespace Provider Drift',
         none,
@@ -75,8 +75,8 @@
         {% endcall %}
     </div>
     <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[940px]') }}">
-            <caption class="sr-only">Tenant Namespace provider drift.</caption>
+        <table class="{{ table_ui.table_classes('min-w-[1100px]') }}">
+            <caption class="sr-only">Tenant Namespace and allocation provider drift.</caption>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
                     <th scope="col" class="{{ table_ui.header_cell_classes() }}">Namespace</th>
@@ -88,8 +88,15 @@
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
                 {% for item in operations_drift_rows %}
+                    {% set allocation_state = operations_allocation_drift_state.get(item.id|string) or {} %}
+                    {% set allocation_drift = allocation_state.get('drift') or {} %}
                     <tr class="{{ table_ui.row_classes() }}">
-                        <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(item.namespace, 'Provider object missing or divergent', 'triangle-alert') }}</td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ table_ui.title_cell(item.namespace,
+                                                        'Allocation contract divergent' if allocation_state.get('is_allocation_drift') else 'Provider object missing or divergent',
+                            'triangle-alert'
+                            ) }}
+                        </td>
                         <td class="{{ table_ui.cell_classes() }}">
                             <p class="text-sm font-semibold text-content-primary">{{ item.environment.tenant.name }}</p>
                             <p class="mt-1 text-xs text-content-muted">{{ item.environment.environment|title }}</p>
@@ -100,10 +107,81 @@
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
                             {{ table_label.special_label('Drifted', 'warning', 'triangle-alert') }}
-                            <p class="mt-1 max-w-[360px] text-xs leading-5 text-content-muted">{{ item.provisioning_message }}</p>
+                            <p class="mt-1 max-w-[420px] text-xs leading-5 text-content-muted">{{ item.provisioning_message }}</p>
+                            {% if allocation_state.get('is_allocation_drift') %}
+                                {% if allocation_drift.get('differences') %}
+                                    <div class="mt-3 space-y-1.5">
+                                        {% for difference in allocation_drift.get('differences', [])[:4] %}
+                                            <p class="text-xs leading-5 text-content-secondary">
+                                                <span class="font-semibold text-content-primary">{{ difference.dimension }}</span>
+                                                · KAORI {{ difference.kaori_value }}
+                                                → Provider {{ difference.provider_value }}
+                                            </p>
+                                        {% endfor %}
+                                        {% if allocation_drift.get('differences', [])|length > 4 %}
+                                            <p class="text-xs text-content-muted">
+                                                +{{ allocation_drift.get('differences', []) |length - 4 }} more changed dimensions
+                                            </p>
+                                        {% endif %}
+                                    </div>
+                                {% elif allocation_drift.get('observed_matches_desired') %}
+                                    <p class="mt-2 text-xs leading-5 text-status-success-text">
+                                        Provider values now match KAORI intent; explicit confirmation is still required.
+                                    </p>
+                                {% endif %}
+                                {% set observed = allocation_drift.get('observed') or {} %}
+                                <p class="mt-2 max-w-[420px] text-xs leading-5 text-content-muted">
+                                    Authority {{ allocation_drift.get("authority") |default('Unknown', true)|replace('_', ' ')|title }}
+                                    · observed {{ allocation_drift.get("observed_at") |default('Unknown', true) }}
+                                </p>
+                                {% if observed.get('source_resources') %}
+                                    <div class="mt-2 space-y-1">
+                                        {% for source in observed.get('source_resources', [])[:3] %}
+                                            <p class="max-w-[420px] break-all text-xs leading-5 text-content-muted">
+                                                {{ source.get("kind") |default('Resource', true) }}/{{ source.get("name") |default('unknown', true) }}
+                                                · UID {{ source.get("uid") |default('Unknown', true) }}
+                                                · resourceVersion {{ source.get("resource_version") |default('Unknown', true) }}
+                                            </p>
+                                        {% endfor %}
+                                        {% if observed.get('source_resources', [])|length > 3 %}
+                                            <p class="text-xs text-content-muted">
+                                                +{{ observed.get('source_resources', []) |length - 3 }} more provider source(s)
+                                            </p>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            {% endif %}
                         </td>
                         <td class="{{ table_ui.cell_classes(action=true) }}">
-                            {% if can_manage
+                            {% if allocation_state.get('is_allocation_drift') %}
+                                {% if can_manage
+                                    and allocation_state.get('reapply_supported')
+                                    and allocation_state.get('accept_supported') %}
+                                    <div class="flex flex-col items-end gap-2">
+                                        <form method="post"
+                                              action="{{ url_for('tenant.reapply_namespace_allocation_route', namespace_id=item.id) }}">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="{{ table_ui.action_classes() }}">
+                                                <i data-lucide="rotate-ccw" class="h-4 w-4" aria-hidden="true"></i>
+                                                Reapply KAORI Intent
+                                            </button>
+                                        </form>
+                                        <form method="post"
+                                              action="{{ url_for('tenant.accept_namespace_provider_allocation_route', namespace_id=item.id) }}">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="{{ table_ui.action_classes() }}">
+                                                <i data-lucide="check-check" class="h-4 w-4" aria-hidden="true"></i>
+                                                Accept Provider State
+                                            </button>
+                                        </form>
+                                    </div>
+                                {% else %}
+                                    {{ table_label.special_label('Control Unavailable', 'warning', 'shield-alert') }}
+                                    <p class="mt-2 max-w-[280px] text-right text-xs leading-5 text-content-muted">
+                                        {{ allocation_state.get("blocked_reason") or 'Provider reconciliation is unavailable.' }}
+                                    </p>
+                                {% endif %}
+                            {% elif can_manage
                                 and item.ownership_status == 'managed'
                                 and item.environment.tenant.provider_key == 'native_kubernetes'
                                 and item.environment.tenant.reconciliation_authority == 'native_kubernetes' %}
@@ -113,7 +191,7 @@
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit" class="{{ table_ui.action_classes() }}">
                                         <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
-                                        Reconcile
+                                        Reconcile Missing Namespace
                                     </button>
                                 </form>
                             {% else %}
@@ -125,8 +203,8 @@
                     <tr>
                         <td colspan="5" class="p-0">
                             {% set empty_state_icon = "circle-check" %}
-                            {% set empty_state_title = "No Namespace Drift" %}
-                            {% set empty_state_description = "No committed Namespace currently requires provider-drift recovery." %}
+                            {% set empty_state_title = "No Namespace or Allocation Drift" %}
+                            {% set empty_state_description = "No committed Namespace currently requires provider or allocation drift recovery." %}
                             {% include 'components/states/_empty_state.html' %}
                         </td>
                     </tr>
@@ -141,7 +219,7 @@
                 operations_drift_pagination,
                 query_params,
                 operations_drift_pagination.allowed_per_page,
-                resource_label='Drifted Namespaces',
+                resource_label='Drifted Records',
                 rows_aria_label='Drift rows per page',
                 control_name='operations-drift',
                 page_param='ops_drift_page',

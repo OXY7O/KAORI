@@ -57,17 +57,23 @@ def test_data_lifecycle_uses_shared_workspace_and_archive_history_contract() -> 
 
 
 def test_data_lifecycle_navigation_and_breadcrumb_are_platform_owned() -> None:
-    menu = read('app/templates/components/navigation/platform_operations_menu.html')
+    catalog = read('app/common/workspace_navigation_catalog.py')
     settings_menu = read('app/templates/components/navigation/settings_menu.html')
-    sidebar = read('app/templates/components/navigation/sidebar.html')
     breadcrumb = read('app/common/navigation.py')
 
-    assert '>Jobs</span>' in menu
-    assert 'Data Lifecycle' in menu
-    assert '>Kubernetes Admin</span>' in menu
-    assert menu.index('>Jobs</span>') < menu.index('Data Lifecycle') < menu.index('>Kubernetes Admin</span>')
-    assert "url_for('platform_operations.data_lifecycle.index')" in menu
-    assert "has_permission('platform_operations.view_data_lifecycle')" in sidebar
+    operations_start = catalog.index("key='operations_center'")
+    integrations_start = catalog.index("key='integrations'")
+    operations = catalog[operations_start:integrations_start]
+    assert "'jobs', 'Jobs'" in operations
+    assert "'data_lifecycle'" in operations
+    assert "'kubernetes_admin'" in operations
+    assert (
+        operations.index("'jobs', 'Jobs'")
+        < operations.index("'data_lifecycle'")
+        < operations.index("'kubernetes_admin'")
+    )
+    assert "'platform_operations.data_lifecycle.index'" in operations
+    assert "'platform_operations.view_data_lifecycle'" in operations
     assert 'Data Lifecycle' not in settings_menu
     assert "endpoint.startswith('platform_operations.data_lifecycle.')" in breadcrumb
 

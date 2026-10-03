@@ -55,14 +55,16 @@ def test_permission_catalog_exposes_delegation_impact_and_transitive_dependencie
 def test_permission_contract_keys_follow_current_domain_ownership_without_runtime_aliases() -> None:
     catalog = read('app/definitions/catalogs/access/rbac/access.yaml')
     migration = read('migrations/versions/20260817_permission_contract_ownership.py')
-    sidebar = read('app/templates/components/navigation/sidebar.html')
+    navigation = read('app/common/workspace_navigation.py')
+    navigation_catalog = read('app/common/workspace_navigation_catalog.py')
     activity_routes = read('app/access/activity_audit/routes.py')
 
     assert 'key: integrations.manage' in catalog
     assert 'key: activity_audit.view' in catalog
     assert 'settings.manage_integrations' not in catalog
     assert 'settings.view_operational_activity' not in catalog
-    assert "current_user.has_permission('integrations.manage')" in sidebar
+    assert "('integrations.manage',)" in navigation_catalog
+    assert '_has_any_permission(user, tab.permissions)' in navigation
     assert "@permission_required('activity_audit.view')" in activity_routes
     assert "'source_key': 'settings.manage_integrations'" in migration
     assert "'target_key': 'integrations.manage'" in migration

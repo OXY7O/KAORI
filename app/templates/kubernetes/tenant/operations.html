@@ -69,8 +69,10 @@
                     {% include "kubernetes/tenant/partials/_operations_evidence_registry.html" %}
                 {% elif active_tab == 'drift-reconcile' %}
                     <div class="space-y-5">
-                        <h3 class="sr-only">Namespace Provider Drift</h3>
-                        <p class="sr-only">Sync remains observation-only; use Reconcile for explicit provider recovery.</p>
+                        <h3 class="sr-only">Namespace and Tenant Allocation Drift</h3>
+                        <p class="sr-only">Sync remains observation-only; explicit provider recovery preserves the active authority.</p>
+                        {% include "kubernetes/tenant/partials/_capsule_tenant_quota_drift.html" %}
+                        {% include "kubernetes/tenant/partials/_capsule_shared_allocation_drift.html" %}
                         {% include "kubernetes/tenant/partials/_operations_drift_registry.html" %}
                         {% include "kubernetes/tenant/partials/_operations_provider_registry.html" %}
                         {% include "kubernetes/tenant/partials/_operations_access_reconciliation_registry.html" %}

@@ -1,5 +1,4 @@
 {% import "components/action_button.html" as action_button %}
-{% import "components/snapshot_context_bar.html" as snapshot_context %}
 <div id="tenant-sync-workspace" class="space-y-4">
     <span id="tenant-sync-background-refresh-trigger"
           class="htmx-indicator hidden"
@@ -9,22 +8,7 @@
           hx-target="#tenant-sync-workspace"
           hx-swap="outerHTML"
           hx-indicator="this"></span>
-    {{ snapshot_context.render(source_label=tenant_collection_snapshot.source_label,
-        status=tenant_collection_snapshot.status,
-        tone=tenant_collection_snapshot.tone,
-        description=tenant_collection_snapshot.description,
-        latest_collected=tenant_collection_snapshot.last_sync_label,
-        scope_label=tenant_collection_snapshot.scope_label,
-        coverage_label=tenant_collection_snapshot.coverage_label,
-        exceptions_label=tenant_collection_snapshot.exception_label,
-        icon='database-backup',
-        title='Tenant Collection Snapshot',
-        latest_supporting='Source: ' ~ tenant_collection_snapshot.source_cutoff_label,
-        scope_supporting='Worker correlation scope',
-        coverage_supporting=tenant_collection_snapshot.coverage_supporting,
-        exceptions_supporting='Committed Tenant snapshot evidence',
-        coverage_tone=tenant_collection_snapshot.coverage_tone,
-        exceptions_tone=tenant_collection_snapshot.exceptions_tone) }}
+    {% include "kubernetes/tenant/partials/_collection_snapshot_context.html" %}
     <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
              aria-labelledby="tenant-inventory-operations-heading">
         <header class="flex flex-col gap-4 border-b border-outline-subtle px-5 py-4 lg:flex-row lg:items-center lg:justify-between">

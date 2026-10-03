@@ -11,6 +11,14 @@ from app.access.authentication.results import AuthResult
 from app.bootstrap import presentation as bootstrap_presentation
 
 
+def _browser_provider(provider_key: str, display_name: str) -> SimpleNamespace:
+    return SimpleNamespace(
+        provider_key=provider_key,
+        key=provider_key,
+        display_name=display_name,
+    )
+
+
 @pytest.fixture()
 def app(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(
@@ -79,3 +87,48 @@ def test_unsafe_next_target_is_not_reflected_into_login_form(app) -> None:
 
     assert response.status_code == 200
     assert 'https://example.invalid/phish' not in html
+
+
+@pytest.mark.parametrize(
+    ('providers', 'expected_names'),
+    (
+        ([_browser_provider('google', 'Google Workspace')], ('Google Workspace',)),
+        ([_browser_provider('github', 'GitHub')], ('GitHub',)),
+        (
+            [
+                _browser_provider('google', 'Google Workspace'),
+                _browser_provider('github', 'GitHub'),
+            ],
+            ('Google Workspace', 'GitHub'),
+        ),
+    ),
+)
+def test_login_page_renders_browser_sso_actions_when_enabled(
+    app,
+    monkeypatch: pytest.MonkeyPatch,
+    providers: list[SimpleNamespace],
+    expected_names: tuple[str, ...],
+) -> None:
+    monkeypatch.setattr(auth_routes, 'enabled_sso_providers', lambda: providers)
+
+    response = app.test_client().get('/auth/login', query_string={'next': '/reports'})
+    html = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert 'data-kaori-sso-actions' in html
+    assert f'data-kaori-sso-provider-count="{len(providers)}"' in html
+    assert 'Or Continue With' in html
+    assert 'next=/reports' in html
+
+    for provider, expected_name in zip(providers, expected_names, strict=True):
+        assert f'data-kaori-sso-provider="{provider.provider_key}"' in html
+        assert f'Continue with {expected_name}' in html
+
+
+def test_login_page_omits_sso_region_when_no_browser_provider_is_enabled(app) -> None:
+    response = app.test_client().get('/auth/login')
+    html = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert 'data-kaori-sso-actions' not in html
+    assert 'Or Continue With' not in html

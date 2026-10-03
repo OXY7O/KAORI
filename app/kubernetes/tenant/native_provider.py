@@ -34,6 +34,26 @@ _ADMISSION_FEATURES = (
     'tenant.admission.validatingpolicies',
     'tenant.admission.validatingpolicybindings',
 )
+_WORKSPACE_READINESS = frozenset({'ready', 'degraded'})
+
+
+def effective_native_connection_readiness(connection: KubernetesConnection | Any) -> str:
+    explicit = str(getattr(connection, 'readiness_status', None) or '').strip().lower()
+    if explicit:
+        return explicit
+    cluster = getattr(connection, 'cluster', None)
+    return (
+        'ready' if str(getattr(cluster, 'status', '') or '').strip().lower() == 'connected' else 'validation_required'
+    )
+
+
+def tenant_workspace_connection_available(connection: KubernetesConnection | Any | None) -> bool:
+    if connection is None:
+        return False
+    cluster = getattr(connection, 'cluster', None)
+    if str(getattr(cluster, 'status', '') or '').strip().lower() != 'connected':
+        return False
+    return effective_native_connection_readiness(connection) in _WORKSPACE_READINESS
 
 
 def _feature_status(feature: dict[str, Any] | None) -> TenantCapabilityStatus:
@@ -74,17 +94,17 @@ class NativeKubernetesTenantProvider:
 
     def capabilities(self, *, cluster_id: str) -> tuple[TenantProviderCapability, ...]:
         connection = self._connection_for(cluster_id)
-        readiness = str(getattr(connection, 'readiness_status', None) or 'validation_required')
+        readiness = effective_native_connection_readiness(connection)
         discovery = getattr(connection, 'discovery_summary', None) or {}
         features = discovery.get('features') or {}
 
-        if readiness != 'ready':
-            status = TenantCapabilityStatus.DEGRADED if readiness == 'degraded' else TenantCapabilityStatus.UNAVAILABLE
+        if readiness not in _WORKSPACE_READINESS:
+            status = TenantCapabilityStatus.UNAVAILABLE
             baseline = [
                 TenantProviderCapability(
                     key=key,
                     status=status,
-                    message='Canonical Kubernetes connection must pass Full Validation for Native Tenant mutations.',
+                    message='Canonical Kubernetes connection is not validated for Native Tenant mutations.',
                 )
                 for key in _BASELINE_FEATURES
             ]
@@ -93,17 +113,17 @@ class NativeKubernetesTenantProvider:
                     TenantProviderCapability(
                         key='domain_policy_preflight',
                         status=status,
-                        message='Tenant policy preflight is degraded while provider readiness is not Ready.',
+                        message='Tenant policy preflight is unavailable while the Kubernetes integration is not validated.',
                     ),
                     TenantProviderCapability(
                         key='service_exposure_preflight',
                         status=status,
-                        message='Tenant exposure preflight is degraded while provider readiness is not Ready.',
+                        message='Tenant exposure preflight is unavailable while the Kubernetes integration is not validated.',
                     ),
                     TenantProviderCapability(
                         key='admission_enforcement',
                         status=status,
-                        message='Admission enforcement is unavailable until provider readiness is Ready.',
+                        message='Admission enforcement is unavailable until the Kubernetes integration is validated.',
                     ),
                     TenantProviderCapability(
                         key='external_registry_provider',

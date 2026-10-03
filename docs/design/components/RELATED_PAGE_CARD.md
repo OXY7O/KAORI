@@ -86,7 +86,7 @@ The shared implementation is:
 Geometry:
 
 - `rounded-2xl`;
-- violet contextual surface;
+- soft Violet contextual surface;
 - 20 px internal padding;
 - 44 px icon surface;
 - one full-width action;
@@ -100,18 +100,20 @@ The card is contextual navigation, not a semantic health block. Do not use green
 
 ### Dark Mode Contract
 
-The card remains Violet in dark mode. It must **not** collapse to a neutral `surface-card`, because the Violet surface is the relationship cue for a cross-workspace handoff.
+The Related Page Card follows the same shared **soft Violet contextual-surface** treatment in both themes. It is a relationship cue, but it must not become a full solid/deep Violet panel.
 
-Canonical surface:
+Canonical shared behavior:
 
-```text
-Light  -> .kaori-brand-domain-panel -> #5B21B6
-Dark   -> .kaori-brand-domain-panel -> #2F1A4F
-```
+- `bg-kaori-soft` provides the contextual surface;
+- controlled Violet border/icon/eyebrow emphasis carries KAORI identity;
+- title and description use `content-primary` / `content-secondary`;
+- the optional authority boundary uses `surface-card`;
+- solid Violet is reserved for the single primary relationship action;
+- no page-local raw Violet hex or custom dark-mode variant.
 
-The dark value is intentionally deeper than primary-action Violet so the card remains harmonious with `surface-page`, `surface-shell`, and `surface-card` while still reading as KAORI brand context. On-brand title/description/icon content uses `brand-foreground`, `brand-foreground-muted`, `brand-surface`, and `brand-surface-strong`.
+The former `.kaori-brand-domain-panel` and `--kaori-brand-domain-panel` treatment is retired by #751 and must not be reintroduced.
 
-This is a global component rule. Every page that imports `components/related_page_card.html` inherits the same light/dark behavior; do not add page-local `dark:bg-*` overrides. The exception applies only to related-workspace/domain context and must not be copied to ordinary forms, tables, status cards, modals, or repeated records.
+This is a global component rule. Every page that imports `components/related_page_card.html` inherits the same behavior; consumers provide relationship content and routes, not visual variants.
 
 ## Desktop and Mobile Placement
 

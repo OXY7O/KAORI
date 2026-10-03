@@ -471,8 +471,8 @@ def _namespace_operational_context(
         return {
             'title': 'Validate Namespace Control Evidence',
             'description': (
-                'Refresh inventory permissions and collection for '
-                f'{", ".join(missing_evidence)} before making governance or access decisions.'
+                'Refresh collection permissions and evidence for '
+                f'{", ".join(missing_evidence)} before governance or access decisions.'
             ),
             'tone': 'warning',
             'icon': 'shield-question',

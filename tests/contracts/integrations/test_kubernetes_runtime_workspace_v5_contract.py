@@ -28,7 +28,7 @@ def test_runtime_workspace_uses_horizontal_decision_summary():
     assert 'class="text-xs font-semibold text-content-muted">Next Operational Action</h4>' in source
     assert 'uppercase tracking-wide' not in source
     assert (
-        'mt-2 text-sm font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ runtime_state.summary }}'
+        'min-w-0 text-sm font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ runtime_state.summary }}'
         in source
     )
 
@@ -38,7 +38,9 @@ def test_runtime_decision_separates_runtime_and_validation_evidence():
     assert 'Runtime Posture' in source
     assert 'Validation Readiness' in source
     assert 'Observation Context' in source
-    assert 'Health gate only; validation remains independent.' in source
+    assert (
+        'Runtime health gates current operation; Full Validation readiness remains independently evaluated.' in source
+    )
     assert 'Runtime Snapshot' not in source
 
 

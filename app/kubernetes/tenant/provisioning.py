@@ -19,7 +19,7 @@ from kubernetes.client.rest import ApiException
 
 from app.extensions.db import db
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
-from app.kubernetes.tenant.validation import validate_namespace_name, validate_profile_spec
+from app.kubernetes.tenant.validation import validate_namespace_name, validate_profile_spec, validate_storage_policy
 from app.models import Cluster
 from app.models.tenant import (
     TenantEnvironment,
@@ -51,12 +51,15 @@ def desired_namespace_contract(
     profile: TenantResourceProfile,
     quota_hard: dict[str, str] | None = None,
     limit_defaults: dict[str, dict[str, str]] | None = None,
+    storage_policy: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     tenant = tenant_environment.tenant
     normalized_namespace = validate_namespace_name(namespace)
     quota_source = profile.quota_hard_json if quota_hard is None else quota_hard
     limits_source = profile.limit_defaults_json if limit_defaults is None else limit_defaults
+    storage_source = getattr(profile, 'storage_policy_json', {}) if storage_policy is None else storage_policy
     quota, limits = validate_profile_spec(quota_source or {}, limits_source or {})
+    normalized_storage = validate_storage_policy(storage_source or {})
     return {
         'namespace': normalized_namespace,
         'labels': {
@@ -67,6 +70,7 @@ def desired_namespace_contract(
         },
         'quota': quota,
         'limits': limits,
+        'storage_policy': normalized_storage,
         'provider_key': tenant.provider_key,
     }
 
@@ -78,6 +82,7 @@ def create_namespace_intent(
     namespace: str,
     quota_hard: dict[str, str] | None = None,
     limit_defaults: dict[str, dict[str, str]] | None = None,
+    storage_policy: dict[str, str] | None = None,
     allocation_customized: bool = False,
 ) -> TenantNamespace:
     tenant = tenant_environment.tenant
@@ -90,13 +95,16 @@ def create_namespace_intent(
 
     quota_source = profile.quota_hard_json if quota_hard is None else quota_hard
     limits_source = profile.limit_defaults_json if limit_defaults is None else limit_defaults
+    storage_source = getattr(profile, 'storage_policy_json', {}) if storage_policy is None else storage_policy
     quota, limits = validate_profile_spec(quota_source or {}, limits_source or {})
+    normalized_storage = validate_storage_policy(storage_source or {})
     desired = desired_namespace_contract(
         tenant_environment=tenant_environment,
         namespace=namespace,
         profile=profile,
         quota_hard=quota,
         limit_defaults=limits,
+        storage_policy=normalized_storage,
     )
     record = TenantNamespace()
     record.tenant_environment_id = tenant_environment.id
@@ -105,6 +113,7 @@ def create_namespace_intent(
     record.resource_profile_version = profile.version
     record.allocation_quota_json = quota
     record.allocation_limit_defaults_json = limits
+    record.allocation_storage_policy_json = normalized_storage
     record.allocation_customized = allocation_customized
     record.namespace = desired['namespace']
     record.provisioning_status = TenantNamespaceProvisioningStatus.PENDING.value
@@ -163,22 +172,33 @@ def _upsert_quota(api, desired: dict[str, Any]) -> None:
 
 
 def _limit_items(desired: dict[str, Any]) -> list[V1LimitRangeItem]:
-    limits = desired['limits']
-    if not limits:
-        return []
-    return [
-        V1LimitRangeItem(
-            type='Container',
-            default=limits.get('default') or None,
-            default_request=limits.get('default_request') or None,
+    items: list[V1LimitRangeItem] = []
+    limits = desired.get('limits') or {}
+    if limits:
+        items.append(
+            V1LimitRangeItem(
+                type='Container',
+                default=limits.get('default') or None,
+                default_request=limits.get('default_request') or None,
+            )
         )
-    ]
+
+    storage = validate_storage_policy(desired.get('storage_policy') or {})
+    if storage:
+        items.append(
+            V1LimitRangeItem(
+                type='PersistentVolumeClaim',
+                min={'storage': storage['min']} if storage.get('min') else None,
+                max={'storage': storage['max']} if storage.get('max') else None,
+            )
+        )
+    return items
 
 
 def _upsert_limit_range(api, desired: dict[str, Any]) -> None:
     namespace = desired['namespace']
     existing = _read_or_none(api.read_namespaced_limit_range, _LIMIT_RANGE_NAME, namespace)
-    if not desired['limits']:
+    if not desired.get('limits') and not desired.get('storage_policy'):
         if existing is not None:
             _managed_or_absent(existing.metadata, kind='LimitRange')
             api.delete_namespaced_limit_range(name=_LIMIT_RANGE_NAME, namespace=namespace)
@@ -200,21 +220,41 @@ def _effective_contract(api, desired: dict[str, Any]) -> dict[str, Any]:
     ns = api.read_namespace(namespace)
     quota = _read_or_none(api.read_namespaced_resource_quota, _QUOTA_NAME, namespace)
     limit_range = _read_or_none(api.read_namespaced_limit_range, _LIMIT_RANGE_NAME, namespace)
-    item = (
-        limit_range.spec.limits[0] if limit_range is not None and limit_range.spec and limit_range.spec.limits else None
-    )
+
+    container_item = None
+    pvc_item = None
+    for item in list((limit_range.spec.limits or []) if limit_range is not None and limit_range.spec else []):
+        item_type = str(getattr(item, 'type', '') or '')
+        if item_type == 'Container':
+            container_item = item
+        elif item_type == 'PersistentVolumeClaim':
+            pvc_item = item
+
+    effective_limits = {}
+    if container_item is not None:
+        effective_limits = {
+            'default': {key: str(value) for key, value in dict(container_item.default or {}).items()},
+            'default_request': {key: str(value) for key, value in dict(container_item.default_request or {}).items()},
+        }
+        effective_limits = {key: value for key, value in effective_limits.items() if value}
+
+    storage_policy: dict[str, str] = {}
+    if pvc_item is not None:
+        for field, value in (
+            ('min', getattr(pvc_item, 'min', None)),
+            ('max', getattr(pvc_item, 'max', None)),
+        ):
+            storage = dict(value or {}).get('storage')
+            if storage not in (None, ''):
+                storage_policy[field] = str(storage)
+    storage_policy = validate_storage_policy(storage_policy)
+
     return {
         'namespace': namespace,
         'labels': {key: (ns.metadata.labels or {}).get(key) for key in desired['labels']},
         'quota': {key: str(value) for key, value in ((quota.spec.hard or {}) if quota is not None else {}).items()},
-        'limits': {
-            'default': {key: str(value) for key, value in ((item.default or {}) if item else {}).items()},
-            'default_request': {
-                key: str(value) for key, value in ((item.default_request or {}) if item else {}).items()
-            },
-        }
-        if limit_range is not None
-        else {},
+        'limits': effective_limits,
+        'storage_policy': storage_policy,
         'provider_key': desired['provider_key'],
     }
 
@@ -380,11 +420,17 @@ def reconcile_native_namespace(record: TenantNamespace) -> TenantNamespace:
     if cluster is None:
         raise ValueError('tenant namespace cluster no longer exists')
 
-    if record.allocation_quota_json is None or record.allocation_limit_defaults_json is None:
+    if (
+        record.allocation_quota_json is None
+        or record.allocation_limit_defaults_json is None
+        or record.allocation_storage_policy_json is None
+    ):
         quota, limits = validate_profile_spec(profile.quota_hard_json or {}, profile.limit_defaults_json or {})
+        storage_policy = validate_storage_policy(getattr(profile, 'storage_policy_json', {}) or {})
         record.resource_profile_version = record.resource_profile_version or profile.version
         record.allocation_quota_json = quota
         record.allocation_limit_defaults_json = limits
+        record.allocation_storage_policy_json = storage_policy
         record.allocation_customized = False
 
     desired = desired_namespace_contract(
@@ -393,6 +439,7 @@ def reconcile_native_namespace(record: TenantNamespace) -> TenantNamespace:
         profile=profile,
         quota_hard=record.allocation_quota_json,
         limit_defaults=record.allocation_limit_defaults_json,
+        storage_policy=record.allocation_storage_policy_json or {},
     )
     desired_hash = _canonical_hash(desired)
     record.desired_hash = desired_hash

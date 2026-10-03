@@ -13,8 +13,8 @@
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
-                    {% call page_hero.intro(domain.icon, "Integrations · " ~ domain.label, domain.icon) %}
-                        <h1 class="{{ page_hero.title_classes() }}">{{ domain.label }} Integrations</h1>
+                    {% call page_hero.intro(domain.icon, "Integrations", domain.icon) %}
+                        <h1 class="{{ page_hero.title_classes() }}">{{ domain.label }}</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">{{ domain.description }}</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label("layers-3", stats.capability_types ~ " Capabilities") }}

@@ -7,6 +7,18 @@ def read(path: str) -> str:
     return (ROOT / path).read_text(encoding='utf-8')
 
 
+def read_routes() -> str:
+    return '\n'.join(
+        read(path)
+        for path in (
+            'app/kubernetes/tenant/routes.py',
+            'app/kubernetes/tenant/route_common.py',
+            'app/kubernetes/tenant/routes_access.py',
+            'app/kubernetes/tenant/routes_credentials.py',
+        )
+    )
+
+
 def test_tenant_access_governance_keeps_application_and_kubernetes_rbac_separate() -> None:
     model_source = (ROOT / 'app/models/tenant.py').read_text(encoding='utf-8')
     access_source = (ROOT / 'app/kubernetes/tenant/access.py').read_text(encoding='utf-8')
@@ -51,7 +63,7 @@ def test_tenant_access_revocation_records_effective_removal_evidence() -> None:
 
 
 def test_tenant_members_access_uat_surface_uses_canonical_access_services() -> None:
-    routes = (ROOT / 'app/kubernetes/tenant/routes.py').read_text(encoding='utf-8')
+    routes = read_routes()
     service = (ROOT / 'app/kubernetes/tenant/access_service.py').read_text(encoding='utf-8')
     template = ''.join(
         [
@@ -121,7 +133,7 @@ def test_membership_revocation_is_fail_closed_for_dependent_grants() -> None:
 
 def test_revoked_membership_reactivation_preserves_grant_history_and_fails_closed() -> None:
     service = read('app/kubernetes/tenant/access_service.py')
-    routes = read('app/kubernetes/tenant/routes.py')
+    routes = read_routes()
     registry = read('app/templates/kubernetes/tenant/partials/_membership_registry.html')
     grant_registry = read('app/templates/kubernetes/tenant/partials/_access_grant_registry.html')
     workspace = read('app/templates/kubernetes/tenant/partials/_tenant_memberships_workspace.html')
@@ -144,7 +156,7 @@ def test_revoked_membership_reactivation_preserves_grant_history_and_fails_close
     assert 'Reactivate' in registry
     assert "grant.status == 'active' or grant.reconciliation_status != 'revoked'" in grant_registry
     assert "url_for('tenant.reconcile_access_grant_route', grant_id=grant.id)" in grant_registry
-    assert 'old grants stay revoked' in workspace
+    assert 'Reactivation does not restore old grants.' in workspace
 
     assert 'Previous Access Grants remain revoked permanently' in docs
     assert 'new Access Grant' in docs
@@ -152,7 +164,7 @@ def test_revoked_membership_reactivation_preserves_grant_history_and_fails_close
 
 def test_tenant_group_edit_retire_and_reactivate_preserve_identity_history() -> None:
     service = read('app/kubernetes/tenant/access_service.py')
-    routes = read('app/kubernetes/tenant/routes.py')
+    routes = read_routes()
     registry = read('app/templates/kubernetes/tenant/partials/_group_registry.html')
     modal_js = read('app/static/js/tenant_group_modal.js')
     architecture = read('docs/architecture/kubernetes-tenant-access-governance.md')
@@ -221,3 +233,38 @@ def test_access_profiles_render_in_least_privilege_operator_order() -> None:
     service = read('app/kubernetes/tenant/access_service.py')
 
     assert "profile_order = ('viewer', 'operator', 'tenant_admin', 'deployer')" in service
+
+
+def test_apply_access_grant_form_uses_context_preview_instead_of_redundant_helper_copy() -> None:
+    workspace = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
+    script = read('app/static/js/tenant_access_grant_form.js')
+
+    assert 'Apply Access Grant' in workspace
+    assert 'access-membership-tip' in workspace
+    assert 'access-profile-tip' in workspace
+    assert 'access-scope-tip' in workspace
+    assert 'data-access-profile-guidance' not in workspace
+    assert 'data-access-scope-guidance' not in workspace
+    assert 'Select Membership first; incompatible profiles are filtered automatically.' not in workspace
+    assert 'Tenant and scope are validated before commit.' not in workspace
+
+    assert 'data-access-grant-context' in workspace
+    assert 'Grant Context' in workspace
+    assert 'Live preview of the authorization intent before commit.' in workspace
+    assert 'data-access-context-principal' in workspace
+    assert 'data-access-context-tenant' in workspace
+    assert 'data-access-context-profile' in workspace
+    assert 'data-access-context-scope' in workspace
+    assert 'data-access-context-provider' in workspace
+    assert 'flex min-h-[14rem] flex-1 flex-col' in workspace
+    assert 'sm:grid-cols-2' in workspace
+    assert 'Filtered by Membership Tenant' in workspace
+
+    assert 'const syncContext = (' in script
+    assert 'membershipOption?.dataset.subjectName' in script
+    assert "target.matches('[data-access-environment]')" in script
+    assert "target.matches('[data-access-namespace]')" in script
+    assert 'Native Kubernetes authority selected.' in script
+    assert 'provider mutation remains blocked.' in script
+    assert 'data-access-profile-guidance' not in script
+    assert 'data-access-scope-guidance' not in script

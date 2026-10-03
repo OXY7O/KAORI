@@ -13,7 +13,7 @@
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
-                    {% call page_hero.intro('file-cog', 'ConfigMap Management', 'file-pen-line') %}
+                    {% call page_hero.intro('file-cog', 'Kubernetes Operations', 'file-pen-line') %}
                         <h1 class="{{ page_hero.title_classes() }}">Update ConfigMap</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">Preview and validate the ConfigMap before applying governed changes.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
@@ -40,9 +40,20 @@
               class="{{ form_context.layout_classes() }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             {% set configmap_main_classes = form_context.main_classes() %}
-            <section class="{{ configmap_ui.surface_shell_classes(configmap_main_classes) }}"
+            <section class="{{ configmap_ui.surface_shell_classes(configmap_main_classes, true) }}"
                      data-kubernetes-operation-form="configmap-update">
-                {{ configmap_ui.section_header('file-pen-line', 'ConfigMap Update', 'Select one live ConfigMap, edit the intended state, then validate the exact effective change before apply.') }}
+                {% set configmap_update_info = [
+                    "Cluster, Namespace, ConfigMap identity, immutable state, and resourceVersion are loaded from the selected live Kubernetes target.",
+                    "Merge preserves keys that are not submitted. Replace removes keys omitted from the proposed form and requires explicit full-replacement confirmation.",
+                    "Changing the target, update mode, or proposed data invalidates the previous validation and requires a new preview."
+                ] %}
+                {{ configmap_ui.section_header('file-pen-line',
+                                'ConfigMap Update',
+                                'Select one live ConfigMap, edit the intended state, then validate the exact effective change before apply.',
+                                info_id='configmap-update-guidance-tip',
+                                info_title='ConfigMap update guide',
+                                info_text='Live-target and update-mode semantics for this controlled mutation.',
+                                info_items=configmap_update_info) }}
                 <div class="divide-y divide-outline-subtle">
                     <section class="p-5 sm:p-6">
                         <div class="mb-4 flex items-start gap-3">
@@ -106,7 +117,7 @@
             <aside class="{{ form_context.rail_classes() }}"
                    aria-label="ConfigMap update guidance">
                 {% set configmap_update_flow = [('Select Object', 'Choose one live ConfigMap and load its current resourceVersion.'), ('Review & Edit', 'Choose Merge or Replace and change only the intended keys.'), ('Preview & Validate', 'Inspect the effective diff and run server-side dry-run.'), ('Apply Update', 'Apply exactly the validated state to the same live resourceVersion.')] %}
-                {{ info_flow.render('ConfigMap Update Flow', 'A bounded update path from live read to one validated mutation.', configmap_update_flow, icon='git-compare-arrows', note='Changing the target, update mode, or proposed entries invalidates the previous validation.', note_icon='circle-alert', open_by_default=true) }}
+                {{ info_flow.render('ConfigMap Update Flow', 'One validated update from live state.', configmap_update_flow, icon='git-compare-arrows', note='Target, mode, or entry changes require revalidation.', note_icon='circle-alert', open_by_default=true) }}
                 {% set configmap_update_guardrails = [('eye', 'Live Read First', 'Current data and immutable state are read directly from Kubernetes before editing.'), ('git-compare-arrows', 'Effective Diff', 'Added, changed, removed, and unchanged keys are explicit before apply.'), ('lock-keyhole', 'Immutable Protected', 'Immutable ConfigMaps remain blocked from mutation.'), ('shield-check', 'Stale Write Blocked', 'resourceVersion prevents applying to a target that changed after review.')] %}
                 {{ information_guide_card.render('Update Safety Contract', 'Controls that stay active while the live object is edited.', configmap_update_guardrails, icon='shield-check') }}
             </aside>

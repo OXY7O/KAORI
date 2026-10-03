@@ -285,6 +285,27 @@ def _write_custom_object(api, intent: TenantAdvancedCapabilityIntent, descriptor
         return _read_custom_object(api, intent, descriptor)
 
     current = _read_custom_object(api, intent, descriptor)
+    expected = (intent.reconciliation_evidence_json or {}).get('expected_provider_source')
+    if isinstance(expected, dict):
+        if current is None:
+            raise ValueError('Expected Capsule provider resource is no longer present; refresh provider evidence.')
+        metadata = current.get('metadata') if isinstance(current, dict) else {}
+        metadata = metadata if isinstance(metadata, dict) else {}
+        expected_uid = str(expected.get('uid') or '')
+        expected_rv = str(expected.get('resource_version') or '')
+        current_uid = str(metadata.get('uid') or '')
+        current_rv = str(metadata.get('resourceVersion') or '')
+        if expected_uid and current_uid and expected_uid != current_uid:
+            raise ValueError('Capsule provider resource UID changed; refresh provider evidence before mutation.')
+        if expected_rv and current_rv and expected_rv != current_rv:
+            raise ValueError('Capsule provider resourceVersion changed; refresh provider evidence before mutation.')
+        if current_rv:
+            metadata_body = body.get('metadata')
+            if not isinstance(metadata_body, dict):
+                metadata_body = {}
+                body['metadata'] = metadata_body
+            metadata_body['resourceVersion'] = current_rv
+
     if descriptor.namespaced:
         namespace = _namespace_name(intent)
         if current is None:
@@ -348,6 +369,7 @@ def reconcile_capsule_advanced_intent(
     intent.effective_hash = _canonical_hash(intent.effective_spec_json)
     intent.last_reconciled_at = now
     intent.reconciliation_evidence_json = {
+        **(intent.reconciliation_evidence_json or {}),
         'provider_key': 'capsule',
         'provider_api_version': _ADVANCED_API_VERSION,
         'capability': descriptor.capability,

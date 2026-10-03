@@ -1,0 +1,30 @@
+{% import "components/snapshot_context_bar.html" as snapshot_context %}
+<div id="tenant-live-provider-connectivity"
+     hx-get="{{ url_for('tenant.live_provider_connectivity') }}"
+     hx-trigger="load"
+     hx-target="this"
+     hx-swap="outerHTML"
+     hx-indicator="#tenant-live-provider-connectivity-loading">
+    <div id="tenant-live-provider-connectivity-loading" class="htmx-indicator">
+        {{ snapshot_context.render(source_label='Live Kubernetes API',
+                status='Checking',
+                tone='pending',
+                description='Committed KAORI Tenant state is already loaded. Live provider reachability is checked separately.',
+                latest_collected='Pending',
+                scope_label=(cluster_onboarding.cluster_count|default(0) ) ~ ' Registered',
+        coverage_label='Checking',
+        exceptions_label='Pending',
+        icon='plug-zap',
+        title='Live Provider Connectivity',
+        latest_supporting='Async provider probe',
+        scope_supporting='Registered Kubernetes connections',
+        coverage_supporting='Does not block committed reads',
+        exceptions_supporting='Provider operations fail closed per target',
+        coverage_tone='pending',
+        exceptions_tone='pending',
+        latest_label='Last Probe',
+        scope_metric_label='Provider Scope',
+        coverage_metric_label='API Reachability',
+        exceptions_metric_label='Connection Exceptions') }}
+    </div>
+</div>

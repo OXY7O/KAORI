@@ -14,6 +14,8 @@ _HUNDRED = Decimal('100')
 class CapacityVector:
     cpu: Decimal | None
     memory_bytes: Decimal | None
+    pods: Decimal | None = None
+    storage_bytes: Decimal | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -23,6 +25,7 @@ class TenantAllocationBudget:
     safety_headroom: CapacityVector
     unmanaged: CapacityVector
     available: CapacityVector
+    logical_storage_budget: Decimal | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -41,6 +44,8 @@ def quota_request_vector(quota: Mapping[str, object]) -> CapacityVector:
     return CapacityVector(
         cpu=_quantity_or_none(quota.get('requests.cpu')),
         memory_bytes=_quantity_or_none(quota.get('requests.memory')),
+        pods=_quantity_or_none(quota.get('pods')),
+        storage_bytes=_quantity_or_none(quota.get('requests.storage')),
     )
 
 
@@ -50,6 +55,7 @@ def build_tenant_allocation_budget(
     reserve: CapacityVector,
     safety_headroom_percent: Decimal,
     unmanaged: CapacityVector,
+    logical_storage_budget: Decimal | None = None,
 ) -> TenantAllocationBudget:
     if safety_headroom_percent < _ZERO or safety_headroom_percent >= _HUNDRED:
         raise ValueError('Tenant capacity safety headroom must be between 0 and 100 percent.')
@@ -57,6 +63,8 @@ def build_tenant_allocation_budget(
     safety_headroom = CapacityVector(
         cpu=_percentage(allocatable.cpu, safety_headroom_percent),
         memory_bytes=_percentage(allocatable.memory_bytes, safety_headroom_percent),
+        pods=_percentage(allocatable.pods, safety_headroom_percent),
+        storage_bytes=None,
     )
     available = CapacityVector(
         cpu=_budget_dimension(allocatable.cpu, reserve.cpu, safety_headroom.cpu, unmanaged.cpu),
@@ -66,6 +74,13 @@ def build_tenant_allocation_budget(
             safety_headroom.memory_bytes,
             unmanaged.memory_bytes,
         ),
+        pods=_budget_dimension(
+            allocatable.pods,
+            reserve.pods,
+            safety_headroom.pods,
+            unmanaged.pods,
+        ),
+        storage_bytes=logical_storage_budget,
     )
     return TenantAllocationBudget(
         allocatable=allocatable,
@@ -73,18 +88,18 @@ def build_tenant_allocation_budget(
         safety_headroom=safety_headroom,
         unmanaged=unmanaged,
         available=available,
+        logical_storage_budget=logical_storage_budget,
     )
 
 
 def classify_capacity_state(*, budget: CapacityVector, committed: CapacityVector) -> str:
-    dimensions = (
-        (budget.cpu, committed.cpu),
-        (budget.memory_bytes, committed.memory_bytes),
-    )
-    if any(limit is None or used is None for limit, used in dimensions):
+    dimensions = _governed_dimensions(budget, committed)
+    if not dimensions:
+        return 'Unknown'
+    if any(used is None for _, used in dimensions):
         return 'Unknown'
 
-    typed = [(limit, used) for limit, used in dimensions if limit is not None and used is not None]
+    typed = [(limit, used) for limit, used in dimensions if used is not None]
     if any(used > limit for limit, used in typed):
         return 'Overcommitted'
 
@@ -102,9 +117,9 @@ def classify_capacity_state(*, budget: CapacityVector, committed: CapacityVector
 
 
 def classify_allocation_change(*, current: CapacityVector, proposed: CapacityVector) -> str:
-    changes = (
-        _dimension_change(current.cpu, proposed.cpu),
-        _dimension_change(current.memory_bytes, proposed.memory_bytes),
+    changes = tuple(
+        _dimension_change(current_value, proposed_value)
+        for current_value, proposed_value in _paired_dimensions(current, proposed)
     )
     if 'increase' in changes:
         return 'increase'
@@ -139,11 +154,14 @@ def evaluate_allocation_preflight(
             positive_change=positive_change,
         )
 
-    if positive_change and _has_unbounded_dimension(proposed_allocation):
+    if positive_change and _has_unbounded_dimension(proposed_allocation, budget=budget):
         return _decision(
             allowed=False,
             state='Unknown',
-            reason='Positive allocation changes require bounded CPU and memory request dimensions; an unbounded request was proposed.',
+            reason=(
+                'Positive allocation changes require bounded values for every governed capacity dimension; '
+                'an unbounded request was proposed.'
+            ),
             budget=budget,
             committed=committed_before,
             current=current_allocation,
@@ -156,7 +174,10 @@ def evaluate_allocation_preflight(
         return _decision(
             allowed=False,
             state='Overcommitted',
-            reason='The cluster is already overcommitted; positive allocation changes are blocked until commitments are reduced or capacity increases.',
+            reason=(
+                'The cluster is already overcommitted; positive allocation changes are blocked until commitments '
+                'are reduced or capacity increases.'
+            ),
             budget=budget,
             committed=committed_before,
             current=current_allocation,
@@ -200,7 +221,7 @@ def evaluate_allocation_preflight(
         reason=reason,
         projected_committed=result.projected_committed,
         projected_headroom=result.projected_headroom,
-        shortfall=CapacityVector(cpu=_ZERO, memory_bytes=_ZERO),
+        shortfall=_zero_vector_for_budget(budget),
         positive_change=positive_change,
     )
 
@@ -282,14 +303,21 @@ def _dimension_positive_change(current: Decimal | None, proposed: Decimal | None
     return proposed > current
 
 
-def _has_positive_change(current: CapacityVector, proposed: CapacityVector) -> bool:
-    return _dimension_positive_change(current.cpu, proposed.cpu) or _dimension_positive_change(
-        current.memory_bytes, proposed.memory_bytes
+def _has_positive_change(
+    current: CapacityVector,
+    proposed: CapacityVector,
+) -> bool:
+    return any(
+        _dimension_positive_change(current_value, proposed_value)
+        for current_value, proposed_value in _paired_dimensions(current, proposed)
     )
 
 
-def _has_unbounded_dimension(vector: CapacityVector) -> bool:
-    return vector.cpu is None or vector.memory_bytes is None
+def _has_unbounded_dimension(vector: CapacityVector, *, budget: CapacityVector) -> bool:
+    return any(
+        limit is not None and value is None
+        for value, limit in zip(_vector_dimensions(vector), _vector_dimensions(budget), strict=True)
+    )
 
 
 def _project_dimension(
@@ -307,16 +335,33 @@ def _projected_committed(
     current: CapacityVector,
     proposed: CapacityVector,
 ) -> CapacityVector:
+    values = [
+        _project_dimension(committed_value, current_value, proposed_value)
+        for committed_value, current_value, proposed_value in zip(
+            _vector_dimensions(committed),
+            _vector_dimensions(current),
+            _vector_dimensions(proposed),
+            strict=True,
+        )
+    ]
     return CapacityVector(
-        cpu=_project_dimension(committed.cpu, current.cpu, proposed.cpu),
-        memory_bytes=_project_dimension(committed.memory_bytes, current.memory_bytes, proposed.memory_bytes),
+        cpu=values[0],
+        memory_bytes=values[1],
+        pods=values[2],
+        storage_bytes=values[3],
     )
 
 
 def _headroom(budget: CapacityVector, committed: CapacityVector) -> CapacityVector:
+    values = [
+        _remaining(limit, used)
+        for limit, used in zip(_vector_dimensions(budget), _vector_dimensions(committed), strict=True)
+    ]
     return CapacityVector(
-        cpu=_remaining(budget.cpu, committed.cpu),
-        memory_bytes=_remaining(budget.memory_bytes, committed.memory_bytes),
+        cpu=values[0],
+        memory_bytes=values[1],
+        pods=values[2],
+        storage_bytes=values[3],
     )
 
 
@@ -327,17 +372,22 @@ def _remaining(limit: Decimal | None, used: Decimal | None) -> Decimal | None:
 
 
 def _exceeds_budget(committed: CapacityVector, budget: CapacityVector) -> bool:
-    dimensions = (
-        (committed.cpu, budget.cpu),
-        (committed.memory_bytes, budget.memory_bytes),
+    return any(
+        used is not None and limit is not None and used > limit
+        for used, limit in zip(_vector_dimensions(committed), _vector_dimensions(budget), strict=True)
     )
-    return any(used is not None and limit is not None and used > limit for used, limit in dimensions)
 
 
 def _shortfall(committed: CapacityVector, budget: CapacityVector) -> CapacityVector:
+    values = [
+        _shortfall_dimension(used, limit)
+        for used, limit in zip(_vector_dimensions(committed), _vector_dimensions(budget), strict=True)
+    ]
     return CapacityVector(
-        cpu=_shortfall_dimension(committed.cpu, budget.cpu),
-        memory_bytes=_shortfall_dimension(committed.memory_bytes, budget.memory_bytes),
+        cpu=values[0],
+        memory_bytes=values[1],
+        pods=values[2],
+        storage_bytes=values[3],
     )
 
 
@@ -345,3 +395,35 @@ def _shortfall_dimension(committed: Decimal | None, budget: Decimal | None) -> D
     if committed is None or budget is None:
         return None
     return max(committed - budget, _ZERO)
+
+
+def _governed_dimensions(
+    budget: CapacityVector,
+    committed: CapacityVector,
+) -> list[tuple[Decimal, Decimal | None]]:
+    return [
+        (limit, used)
+        for limit, used in zip(_vector_dimensions(budget), _vector_dimensions(committed), strict=True)
+        if limit is not None
+    ]
+
+
+def _paired_dimensions(
+    left: CapacityVector,
+    right: CapacityVector,
+) -> tuple[tuple[Decimal | None, Decimal | None], ...]:
+    return tuple(zip(_vector_dimensions(left), _vector_dimensions(right), strict=True))
+
+
+def _vector_dimensions(vector: CapacityVector) -> tuple[Decimal | None, Decimal | None, Decimal | None, Decimal | None]:
+    return vector.cpu, vector.memory_bytes, vector.pods, vector.storage_bytes
+
+
+def _zero_vector_for_budget(budget: CapacityVector) -> CapacityVector:
+    values = [_ZERO if value is not None else None for value in _vector_dimensions(budget)]
+    return CapacityVector(
+        cpu=values[0],
+        memory_bytes=values[1],
+        pods=values[2],
+        storage_bytes=values[3],
+    )

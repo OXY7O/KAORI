@@ -7,8 +7,8 @@
 
   It owns reusable table/card/filter geometry and visual classes only.
 #}
-{% macro block_classes() -%}
-    overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm
+{% macro block_classes(allow_overflow=false) -%}
+    {{ 'overflow-visible' if allow_overflow else 'overflow-hidden' }} rounded-xl border border-outline-default bg-surface-card shadow-sm
 {%- endmacro %}
 {% macro block_header_classes() -%}
     flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6

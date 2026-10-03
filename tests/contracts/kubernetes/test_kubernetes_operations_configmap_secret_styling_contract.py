@@ -52,6 +52,12 @@ def test_reviewed_crud_and_protected_reveal_use_form_with_right_context() -> Non
         assert 'information_guide_card.html' in source
 
 
+def test_configmap_creation_flow_uses_compact_helper_copy() -> None:
+    source = read('app/templates/kubernetes/operations/configmaps/create.html')
+    assert 'Definition flow to one audited live ConfigMap.' in source
+    assert 'How a proposed definition becomes one audited live ConfigMap.' not in source
+
+
 def test_reviewed_crud_moves_workflow_guidance_to_right_context() -> None:
     for relative in (
         'app/templates/kubernetes/operations/configmaps/create.html',
@@ -144,15 +150,17 @@ def test_live_target_selectors_keep_consistent_helper_context() -> None:
     secret_delete = read('app/templates/kubernetes/operations/secrets/delete.html')
     secret_reveal = read('app/templates/kubernetes/operations/secrets/reveal.html')
 
-    assert 'Registered cluster for the target namespace.' in configmap_create
-    assert 'Registered cluster for the target namespace.' in configmap_workspace
-    assert 'Loaded from the selected Kubernetes API.' in configmap_workspace
-    assert 'Loaded from the selected live namespace.' in configmap_workspace
-    assert 'Registered cluster for the target namespace.' in secret_create
-    assert 'Loaded from the selected Kubernetes API.' in secret_namespace
-    assert 'Registered cluster for the target namespace.' in secret_replace
-    assert 'Registered cluster for the target namespace.' in secret_delete
-    assert 'Protected clusters are registered live targets for Secret Reveal.' in secret_reveal
+    assert (
+        'Select one registered cluster, one live namespace, and a create-only Kubernetes object name.'
+        in configmap_create
+    )
+    assert 'No live namespace is available for the selected cluster.' in configmap_workspace
+    assert 'No ConfigMap currently exists in this live namespace.' in configmap_workspace
+    assert 'Bind this create-only request to one live namespace and a new Kubernetes Secret name.' in secret_create
+    assert 'Live namespace lookup failed' in secret_namespace
+    assert 'Cluster and Namespace choices come from the selected live Kubernetes target.' in secret_replace
+    assert 'Cluster and Namespace choices come from the selected live Kubernetes target.' in secret_delete
+    assert 'Only protected clusters and policy-enabled namespaces are selectable.' in secret_reveal
 
 
 def test_operation_hero_copy_keeps_explicit_live_validation_boundaries() -> None:

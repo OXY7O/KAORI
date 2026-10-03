@@ -9,13 +9,16 @@ def _read(relative: str) -> str:
 
 def test_tenant_uat_surface_uses_one_expandable_parent_with_five_submenu_destinations() -> None:
     sidebar = _read('app/templates/components/navigation/sidebar.html')
+    catalog = _read('app/common/workspace_navigation_catalog.py')
+    navigation_model = _read('app/common/workspace_navigation.py')
     tenant_menu = _read('app/templates/components/navigation/tenant_menu.html')
     navigation = _read('app/common/navigation.py')
     routes = _read('app/kubernetes/tenant/routes.py')
 
-    assert "has_permission('tenant.view')" in sidebar
-    assert "has_permission('tenant.manage')" in sidebar
-    assert sidebar.count('components/navigation/tenant_menu.html') == 1
+    assert "('tenant.view', 'tenant.manage')" in catalog
+    assert "'tenant', 'Tenant', 'building-2', 'tenant.index'" in catalog
+    assert '_visible_capabilities(workspace, user)' in navigation_model
+    assert 'data-kaori-sidebar-capability="{{ child[\'key\'] }}"' in sidebar
     assert '<details class="sidebar-menu space-y-1"' in tenant_menu
 
     for endpoint, label in (

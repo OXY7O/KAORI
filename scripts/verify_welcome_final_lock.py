@@ -164,11 +164,28 @@ def _verify_catalog_contract(errors: list[str]) -> None:
         )
 
     governance = next((item for item in shortcut_definitions if item.get('title') == 'Kubernetes Governance'), None)
+    tenant = next((item for item in shortcut_definitions if item.get('title') == 'Tenant Management'), None)
     reports = next((item for item in shortcut_definitions if item.get('title') == 'Reports'), None)
     intelligence = next((item for item in shortcut_definitions if item.get('title') == 'Intelligence'), None)
+    access = next((item for item in shortcut_definitions if item.get('title') == 'Access'), None)
     require(
         governance is not None and governance.get('scope') == 'Compute',
         'Kubernetes Governance scope must be Compute.',
+        errors,
+    )
+    require(
+        tenant is not None
+        and tenant.get('scope') == 'Compute'
+        and ('tenant.view', 'tenant.index') in (tenant.get('targets') or ()),
+        'Tenant Management must remain a Compute workspace owned by tenant.view.',
+        errors,
+    )
+    require(
+        access is not None
+        and ('identity_providers.view', 'access.overview.index') in (access.get('targets') or ())
+        and 'identity providers' in str(access.get('description') or '').lower()
+        and 'external identities' in str(access.get('description') or '').lower(),
+        'Access must expose current Identity Provider and external identity capability ownership.',
         errors,
     )
     require(
@@ -288,6 +305,21 @@ def _verify_release_evidence(errors: list[str]) -> None:
         errors,
     )
 
+    playwright = read('tests/ui/test_representative_interactions.py')
+    for required in (
+        'test_welcome_catalog_content_search_and_card_geometry_across_canonical_viewports',
+        "page.keyboard.press('/')",
+        "page.keyboard.press('Escape')",
+        "get_by_role('link', name='Open Tenant Management Workspace')",
+        'assert_locator_within_document_width',
+        "_browser_evidence(page, 'welcome-catalog-content-search', viewport_name)",
+    ):
+        require(
+            required in playwright,
+            f'Welcome Playwright content/search evidence is missing: {required}',
+            errors,
+        )
+
     migration = read('migrations/versions/20260810_retire_welcome_view.py')
     require(
         "revision = '20260810_retire_welcome_view'" in migration
@@ -346,6 +378,11 @@ def _verify_release_evidence(errors: list[str]) -> None:
     require(
         'Security boundary' in pattern,
         'Welcome pattern must document the discoverability security boundary.',
+        errors,
+    )
+    require(
+        'Playwright validates catalog content/search geometry' in pattern,
+        'Welcome pattern must document canonical Playwright responsive evidence.',
         errors,
     )
     require(

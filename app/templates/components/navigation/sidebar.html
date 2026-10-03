@@ -1,39 +1,3 @@
-{% set can_dashboard = current_user.is_authenticated and current_user.has_permission('dashboard.view') %}
-{% set can_kubernetes_inventory = current_user.is_authenticated and current_user.has_permission('inventory.view') %}
-{% set can_object_storage_inventory = current_user.is_authenticated and current_user.has_permission('object_storage_inventory.view') %}
-{% set can_tenant = current_user.is_authenticated and (current_user.has_permission('tenant.view') or current_user.has_permission('tenant.manage')) %}
-{% set can_kubernetes_analytics = current_user.is_authenticated and current_user.has_permission('analytics.view') %}
-{% set can_object_storage_analytics = current_user.is_authenticated and current_user.has_permission('object_storage_analytics.view') %}
-{% set can_intelligence = current_user.is_authenticated and current_user.has_permission('intelligence.view') %}
-{% set can_operations = current_user.is_authenticated and (
-    current_user.has_permission('kubernetes_secrets.view')
-    or current_user.has_permission('kubernetes_secrets.create')
-    or current_user.has_permission('kubernetes_secrets.replace')
-    or current_user.has_permission('kubernetes_secrets.delete')
-    or current_user.has_permission('kubernetes_secrets.reveal')
-    or current_user.has_permission('kubernetes_secrets.approve_reveal')
-    or current_user.has_permission('kubernetes_secrets.rotate_tls')
-    or current_user.has_permission('kubernetes_secrets.bulk_rotate_tls')
-) %}
-{% set can_governance = current_user.is_authenticated and (
-    current_user.has_permission('governance.view')
-    or current_user.has_permission('tls_certificates.view')
-    or current_user.has_permission('tls_certificates.sync')
-) %}
-{% set can_reports = current_user.is_authenticated and (
-    current_user.has_permission('reports.view')
-    or current_user.has_permission('reports.generate')
-    or current_user.has_permission('reports.manage_templates')
-    or current_user.has_permission('reports.manage_schedules')
-    or current_user.has_permission('reports.manage_storage')
-) %}
-{% set can_integrations = current_user.is_authenticated and current_user.has_permission('integrations.manage') %}
-{% set can_operations_center = current_user.is_authenticated and (
-    current_user.has_permission('jobs.view')
-    or current_user.has_permission('platform_operations.view_data_lifecycle')
-    or current_user.has_permission('kubernetes_secrets.manage_reveal')
-) %}
-{% set can_platform_operations = can_operations_center or can_integrations %}
 <div class="contents"
      x-data="{ mobileNavOpen: false, mobileNavTrigger: null, openMobileNavigation(event) { this.mobileNavTrigger = event.detail?.trigger || null; this.mobileNavOpen = true; this.$nextTick(() => this.$refs.mobileNavClose?.focus()); }, closeMobileNavigation() { this.mobileNavOpen = false; this.$nextTick(() => this.mobileNavTrigger?.focus()); } }"
      @kaori:mobile-nav-open.window="openMobileNavigation($event)"
@@ -76,90 +40,68 @@
             </div>
         </div>
         <nav class="relative z-10 flex-1 space-y-4 overflow-y-auto overscroll-contain px-3 py-3 [scrollbar-gutter:stable]"
+             aria-label="Primary navigation"
              @click="if ($event.target.closest('a[href]')) closeMobileNavigation()">
-            {% if current_user.is_authenticated %}
-                <div class="sidebar-nav-section">
-                    <div class="sidebar-expanded-only mb-1.5 px-3 sidebar-section-label text-xs font-extrabold uppercase tracking-widest">Main</div>
+            {% for section in sidebar_navigation %}
+                <div class="sidebar-nav-section"
+                     data-kaori-sidebar-section="{{ section['label']|lower|replace(' ', '-') }}">
+                    <div class="sidebar-expanded-only mb-1.5 px-3 sidebar-section-label text-xs font-extrabold uppercase tracking-widest">{{ section['label'] }}</div>
                     <div class="space-y-1">
-                        <a href="{{ url_for('welcome.index') }}"
-                           title="Welcome"
-                           aria-label="Welcome"
-                           class="{{ 'sidebar-parent-active' if request.endpoint == 'welcome.index' else 'sidebar-item-idle' }} sidebar-parent-link group flex min-h-11 items-center gap-2.5 rounded-lg px-2.5 py-2 text-base font-semibold leading-6 transition lg:[.sidebar-collapsed_&]:justify-center lg:[.sidebar-collapsed_&]:px-2">
-                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ 'sidebar-parent-active-icon' if request.endpoint == 'welcome.index' else 'sidebar-item-idle-icon' }} transition">
-                                <i data-lucide="sparkles" class="h-4 w-4"></i>
-                            </span>
-                            <span class="sidebar-expanded-only truncate whitespace-nowrap">Welcome</span>
-                        </a>
-                        {% if can_dashboard %}
-                            {% include "components/navigation/dashboards_menu.html" %}
-                        {% endif %}
+                        {% for item in section['items'] %}
+                            {% if item['children'] %}
+                                <details class="sidebar-menu space-y-1"
+                                         data-kaori-sidebar-workspace="{{ item['key'] }}"
+                                         {% if item['active'] %}open{% endif %}>
+                                    <summary class="{{ 'sidebar-parent-active' if item['active'] else 'sidebar-item-idle' }} sidebar-parent-link group flex min-h-11 cursor-pointer select-none items-center justify-between rounded-lg px-2.5 py-2 text-base font-semibold leading-6 transition lg:[.sidebar-collapsed_&]:justify-center lg:[.sidebar-collapsed_&]:px-2"
+                                             title="{{ item['label'] }}"
+                                             aria-label="{{ item['label'] }}"
+                                             data-kaori-sidebar-workspace-trigger="{{ item['key'] }}"
+                                             @click="if (window.innerWidth >= 1024 && !sidebarExpanded) { $event.preventDefault(); toggleSidebar(); $el.parentElement.open = true }">
+                                        <div class="flex min-w-0 items-center gap-2.5">
+                                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ 'sidebar-parent-active-icon' if item['active'] else 'sidebar-item-idle-icon' }} transition">
+                                                <i data-lucide="{{ item['icon'] }}" class="h-4 w-4" aria-hidden="true"></i>
+                                            </span>
+                                            <span class="sidebar-expanded-only truncate whitespace-nowrap">{{ item['label'] }}</span>
+                                        </div>
+                                        <i data-lucide="chevron-right"
+                                           class="sidebar-expanded-only sidebar-menu-chevron h-4 w-4 {{ 'text-kaori-accent' if item['active'] else 'text-white/[0.35]' }}"
+                                           aria-hidden="true"></i>
+                                    </summary>
+                                    <div class="sidebar-expanded-only sidebar-submenu ml-6 mt-1 space-y-1 border-l border-white/10 pl-3"
+                                         data-kaori-sidebar-capabilities="{{ item['key'] }}">
+                                        {% for child in item['children'] %}
+                                            <a href="{{ child['href'] }}"
+                                               title="{{ child['label'] }}"
+                                               data-kaori-sidebar-capability="{{ child['key'] }}"
+                                               {% if child['active'] %}aria-current="page"{% endif %}
+                                               class="{{ 'bg-white/[0.08] text-kaori-accent' if child['active'] else 'sidebar-item-idle' }} group flex min-h-9 items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
+                                                <span class="h-1.5 w-1.5 shrink-0 rounded-full {{ 'bg-kaori-accent' if child['active'] else 'bg-white/20 group-hover:bg-white/[0.45]' }}"
+                                                      aria-hidden="true"></span>
+                                                <i data-lucide="{{ child['icon'] }}"
+                                                   class="h-3.5 w-3.5 shrink-0"
+                                                   aria-hidden="true"></i>
+                                                <span class="truncate whitespace-nowrap">{{ child['label'] }}</span>
+                                            </a>
+                                        {% endfor %}
+                                    </div>
+                                </details>
+                            {% else %}
+                                <a href="{{ item['href'] }}"
+                                   title="{{ item['label'] }}"
+                                   aria-label="{{ item['label'] }}"
+                                   data-kaori-sidebar-workspace="{{ item['key'] }}"
+                                   {% if item['active'] %}aria-current="page"{% endif %}
+                                   class="{{ 'sidebar-parent-active' if item['active'] else 'sidebar-item-idle' }} sidebar-parent-link group flex min-h-11 items-center gap-2.5 rounded-lg px-2.5 py-2 text-base font-semibold leading-6 transition lg:[.sidebar-collapsed_&]:justify-center lg:[.sidebar-collapsed_&]:px-2">
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ 'sidebar-parent-active-icon' if item['active'] else 'sidebar-item-idle-icon' }} transition">
+                                        <i data-lucide="{{ item['icon'] }}" class="h-4 w-4" aria-hidden="true"></i>
+                                    </span>
+                                    <span class="sidebar-expanded-only truncate whitespace-nowrap">{{ item['label'] }}</span>
+                                </a>
+                            {% endif %}
+                        {% endfor %}
                     </div>
                 </div>
-            {% endif %}
-            {% if can_kubernetes_inventory or can_operations or can_governance or can_tenant %}
-                <div class="sidebar-nav-section">
-                    <div class="sidebar-expanded-only mb-1.5 px-3 sidebar-section-label text-xs font-extrabold uppercase tracking-widest">Kubernetes</div>
-                    <div class="space-y-1">
-                        {% if can_kubernetes_inventory %}
-                            {% include "components/navigation/inventory_menu.html" %}
-                        {% endif %}
-                        {% if can_operations %}
-                            {% include "components/navigation/kubernetes_operations_menu.html" %}
-                        {% endif %}
-                        {% if can_governance %}
-                            {% include "components/navigation/governance_menu.html" %}
-                        {% endif %}
-                        {% if can_tenant %}
-                            {% include "components/navigation/tenant_menu.html" %}
-                        {% endif %}
-                    </div>
-                </div>
-            {% endif %}
-            {% if can_object_storage_inventory %}
-                <div class="sidebar-nav-section">
-                    <div class="sidebar-expanded-only mb-1.5 px-3 sidebar-section-label text-xs font-extrabold uppercase tracking-widest">Storage</div>
-                    <div class="space-y-1">{% include "components/navigation/object_storage_menu.html" %}</div>
-                </div>
-            {% endif %}
-            {% if can_kubernetes_analytics or can_object_storage_analytics %}
-                <div class="sidebar-nav-section">
-                    <div class="sidebar-expanded-only mb-1.5 px-3 sidebar-section-label text-xs font-extrabold uppercase tracking-widest">Analytics</div>
-                    <div class="space-y-1">{% include "components/navigation/analytics_menu.html" %}</div>
-                </div>
-            {% endif %}
-            {% if can_intelligence or can_reports %}
-                <div class="sidebar-nav-section">
-                    <div class="sidebar-expanded-only mb-1.5 px-3 sidebar-section-label text-xs font-extrabold uppercase tracking-widest">Insights</div>
-                    <div class="space-y-1">
-                        {% if can_intelligence %}
-                            {% include "components/navigation/intelligence_menu.html" %}
-                        {% endif %}
-                        {% if can_reports %}
-                            {% include "components/navigation/reports_menu.html" %}
-                        {% endif %}
-                    </div>
-                </div>
-            {% endif %}
-            {% if can_platform_operations %}
-                <div class="sidebar-nav-section">
-                    <div class="sidebar-expanded-only mb-1.5 px-3 sidebar-section-label text-xs font-extrabold uppercase tracking-widest">Platform</div>
-                    <div class="space-y-1">
-                        {% if can_operations_center %}
-                            {% include "components/navigation/platform_operations_menu.html" %}
-                        {% endif %}
-                        {% if can_integrations %}
-                            {% include "components/navigation/integrations_menu.html" %}
-                        {% endif %}
-                    </div>
-                </div>
-            {% endif %}
-            <div class="sidebar-nav-section">
-                <div class="sidebar-expanded-only mb-1.5 px-3 sidebar-section-label text-xs font-extrabold uppercase tracking-widest">Administration</div>
-                <div class="space-y-1">
-                    {% include "components/navigation/access_management_menu.html" %}
-                    {% include "components/navigation/settings_menu.html" %}
-                </div>
-            </div>
+            {% endfor %}
         </nav>
     </aside>
 </div>

@@ -7,6 +7,7 @@
         <link rel="icon"
               type="image/svg+xml"
               href="{{ url_for('static', filename='favicon.svg') }}" />
+        {% import "components/workspace_tabs.html" as workspace_tabs %}
         <title>
             {% block title %}
                 KAORI
@@ -42,6 +43,17 @@
                       class="min-h-0 flex-1 overflow-y-auto scroll-pt-5 bg-surface-page transition-colors duration-300 [scrollbar-gutter:stable] lg:scroll-pt-6 2xl:scroll-pt-7">
                     <div class="p-5 lg:p-6 2xl:p-7">
                         {% include "components/states/_flash_messages.html" %}
+                        {% block page_capability_navigation %}
+                            {% if capability_navigation %}
+                                <div class="mb-4 min-w-0"
+                                     data-kaori-capability-navigation="{{ capability_navigation.key }}">
+                                    {{ workspace_tabs.render_navigation(capability_navigation.tabs,
+                                                                        capability_navigation.active_key,
+                                                                        prefix='detail-' ~ capability_navigation.key,
+                                                                        aria_label=capability_navigation.label ~ ' views') }}
+                                </div>
+                            {% endif %}
+                        {% endblock page_capability_navigation %}
                         {% block dashboard_content %}
                         {% endblock dashboard_content %}
                     </div>
@@ -99,6 +111,7 @@
         <script src="{{ url_for('static', filename='js/analytics/controls.js') }}"></script>
         <script src="{{ url_for('static', filename='js/integration_workspace_tabs.js') }}"></script>
         <script src="{{ url_for('static', filename='js/native_dialogs.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/info_tips.js') }}"></script>
         <script src="{{ url_for('static', filename='js/operational_toasts.js') }}"></script>
         {% block scripts %}
         {% endblock scripts %}

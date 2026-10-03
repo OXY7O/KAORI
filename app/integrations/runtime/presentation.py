@@ -172,6 +172,11 @@ def runtime_observation_state_view(
             message=observation.message or '',
             diagnostics=diagnostics,
         ),
+        'decision_summary': _runtime_decision_summary(
+            integration_type=observation.integration_type,
+            message=observation.message or '',
+            diagnostics=diagnostics,
+        ),
         'latency_ms': observation.latency_ms,
         'latency_display': present_milliseconds(observation.latency_ms),
     }
@@ -243,6 +248,16 @@ def runtime_history_view(
                     if row.message and not _message_repeats_diagnostic(row.message or '', diagnostics)
                     else None
                 ),
+                'summary': _runtime_primary_summary(
+                    integration_type=row.integration_type,
+                    message=row.message or '',
+                    diagnostics=diagnostics,
+                ),
+                'decision_summary': _runtime_decision_summary(
+                    integration_type=row.integration_type,
+                    message=row.message or '',
+                    diagnostics=diagnostics,
+                ),
                 'diagnostics': diagnostics,
                 'diagnostic_count': len(diagnostics),
                 'lifecycle_context': lifecycle_context,
@@ -250,20 +265,7 @@ def runtime_history_view(
             }
         )
 
-    health_counts = {'healthy': 0, 'degraded': 0, 'unhealthy': 0}
-    posture_counts = {'ready': 0, 'attention': 0, 'blocked': 0, 'not_observed': 0}
-    for row in rendered_source_rows:
-        if row.health_status in health_counts:
-            health_counts[row.health_status] += 1
-        posture = _effective_runtime_posture(row.health_status, row.readiness)
-        if posture == 'ready':
-            posture_counts['ready'] += 1
-        elif posture == 'blocked':
-            posture_counts['blocked'] += 1
-        elif posture in {'degraded', 'validation_required'}:
-            posture_counts['attention'] += 1
-        else:
-            posture_counts['not_observed'] += 1
+    health_counts, posture_counts = _runtime_history_counts(rendered_source_rows)
 
     latest = rendered_source_rows[0] if rendered_source_rows else None
     return {
@@ -278,6 +280,26 @@ def runtime_history_view(
         'health_counts': health_counts,
         'posture_counts': posture_counts,
     }
+
+
+def _runtime_history_counts(
+    rows: list[IntegrationRuntimeObservation],
+) -> tuple[dict[str, int], dict[str, int]]:
+    health_counts = {'healthy': 0, 'degraded': 0, 'unhealthy': 0}
+    posture_counts = {'ready': 0, 'attention': 0, 'blocked': 0, 'not_observed': 0}
+    for row in rows:
+        if row.health_status in health_counts:
+            health_counts[row.health_status] += 1
+        posture = _effective_runtime_posture(row.health_status, row.readiness)
+        if posture == 'ready':
+            posture_counts['ready'] += 1
+        elif posture == 'blocked':
+            posture_counts['blocked'] += 1
+        elif posture in {'degraded', 'validation_required'}:
+            posture_counts['attention'] += 1
+        else:
+            posture_counts['not_observed'] += 1
+    return health_counts, posture_counts
 
 
 def _effective_runtime_posture(health_status: str | None, readiness: str | None) -> str:
@@ -340,6 +362,34 @@ def _runtime_primary_summary(
     if message:
         label = 'Kubernetes API' if integration_type == 'container_orchestrator' else 'Runtime'
         return _diagnostic_summary(message, label=label)
+    return 'No current runtime issue was recorded.'
+
+
+def _runtime_decision_summary(
+    *,
+    integration_type: str,
+    message: str,
+    diagnostics: list[dict[str, object]],
+) -> str:
+    """Return the full operator-facing runtime decision without presentation clipping."""
+    priority = {'failed': 0, 'warning': 1, 'pending': 2, 'unknown': 3}
+    candidates = sorted(
+        diagnostics,
+        key=lambda item: priority.get(str(item.get('status') or '').lower(), 9),
+    )
+    for item in candidates:
+        if str(item.get('status') or '').lower() not in priority:
+            continue
+        detail = compact_readiness_reason(str(item.get('detail') or ''))
+        if detail:
+            if integration_type == 'container_orchestrator' and detail.startswith('Provider '):
+                return 'Kubernetes API ' + detail[len('Provider ') :]
+            return detail
+    if message:
+        value = compact_readiness_reason(message)
+        if integration_type == 'container_orchestrator' and value.startswith('Provider '):
+            return 'Kubernetes API ' + value[len('Provider ') :]
+        return value
     return 'No current runtime issue was recorded.'
 
 

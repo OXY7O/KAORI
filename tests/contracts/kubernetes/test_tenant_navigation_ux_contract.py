@@ -4,22 +4,41 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 
 
-def test_tenant_uses_canonical_expandable_sidebar_parent() -> None:
-    menu = (ROOT / 'app/templates/components/navigation/tenant_menu.html').read_text(encoding='utf-8')
+def _read(relative: str) -> str:
+    return (ROOT / relative).read_text(encoding='utf-8')
 
-    assert '<details class="sidebar-menu space-y-1"' in menu
-    assert 'sidebar-menu-chevron' in menu
-    assert 'sidebar-submenu' in menu
 
-    for endpoint, label in (
-        ('tenant.index', 'Overview'),
-        ('tenant.tenants', 'Tenants'),
-        ('tenant.resource_profiles', 'Resource Profiles'),
-        ('tenant.namespace_provisioning', 'Namespace Provisioning'),
-        ('tenant.operations', 'Operations'),
-    ):
-        assert f"url_for('{endpoint}')" in menu
-        assert f'>{label}</span>' in menu
+def _navigation_source() -> str:
+    return _read('app/common/workspace_navigation.py') + '\n' + _read('app/common/workspace_navigation_catalog.py')
+
+
+def _tenant_service_source() -> str:
+    return '\n'.join(
+        _read(path)
+        for path in (
+            'app/kubernetes/tenant/service.py',
+            'app/kubernetes/tenant/service_contracts.py',
+            'app/kubernetes/tenant/registry_context.py',
+            'app/kubernetes/tenant/resource_profile_controls.py',
+        )
+    )
+
+
+def _tenant_discovery_source() -> str:
+    return (
+        _read('app/kubernetes/tenant/discovery_service.py')
+        + '\n'
+        + _read('app/kubernetes/tenant/discovery_adoption.py')
+    )
+
+
+def test_tenant_is_a_kubernetes_sidebar_capability_under_v21() -> None:
+    model = _navigation_source()
+    sidebar = (ROOT / 'app/templates/components/navigation/sidebar.html').read_text(encoding='utf-8')
+
+    assert "key='kubernetes'" in model
+    assert "'tenant', 'Tenant', 'building-2', 'tenant.index'" in model
+    assert 'data-kaori-sidebar-capability="{{ child[\'key\'] }}"' in sidebar
 
 
 def test_tenant_routes_own_only_five_primary_destinations() -> None:
@@ -77,31 +96,31 @@ def test_tenant_pages_reuse_kaori_shared_presentation_patterns() -> None:
         assert 'workspace_tabs.html' not in template
 
 
-def test_sidebar_authority_documents_tenant_submenu_v17() -> None:
+def test_sidebar_authority_documents_tenant_capability_v21() -> None:
     standard = (ROOT / 'docs/design/components/SIDEBAR_NAVIGATION.md').read_text(encoding='utf-8')
     verifier = (ROOT / 'scripts/verify_sidebar_navigation_standard.py').read_text(encoding='utf-8')
 
-    assert 'KAORI Sidebar Navigation Standard v1.7' in standard
-    assert 'Tenant remains one Kubernetes capability parent' in standard
-    for label in ('Overview', 'Tenants', 'Resource Profiles', 'Namespace Provisioning', 'Operations'):
-        assert label in standard
-        assert label in verifier
+    assert 'KAORI Sidebar Navigation Standard v2.1' in standard
+    assert 'Level 1 — Workspace / Domain' in standard
+    assert 'Level 2 — Capability' in standard
+    assert 'Tenant' in standard
+    assert "'tenant', 'Tenant', 'building-2', 'tenant.index'" in _navigation_source()
+    assert 'two-level Workspace -> Capability sidebar' in verifier
 
 
 def test_tenant_primary_navigation_preserves_provider_neutral_boundary() -> None:
-    menu = (ROOT / 'app/templates/components/navigation/tenant_menu.html').read_text(encoding='utf-8')
+    model = _navigation_source()
     base = (ROOT / 'app/templates/kubernetes/tenant/base.html').read_text(encoding='utf-8')
     readme = (ROOT / 'app/kubernetes/tenant/README.md').read_text(encoding='utf-8')
 
     assert 'Native Kubernetes' in base
     assert 'Native Kubernetes' in readme
     assert 'Capsule' in readme
-    assert 'Native Kubernetes</span>' not in menu
-    assert 'Capsule</span>' not in menu
+    assert 'Capsule' not in model
 
 
 def test_tenant_registry_pages_use_shared_default_five_pagination() -> None:
-    service = (ROOT / 'app/kubernetes/tenant/service.py').read_text(encoding='utf-8')
+    service = _tenant_service_source()
     tenant_registry = (ROOT / 'app/templates/kubernetes/tenant/partials/_tenant_registry.html').read_text(
         encoding='utf-8'
     )
@@ -150,9 +169,64 @@ def test_tenant_registry_pages_use_shared_default_five_pagination() -> None:
 
 
 def test_namespace_allocation_selector_is_not_limited_by_visible_page() -> None:
-    service = (ROOT / 'app/kubernetes/tenant/service.py').read_text(encoding='utf-8')
+    service = _tenant_service_source()
     allocation = (ROOT / 'app/templates/kubernetes/tenant/partials/_allocation_change.html').read_text(encoding='utf-8')
 
-    assert "'namespace_options': namespace_options" in service
-    assert '{% for item in namespace_options %}' in allocation
+    assert "'namespace_allocation_options': namespace_allocation_options" in service
+    assert '{% for item in namespace_allocation_options %}' in allocation
     assert '{% for item in namespaces %}' not in allocation
+
+
+def test_tenant_blocked_state_reuses_general_kubernetes_prerequisite_family() -> None:
+    base = (ROOT / 'app/templates/kubernetes/tenant/base.html').read_text(encoding='utf-8')
+
+    blocked_index = base.index('{% if not native_available %}')
+    onboarding_index = base.index('{% if registered_cluster_count == 0 %}')
+    content_index = base.index('{% block tenant_content %}')
+
+    assert 'components/cluster/_hero_blocked_context.html' in base
+    assert 'components/cluster/_onboarding_banner.html' in base[onboarding_index:content_index]
+    assert 'components/states/_blocked_state.html' not in base
+    assert 'Tenant capability is blocked' not in base
+    assert 'Return to Tenant' not in base
+    assert "page_hero.context_card('Tenant context'" in base
+    assert blocked_index < onboarding_index < content_index
+
+    blocked_hero = base[blocked_index : base.index('{% else %}', blocked_index)]
+    assert "page_hero.context_card('Tenant context'" not in blocked_hero
+    assert 'Open Cluster Integrations' not in blocked_hero
+
+
+def test_tenant_readiness_matches_runtime_fallback_and_blocker_distinguishes_validation() -> None:
+    service = _tenant_service_source()
+    base = (ROOT / 'app/templates/kubernetes/tenant/base.html').read_text(encoding='utf-8')
+    hero_blocker = (ROOT / 'app/templates/components/cluster/_hero_blocked_context.html').read_text(encoding='utf-8')
+    onboarding = (ROOT / 'app/templates/components/cluster/_onboarding_banner.html').read_text(encoding='utf-8')
+
+    native_provider = (ROOT / 'app/kubernetes/tenant/native_provider.py').read_text(encoding='utf-8')
+    discovery = _tenant_discovery_source()
+
+    assert 'tenant_workspace_connection_available' in service
+    assert "frozenset({'ready', 'degraded'})" in native_provider
+    assert 'def effective_native_connection_readiness(' in native_provider
+    assert "== 'connected' else 'validation_required'" in native_provider
+    assert 'effective_native_connection_readiness(connection)' in native_provider
+    assert 'tenant_workspace_connection_available(cluster.kubernetes_connection)' in discovery
+    assert 'Metrics Source' not in service
+    assert 'Alertmanager' not in service
+
+    assert 'registered_cluster_count = cluster_onboarding.cluster_count|default(0)' in base
+    assert 'Provider Operations Restricted' in base
+    assert 'Registered Clusters' in base
+    assert 'Provider mutations require a Ready Kubernetes integration.' in base
+
+    assert 'blocked_cluster_value' in hero_blocker
+    assert 'blocked_cluster_supporting' in hero_blocker
+    assert 'Validate Your Kubernetes Cluster' in onboarding
+    assert (
+        'Cluster registered, but this workspace needs a Ready integration or pending legacy readiness persistence.'
+        in onboarding
+    )
+    assert 'Open Cluster Integrations' in onboarding
+    assert 'Validate Cluster' in onboarding
+    assert 'Confirm Ready' in onboarding

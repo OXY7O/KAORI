@@ -146,15 +146,25 @@ def _deduplicate(items: Iterable[BreadcrumbItem]) -> list[BreadcrumbItem]:
 def _analytics_items(endpoint: str) -> list[BreadcrumbItem]:
     if endpoint.startswith('analytics.object_storage_'):
         return [
+            BreadcrumbItem('Object Storage', 'database'),
             BreadcrumbItem('Analytics', 'chart-no-axes-combined'),
-            BreadcrumbItem('Object Storage', 'database-zap'),
             BreadcrumbItem(_leaf(endpoint, 'Overview')),
         ]
     return [
+        BreadcrumbItem('Kubernetes', 'boxes'),
         BreadcrumbItem('Analytics', 'chart-no-axes-combined'),
-        BreadcrumbItem('Kubernetes', 'bar-chart-3'),
         BreadcrumbItem(_leaf(endpoint, 'Overview')),
     ]
+
+
+def _platform_kubernetes_items(endpoint: str) -> list[BreadcrumbItem]:
+    items = [
+        BreadcrumbItem('Operations Center', 'workflow'),
+        BreadcrumbItem('Kubernetes Admin'),
+    ]
+    if endpoint != 'platform_operations.kubernetes.index':
+        items.append(BreadcrumbItem(_leaf(endpoint, 'Secret Reveal')))
+    return items
 
 
 def build_navigation_breadcrumb(
@@ -169,14 +179,15 @@ def build_navigation_breadcrumb(
 
     if endpoint == 'welcome.index':
         items = [BreadcrumbItem('Welcome', 'sparkles')]
-    elif endpoint.startswith(('kubernetes_dashboard.', 'object_storage_dashboard.')):
-        dashboard_label = {
-            'kubernetes_dashboard': 'Kubernetes Operations',
-            'object_storage_dashboard': 'Object Storage Operations',
-        }.get(endpoint.split('.', 1)[0], 'Kubernetes Operations')
+    elif endpoint.startswith('kubernetes_dashboard.'):
         items = [
-            BreadcrumbItem('Dashboards', 'layout-dashboard'),
-            BreadcrumbItem(dashboard_label),
+            BreadcrumbItem('Kubernetes', 'boxes'),
+            BreadcrumbItem('Overview'),
+        ]
+    elif endpoint.startswith('object_storage_dashboard.'):
+        items = [
+            BreadcrumbItem('Object Storage', 'database'),
+            BreadcrumbItem('Overview'),
         ]
     elif integration_owner is not None:
         items = [
@@ -188,27 +199,31 @@ def build_navigation_breadcrumb(
     elif endpoint.startswith('object_storage_inventory.'):
         items = [
             BreadcrumbItem('Object Storage', 'database'),
+            BreadcrumbItem('Inventory'),
             BreadcrumbItem(_leaf(endpoint, 'Overview')),
         ]
     elif endpoint.startswith('inventory.'):
         items = [
-            BreadcrumbItem('Inventory', 'boxes'),
+            BreadcrumbItem('Kubernetes', 'boxes'),
+            BreadcrumbItem('Inventory'),
             BreadcrumbItem(_leaf(endpoint, 'Overview')),
         ]
     elif endpoint.startswith('kubernetes_operations.'):
         fallback = 'Secrets' if 'secret' in endpoint or '/secrets' in path else 'ConfigMaps'
         items = [
-            BreadcrumbItem('Operations', 'terminal-square'),
+            BreadcrumbItem('Kubernetes', 'boxes'),
+            BreadcrumbItem('Operations'),
             BreadcrumbItem(_leaf(endpoint, fallback)),
         ]
     elif endpoint.startswith(('governance.', 'tenant.')):
         domain_key = endpoint.split('.', 1)[0]
-        domain_label, domain_icon, domain_fallback = {
-            'governance': ('Governance', 'shield-check', 'TLS Certificates'),
-            'tenant': ('Tenant', 'building-2', 'Overview'),
+        domain_label, domain_fallback = {
+            'governance': ('Governance', 'TLS Certificates'),
+            'tenant': ('Tenant', 'Overview'),
         }[domain_key]
         items = [
-            BreadcrumbItem(domain_label, domain_icon),
+            BreadcrumbItem('Kubernetes', 'boxes'),
+            BreadcrumbItem(domain_label),
             BreadcrumbItem(_leaf(endpoint, domain_fallback)),
         ]
     elif endpoint.startswith('analytics.'):
@@ -236,12 +251,7 @@ def build_navigation_breadcrumb(
             BreadcrumbItem('Data Lifecycle'),
         ]
     elif endpoint.startswith('platform_operations.kubernetes.'):
-        items = [
-            BreadcrumbItem('Operations Center', 'workflow'),
-            BreadcrumbItem('Kubernetes Admin'),
-        ]
-        if endpoint != 'platform_operations.kubernetes.index':
-            items.append(BreadcrumbItem(_leaf(endpoint, 'Secret Reveal')))
+        items = _platform_kubernetes_items(endpoint)
     elif endpoint.startswith(('integrations.', 'notification_channels.')):
         leaf = {
             'integrations.overview': 'Overview',

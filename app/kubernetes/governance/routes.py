@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from flask import Blueprint, render_template
+from flask_login import current_user
 
 from app.access.rbac.decorators import permission_required
 from app.kubernetes.governance.tls_certificates.routes import (
@@ -20,7 +21,10 @@ governance_bp = Blueprint(
 @governance_bp.route('/', methods=['GET'])
 @permission_required('governance.view')
 def overview():
-    return render_template('kubernetes/governance/overview/index.html')
+    return render_template(
+        'kubernetes/governance/overview/index.html',
+        can_view_tls=current_user.has_permission('tls_certificates.view'),
+    )
 
 
 governance_bp.add_url_rule(

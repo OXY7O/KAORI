@@ -413,3 +413,56 @@ def test_generate_report_readiness_badges_use_shared_semantic_border_authority()
     assert 'border-status-warning-border' not in readiness
     assert 'function setReadinessItemTone' in runtime
     assert 'function syncOverallReadiness' in runtime
+
+
+def test_generate_report_readiness_uses_live_scope_selection_instead_of_bootstrap_counts() -> None:
+    runtime = read(RUNTIME)
+    service = read(SERVICE)
+
+    assert 'function scopeSelectionIsReady()' in runtime
+    assert 'return Boolean(objectStorageSystemSelect && objectStorageSystemSelect.value)' in runtime
+    assert 'if (reportType && reportType.requires_cluster === false)' in runtime
+    assert 'return Boolean(clusterSelect && clusterSelect.value)' in runtime
+    assert 'return hasRegisteredClusters && Boolean(clusterSelect.value)' not in runtime
+    assert (
+        'hasObjectStorageSystems && Boolean(objectStorageSystemSelect && objectStorageSystemSelect.value)'
+        not in runtime
+    )
+    assert "if not bool(report_context.get('requires_cluster', True)):" in service
+
+
+def test_generate_report_final_submit_is_backend_authoritative() -> None:
+    runtime = read(RUNTIME)
+
+    assert 'generateButton.disabled = false' in runtime
+    assert 'create_report_request()/validate_form_state() is authoritative' in runtime
+    assert 'if (!overallRequestReady) {\n                event.preventDefault()' not in runtime
+
+
+def test_generate_report_review_recomputes_live_readiness_state() -> None:
+    runtime = read(RUNTIME)
+
+    show_step = runtime[runtime.index('function showWizardStep') : runtime.index('function validateWizardStep')]
+    assert 'if (nextStep === 5) {' in show_step
+    assert show_step.index('syncClusterGuard()') < show_step.index('currentWizardStep = nextStep')
+    assert 'if (currentWizardStep === 5) {' not in show_step
+    assert "clusterSelect.addEventListener('input', syncClusterSelection)" in runtime
+    assert "clusterSelect.addEventListener('change', syncClusterSelection)" in runtime
+
+    update_section = runtime[
+        runtime.index('function updateSelectedSectionFromCheckbox') : runtime.index('function syncSectionCount')
+    ]
+    assert 'syncClusterGuard()' in update_section
+
+
+def test_generate_report_runtime_updates_lucide_svg_classes_safely() -> None:
+    runtime = read(RUNTIME)
+
+    # Lucide replaces <i> nodes with <svg>; Firefox exposes SVGElement.className
+    # as an SVGAnimatedString, so direct assignment throws a getter-only error.
+    assert 'statusIcon.className =' not in runtime
+    assert 'readinessOverallIcon.className =' not in runtime
+    assert 'readinessSummaryIcon.className =' not in runtime
+    assert 'previewEligibilityIcon.className =' not in runtime
+    assert "statusIcon.setAttribute(\n                    'class'," in runtime
+    assert "readinessSummaryIcon.setAttribute(\n                    'class'," in runtime

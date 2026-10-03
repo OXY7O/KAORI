@@ -4,44 +4,42 @@ ROOT = Path(__file__).resolve().parents[4]
 
 
 def test_platform_operations_section_contains_operations_center_and_integrations_as_sibling_roots() -> None:
-    sidebar = (ROOT / 'app/templates/components/navigation/sidebar.html').read_text()
-    operations_menu = (ROOT / 'app/templates/components/navigation/platform_operations_menu.html').read_text()
-    integrations_menu = (ROOT / 'app/templates/components/navigation/integrations_menu.html').read_text()
+    catalog = (ROOT / 'app/common/workspace_navigation_catalog.py').read_text()
     page = (ROOT / 'app/templates/platform_operations/jobs/index.html').read_text()
 
-    section = sidebar.split('>Platform</div>', 1)[1].split('>Administration</div>', 1)[0]
-    assert 'components/navigation/platform_operations_menu.html' in section
-    assert 'components/navigation/integrations_menu.html' in section
-    assert section.index('platform_operations_menu.html') < section.index('integrations_menu.html')
+    operations_start = catalog.index("key='operations_center'")
+    integrations_start = catalog.index("key='integrations'")
+    assert operations_start < integrations_start
+    operations = catalog[operations_start:integrations_start]
+    integrations = catalog[integrations_start:]
 
-    assert '<details' in operations_menu
-    assert 'Operations Center' in operations_menu
-    assert 'Overview' in operations_menu
-    assert '>Jobs</span>' in operations_menu
-    assert 'Data Lifecycle' in operations_menu
-    assert '>Kubernetes Admin</span>' in operations_menu
-    assert 'Integrations' not in operations_menu
-    assert 'Notification Channels' not in operations_menu
-    assert "url_for('platform_operations.overview.index')" in operations_menu
-    assert "url_for('jobs.executions')" in operations_menu
-    assert "url_for('platform_operations.data_lifecycle.index')" in operations_menu
-    assert "url_for('platform_operations.kubernetes.index')" in operations_menu
-    assert 'Inventory Sync' not in operations_menu
+    assert "label='Operations Center'" in operations
+    assert "section='Platform'" in operations
+    assert "'overview'" in operations
+    assert "'jobs', 'Jobs'" in operations
+    assert "'data_lifecycle'" in operations
+    assert "'kubernetes_admin'" in operations
+    assert "'platform_operations.overview.index'" in operations
+    assert "'jobs.executions'" in operations
+    assert "'platform_operations.data_lifecycle.index'" in operations
+    assert "'platform_operations.kubernetes.index'" in operations
+    assert 'Notification Channels' not in operations
 
-    assert '<details' in integrations_menu
-    assert 'Integrations' in integrations_menu
-    assert "url_for('integrations.overview')" in integrations_menu
-    assert "url_for('notification_channels.index')" in integrations_menu
-    assert 'Notification Channels' in integrations_menu
+    assert "label='Integrations'" in integrations
+    assert "section='Platform'" in integrations
+    assert "'integrations.overview'" in integrations
+    assert "'notification_channels.index'" in integrations
+    assert 'Notification Channels' in integrations
 
     assert 'Job Configuration' in page
     assert "url_for('jobs.configuration')" in page
 
 
 def test_secret_reveal_administration_is_not_owned_by_settings_navigation() -> None:
-    settings_menu = (ROOT / 'app/templates/components/navigation/settings_menu.html').read_text()
-    platform_menu = (ROOT / 'app/templates/components/navigation/platform_operations_menu.html').read_text()
+    catalog = (ROOT / 'app/common/workspace_navigation_catalog.py').read_text()
+    settings_start = catalog.index("key='settings'")
+    settings = catalog[settings_start:]
 
-    assert 'settings.secret_reveal' not in settings_menu
-    assert 'Secret Reveal' not in settings_menu
-    assert 'platform_operations.kubernetes.index' in platform_menu
+    assert 'settings.secret_reveal' not in settings
+    assert 'Secret Reveal' not in settings
+    assert "'platform_operations.kubernetes.index'" in catalog

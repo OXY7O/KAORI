@@ -11,12 +11,10 @@
 
     const visibleModal = () => document.querySelector('[data-tenant-adoption-modal]:not(.hidden)')
 
-    const openModal = (button) => {
-        const id = button.dataset.tenantAdoptionModalId || ''
-        const modal = document.getElementById(id)
+    const openModal = (modal, button = opener) => {
         if (!(modal instanceof HTMLElement)) return
 
-        opener = button
+        if (button instanceof HTMLElement) opener = button
         modal.classList.remove('hidden')
         modal.classList.add('flex')
         modal.setAttribute('aria-hidden', 'false')
@@ -38,15 +36,35 @@
     }
 
     document.addEventListener('click', (event) => {
+        const load = event.target.closest('[data-tenant-adoption-load]')
+        if (load) {
+            if (!load.disabled) opener = load
+            return
+        }
+
         const open = event.target.closest('[data-tenant-adoption-open]')
         if (open) {
             event.preventDefault()
-            if (!open.disabled) openModal(open)
+            const id = open.dataset.tenantAdoptionModalId || ''
+            const modal = document.getElementById(id)
+            if (!open.disabled) openModal(modal, open)
             return
         }
 
         const close = event.target.closest('[data-tenant-adoption-close]')
         if (close) closeModal(close.closest('[data-tenant-adoption-modal]'))
+    })
+
+    document.addEventListener('htmx:afterSwap', (event) => {
+        const target = event.target
+        if (!(target instanceof HTMLElement) || target.id !== 'tenant-adoption-preflight-slot') return
+        const modal = target.querySelector('[data-tenant-adoption-modal]')
+        if (modal) openModal(modal)
+    })
+
+    document.addEventListener('htmx:responseError', (event) => {
+        const load = event.target?.closest?.('[data-tenant-adoption-load]')
+        if (load && opener === load) opener = null
     })
 
     document.addEventListener('htmx:afterRequest', (event) => {

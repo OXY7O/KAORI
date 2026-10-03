@@ -29,7 +29,7 @@ def build_alerts_snapshot(*, context: dict[str, Any] | None, unavailable_reason:
             severity=str(item.get('severity') or 'None'),
             age=str(item.get('age') or ''),
         )
-        for item in raw_items[:3]
+        for item in raw_items[:5]
         if isinstance(item, dict)
     ]
     connected = bool(context.get('source_connected'))

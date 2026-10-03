@@ -2,6 +2,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry_ui %}
 {% set registry_id = "resource-profile-registry-card" %}
+{% set profile_class_labels = {"small": "Small", "standard": "Medium", "large": "Large", "extra_large": "Extra Large", "custom": "Custom"} %}
 {% set loading_id = "resource-profile-registry-loading" %}
 {% set query_params = {
     'view': 'profiles',
@@ -48,7 +49,7 @@
                     <option value="">All Classes</option>
                     {% for item in profile_class_filter_options %}
                         <option value="{{ item }}"
-                                {% if profile_registry_filters.profile_class == item %}selected{% endif %}>{{ item|title }}</option>
+                                {% if profile_registry_filters.profile_class == item %}selected{% endif %}>{{ profile_class_labels.get(item, item|replace('_', ' ') |title) }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -93,43 +94,47 @@
                         </td>
                         <td class="{{ table_ui.cell_classes() }} align-middle">
                             <div class="flex flex-wrap items-center gap-2">
-                                {{ table_label.status_label(profile.profile_class|title, 'info' if profile.profile_class == 'custom' else 'normal') }}
+                                {{ table_label.status_label(profile_class_labels.get(profile.profile_class, profile.profile_class|replace('_', ' ') |title), 'info' if profile.profile_class == 'custom' else 'normal') }}
+                                {{ table_label.status_label('Editable Values' if profile.profile_class == 'custom' else 'Versioned Controls', 'info' if profile.profile_class == 'custom' else 'maintenance') }}
                                 {{ table_label.status_label('Enabled' if profile.enabled else 'Disabled', 'normal' if profile.enabled else 'unknown') }}
                             </div>
                             <p class="mt-1 text-xs text-content-muted">
                                 v{{ profile.version }} ·
                                 {% if profile.profile_class == 'custom' and profile.base_preset_class %}
-                                    Based on {{ profile.base_preset_class|title }} v{{ profile.base_preset_version or '—' }}
+                                    Based on {{ profile_class_labels.get(profile.base_preset_class, profile.base_preset_class|replace('_', ' ') |title) }} v{{ profile.base_preset_version or '—' }}
                                 {% elif profile.profile_class == 'custom' %}
                                     Independent Custom
                                 {% else %}
-                                    KAORI preset · Locked
+                                    KAORI preset · Fixed values
                                 {% endif %}
                             </p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} align-middle">
                             <p class="text-xs font-semibold text-content-primary">
-                                {{ profile.quota_hard_json.get("requests.cpu") or 'Unbounded' }} CPU ·
-                                {{ profile.quota_hard_json.get("requests.memory") or 'Unbounded' }} memory
+                                {{ profile.quota_hard_json.get("requests.cpu") or 'Not Managed' }} CPU ·
+                                {{ profile.quota_hard_json.get("requests.memory") or 'Not Managed' }} memory
                             </p>
                             <p class="mt-1 text-xs text-content-muted">
-                                {{ profile.quota_hard_json.get("pods") or 'Unbounded' }} pods ·
-                                {{ profile.quota_hard_json.get("requests.storage") or 'Unbounded' }} storage
+                                {{ profile.quota_hard_json.get("pods") or 'Not Managed' }} pods ·
+                                {{ profile.quota_hard_json.get("requests.storage") or 'Not Managed' }} storage
                             </p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} align-middle">
+                            {% set rollout_targets = profile_rollout_targets.get(profile.id, []) %}
+                            {% set pending_rollout = rollout_targets|sum(attribute='outdated') if rollout_targets else 0 %}
                             <p class="text-xs font-semibold text-content-primary">{{ usage.namespaces }} Namespace ref{{ '' if usage.namespaces == 1 else 's' }}</p>
                             <p class="mt-1 text-xs text-content-muted">{{ usage.capacity_decisions }} Capacity Decision{{ '' if usage.capacity_decisions == 1 else 's' }}</p>
+                            {% if pending_rollout %}
+                                <div class="mt-1.5">{{ table_label.status_label(pending_rollout ~ ' pending rollout', 'warning') }}</div>
+                            {% endif %}
                         </td>
                         <td class="{{ table_ui.cell_classes(action=true) }} align-middle">
                             <button type="button"
                                     data-kaori-dialog-open
                                     data-dialog-target="resource-profile-manage-{{ profile.id }}"
                                     class="{{ table_ui.action_classes() }}">
-                                <i data-lucide="{{ 'settings-2' if profile.profile_class == 'custom' else 'eye' }}"
-                                   class="h-4 w-4"
-                                   aria-hidden="true"></i>
-                                {{ 'Manage' if profile.profile_class == 'custom' else 'View' }}
+                                <i data-lucide="settings-2" class="h-4 w-4" aria-hidden="true"></i>
+                                Manage
                             </button>
                         </td>
                     </tr>

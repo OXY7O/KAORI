@@ -1,14 +1,15 @@
-# KAORI Operational Dashboard Pattern v1.5
+# KAORI Operational Dashboard Pattern v1.7
 
 **Status:** Locked reference pattern  
 **Reference implementations:** Kubernetes Operations Dashboard and Object Storage Operations Dashboard  
-**Canonical pages:** `app/templates/kubernetes/dashboard/partials/_content.html` and `app/templates/storage/object_storage/dashboard/partials/_content.html`
+**Canonical framework:** `app/templates/components/operational_dashboard_workspace.html`  
+**Reference consumers:** `app/templates/kubernetes/dashboard/partials/_content.html` and `app/templates/storage/object_storage/dashboard/partials/_content.html`
 
 ## Purpose
 
 This pattern defines a read-only, snapshot-backed operational dashboard that combines scope, operational indicators, peer workspace tabs, tables, charts, and visible action guidance without creating page-local styling systems.
 
-Kubernetes Operations Dashboard and Object Storage Operations Dashboard are the paired references. Domain content may change nouns and evidence values; Hero grammar, Operational Signal Overview placement, workspace tabs, peer-grid composition, data boundaries, interaction, accessibility, wording discipline, and style ownership remain shared.
+Kubernetes Operations Dashboard and Object Storage Operations Dashboard are the paired references. The shared `operational_dashboard_workspace.html` component owns workspace tabs, URL-backed active state, keyboard navigation, panel ARIA/visibility geometry, and the canonical four-tab information architecture. Domain implementations change data, nouns, evidence, actions, and section content only.
 
 ## Operational Dashboard Hero Profile
 
@@ -76,10 +77,11 @@ Kubernetes maps the health table to clusters and Object Storage maps it to regis
 
 - Use `components/page_hero.html` and the `operational_dashboard(...)` profile renderer for the Hero.
 - Use `components/operational_metric_card.html` for the KPI grid.
-- Use `components/workspace_tabs.html` with semantic key `integrated-workspace`.
+- Consume `components/operational_dashboard_workspace.html` for canonical four-tab navigation, URL state, keyboard behavior, and panel geometry. It delegates tab rendering to `components/workspace_tabs.html` with semantic key `integrated-workspace`.
 - Use `components/operational_section_card.html` for repeated section shells.
 - Use `components/peer_content_grid.html` for equal-height peer content.
-- Use `components/operational_flow_steps.html` for visible action and response flows.
+- Use `components/operational_flow_steps.html` for capacity and other directional action flows where arrow-connected progression remains meaningful.
+- Use `components/numbered_governance_steps.html` for **Alert Interpretation & Response**. Reporting uses the shared compact `components/reporting_dashboard_workspace.html` presentation so Kubernetes and Object Storage cannot drift.
 - Use `components/operational_callout.html` for interpretation/supporting guidance.
 - Use `components/forecast_projection_chart.html` for historical/projected utilization.
 - Use canonical table, label, empty-state, loading, and pagination components.
@@ -94,6 +96,20 @@ Identity → Scope → Indicators → Peer analysis → Interpretation → Actio
 
 The Hero establishes identity, evidence boundary, and readiness. Operational Signal Overview owns scope and high-level indicators. Tabs are peer perspectives of the same dashboard scope. Evidence precedes interpretation and action.
 
+### Controlled dashboard flow contract
+
+`Alert Interpretation & Response` keeps the shared six-step sequence `Validate → Triage → Investigate → Respond → Verify → Record`, rendered through `components/numbered_governance_steps.html`.
+
+`Governed Reporting Flow` remains `Validate → Select → Create → Generate → Schedule → Retain`, but its geometry is owned by `components/reporting_dashboard_workspace.html`. Domain wrappers provide scope/evidence wording only. Capacity remains on `components/operational_flow_steps.html` where directional action progression is the intended semantic.
+
+### Alerts Summary preview contract
+
+`Alerts Summary` is a bounded dashboard preview, not an alert registry. Kubernetes and Object Storage expose and render at most **five** recent active AlertCase records while severity totals continue to represent the complete selected scope. The full case set remains available through **Open Alert Intelligence**.
+
+### Recent Report Activity preview contract
+
+`Recent Report Activity` is a bounded dashboard preview of generated report artifacts. Kubernetes and Object Storage query and render at most **four** latest generated report records. The Reports workspace remains authoritative for full report history, filtering, scheduling, and retained-artifact review; dashboard summaries must not add local pagination.
+
 ## Data-boundary contract
 
 - Web requests read committed database rows and worker snapshots only.
@@ -103,7 +119,7 @@ The Hero establishes identity, evidence boundary, and readiness. Operational Sig
 - Detailed capacity, forecast, consumer, and alert signals may require a selected domain scope.
 - UI copy uses `snapshot`, `committed`, `available`, or `detailed signals`; it must not imply request-time provider queries.
 - Reporting guidance remains format-neutral.
-- Reporting Control states selected scope, committed-evidence boundary, and review requirement before the controlled reporting flow.
+- Reporting guardrails state selected scope, committed-evidence authority, and review requirement before the governed reporting flow.
 
 ## Request authorization contract
 
@@ -147,10 +163,26 @@ Use consistent evidence terminology such as `Cluster Signals Available`, `Select
 
 ## Dashboard family consistency
 
-- Kubernetes and Object Storage share the same Hero profile, four workspace tabs, outer `space-y-5` rhythm, Operational Signal Overview placement, peer-grid proportions, and section-card hierarchy.
-- Domain-specific wording changes nouns/evidence semantics only; it does not create a different visual grammar.
-- Future Server/VM, HCI, network, backup, and other operational dashboards begin from this pattern and the shared Hero profile.
-- Reusable layout changes happen through shared components/canonical structure and family-level contract tests.
+- Kubernetes and Object Storage consume the same `components/operational_dashboard_workspace.html` framework and therefore share the four workspace tabs, active-tab state, URL synchronization, keyboard navigation, panel semantics, outer `space-y-5` rhythm, and section hierarchy.
+- Domain-specific templates own only Hero values/readiness, Operational Signal Overview content, section data, and domain-specific copy/actions.
+- Future capability dashboards—including Registry/Harbor and Source Control/GitHub, plus Server/VM, HCI, network, backup, and other operational domains—must start by consuming `operational_dashboard_workspace.html`; copying Alpine tab state or local panel geometry is prohibited.
+- Reusable layout changes happen in shared components first, then all dashboard consumers inherit the change. Family-level contract tests and `scripts/verify_operational_dashboard_standard.py` protect this invariant.
+
+## New dashboard implementation contract
+
+A new operational dashboard is a **content implementation of the shared framework**, not a new page design.
+
+Required sequence:
+
+1. render the domain Hero with `page_hero.operational_dashboard(...)`;
+2. render the domain onboarding/readiness blocker when required;
+3. enter `operational_dashboard_workspace.controller(...)`;
+4. render the domain Operational Signal Overview;
+5. render `operational_dashboard_workspace.navigation(...)`;
+6. provide content for the canonical `overview`, `capacity`, `signals`, and `reporting` panels through `operational_dashboard_workspace.panel(...)`;
+7. use shared section-card, peer-grid, table, label, loading, chart, and reporting components rather than page-local geometry.
+
+A future framework-level redesign updates the shared components and this standard once; individual dashboard domains should not fork the layout.
 
 ## Maintainability and performance contract
 

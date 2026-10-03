@@ -51,7 +51,7 @@
                         </div>
                         {{ integration_ui.palette_icon('boxes', 'normal' if operational_use.inventory_status == 'committed' else 'unknown', size='md') }}
                     </div>
-                    <p class="mt-2 text-xs leading-5 text-content-secondary">Committed inventory captured at {{ operational_use.inventory_collected_at_display }}.</p>
+                    <p class="mt-2 text-xs leading-5 text-content-secondary">Captured {{ operational_use.inventory_collected_at_display }}. Check freshness before relying on this snapshot.</p>
                 </article>
                 <article class="bg-surface-card p-5">
                     <div class="flex items-start justify-between gap-3">
@@ -158,7 +158,7 @@
                     </div>
                 </header>
                 <div class="divide-y divide-outline-subtle" data-kaori-consumer-list>
-                    {% set consumers = [('boxes', 'Kubernetes Inventory', 'Live authority + committed inventory', 'Nodes, namespaces, workloads, pods, services, ingress, storage, and topology.'), ('chart-no-axes-combined', 'Kubernetes Analytics', 'Committed inventory + metrics', 'Utilization, capacity, storage, workload, forecasting, and alert context.'), ('shield-check', 'Governance', 'Registered authority + policy guardrails', 'TLS inventory, protected-secret policy, and operational compliance context.'), ('square-terminal', 'Operations', 'Registered live authority', 'ConfigMap and Secret workflows use separate governed write permissions.'), ('file-chart-column', 'Reports', 'Committed evidence + retained artifacts', 'Generated reports remain available after the Kubernetes registration is removed.')] %}
+                    {% set consumers = [('boxes', 'Kubernetes Inventory', 'Live authority + committed inventory', 'Nodes, namespaces, workloads, pods, services, ingress, storage, and topology.'), ('chart-no-axes-combined', 'Kubernetes Analytics', 'Committed inventory + metrics', 'Utilization, capacity, storage, workload, forecasting, and alert context.'), ('shield-check', 'Governance', 'Registered authority + policy guardrails', 'TLS inventory, protected-secret policy, and operational compliance context.'), ('building-2', 'Kubernetes Tenant', 'Committed Tenant intent + provider authority', 'Tenant ownership, namespace allocations, access grants, credentials, and reconciliation evidence.'), ('square-terminal', 'Operations', 'Registered live authority', 'ConfigMap and Secret workflows use separate governed write permissions.'), ('file-chart-column', 'Reports', 'Committed evidence + retained artifacts', 'Generated reports remain available after the Kubernetes registration is removed.')] %}
                     {% for icon, title, boundary, description in consumers %}
                         <article class="grid gap-3 px-4 py-3.5 transition hover:bg-kaori-mist sm:px-5 lg:grid-cols-[minmax(14rem,0.8fr)_minmax(15rem,0.8fr)_minmax(0,1.4fr)] lg:items-center">
                             <div class="flex min-w-0 items-start gap-3">

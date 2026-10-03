@@ -37,7 +37,7 @@ def test_dashboard_family_explains_kaori_alert_intelligence_as_primary_alert_sou
 
     for content in (kubernetes, object_storage):
         assert 'KAORI Alert Intelligence' in content
-        assert 'Active KAORI AlertCase posture and recent cases.' in content
+        assert 'Active KAORI AlertCase posture and up to five recent cases.' in content
 
     for content in (kubernetes_guidance, object_storage_guidance):
         assert 'Alert Data Source' in content

@@ -17,11 +17,16 @@ def test_dashboard_uses_shared_workspace_tabs_and_persists_url_state() -> None:
     routes = read('app/kubernetes/dashboard/routes.py')
     schema = read('app/kubernetes/dashboard/schema.py')
 
-    assert '{% import "components/workspace_tabs.html" as workspace_tabs %}' in source
-    assert 'workspace_tabs.render(' in source
-    assert "url.searchParams.set('tab', tab)" in source
-    assert "window.history.replaceState({}, '', url)" in source
-    assert 'id="dashboard-active-tab"' in source
+    framework = read('app/templates/components/operational_dashboard_workspace.html')
+
+    assert 'components/operational_dashboard_workspace.html' in source
+    assert 'dashboard_workspace.controller(' in source
+    assert 'dashboard_workspace.navigation(' in source
+    assert source.count('dashboard_workspace.panel(') == 4
+    assert 'workspace_tabs.render(standard_tabs' in framework
+    assert "url.searchParams.set('tab', tab)" in framework
+    assert "window.history.replaceState({}, '', url)" in framework
+    assert 'id="{{ input_id }}"' in framework
     assert 'hx-include="#dashboard-active-tab"' in selector
     assert "DASHBOARD_TABS = {'overview', 'capacity', 'signals', 'reporting'}" in routes
     assert "active_tab: str = 'overview'" in schema
@@ -31,9 +36,12 @@ def test_dashboard_uses_integrated_tabs_and_equal_height_peer_content() -> None:
     source = read('app/templates/kubernetes/dashboard/partials/_content.html')
     grid = read('app/templates/components/peer_content_grid.html')
     tabs = read('app/templates/components/workspace_tabs.html')
+    framework = read('app/templates/components/operational_dashboard_workspace.html')
     integrated_tabs = tabs.split('{% macro render(', 1)[1].split('{%- endmacro %}', 1)[0]
 
     assert '{% import "components/peer_content_grid.html" as peer_content_grid %}' in source
+    assert 'components/operational_dashboard_workspace.html' in source
+    assert 'data-kaori-dashboard-framework="operational-v1"' in framework
     assert source.count('peer_content_grid.layout_classes()') == 4
     assert "column_classes('primary', 'seven-five')" in source
     assert "column_classes('secondary', 'seven-five')" in source
@@ -49,9 +57,9 @@ def test_dashboard_uses_integrated_tabs_and_equal_height_peer_content() -> None:
     assert 'shadow-sm' not in integrated_tabs
     assert 'border-b border-outline-subtle' in integrated_tabs
     assert 'data-kaori-tab-variant="integrated-workspace"' in integrated_tabs
-    assert 'id="kubernetes-dashboard-panel-capacity"' in source
-    assert 'id="kubernetes-dashboard-panel-signals"' in source
-    assert 'id="kubernetes-dashboard-panel-reporting"' in source
+    assert "dashboard_workspace.panel('capacity'" in source
+    assert "dashboard_workspace.panel('signals'" in source
+    assert "'reporting'," in source
 
 
 def test_dashboard_sections_use_the_canonical_operational_section_card() -> None:
@@ -65,9 +73,7 @@ def test_dashboard_sections_use_the_canonical_operational_section_card() -> None
         '_top_consumers.html',
         '_alerts_summary.html',
         '_recommended_actions.html',
-        '_reporting_summary.html',
         '_alert_response_guidance.html',
-        '_reporting_guidance.html',
         '_section_loading.html',
     ]
 
@@ -76,17 +82,27 @@ def test_dashboard_sections_use_the_canonical_operational_section_card() -> None
         assert 'components/operational_section_card.html' in source, name
         assert 'operational_section_card.render(' in source, name
 
+    reporting_summary = read('app/templates/kubernetes/dashboard/partials/_reporting_summary.html')
+    reporting_guidance = read('app/templates/kubernetes/dashboard/partials/_reporting_guidance.html')
+    reporting_workspace = read('app/templates/components/reporting_dashboard_workspace.html')
+    assert 'components/reporting_dashboard_workspace.html' in reporting_summary
+    assert 'components/reporting_dashboard_workspace.html' in reporting_guidance
+    assert 'components/operational_section_card.html' in reporting_workspace
+    assert reporting_workspace.count('operational_section_card.render(') == 2
+
     component = read('app/templates/components/operational_section_card.html')
     assert 'text-base font-semibold' in component
     assert 'components/section_link_button.html' in component
     assert 'rounded-xl border border-outline-default bg-surface-card shadow-sm' in component
 
 
-def test_primary_and_peer_operational_flows_are_static() -> None:
+def test_primary_and_peer_operational_flows_are_static_and_controlled_flows_reuse_governance_sequence() -> None:
     info_flow = read('app/templates/components/info_flow.html')
     flow_steps = read('app/templates/components/operational_flow_steps.html')
+    numbered_steps = read('app/templates/components/numbered_governance_steps.html')
     alert_guidance = read('app/templates/kubernetes/dashboard/partials/_alert_response_guidance.html')
     reporting_guidance = read('app/templates/kubernetes/dashboard/partials/_reporting_guidance.html')
+    reporting_workspace = read('app/templates/components/reporting_dashboard_workspace.html')
     capacity = read('app/templates/kubernetes/dashboard/partials/_capacity_snapshot.html')
     contract = read('docs/design/components/OPERATIONAL_FLOW_STEPS.md')
 
@@ -94,8 +110,17 @@ def test_primary_and_peer_operational_flows_are_static() -> None:
     assert '<details' not in info_flow
     assert '<summary' not in info_flow
     assert '<details' not in flow_steps
-    assert 'components/operational_flow_steps.html' in alert_guidance
-    assert 'components/operational_flow_steps.html' in reporting_guidance
+    assert '<details' not in numbered_steps
+    assert 'divide-y divide-outline-subtle' in numbered_steps
+    assert 'components/numbered_governance_steps.html' in alert_guidance
+    assert 'components/operational_flow_steps.html' not in alert_guidance
+    assert 'components/reporting_dashboard_workspace.html' in reporting_guidance
+    assert 'components/numbered_governance_steps.html' not in reporting_workspace
+    assert 'components/operational_flow_steps.html' not in reporting_workspace
+    assert 'reporting_steps' in reporting_workspace
+    assert 'Governed Flow' in reporting_workspace
+    assert 'sm:grid-cols-2' in reporting_workspace
+    assert 'gap-px overflow-hidden' in reporting_workspace
     assert 'components/operational_flow_steps.html' in capacity
     assert 'components/context_guidance_card.html' not in alert_guidance
     assert 'components/context_guidance_card.html' not in reporting_guidance
@@ -159,6 +184,7 @@ def test_dashboard_page_templates_have_no_local_typography_or_shell_drift() -> N
 
 def test_dashboard_copy_uses_canonical_casing() -> None:
     all_source = '\n'.join(path.read_text(encoding='utf-8') for path in sorted(DASHBOARD_TEMPLATES.rglob('*.html')))
+    reporting_workspace = read('app/templates/components/reporting_dashboard_workspace.html')
 
     assert 'Live Signals Enabled' not in all_source
     assert 'Select a Cluster for Live Signals' not in all_source
@@ -172,8 +198,8 @@ def test_dashboard_copy_uses_canonical_casing() -> None:
     assert 'What This Summary Means' not in all_source
     assert 'Cluster Signals Available' in all_source
     assert 'Select a Cluster for Detailed Signals' in all_source
-    assert 'approved output' in all_source
-    assert 'stored artifact' in all_source
+    assert 'Generated output' in reporting_workspace
+    assert 'Preserve the artifact' in reporting_workspace
 
 
 def test_dashboard_uses_local_skeletons_and_section_owned_loading_bar() -> None:
@@ -200,29 +226,38 @@ def test_dashboard_restores_card_grid_freshness_and_visible_action_flows() -> No
     capacity = read('app/templates/kubernetes/dashboard/partials/_capacity_snapshot.html')
     alert = read('app/templates/kubernetes/dashboard/partials/_alert_response_guidance.html')
     reporting = read('app/templates/kubernetes/dashboard/partials/_reporting_guidance.html')
+    reporting_workspace = read('app/templates/components/reporting_dashboard_workspace.html')
 
     assert "body_classes='grid gap-3 p-5 sm:grid-cols-2'" in freshness
     assert 'bg-surface-elevated p-3.5' in freshness
     assert 'Recommended Capacity Action Flow' in capacity
     assert 'Controlled Alert Response Flow' in alert
-    assert 'Controlled Reporting Flow' in reporting
-    assert 'Reporting Tip' in reporting
-    assert 'Use schedules for recurring operational evidence.' in reporting
-    assert "icon='lightbulb'" in reporting
+    assert 'components/reporting_dashboard_workspace.html' in reporting
+    assert 'Reporting Workflow' in reporting_workspace
+    assert 'Scope Bound' in reporting_workspace
+    assert 'Evidence Backed' in reporting_workspace
+    assert 'Review First' in reporting_workspace
+    assert 'Governed Flow' in reporting_workspace
+    assert 'Execution Mode' in reporting_workspace
+    assert 'Reporting Tip' in reporting_workspace
+    assert 'Use templates for repeatable report structure.' in reporting_workspace
+    assert "body_classes='space-y-4 p-5'" in reporting_workspace
+    assert "extra_classes='h-full'" in reporting_workspace
     assert '<details' not in alert
-    assert '<details' not in reporting
+    assert '<details' not in reporting_workspace
     assert "extra_classes='h-full'" in freshness
     assert "extra_classes='h-full'" in capacity
     assert "extra_classes='h-full'" in alert
-    assert "extra_classes='h-full'" in reporting
 
 
 def test_dashboard_tabs_support_canonical_keyboard_navigation() -> None:
     source = read('app/templates/kubernetes/dashboard/partials/_content.html')
+    framework = read('app/templates/components/operational_dashboard_workspace.html')
     tabs = read('app/templates/components/workspace_tabs.html')
     contract = read('docs/design/components/WORKSPACE_TABS.md')
 
-    assert 'moveTab(currentTab, direction, prefix)' in source
+    assert 'components/operational_dashboard_workspace.html' in source
+    assert 'moveTab(currentTab, direction, prefix)' in framework
     assert '@keydown.arrow-right.prevent' in tabs
     assert '@keydown.arrow-left.prevent' in tabs
     assert '@keydown.home.prevent' in tabs
@@ -249,8 +284,18 @@ def test_dashboard_pattern_is_locked_by_documentation_and_quality_gate() -> None
     audit = read('docs/design/audits/KUBERNETES_OPERATIONS_DASHBOARD_ALIGNMENT_AUDIT_2026_08.md')
     quality_gate = read('scripts/quality_gate.sh')
 
-    assert '# KAORI Operational Dashboard Pattern v1.5' in standard
+    assert '# KAORI Operational Dashboard Pattern v1.7' in standard
     assert '**Status:** Locked reference pattern' in standard
     assert 'No visual redesign is required' in audit
     assert 'python scripts/verify_operational_dashboard_standard.py' in quality_gate
     assert "-m 'not debug and not e2e and not contract and not migration'" in quality_gate
+
+
+def test_reporting_activity_is_capped_at_four_records() -> None:
+    reporting_service = read('app/kubernetes/dashboard/sections/reporting.py')
+    reporting_workspace = read('app/templates/components/reporting_dashboard_workspace.html')
+
+    assert 'query_all(Report, selected_cluster_id, limit=4)' in reporting_service
+    assert 'reporting.latest_reports[:4]' in reporting_workspace
+    assert 'Review before reuse.' in reporting_workspace
+    assert '<span class="font-semibold text-content-primary">Recurring</span> · Schedule' in reporting_workspace

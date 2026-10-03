@@ -161,7 +161,7 @@ jobs:
     needs: [route, toolchain]
     if: ${{ needs.route.result == 'success' && needs.toolchain.result == 'success' && (needs.route.outputs.templates == 'true' || needs.route.outputs.frontend == 'true' || needs.route.outputs.contracts == 'true' || needs.route.outputs.test_paths != '') }}
     runs-on: [self-hosted, linux, x64, kaori-ci]
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - name: Checkout Work Branch
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

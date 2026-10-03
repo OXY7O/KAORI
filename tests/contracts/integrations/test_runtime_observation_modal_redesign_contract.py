@@ -54,11 +54,11 @@ def test_runtime_observation_modal_is_decision_first_and_shared() -> None:
     assert 'record_detail_modal.render(' in modal
     assert "size='standard'" in modal
     assert '<dialog' not in modal
-    assert 'data-kaori-runtime-observation-dialog-v4' in modal
+    assert 'data-kaori-runtime-observation-dialog-v5' in modal
     assert 'data-kaori-runtime-observation-decision' in modal
-    assert 'Observation Decision' in modal
-    assert 'data-kaori-runtime-observation-context' in modal
-    assert 'Observation Context' in modal
+    assert 'Runtime Decision' in modal
+    assert 'data-kaori-runtime-observation-snapshot' in modal
+    assert 'Observation Snapshot' in modal
     assert 'data-kaori-runtime-observation-evidence-context' not in modal
     assert 'Evidence Context' not in modal
     assert 'Operational Reading' not in modal

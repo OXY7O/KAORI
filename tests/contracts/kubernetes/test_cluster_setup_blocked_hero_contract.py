@@ -164,13 +164,18 @@ def test_setup_blockers_preserve_page_identity_from_kubernetes_to_object_storage
     object_storage_buckets = _read('app/templates/storage/object_storage/inventory/buckets/partials/_hero.html')
     object_storage_analytics = _read('app/templates/storage/object_storage/analytics/partials/_hero.html')
 
-    assert 'Kubernetes Operations Dashboard' in dashboard
+    assert "page_hero.operational_dashboard('Kubernetes Operations'" in dashboard
+    assert "'Dashboard'," in dashboard
     assert '{{ materialization_title }}' in k8s_analytics
-    assert 'Kubernetes Governance Workspace' in governance
-    assert 'TLS Certificate Governance' in tls_governance
+    assert "page_hero.intro('layout-dashboard', 'Kubernetes Governance', 'shield-check')" in governance
+    assert '<h1 class="{{ page_hero.title_classes() }}">Overview</h1>' in governance
+    assert "page_hero.intro('key-round', 'Kubernetes Governance', 'shield-check')" in tls_governance
+    assert '<h1 class="{{ page_hero.title_classes() }}">TLS Certificates</h1>' in tls_governance
     assert '{{ requested_page_title }}' in operations
-    assert 'Object Storage Overview' in object_storage_overview
-    assert 'Object Storage Systems' in object_storage_systems
+    assert "page_hero.intro('database-zap', 'Object Storage Inventory', 'database')" in object_storage_overview
+    assert '<h1 class="{{ page_hero.title_classes() }}">Overview</h1>' in object_storage_overview
+    assert "page_hero.intro('database-zap', 'Object Storage Inventory', 'server')" in object_storage_systems
+    assert '<h1 class="{{ page_hero.title_classes() }}">Systems</h1>' in object_storage_systems
     assert 'Buckets &amp; Containers' in object_storage_buckets
     assert '{{ page.title }}' in object_storage_analytics
 

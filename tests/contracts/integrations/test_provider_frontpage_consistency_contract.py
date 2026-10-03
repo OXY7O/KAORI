@@ -171,5 +171,6 @@ def test_metrics_source_provider_selector_uses_canonical_hero_shell_api() -> Non
     assert 'page_hero.shell_classes()' in selector
     assert 'page_hero.layout_classes()' in selector
     assert 'page_hero.content_classes()' in selector
-    assert "page_hero.intro('chart-spline', 'Metrics Source Registration', 'plus')" in selector
+    assert "page_hero.intro('chart-spline', 'Integrations', 'plus')" in selector
+    assert '<h1 class="{{ page_hero.title_classes() }}">Register Metrics Source</h1>' in selector
     assert 'page_hero.hero(' not in selector

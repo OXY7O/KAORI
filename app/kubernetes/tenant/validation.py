@@ -22,6 +22,7 @@ SUPPORTED_QUOTA_KEYS = frozenset(
 )
 COUNT_QUOTA_KEYS = frozenset({'pods', 'persistentvolumeclaims', 'services', 'configmaps', 'secrets'})
 SUPPORTED_LIMIT_KEYS = frozenset({'cpu', 'memory'})
+SUPPORTED_STORAGE_POLICY_FIELDS = frozenset({'min', 'max'})
 _NAMESPACE_RE = re.compile(r'^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')
 
 
@@ -73,3 +74,31 @@ def validate_profile_spec(
         normalized_limits[field] = {key: _positive_quantity(raw, key=f'{field}.{key}') for key, raw in values.items()}
 
     return normalized_quota, normalized_limits
+
+
+def validate_storage_policy(
+    storage_policy: Mapping[str, object] | None,
+) -> dict[str, str]:
+    policy = dict(storage_policy or {})
+    unsupported = sorted(set(policy) - SUPPORTED_STORAGE_POLICY_FIELDS)
+    if unsupported:
+        raise ValueError(f'unsupported PVC storage policy field(s): {", ".join(unsupported)}')
+
+    normalized = {
+        field: _positive_quantity(raw, key=f'pvc.{field}.storage')
+        for field, raw in policy.items()
+        if raw not in (None, '')
+    }
+
+    minimum = normalized.get('min')
+    maximum = normalized.get('max')
+    if minimum and maximum:
+        try:
+            if Decimal(parse_quantity(minimum)) > Decimal(parse_quantity(maximum)):
+                raise ValueError('PVC minimum storage cannot exceed maximum storage')
+        except (InvalidOperation, TypeError, ValueError) as exc:
+            if isinstance(exc, ValueError) and str(exc) == 'PVC minimum storage cannot exceed maximum storage':
+                raise
+            raise ValueError('PVC min/max must be valid Kubernetes storage quantities') from exc
+
+    return normalized

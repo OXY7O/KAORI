@@ -62,7 +62,7 @@
                 action_icon) }}
     </aside>
 {%- endmacro %}
-{% macro blocked_context_body(eyebrow_label, title, metrics, info_text, status_label=None, status_tone='warning', header_icon='lock-keyhole', info_icon='info') -%}
+{% macro blocked_context_body(eyebrow_label, title, metrics, info_text, status_label=None, status_tone='warning', header_icon='lock-keyhole', info_icon='info', action_label=None, action_href=None, action_icon='server-cog') -%}
     <div class="{{ context_panel_classes() }}" data-kaori-blocked-state>
         {% if status_label %}
             {{ context_header_status(eyebrow_label, title, status_label, status_tone) }}
@@ -79,7 +79,15 @@
                 {{ context_metric(metric_icon, metric_label, metric_value, metric_description, metric_value_classes) }}
             {% endfor %}
         </div>
-        {{ context_info(info_icon, info_text) }}
+        {% if action_label and action_href %}
+            <a href="{{ action_href }}"
+               class="{{ context_single_action_classes() }}">
+                <i data-lucide="{{ action_icon }}" class="h-4 w-4" aria-hidden="true"></i>
+                {{ action_label }}
+            </a>
+        {% else %}
+            {{ context_info(info_icon, info_text) }}
+        {% endif %}
     </div>
 {%- endmacro %}
 {% macro operational_dashboard(eyebrow_label, leading_icon, title, description, metadata, active_scope, action_label, action_href, action_icon='settings-2', data_authority='Committed Snapshots', state='normal', blocked_title='Setup Required', blocked_info='Complete setup to activate operational signals.') -%}

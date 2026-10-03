@@ -100,6 +100,15 @@ def main() -> int:
     require('id="auth-theme-toggle"' in login, 'Authentication theme control missing', errors)
     require('aria-label="Switch to Dark Mode"' in login, 'Authentication theme action label missing', errors)
     require('Remember Me' in login, 'Remember Me control missing', errors)
+    for required in (
+        'data-kaori-sso-actions',
+        'data-kaori-sso-provider-count="{{ sso_provider_rows|length }}"',
+        'data-kaori-sso-provider-grid',
+        '{% if sso_provider_rows|length > 1 %}sm:grid-cols-2{% endif %}',
+        'data-kaori-sso-provider="{{ provider.provider_key }}"',
+        'aria-label="Continue with {{ provider.display_name }}"',
+    ):
+        require(required in login, f'Browser SSO presentation contract missing: {required}', errors)
     require(
         'provider_login_url' in login and 'next=form.next.data' in login,
         'SSO safe-next propagation missing',
@@ -129,6 +138,12 @@ def main() -> int:
         'PostgreSQL Reachable',
         'Schema Missing',
         'components/terminal_command.html',
+        'components/info_flow.html',
+        'components/operational_section_card.html',
+        'components/table_label.html',
+        'table_label.status_indicator_label',
+        'info_flow.render',
+        'operational_section_card.render',
         'Copy Command',
         'This readiness check is read-only.',
     ):

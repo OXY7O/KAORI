@@ -18,9 +18,10 @@ def test_object_storage_dashboard_is_registered_and_visible_beside_kubernetes() 
     assert "url_for('object_storage_dashboard.index')" in navigation
     assert '>Object Storage</span>' in navigation
     assert "request.endpoint.startswith('object_storage_dashboard.')" in navigation
-    assert "endpoint.startswith(('kubernetes_dashboard.', 'object_storage_dashboard.'))" in breadcrumbs
-    assert "'object_storage_dashboard': 'Object Storage Operations'" in breadcrumbs
-    assert 'BreadcrumbItem(dashboard_label)' in breadcrumbs
+    assert "elif endpoint.startswith('kubernetes_dashboard.'):" in breadcrumbs
+    assert "elif endpoint.startswith('object_storage_dashboard.'):" in breadcrumbs
+    assert "BreadcrumbItem('Object Storage', 'database')" in breadcrumbs
+    assert "BreadcrumbItem('Overview')" in breadcrumbs
     assert "navigation_endpoints=('kubernetes_dashboard.index', 'object_storage_dashboard.index')" in release_registry
     assert "blueprint_vars=('kubernetes_dashboard_bp', 'object_storage_dashboard_bp')" in release_registry
 
@@ -67,10 +68,15 @@ def test_dashboard_matches_kubernetes_operational_layout_concept() -> None:
     signal_overview = read('app/templates/storage/object_storage/dashboard/partials/_signal_overview.html')
     kubernetes_content = read('app/templates/kubernetes/dashboard/partials/_content.html')
 
+    framework = read('app/templates/components/operational_dashboard_workspace.html')
+
     for label in ('Operations Overview', 'Capacity & Demand', 'Signals & Actions', 'Reporting'):
-        assert label in content
-        assert label in kubernetes_content
-    assert 'components/workspace_tabs.html' in content
+        assert label in framework
+    assert 'components/operational_dashboard_workspace.html' in content
+    assert 'components/operational_dashboard_workspace.html' in kubernetes_content
+    assert 'dashboard_workspace.controller(' in content
+    assert 'dashboard_workspace.navigation(' in content
+    assert 'dashboard_workspace.panel(' in content
     assert 'storage/object_storage/dashboard/partials/_hero.html' in content
     assert 'storage/object_storage/dashboard/partials/_signal_overview.html' in content
     assert (
@@ -86,6 +92,8 @@ def test_dashboard_matches_kubernetes_operational_layout_concept() -> None:
     assert 'page_hero.operational_dashboard(' in hero
     assert 'No live provider query on page load' in page_hero
     assert 'class="mt-5 space-y-5"' in content
+    assert 'data-kaori-dashboard-framework="operational-v1"' in framework
+    assert 'workspace_tabs.render(standard_tabs' in framework
 
 
 def test_dashboard_sections_are_object_storage_specific_and_committed_evidence_owned() -> None:
@@ -114,8 +122,8 @@ def test_dashboard_sections_are_object_storage_specific_and_committed_evidence_o
     assert 'Alert Interpretation & Response' in response
     assert 'Recommended Actions' in actions
     assert 'storage/object_storage/dashboard/partials/_reporting_summary.html' in reporting
-    assert 'Reporting Summary' in reporting_summary
-    assert 'Reporting Interpretation & Next Steps' in reporting_guidance
+    assert 'reporting_workspace.summary(' in reporting_summary
+    assert 'reporting_workspace.guidance(' in reporting_guidance
 
     assert 'storage/object_storage/dashboard/partials/_system_health.html' in overview
     for token in (
@@ -244,6 +252,7 @@ def test_signals_and_reporting_match_kubernetes_dashboard_composition() -> None:
     reporting = read('app/templates/storage/object_storage/dashboard/partials/_reporting.html')
     reporting_summary = read('app/templates/storage/object_storage/dashboard/partials/_reporting_summary.html')
     reporting_guidance = read('app/templates/storage/object_storage/dashboard/partials/_reporting_guidance.html')
+    reporting_workspace = read('app/templates/components/reporting_dashboard_workspace.html')
     kubernetes_signals = read('app/templates/kubernetes/dashboard/partials/_content.html')
     kubernetes_reporting = read('app/templates/kubernetes/dashboard/partials/_reporting_guidance.html')
     service = read('app/storage/object_storage/dashboard/service.py')
@@ -256,9 +265,11 @@ def test_signals_and_reporting_match_kubernetes_dashboard_composition() -> None:
         assert token in signals
     assert 'Alerts Summary' in alerts
     assert 'def _alerts(selected: ObjectStorageSystem | None)' in service
-    assert "for case in posture['cases'][:3]" in service
+    assert "for case in posture['cases'][:5]" in service
     assert 'Alert Interpretation & Response' in response
     assert 'Controlled Response Flow' in response
+    assert 'components/numbered_governance_steps.html' in response
+    assert 'components/operational_flow_steps.html' not in response
     assert 'Recommended Actions' in actions
     assert 'dashboard-recommended-actions' in kubernetes_signals
     assert "dashboard['recommended_actions'] = _recommended_actions(selected)" in service
@@ -266,9 +277,23 @@ def test_signals_and_reporting_match_kubernetes_dashboard_composition() -> None:
 
     assert "peer_content_grid.column_classes('primary', 'seven-five')" in reporting
     assert "peer_content_grid.column_classes('secondary', 'seven-five')" in reporting
-    assert 'Reporting Summary' in reporting_summary
-    assert 'Recent Report Activity' in reporting_summary
-    assert 'Reporting Interpretation & Next Steps' in reporting_guidance
-    assert 'Reporting Control' in reporting_guidance
-    assert 'Controlled Reporting Flow' in reporting_guidance
-    assert 'Controlled Reporting Flow' in kubernetes_reporting
+    assert 'components/reporting_dashboard_workspace.html' in reporting_summary
+    assert 'reporting_workspace.summary(' in reporting_summary
+    assert "'Object Storage'" in reporting_summary
+    assert 'components/reporting_dashboard_workspace.html' in reporting_guidance
+    assert 'reporting_workspace.guidance(' in reporting_guidance
+    assert 'recent = reports_query.order_by(Report.created_at.desc()).limit(4).all()' in service
+    assert 'Reporting Summary' in reporting_workspace
+    assert 'Recent Report Activity' in reporting_workspace
+    assert 'Reporting Workflow' in reporting_workspace
+    assert 'Scope Bound' in reporting_workspace
+    assert 'Evidence Backed' in reporting_workspace
+    assert 'Review First' in reporting_workspace
+    assert 'Governed Flow' in reporting_workspace
+    assert 'Execution Mode' in reporting_workspace
+    assert 'Reporting Tip' in reporting_workspace
+    assert 'Use templates for repeatable report structure.' in reporting_workspace
+    assert 'components/numbered_governance_steps.html' not in reporting_workspace
+    assert 'components/operational_flow_steps.html' not in reporting_workspace
+    assert 'components/reporting_dashboard_workspace.html' in kubernetes_reporting
+    assert 'reporting_workspace.guidance(' in kubernetes_reporting

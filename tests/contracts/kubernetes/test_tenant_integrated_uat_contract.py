@@ -7,6 +7,26 @@ def _read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
 
 
+def _routes_source() -> str:
+    return '\n'.join(
+        _read(path)
+        for path in (
+            'app/kubernetes/tenant/routes.py',
+            'app/kubernetes/tenant/route_common.py',
+            'app/kubernetes/tenant/routes_access.py',
+            'app/kubernetes/tenant/routes_credentials.py',
+        )
+    )
+
+
+def _discovery_source() -> str:
+    return (
+        _read('app/kubernetes/tenant/discovery_service.py')
+        + '\n'
+        + _read('app/kubernetes/tenant/discovery_adoption.py')
+    )
+
+
 def test_tenant_workspace_uses_only_approved_sidebar_destinations() -> None:
     menu = _read('app/templates/components/navigation/tenant_menu.html')
     for endpoint, label in (
@@ -39,7 +59,7 @@ def test_tenant_workspace_reads_committed_cross_child_state() -> None:
 
 
 def test_tenant_tenants_surface_exposes_governed_access_and_credential_lifecycle_without_secrets() -> None:
-    routes = _read('app/kubernetes/tenant/routes.py')
+    routes = _routes_source()
     page = _read('app/templates/kubernetes/tenant/tenants.html')
     admin = _read('app/templates/kubernetes/tenant/partials/_tenant_admin_workspace.html')
     memberships = _read('app/templates/kubernetes/tenant/partials/_tenant_memberships_workspace.html')
@@ -116,3 +136,50 @@ def test_tenant_operations_uses_shared_content_tabs_without_sidebar_third_level(
     for label in ('Provisioning', 'Runs & Evidence', 'Drift & Reconcile', 'Activity'):
         assert label in operations
         assert f'>{label}</span>' not in menu
+
+
+def test_tenant_adoption_preflight_is_compact_and_pvc_bounds_are_explicit() -> None:
+    modal = _read('app/templates/kubernetes/tenant/partials/_tenant_adoption_preflight.html')
+    tenants = _read('app/templates/kubernetes/tenant/tenants.html')
+
+    assert 'max-w-5xl' in modal
+    assert 'max-w-[1240px]' not in modal
+    assert 'Min PVC Size' in modal
+    assert 'Max PVC Size' in modal
+    assert 'Storage &amp; Provider Constraints' in modal
+    assert 'Supported Min/Max PVC bounds become Storage Guardrails on adoption.' in modal
+    assert 'Managed on Adopt' in modal
+    assert 'Provider Mirrored' in modal
+    assert 'Default Request</dt>' not in modal
+    assert 'Default Limit</dt>' not in modal
+    assert 'Per-PVC size bounds from the provider LimitRange' not in modal
+    assert 'Not declared' in modal
+    assert "pvc_min is not none and pvc_min != ''" in modal
+    assert "pvc_max is not none and pvc_max != ''" in modal
+    assert 'Active principals' in tenants
+    assert 'Active user, group, and machine principals' not in tenants
+
+
+def test_managed_adoption_imports_storage_policy_and_verifies_native_takeover() -> None:
+    adoption = _read('app/kubernetes/tenant/discovery_adoption.py')
+    cutover = _read('app/kubernetes/tenant/allocation_cutover.py')
+    drift = _read('app/kubernetes/tenant/allocation_drift.py')
+    tasks = _read('app/kubernetes/tenant/tasks.py')
+
+    native_start = adoption.index('def _native_namespace_record(')
+    capsule_start = adoption.index('def _capsule_namespace_records(', native_start)
+    native = adoption[native_start:capsule_start]
+
+    assert "record.allocation_storage_policy_json = dict(allocation.get('storage_policy') or {})" in native
+    assert 'storage_policy=dict(profile.storage_policy_json or {})' in native
+    assert "operation='adoption_takeover'" in native
+    assert "'provider_mutation_performed': True" in native
+    assert "'provider_readback_verified':" in native
+    assert 'shared_profile' not in native
+
+    assert "_storage_policy_equal(dict(after.get('storage_policy') or {}), prepared.storage)" in cutover
+    assert 'record.allocation_storage_policy_json = prepared.storage' in cutover
+    assert 'def reapply_kaori_allocation_intent(' in drift
+    assert 'def accept_provider_allocation_state(' in drift
+    assert 'def apply_provider_mirrored_policy_observation()' in drift
+    assert 'apply_provider_mirrored_policy_observation()' in tasks

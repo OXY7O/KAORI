@@ -16,8 +16,8 @@
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
-                    {% call page_hero.intro('file-cog', 'ConfigMap Management', 'file-plus-2') %}
-                        <h1 class="{{ page_hero.title_classes() }}">Create Kubernetes ConfigMap</h1>
+                    {% call page_hero.intro('file-cog', 'Kubernetes Operations', 'file-plus-2') %}
+                        <h1 class="{{ page_hero.title_classes() }}">Create ConfigMap</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">Validate and create one ConfigMap with governed KAORI context.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('radio-tower', 'Live Namespace Source') }}
@@ -44,19 +44,20 @@
               class="{{ form_context.layout_classes() }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             {% set configmap_main_classes = form_context.main_classes() %}
-            <section class="{{ configmap_ui.surface_shell_classes(configmap_main_classes) }}"
+            <section class="{{ configmap_ui.surface_shell_classes(configmap_main_classes, true) }}"
                      data-kubernetes-operation-form="configmap-create">
-                <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-                    <div class="flex items-start gap-3">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent">
-                            <i data-lucide="file-plus-2" class="h-5 w-5" aria-hidden="true"></i>
-                        </span>
-                        <div class="min-w-0">
-                            <h2 class="text-base font-semibold text-content-primary">ConfigMap Definition</h2>
-                            <p class="mt-1 text-sm leading-6 text-content-secondary">Choose the live target, define application configuration data, and validate the exact create-only object before persistence.</p>
-                        </div>
-                    </div>
-                </header>
+                {% set configmap_create_info = [
+                    "Cluster and Namespace are live Kubernetes targets; Namespace options are loaded from the selected registered cluster.",
+                    "ConfigMap Name must be DNS-compatible and stable. Create never overwrites an existing ConfigMap.",
+                    "Immutable prevents later mutation of this ConfigMap; changing immutable configuration requires a new object."
+                ] %}
+                {{ configmap_ui.section_header('file-plus-2',
+                                'ConfigMap Definition',
+                                'Choose the live target, define application configuration data, and validate the exact create-only object before persistence.',
+                                info_id='configmap-create-guidance-tip',
+                                info_title='ConfigMap creation guide',
+                                info_text='Target, identity, and lifecycle guidance for this create-only workflow.',
+                                info_items=configmap_create_info) }}
                 <div class="space-y-6 p-5 sm:p-6">
                     <section>
                         <div class="mb-4 flex items-start gap-3">
@@ -70,7 +71,7 @@
                         </div>
                         <div class="grid gap-5 lg:grid-cols-2">
                             <label class="block min-w-0">
-                                {{ form_field.label_row("Cluster") }}
+                                <span class="text-xs font-semibold text-content-primary">Cluster</span>
                                 <select name="cluster_id"
                                         required
                                         hx-get="{{ url_for('kubernetes_operations.configmap_namespace_options') }}"
@@ -82,12 +83,14 @@
                                     <option value="">Select cluster</option>
                                     {% for cluster in clusters %}<option value="{{ cluster.id }}">{{ cluster.name }}</option>{% endfor %}
                                 </select>
-                                {{ form_field.help("Registered cluster for the target namespace.") }}
                             </label>
                             {% include 'kubernetes/operations/configmaps/_namespace_options.html' %}
                         </div>
                         <label class="mt-5 block min-w-0">
-                            {{ form_field.label_row('ConfigMap Name', 'Create Only', 'normal', 'shield-check') }}
+                            <span class="flex min-h-6 items-center justify-between gap-2">
+                                <span class="text-xs font-semibold text-content-primary">ConfigMap Name</span>
+                                {{ table_label.status_label('Create Only', 'normal', 'shield-check') }}
+                            </span>
                             <input id="configmap-name"
                                    name="configmap_name"
                                    required
@@ -95,7 +98,6 @@
                                    placeholder="Select namespace first"
                                    autocomplete="off"
                                    class="{{ form_field.input_classes() }} font-medium placeholder:text-content-disabled">
-                            {{ form_field.help("Use a stable DNS-compatible name. Existing ConfigMaps are never overwritten by this workflow.") }}
                         </label>
                         <div id="configmap-live-lookup-notice" class="mt-4">
                             {% if namespace_error %}{{ live_lookup.warning('Live namespace lookup failed', namespace_error, '') }}{% endif %}
@@ -156,11 +158,11 @@
             <aside class="{{ form_context.rail_classes() }}"
                    aria-label="Create ConfigMap guidance">
                 {% set configmap_create_flow = [('Select Target', 'Choose the registered cluster and a namespace loaded from the live Kubernetes API.'), ('Define Configuration', 'Set the create-only name, configuration keys, content types, and mutability policy.'), ('Validate Object', 'Run Kubernetes server-side dry-run against the latest definition without creating anything.'), ('Create ConfigMap', 'Submit exactly the validated object. Any later input change requires validation again.')] %}
-                {% set configmap_create_note = "Changing the target, name, data, type, or immutable setting invalidates the previous validation." %}
-                {{ info_flow.render('ConfigMap Creation Flow', 'How a proposed definition becomes one audited live ConfigMap.', configmap_create_flow, icon='waypoints', note=configmap_create_note, note_icon='circle-alert', open_by_default=true) }}
+                {% set configmap_create_note = "Target, name, data, type, or immutability changes require revalidation." %}
+                {{ info_flow.render('ConfigMap Creation Flow', 'Definition flow to one audited live ConfigMap.', configmap_create_flow, icon='waypoints', note=configmap_create_note, note_icon='circle-alert', open_by_default=true) }}
                 {% set configmap_create_guardrails = [('shield-check', 'Create Only', 'An existing ConfigMap with the same name is never overwritten.'), ('scan-search', 'Validate First', 'Create unlocks only for the exact form state accepted by server-side dry-run.'), ('radio-tower', 'Live Namespace Source', 'Namespace choices are loaded from the selected Kubernetes API.'), ('scroll-text', 'Metadata-Only Audit', 'Actor, target, operation, and result are recorded without copying ConfigMap values.')] %}
                 {{ information_guide_card.render('Creation Safety Contract',
-                                'Boundaries that remain active throughout this create workflow.',
+                                'Active boundaries for this create workflow.',
                                 configmap_create_guardrails,
                                 icon='shield-check') }}
             </aside>

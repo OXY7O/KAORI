@@ -15,7 +15,7 @@
             ('decisions', 'Capacity Decisions', 'shield-check', url_for('tenant.namespace_provisioning', view='decisions'))
         ] %}
     {% set namespace_metrics = [
-            ('folder-tree', 'Managed Namespaces', namespace_total, 'Committed Namespace records retained by KAORI', 'info'),
+            ('folder-tree', 'Namespace Records', namespace_total, 'Committed managed and adopted Namespace records retained by KAORI', 'info'),
             ('circle-check', 'Ready', namespace_ready, 'Provider reconciliation currently verified', 'normal'),
             ('triangle-alert', 'Drifted', namespace_drifted, 'Committed intent differs from provider observation', 'warning' if namespace_drifted else 'normal'),
             ('activity', 'Needs Attention', namespace_attention, 'Pending, drifted, failed, or teardown states', 'warning' if namespace_attention else 'normal')
@@ -64,6 +64,49 @@
             <div class="space-y-5 p-4 sm:p-5">
                 {% if active_namespace_view == 'allocation' %}
                     {% include "kubernetes/tenant/partials/_allocation_change.html" %}
+                    <details class="group overflow-visible rounded-xl border border-outline-subtle bg-surface-card"
+                             data-tenant-native-cutover-workspace>
+                        <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 marker:hidden">
+                            <div class="flex min-w-0 items-start gap-3">
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                      aria-hidden="true">
+                                    <i data-lucide="arrow-right-left" class="h-4 w-4"></i>
+                                </span>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-content-primary">Adopted Native Governance Cutover</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Transfer an observed Native Namespace allocation into KAORI-managed reconciliation with provider read-back.</p>
+                                </div>
+                            </div>
+                            <i data-lucide="chevron-down"
+                               class="h-4 w-4 shrink-0 text-content-muted transition-transform group-open:rotate-180"
+                               aria-hidden="true"></i>
+                        </summary>
+                        <div class="border-t border-outline-subtle p-4 sm:p-5">
+                            {% include "kubernetes/tenant/partials/_allocation_cutover.html" %}
+                        </div>
+                    </details>
+                    <details class="group overflow-visible rounded-xl border border-outline-subtle bg-surface-card"
+                             data-tenant-capsule-allocation-workspace>
+                        <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 marker:hidden">
+                            <div class="flex min-w-0 items-start gap-3">
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                      aria-hidden="true">
+                                    <i data-lucide="waypoints" class="h-4 w-4"></i>
+                                </span>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-content-primary">Capsule Allocation Governance</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Open provider-specific Tenant quota, shared quota, and managed Capsule allocation workflows.</p>
+                                </div>
+                            </div>
+                            <i data-lucide="chevron-down"
+                               class="h-4 w-4 shrink-0 text-content-muted transition-transform group-open:rotate-180"
+                               aria-hidden="true"></i>
+                        </summary>
+                        <div class="space-y-5 border-t border-outline-subtle p-4 sm:p-5">
+                            {% include "kubernetes/tenant/partials/_capsule_tenant_quota_cutover.html" %}
+                            {% include "kubernetes/tenant/partials/_capsule_shared_allocation_cutover.html" %}
+                        </div>
+                    </details>
                 {% elif active_namespace_view == 'decisions' %}
                     {% include "kubernetes/tenant/partials/_capacity_decisions.html" %}
                 {% else %}
@@ -73,7 +116,12 @@
             </div>
             <script type="application/json" id="tenant-resource-profile-presets">{{ resource_profile_presets|tojson }}</script>
             <script type="application/json" id="tenant-namespace-allocation-profiles">{{ namespace_allocation_profiles|tojson }}</script>
+            <script type="application/json"
+                    id="tenant-environment-advanced-control-state">{{ tenant_environment_advanced_control_state|tojson }}</script>
             <script type="application/json" id="tenant-namespace-allocation-state">{{ namespace_allocation_state|tojson }}</script>
+            <script type="application/json" id="tenant-capsule-shared-allocation-state">{{ capsule_shared_cutover_state|tojson }}</script>
+            <script type="application/json" id="tenant-capsule-tenant-quota-state">{{ capsule_tenant_quota_cutover_state|tojson }}</script>
+            <script type="application/json" id="tenant-capsule-tenant-quota-governance">{{ capsule_tenant_quota_governance|tojson }}</script>
         {% endcall %}
     </section>
 {% endblock tenant_content %}

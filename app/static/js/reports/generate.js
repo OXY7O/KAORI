@@ -128,9 +128,12 @@
 
         function setReadinessItemTone(icon, status, isReady) {
             if (icon) {
-                icon.className = isReady
-                    ? 'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-status-normal-soft text-status-normal'
-                    : 'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-status-warning-soft text-status-warning'
+                icon.setAttribute(
+                    'class',
+                    isReady
+                        ? 'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-status-normal-soft text-status-normal'
+                        : 'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-status-warning-soft text-status-warning'
+                )
             }
 
             if (!status) {
@@ -144,9 +147,10 @@
             const statusIcon = status.querySelector('[data-readiness-status-icon]')
             if (statusIcon) {
                 statusIcon.setAttribute('data-lucide', isReady ? 'check' : 'triangle-alert')
-                statusIcon.className = isReady
-                    ? 'h-3 w-3 shrink-0 text-status-normal'
-                    : 'h-3 w-3 shrink-0 text-status-warning'
+                statusIcon.setAttribute(
+                    'class',
+                    isReady ? 'h-3 w-3 shrink-0 text-status-normal' : 'h-3 w-3 shrink-0 text-status-warning'
+                )
             }
         }
 
@@ -188,8 +192,9 @@
             })
         }
 
-        function syncOverallReadiness(isReady) {
+        function syncOverallReadiness(isReady, blockers = []) {
             overallRequestReady = isReady
+            const missingRequirements = blockers.length ? blockers.join(' and ') : 'required request inputs'
             const readyStatusClasses =
                 'inline-flex min-h-6 shrink-0 items-center gap-1 rounded-md border border-status-normal-border bg-status-normal-soft px-2 py-0.5 text-xs font-semibold leading-4 text-status-normal-text'
             const warningStatusClasses =
@@ -200,9 +205,10 @@
             }
             if (readinessOverallIcon) {
                 readinessOverallIcon.setAttribute('data-lucide', isReady ? 'circle-check' : 'triangle-alert')
-                readinessOverallIcon.className = isReady
-                    ? 'h-3 w-3 shrink-0 text-status-normal'
-                    : 'h-3 w-3 shrink-0 text-status-warning'
+                readinessOverallIcon.setAttribute(
+                    'class',
+                    isReady ? 'h-3 w-3 shrink-0 text-status-normal' : 'h-3 w-3 shrink-0 text-status-warning'
+                )
             }
             if (readinessOverallLabel) {
                 readinessOverallLabel.textContent = isReady ? 'Ready to Queue' : 'Action Required'
@@ -214,15 +220,18 @@
             }
             if (readinessSummaryIcon) {
                 readinessSummaryIcon.setAttribute('data-lucide', isReady ? 'circle-check' : 'circle-alert')
-                readinessSummaryIcon.className = isReady
-                    ? 'mt-0.5 h-4 w-4 shrink-0 text-status-normal'
-                    : 'mt-0.5 h-4 w-4 shrink-0 text-status-warning'
+                readinessSummaryIcon.setAttribute(
+                    'class',
+                    isReady
+                        ? 'mt-0.5 h-4 w-4 shrink-0 text-status-normal'
+                        : 'mt-0.5 h-4 w-4 shrink-0 text-status-warning'
+                )
             }
             if (readinessSummaryText) {
                 readinessSummaryText.textContent = isReady
                     ? 'Scope and artifact requirements are valid. The request is ready to queue.'
                     : storageGenerationReady
-                      ? 'Resolve the required scope or section checks before creating the request.'
+                      ? `Complete ${missingRequirements} before creating the request.`
                       : 'Artifact storage is unavailable. Restore storage connectivity before creating a report.'
             }
             if (previewEligibilityStatus) {
@@ -230,9 +239,10 @@
             }
             if (previewEligibilityIcon) {
                 previewEligibilityIcon.setAttribute('data-lucide', isReady ? 'circle-check' : 'triangle-alert')
-                previewEligibilityIcon.className = isReady
-                    ? 'h-3 w-3 shrink-0 text-status-normal'
-                    : 'h-3 w-3 shrink-0 text-status-warning'
+                previewEligibilityIcon.setAttribute(
+                    'class',
+                    isReady ? 'h-3 w-3 shrink-0 text-status-normal' : 'h-3 w-3 shrink-0 text-status-warning'
+                )
             }
             if (previewEligibilityLabel) {
                 previewEligibilityLabel.textContent = isReady ? 'Ready to Queue' : 'Action Required'
@@ -250,7 +260,7 @@
                 previewNextStepDescription.textContent = isReady
                     ? 'The governed request will be saved and queued on the canonical Reports worker.'
                     : storageGenerationReady
-                      ? 'Resolve the required scope or section selection before continuing.'
+                      ? `Complete ${missingRequirements} before continuing.`
                       : 'Restore artifact storage connectivity before creating and queueing a report.'
             }
             syncWizardNavigation()
@@ -281,6 +291,7 @@
             }
             setSelectedSections(Array.from(selected))
             syncSectionCount()
+            syncClusterGuard()
         }
 
         function syncSectionCount() {
@@ -587,17 +598,35 @@
             }
         }
 
+        function scopeSelectionIsReady() {
+            const reportType = getReportTypeOption()
+            const scopeType =
+                reportType && reportType.scope_asset_type ? reportType.scope_asset_type : 'kubernetes_cluster'
+
+            if (scopeType === 'object_storage_system') {
+                return Boolean(objectStorageSystemSelect && objectStorageSystemSelect.value)
+            }
+            if (reportType && reportType.requires_cluster === false) {
+                return true
+            }
+            return Boolean(clusterSelect && clusterSelect.value)
+        }
+
         function syncClusterGuard() {
             const reportType = getReportTypeOption()
             const scopeType =
                 reportType && reportType.scope_asset_type ? reportType.scope_asset_type : 'kubernetes_cluster'
             const objectStorageScope = scopeType === 'object_storage_system'
             const hasSelectedSections = getSelectedSections().length > 0
-            const clusterReady = hasRegisteredClusters && Boolean(clusterSelect.value)
-            const objectStorageReady =
-                hasObjectStorageSystems && objectStorageSystemSelect && Boolean(objectStorageSystemSelect.value)
-            const scopeReady = objectStorageScope ? objectStorageReady : clusterReady
+            const scopeReady = scopeSelectionIsReady()
             const shouldBlock = !scopeReady || !hasSelectedSections || !storageGenerationReady
+            const readinessBlockers = []
+            if (!scopeReady) {
+                readinessBlockers.push(objectStorageScope ? 'Object Storage system scope' : 'Kubernetes cluster scope')
+            }
+            if (!hasSelectedSections) {
+                readinessBlockers.push('report section selection')
+            }
 
             if (wizardScopeValidation) {
                 wizardScopeValidation.classList.toggle('hidden', scopeReady)
@@ -653,24 +682,21 @@
             if (previewCluster) previewCluster.textContent = objectStorageScope ? systemLabel : clusterLabel
             if (previewNamespace) previewNamespace.textContent = objectStorageScope ? 'System Scope' : namespaceValue
 
-            syncOverallReadiness(!shouldBlock)
+            syncOverallReadiness(!shouldBlock, readinessBlockers)
             if (window.lucide) window.lucide.createIcons()
             if (!generateButton) return
-            generateButton.disabled = shouldBlock
+            // Readiness remains advisory in the browser. The backend owns the
+            // authoritative request validation so stale DOM state cannot block
+            // an otherwise valid report request.
+            generateButton.disabled = false
             const submitVisibilityClass = currentWizardStep === 5 ? 'inline-flex' : 'hidden'
-            generateButton.className = shouldBlock
-                ? submitVisibilityClass +
-                  ' min-h-9 cursor-not-allowed items-center justify-center gap-2 rounded-lg bg-kaori-soft px-5 text-sm font-semibold text-content-muted transition focus:outline-none focus:ring-2 focus:ring-kaori-primary/20'
-                : submitVisibilityClass +
-                  ' min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white transition hover:bg-kaori-primary-dark focus:outline-none focus:ring-2 focus:ring-kaori-primary/20'
+            generateButton.className =
+                submitVisibilityClass +
+                ' min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white transition hover:bg-kaori-primary-dark focus:outline-none focus:ring-2 focus:ring-kaori-primary/20'
         }
 
         function wizardScopeIsReady() {
-            const reportType = getReportTypeOption()
-            if (reportType.scope_asset_type === 'object_storage_system') {
-                return hasObjectStorageSystems && Boolean(objectStorageSystemSelect && objectStorageSystemSelect.value)
-            }
-            return hasRegisteredClusters && Boolean(clusterSelect.value)
+            return scopeSelectionIsReady()
         }
 
         function wizardArtifactIsReady() {
@@ -711,6 +737,12 @@
         function showWizardStep(step, focusPanel) {
             const nextStep = Math.min(5, Math.max(1, step))
             if (nextStep > highestVisitedWizardStep) return
+            if (nextStep === 5) {
+                // Refresh readiness while the current step is still stable.
+                // Updating currentWizardStep first can leave the wizard half
+                // transitioned if readiness rendering raises an exception.
+                syncClusterGuard()
+            }
             currentWizardStep = nextStep
             wizardPanels.forEach(function (panel) {
                 panel.classList.toggle('hidden', Number(panel.dataset.wizardPanel) !== currentWizardStep)
@@ -787,10 +819,12 @@
             syncForm()
             showWizardStep(1, false)
         })
-        clusterSelect.addEventListener('change', function () {
+        function syncClusterSelection() {
             updateNamespaceOptions('')
             syncClusterGuard()
-        })
+        }
+        clusterSelect.addEventListener('input', syncClusterSelection)
+        clusterSelect.addEventListener('change', syncClusterSelection)
         if (objectStorageSystemSelect) objectStorageSystemSelect.addEventListener('change', syncClusterGuard)
         if (outputFormatSelect) outputFormatSelect.addEventListener('change', syncOutputFormatMode)
         if (periodSelect) {
@@ -810,6 +844,7 @@
                 setSelectedSections(allSections)
                 renderSectionList()
                 syncReportTypeSummary()
+                syncClusterGuard()
             })
         }
         if (resetDefaultSectionsButton) {
@@ -817,6 +852,7 @@
                 setSelectedSections(defaultSectionsByReportType[reportTypeSelect.value] || [])
                 renderSectionList()
                 syncReportTypeSummary()
+                syncClusterGuard()
             })
         }
         if (wizardBackButton) {
@@ -846,10 +882,10 @@
                 }
                 return
             }
-            if (!overallRequestReady) {
-                event.preventDefault()
-                syncWizardNavigation()
-            }
+            // Do not hard-gate the final POST with client-side readiness.
+            // create_report_request()/validate_form_state() is authoritative
+            // and returns concrete scope/section errors when the request is invalid.
+            syncWizardNavigation()
         })
 
         updateNamespaceOptions(initialNamespace)

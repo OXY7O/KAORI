@@ -25,7 +25,7 @@
                 {'label': 'Runtime State', 'value': pod.operational_state_label, 'supporting': pod.state_evidence, 'icon': 'activity', 'tone': pod.operational_state_tone},
                 {'label': 'Ready Containers', 'value': pod.ready, 'supporting': 'Container readiness', 'icon': 'container', 'tone': 'brand'},
                 {'label': 'Restart Activity', 'value': pod.restarts, 'supporting': 'Cumulative snapshot value' if pod.runtime_evidence_reported else 'Runtime evidence not reported', 'icon': 'rotate-ccw', 'tone': 'brand'},
-                {'label': 'Owner', 'value': pod.owner_display, 'supporting': 'Resolved controller', 'icon': 'git-branch', 'tone': 'brand'}
+                {'label': 'Owner', 'value': pod.owner_type, 'supporting': 'Resolved controller', 'icon': 'git-branch', 'tone': 'brand'}
                 ]) }}
         <div class="min-w-0 space-y-4 p-4 sm:p-5 lg:p-6">
             <div data-kaori-unified-resource-sheet

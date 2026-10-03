@@ -435,17 +435,18 @@ The runtime-history workspace uses a compact `Observation Posture` strip before 
 
 `View More` is a shared Integration record action from `integrations/components/_record_actions.html`; Capability Registry and Recent Runtime Observations must not maintain separate button styling. The action reuses the canonical KAORI table-action primitive (`table_ui.action_classes()`): compact rectangular geometry, neutral default surface, controlled Violet hover/focus emphasis, and a quiet trailing `chevron-right`. Avoid oversized `h-9` registry buttons, `panel-top-open` iconography, or page-local action classes.
 
-The runtime observation dialog uses the shared `integrations/components/_record_detail_modal.html` with `size='standard'`. It is content-sized and decision-first rather than a full-height evidence dump. Information order is:
+The runtime observation dialog uses the shared `integrations/components/_record_detail_modal.html` with `size='standard'`. It is content-sized and decision-first, and its body hierarchy mirrors Kubernetes Capability Registry detail:
 
-1. `Observation Decision` — persisted Runtime Posture + Validation Readiness, without repeating the diagnostic error body;
-2. `Observation Context` — observed time, trigger, health score, latency, compatibility profile, and state change;
-3. standalone observation detail only when no diagnostic rows exist;
+1. `Runtime Decision` — effective persisted posture, concise primary summary, and status;
+2. `Observation Snapshot` — observed time, trigger, latency, capability snapshot, and compact readiness metadata;
+3. standalone observation detail only when it is not already represented by diagnostic evidence;
 4. Kubernetes lifecycle boundary when applicable;
-5. capability evidence / persisted drift when applicable;
-6. `Diagnostic Review` — the single authoritative location for detailed provider error evidence and Recommended Action.
+5. capability evidence or persisted drift when applicable;
+6. `Diagnostic Review` — the authoritative location for detailed provider evidence and Recommended Action.
 
-The dialog shows immutable persisted evidence only. A provider error must not be rendered once as an operational reading and then repeated again inside Diagnostic Review. Do not infer live health, do not add nested disclosures, and do not restore a provider-specific standalone modal shell. Native dialog controls use `data-kaori-dialog-open`, `data-dialog-target`, and `data-kaori-dialog-close`. Inline `onclick`, `onchange`, and `onsubmit` handlers are prohibited in Integration templates.
+Current-page runtime copy remains concise. When lifecycle or compatibility detail is longer than its compact summary, reuse `components/info_tip.html` so desktop hover and click/touch/keyboard can expose full persisted detail without expanding the row.
 
+The dialog shows immutable persisted evidence only. Do not infer live health, add nested disclosures, or restore a provider-specific modal shell. Native dialog controls remain shared.
 ## Provider Binding Workspace Layout
 
 Metrics Source and Alertmanager place binding decisions and consumer resolution on full-width surfaces. Persistent decision side rails are prohibited when the same facts can be summarized horizontally.
@@ -523,7 +524,7 @@ Regression ownership is enforced in `tests/contracts/integrations/`, including `
 
 Connection add/edit workspaces for Kubernetes, Metrics Source, and Alertmanager follow the global neutral-first dark-mode contract. The canonical Hero remains the only gradient surface. Ordinary cards below the Hero use `surface-card`, `surface-muted`, or `surface-elevated`; Bright Violet is limited to primary actions, focus, links, compact icon accents, and selected metadata.
 
-The shared `related_page_card.html` is the controlled contextual exception: it remains Violet in both themes through `.kaori-brand-domain-panel`. In dark mode that class resolves to the deeper `#2F1A4F`, keeping the relationship card visibly branded without competing with the Hero or surrounding neutral operational surfaces. This rule applies globally to every Related Page Card usage, not only Integration forms. Registration flows, guide cards, validation headers, and expandable references remain neutral and use Accent Violet only for compact icons or step markers. Secondary validation/cancel controls use `components/action_button.html` so dark hover becomes solid Violet with white text instead of low-contrast Violet-on-translucent-Violet.
+The shared `related_page_card.html` follows the canonical **soft Violet contextual-surface** treatment in both themes. The card uses `bg-kaori-soft`, controlled Violet border/icon/eyebrow emphasis, normal `content-primary` / `content-secondary` typography, and a neutral `surface-card` boundary callout. Solid Violet is reserved for the primary relationship action and interactive emphasis; the full card must not use a solid/deep Violet background. This rule applies globally to every Related Page Card usage, including `Related Operational Workspace` on provider registration/edit flows. Registration flows, guide cards, validation headers, and expandable references remain neutral and use Accent Violet only for compact icons or step markers. Secondary validation/cancel controls use `components/action_button.html` so dark hover becomes solid Violet with white text instead of low-contrast Violet-on-translucent-Violet.
 
 ### Provider Capability Registry Loading and Interaction
 

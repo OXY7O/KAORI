@@ -2,8 +2,8 @@
 <section class="{{ page_hero.shell_classes() }}">
     <div class="{{ page_hero.layout_classes() }}">
         <div class="{{ page_hero.content_classes() }}">
-            {% call page_hero.intro('layout-grid', 'Kubernetes Workload Inventory', 'boxes') %}
-                <h1 class="{{ page_hero.title_classes() }}">Workload Inventory</h1>
+            {% call page_hero.intro('layout-grid', 'Kubernetes Inventory', 'boxes') %}
+                <h1 class="{{ page_hero.title_classes() }}">Workloads</h1>
                 <p class="mt-2 {{ page_hero.description_classes() }}">Review workloads, runtime state, replicas, strategy, and placement.</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {% if cluster_onboarding.is_blocked %}

@@ -56,3 +56,10 @@ def test_inventory_lifecycle_consolidates_retention_and_delete_boundary():
     assert 'Delete Connection' in text
     assert 'data-kaori-inventory-lifecycle-boundary' in text
     assert 'data-kaori-connection-lifecycle' not in text
+
+
+def test_inventory_lifecycle_lists_kubernetes_tenant_as_an_operational_consumer():
+    text = source()
+    assert "'Kubernetes Tenant'" in text
+    assert "'Committed Tenant intent + provider authority'" in text
+    assert 'Tenant ownership, namespace allocations, access grants, credentials, and reconciliation evidence.' in text

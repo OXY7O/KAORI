@@ -58,12 +58,12 @@ The `analytics.materialize` policy includes both dashboard and full-page alert d
 
 ## Styling and workspace composition
 
-The Kubernetes Operations Dashboard is the reference implementation for `docs/design/patterns/OPERATIONAL_DASHBOARD.md` v1.5.
+The Kubernetes Operations Dashboard is the reference implementation for `docs/design/patterns/OPERATIONAL_DASHBOARD.md` v1.7.
 
 - Hero: `components/page_hero.html` through the canonical `page_hero.operational_dashboard(...)` profile renderer shared with Object Storage Operations Dashboard.
 - Dashboard Hero context is fixed to `Active Scope` + `Data Authority`; Normal metadata is exactly three evidence slots (inventory, metrics/analytics, alerts).
 - KPI cards: `components/operational_metric_card.html`.
-- Peer navigation: **Tab Style 1 — Integrated Workspace Tabs** (`integrated-workspace`) through `components/workspace_tabs.html`; active state is stored in `?tab=`, preserved during HTMX scope changes, and supports Arrow Left/Right, Home, and End keyboard navigation.
+- Dashboard workspace: `components/operational_dashboard_workspace.html` owns the canonical four tabs, URL-backed active state, keyboard navigation, and tab-panel geometry; it renders **Tab Style 1 — Integrated Workspace Tabs** through `components/workspace_tabs.html`.
 - Repeated blocks: `components/operational_section_card.html`.
 - Peer main-content layout: `components/peer_content_grid.html`; both boxes stretch to the tallest peer in the row.
 - Static action and response flows: `components/operational_flow_steps.html`.

@@ -185,6 +185,18 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         ),
     },
     {
+        'title': 'Tenant Management',
+        'label': 'Governed Tenancy',
+        'description': (
+            'Manage tenant definitions, resource profiles, namespace provisioning, access and capacity governance, '
+            'and lifecycle operations across registered Kubernetes clusters.'
+        ),
+        'icon': 'building-2',
+        'scope': 'Compute',
+        'group': 'operations',
+        'targets': (('tenant.view', 'tenant.index'),),
+    },
+    {
         'title': 'Kubernetes Governance',
         'label': 'Policy & Lifecycle',
         'description': (
@@ -221,8 +233,8 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'title': 'Access',
         'label': 'Identity, Access & Audit',
         'description': (
-            'Manage users, roles, permissions, authentication events, and operational '
-            'audit records according to assigned authority.'
+            'Manage users, roles, permissions, identity providers, directory-projected external identities, '
+            'authentication evidence, and operational audit records according to assigned authority.'
         ),
         'icon': 'users-round',
         'scope': 'Platform',
@@ -230,6 +242,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'targets': (
             ('users.view', 'access.overview.index'),
             ('users.manage', 'access.overview.index'),
+            ('identity_providers.view', 'access.overview.index'),
             ('roles.view', 'access.overview.index'),
             ('activity_audit.view', 'access.overview.index'),
         ),

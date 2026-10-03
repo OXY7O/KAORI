@@ -56,6 +56,22 @@ def main() -> int:
         errors,
     )
 
+    for token in (
+        "@permission_required('governance.view')",
+        "can_view_tls=current_user.has_permission('tls_certificates.view')",
+    ):
+        require(
+            token in governance_source,
+            f'Governance Overview route must preserve domain authorization and child-capability visibility: {token}',
+            errors,
+        )
+    for retired_dependency in ('get_tls_certificate_page', 'has_registered_clusters', 'tls_payload'):
+        require(
+            retired_dependency not in governance_source,
+            f'Governance Overview route must not load child-capability evidence: {retired_dependency}',
+            errors,
+        )
+
     for name, expected_permission in (
         ('tls_certificates_index', 'tls_certificates.view'),
         ('tls_certificates_detail', 'tls_certificates.view'),
@@ -119,8 +135,10 @@ def main() -> int:
     table = read('app/templates/kubernetes/governance/tls_certificates/partials/_table.html')
     page = read('app/templates/kubernetes/governance/tls_certificates/index.html')
     require(
-        'page_hero.context_header(' in overview,
-        'Governance Overview Hero must use the Context Icon Box.',
+        'page_hero.context_card(' in overview
+        and "'Open Cluster Integrations'" in overview
+        and "url_for('integrations.kubernetes')" in overview,
+        'Governance Overview ready Hero must use the canonical generic context card and Open Cluster Integrations action.',
         errors,
     )
     require(
@@ -129,10 +147,51 @@ def main() -> int:
         errors,
     )
     require(
-        'Governance Controls' in overview and "meta_label('server-cog', 'Kubernetes Operations')" not in overview,
-        'Governance Overview Hero metadata must remain governance-specific.',
+        'Governance Controls' in overview
+        and 'Committed Evidence' in overview
+        and 'Governed Handoffs' in overview
+        and "meta_label('server-cog', 'Kubernetes Operations')" not in overview,
+        'Governance Overview Hero metadata must remain domain-governance specific.',
         errors,
     )
+
+    for token in (
+        'Review Kubernetes governance controls, evidence, and ownership.',
+        'Governance Capabilities',
+        'Implemented governance controls are added as independent capability cards without changing the Overview structure.',
+        '[grid-template-columns:repeat(auto-fit,minmax(min(100%,18rem),1fr))]',
+        "'title': 'TLS Certificates'",
+        "'action': 'Open TLS Certificates' if can_view_tls else 'View Permission Required'",
+        'Governance Operating Model',
+        'Provider Authority',
+        'Policy & Guardrails',
+        'Committed Evidence',
+        'Controlled Handoffs',
+        'KAORI applies governance policy and authorization guardrails without cloning the provider control plane.',
+        'View Permission Required',
+        'New governance capabilities join this catalog only after implementation and authorization',
+    ):
+        require(token in overview, f'Governance Overview domain-first composition is missing: {token}', errors)
+    require(
+        "action_href=url_for('governance.tls_certificates')" not in overview
+        and "action_label='Open TLS Certificates'" not in overview,
+        'Governance Capabilities parent card must not own a TLS-specific action.',
+        errors,
+    )
+
+    for retired_tls_overview in (
+        'Committed Governance Posture',
+        'TLS Governance Snapshot',
+        'TLS Governance Posture',
+        'components/snapshot_context_bar.html',
+        '{% if can_view_tls and tls_payload %}',
+        'TLS View Restricted',
+    ):
+        require(
+            retired_tls_overview not in overview,
+            f'Governance Overview must not be TLS-posture centric: {retired_tls_overview}',
+            errors,
+        )
     require(
         'page_hero.context_card(' in hero,
         'TLS Governance Hero must use the canonical status-oriented context card.',
@@ -207,7 +266,13 @@ def main() -> int:
 
     standard = read('docs/design/patterns/KUBERNETES_TLS_CERTIFICATE_GOVERNANCE.md')
     audit = read('docs/design/audits/KUBERNETES_GOVERNANCE_FINAL_RECHECK_2026_08.md')
-    for phrase in ('Authorization before readiness', 'Context Icon Box', 'Status Badge Box', 'L0–L7'):
+    for phrase in (
+        'Authorization before readiness',
+        'Context Icon Box',
+        'Status Badge Box',
+        'Governance Overview landing contract',
+        'L0–L7',
+    ):
         require(phrase in standard or phrase in audit, f'Governance documentation must record {phrase}.', errors)
 
     quality_gate = read('scripts/quality_gate.sh')
@@ -241,8 +306,8 @@ def main() -> int:
 
     print(
         'KAORI Kubernetes Governance Final Lock v1 passed: AuthZ-first readiness, TLS evidence minimization, '
-        'canonical Hero/table/modal/pagination ownership, user-scoped sync status, dead-surface cleanup, and L0–L7 '
-        'release evidence are aligned.'
+        'domain-first Governance Overview, canonical Hero/table/modal/pagination ownership, user-scoped sync status, '
+        'scalable capability catalog, dead-surface cleanup, and L0–L7 release evidence are aligned.'
     )
     return 0
 

@@ -115,7 +115,9 @@ def test_kubernetes_runtime_health_requires_persisted_observation() -> None:
     assert "runtime_gate_label = 'Observation Required'" in runtime
     assert 'Not Observed' in runtime
     assert 'Persisted Runtime Refresh evidence' in runtime
-    assert 'Health gate only; validation remains independent.' in runtime
+    assert (
+        'Runtime health gates current operation; Full Validation readiness remains independently evaluated.' in runtime
+    )
     assert 'Validation Readiness' in runtime
 
 

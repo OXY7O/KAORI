@@ -172,6 +172,42 @@ The following family-level map keeps current production surfaces deterministic w
 
 Where a family contains materially different route intents, classify the route rather than assigning one archetype to the entire module.
 
+## Application Navigation Layering
+
+Global and local navigation are separate semantic layers. Sidebar section labels are grouping metadata, not a navigation level.
+
+```text
+Global Sidebar
+Level 1: Workspace / Domain
+Level 2: Capability
+
+Page Workspace
+Level 3: Detailed peer view
+```
+
+The sidebar never renders level 3. The page does not repeat level-2 capability peers as another global horizontal strip.
+
+Examples:
+
+```text
+Kubernetes               ← sidebar level 1
+  Inventory               ← sidebar level 2
+    Nodes                  ← page level 3
+
+Object Storage
+  Analytics
+    Forecast
+
+Access
+  Identity Providers      ← level 2; no level-3 row required
+```
+
+Provider/vendor identities and runtime instances remain inside their owning capability/workspace rather than becoming sidebar roots.
+
+Level-3 route peers that define the current capability workspace use server-owned **Integrated Workspace Tabs**. Content Tabs remain for subordinate content switching inside one route/page. Integrated Workspace Tabs are not the global Workspace → Capability navigator; that capability layer stays in the sidebar.
+
+See `components/SIDEBAR_NAVIGATION.md` and `components/DOMAIN_WORKSPACE_NAVIGATION.md`.
+
 ## Navigation and Tab Decision Matrix
 
 Tabs are optional. A page should use no tabs when sections, routes, cards, or a detail surface express the information architecture more clearly.
@@ -179,7 +215,8 @@ Tabs are optional. A page should use no tabs when sections, routes, cards, or a 
 | Decision | Approved family | Semantic key | Shared owner | Production reference |
 | --- | --- | --- | --- | --- |
 | Two or three mutually exclusive **local** views inside one component, visualization, drawer, or inspector | **Compact Segmented Tabs** | `compact-segmented` | `components/segmented_tabs.html` | Kubernetes Topology Graph/List and Details/Relationships |
-| Several closely related **content views subordinate to an established workspace** | **Content Tabs** | `content-tabs` | `components/content_tabs.html` | Kubernetes/Object Storage Analytics; Alert Intelligence |
+| Peer server-rendered **routes that define the current capability workspace** | **Integrated Workspace Tabs** | `integrated-workspace` | `components/workspace_tabs.html` | Kubernetes Inventory level-3 routes; Kubernetes Operations Dashboard |
+| Several closely related **content states/sections inside one established route/page** | **Content Tabs** | `content-tabs` | `components/content_tabs.html` | Kubernetes Analytics Overview; Alert Intelligence |
 | Peer operational domains where an **explicit framed parent workspace** is part of the information architecture | **Framed Workspace Tabs** | `framed-workspace-v2` | `components/framed_workspace_tabs.html` | Kubernetes Integration detail and Integration Overview |
 | Peer sections that **define the workspace itself** and should attach through a simple divider without a parent card | **Integrated Workspace Tabs** | `integrated-workspace` | `components/workspace_tabs.html` | Kubernetes Operations Dashboard |
 | No tab relationship is required | **No Tabs** | n/a | sections/routes/cards/detail navigation | Welcome, ordinary Inventory resource pages, Reports Generate |
@@ -191,7 +228,9 @@ Use this order:
 ```text
 2–3 local mutually exclusive views?
   → Compact Segmented Tabs
-else closely related subordinate content views in an established workspace?
+else peer server-rendered routes define the current capability workspace?
+  → Integrated Workspace Tabs
+else closely related subordinate content states exist inside one route/page?
   → Content Tabs
 else peer domains inside an explicit framed parent workspace?
   → Framed Workspace Tabs
@@ -201,7 +240,7 @@ else
   → No Tabs
 ```
 
-**Content Tabs vs Integrated Workspace Tabs:** Content Tabs are subordinate navigation inside a workspace that already has its identity and primary composition. Integrated Workspace Tabs define major peer sections of the workspace itself.
+**Content Tabs vs Integrated Workspace Tabs:** Content Tabs switch subordinate content inside one route/page. Integrated Workspace Tabs define peer routes/sections of the current capability workspace and visually attach through a simple divider without a floating shell.
 
 **Framed vs Integrated Workspace Tabs:** use Framed Workspace Tabs only when the parent frame is semantically meaningful. Visual preference for a card is not sufficient.
 

@@ -49,6 +49,7 @@ class TenantResourceProfileClass(StrEnum):
     SMALL = 'small'
     STANDARD = 'standard'
     LARGE = 'large'
+    EXTRA_LARGE = 'extra_large'
     CUSTOM = 'custom'
 
 
@@ -240,6 +241,8 @@ class TenantResourceProfile(db.Model):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     quota_hard_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     limit_defaults_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    storage_policy_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    advanced_controls_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
@@ -254,7 +257,7 @@ class TenantResourceProfile(db.Model):
         UniqueConstraint('public_id', name='uq_tenant_resource_profiles_public_id'),
         UniqueConstraint('name', name='uq_tenant_resource_profiles_name'),
         CheckConstraint(
-            "profile_class IN ('small', 'standard', 'large', 'custom')",
+            "profile_class IN ('small', 'standard', 'large', 'extra_large', 'custom')",
             name='ck_tenant_resource_profiles_class',
         ),
         Index('ix_tenant_resource_profiles_class_enabled', 'profile_class', 'enabled'),
@@ -268,9 +271,12 @@ class TenantCapacityPolicy(db.Model):
     cluster_id: Mapped[str] = mapped_column(ForeignKey('clusters.id', ondelete='CASCADE'), nullable=False)
     platform_reserve_cpu: Mapped[str] = mapped_column(String(50), nullable=False, default='0')
     platform_reserve_memory: Mapped[str] = mapped_column(String(50), nullable=False, default='0')
+    platform_reserve_pods: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     safety_headroom_percent: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     unmanaged_commitment_cpu: Mapped[str] = mapped_column(String(50), nullable=False, default='0')
     unmanaged_commitment_memory: Mapped[str] = mapped_column(String(50), nullable=False, default='0')
+    unmanaged_commitment_pods: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    tenant_storage_budget: Mapped[str | None] = mapped_column(String(50), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
     )
@@ -347,6 +353,7 @@ class TenantNamespace(db.Model):
     )
     allocation_quota_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     allocation_limit_defaults_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    allocation_storage_policy_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     allocation_customized: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     namespace: Mapped[str] = mapped_column(String(253), nullable=False)
     generation: Mapped[int] = mapped_column(Integer, nullable=False, default=1)

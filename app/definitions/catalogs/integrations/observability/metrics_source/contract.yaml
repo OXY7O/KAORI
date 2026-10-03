@@ -74,7 +74,7 @@ capabilities:
   required_by:
   - All metrics consumers
   impact: KAORI cannot retrieve current metrics.
-  source_owner: Configured metrics query adapter
+  source_owner: Configured query adapter
   recommendation: Expose the instant-query operation required by the selected metrics adapter through the exact endpoint configured in KAORI.
   expected_signals: []
 - key: range_query
@@ -84,7 +84,7 @@ capabilities:
   - Forecast
   - Trends
   impact: Historical charts and forecast inputs are unavailable.
-  source_owner: Configured metrics query adapter
+  source_owner: Configured query adapter
   recommendation: Expose the range-query operation required by the selected metrics adapter and confirm that the access path permits historical queries.
   expected_signals: []
 - key: series_discovery
@@ -93,7 +93,7 @@ capabilities:
   - Consumer binding validation
   - Metrics inventory
   impact: KAORI cannot inspect metric-series identity for bound consumers.
-  source_owner: Configured metrics query adapter
+  source_owner: Configured query adapter
   recommendation: Expose the series-discovery operation required by the selected metrics adapter.
   expected_signals: []
 - key: label_discovery
@@ -102,7 +102,7 @@ capabilities:
   - Consumer binding validation
   - Metrics identity
   impact: KAORI cannot discover metric names or labels used to validate consumer bindings.
-  source_owner: Configured metrics query adapter
+  source_owner: Configured query adapter
   recommendation: Expose the label-discovery operation required by the selected metrics adapter.
   expected_signals: []
 - key: kubernetes_identity

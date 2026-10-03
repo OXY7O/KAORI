@@ -1,371 +1,223 @@
 from __future__ import annotations
 
-import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-NAVIGATION_DIR = ROOT / 'app' / 'templates' / 'components' / 'navigation'
-SIDEBAR = NAVIGATION_DIR / 'sidebar.html'
-STANDARD = ROOT / 'docs' / 'design' / 'components' / 'SIDEBAR_NAVIGATION.md'
-QUALITY_GATE = ROOT / 'scripts' / 'quality_gate.sh'
+SIDEBAR = ROOT / 'app' / 'templates' / 'components' / 'navigation' / 'sidebar.html'
+MODEL = ROOT / 'app' / 'common' / 'workspace_navigation.py'
+CATALOG = ROOT / 'app' / 'common' / 'workspace_navigation_catalog.py'
+LAYOUT = ROOT / 'app' / 'templates' / 'layouts' / 'app.html'
+PRESENTATION = ROOT / 'app' / 'bootstrap' / 'presentation.py'
 BREADCRUMB = ROOT / 'app' / 'common' / 'navigation.py'
-
-MENU_TEMPLATES = (
-    'access_management_menu.html',
-    'analytics_menu.html',
-    'dashboards_menu.html',
-    'governance_menu.html',
-    'tenant_menu.html',
-    'integrations_menu.html',
-    'intelligence_menu.html',
-    'inventory_menu.html',
-    'object_storage_menu.html',
-    'kubernetes_operations_menu.html',
-    'platform_operations_menu.html',
-    'reports_menu.html',
-    'settings_menu.html',
-)
-
-EXPECTED_SECTION_ORDER = (
-    'Main',
-    'Kubernetes',
-    'Storage',
-    'Analytics',
-    'Insights',
-    'Platform',
-    'Administration',
-)
-
-EXPECTED_INCLUDE_ORDER = (
-    'dashboards_menu.html',
-    'inventory_menu.html',
-    'kubernetes_operations_menu.html',
-    'governance_menu.html',
-    'tenant_menu.html',
-    'object_storage_menu.html',
-    'analytics_menu.html',
-    'intelligence_menu.html',
-    'reports_menu.html',
-    'platform_operations_menu.html',
-    'integrations_menu.html',
-    'access_management_menu.html',
-    'settings_menu.html',
-)
-
-PARENT_TOKENS = (
-    'sidebar-parent-link',
-    'min-h-11',
-    'rounded-lg',
-    'px-2.5',
-    'py-2',
-    'text-base',
-    'font-semibold',
-    'leading-6',
-    'lg:[.sidebar-collapsed_&]:justify-center',
-    'lg:[.sidebar-collapsed_&]:px-2',
-    'sidebar-parent-active',
-    'sidebar-item-idle',
-)
-
-SUBMENU_TOKENS = (
-    'group',
-    'flex',
-    'items-center',
-    'gap-2',
-    'rounded-lg',
-    'px-2.5',
-    'py-1.5',
-    'text-sm',
-    'leading-5',
-    'transition',
-    'bg-white/[0.08]',
-    'text-kaori-accent',
-    'sidebar-item-idle',
-    'h-1.5 w-1.5',
-    'h-3.5 w-3.5',
-    'truncate whitespace-nowrap',
-)
+SIDEBAR_STANDARD = ROOT / 'docs' / 'design' / 'components' / 'SIDEBAR_NAVIGATION.md'
+WORKSPACE_STANDARD = ROOT / 'docs' / 'design' / 'components' / 'DOMAIN_WORKSPACE_NAVIGATION.md'
+QUALITY_GATE = ROOT / 'scripts' / 'quality_gate.sh'
 
 
 def _read(path: Path) -> str:
     if not path.exists():
-        raise AssertionError(f'Missing required sidebar contract file: {path.relative_to(ROOT)}')
+        raise AssertionError(f'Missing navigation contract file: {path.relative_to(ROOT)}')
     return path.read_text(encoding='utf-8')
 
 
-def _parent_blocks(source: str, filename: str) -> list[tuple[str, str]]:
-    blocks: list[tuple[str, str]] = []
-    search_from = 0
-
-    while True:
-        marker = source.find('sidebar-parent-link', search_from)
-        if marker == -1:
-            return blocks
-
-        summary_start = source.rfind('<summary', 0, marker)
-        anchor_start = source.rfind('<a ', 0, marker)
-        block_start = max(summary_start, anchor_start)
-        if block_start == -1:
-            raise AssertionError(f'{filename}: sidebar-parent-link has no summary or anchor owner')
-
-        tag = 'summary' if block_start == summary_start else 'a'
-        closing = f'</{tag}>'
-        block_end = source.find(closing, marker)
-        if block_end == -1:
-            raise AssertionError(f'{filename}: parent block is missing {closing}')
-
-        block_end += len(closing)
-        blocks.append((tag, source[block_start:block_end]))
-        search_from = block_end
-
-
-def _submenu_links(source: str, filename: str) -> list[str]:
-    marker = source.find('sidebar-submenu')
-    if marker == -1:
-        raise AssertionError(f'{filename}: missing sidebar-submenu container')
-    return re.findall(r'<a\s[\s\S]*?</a>', source[marker:])
-
-
-def _require_tokens(block: str, tokens: tuple[str, ...], owner: str) -> None:
-    missing = [token for token in tokens if token not in block]
+def _require(source: str, tokens: tuple[str, ...], owner: str) -> None:
+    missing = [token for token in tokens if token not in source]
     if missing:
-        raise AssertionError(f'{owner}: missing canonical tokens: {", ".join(missing)}')
+        raise AssertionError(f'{owner}: missing tokens: {", ".join(missing)}')
 
 
 def verify() -> None:
     sidebar = _read(SIDEBAR)
-    standard = _read(STANDARD)
+    model = _read(MODEL)
+    catalog = _read(CATALOG)
+    semantic_model = f'{model}\n{catalog}'
+    layout = _read(LAYOUT)
+    presentation = _read(PRESENTATION)
+    breadcrumb = _read(BREADCRUMB)
+    sidebar_standard = _read(SIDEBAR_STANDARD)
+    workspace_standard = _read(WORKSPACE_STANDARD)
 
-    _require_tokens(
+    _require(
         sidebar,
         (
             'w-[250px]',
             'lg:[.sidebar-collapsed_&]:w-[78px]',
-            'rounded-2xl',
-            'bg-surface-sidebar',
-            'overflow-y-auto',
-            'sidebar-expanded-only',
-            'text-sm font-extrabold leading-5',
-            'text-xs font-medium',
+            'data-kaori-sidebar-section',
+            'data-kaori-sidebar-workspace',
+            'data-kaori-sidebar-workspace-trigger',
+            'data-kaori-sidebar-capabilities',
+            'data-kaori-sidebar-capability',
+            "{% if item['children'] %}",
+            "{% for child in item['children'] %}",
+            "child['href']",
+            "child['label']",
+            "child['active']",
+            '<details class="sidebar-menu space-y-1"',
+            'sidebar-parent-active',
+            'sidebar-submenu',
+            'min-h-11',
+            'text-base font-semibold leading-6',
+            'text-sm leading-5',
         ),
-        'sidebar frame and brand',
+        'two-level sidebar renderer',
     )
 
-    mobile_marker = sidebar.find('\n           data-mobile-navigation\n')
-    mobile_aside_start = sidebar.rfind('<aside', 0, mobile_marker)
-    mobile_aside_end = sidebar.find('>', mobile_marker)
-    if mobile_aside_start == -1 or mobile_aside_end == -1:
-        raise AssertionError('sidebar.html: missing canonical mobile navigation aside')
-    mobile_aside_tag = sidebar[mobile_aside_start:mobile_aside_end]
-    _require_tokens(
-        mobile_aside_tag,
+    if 'section.items' in sidebar:
+        raise AssertionError("sidebar renderer must use section['items'], not dict.items attribute lookup")
+    if 'workspace_tabs.render_navigation' in sidebar:
+        raise AssertionError('sidebar capabilities must not be rendered as horizontal workspace tabs')
+
+    for legacy in (
+        'dashboards_menu.html',
+        'inventory_menu.html',
+        'kubernetes_operations_menu.html',
+        'governance_menu.html',
+        'tenant_menu.html',
+        'object_storage_menu.html',
+        'analytics_menu.html',
+        'intelligence_menu.html',
+        'reports_menu.html',
+        'platform_operations_menu.html',
+        'integrations_menu.html',
+        'access_management_menu.html',
+        'settings_menu.html',
+    ):
+        if legacy in sidebar:
+            raise AssertionError(f'legacy sidebar include remains active: {legacy}')
+
+    _require(
+        semantic_model,
         (
-            'x-cloak',
-            'data-mobile-navigation',
-            'lg:[.sidebar-collapsed_&]:w-[78px]',
+            'class WorkspaceCapabilityDefinition:',
+            'capabilities: tuple[WorkspaceCapabilityDefinition, ...]',
+            'def build_sidebar_navigation(',
+            'def build_capability_navigation(',
+            "'children': children",
+            "'children': ()",
+            "'active': (",
+            '_visible_capabilities',
+            '_resolved_capability_endpoint',
+            '_active_capability_key',
+            "'kubernetes_operations.create_configmap': 'configmaps'",
+            "'kubernetes_operations.update_configmap': 'configmaps'",
+            "'kubernetes_operations.delete_configmap': 'configmaps'",
+            "'kubernetes_operations': 'secrets'",
+            '_WORKSPACE_CONTEXT_KEYS',
+            '_CAPABILITY_CONTEXT_KEYS',
+            '_preserved_context',
+            "key='kubernetes'",
+            "key='object_storage'",
+            "key='intelligence'",
+            "key='reports'",
+            "key='operations_center'",
+            "key='integrations'",
+            "key='access'",
+            "key='settings'",
         ),
-        'mobile navigation hydration and desktop-collapse boundary',
+        'navigation semantic model',
     )
-    if ' [.sidebar-collapsed_&]:w-[78px]' in mobile_aside_tag:
-        raise AssertionError('sidebar.html: desktop collapse width must not own mobile drawer geometry')
-    if 'sidebarExpanded = false; openMobileNavigation($event)' in sidebar:
-        raise AssertionError('sidebar.html: mobile open must not mutate desktop collapse state')
-    if 'restoreDesktopSidebarState()' in sidebar:
-        raise AssertionError('sidebar.html: mobile close must not restore desktop collapse state into drawer geometry')
 
-    section_pattern = re.compile(
-        r'<div class="sidebar-expanded-only mb-1\.5 px-3 sidebar-section-label '
-        r'text-xs font-extrabold uppercase tracking-widest">([^<]+)</div>'
+    if 'def build_workspace_navigation(' in model:
+        raise AssertionError('horizontal Domain Workspace navigation model must not remain active')
+
+    for future_placeholder in (
+        "key='compute'",
+        "key='network'",
+        "key='reliability'",
+        "key='finops'",
+        "key='automation'",
+        "key='backup_recovery'",
+    ):
+        if future_placeholder in semantic_model:
+            raise AssertionError(f'reserved future workspace rendered as placeholder: {future_placeholder}')
+
+    _require(
+        presentation,
+        (
+            "'sidebar_navigation': build_sidebar_navigation(request.endpoint, current_user, request.args)",
+            "'capability_navigation': build_capability_navigation(request.endpoint, current_user, request.args)",
+        ),
+        'presentation context',
     )
-    section_order = tuple(match.strip() for match in section_pattern.findall(sidebar))
-    if section_order != EXPECTED_SECTION_ORDER:
+    if "'workspace_navigation':" in presentation or 'build_workspace_navigation' in presentation:
+        raise AssertionError('presentation still publishes retired horizontal workspace navigation')
+
+    navbar = _read(ROOT / 'app' / 'templates' / 'components' / 'navigation' / 'navbar.html')
+    if "namespace(label='Welcome')" in navbar:
         raise AssertionError(
-            f'sidebar.html: canonical section order changed. Expected {EXPECTED_SECTION_ORDER}, found {section_order}'
+            'navbar mobile label must not call the Jinja namespace() builtin because route context may own a namespace variable'
         )
-
-    include_positions: list[int] = []
-    for filename in EXPECTED_INCLUDE_ORDER:
-        marker = f'components/navigation/{filename}'
-        position = sidebar.find(marker)
-        if position == -1:
-            raise AssertionError(f'sidebar.html: missing canonical include {filename}')
-        include_positions.append(position)
-    if include_positions != sorted(include_positions):
-        raise AssertionError('sidebar.html: canonical parent-menu include order changed')
-
-    sources = {filename: _read(NAVIGATION_DIR / filename) for filename in MENU_TEMPLATES}
-    sources['sidebar.html'] = sidebar
-    breadcrumb = _read(BREADCRUMB)
-
-    expected_copy = {
-        'sidebar.html': ('>Analytics</div>', '>Insights</div>', '>Platform</div>'),
-        'inventory_menu.html': ('title="Inventory"', 'aria-label="Inventory"', '>Inventory</span>'),
-        'kubernetes_operations_menu.html': (
-            'title="Operations"',
-            'aria-label="Operations"',
-            '>Operations</span>',
-            '>ConfigMaps</span>',
-            '>Secrets</span>',
+    _require(
+        navbar,
+        (
+            "mobile_page_candidates = breadcrumb_items | rejectattr('label', 'equalto', 'KAORI') | list",
+            "mobile_page_label = mobile_page_candidates[-1].label if mobile_page_candidates else 'Welcome'",
+            '{{ mobile_page_label }}',
         ),
-        'governance_menu.html': ('title="Governance"', 'aria-label="Governance"', '>Governance</span>'),
-        'tenant_menu.html': (
-            'title="Tenant"',
-            'aria-label="Tenant"',
-            '>Tenant</span>',
-            '>Overview</span>',
-            '>Tenants</span>',
-            '>Resource Profiles</span>',
-            '>Namespace Provisioning</span>',
-            '>Operations</span>',
-        ),
-        'analytics_menu.html': (
-            'title="Kubernetes"',
-            'aria-label="Kubernetes"',
-            '>Kubernetes</span>',
-            'title="Object Storage"',
-            'aria-label="Object Storage"',
-            '>Object Storage</span>',
-            '>Utilization</span>',
-            '>Capacity</span>',
-            '>Storage</span>',
-            '>Workloads</span>',
-            '>Forecast</span>',
-        ),
-        'access_management_menu.html': ('>Users</span>', '>Roles</span>', '>Permissions</span>'),
-        'platform_operations_menu.html': (
-            '>Operations Center</span>',
-            '>Jobs</span>',
-            '>Data Lifecycle</span>',
-            '>Kubernetes Admin</span>',
-        ),
-    }
-    for filename, tokens in expected_copy.items():
-        _require_tokens(sources[filename], tokens, f'{filename} navigation copy')
+        'navbar mobile breadcrumb label',
+    )
 
-    _require_tokens(
+    _require(
+        layout,
+        (
+            '{% import "components/workspace_tabs.html" as workspace_tabs %}',
+            'data-kaori-capability-navigation="{{ capability_navigation.key }}"',
+            'workspace_tabs.render_navigation(',
+            "prefix='detail-' ~ capability_navigation.key",
+        ),
+        'page level-3 navigation',
+    )
+    for retired in (
+        'data-kaori-domain-workspace-nav',
+        'workspace_navigation',
+    ):
+        if retired in layout:
+            raise AssertionError(f'app shell retains retired horizontal workspace navigation: {retired}')
+
+    _require(
         breadcrumb,
         (
-            "'analytics.utilization': 'Utilization'",
-            "'analytics.capacity': 'Capacity'",
-            "'analytics.storage': 'Storage'",
-            "'analytics.workload': 'Workloads'",
-            "'analytics.forecast': 'Forecast'",
-            "'kubernetes_operations.configmap_management': 'ConfigMaps'",
-            "'kubernetes_operations.secret_management': 'Secrets'",
-            "'jobs.executions': 'Jobs'",
-            "'users.index': 'Users'",
-            "'access.roles.index': 'Roles'",
-            "'access.permissions.index': 'Permissions'",
-            "BreadcrumbItem('Inventory', 'boxes')",
+            "BreadcrumbItem('Kubernetes', 'boxes')",
             "BreadcrumbItem('Object Storage', 'database')",
+            "BreadcrumbItem('Inventory')",
+            "BreadcrumbItem('Operations')",
             "BreadcrumbItem('Analytics', 'chart-no-axes-combined')",
-            "BreadcrumbItem('Kubernetes', 'bar-chart-3')",
-            "BreadcrumbItem('Object Storage', 'database-zap')",
-            "BreadcrumbItem('Operations', 'terminal-square')",
-            "'governance': ('Governance', 'shield-check', 'TLS Certificates')",
-            "'tenant': ('Tenant', 'building-2', 'Overview')",
-            "BreadcrumbItem('Operations Center', 'workflow')",
-            "BreadcrumbItem('Kubernetes Admin')",
         ),
-        'navigation breadcrumb copy',
+        'breadcrumb hierarchy',
     )
 
-    for token in (
-        "has_permission('inventory.view')",
-        "has_permission('object_storage_inventory.view')",
-        "has_permission('analytics.view')",
-        "has_permission('object_storage_analytics.view')",
-    ):
-        if token not in sidebar:
-            raise AssertionError(f'sidebar.html: missing domain-specific visibility guard {token}')
-    analytics_menu = sources['analytics_menu.html']
-    if '{% if can_kubernetes_analytics %}' not in analytics_menu:
-        raise AssertionError('analytics_menu.html: Kubernetes Analytics must use its dedicated visibility branch')
-    if '{% if can_object_storage_analytics %}' not in analytics_menu:
-        raise AssertionError('analytics_menu.html: Object Storage Analytics must use its dedicated visibility branch')
-
-    parent_count = 0
-    submenu_count = 0
-    for filename, source in sources.items():
-        blocks = _parent_blocks(source, filename)
-        if not blocks:
-            raise AssertionError(f'{filename}: no canonical parent navigation block found')
-
-        for tag, block in blocks:
-            parent_count += 1
-            _require_tokens(block, PARENT_TOKENS, f'{filename} parent')
-            _require_tokens(
-                block,
-                (
-                    'h-8 w-8',
-                    'h-4 w-4',
-                    'truncate whitespace-nowrap',
-                    'sidebar-parent-active-icon',
-                    'sidebar-item-idle-icon',
-                ),
-                f'{filename} parent identity',
-            )
-            if 'text-sm' in block or 'text-xs' in block or 'text-[' in block:
-                raise AssertionError(f'{filename}: parent typography must remain text-base')
-            if 'title="' not in block or 'aria-label="' not in block:
-                raise AssertionError(f'{filename}: each parent requires title and aria-label')
-            if tag == 'summary':
-                _require_tokens(
-                    block,
-                    (
-                        'cursor-pointer',
-                        'select-none',
-                        'justify-between',
-                        'sidebar-menu-chevron',
-                        '@click=',
-                        'window.innerWidth >= 1024',
-                        'toggleSidebar()',
-                    ),
-                    f'{filename} expandable parent',
-                )
-
-        if filename == 'sidebar.html':
-            continue
-
-        if '<details class="sidebar-menu space-y-1"' not in source:
-            raise AssertionError(f'{filename}: expandable parent must use sidebar-menu space-y-1')
-        if 'sidebar-expanded-only sidebar-submenu ml-6 mt-1 space-y-1 border-l border-white/10 pl-3' not in source:
-            raise AssertionError(f'{filename}: submenu container geometry changed')
-
-        links = _submenu_links(source, filename)
-        if not links:
-            raise AssertionError(f'{filename}: parent menu has no submenu links')
-        for index, link in enumerate(links, start=1):
-            submenu_count += 1
-            _require_tokens(link, SUBMENU_TOKENS, f'{filename} submenu #{index}')
-            if 'text-base' in link or 'text-xs' in link or 'text-[' in link:
-                raise AssertionError(f'{filename} submenu #{index}: submenu typography must remain text-sm')
-
-    doc_tokens = (
-        '# KAORI Sidebar Navigation Standard v1.7',
-        'Status:** Locked application-shell and dark-mode contract',
-        'Parent menu label | 16 px',
-        'Submenu label | 14 px',
-        'Parent:  min-h-11 rounded-lg px-2.5 py-2 text-base font-semibold leading-6',
-        'Child:   rounded-lg px-2.5 py-1.5 text-sm leading-5',
-        'sidebar-parent-active',
-        'dark mode keeps the active Violet surface without a separate left-edge accent',
-        '## Navigation Naming Contract',
-        '## Canonical Information Architecture',
-        '## Enforcement and Change Control',
-        'scripts/verify_sidebar_navigation_standard.py',
-        'tests/contracts/design/test_sidebar_navigation_standard_contract.py',
+    _require(
+        sidebar_standard,
+        (
+            '# KAORI Sidebar Navigation Standard v2.1',
+            'Level 1 — Workspace / Domain',
+            'Level 2 — Capability',
+            'a third nested sidebar level is prohibited',
+            'Reserved Future Ownership',
+            'no horizontal Domain Workspace strip',
+        ),
+        'sidebar v2.1 documentation',
     )
-    _require_tokens(standard, doc_tokens, 'sidebar standard documentation')
+
+    _require(
+        workspace_standard,
+        (
+            '# KAORI Page Workspace Navigation Standard v1.1',
+            'Page level 3 — Detailed View / Resource View',
+            'There is **no global Domain Workspace horizontal strip**',
+            'components/workspace_tabs.html',
+            'Analytics Overview always keeps the route-level Integrated Workspace Tabs visible',
+        ),
+        'page workspace documentation',
+    )
 
     quality_gate = _read(QUALITY_GATE)
     if 'python scripts/verify_sidebar_navigation_standard.py' not in quality_gate:
-        raise AssertionError('scripts/quality_gate.sh does not execute the sidebar standard verifier')
+        raise AssertionError('quality gate does not execute the sidebar standard verifier')
 
     print(
-        'KAORI sidebar navigation standard passed: '
-        f'{parent_count} parent blocks and {submenu_count} submenu links conform to v1.5; '
-        'section order, collapse behavior, accessibility, typography, and documentation are locked.'
+        'KAORI sidebar navigation standard passed: two-level Workspace -> Capability sidebar, '
+        'page-owned level-3 detail navigation, permission-aware disclosure, and future-domain guardrails are locked.'
     )
 
 

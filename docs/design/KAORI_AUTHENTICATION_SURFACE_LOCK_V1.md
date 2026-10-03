@@ -26,6 +26,74 @@ It does not redesign identity-provider administration, User Management, Roles & 
 8. Auth templates use canonical typography tokens: no arbitrary text sizes/tracking, no `font-extrabold`, no presentation-only uppercase utilities, and no inline DOM event handlers.
 9. Password/theme interaction runtime is owned by `app/static/js/auth_login.js`; only the pre-paint theme bootstrap remains inline to prevent theme flash.
 
+### Browser SSO Action Region
+
+The accepted split-screen login remains unchanged when browser SSO is disabled. The SSO action region is conditional and consumes no blank placeholder space when no runtime-ready browser provider exists.
+
+Current supported browser providers are Google OIDC and GitHub OAuth. Their login actions are rendered from the provider registry rather than hard-coded provider branches.
+
+Canonical geometry:
+
+- zero providers: no divider and no SSO action region;
+- one provider: one full-width 44 px action;
+- two providers: two peer 44 px actions in a two-column row from `sm`, stacked below `sm`;
+- additional future browser providers wrap through the same two-column grid;
+- provider display names may vary, so button text uses a bounded flexible/truncating span while the full name remains available through accessible label/title text;
+- every provider link preserves only the server-sanitized internal `next` target.
+
+The Local Database form remains the primary credential/recovery path and provider actions remain visually secondary to **Sign In**.
+
+### Login Responsive Composition
+
+Laptop browser usage is the primary product target, but Authentication follows the global canonical viewport authority from `tests/ui/conftest.py::CANONICAL_VIEWPORTS`:
+
+| Viewport | Size | Authentication composition |
+| --- | ---: | --- |
+| large-desktop | 1440×900 | split brand/form |
+| laptop | 1280×800 | primary compact split target |
+| compact-laptop | 1024×768 | lower-bound split target |
+| tablet | 768×1024 | form-first; brand panel removed from layout |
+| mobile | 390×844 | single-column form; SSO actions stacked |
+| small-mobile | 360×800 | smallest canonical form-first target |
+
+Responsive ownership rules:
+
+- smaller viewports recompose rather than shrink the split desktop surface;
+- the brand panel is present only at `lg+`; below `lg`, the form panel owns the visible KAORI identity;
+- form content stays bounded by the existing `max-w-md` reading width while the outer panel remains viewport-safe;
+- primary credential controls and browser SSO actions retain the 44 px interaction-height contract;
+- one SSO provider is full width; multiple providers stack below `sm` and use a two-column grid from `sm+`;
+- page-level horizontal scrolling is prohibited;
+- phone layouts may grow vertically and use normal document scrolling rather than clipping authentication actions to preserve desktop card height;
+- light/dark mode, focus visibility, accessible names, and authentication semantics remain equivalent at every canonical viewport.
+
+Real-device UAT may add evidence, but physical device names do not become CSS contracts.
+
+### Canonical Database Setup Workspace Composition
+
+The approved Database Setup Required surface is a non-Hero operational readiness workspace. It uses the global **Major Page Title outside Hero** typography authority: 24 px (`text-2xl`), semibold, compact line height, with no Hero minimum-height or promotional title treatment.
+
+The composition is:
+
+```text
+Compact Page Identity + Shared Readiness Labels
+→ Development Bootstrap
+→ Shared Initialization Info Flow
+→ Security / Readiness Supporting Evidence
+→ Progressive Setup Details
+→ Retry Setup Check
+```
+
+Shared ownership is mandatory:
+
+- `components/table_label.html` owns PostgreSQL/schema semantic labels;
+- `components/operational_section_card.html` owns primary operational surfaces;
+- `components/info_flow.html` owns the initialization sequence;
+- `components/terminal_command.html` owns copyable bootstrap/check commands;
+- `components/operational_callout.html` owns semantic security/recovery callouts.
+
+The setup page must not introduce authenticated Hero geometry, page-local semantic badge styling, a copied timeline implementation, arbitrary typography, or database mutation from presentation code.
+
 ## Locked Security Contract
 
 - Login is rate-limited and Flask-WTF owns CSRF validation.

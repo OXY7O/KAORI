@@ -180,3 +180,26 @@ def test_create_report_request_commits_record_for_fresh_session_readback(
         finally:
             db.session.remove()
             Report.__table__.drop(db.engine)
+
+
+def test_scope_readiness_honors_scope_contract_without_stale_inventory_counts() -> None:
+    assert generate_service._scope_is_ready(
+        {'cluster_id': '', 'object_storage_system_id': ''},
+        {'scope_asset_type': 'characterization_scope', 'requires_cluster': False},
+    )
+    assert not generate_service._scope_is_ready(
+        {'cluster_id': '', 'object_storage_system_id': ''},
+        {'scope_asset_type': 'kubernetes_cluster', 'requires_cluster': True},
+    )
+    assert generate_service._scope_is_ready(
+        {'cluster_id': 'cluster-1', 'object_storage_system_id': ''},
+        {'scope_asset_type': 'kubernetes_cluster', 'requires_cluster': True},
+    )
+    assert not generate_service._scope_is_ready(
+        {'cluster_id': '', 'object_storage_system_id': ''},
+        {'scope_asset_type': 'object_storage_system', 'requires_cluster': False},
+    )
+    assert generate_service._scope_is_ready(
+        {'cluster_id': '', 'object_storage_system_id': 'storage-1'},
+        {'scope_asset_type': 'object_storage_system', 'requires_cluster': False},
+    )

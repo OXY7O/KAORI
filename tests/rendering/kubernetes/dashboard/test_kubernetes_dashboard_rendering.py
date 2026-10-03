@@ -26,8 +26,26 @@ def test_dashboard_uses_canonical_hero_tabs_table_status_and_pagination_componen
     assert 'components/page_hero.html' in hero
     assert 'page_hero.operational_dashboard(' in hero
     assert "context_header('Dashboard Context', 'Operational Signal Scope', 'scan-search')" in page_hero
-    assert 'components/workspace_tabs.html' in content
+    assert 'components/operational_dashboard_workspace.html' in content
     assert 'components/table.html' in cluster_health
     assert 'components/table_label.html' in cluster_health
     assert 'components/pagination.html' in cluster_health
     assert '[5, 10, 25, 50]' in cluster_health
+
+
+def test_shared_operational_dashboard_framework_is_valid_jinja() -> None:
+    environment = Environment(autoescape=True)
+    framework = ROOT / 'app/templates/components/operational_dashboard_workspace.html'
+
+    source = framework.read_text(encoding='utf-8')
+    environment.parse(source)
+
+    assert 'data-kaori-dashboard-framework="operational-v1"' in source
+    assert 'workspace_tabs.render(standard_tabs' in source
+    assert "('overview', 'Operations Overview', 'activity')" in source
+    assert "('capacity', 'Capacity & Demand', 'gauge')" in source
+    assert "('signals', 'Signals & Actions', 'bell-ring')" in source
+    assert "('reporting', 'Reporting', 'file-text')" in source
+    assert 'macro controller(' in source
+    assert 'macro navigation(' in source
+    assert 'macro panel(' in source

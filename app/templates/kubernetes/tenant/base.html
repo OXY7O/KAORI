@@ -13,6 +13,7 @@
 {% else %}
     {% set tenant_page_description = "Inspect provisioning evidence, drift, audit, and activity." %}
 {% endif %}
+{% set registered_cluster_count = cluster_onboarding.cluster_count|default(0) %}
 {% block title %}{{ tenant_page_title }} · Tenant{% endblock title %}
 {% block dashboard_content %}
     <div class="space-y-6" data-tenant-workspace="{{ tenant_page }}">
@@ -29,35 +30,57 @@
                         </div>
                     {% endcall %}
                 </div>
-                {% set tenant_context_metrics = [
-                                    ('server', 'Ready Clusters', ready_clusters|length, 'Native provider targets', true),
-                                    ('circle-check', 'Ready Namespaces', ready_namespace_count, 'Verified committed state')
-                                ] %}
-                {{ page_hero.context_card('Tenant context',
-                                'Provider Readiness',
-                                'Native Kubernetes',
-                                'Ready' if native_available else 'Blocked',
-                                'normal' if native_available else 'warning',
-                                tenant_context_metrics,
-                                'Open Cluster Integrations',
-                                url_for('integrations.kubernetes') ,
-                'server-cog'
-                ) }}
+                {% if not native_available %}
+                    <aside class="{{ page_hero.aside_classes() }}"
+                           aria-label="Tenant provider readiness">
+                        {% set cluster_blocked_scope = "Tenant Provider" %}
+                        {% if registered_cluster_count > 0 %}
+                            {% set cluster_blocked_title = "Provider Operations Restricted" %}
+                            {% set cluster_blocked_info = "Provider mutations require a Ready Kubernetes integration." %}
+                            {% set cluster_blocked_action_label = "Review Cluster Integrations" %}
+                            {% set cluster_blocked_action_href = url_for('integrations.kubernetes') %}
+                            {% set cluster_blocked_action_icon = "server-cog" %}
+                            {% set cluster_blocked_cluster_label = "Registered Clusters" %}
+                            {% set cluster_blocked_cluster_value = registered_cluster_count %}
+                            {% set cluster_blocked_cluster_supporting = "Committed state remains readable" %}
+                            {% set cluster_blocked_state_label = "Provider Operations" %}
+                            {% set cluster_blocked_state_value = "Restricted" %}
+                            {% set cluster_blocked_state_supporting = "Live connectivity is checked separately below" %}
+                        {% else %}
+                            {% set cluster_blocked_title = "Cluster Setup Required" %}
+                            {% set cluster_blocked_info = "Add a Kubernetes cluster to enable provider-backed Tenant workflows." %}
+                            {% set cluster_blocked_action_label = "Open Cluster Integrations" %}
+                            {% set cluster_blocked_action_href = url_for('integrations.kubernetes') %}
+                            {% set cluster_blocked_action_icon = "server-cog" %}
+                        {% endif %}
+                        {% include 'components/cluster/_hero_blocked_context.html' %}
+                    </aside>
+                {% else %}
+                    {% set tenant_context_metrics = [
+                                            ('server', 'Ready Clusters', ready_clusters|length, 'Native provider targets', true),
+                                            ('circle-check', 'Ready Namespaces', ready_namespace_count, 'Verified committed state')
+                                        ] %}
+                    {{ page_hero.context_card('Tenant context',
+                                        'Provider Readiness',
+                                        'Native Kubernetes',
+                                        'Ready',
+                                        'normal',
+                                        tenant_context_metrics,
+                                        'Open Cluster Integrations',
+                                        url_for('integrations.kubernetes') ,
+                    'server-cog'
+                    ) }}
+                {% endif %}
             </div>
         </section>
-        {% if tenant_page != 'overview' and tenant_live_connection is defined %}
-            {% include "kubernetes/tenant/partials/_live_connection_snapshot.html" %}
+        {% if tenant_page != 'overview' and tenant_collection_snapshot is defined %}
+            {% include "kubernetes/tenant/partials/_collection_snapshot_context.html" %}
         {% endif %}
-        {% if not native_available %}
-            {% set blocked_state_title = "Tenant capability is blocked" %}
-            {% set blocked_state_description = "Register and validate a Kubernetes cluster before running Native Tenant workflows." %}
-            {% set blocked_state_action_url = url_for('integrations.kubernetes') %}
-            {% set blocked_state_action_label = "Open Cluster Integrations" %}
-            {% set blocked_state_action_icon = "server-cog" %}
-            {% set blocked_state_permission = "integrations.manage" %}
-            {% set blocked_state_show_admin_required = true %}
-            {% set blocked_state_steps = ["Register Cluster", "Run Sync", "Return to Tenant"] %}
-            {% include "components/states/_blocked_state.html" %}
+        {% if tenant_page != 'overview' and registered_cluster_count > 0 %}
+            {% include "kubernetes/tenant/partials/_live_connection_loader.html" %}
+        {% endif %}
+        {% if registered_cluster_count == 0 %}
+            {% include "components/cluster/_onboarding_banner.html" %}
         {% endif %}
         {% block tenant_content %}
         {% endblock tenant_content %}

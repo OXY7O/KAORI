@@ -21,8 +21,10 @@ containers. A host `.venv` is not required.
 3. Open the repository in VS Code.
 4. Run `Dev Containers: Rebuild and Reopen in Container`.
 5. Run `bash scripts/init_db.sh --bootstrap-admin` in the Dev Container terminal.
-6. Start `KAORI: Watch Tailwind CSS`.
+6. After the Dev Container reports that frontend assets are ready, start `KAORI: Watch Tailwind CSS`.
 7. Press `F5` and select `KAORI: Flask Debug`.
+
+The Tailwind watcher is intentionally not started on VS Code folder-open. On a fresh or reset `kaori_node_modules` volume, Dev Container lifecycle bootstrap must finish `npm ci` and frontend verification before the watcher starts.
 
 The application is available at `http://localhost:5000`.
 
@@ -39,6 +41,8 @@ docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml down --r
 ```
 
 Do not use plain `docker compose down` to manage the Dev Container. The plain root Compose project is a separate `kaori` boundary; the supported development runtime is `kaori-dev` through the merged files above. To intentionally reset the development database and all development volumes, use the same merged command with `down --volumes --remove-orphans`.
+
+On a fresh or reset PostgreSQL volume, the workspace remains available immediately, while every Celery worker and Beat waits at the shared database entrypoint until the database reaches the current Alembic migration head. Run `bash scripts/init_db.sh --bootstrap-admin` from the workspace as usual; background services continue automatically after migration completes. Workers and Beat never own migration or RBAC/bootstrap mutation.
 
 Equivalent terminal launch inside the Dev Container:
 

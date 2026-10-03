@@ -43,6 +43,72 @@ def test_shared_operation_component_keeps_special_workflow_and_embedded_action_p
     assert 'embedded=true' in component
 
 
+def test_operations_header_info_tips_are_not_clipped_by_surface_shells() -> None:
+    component = read('app/templates/components/kubernetes_operation_ui.html')
+    replace_content = read('app/templates/kubernetes/operations/secrets/_replace_content_form.html')
+
+    assert "macro surface_shell_classes(extra_classes='', allow_overflow=false)" in component
+    assert "'overflow-visible' if allow_overflow else 'overflow-hidden'" in component
+    assert 'surface_shell_classes(allow_overflow=info_id and info_title)' in component
+
+    for relative in (
+        'app/templates/kubernetes/operations/configmaps/create.html',
+        'app/templates/kubernetes/operations/configmaps/update.html',
+        'app/templates/kubernetes/operations/configmaps/delete.html',
+    ):
+        assert 'surface_shell_classes(configmap_main_classes, true)' in read(relative)
+
+    secret_create = read('app/templates/kubernetes/operations/secrets/create.html')
+    assert 'surface_shell_classes(form_context.main_classes()' in secret_create
+    assert ', true)' in secret_create
+    assert 'surface_shell_classes(allow_overflow=true)' in read(
+        'app/templates/kubernetes/operations/secrets/reveal.html'
+    )
+    assert '<section class="overflow-visible rounded-xl border bg-surface-card shadow-sm' in replace_content
+    assert 'rounded-t-xl border-b' in replace_content
+
+
+def test_operations_landing_hero_and_deletion_reference_defaults_are_aligned() -> None:
+    configmaps = read('app/templates/kubernetes/operations/configmaps/index.html')
+    secrets = read('app/templates/kubernetes/operations/secrets/index.html')
+    configmap_delete = read('app/templates/kubernetes/operations/configmaps/delete.html')
+    secret_delete = read('app/templates/kubernetes/operations/secrets/delete.html')
+
+    for landing in (configmaps, secrets):
+        assert "'Open Cluster Integrations'," in landing
+        assert "'Manage Clusters'," not in landing
+        assert "url_for('integrations.kubernetes')" in landing
+
+    assert "information_guide_card.render('Deletion Safety Contract'" in configmap_delete
+    assert "configmap_delete_guardrails, icon='shield-alert', open_by_default=false" in configmap_delete
+    assert "information_guide_card.render('Deletion Safety Contract'" in secret_delete
+    assert "secret_delete_guardrails, icon='shield-alert', open_by_default=false" in secret_delete
+
+
+def test_operations_workflow_hero_names_are_compact_and_semantically_distinct() -> None:
+    configmap_create = read('app/templates/kubernetes/operations/configmaps/create.html')
+    secret_create = read('app/templates/kubernetes/operations/secrets/create.html')
+    secret_replace = read('app/templates/kubernetes/operations/secrets/replace.html')
+    configmap_routes = read('app/kubernetes/operations/configmaps/routes.py')
+    secret_routes = read('app/kubernetes/operations/secrets/crud_routes.py')
+    pattern = read('docs/design/patterns/KUBERNETES_CONFIGMAP_SECRET_OPERATIONS.md')
+
+    assert '>Create ConfigMap</h1>' in configmap_create
+    assert '>Create Kubernetes ConfigMap</h1>' not in configmap_create
+    assert '>Create Secret</h1>' in secret_create
+    assert 'Create Kubernetes Secret' not in secret_create
+    assert '>Replace Secret</h1>' in secret_replace
+    assert "'Replace Workflow'" in secret_replace
+    assert "'Update Workflow'" not in secret_replace
+    assert 'Replace Kubernetes Secret Data' not in secret_replace
+
+    assert "page_title='Create ConfigMap'" in configmap_routes
+    assert "page_title='Create Secret'" in secret_routes
+    assert "page_title='Replace Secret'" in secret_routes
+    assert '**Update ConfigMap**' in pattern and '**Replace Secret**' in pattern
+    assert 'without reading or rendering current Secret values' in pattern
+
+
 def test_operations_authorization_and_cluster_prerequisite_are_owned_inside_route_permissions() -> None:
     root_routes = read('app/kubernetes/operations/routes.py')
     operation_flow = read('app/kubernetes/operations/operation_flow.py')

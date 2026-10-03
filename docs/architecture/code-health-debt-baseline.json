@@ -49,7 +49,6 @@
     "app/integrations/observability/metrics_source/query_profiles/audit.py::PromQLProfileAuditor._capability_assessments": 31,
     "app/integrations/observability/metrics_source/query_profiles/audit.py::PromQLProfileAuditor.audit": 33,
     "app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/adapter.py::KubernetesRuntimeAdapter.get_state": 55,
-    "app/integrations/runtime/presentation.py::runtime_history_view": 33,
     "app/integrations/service.py::build_kubernetes_detail": 39,
     "app/intelligence/recommendation_engine.py::build_alerts_actionable_recommendations": 38,
     "app/intelligence/recommendation_engine.py::build_workload_actionable_recommendations": 49,
@@ -63,9 +62,7 @@
     "app/reports/export/payloads/tls_inventory.py::_summary": 31,
     "app/kubernetes/tenant/decommission_service.py::build_tenant_decommission_preflight": 33,
     "app/kubernetes/tenant/decommission_service.py::execute_tenant_decommission": 33,
-    "app/kubernetes/tenant/discovery_service.py::get_tenant_discovery_context": 59,
-    "app/kubernetes/tenant/routes.py::_tenant_active_section_context": 49,
-    "app/kubernetes/tenant/routes.py::operations": 35
+    "app/kubernetes/tenant/discovery_service.py::get_tenant_discovery_context": 59
   },
   "function_line_limits": {
     "app/access/overview/presentation.py::build_access_overview": 199,
@@ -90,7 +87,6 @@
     "app/platform_operations/notifications/metadata.py::metadata_items": 179,
     "app/reports/storage/service.py::get_report_storage_backend_status": 193,
     "app/kubernetes/tenant/decommission_service.py::execute_tenant_decommission": 207,
-    "app/kubernetes/tenant/discovery_service.py::adopt_discovered_tenant_committed": 170,
     "app/kubernetes/tenant/discovery_service.py::get_tenant_discovery_context": 239
   },
   "module_line_limits": {
@@ -106,7 +102,7 @@
     "app/reports/storage/service.py": 949,
     "app/kubernetes/tenant/access_service.py": 967,
     "app/kubernetes/tenant/credential_service.py": 863,
-    "app/kubernetes/tenant/routes.py": 1641,
-    "app/kubernetes/tenant/service.py": 1116
+    "app/kubernetes/tenant/routes.py": 1371,
+    "app/kubernetes/tenant/service.py": 960
   }
 }

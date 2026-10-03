@@ -115,3 +115,25 @@ def test_object_storage_workspaces_are_discoverable_independently_from_kubernete
     assert titles == ['Object Storage Inventory', 'Object Storage Analytics', 'Settings']
     assert 'Kubernetes Inventory' not in titles
     assert 'Kubernetes Analytics' not in titles
+
+
+def test_tenant_and_identity_provider_capabilities_are_discoverable_through_current_authority(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    tenant_module = _load_shortcuts(monkeypatch, {'tenant.view'})
+    tenant_shortcuts = _flatten(tenant_module.build_welcome_workspace_groups())
+    tenant_titles = [shortcut['title'] for shortcut in tenant_shortcuts]
+
+    assert tenant_titles == ['Tenant Management', 'Settings']
+    tenant = next(shortcut for shortcut in tenant_shortcuts if shortcut['title'] == 'Tenant Management')
+    assert tenant['href'] == '/endpoint/tenant.index'
+    assert 'namespace provisioning' in tenant['search_text']
+
+    identity_module = _load_shortcuts(monkeypatch, {'identity_providers.view'})
+    identity_shortcuts = _flatten(identity_module.build_welcome_workspace_groups())
+    identity_titles = [shortcut['title'] for shortcut in identity_shortcuts]
+
+    assert identity_titles == ['Access', 'Settings']
+    access = next(shortcut for shortcut in identity_shortcuts if shortcut['title'] == 'Access')
+    assert access['href'] == '/endpoint/access.overview.index'
+    assert 'identity providers' in access['search_text']

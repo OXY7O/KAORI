@@ -15,7 +15,7 @@ Live Mutation Evidence Boundary
 Operational Workflow Catalog
 ```
 
-The landing page is an operations catalog, not a marketing-card grid. Workflow cards use natural height and separate permission state from operation classification.
+The landing page is an operations catalog, not a marketing-card grid. Workflow cards use natural height and separate permission state from operation classification. The Hero context action uses the canonical **Open Cluster Integrations** label and links to the Kubernetes integration registry; the retired **Manage Clusters** wording must not return.
 
 ## Live Mutation Evidence Contract
 
@@ -81,6 +81,9 @@ Rules:
 - the primary form should be one canonical form card with internal sections rather than a stack of independent mutation cards; validation and the canonical action bar remain inside that primary card;
 - do not introduce a new page-local geometry when the shared Form + Right Context or another reviewed KAORI pattern already fits;
 - controls use 40 px geometry and 12 px labels;
+- routine guidance shared by multiple controls—source, naming, mutability, selection, merge/replace, blank-preserves, or other non-critical lifecycle semantics—uses one consolidated shared `components/info_tip.html` trigger in the owning form/card/section header; field-level Info Tips are reserved for genuinely unique field semantics that cannot be represented accurately by the parent guidance;
+- any Kubernetes Operations surface whose header owns an Info Tip permits visible overflow so the desktop hover preview can escape the card boundary intact; surfaces without a header Info Tip may retain clipped overflow where their geometry requires it;
+- unavailable/empty live-target state, validation failure, destructive confirmation, security boundary, authentication/step-up requirement, and stale/missing evidence remain persistently visible and must never be hidden in an Info Tip;
 - mutation remains validation-gated, but the server always performs a fresh provider validation immediately before mutation;
 - target identity, payload/current state, validation evidence, and destructive impact remain visually distinct rather than becoming one stretched card;
 - the canonical Hero may still own a right-side Context/Status/Action accessory; that Hero accessory is not a content right rail;
@@ -101,7 +104,7 @@ Authentication
 
 The canonical boundary is **AuthZ → cluster prerequisite → request validation → live provider**. The cluster prerequisite is implemented with `cluster_required()` inside the route permission boundary. A Blueprint `before_request` must not return cluster onboarding/readiness responses before authorization.
 
-For full-page GET requests that fail the cluster prerequisite, Kubernetes Operations renders the shared setup-blocked Hero context with `Operations Readiness`, followed by the canonical onboarding banner. The blocked Hero must use `components/cluster/_hero_blocked_context.html`; operation-specific forms and mutation controls are not rendered. The requested operation keeps its normal page identity and concise purpose copy (`ConfigMap Management`, `Create Kubernetes Secret`, `Protected Kubernetes Secret Reveal`, and so on); `Cluster Setup Required` is readiness state, not the page title.
+For full-page GET requests that fail the cluster prerequisite, Kubernetes Operations renders the shared setup-blocked Hero context with `Operations Readiness`, followed by the canonical onboarding banner. The blocked Hero must use `components/cluster/_hero_blocked_context.html`; operation-specific forms and mutation controls are not rendered. The requested operation keeps its normal page identity and concise purpose copy (`ConfigMap Management`, `Create ConfigMap`, `Create Secret`, `Replace Secret`, `Protected Kubernetes Secret Reveal`, and so on); `Cluster Setup Required` is readiness state, not the page title.
 
 
 ## ConfigMap entry editing
@@ -109,6 +112,11 @@ For full-page GET requests that fail the cluster prerequisite, Kubernetes Operat
 ConfigMap text and binary entries use Structured Entry Editor. Update keeps Merge and Replace explicit. Immutable ConfigMaps remain protected from update.
 
 ## Secret creation and replacement
+
+Workflow naming is intentionally task-specific:
+
+- **Update ConfigMap** owns editable current-state mutation with explicit Merge / Replace modes and effective diff preview.
+- **Replace Secret** owns submitted-key value replacement without reading or rendering current Secret values. Blank fields preserve existing values and key deletion is outside this workflow.
 
 Secret Type uses Operational Choice Card Group with the canonical responsive 1/2/3-column reflow. The selected option uses a strong Violet boundary, selected surface, check icon, and explicit `Selected` marker; changing only the rail summary is insufficient. Existing values are never rendered in Replace. Blank replacement inputs mean unchanged; submitted values mean replace.
 
@@ -129,6 +137,8 @@ Deletion
 ```
 
 The modal is the final human confirmation. It does not replace the signed receipt, RBAC preflight, or resourceVersion precondition. ConfigMap and signed Secret delete receipts are stateless, bound to the KAORI user and exact live target plus resourceVersion, and expire after ten minutes.
+
+The right-rail **Deletion Safety Contract** remains available as reference guidance but is collapsed by default. Persistent destructive warnings, exact-name confirmation, validation evidence, and final confirmation remain visible in the owning workflow and are never hidden by the collapsed reference state.
 
 ## Protected Secret Reveal
 

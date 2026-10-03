@@ -12,7 +12,8 @@
     'group_enabled': group_filters.enabled,
     'group_search': group_filters.search
 } %}
-<section id="{{ registry_id }}" class="{{ table_ui.block_classes() }}">
+<section id="{{ registry_id }}"
+         class="{{ table_ui.block_classes(allow_overflow=true) }}">
     {% set header_actions %}
         {% if group_filters.tenant_id or group_filters.enabled or group_filters.search %}
             {{ registry_ui.clear_filters_link('tenant.tenants',
@@ -25,6 +26,8 @@
             per_page_param='group_per_page'
             ) }}
         {% endif %}
+    {% endset %}
+    {% set title_info %}
         {{ info_tip.render('tenant-group-lifecycle-tip',
                 'Tenant Group lifecycle',
                 'KAORI stores a Tenant binding to an externally asserted Kubernetes Group subject.',
@@ -34,9 +37,7 @@
                 'Reactivate restores a retired binding for future use.',
                 'Routine hard delete is intentionally absent so Membership, Access Grant, and audit lineage remain queryable.'
                 ],
-                button_text='Group Guide',
-                button_classes=table_ui.action_classes() 
-        ) }}
+                placement='right') }}
     {% endset %}
     {{ table_ui.inventory_block_header('users',
         'Tenant Group Registry',
@@ -45,7 +46,8 @@
         'Refreshing Tenant Group Registry',
         '#create-tenant-group-form',
         'Create Group',
-        header_actions=header_actions) }}
+        header_actions=header_actions,
+        title_extra=title_info) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         {% call registry_ui.filter_form(
             'tenant.tenants',

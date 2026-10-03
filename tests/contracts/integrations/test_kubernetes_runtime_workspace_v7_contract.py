@@ -3,7 +3,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 TEMPLATE = (
     ROOT
-    / 'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_runtime_workspace.html'
+    / 'app/templates/integrations/orchestration/container_orchestrator/providers'
+    / 'kubernetes/partials/_runtime_workspace.html'
 )
 
 
@@ -18,6 +19,8 @@ def test_primary_finding_is_compact_and_nonduplicative() -> None:
     assert 'Primary Finding' in source
     assert "(' Finding' if runtime_state.attention_factors|length == 1 else ' Findings')" in source
     assert '{{ runtime_state.summary }}' in source
+    assert 'components/info_tip.html' in source
+    assert 'Lifecycle and capability detail' in source
     assert 'data-kaori-runtime-response' in source
     assert 'Operational Response' in source
     assert 'data-kaori-runtime-next-action-card' in source
@@ -35,6 +38,21 @@ def test_current_page_defers_long_diagnostic_detail_to_runtime_observation_modal
         'data-kaori-runtime-observation-boundary', 1
     )[0]
     assert '{{ item.summary }}' in diagnostic
+    assert 'Full Validation readiness remains independently evaluated.' in source
     assert '{{ item.detail }}' not in diagnostic
     assert '{{ item.recommendation }}' not in diagnostic
     assert 'Detailed evidence and remediation are available from Recent Runtime Observations.' in source
+
+
+def test_runtime_copy_and_extended_lifecycle_summary_are_compact() -> None:
+    source = _source()
+    messages = (
+        ROOT / 'app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/messages.py'
+    ).read_text(encoding='utf-8')
+
+    assert 'Review persisted runtime health, diagnostics, lifecycle context, and validation boundaries.' in source
+    assert (
+        'Runtime health gates current operation; Full Validation readiness remains independently evaluated.'
+    ) in source
+    assert 'uses KAORI Extended support. Upgrade recommended.' in messages
+    assert 'Optional capability access is limited; core Kubernetes readiness is unaffected.' in messages

@@ -351,7 +351,7 @@ def _operational_context(
     return {
         'title': 'Configuration Snapshot Ready for Review',
         'description': (
-            'Key-index metadata and current Pod references are available from the latest committed inventory snapshot.'
+            'Key-index metadata and current Pod references are available from the latest committed inventory snapshot, providing current configuration usage and relationship evidence.'
         ),
         'tone': 'normal',
         'icon': 'circle-check',

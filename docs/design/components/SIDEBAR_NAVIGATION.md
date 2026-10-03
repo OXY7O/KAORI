@@ -1,405 +1,126 @@
-# KAORI Sidebar Navigation Standard v1.7
+# KAORI Sidebar Navigation Standard v2.1
 
-**Status:** Locked application-shell and dark-mode contract. The source templates, this document, and `scripts/verify_sidebar_navigation_standard.py` must change together.
+**Status:** Locked application-shell navigation contract  
+**Foundation authority:** #747  
+**Implementation authority:** #748
 
-This document is the authoritative visual, typography, spacing, hierarchy, and interaction contract for the authenticated KAORI sidebar. Sidebar navigation is an application-shell component and intentionally does **not** inherit the ordinary content typography scale unchanged.
+## Purpose
 
-## Why the Sidebar Has Its Own Scale
+The authenticated sidebar is KAORI's persistent two-level workspace navigator.
 
-The sidebar must preserve three visible hierarchy levels inside a fixed-width navigation surface:
-
-1. navigation section label;
-2. parent menu;
-3. submenu item.
-
-Applying the content scale directly makes parent navigation too small, weakens orientation, and causes parent and child items to look equivalent. The sidebar therefore uses a compact but independently governed scale.
-
-## Scope
-
-This standard applies to:
-
-- KAORI brand block;
-- navigation section labels;
-- top-level direct links;
-- expandable parent menus;
-- nested submenu links;
-- active, hover, focus, expanded, and collapsed states;
-- sidebar icons, chevrons, guide lines, spacing, and truncation.
-
-It does not apply to tabs, page breadcrumbs, table navigation, pagination, or navigation controls inside content cards.
-
-## Frame and Width
-
-| State | Width | Contract |
-|---|---:|---|
-| Expanded | 250 px | Brand, section labels, parent labels, submenu, and chevrons are visible. |
-| Collapsed | 78 px | Parent icons remain centered; text, section labels, submenu, and chevrons are hidden. |
-
-The sidebar frame uses:
-
-- `rounded-2xl`;
-- `surface-sidebar`;
-- restrained outline and elevation;
-- vertical scrolling only inside the navigation region;
-- stable width transitions without changing the main content hierarchy.
-
-Collapsed mode is an icon rail, not a compressed text sidebar. Parent labels must never be reduced to fit the collapsed width.
-
-## Typography Scale
-
-The sidebar typography scale is frozen independently from content typography.
-
-| Role | Size | Weight | Casing | Line height |
-|---|---:|---|---|---|
-| Product name | 14 px | Extra-bold / strong brand emphasis | Official `KAORI` casing | 20 px |
-| Product descriptor | 12 px | Medium | Title Case | 16 px |
-| Navigation section label | 12 px | Extra-bold | Uppercase | 16 px |
-| Parent menu label | 16 px | Semibold | Title Case | 24 px |
-| Submenu label | 14 px | Regular or medium | Title Case | 20 px |
-
-### Mandatory hierarchy
-
-Parent menu labels must remain visually stronger than submenu labels:
+Section labels are non-interactive grouping metadata and are **not** counted as navigation levels.
 
 ```text
-Parent menu: 16 px semibold
-Submenu:     14 px regular/medium
+Section label
+└── Level 1 — Workspace / Domain
+    └── Level 2 — Capability
 ```
 
-Do not shrink parent labels to `text-sm` or `text-xs` merely to make all application text use the same class. The semantic role is different.
+Detailed views below a capability belong to the page workspace, not the sidebar.
 
-### Casing exceptions
+## Architecture Rule
 
-The sidebar may use deliberate uppercase and tracking for short section labels such as:
+Navigation follows the KAORI architecture principle:
 
-```text
-MAIN
-KUBERNETES
-STORAGE
-INSIGHTS
-PLATFORM
-ADMINISTRATION
-```
+> **capability/domain first, provider second, instance third**
 
-This is a shell-navigation exception. Parent menu and submenu labels remain Title Case and must not use CSS `capitalize`.
+Therefore:
 
-Technical product names keep their official casing:
+- providers/vendors do not become global roots merely because they are integrated;
+- provider domains/providers remain inside Integrations;
+- provider instances/resources remain context selectors, registries, tables, drawers, or detail surfaces;
+- sidebar level 1 identifies the workspace/domain;
+- sidebar level 2 identifies the capability;
+- detailed resource/view navigation is local page/workspace navigation;
+- a third nested sidebar level is prohibited.
 
-```text
-Kubernetes Inventory
-Metrics Sources
-Alertmanager
-GitOps
-OAuth
-LDAP
-```
+## Visual Geometry
 
-## Brand Block
+The approved Violet sidebar geometry remains stable:
 
-The brand block contains:
+| Role | Contract |
+| --- | --- |
+| Expanded width | 250 px |
+| Collapsed width | 78 px |
+| Section label | 12 px extra-bold uppercase |
+| Level-1 workspace | minimum 44 px, 16 px semibold |
+| Level-1 icon surface | 32 px |
+| Level-1 icon | 16 px |
+| Level-2 capability | 14 px / 20 px line-height |
+| Level-2 icon | 14 px |
+| Level-2 indicator dot | 6 px |
+| Parent radius | 8 px |
+| Child radius | 8 px |
 
-```text
-[KAORI Logo] KAORI
-             Infrastructure Operations
-```
+The level-1 parent remains visually stronger than its active level-2 child.
+
+## Level-1 Workspace
+
+Level-1 workspaces use native `details/summary` when they own multiple capabilities.
 
 Contract:
 
-- logo surface: 44 × 44 px;
-- product name: strong brand emphasis, not ordinary card-title styling;
-- descriptor: 12 px medium and muted;
-- brand block remains vertically centered;
-- collapsed mode shows only the logo, centered;
-- no alternate text abbreviation is shown in collapsed mode.
+- minimum 44 px root target;
+- stable icon and Title Case label;
+- active workspace uses canonical `sidebar-parent-active`;
+- active parent remains open after navigation;
+- chevron indicates disclosure;
+- when desktop sidebar is collapsed, activating an expandable workspace first expands the sidebar and reveals level 2 rather than navigating to an arbitrary capability;
+- `title` and `aria-label` remain available in collapsed mode.
 
-## Navigation Sections
+A true single-destination workspace may use a direct root link with identical root geometry.
 
-Section labels provide grouping, not navigation.
+## Level-2 Capability
+
+Capabilities are subordinate links inside the active/open workspace.
 
 Contract:
 
-- visible only in expanded mode;
-- 12 px extra-bold uppercase;
-- restrained tracking;
-- low-contrast inverse text;
-- 12 px horizontal inset relative to the sidebar frame;
-- not interactive and not focusable;
-- section groups use a larger vertical gap than links inside one group.
+- 14 px label;
+- subtle guide line;
+- 14 px stable Lucide icon;
+- 6 px indicator dot;
+- restrained translucent active state;
+- never use the same solid Violet fill as the level-1 parent;
+- one active capability may own `aria-current="page"`;
+- permission filtering occurs before rendering;
+- a capability link may preserve only approved stable context.
 
-## Parent Menu
+## Runtime IA
 
-Parent navigation represents a primary functional domain such as Inventory, Analytics, Reports, Platform Operations, or Settings.
-
-### Geometry
-
-- minimum height: 44 px;
-- horizontal padding: 10 px;
-- vertical padding: 8 px;
-- radius: 8 px (`rounded-lg`);
-- icon surface: 32 × 32 px;
-- icon: 16 × 16 px;
-- icon-to-label gap: 10 px;
-- label: 16 px semibold;
-- chevron: 16 × 16 px;
-- full-width click target in expanded mode.
-
-### Direct parent links
-
-A direct top-level link uses the same geometry and typography as an expandable parent menu. The visual hierarchy must not change merely because it has no submenu.
-
-### Default state
-
-Canonical classes:
-
-```text
-sidebar-item-idle
-sidebar-item-idle-icon
-```
-
-- muted inverse foreground owned by the sidebar token;
-- transparent background;
-- icon surface uses a restrained translucent background;
-- no provider-specific color.
-
-### Hover state
-
-- subtle white/translucent surface;
-- foreground becomes white;
-- icon surface becomes slightly stronger;
-- pointer cursor;
-- no scale animation.
-
-### Active state
-
-Canonical classes:
-
-```text
-sidebar-parent-active
-sidebar-parent-active-icon
-```
-
-- light mode uses a solid KAORI Violet surface;
-- dark mode keeps the active Violet surface without a separate left-edge accent;
-- label remains white and the dark-mode icon uses Accent Violet;
-- dark mode does not use a large glow or CTA-like elevation;
-- active parent remains visually dominant over its active submenu;
-- active state is determined from the owned endpoint set, not only the exact index route.
-
-### Expanded state
-
-- chevron rotates to indicate disclosure;
-- submenu appears below the parent;
-- parent may remain active when any owned child route is active.
-
-### Collapsed interaction
-
-When a collapsed parent with children is activated:
-
-1. expand the sidebar;
-2. keep the selected parent open;
-3. reveal its submenu;
-4. do not navigate to an arbitrary child automatically.
-
-Each parent icon must retain `title` and `aria-label` so collapsed navigation remains understandable.
-
-## Submenu
-
-Submenu links are secondary navigation and must not compete with their parent.
-
-### Geometry
-
-- left offset: 24 px from the parent content line;
-- guide line: subtle vertical border;
-- inner left padding: 12 px;
-- row horizontal padding: 10 px;
-- row vertical padding: 6 px;
-- radius: 8 px;
-- icon: 14 px;
-- indicator dot: 6 px;
-- label: 14 px with 20 px line height;
-- item gap: 8 px between dot, icon, and text composition.
-
-### Default state
-
-- muted inverse foreground;
-- transparent background;
-- subdued dot and icon;
-- no bold weight by default.
-
-### Hover state
-
-- subtle translucent surface;
-- foreground becomes white;
-- dot becomes more visible;
-- no solid Violet fill.
-
-### Active state
-
-- restrained translucent surface;
-- accent-violet text, icon, and dot;
-- active submenu remains visually subordinate to the active parent;
-- do not use the same solid Violet fill as the parent.
-
-## Icons
-
-Sidebar icon sizes are shell-specific:
-
-| Role | Size |
-|---|---:|
-| Brand logo | 44 px |
-| Parent icon surface | 32 px |
-| Parent icon | 16 px |
-| Parent chevron | 16 px |
-| Submenu icon | 14 px |
-| Submenu indicator dot | 6 px |
-
-Rules:
-
-- each parent requires a meaningful, stable icon;
-- submenu icons are permitted where they improve scanning;
-- icons must remain consistent when state changes;
-- active state changes color/surface, not the icon glyph;
-- avoid mixing outline families or arbitrary sizes.
-
-## Spacing and Density
-
-Sidebar density is compact but not compressed.
-
-```text
-Sidebar outer padding        12 px
-Brand-to-navigation gap      8–12 px
-Section-to-section gap       16 px
-Links inside one section      4 px
-Parent-to-submenu gap         4 px
-Submenu item gap              4 px
-```
-
-Do not reduce parent row height to match submenu rows. The height difference is part of the navigation hierarchy.
-
-## Text Overflow
-
-- parent and submenu labels use a single line;
-- use `truncate whitespace-nowrap`;
-- do not wrap labels to two lines;
-- fix clipping by adjusting width, gap, padding, or owned label wording—not by reducing the parent font below 12 px;
-- labels should be concise and recognizable.
-
-## Navigation Naming Contract
-
-Visible navigation language follows a domain-aware ownership rule:
-
-```text
-Section provides domain context
-  -> parent names the capability
-      -> child names the resource or action
-```
-
-Rules:
-
-1. Prefer concise noun-first navigation labels.
-2. Do not repeat the section/domain name in a parent when section context is unambiguous.
-3. Avoid administrative suffixes such as `Management`, `Analysis`, `Catalog`, `Center`, or `Administration` unless they materially distinguish the capability.
-4. Sidebar labels may be shorter than page Hero titles.
-5. Breadcrumb owner labels remain consistent with the visible sidebar owner; workflow/detail leaves may remain more descriptive.
-6. Never shorten a label when doing so creates ambiguity between active KAORI domains or shared concepts.
-7. Do not reduce sidebar typography to accommodate long labels; fix owned wording first.
-
-When a dedicated section already supplies capability context, parent labels omit that repeated noun. The `ANALYTICS` section therefore owns peer parents `Kubernetes` and `Object Storage`. Ambiguity-sensitive labels such as `Operations Center` and `Notification Channels` remain explicit.
-
-## Color and Effects
-
-The sidebar uses inverse shell colors rather than ordinary content-surface colors.
-
-- Default text: muted inverse foreground.
-- Hover text: white.
-- Active parent: solid KAORI Violet in light mode; translucent Violet plus a left accent in dark mode.
-- Active child: accent Violet on a restrained translucent surface.
-- Guide lines and inactive dots: low-contrast white.
-- Shadows are reserved for the active parent and the sidebar frame.
-- Navigation items do not use gradients, semantic status colors, or CRUD colors.
-- Dark-mode values are owned by `components/DARK_MODE.md`; menu templates do not add local dark classes.
-
-## Accessibility
-
-- `nav` remains the semantic navigation container.
-- expandable parents use native `details` and `summary` or an equivalent accessible disclosure pattern;
-- summary controls expose a meaningful accessible name;
-- collapsed parent icons retain `title` and `aria-label`;
-- focus-visible treatment must remain visible on the dark sidebar surface;
-- active navigation is indicated by more than color through surface, foreground, and route ownership;
-- labels are never removed from the accessibility tree merely because the sidebar is collapsed.
-
-## Responsive and Collapse Rules
-
-- expanded desktop width is 250 px;
-- collapsed desktop width is 78 px;
-- collapsed mode hides textual navigation rather than reducing its typography;
-- submenu is not rendered as an icon-only nested rail;
-- mobile behavior may use an overlay drawer while preserving the same parent/submenu hierarchy;
-- route state and expanded menu state must remain stable after HTMX updates to the main content region.
-
-## Canonical Information Architecture
-
-The top-level order is locked. New modules must be placed in the existing domain group unless an approved information-architecture change updates this document and the verifier in the same commit.
+Current implemented runtime:
 
 ```text
 MAIN
-├── Welcome
-└── Dashboards
-    ├── Kubernetes
-    └── Object Storage
+└── Welcome
 
-KUBERNETES
-├── Inventory
-│   ├── Overview
-│   ├── Topology
-│   ├── Nodes
-│   ├── Namespaces
-│   ├── Workloads
-│   ├── Pods
-│   ├── Services
-│   ├── Ingresses
-│   ├── Storage
-│   └── Configuration
-├── Operations
-│   ├── ConfigMaps
-│   └── Secrets
-├── Governance
-│   └── TLS Certificates
-└── Tenant
-    ├── Overview
-    ├── Tenants
-    ├── Resource Profiles
-    ├── Namespace Provisioning
-    └── Operations
-
-STORAGE
-└── Object Storage
-    ├── Overview
-    ├── Systems
-    └── Buckets & Containers
-
-ANALYTICS
+INFRASTRUCTURE
 ├── Kubernetes
 │   ├── Overview
-│   ├── Utilization
-│   ├── Capacity
-│   ├── Storage
-│   ├── Workloads
-│   ├── Forecast
-│   ├── Top Consumers
-│   └── Alerts & Anomalies
+│   ├── Inventory
+│   ├── Operations
+│   ├── Governance
+│   ├── Tenant
+│   └── Analytics
 └── Object Storage
     ├── Overview
-    ├── Capacity & Usage
-    ├── Performance
-    ├── Forecast
-    ├── Top Consumers
-    └── Alerts & Anomalies
+    ├── Inventory
+    └── Analytics
 
 INSIGHTS
 ├── Intelligence
+│   ├── Overview
+│   ├── Recommendations
+│   ├── Alert Intelligence
+│   ├── Rule Catalog
+│   └── Automation Control
 └── Reports
+    ├── Overview
+    ├── Generate
+    ├── Generated
+    ├── Templates
+    ├── Storage
+    └── Schedules
 
 PLATFORM
 ├── Operations Center
@@ -427,121 +148,181 @@ ADMINISTRATION
     └── Account
 ```
 
-v1.7 retains the approved section order and Analytics hierarchy, and expands **Tenant** using the canonical parent/submenu pattern. Tenant remains one Kubernetes capability parent; Overview, Tenants, Resource Profiles, Namespace Provisioning, and Operations are capability pages below that parent. Native Kubernetes and Capsule remain providers behind the Tenant contract and never become sibling product menus. Operations keeps task-level views inside the page rather than adding a third sidebar level. `Object Storage` remains a provider-neutral inventory parent; vendor connectors such as MinIO remain under Integrations and must not become sidebar inventory parents.
+## Reserved Future Ownership
 
-`Buckets & Containers` is intentionally provider-neutral: the list surface uses canonical object-storage fields, while provider-native attributes remain in the detail drawer. This prevents MinIO, AWS S3, Azure Blob, Ceph RGW, or future providers from creating vendor-specific sidebar branches.
-
-Rules for adding navigation:
-
-1. Add a child route to an existing parent when it belongs to the same operational domain.
-2. Add a new parent only when the module owns a distinct domain and cannot be represented by an existing parent.
-3. Do not create a new section label for one feature. A new section requires an explicit information-architecture decision.
-4. Permission checks remain in `sidebar.html`; route ownership and active-state logic remain in the owning `*_menu.html`. Tenant uses the standard expandable parent pattern so its capability pages remain explicit without creating new global parents.
-5. Every expandable parent requires `title`, `aria-label`, collapsed-sidebar expansion behavior, one stable Lucide icon, and an owned endpoint set.
-6. Every submenu link uses the standard dot, 14 px icon, single-line truncated label, and subordinate active state.
-7. A direct parent destination uses the same 44 px parent geometry, icon surface, accessibility labels, and collapsed-rail behavior as expandable parents.
-
-## Mobile drawer ownership
-
-Desktop collapse preference and mobile drawer visibility are separate shell states.
-
-- `kaori.sidebarExpanded` owns the desktop 250 px / 78 px presentation only.
-- Mobile navigation always keeps full drawer geometry and readable labels, even when the persisted desktop preference is collapsed.
-- The mobile drawer is concealed with `x-cloak` before Alpine hydration to prevent first-paint flash.
-- Opening, closing, Escape, backdrop dismissal, parent-menu interaction, and destination navigation must not rewrite the persisted desktop collapse preference.
-- Desktop-only collapse utilities and CSS behavior begin at the `lg` breakpoint.
-
-## Enforcement and Change Control
-
-The sidebar is considered locked only when documentation, implementation, dark-mode tokens, and enforcement agree:
+Reserved workspaces do not render until implementation and authorization exist:
 
 ```text
-Documentation  docs/design/components/SIDEBAR_NAVIGATION.md
-Implementation app/templates/components/navigation/sidebar.html
-               app/templates/components/navigation/*_menu.html
-Theme contract docs/design/components/DARK_MODE.md
-Quality gate   scripts/verify_sidebar_navigation_standard.py
-               tests/contracts/design/test_sidebar_navigation_standard_contract.py
+MAIN
+└── Operational Overview
+
+INFRASTRUCTURE
+├── Compute
+└── Network
+
+OPERATIONS
+├── Services
+└── Reliability
+
+ASSURANCE
+├── Backup & Recovery
+├── Security Posture
+├── Policy & Compliance
+└── Secrets & PKI
+
+INSIGHTS
+└── FinOps
+
+PLATFORM
+└── Automation
 ```
 
-Any sidebar change must update the contract deliberately. Never weaken or delete an assertion merely to make a local menu variant pass. A legitimate standard change must include rationale, documentation, implementation updates, regression tests, and a design-system version increment.
+Future workspace capabilities are defined by #747 and may extend their parent without changing the global section architecture.
 
-### New-parent checklist
+## Permission Contract
 
-- assign the parent to one canonical section;
-- add the permission boundary in `sidebar.html`;
-- create one `*_menu.html` owner;
-- declare whether the parent is expandable or a direct single-destination parent;
-- reuse 44 px parent geometry and 32 px icon surface;
-- use `text-base font-semibold leading-6`;
-- add `title`, `aria-label`, and collapsed expansion behavior;
-- use a stable endpoint-family active rule;
-- keep child links at `text-sm leading-5`;
-- run `python scripts/verify_sidebar_navigation_standard.py`;
-- run the design contract tests.
+A workspace is rendered only when at least one capability is authorized.
+
+A workspace does not navigate to an arbitrary child when the user activates its parent disclosure. Child links own navigation.
+
+Examples:
+
+- Governance-only Kubernetes user sees Kubernetes → Governance;
+- ConfigMap-only user sees Kubernetes → Operations and the capability resolves to ConfigMaps;
+- identity-provider-only administrator sees Access → Identity Providers plus any authorized overview contract;
+- unauthorized siblings are omitted.
+
+Server-side route decorators remain authoritative; sidebar filtering is discoverability, not authorization.
+
+## Context Contract
+
+Stable scope may survive sibling capability navigation without becoming navigation identity:
+
+- Kubernetes capabilities may preserve `cluster_id`;
+- Object Storage capabilities may preserve `system_id`.
+
+Detailed page navigation may preserve additional bounded context such as `time_range` or Operations `namespace` where explicitly registered.
+
+Do not propagate arbitrary page filters.
+
+## Active-State Contract
+
+Exactly one level-1 workspace may be active.
+
+Within that workspace, exactly one authorized level-2 capability may own the active child state.
+
+Example:
+
+```text
+Kubernetes              ← active level 1
+  Inventory             ← active level 2
+```
+
+The page then owns its detailed active view, such as `Overview` or `Nodes`.
+
+## Responsive / Collapse Contract
+
+Desktop:
+
+- expanded width 250 px;
+- collapsed width 78 px;
+- collapsed mode hides text/submenus;
+- selecting an expandable workspace while collapsed expands the sidebar and reveals its capabilities.
+
+Mobile:
+
+- full readable off-canvas drawer;
+- same level-1/level-2 taxonomy;
+- no mobile-only information architecture;
+- destination navigation closes the drawer;
+- disclosure does not overwrite desktop collapse preference.
+
+## Breadcrumb Contract
+
+Breadcrumb hierarchy may expose the page-detail level even though that detail is not in the sidebar:
+
+```text
+KAORI / Kubernetes / Inventory / Nodes
+KAORI / Kubernetes / Analytics / Capacity
+KAORI / Object Storage / Inventory / Buckets
+KAORI / Intelligence / Recommendations
+KAORI / Integrations / Observability
+```
+
+## Provider Boundary
+
+Do not add provider/vendor roots such as Harbor, GitHub, Ansible, Prometheus, Alertmanager, MinIO, Vault/OpenBao, VMware, Proxmox, Cilium, or NetBox simply because they are connected.
+
+Provider navigation belongs inside the owning capability/workspace.
+
+## Jinja Mapping Contract
+
+Runtime navigation is supplied as Python mappings.
+
+Renderer access must use explicit mapping syntax:
+
+```jinja2
+section['items']
+item['children']
+child['label']
+```
+
+Do not use mapping attribute syntax such as `section.items`; Jinja may resolve Python methods such as `dict.items()`.
+
+## Implementation Ownership
+
+Runtime semantic model:
+`app/common/workspace_navigation.py`
+
+Global renderer:
+`app/templates/components/navigation/sidebar.html`
+
+Detailed page navigation:
+`app/templates/components/content_tabs.html` and other registered local tab components
+
+Breadcrumb authority:
+`app/common/navigation.py`
+
+Legacy `*_menu.html` templates may remain temporarily as historical/migration files but must not be included by the v2.1 sidebar.
+
+## Playwright / Visual QA
+
+Reuse #543 / #224.
+
+Required evidence:
+
+- expanded desktop two-level hierarchy;
+- collapsed desktop expansion behavior;
+- mobile disclosure/destination behavior;
+- active parent + subordinate active capability;
+- permission filtering;
+- Kubernetes/Object Storage detail Content Tabs;
+- light/dark;
+- all canonical viewports;
+- no page-level horizontal overflow;
+- no horizontal Domain Workspace strip in the app shell.
+
+Reviewed baseline changes require human acceptance.
 
 ## Prohibited Patterns
 
 Do not:
 
-- apply ordinary content typography wholesale to sidebar navigation;
-- make parent and submenu labels the same size and weight;
-- shrink parent labels below 16 px to solve clipping;
-- use `font-bold` or extra-bold on every navigation item;
-- use solid Violet for active submenu links;
-- use provider-specific colors in navigation;
-- wrap navigation labels;
-- show submenu text in the 78 px collapsed rail;
-- place page actions, status labels, or operational metrics inside navigation rows;
-- duplicate a domain in multiple parent groups without an explicit information-architecture decision.
+- render a third nested sidebar level;
+- render capability peers as a second global horizontal tab row;
+- give active children the same solid Violet treatment as parents;
+- expose provider instances as sidebar items;
+- render future placeholder workspaces;
+- create a new tab family for ordinary detail navigation;
+- use page filters as navigation identity;
+- use Jinja mapping attribute syntax for runtime navigation mappings.
 
-## Implementation Reference
+## Enforcement
 
-Current reference templates:
+Executable authority:
 
-```text
-app/templates/components/navigation/sidebar.html
-app/templates/components/navigation/*_menu.html
-```
+- `scripts/verify_sidebar_navigation_standard.py`;
+- `tests/contracts/design/test_sidebar_navigation_standard_contract.py`;
+- Playwright coverage in `tests/ui/test_representative_interactions.py`.
 
-The current implementation establishes the baseline classes:
-
-```text
-Parent:  min-h-11 rounded-lg px-2.5 py-2 text-base font-semibold leading-6
-Child:   rounded-lg px-2.5 py-1.5 text-sm leading-5
-Section: text-xs font-extrabold uppercase tracking-widest
-```
-
-These Tailwind tokens are the canonical sidebar scale. The earlier 12/11 px markdown baseline and the 15/13 px visual-guide draft are superseded by this v1.1 contract.
-
-## Review Checklist
-
-Before accepting a sidebar change, verify:
-
-- parent remains 16 px semibold (`text-base leading-6`);
-- submenu remains 14 px (`text-sm leading-5`) and visually subordinate;
-- section label remains compact uppercase metadata;
-- collapsed mode hides text instead of shrinking it;
-- active parent and active child use different emphasis levels;
-- long labels truncate without clipping their icon;
-- submenu guide and spacing remain visible;
-- icon, hover, focus, disclosure, and endpoint ownership states work;
-- no global content typography migration has altered sidebar hierarchy.
-
-
-## Platform ownership
-
-Integrations is grouped under the **Platform** sidebar section. It remains an independent root menu alongside **Operations Center**; `Notification Channels` and provider/domain-specific destinations remain children of the Integrations root. The section therefore expresses shared platform ownership without merging the two workspaces or expanding provider-specific roots across the application shell.
-
-## Asset-domain authorization ownership
-
-Sidebar section membership does not imply shared authorization. Kubernetes and Object Storage read surfaces use independent visibility permissions:
-
-```text
-Kubernetes Inventory      inventory.view
-Object Storage Inventory  object_storage_inventory.view
-Kubernetes Analytics      analytics.view
-Object Storage Analytics  object_storage_analytics.view
-```
-
-`analytics_menu.html` renders both analytics parents inside the dedicated `Analytics` section, and each parent remains independently permission-gated. The `Storage` section is rendered only when `object_storage_inventory.view` is granted. Template visibility remains secondary to the server-side route decorator.
+Any change to hierarchy, section ownership, geometry, responsive behavior, or provider boundary requires an explicit authority update.

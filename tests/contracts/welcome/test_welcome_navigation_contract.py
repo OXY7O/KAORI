@@ -111,6 +111,7 @@ def test_welcome_catalog_matches_current_primary_navigation_domains() -> None:
         'Integrations',
         'Platform Operations',
         'Kubernetes Operations',
+        'Tenant Management',
         'Kubernetes Governance',
         'Reports',
         'Access',
@@ -143,3 +144,16 @@ def test_welcome_object_storage_cards_use_dedicated_permissions() -> None:
     assert "'title': 'Object Storage Analytics'" in shortcuts
     assert "('object_storage_analytics.view', 'analytics.object_storage_overview')" in shortcuts
     assert "'scope': 'Storage'" in shortcuts
+
+
+def test_welcome_tenant_and_access_cards_track_current_capabilities() -> None:
+    shortcuts = (ROOT / 'app/welcome/shortcuts.py').read_text(encoding='utf-8')
+
+    assert "'title': 'Tenant Management'" in shortcuts
+    assert "'label': 'Governed Tenancy'" in shortcuts
+    assert "('tenant.view', 'tenant.index')" in shortcuts
+
+    access_block = shortcuts.split("'title': 'Access'", 1)[1].split("'title': 'Settings'", 1)[0]
+    assert "('identity_providers.view', 'access.overview.index')" in access_block
+    assert 'identity providers' in access_block.lower()
+    assert 'directory-projected external identities' in access_block.lower()

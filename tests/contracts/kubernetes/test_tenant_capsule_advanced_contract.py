@@ -71,3 +71,20 @@ def test_capsule_advanced_docs_preserve_single_authority_and_conditional_uat() -
     assert 'Native mode does not emulate' in docs
     assert 'capability-conditional' in docs
     assert 'self-service namespace creation remains disabled' in docs
+
+
+def test_capsule_tenant_quota_governance_uses_compact_action_footers() -> None:
+    source = (ROOT / 'app/templates/kubernetes/tenant/partials/_capsule_tenant_quota_cutover.html').read_text(
+        encoding='utf-8'
+    )
+
+    assert 'Capsule Tenant Quota Governance' in source
+    assert source.count('border-t border-outline-subtle bg-surface-elevated px-4 py-3') == 2
+    assert 'Governance Cutover' in source
+    assert 'Managed Change' in source
+    assert 'Adoption stays read-only until explicit cutover.' in source
+    assert 'Resolve drift before applying a new profile.' in source
+    assert 'Take Over Governance' in source
+    assert 'Change Allocation' in source
+    assert 'Take Over Allocation Governance' not in source
+    assert 'Change Governed Allocation' not in source

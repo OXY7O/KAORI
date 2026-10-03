@@ -8,18 +8,21 @@ def read(path: str) -> str:
 
 
 def test_storage_navigation_is_domain_first_and_vendor_neutral() -> None:
-    sidebar = read('app/templates/components/navigation/sidebar.html')
-    menu = read('app/templates/components/navigation/object_storage_menu.html')
+    catalog = read('app/common/workspace_navigation_catalog.py')
 
-    assert '>Storage<' in sidebar
-    assert 'Object Storage' in menu
-    assert '>Overview<' in menu
-    assert '>Systems<' in menu
-    assert 'Buckets &amp; Containers' in menu
-    assert 'MinIO' not in menu
-    assert 'object_storage_inventory.overview' in menu
-    assert 'object_storage_inventory.systems' in menu
-    assert 'object_storage_inventory.buckets' in menu
+    object_storage_start = catalog.index("key='object_storage'")
+    intelligence_start = catalog.index("key='intelligence'")
+    object_storage = catalog[object_storage_start:intelligence_start]
+
+    assert "label='Object Storage'" in object_storage
+    assert "section='Infrastructure'" in object_storage
+    assert "'overview', 'Overview'" in object_storage
+    assert "'inventory'" in object_storage
+    assert "'analytics'" in object_storage
+    assert "'object_storage_inventory.overview'" in object_storage
+    assert "'object_storage_inventory.view'" in object_storage
+    assert "'object_storage_analytics.view'" in object_storage
+    assert 'MinIO' not in object_storage
 
 
 def test_object_storage_inventory_is_registered_as_read_only_inventory_domain() -> None:
@@ -109,7 +112,8 @@ def test_object_storage_inventory_uses_dedicated_rbac_and_preserves_existing_rol
     access = read('app/definitions/catalogs/access/rbac/access.yaml')
     service = read('app/access/rbac/service.py')
     migration = read('migrations/versions/20260814_object_storage_rbac_split.py')
-    sidebar = read('app/templates/components/navigation/sidebar.html')
+    navigation = read('app/common/workspace_navigation.py')
+    navigation_catalog = read('app/common/workspace_navigation_catalog.py')
 
     assert 'key: object_storage_inventory.view' in access
     assert 'module: storage_inventory' in access
@@ -124,8 +128,9 @@ def test_object_storage_inventory_uses_dedicated_rbac_and_preserves_existing_rol
     assert "down_revision = '20260814_report_notify_channels'" in migration
     assert "'inventory.view'" in migration
     assert '_copy_role_assignments' in migration
-    assert "has_permission('object_storage_inventory.view')" in sidebar
-    assert "has_permission('inventory.view')" in sidebar
+    assert "('object_storage_inventory.view',)" in navigation_catalog
+    assert "'inventory.view'" in navigation_catalog
+    assert '_visible_capabilities(workspace, user)' in navigation
 
 
 def test_inventory_sync_preserves_last_committed_snapshot_on_unexpected_empty_discovery() -> None:

@@ -51,18 +51,19 @@ def get_live_tenant_connection_context() -> dict[str, Any]:
     failures = total - reachable
     if total == 0:
         status, tone = 'Unavailable', 'warning'
-        description = 'No canonical Kubernetes connection is registered for live Tenant provider operations.'
+        description = 'No live Kubernetes connection is registered. KAORI state remains readable.'
     elif failures == 0:
         status, tone = 'Connected', 'normal'
         description = 'Live Kubernetes API is reachable.'
     elif reachable:
         status, tone = 'Partial', 'warning'
         description = (
-            'Some Kubernetes clusters are unreachable; provider-backed Tenant operations fail closed per target.'
+            'Some Kubernetes clusters are unreachable. KAORI state stays readable; '
+            'provider operations fail closed per target.'
         )
     else:
         status, tone = 'Unavailable', 'critical'
-        description = 'Kubernetes API is unreachable for the current Tenant provider scope.'
+        description = 'Kubernetes unreachable. Mutations blocked.'
 
     return {
         'tenant_live_connection': {
