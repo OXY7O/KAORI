@@ -60,6 +60,34 @@ def test_shared_zero_cluster_onboarding_uses_one_canonical_integration_flow() ->
         assert 'cluster_onboarding_action_icon =' not in consumer
 
 
+def test_tenant_zero_cluster_state_is_terminal_but_registered_committed_state_remains_readable() -> None:
+    tenant_base = _read('app/templates/kubernetes/tenant/base.html')
+
+    assert '{% set registered_cluster_count = cluster_onboarding.cluster_count|default(0) %}' in tenant_base
+    assert '{% block page_capability_navigation %}' in tenant_base
+    assert '{% if registered_cluster_count > 0 %}' in tenant_base
+    assert '{{ super() }}' in tenant_base
+
+    zero_cluster_branch = tenant_base.split('{% if registered_cluster_count == 0 %}', 1)[1].split(
+        '{% else %}',
+        1,
+    )[0]
+    registered_branch = tenant_base.split('{% if registered_cluster_count == 0 %}', 1)[1].split(
+        '{% else %}',
+        1,
+    )[1]
+
+    assert 'components/cluster/_onboarding_banner.html' in zero_cluster_branch
+    assert 'block tenant_content' not in zero_cluster_branch
+    assert '_collection_snapshot_context.html' not in zero_cluster_branch
+    assert '_live_connection_loader.html' not in zero_cluster_branch
+
+    assert 'block tenant_content' in registered_branch
+    assert '_collection_snapshot_context.html' in registered_branch
+    assert '_live_connection_loader.html' in registered_branch
+    assert 'native_available' not in registered_branch
+
+
 def test_every_inventory_hero_uses_the_shared_blocked_context() -> None:
     resources = (
         'overview',
