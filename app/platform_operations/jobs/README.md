@@ -133,3 +133,15 @@ Jobs & Executions is intentionally server-backed and demand-loaded. The page mus
 - Active Work OOB counter fragments are emitted only by HTMX fragment responses. The initial full-page render must never append those response helpers as visible inline content.
 - Active Work, Registry, and Queues use the canonical KAORI empty-state component so healthy zero work, filtered no-results, and initial no-data conditions keep one visual grammar.
 - Terminal JobExecution history remains bounded by **Platform Operations → Data Lifecycle**. The Jobs page is the hot operational registry, not a replacement archive browser.
+
+
+Artifact Registry runtime correlation is registered as `artifact_registry.runtime_correlation.materialize`:
+
+- queue: `inventory`
+- scope: `registry_kubernetes_correlation:all`
+- schedule: enabled by default every 60 minutes
+- manual execution: supported
+- domain execution permission: `artifact_registry.sync`
+- deduplication group: `artifact-registry-runtime-correlation:global`
+
+The materializer is database-only. It joins committed Registry artifact evidence with the current committed Kubernetes Pod inventory generation; no provider transport is allowed in the materialization path.
