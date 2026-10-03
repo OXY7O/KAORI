@@ -6,14 +6,9 @@
                 <h1 class="{{ page_hero.title_classes() }}">Storage</h1>
                 <p class="mt-2 {{ page_hero.description_classes() }}">Review storage assets, capacity, bindings, access, and lifecycle.</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
-                    {% if cluster_onboarding.is_blocked %}
-                        {{ page_hero.meta_label('database', 'Committed Inventory') }}
-                        {{ page_hero.meta_label('lock-keyhole', 'Cluster Setup Required') }}
-                    {% else %}
-                        {{ page_hero.meta_label('database', inventory.total_storage ~ ' Storage Objects in Scope') }}
-                        {{ page_hero.meta_label('scan-search', inventory.scope_label) }}
-                        {{ page_hero.meta_label('layers-3', inventory.resource_type_count ~ ' Resource Types') }}
-                    {% endif %}
+                    {{ page_hero.meta_label('database', inventory.total_storage ~ ' Storage Objects in Scope') }}
+                    {{ page_hero.meta_label('scan-search', inventory.scope_label) }}
+                    {{ page_hero.meta_label('layers-3', inventory.resource_type_count ~ ' Resource Types') }}
                 </div>
             {% endcall %}
         </div>
