@@ -1,0 +1,308 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "components/table_primitives.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/pagination.html" as pagination_ui %}
+{% import "components/operational_section_card.html" as section_card %}
+{% block title %}{{ security_title }} · Artifact Registry Security{% endblock title %}
+{% block dashboard_content %}
+    <div class="space-y-6" data-artifact-registry-security="{{ security_kind }}">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('shield-check', 'Artifact Registry Security', 'shield-check') %}
+                        <h1 class="{{ page_hero.title_classes() }}">{{ security_title }}</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">{{ security_description }}</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('shield-alert', security.finding_count ~ ' Findings') }}
+                            {{ page_hero.meta_label('triangle-alert', security.critical_count ~ ' Critical') }}
+                            {{ page_hero.meta_label('database-zap', security.freshness.label) }}
+                        </div>
+                    {% endcall %}
+                </div>
+                <aside class="{{ page_hero.aside_classes() }}" aria-label="Artifact Registry security context">
+                    {% if security.setup_blocked %}
+                        {% set provider_prerequisite_scope = "Security Readiness" %}
+                        {% set provider_prerequisite_title = "Registry Setup Required" %}
+                        {% set provider_prerequisite_info = "Register and validate a Registry provider before security evidence can be collected." %}
+                        {% set provider_prerequisite_resource_icon = "blocks" %}
+                        {% set provider_prerequisite_resource_label = "Registered Providers" %}
+                        {% set provider_prerequisite_resource_value = "0" %}
+                        {% set provider_prerequisite_resource_supporting = "No Registry integration registered" %}
+                        {% set provider_prerequisite_state_label = "Security State" %}
+                        {% set provider_prerequisite_state_value = "Blocked" %}
+                        {% set provider_prerequisite_state_supporting = "Provider setup is required" %}
+                        {% include "components/provider_prerequisite/_hero_context.html" %}
+                    {% elif security.inventory_required %}
+                        {{ page_hero.blocked_context_body(
+                            'Security Readiness',
+                            'Committed Inventory Required',
+                            [
+                                ('package-search', 'Artifacts', '0', 'No committed artifact inventory'),
+                                ('shield-check', 'Security State', 'Blocked', 'Inventory must be collected first')
+                            ],
+                            'Run Artifact Registry Inventory Sync before collecting scanner or supply-chain evidence.',
+                            'Blocked',
+                            'warning',
+                            'lock-keyhole',
+                            'triangle-alert',
+                            'Open Inventory',
+                            url_for('artifact_registry.projects'),
+                            'package-open'
+                        ) }}
+                    {% else %}
+                        {{ page_hero.context_card_body(
+                            'Committed Evidence',
+                            'Security Posture',
+                            security.freshness.label,
+                            security.freshness.tone,
+                            [
+                                ('scan-search', 'Scanned Artifacts', security.scanned_artifact_count ~ '/' ~ security.artifact_count, 'Artifacts with observed scanner evidence'),
+                                ('badge-check', 'Supply Chain Evidence', security.signature_observed_count ~ ' signed · ' ~ security.sbom_observed_count ~ ' SBOM', 'Provider-observed metadata only')
+                            ],
+                            'Open Registry Integrations',
+                            url_for('integrations.registry'),
+                            'package'
+                        ) }}
+                    {% endif %}
+                </aside>
+            </div>
+        </section>
+
+        {% if security.setup_blocked %}
+            {% set provider_prerequisite_icon = "package-plus" %}
+            {% set provider_prerequisite_label = "Setup Required" %}
+            {% set provider_prerequisite_title = "Register Your First Registry Provider" %}
+            {% set provider_prerequisite_description = "Connect a Registry provider and complete Full Validation before collecting Artifact Registry security evidence." %}
+            {% set provider_prerequisite_steps = ["Open Registry Integrations", "Register Provider", "Run Full Validation", "Run Inventory Sync"] %}
+            {% set provider_prerequisite_action_url = url_for('integrations.registry') %}
+            {% set provider_prerequisite_action_label = "Open Registry Integrations" %}
+            {% set provider_prerequisite_action_icon = "package" %}
+            {% set provider_prerequisite_permission = "integrations.manage" %}
+            {% include "components/provider_prerequisite/_setup_blocker.html" %}
+        {% elif security.inventory_required %}
+            {% set blocked_state_icon = "package-search" %}
+            {% set blocked_state_label = "Inventory Required" %}
+            {% set blocked_state_title = "Collect Artifact Inventory First" %}
+            {% set blocked_state_description = "Security evidence is attached to immutable artifact digests. Run Artifact Registry Inventory Sync before scanner or supply-chain collection." %}
+            {% set blocked_state_steps = ["Open Artifact Registry Inventory", "Run Inventory Sync", "Return To Security", "Run Security Sync"] %}
+            {% set blocked_state_action_url = url_for('artifact_registry.projects') %}
+            {% set blocked_state_action_label = "Open Inventory" %}
+            {% set blocked_state_action_icon = "package-open" %}
+            {% set blocked_state_permission = "artifact_registry.view" %}
+            {% set blocked_state_variant = "section" %}
+            {% include "components/states/_blocked_state.html" %}
+        {% else %}
+            {% if security.source_capabilities %}
+                {% call section_card.render(
+                    'Provider Capability Matrix',
+                    'Provider differences stay explicit; unsupported or unavailable evidence does not block unrelated Registry views.',
+                    'blocks',
+                    body_classes='p-0'
+                ) %}
+                    <div class="overflow-x-auto">
+                        <table class="{{ table_ui.table_classes('min-w-[760px]') }}">
+                            <thead class="{{ table_ui.head_classes() }}">
+                                <tr>
+                                    <th class="{{ table_ui.header_cell_classes() }}">Registry Source</th>
+                                    <th class="{{ table_ui.header_cell_classes() }}">Vulnerability</th>
+                                    <th class="{{ table_ui.header_cell_classes() }}">Signature</th>
+                                    <th class="{{ table_ui.header_cell_classes() }}">SBOM</th>
+                                    <th class="{{ table_ui.header_cell_classes() }}">Snapshot</th>
+                                </tr>
+                            </thead>
+                            <tbody class="{{ table_ui.body_classes() }}">
+                                {% for row in security.source_capabilities %}
+                                    <tr class="{{ table_ui.row_classes() }}">
+                                        <td class="{{ table_ui.cell_classes() }}">
+                                            {{ table_ui.title_cell(row.source_name, row.provider_label, 'blocks') }}
+                                        </td>
+                                        <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(row.vulnerability.label, row.vulnerability.tone) }}</td>
+                                        <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(row.signature.label, row.signature.tone) }}</td>
+                                        <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(row.sbom.label, row.sbom.tone) }}</td>
+                                        <td class="{{ table_ui.cell_classes() }}">
+                                            {{ table_label.status_indicator_label(row.freshness.label, row.freshness.tone) }}
+                                            <p class="mt-1 text-xs text-content-muted">{{ row.observed_at|user_datetime if row.observed_at else 'Not Collected' }}</p>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endcall %}
+            {% endif %}
+
+            <section class="{{ table_ui.block_classes() }}">
+                <header class="{{ table_ui.block_header_classes() }}">
+                    <div class="flex items-start gap-3">
+                        <span class="{{ table_ui.block_icon_classes() }}">
+                            <i data-lucide="{{ 'shield-alert' if security_kind == 'vulnerabilities' else 'badge-check' }}" class="h-5 w-5"></i>
+                        </span>
+                        <div>
+                            <h2 class="{{ table_ui.block_title_classes() }}">{{ security_title }} Registry</h2>
+                            <p class="{{ table_ui.block_description_classes() }}">
+                                {% if security_kind == 'vulnerabilities' %}
+                                    Scanner findings remain evidence; they are not automatically promoted into Alert Intelligence.
+                                {% else %}
+                                    Signature presence and SBOM availability are provider evidence. KAORI does not perform trust-policy evaluation here.
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    {% if current_user.has_permission('artifact_registry.sync') %}
+                        <form method="post" action="{{ url_for('artifact_registry.sync_security') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                            <button type="submit"
+                                    class="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover">
+                                <i data-lucide="refresh-cw" class="h-3.5 w-3.5"></i>
+                                Sync Security
+                            </button>
+                        </form>
+                    {% endif %}
+                </header>
+
+                <form method="get" class="{{ table_ui.filter_bar_classes() }}">
+                    <label>
+                        <span class="{{ table_ui.filter_label_classes() }}">Search</span>
+                        {{ table_ui.search_field('q', request.args.get('q', ''), 'Search artifact or evidence…') }}
+                    </label>
+                    {% if security_kind == 'vulnerabilities' %}
+                        <label>
+                            <span class="{{ table_ui.filter_label_classes() }}">Severity</span>
+                            <select name="severity" class="{{ table_ui.filter_select_classes() }}">
+                                <option value="">All Severities</option>
+                                {% for option in security.severity_options %}
+                                    <option value="{{ option.value }}" {% if request.args.get('severity') == option.value %}selected{% endif %}>{{ option.label }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                    {% endif %}
+                    <label>
+                        <span class="{{ table_ui.filter_label_classes() }}">Provider</span>
+                        <select name="provider" class="{{ table_ui.filter_select_classes() }}">
+                            <option value="">All Providers</option>
+                            {% for option in security.providers %}
+                                <option value="{{ option.value }}" {% if request.args.get('provider') == option.value %}selected{% endif %}>{{ option.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label>
+                        <span class="{{ table_ui.filter_label_classes() }}">Source</span>
+                        <select name="source_id" class="{{ table_ui.filter_select_classes() }}">
+                            <option value="">All Sources</option>
+                            {% for source in security.sources %}
+                                <option value="{{ source.id }}" {% if request.args.get('source_id')|int == source.id %}selected{% endif %}>{{ source.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <button data-kaori-filter-action type="submit" class="{{ table_ui.action_classes() }}">Apply</button>
+                </form>
+
+                <div class="overflow-x-auto">
+                    {% if security_kind == 'vulnerabilities' %}
+                        <table class="{{ table_ui.table_classes('min-w-[980px]') }}">
+                            <thead class="{{ table_ui.head_classes() }}">
+                                <tr>
+                                    <th class="{{ table_ui.header_cell_classes() }}">Finding</th>
+                                    <th class="{{ table_ui.header_cell_classes() }}">Artifact</th>
+                                    <th class="{{ table_ui.header_cell_classes() }}">Provider</th>
+                                    <th class="{{ table_ui.header_cell_classes() }}">Package / Fix</th>
+                                    <th class="{{ table_ui.header_cell_classes() }}">Snapshot</th>
+                                </tr>
+                            </thead>
+                            <tbody class="{{ table_ui.body_classes() }}">
+                                {% for row in security.rows %}
+                                    {% set severity_tone = 'critical' if row.severity == 'critical' else ('warning' if row.severity in ['high', 'medium'] else ('normal' if row.severity in ['low', 'negligible'] else 'unknown')) %}
+                                    <tr class="{{ table_ui.row_classes() }}">
+                                        <td class="{{ table_ui.cell_classes() }}">
+                                            {{ table_ui.title_cell(row.vulnerability_id, row.severity_label, 'shield-alert') }}
+                                            <div class="mt-2">{{ table_label.status_indicator_label(row.severity_label, severity_tone) }}</div>
+                                        </td>
+                                        <td class="{{ table_ui.cell_classes() }}">
+                                            <p class="font-semibold text-content-primary">{{ row.repository_name }}</p>
+                                            <p class="mt-0.5 text-xs text-content-muted">{{ row.project_name }} · {{ row.digest_short }}</p>
+                                        </td>
+                                        <td class="{{ table_ui.cell_classes() }}">
+                                            {{ table_label.metadata_label(row.provider_label, 'blocks') }}
+                                            <p class="mt-1 text-xs text-content-muted">{{ row.source_name }}</p>
+                                        </td>
+                                        <td class="{{ table_ui.cell_classes() }}">
+                                            <p class="font-semibold text-content-primary">{{ row.package }}</p>
+                                            <p class="mt-0.5 text-xs text-content-muted">{{ row.installed_version }} → {{ row.fixed_version }}</p>
+                                            {% if row.fix_available %}<div class="mt-1">{{ table_label.status_indicator_label('Fix Observed', 'normal') }}</div>{% endif %}
+                                        </td>
+                                        <td class="{{ table_ui.cell_classes() }}">
+                                            {{ table_label.status_indicator_label(row.freshness.label, row.freshness.tone) }}
+                                            <p class="mt-1 text-xs text-content-muted">{{ row.observed_at|user_datetime }}</p>
+                                        </td>
+                                    </tr>
+                                {% else %}
+                                    <tr>
+                                        <td colspan="5" class="px-5 py-10 text-center text-sm text-content-muted">
+                                            No committed vulnerability findings match the current filters.
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <table class="{{ table_ui.table_classes('min-w-[980px]') }}">
+                            <thead class="{{ table_ui.head_classes() }}">
+                                <tr>
+                                    <th class="{{ table_ui.header_cell_classes() }}">Artifact</th>
+                                    <th class="{{ table_ui.header_cell_classes() }}">Provider</th>
+                                    <th class="{{ table_ui.header_cell_classes() }}">Signature</th>
+                                    <th class="{{ table_ui.header_cell_classes() }}">Trust</th>
+                                    <th class="{{ table_ui.header_cell_classes() }}">SBOM</th>
+                                    <th class="{{ table_ui.header_cell_classes() }}">Snapshot</th>
+                                </tr>
+                            </thead>
+                            <tbody class="{{ table_ui.body_classes() }}">
+                                {% for row in security.rows %}
+                                    <tr class="{{ table_ui.row_classes() }}">
+                                        <td class="{{ table_ui.cell_classes() }}">
+                                            {{ table_ui.title_cell(row.repository_name, row.project_name ~ ' · ' ~ row.digest_short, 'package-search') }}
+                                        </td>
+                                        <td class="{{ table_ui.cell_classes() }}">
+                                            {{ table_label.metadata_label(row.provider_label, 'blocks') }}
+                                            <p class="mt-1 text-xs text-content-muted">{{ row.source_name }}</p>
+                                        </td>
+                                        <td class="{{ table_ui.cell_classes() }}">
+                                            {{ table_label.status_indicator_label(row.signature.label, row.signature.tone) }}
+                                            <p class="mt-1 text-xs text-content-muted">{{ row.signature_count }} observed accessory record(s)</p>
+                                        </td>
+                                        <td class="{{ table_ui.cell_classes() }}">
+                                            {{ table_label.status_indicator_label(row.trust.label, row.trust.tone) }}
+                                            <p class="mt-1 text-xs text-content-muted">Presence is not trust-policy evaluation.</p>
+                                        </td>
+                                        <td class="{{ table_ui.cell_classes() }}">
+                                            {{ table_label.status_indicator_label(row.sbom.label, row.sbom.tone) }}
+                                            <p class="mt-1 text-xs text-content-muted">{{ row.sbom_count }} observed SBOM accessory record(s)</p>
+                                        </td>
+                                        <td class="{{ table_ui.cell_classes() }}">
+                                            {{ table_label.status_indicator_label(row.freshness.label, row.freshness.tone) }}
+                                            <p class="mt-1 text-xs text-content-muted">{{ row.observed_at|user_datetime }}</p>
+                                        </td>
+                                    </tr>
+                                {% else %}
+                                    <tr>
+                                        <td colspan="6" class="px-5 py-10 text-center text-sm text-content-muted">
+                                            No committed supply-chain evidence matches the current filters.
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% endif %}
+                </div>
+
+                {% if security.pagination.total_pages > 1 %}
+                    <footer class="{{ pagination_ui.footer_classes() }}">
+                        <span>{{ security.total }} committed record(s)</span>
+                        {{ pagination_ui.numeric_pages(security.pagination.page, security.pagination.total_pages) }}
+                    </footer>
+                {% endif %}
+            </section>
+        {% endif %}
+    </div>
+{% endblock dashboard_content %}
