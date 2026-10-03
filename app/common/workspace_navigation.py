@@ -32,6 +32,8 @@ def _capability_key(endpoint: str) -> str | None:
         return 'kubernetes_analytics'
     if endpoint.startswith('object_storage_inventory.'):
         return 'object_storage_inventory'
+    if endpoint.startswith('artifact_registry.security_'):
+        return 'artifact_registry_security'
     if endpoint.startswith('artifact_registry.') and endpoint != 'artifact_registry.overview':
         return 'artifact_registry_inventory'
     return None
@@ -47,6 +49,7 @@ def _capability_label(capability_key: str) -> str:
         'object_storage_inventory': 'Inventory',
         'object_storage_analytics': 'Analytics',
         'artifact_registry_inventory': 'Inventory',
+        'artifact_registry_security': 'Security',
     }[capability_key]
 
 
@@ -93,6 +96,9 @@ _CAPABILITY_ACTIVE_EXACT: dict[str, dict[str, str]] = {
     'artifact_registry_inventory': {
         'artifact_registry.repositories': 'repositories',
         'artifact_registry.artifacts': 'artifacts',
+    },
+    'artifact_registry_security': {
+        'artifact_registry.security_supply_chain': 'supply_chain',
     },
     'object_storage_analytics': {
         'analytics.object_storage_capacity': 'capacity',
@@ -272,6 +278,7 @@ _WORKSPACE_ACTIVE_PREFIXES: dict[str, tuple[tuple[str, str], ...]] = {
         ('artifact_registry.projects', 'inventory'),
         ('artifact_registry.repositories', 'inventory'),
         ('artifact_registry.artifacts', 'inventory'),
+        ('artifact_registry.security_', 'security'),
     ),
     'intelligence': (
         ('alert_intelligence.', 'alert_intelligence'),
