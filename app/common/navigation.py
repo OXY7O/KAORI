@@ -258,6 +258,7 @@ def build_navigation_breadcrumb(
             'integrations.orchestration': 'Orchestration',
             'integrations.observability': 'Observability',
             'integrations.storage': 'Storage',
+            'integrations.registry': 'Registry',
             'notification_channels.index': 'Notification Channels',
         }.get(endpoint, 'Overview')
         items = [
