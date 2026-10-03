@@ -19,6 +19,12 @@ domains:
   icon: database
   workspace_endpoint: integrations.storage
   order: 30
+- key: registry
+  label: Registry
+  description: Connect OCI Registry providers through governed readiness and evidence contracts.
+  icon: package
+  workspace_endpoint: integrations.registry
+  order: 40
 capabilities:
 - key: container_orchestrator
   domain_key: orchestration
@@ -57,6 +63,12 @@ capabilities:
   label: Block Storage
   description: Block-device provider connectivity, inventory, and operational telemetry.
   order: 30
+  asset_types: []
+- key: registry
+  domain_key: registry
+  label: Registry
+  description: OCI Registry provider connectivity, compatibility, readiness, and evidence collection.
+  order: 10
   asset_types: []
 consumer_assets:
 - asset_type: kubernetes_cluster

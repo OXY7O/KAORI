@@ -238,6 +238,7 @@ class IntegrationRegistry:
                 'app.integrations.observability.metrics_source',
                 'app.integrations.observability.alert_source.providers.alertmanager',
                 'app.integrations.storage.object_storage.providers.minio',
+                'app.integrations.registry.providers.harbor',
             ):
                 import_module(module_path)
             self._builtins_loaded = True

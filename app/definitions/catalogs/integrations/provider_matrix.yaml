@@ -84,3 +84,11 @@ integration_types:
     adapter_key: hpe_storage_rest
     lifecycle: planned
     protocol: hpe_storage_rest
+- key: registry
+  domain_key: registry
+  providers:
+  - key: harbor
+    label: Harbor
+    adapter_key: harbor_api_v2
+    lifecycle: available
+    protocol: harbor_api_v2
