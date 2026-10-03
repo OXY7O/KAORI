@@ -99,6 +99,7 @@ _CAPABILITY_ACTIVE_EXACT: dict[str, dict[str, str]] = {
     },
     'artifact_registry_security': {
         'artifact_registry.security_supply_chain': 'supply_chain',
+        'artifact_registry.security_runtime_usage': 'runtime_usage',
     },
     'object_storage_analytics': {
         'analytics.object_storage_capacity': 'capacity',
