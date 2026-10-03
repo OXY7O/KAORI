@@ -221,6 +221,13 @@
                                         <td class="{{ table_ui.cell_classes() }}">
                                             <p class="font-semibold text-content-primary">{{ row.repository_name }}</p>
                                             <p class="mt-0.5 text-xs text-content-muted">{{ row.project_name }} · {{ row.digest_short }}</p>
+                                            {% if current_user.has_permission('artifact_registry.runtime_correlation.view') %}
+                                                <a href="{{ url_for('artifact_registry.security_runtime_usage', artifact_id=row.artifact_id) }}"
+                                                   class="mt-2 {{ table_ui.action_classes() }}">
+                                                    <i data-lucide="waypoints" class="h-3.5 w-3.5"></i>
+                                                    Runtime Usage
+                                                </a>
+                                            {% endif %}
                                         </td>
                                         <td class="{{ table_ui.cell_classes() }}">
                                             {{ table_label.metadata_label(row.provider_label, 'blocks') }}
