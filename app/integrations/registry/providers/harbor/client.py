@@ -83,6 +83,35 @@ class HarborClient:
         )
         return self._object_list(payload, 'repositories')
 
+    def list_artifacts(
+        self,
+        *,
+        project_name_or_id: str | int,
+        repository_name: str,
+        page: int = 1,
+        page_size: int = 100,
+    ) -> list[dict[str, Any]]:
+        project_scope = str(project_name_or_id).strip()
+        repository_scope = str(repository_name).strip()
+        if not project_scope or not repository_scope:
+            raise HarborResponseError('Harbor project and repository are required for artifact discovery.')
+        encoded_project = quote(project_scope, safe='')
+        encoded_repository = quote(repository_scope, safe='')
+        payload = self._request_json(
+            f'/api/v2.0/projects/{encoded_project}/repositories/{encoded_repository}/artifacts',
+            params={
+                'page': page,
+                'page_size': page_size,
+                'with_tag': 'true',
+                'with_scan_overview': 'false',
+                'with_signature': 'false',
+                'with_immutable_status': 'false',
+                'with_label': 'false',
+                'with_accessory': 'false',
+            },
+        )
+        return self._object_list(payload, 'artifacts')
+
     @staticmethod
     def _object_list(payload: Any, label: str) -> list[dict[str, Any]]:
         if not isinstance(payload, list):
