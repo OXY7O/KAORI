@@ -135,6 +135,7 @@ def build_vulnerabilities(filters: SecurityFilters) -> dict[str, Any]:
         rows.append(
             {
                 'id': finding.id,
+                'artifact_id': artifact.id,
                 'vulnerability_id': finding.vulnerability_id,
                 'severity': finding.severity,
                 'severity_label': finding.severity.title(),
