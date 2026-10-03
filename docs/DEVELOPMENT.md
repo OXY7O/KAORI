@@ -64,6 +64,24 @@ Useful VS Code tasks:
 - `KAORI: djLint Check`
 - `KAORI: Watch Tailwind CSS`
 - `KAORI: Build Tailwind CSS`
+- `KAORI: Developer Check Plan` — resolve the same path-aware validation plan used by GitHub Actions against `kaori/staging`.
+
+### Engineering Evolution v2 development tracks
+
+KAORI supports two context-sensitive inner development loops with one governed delivery outcome:
+
+- **Local-First / Dev Container** — preferred for larger feature work, UI/UX iteration, provider/infrastructure workflows, or broad refactoring where repeated GitHub CI round-trips would dominate feedback time.
+- **GitHub-First** — preferred for bounded fixes, documentation, small refactors, and narrow changes where Draft PR Developer Check remains the fastest useful loop.
+
+The tracks do not create separate quality or release paths. Both converge at the frozen-candidate boundary and require exact-head Developer Check, Full Admission, `kaori/staging` integration, applicable UAT, and governed promotion.
+
+For Local-First work, inspect the authoritative plan before candidate freeze:
+
+```bash
+python scripts/developer_check_plan.py --base kaori/staging --head HEAD
+```
+
+The planner selects existing KAORI validators and focused pytest ownership from the current diff. It does not replace Full Admission. Shared/authority changes widen fail-safe; capability-aware narrowing is introduced only where an explicit test ownership boundary exists.
 
 ## Dependency updates
 

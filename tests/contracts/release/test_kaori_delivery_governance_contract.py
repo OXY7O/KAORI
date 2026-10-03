@@ -9,6 +9,7 @@ LABEL_CATALOG = ROOT / 'docs/engineering/KAORI_GITHUB_LABEL_CATALOG.md'
 ISSUE_DIR = ROOT / '.github/ISSUE_TEMPLATE'
 QUALITY_WORKFLOW = ROOT / '.github/workflows/quality.yml'
 DEVELOPER_WORKFLOW = ROOT / '.github/workflows/developer-check.yml'
+PLANNER = ROOT / 'scripts/developer_check_plan.py'
 PR_TEMPLATE = ROOT / '.github/PULL_REQUEST_TEMPLATE.md'
 CI_CD_DOC = ROOT / 'docs/setup/GITHUB_ACTIONS_CI_CD.md'
 RECOVERY_DOC = ROOT / 'docs/deployment/CI_CD_RECOVERY_CONTRACT.md'
@@ -27,7 +28,7 @@ def load_form(name: str) -> dict:
 def test_delivery_workflow_locks_current_lifecycle_branch_and_uat_authority() -> None:
     source = read(WORKFLOW)
     for token in (
-        '**Governance Version:** 2.1',
+        '**Governance Version:** 2.2',
         'Inbox',
         'Backlog',
         'Ready',
@@ -256,11 +257,12 @@ def test_work_branches_use_targeted_checks_before_ready_admission() -> None:
 
 def test_draft_developer_check_is_path_aware_and_non_authoritative() -> None:
     source = read(DEVELOPER_WORKFLOW)
+    planner = read(PLANNER)
 
     assert 'name: Developer Check' in source
     assert 'name: Route Checks' in source
-    assert 'name: Developer Check' in source
-    assert 'wide=true' in source
+    assert 'python3 scripts/developer_check_plan.py' in source
+    assert 'plan.wide = True' in planner
     assert 'scripts/quality_gate.sh --static' not in source
     assert 'run-runtime-validation.sh' not in source
 

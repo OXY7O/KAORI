@@ -50,6 +50,12 @@
       "problemMatcher": []
     },
     {
+      "label": "KAORI: Developer Check Plan",
+      "type": "shell",
+      "command": "python scripts/developer_check_plan.py --base kaori/staging --head HEAD",
+      "problemMatcher": []
+    },
+    {
       "label": "KAORI: Watch Tailwind CSS",
       "type": "shell",
       "command": "npm run watch-css",
