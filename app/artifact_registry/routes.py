@@ -5,6 +5,11 @@ from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
 from app.access.rbac.decorators import permission_required
+from app.artifact_registry.correlation.presentation import RuntimeUsageFilters, build_runtime_usage
+from app.artifact_registry.correlation.sync_jobs import (
+    RegistryRuntimeCorrelationBlocked,
+    enqueue_registry_runtime_correlation,
+)
 from app.artifact_registry.inventory.presentation import (
     RegistryInventoryFilters,
     build_artifacts,
@@ -185,3 +190,60 @@ def sync_security() -> ResponseReturnValue:
             queue_feedback=True,
         )
     return redirect(request.referrer or url_for('artifact_registry.security_vulnerabilities'))
+
+
+def _runtime_usage_filters() -> RuntimeUsageFilters:
+    return RuntimeUsageFilters(
+        query=request.args.get('q', '', type=str),
+        match_type=request.args.get('match_type', '', type=str),
+        cluster_id=request.args.get('cluster_id', '', type=str),
+        artifact_id=request.args.get('artifact_id', type=int),
+        page=request.args.get('page', 1, type=int) or 1,
+        per_page=request.args.get('per_page', 5, type=int) or 5,
+    )
+
+
+@artifact_registry_bp.get('/security/runtime-usage')
+@permission_required('artifact_registry.runtime_correlation.view')
+def security_runtime_usage() -> ResponseReturnValue:
+    return render_template(
+        'artifact_registry/runtime_usage.html',
+        runtime=build_runtime_usage(_runtime_usage_filters()),
+    )
+
+
+@artifact_registry_bp.post('/security/runtime-usage/materialize')
+@permission_required('artifact_registry.sync')
+def materialize_runtime_usage() -> ResponseReturnValue:
+    try:
+        job, created = enqueue_registry_runtime_correlation(
+            requested_by_user_id=int(current_user.id),
+            trigger_type='manual',
+        )
+    except RegistryRuntimeCorrelationBlocked as exc:
+        record_operational_activity(
+            user_id=int(current_user.id),
+            event_type='artifact_registry_runtime_correlation_blocked',
+            status='warning',
+            title='Registry Runtime Correlation Blocked',
+            message=str(exc),
+            detail='Collect both Artifact Registry inventory and Kubernetes Pod inventory before rebuilding correlation.',
+            action_url=url_for('artifact_registry.security_runtime_usage'),
+            action_label='Open Runtime Usage',
+            action_icon='waypoints',
+            queue_feedback=True,
+        )
+    else:
+        record_operational_activity(
+            user_id=int(current_user.id),
+            event_type='artifact_registry_runtime_correlation',
+            status='success' if created else 'info',
+            title='Runtime Correlation Queued' if created else 'Runtime Correlation Already Active',
+            message='KAORI will rebuild digest-first runtime bindings from committed Registry and Kubernetes inventory.',
+            detail=f'Canonical Job Execution #{job.id} owns this database-only correlation materialization.',
+            action_url=url_for('artifact_registry.security_runtime_usage'),
+            action_label='Open Runtime Usage',
+            action_icon='waypoints',
+            queue_feedback=True,
+        )
+    return redirect(request.referrer or url_for('artifact_registry.security_runtime_usage'))
