@@ -33,6 +33,8 @@ def test_harbor_registration_reuses_canonical_connection_workflow() -> None:
     assert 'xl:col-span-4' in form
     assert 'connectionVerified' in form
     assert 'provider_registration_hero.render' in form
+    assert 'after_save_label="Full Validation"' in form
+    assert 'after_save_description="Then establish compatibility and capability readiness"' in form
     assert 'provider_registration_actions.render' in form
     assert 'REGISTRATION_PROOF_MAX_AGE_SECONDS = 600' in registration
     assert "'password'," in registration

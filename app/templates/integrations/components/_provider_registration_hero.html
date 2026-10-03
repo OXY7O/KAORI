@@ -1,6 +1,6 @@
 {% import "components/page_hero.html" as page_hero %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
-{% macro render(eyebrow_icon, eyebrow_label, leading_icon, title, description, api_icon, api_label, back_url, aria_label, binding_label="Governed Consumer Binding") -%}
+{% macro render(eyebrow_icon, eyebrow_label, leading_icon, title, description, api_icon, api_label, back_url, aria_label, binding_label="Governed Consumer Binding", after_save_label="Core Validation", after_save_description="Then assign consumer bindings") -%}
     <section class="{{ page_hero.shell_classes() }}"
              data-kaori-provider-registration-hero>
         <div class="{{ page_hero.layout_classes() }}">
@@ -26,7 +26,7 @@
                     </div>
                     <div class="{{ page_hero.context_panel_metrics_classes() }}">
                         {{ page_hero.context_metric("plug-zap", "Before Save", "Test Connection", "Registration reuses the verified payload", value_classes="text-sm font-semibold leading-5") }}
-                        {{ page_hero.context_metric("scan-search", "After Save", "Core Validation", "Then assign consumer bindings", value_classes="text-sm font-semibold leading-5") }}
+                        {{ page_hero.context_metric("scan-search", "After Save", after_save_label, after_save_description, value_classes="text-sm font-semibold leading-5") }}
                     </div>
                     <a href="{{ back_url }}"
                        class="{{ page_hero.context_single_action_classes() }}">

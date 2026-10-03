@@ -37,7 +37,9 @@
                         "Harbor API v2.0",
                         url_for("harbor.index"),
                         "Harbor connection workflow",
-                        binding_label="Read-Oriented Provider Contract") }}
+                        binding_label="Read-Oriented Provider Contract",
+                        after_save_label="Full Validation",
+                        after_save_description="Then establish compatibility and capability readiness") }}
         {% endif %}
         <form id="harbor-instance-form"
               method="post"
