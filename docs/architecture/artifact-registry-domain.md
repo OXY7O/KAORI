@@ -102,3 +102,35 @@ The foundation does not:
 - publish each vulnerability directly into Alert Intelligence.
 
 Those boundaries remain explicit for later workstreams.
+
+
+## Security evidence boundary
+
+Issue #896 extends the committed Artifact Registry state with provider-neutral security and supply-chain evidence.
+
+```text
+RegistryArtifact(digest)
+→ RegistryArtifactSecuritySnapshot
+   ├── normalized vulnerability summary
+   ├── RegistryVulnerabilityFinding[]
+   ├── signature presence metadata
+   ├── trust evaluation state
+   └── SBOM availability metadata
+```
+
+Harbor is the first collector and may expose Trivy-produced vulnerability metadata plus artifact accessories. KAORI does not trigger scans, generate SBOMs, verify signatures, or replace provider-native security engines.
+
+Provider capability state is explicit and may differ by provider:
+
+```text
+supported_observed
+supported_unavailable
+unsupported
+not_collected
+```
+
+The common Security workspace therefore never assumes that ECR, Google Artifact Registry, ACR, GHCR, Docker Hub, Harbor, or another OCI Registry expose equivalent scanners, signature metadata, or SBOM metadata.
+
+Signature presence and trust are deliberately separate facts. A signature accessory may be observed while `trust_state` remains `not_evaluated`. This prevents KAORI from implying policy verification it did not perform.
+
+Vulnerability findings remain committed evidence. They are not copied one-for-one into Alert Intelligence. Escalation belongs to later cross-domain intelligence where severity, fixability, runtime deployment, policy sensitivity, and other operational context can be correlated.
