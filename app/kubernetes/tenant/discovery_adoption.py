@@ -11,11 +11,9 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from app.extensions.db import db
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
 from app.kubernetes.tenant.allocation_cutover import reconcile_adopted_native_allocation
-from app.kubernetes.tenant.allocation_observation import (
-    observe_capsule_tenant_allocation,
-    observe_native_namespace_allocation,
-)
+from app.kubernetes.tenant.allocation_observation import observe_native_namespace_allocation
 from app.kubernetes.tenant.capacity_governance import enforce_existing_namespace_allocation_preflight
+from app.kubernetes.tenant.capsule_allocation_observation import observe_capsule_tenant_allocation
 from app.kubernetes.tenant.capsule_tenant import qualify_capsule_tenant_adoption
 from app.kubernetes.tenant.discovery_service import (
     _adoption_environment,
