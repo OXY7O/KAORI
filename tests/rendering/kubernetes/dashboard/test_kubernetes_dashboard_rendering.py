@@ -26,7 +26,7 @@ def test_dashboard_uses_canonical_hero_tabs_table_status_and_pagination_componen
     assert 'components/page_hero.html' in hero
     assert 'page_hero.operational_dashboard(' in hero
     assert "context_header('Dashboard Context', 'Operational Signal Scope', 'scan-search')" in page_hero
-    assert 'components/workspace_tabs.html' in content
+    assert 'components/operational_dashboard_workspace.html' in content
     assert 'components/table.html' in cluster_health
     assert 'components/table_label.html' in cluster_health
     assert 'components/pagination.html' in cluster_health

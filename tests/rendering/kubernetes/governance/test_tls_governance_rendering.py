@@ -27,7 +27,7 @@ def test_tls_registry_uses_canonical_hero_table_status_pagination_and_modal_cont
     table = (TEMPLATES / 'tls_certificates/partials/_table.html').read_text(encoding='utf-8')
     page = (TEMPLATES / 'tls_certificates/index.html').read_text(encoding='utf-8')
 
-    assert 'page_hero.context_header(' in overview
+    assert 'page_hero.context_card(' in overview
     assert 'page_hero.context_card(' in hero
     assert 'components/table.html' in table
     assert 'components/table_label.html' in table

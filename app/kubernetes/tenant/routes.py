@@ -466,6 +466,8 @@ def _operations_drift_context() -> dict[str, Any]:
     return context
 
 
+@tenant_bp.get('/operations')
+@any_permission_required('tenant.view', 'tenant.manage')
 def operations():
     active_tab = _operations_active_tab()
     context = _tenant_workspace_context()
