@@ -74,6 +74,10 @@ permissions:
   module: artifact_registry
   action: sync
   description: Run Artifact Registry inventory synchronization through canonical Job Execution.
+- key: artifact_registry.runtime_correlation.view
+  module: artifact_registry
+  action: view_runtime_correlation
+  description: View committed Artifact Registry to Kubernetes runtime correlation evidence.
 - key: kubernetes_configmaps.view
   module: k8s_operations
   action: view_configmap_management
@@ -299,6 +303,7 @@ permission_dependencies:
   clusters.sync: [clusters.view, jobs.execute]
   storage.sync: [object_storage_inventory.view, jobs.execute]
   artifact_registry.sync: [artifact_registry.view, jobs.execute]
+  artifact_registry.runtime_correlation.view: [artifact_registry.view, inventory.view]
   kubernetes_configmaps.create: [kubernetes_configmaps.view]
   kubernetes_configmaps.update: [kubernetes_configmaps.view]
   kubernetes_configmaps.delete: [kubernetes_configmaps.view]
@@ -349,6 +354,7 @@ system_roles:
     ConfigMaps, and reports.
   permissions:
   - artifact_registry.view
+  - artifact_registry.runtime_correlation.view
   - analytics.view
   - clusters.view
   - dashboard.view
@@ -370,6 +376,7 @@ system_roles:
     and controlled TLS Secret rotation.
   permissions:
   - artifact_registry.view
+  - artifact_registry.runtime_correlation.view
   - artifact_registry.sync
   - analytics.view
   - clusters.sync
@@ -404,6 +411,7 @@ system_roles:
     schedules, and storage operations.
   permissions:
   - artifact_registry.view
+  - artifact_registry.runtime_correlation.view
   - artifact_registry.sync
   - analytics.view
   - clusters.manage
@@ -452,6 +460,7 @@ system_roles:
     excluding direct Secret reveal.
   permissions:
   - artifact_registry.view
+  - artifact_registry.runtime_correlation.view
   - artifact_registry.sync
   - analytics.view
   - clusters.manage
@@ -520,6 +529,7 @@ system_roles:
     access.
   permissions:
   - artifact_registry.view
+  - artifact_registry.runtime_correlation.view
   - analytics.view
   - clusters.view
   - dashboard.view
