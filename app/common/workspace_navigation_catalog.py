@@ -128,6 +128,28 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
         ),
     ),
     WorkspaceDefinition(
+        key='artifact_registry',
+        label='Artifact Registry',
+        icon='package-search',
+        section='Infrastructure',
+        capabilities=(
+            WorkspaceCapabilityDefinition(
+                'overview',
+                'Overview',
+                'layout-dashboard',
+                'artifact_registry.overview',
+                ('artifact_registry.view',),
+            ),
+            WorkspaceCapabilityDefinition(
+                'inventory',
+                'Inventory',
+                'package-open',
+                'artifact_registry.projects',
+                ('artifact_registry.view',),
+            ),
+        ),
+    ),
+    WorkspaceDefinition(
         key='intelligence',
         label='Intelligence',
         icon='brain-circuit',
@@ -335,6 +357,7 @@ _SECTION_ORDER = ('Main', 'Infrastructure', 'Operations', 'Assurance', 'Insights
 _WORKSPACE_CONTEXT_KEYS: dict[str, tuple[str, ...]] = {
     'kubernetes': ('cluster_id',),
     'object_storage': ('system_id',),
+    'artifact_registry': ('source_id',),
 }
 
 _CAPABILITY_CONTEXT_KEYS: dict[str, tuple[str, ...]] = {
@@ -345,6 +368,7 @@ _CAPABILITY_CONTEXT_KEYS: dict[str, tuple[str, ...]] = {
     'kubernetes_analytics': ('cluster_id', 'time_range'),
     'object_storage_inventory': ('system_id',),
     'object_storage_analytics': ('system_id', 'time_range'),
+    'artifact_registry_inventory': ('source_id',),
 }
 
 
@@ -510,5 +534,16 @@ _CAPABILITY_VIEWS: dict[str, tuple[CapabilityViewDefinition, ...]] = {
             'analytics.object_storage_alerts',
             ('object_storage_analytics.view',),
         ),
+    ),    'artifact_registry_inventory': (
+        CapabilityViewDefinition(
+            'projects', 'Projects', 'folder-tree', 'artifact_registry.projects', ('artifact_registry.view',)
+        ),
+        CapabilityViewDefinition(
+            'repositories', 'Repositories', 'package-open', 'artifact_registry.repositories', ('artifact_registry.view',)
+        ),
+        CapabilityViewDefinition(
+            'artifacts', 'Artifacts', 'package-search', 'artifact_registry.artifacts', ('artifact_registry.view',)
+        ),
     ),
+
 }
