@@ -1,0 +1,32 @@
+{% import "components/page_hero.html" as page_hero %}
+{% set prerequisite_scope = provider_prerequisite_scope|default('Workspace Readiness') %}
+{% set prerequisite_title = provider_prerequisite_title|default('Provider Setup Required') %}
+{% set prerequisite_info = provider_prerequisite_info|default('Configure the required provider integration to activate this workspace.') %}
+{% set prerequisite_tone = provider_prerequisite_tone|default('warning') %}
+{% set prerequisite_resource_icon = provider_prerequisite_resource_icon|default('server-cog') %}
+{% set prerequisite_resource_label = provider_prerequisite_resource_label|default('Registered Providers') %}
+{% set prerequisite_resource_value = provider_prerequisite_resource_value|default('0') %}
+{% set prerequisite_resource_supporting = provider_prerequisite_resource_supporting|default('No provider connection registered') %}
+{% set prerequisite_state_icon = provider_prerequisite_state_icon|default('circle-dot-dashed') %}
+{% set prerequisite_state_label = provider_prerequisite_state_label|default('Workspace State') %}
+{% set prerequisite_state_value = provider_prerequisite_state_value|default('Blocked') %}
+{% set prerequisite_state_supporting = provider_prerequisite_state_supporting|default('Provider setup is required') %}
+{% set prerequisite_action_label = provider_prerequisite_action_label|default(none) %}
+{% set prerequisite_action_href = provider_prerequisite_action_href|default(none) %}
+{% set prerequisite_action_icon = provider_prerequisite_action_icon|default('settings-2') %}
+{{ page_hero.blocked_context_body(
+    prerequisite_scope,
+    prerequisite_title,
+    [
+        (prerequisite_resource_icon, prerequisite_resource_label, prerequisite_resource_value, prerequisite_resource_supporting),
+        (prerequisite_state_icon, prerequisite_state_label, prerequisite_state_value, prerequisite_state_supporting, 'text-sm font-semibold leading-5')
+    ],
+    prerequisite_info,
+    provider_prerequisite_status_label|default(none),
+    prerequisite_tone,
+    provider_prerequisite_header_icon|default('lock-keyhole'),
+    provider_prerequisite_info_icon|default('triangle-alert'),
+    prerequisite_action_label,
+    prerequisite_action_href,
+    prerequisite_action_icon
+) }}

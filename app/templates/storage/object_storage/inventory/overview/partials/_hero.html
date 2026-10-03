@@ -6,14 +6,9 @@
                 <h1 class="{{ page_hero.title_classes() }}">Overview</h1>
                 <p class="mt-2 {{ page_hero.description_classes() }}">Review inventory coverage across registered Object Storage systems.</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
-                    {% if overview.setup.is_blocked %}
-                        {{ page_hero.meta_label('database-backup', 'Committed Inventory') }}
-                        {{ page_hero.meta_label('lock-keyhole', 'Object Storage Setup Required') }}
-                    {% else %}
-                        {{ page_hero.meta_label('server', overview.total_systems ~ (' System Registered' if overview.total_systems == 1 else ' Systems Registered') ) }}
-                        {{ page_hero.meta_label('boxes', overview.total_buckets ~ (' Inventory Asset' if overview.total_buckets == 1 else ' Inventory Assets') ) }}
-                        {{ page_hero.meta_label('database-backup', overview.inventory_coverage ~ '% Inventory Coverage') }}
-                    {% endif %}
+                    {{ page_hero.meta_label('server', overview.total_systems ~ (' System Registered' if overview.total_systems == 1 else ' Systems Registered') ) }}
+                    {{ page_hero.meta_label('boxes', overview.total_buckets ~ (' Inventory Asset' if overview.total_buckets == 1 else ' Inventory Assets') ) }}
+                    {{ page_hero.meta_label('database-backup', overview.inventory_coverage ~ '% Inventory Coverage') }}
                 </div>
             {% endcall %}
         </div>

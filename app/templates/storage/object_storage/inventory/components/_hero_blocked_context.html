@@ -1,16 +1,11 @@
-{% import "components/page_hero.html" as page_hero %}
-{% set storage_blocked_scope = storage_blocked_scope|default('Inventory Readiness') %}
-{% set storage_blocked_title = storage_blocked_title|default('Object Storage Setup Required') %}
-{% set storage_blocked_info = storage_blocked_info|default('Register a Storage integration to activate committed Object Storage inventory in KAORI.') %}
-{{ page_hero.blocked_context_body(storage_blocked_scope,
-storage_blocked_title,
-[
-('server', 'Registered Systems', '0', 'No Object Storage system registered') ,
-('circle-dot-dashed', 'Workspace State', 'Blocked', 'Storage integration is required', 'text-sm font-semibold leading-5')
-],
-storage_blocked_info,
-none,
-'warning',
-'lock-keyhole',
-'triangle-alert'
-) }}
+{% set provider_prerequisite_scope = storage_blocked_scope|default('Inventory Readiness') %}
+{% set provider_prerequisite_title = storage_blocked_title|default('Object Storage Setup Required') %}
+{% set provider_prerequisite_info = storage_blocked_info|default('Register a Storage integration to activate committed Object Storage inventory in KAORI.') %}
+{% set provider_prerequisite_resource_icon = 'server' %}
+{% set provider_prerequisite_resource_label = 'Registered Systems' %}
+{% set provider_prerequisite_resource_value = '0' %}
+{% set provider_prerequisite_resource_supporting = 'No Object Storage system registered' %}
+{% set provider_prerequisite_state_label = 'Workspace State' %}
+{% set provider_prerequisite_state_value = 'Blocked' %}
+{% set provider_prerequisite_state_supporting = 'Storage integration is required' %}
+{% include "components/provider_prerequisite/_hero_context.html" %}

@@ -1,0 +1,14 @@
+{% set blocked_state_icon = provider_prerequisite_icon|default('plug-zap') %}
+{% set blocked_state_label = provider_prerequisite_label|default('Setup Required') %}
+{% set blocked_state_title = provider_prerequisite_title|default('Configure Provider') %}
+{% set blocked_state_description = provider_prerequisite_description|default('Configure the required provider integration before continuing.') %}
+{% set blocked_state_steps = provider_prerequisite_steps|default([]) %}
+{% set blocked_state_action_url = provider_prerequisite_action_url|default(none) %}
+{% set blocked_state_action_label = provider_prerequisite_action_label|default(none) %}
+{% set blocked_state_action_icon = provider_prerequisite_action_icon|default('settings-2') %}
+{% set blocked_state_permission = provider_prerequisite_permission|default(none) %}
+{% set blocked_state_permission_granted = provider_prerequisite_permission_granted|default(none) %}
+{% set blocked_state_show_admin_required = provider_prerequisite_show_admin_required|default(true) %}
+{% set blocked_state_tone = provider_prerequisite_tone|default('warning') %}
+{% set blocked_state_variant = 'section' %}
+{% include "components/states/_blocked_state.html" %}

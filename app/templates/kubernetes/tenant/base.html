@@ -15,11 +15,6 @@
 {% endif %}
 {% set registered_cluster_count = cluster_onboarding.cluster_count|default(0) %}
 {% block title %}{{ tenant_page_title }} · Tenant{% endblock title %}
-{% block page_capability_navigation %}
-    {% if registered_cluster_count > 0 %}
-        {{ super() }}
-    {% endif %}
-{% endblock page_capability_navigation %}
 {% block dashboard_content %}
     <div class="space-y-6" data-tenant-workspace="{{ tenant_page }}">
         <section class="{{ page_hero.shell_classes() }}">
@@ -54,9 +49,6 @@
                         {% else %}
                             {% set cluster_blocked_title = "Cluster Setup Required" %}
                             {% set cluster_blocked_info = "Add a Kubernetes cluster to enable provider-backed Tenant workflows." %}
-                            {% set cluster_blocked_action_label = "Open Cluster Integrations" %}
-                            {% set cluster_blocked_action_href = url_for('integrations.kubernetes') %}
-                            {% set cluster_blocked_action_icon = "server-cog" %}
                         {% endif %}
                         {% include 'components/cluster/_hero_blocked_context.html' %}
                     </aside>
