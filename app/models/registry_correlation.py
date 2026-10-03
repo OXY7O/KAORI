@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.extensions.db import db
@@ -19,6 +19,7 @@ class RegistryCorrelationState(db.Model):
     """Committed cross-domain materialization state for Registry ↔ Kubernetes runtime usage."""
 
     __tablename__ = 'registry_correlation_states'
+    __table_args__ = (CheckConstraint('id = 1', name='ck_registry_correlation_state_singleton'),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     status: Mapped[str] = mapped_column(String(30), nullable=False, default='not_materialized')
