@@ -75,6 +75,20 @@ def _base_context() -> dict[str, Any]:
             for key in sorted({item.provider_key for item in sources})
         ],
         'collection_states': states,
+        'source_capabilities': [
+            {
+                'source_id': state.integration_instance_id,
+                'source_name': state.integration_instance.name,
+                'provider_key': state.integration_instance.provider_key,
+                'provider_label': state.integration_instance.provider_key.replace('_', ' ').title(),
+                'vulnerability': _capability_state(state.vulnerability_capability_state),
+                'signature': _capability_state(state.signature_capability_state),
+                'sbom': _capability_state(state.sbom_capability_state),
+                'observed_at': state.observed_at,
+                'freshness': _freshness(state.observed_at),
+            }
+            for state in states
+        ],
         'latest_observed_at': latest,
         'freshness': _freshness(latest),
         'finding_count': sum(state.finding_count for state in states),
