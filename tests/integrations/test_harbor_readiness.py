@@ -3,6 +3,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 from app.integrations.registry.providers.harbor import runtime, validation
+from app.integrations.registry.providers.harbor.adapter import HarborRuntimeAdapter
 from app.integrations.registry.providers.harbor.exceptions import HarborAuthError
 
 
@@ -36,6 +37,10 @@ class _MissingRepositoryClient(_ReadyClient):
 
 def _source():
     return SimpleNamespace(
+        id=41,
+        name='Harbor Test',
+        provider_key='harbor',
+        adapter_key='harbor_api_v2',
         endpoint='https://harbor.example.test',
         timeout=5,
         detected_version=None,
@@ -48,6 +53,9 @@ def _source():
         validation_message=None,
         last_validated_at=None,
         last_response_time_ms=None,
+        last_status=None,
+        last_error=None,
+        last_checked_at=None,
     )
 
 
@@ -59,6 +67,8 @@ def _stub_persistence(monkeypatch, module):
 
     def mark_status(instance, **kwargs):
         statuses.append(kwargs)
+        instance.last_status = kwargs.get('status')
+        instance.last_error = kwargs.get('error')
         instance.last_response_time_ms = kwargs.get('response_time_ms')
 
     monkeypatch.setattr(module, 'mark_status', mark_status)
@@ -99,6 +109,9 @@ def test_full_validation_keeps_provider_health_signal_distinct_from_readiness(mo
     assert source.readiness_status == 'ready'
     assert source.validation_summary['provider_health']['status'] == 'unhealthy'
     assert any(step.key == 'provider_health' and step.status == 'warning' for step in result.validation_steps)
+    runtime_state = HarborRuntimeAdapter().get_state(source, validation_result=result)
+    assert runtime_state.readiness == 'ready'
+    assert runtime_state.health.status == 'degraded'
     assert commits == [True]
     assert statuses[-1]['status'] == 'connected'
 

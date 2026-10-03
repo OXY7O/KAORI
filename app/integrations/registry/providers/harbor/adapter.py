@@ -127,6 +127,7 @@ class HarborRuntimeAdapter:
         diagnostics: tuple[DiagnosticResult, ...],
     ) -> tuple[HealthFactor, ...]:
         api_failed = any(row.status == 'failed' and row.category in {'api', 'runtime'} for row in diagnostics)
+        api_warning = any(row.status == 'warning' and row.category in {'api', 'runtime'} for row in diagnostics)
         capabilities_ready = bool(instance.capabilities)
         return (
             HealthFactor(
@@ -156,9 +157,11 @@ class HarborRuntimeAdapter:
             HealthFactor(
                 'provider_api',
                 'Provider API',
-                'failed' if api_failed else ('success' if instance.last_status == 'connected' else 'unknown'),
+                'failed' if api_failed else (
+                    'warning' if api_warning else ('success' if instance.last_status == 'connected' else 'unknown')
+                ),
                 25,
-                0 if api_failed else (100 if instance.last_status == 'connected' else 50),
+                0 if api_failed else (65 if api_warning else (100 if instance.last_status == 'connected' else 50)),
             ),
             HealthFactor(
                 'capability',
