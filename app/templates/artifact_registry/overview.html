@@ -132,6 +132,40 @@
                     {% endfor %}
                 </div>
             {% endcall %}
+
+            {% call section_card.render(
+                'Security Evidence',
+                'Committed vulnerability and supply-chain evidence remains separate from provider setup and from Alert Intelligence escalation.',
+                'shield-check',
+                action_href=url_for('artifact_registry.security_vulnerabilities'),
+                action_label='Open Security',
+                action_icon='arrow-up-right',
+                body_classes='p-5'
+            ) %}
+                <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    {% for label, value, icon, helper in [
+                        ('Findings', overview.security.finding_count, 'shield-alert', overview.security.critical_count ~ ' critical · ' ~ overview.security.high_count ~ ' high'),
+                        ('Scanned Artifacts', overview.security.scanned_artifact_count, 'scan-search', 'Artifacts with committed scanner evidence'),
+                        ('Signatures Observed', overview.security.signature_observed_count, 'badge-check', 'Presence only; trust is evaluated separately'),
+                        ('SBOM Observed', overview.security.sbom_observed_count, 'file-search', 'Provider-observed SBOM availability')
+                    ] %}
+                        <div class="rounded-xl border border-outline-default bg-surface-hover p-4">
+                            <div class="flex items-center gap-2 text-xs font-semibold text-content-muted">
+                                <i data-lucide="{{ icon }}" class="h-4 w-4 text-kaori-primary"></i>
+                                {{ label }}
+                            </div>
+                            <p class="mt-2 text-2xl font-semibold text-content-primary">{{ value }}</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
+                        </div>
+                    {% endfor %}
+                </div>
+                <p class="mt-4 text-xs leading-5 text-content-muted">
+                    Latest security observation:
+                    <span class="font-semibold text-content-primary">
+                        {{ overview.security.latest_observed_at|user_datetime if overview.security.latest_observed_at else 'Not Collected' }}
+                    </span>
+                </p>
+            {% endcall %}
         {% endif %}
     </div>
 {% endblock dashboard_content %}
