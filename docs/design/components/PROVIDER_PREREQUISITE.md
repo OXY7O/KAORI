@@ -70,6 +70,18 @@ provider present
 → Dependency Blocker
 ```
 
+The source-dependency grammar is consistent across Analytics domains:
+
+```text
+Kubernetes Analytics
+Kubernetes → Metrics Source → Alertmanager
+
+Object Storage Analytics
+Object Storage → Metrics Source → Alert Source
+```
+
+For Object Storage, **Alert Source** means the committed alert-evidence boundary. Alertmanager is preferred when an eligible binding exists, while the existing qualified metrics-backed alert fallback remains valid. Worker materialization is a downstream evidence stage and must not replace Metrics Source / Alert Source in the setup grammar.
+
 ## Metadata
 
 Blocked state does not replace the normal metadata vocabulary with setup labels.
