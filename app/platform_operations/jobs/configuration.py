@@ -68,6 +68,12 @@ def _execution_presentation(definition: JobDefinition, selected_context: dict[st
             'execution_scope_label': 'All Eligible Storage Systems',
             'execution_scope_detail': f'{selected_context.get("eligible_system_count", 0)} Ready managed systems',
         },
+        'artifact_registry.inventory.sync': {
+            'manual_action_label': 'Sync Artifact Registry',
+            'manual_action_icon': 'package-search',
+            'execution_scope_label': 'All Eligible Registry Providers',
+            'execution_scope_detail': f'{selected_context.get("eligible_source_count", 0)} qualified Registry sources',
+        },
         'governance.tls_certificates.sync': {
             'manual_action_label': 'Sync TLS',
             'manual_action_icon': 'refresh-cw',
