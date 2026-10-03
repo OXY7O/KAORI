@@ -99,7 +99,9 @@ class HarborClient:
                 headers={'Accept': 'application/json'},
             )
         except requests.RequestException as exc:
-            raise HarborConnectionError(str(exc)) from exc
+            raise HarborConnectionError(
+                'Harbor API request failed before a response was received.'
+            ) from exc
 
         if response.status_code in {401, 403}:
             raise HarborAuthError(

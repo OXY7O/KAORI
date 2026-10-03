@@ -4,9 +4,10 @@ from dataclasses import dataclass
 from typing import Any
 
 import pytest
+import requests
 
 from app.integrations.registry.providers.harbor.client import HarborClient
-from app.integrations.registry.providers.harbor.exceptions import HarborAuthError
+from app.integrations.registry.providers.harbor.exceptions import HarborAuthError, HarborConnectionError
 
 
 @dataclass
@@ -106,3 +107,24 @@ def test_harbor_client_uses_get_only_for_foundation_probes(monkeypatch) -> None:
     client.list_repositories()
 
     assert methods == ['GET', 'GET', 'GET']
+
+
+def test_harbor_client_normalizes_transport_failure_without_exposing_raw_exception(monkeypatch) -> None:
+    secret = 'do-not-reflect-this-secret'
+
+    def fake_get(url, **kwargs):
+        raise requests.ConnectionError(f'connection failed while handling {secret}')
+
+    monkeypatch.setattr('app.integrations.registry.providers.harbor.client.requests.get', fake_get)
+
+    client = HarborClient(
+        endpoint='https://harbor.example.test',
+        username='robot$kaori',
+        password=secret,
+    )
+
+    with pytest.raises(HarborConnectionError) as exc_info:
+        client.test_connection()
+
+    assert str(exc_info.value) == 'Harbor API request failed before a response was received.'
+    assert secret not in str(exc_info.value)
