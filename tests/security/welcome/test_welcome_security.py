@@ -104,3 +104,22 @@ def test_tenant_workspace_metadata_requires_tenant_permission(monkeypatch: pytes
 
     assert 'Tenant Management' in titles
     assert 'tenant.view' not in search_text
+
+
+
+def test_artifact_registry_workspace_metadata_requires_registry_permission(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_shortcuts(monkeypatch, {'inventory.view', 'object_storage_inventory.view'})
+    titles = {shortcut['title'] for shortcut in _flatten(module.build_welcome_workspace_groups())}
+    assert 'Artifact Registry' not in titles
+
+    module = _load_shortcuts(monkeypatch, {'artifact_registry.view'})
+    shortcuts = _flatten(module.build_welcome_workspace_groups())
+    titles = {shortcut['title'] for shortcut in shortcuts}
+    search_text = ' '.join(shortcut['search_text'] for shortcut in shortcuts)
+
+    assert 'Artifact Registry' in titles
+    assert 'Kubernetes Inventory' not in titles
+    assert 'Object Storage Inventory' not in titles
+    assert 'artifact_registry.view' not in search_text

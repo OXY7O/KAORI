@@ -168,9 +168,21 @@ def _verify_catalog_contract(errors: list[str]) -> None:
     reports = next((item for item in shortcut_definitions if item.get('title') == 'Reports'), None)
     intelligence = next((item for item in shortcut_definitions if item.get('title') == 'Intelligence'), None)
     access = next((item for item in shortcut_definitions if item.get('title') == 'Access'), None)
+    registry_workspace = next(
+        (item for item in shortcut_definitions if item.get('title') == 'Artifact Registry'),
+        None,
+    )
     require(
         governance is not None and governance.get('scope') == 'Compute',
         'Kubernetes Governance scope must be Compute.',
+        errors,
+    )
+    require(
+        registry_workspace is not None
+        and registry_workspace.get('scope') == 'Registry'
+        and ('artifact_registry.view', 'artifact_registry.overview')
+        in (registry_workspace.get('targets') or ()),
+        'Artifact Registry must remain a provider-neutral Welcome workspace owned by artifact_registry.view.',
         errors,
     )
     require(

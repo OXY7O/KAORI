@@ -27,8 +27,13 @@ def test_registry_operational_pages_read_committed_state() -> None:
 
 def test_harbor_is_collector_not_operational_page_authority() -> None:
     sync = (ROOT / 'app/artifact_registry/sync.py').read_text()
+    collector = (ROOT / 'app/integrations/registry/providers/harbor/inventory.py').read_text()
     client = (ROOT / 'app/integrations/registry/providers/harbor/client.py').read_text()
-    assert 'collect_harbor_inventory' in sync
+
+    assert 'get_registry_collector' in sync
     assert 'commit_registry_inventory' in sync
+    assert 'HarborInstance' not in sync
+    assert 'collect_harbor_inventory' in collector
+    assert 'RegistryInventoryEvidence' in collector
     assert 'list_all_artifacts' in client
-    assert 'with_scan_overview=False' in sync
+    assert 'with_scan_overview=True' in collector
