@@ -12,6 +12,11 @@ from app.artifact_registry.inventory.presentation import (
     build_projects,
     build_repositories,
 )
+from app.artifact_registry.security.presentation import SecurityFilters, build_supply_chain, build_vulnerabilities
+from app.artifact_registry.security.sync_jobs import (
+    NoEligibleRegistrySecurityTargets,
+    enqueue_artifact_registry_security_sync,
+)
 from app.artifact_registry.inventory.sync_jobs import (
     NoEligibleRegistryTargets,
     enqueue_artifact_registry_inventory_sync,
@@ -108,3 +113,75 @@ def sync_inventory() -> ResponseReturnValue:
             queue_feedback=True,
         )
     return redirect(request.referrer or url_for('artifact_registry.overview'))
+
+
+def _security_filters() -> SecurityFilters:
+    return SecurityFilters(
+        query=request.args.get('q', '', type=str),
+        severity=request.args.get('severity', '', type=str),
+        provider=request.args.get('provider', '', type=str),
+        source_id=request.args.get('source_id', type=int),
+        page=request.args.get('page', 1, type=int) or 1,
+        per_page=request.args.get('per_page', 5, type=int) or 5,
+    )
+
+
+@artifact_registry_bp.get('/security/vulnerabilities')
+@permission_required('artifact_registry.view')
+def security_vulnerabilities() -> ResponseReturnValue:
+    return render_template(
+        'artifact_registry/security.html',
+        security=build_vulnerabilities(_security_filters()),
+        security_kind='vulnerabilities',
+        security_title='Vulnerabilities',
+        security_description='Normalized scanner findings committed by immutable artifact digest.',
+    )
+
+
+@artifact_registry_bp.get('/security/supply-chain')
+@permission_required('artifact_registry.view')
+def security_supply_chain() -> ResponseReturnValue:
+    return render_template(
+        'artifact_registry/security.html',
+        security=build_supply_chain(_security_filters()),
+        security_kind='supply_chain',
+        security_title='Supply Chain',
+        security_description='Signature presence, trust-evaluation boundary, and SBOM availability evidence.',
+    )
+
+
+@artifact_registry_bp.post('/security/sync')
+@permission_required('artifact_registry.sync')
+def sync_security() -> ResponseReturnValue:
+    try:
+        job, created = enqueue_artifact_registry_security_sync(
+            requested_by_user_id=int(current_user.id),
+            trigger_type='manual',
+        )
+    except NoEligibleRegistrySecurityTargets as exc:
+        record_operational_activity(
+            user_id=int(current_user.id),
+            event_type='artifact_registry_security_sync_blocked',
+            status='warning',
+            title='Artifact Registry Security Sync Blocked',
+            message=str(exc),
+            detail='Run Registry Full Validation and Artifact Registry Inventory Sync before collecting security evidence.',
+            action_url=url_for('artifact_registry.projects'),
+            action_label='Open Artifact Registry Inventory',
+            action_icon='package-open',
+            queue_feedback=True,
+        )
+    else:
+        record_operational_activity(
+            user_id=int(current_user.id),
+            event_type='artifact_registry_security_sync',
+            status='success' if created else 'info',
+            title='Artifact Registry Security Sync Queued' if created else 'Artifact Registry Security Sync Already Active',
+            message='KAORI will collect scanner and supply-chain metadata without triggering provider scans.',
+            detail=f'Canonical Job Execution #{job.id} owns this read-only security evidence synchronization.',
+            action_url=url_for('artifact_registry.security_vulnerabilities'),
+            action_label='Open Registry Security',
+            action_icon='shield-check',
+            queue_feedback=True,
+        )
+    return redirect(request.referrer or url_for('artifact_registry.security_vulnerabilities'))
