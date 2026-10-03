@@ -607,7 +607,7 @@ def verify() -> None:
             'read-only operational projection over committed KAORI data',
             'OPERATIONAL_DASHBOARD.md` v1.7',
             'page_hero.operational_dashboard(...)',
-            'Arrow Left/Right, Home, and End keyboard navigation',
+            'keyboard navigation',
             'artifact-format neutral',
             'Web requests must not query Kubernetes, Metrics Source, or Alertmanager directly',
         ),
@@ -631,6 +631,7 @@ def verify() -> None:
             'components/operational_dashboard_workspace.html',
             'components/reporting_dashboard_workspace.html',
             'components/numbered_governance_steps.html',
+            'Arrow Left/Right wrap; Home selects first; End selects last;',
         ),
         'operational dashboard standard',
     )
