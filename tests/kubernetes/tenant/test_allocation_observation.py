@@ -3,10 +3,10 @@ from types import SimpleNamespace
 from kubernetes.client.rest import ApiException
 
 from app.kubernetes.tenant.allocation_observation import (
-    observe_capsule_tenant_allocation,
     observe_native_namespace_allocation,
     profile_lineage_for_observed_allocation,
 )
+from app.kubernetes.tenant.capsule_allocation_observation import observe_capsule_tenant_allocation
 
 
 def _metadata(name, *, uid=None, resource_version='1', labels=None, owner_references=None):
