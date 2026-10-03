@@ -85,9 +85,15 @@ def sync_artifact_registry_inventory_task(
         target='Registry Estate',
         message='Finalizing committed Artifact Registry inventory evidence.',
     )
-    context.succeed(
-        result_summary=result,
-        result_type='artifact_registry_inventory_sync',
-        partial=bool(failures),
-    )
+    if failures and not synced:
+        context.fail(
+            'All eligible Registry sources failed inventory synchronization.',
+            error_code='artifact_registry_inventory_failed',
+        )
+    else:
+        context.succeed(
+            result_summary=result,
+            result_type='artifact_registry_inventory_sync',
+            partial=bool(failures),
+        )
     return result
