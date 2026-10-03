@@ -70,9 +70,7 @@ def _load_persisted_visual_theme(page: Page, visual_theme: str) -> None:
     expect(page.locator('body')).to_be_visible()
     expect(page.locator('#theme-toggle')).to_be_visible()
     page.evaluate('() => document.fonts.ready')
-    page.evaluate(
-        '() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))'
-    )
+    page.evaluate('() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))')
 
     html = page.locator('html')
     class_tokens = (html.get_attribute('class') or '').split()
