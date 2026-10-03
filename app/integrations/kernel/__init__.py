@@ -1,1 +1,5 @@
-"""Shared Integration Kernel internals.\n\nProduct capabilities and providers remain outside this package; the provider registry\nis kernel infrastructure rather than the Registry product domain.\n"""\n
+"""Shared Integration Kernel internals.
+
+Product capabilities and providers remain outside this package; the provider registry
+is kernel infrastructure rather than the Registry product domain.
+"""
