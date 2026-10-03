@@ -79,7 +79,10 @@ Product identity must not be encoded in core form branches, route branches, or O
 Reusable protocols live under:
 
 ```text
-app/access/authentication/identity_provider/adapters/<adapter>/
+app/access/authentication/identity_provider/adapters/
+├── ldap/
+├── oidc/
+└── oauth2/
 ```
 
 Provider-specific behavior lives under:
@@ -87,6 +90,8 @@ Provider-specific behavior lives under:
 ```text
 app/access/authentication/identity_provider/providers/<provider>/
 ```
+
+For browser SSO, source-controlled provider definitions also own a `browser_profile` that separates protocol identity from provider identity. A browser profile declares protocol, scopes, trusted discovery/endpoints, identity resolver, PKCE policy, and bounded authorization parameters. Runtime provider instances do not become the authority for protocol endpoints or provider identity semantics.
 
 ### Identity Provider Workspace
 
@@ -105,6 +110,25 @@ Overview · Providers · Directory Provisioning
 ### RBAC
 
 RBAC owns roles, permissions, route guards, menu visibility, and operational authorization. Provider adapters must not assign hidden permissions. `is_super_admin` is reserved for Local Database break-glass identities.
+
+## Browser Protocol / Provider Separation
+
+The browser extension model is:
+
+```text
+Provider Definition
+→ Browser Provider Profile
+→ Reusable Protocol Adapter
+→ Provider-specific Identity Resolver when required
+→ SsoIdentity
+→ External Identity Projection
+```
+
+OIDC is a reusable authentication protocol. Its adapter owns discovery, issuer/JWKS validation, Authorization Code flow, ID-token validation, nonce, audience/time validation, PKCE policy, and normalized claims.
+
+OAuth2 is not treated as a universal identity protocol. Its reusable layer owns Authorization Code transport/security only. Provider-specific resolvers own identity APIs and immutable subject extraction. GitHub is the reference OAuth2 shape.
+
+Normal provider onboarding must not require core route, session, User Management, RBAC, or schema changes when an admitted adapter/profile can express the provider.
 
 ## Adapter Registries
 
@@ -146,10 +170,27 @@ Successful authentication routes to `welcome.index`. Authentication does not enc
 
 Adding a new identity product must follow this order:
 
-1. add or reuse an adapter;
-2. add a provider definition to the source-controlled catalog;
-3. add provider-specific implementation only when the provider has behavior beyond the reusable adapter;
-4. add provider-specific guidance partial when needed;
-5. validate catalog/registry/contracts.
+1. determine whether an admitted reusable adapter fits;
+2. add the provider definition and browser/directory profile to the source-controlled catalog;
+3. reuse the existing configuration profile when it can express the provider;
+4. add provider-specific identity resolution only when protocol-neutral normalization cannot supply it;
+5. add provider-specific admission policy/guidance only where semantics genuinely differ;
+6. validate catalog/registry/contracts and real-provider behavior.
 
-Core routes, User Management, RBAC, and database schema must remain unchanged when an existing adapter can serve the provider.
+For browser providers:
+
+```text
+Conforming OIDC provider
+→ provider definition/profile
+→ reusable oidc adapter
+→ optional bounded claim/profile delta
+
+OAuth2 identity provider
+→ provider definition/profile
+→ reusable oauth2 transport
+→ provider-specific identity resolver
+```
+
+A genuinely new protocol receives its own bounded adapter workstream before provider onboarding.
+
+Core routes, session lifecycle, User Management, RBAC, and database schema must remain unchanged when an existing adapter/profile can serve the provider.
