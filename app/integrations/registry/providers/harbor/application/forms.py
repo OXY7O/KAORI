@@ -86,8 +86,13 @@ class HarborInstanceForm(FlaskForm):
         if self.auth_type.data != 'basic':
             return
         submitted = str(field.data or '')
-        if self.existing_instance is None and not submitted:
-            raise ValidationError('Password is required for a new Basic Authentication connection.')
+        current_password = (
+            str(self.existing_instance.password)
+            if self.existing_instance is not None and self.existing_instance.password is not None
+            else ''
+        )
+        if not submitted and not current_password:
+            raise ValidationError('Password is required for Basic Authentication.')
 
     def to_input(self, *, existing_instance: HarborInstance | None = None) -> HarborRegistrationInput:
         current = existing_instance or getattr(self, 'existing_instance', None)

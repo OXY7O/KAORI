@@ -113,6 +113,12 @@ def build_detail_context(
         fallback_compatibility_profile=instance.compatibility_profile,
         fallback_capabilities=tuple(instance.capabilities or ()),
     )
+    if not runtime_state.get('has_observation'):
+        runtime_state = {
+            **runtime_state,
+            'message': 'No persisted Harbor runtime observation is available yet.',
+            'summary': 'No persisted Harbor runtime observation is available yet.',
+        }
     capability_registry = build_harbor_capability_registry(
         instance,
         query=query.capability_query,

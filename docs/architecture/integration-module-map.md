@@ -55,6 +55,7 @@ as `registry_domain` or root product packages to avoid this boundary.
 | Observability | Metrics | Metrics Source | `app/integrations/observability/metrics_source/` | `observability-metrics` |
 | Observability | Alerting | Alertmanager | `app/integrations/observability/alert_source/providers/alertmanager/` | `observability-alerts` |
 | Storage | Object Storage | MinIO | `app/integrations/storage/object_storage/providers/minio/` | `storage-object` |
+| Registry | OCI Registry | Harbor | `app/integrations/registry/providers/harbor/` | `registry-provider` |
 
 Every registered operation has an explicit execution queue. Inline operations
 are construction or state-translation operations that perform no asynchronous
@@ -126,7 +127,8 @@ IntegrationInstance
     ├── KubernetesConnection
     ├── MetricsSource
     ├── AlertmanagerInstance
-    └── MinioInstance
+    ├── MinioInstance
+    └── HarborInstance
 
 ObjectStorageSystem
     └── provider-neutral managed asset for MinIO today and future object-storage providers
@@ -221,16 +223,19 @@ changes only the affected binding.
 
 ### Provider workspace alignment
 
-Kubernetes, Metrics Source, Alertmanager, and MinIO follow the same provider interaction
+Kubernetes, Metrics Source, Alertmanager, MinIO, and Harbor follow the same provider interaction
 model for front pages, registration, Configuration, Validation & Capabilities, and Runtime &
 History. Asset-owner providers use a lifecycle-oriented final workspace: Kubernetes
 owns the managed cluster lifecycle and MinIO owns the canonical `object_storage_system`
 lifecycle, while Metrics Source and Alertmanager remain reusable shared-source providers.
 Kubernetes and MinIO expose `Inventory & Lifecycle`, where bound observability sources are
 read-only evidence. Metrics Source/Alertmanager own binding creation, validation, update, and
-removal from their `Bindings & Consumers` workspaces. Provider-specific API fields and
-consumer contracts may differ, but Hero semantics, connection terminology, readiness
-boundaries, standard tables, and empty/populated registry states must not drift per provider.
+removal from their `Bindings & Consumers` workspaces. Harbor intentionally stops at the shared
+Configuration, Validation & Capabilities, and Runtime & History domains in its foundation slice;
+artifact inventory, vulnerability findings, provider mutation, webhooks, and Registry consumer
+surfaces require their own authority before they are added. Provider-specific API fields and
+consumer contracts may differ, but Hero semantics, connection terminology, readiness boundaries,
+standard tables, and empty/populated registry states must not drift per provider.
 
 Eligible consumer asset families are registered centrally in `app/integrations/consumer_assets.py`.
 The shared Observability Add Binding modal resolves each source provider's Consumer Profile from
@@ -280,12 +285,14 @@ Integrations
 ├── Overview
 ├── Orchestration
 ├── Observability
-└── Storage
+├── Storage
+└── Registry
 ```
 
 Provider workspaces remain canonical deep links. `IntegrationModule.navigation_endpoint_prefixes`
 assigns those endpoints to their owning domain, so Kubernetes and `cluster.*` remain active under
-Orchestration while Metrics Source and Alertmanager remain active under Observability. The sidebar
+Orchestration, Metrics Source and Alertmanager remain active under Observability, and Harbor
+provider workspaces remain active under Registry. The sidebar
 does not branch on provider names. Domain landing pages are taxonomy-driven projections over
 canonical `IntegrationInstance` identities and active `IntegrationBinding` evidence.
 
