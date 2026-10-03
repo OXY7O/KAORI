@@ -1,0 +1,187 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "components/table_primitives.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/pagination.html" as pagination_ui %}
+{% block title %}{{ inventory_title }} · Artifact Registry{% endblock title %}
+{% block dashboard_content %}
+    <div class="space-y-6" data-artifact-registry-inventory="{{ inventory_kind }}">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('package-open', 'Artifact Registry Inventory', 'package-search') %}
+                        <h1 class="{{ page_hero.title_classes() }}">{{ inventory_title }}</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">{{ inventory_description }}</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('list-tree', inventory.total ~ ' In Scope') }}
+                            {{ page_hero.meta_label('blocks', inventory.setup.registered_count ~ ' Providers') }}
+                            {{ page_hero.meta_label('database-zap', inventory.snapshot.freshness.label) }}
+                        </div>
+                    {% endcall %}
+                </div>
+                <aside class="{{ page_hero.aside_classes() }}" aria-label="Artifact Registry inventory context">
+                    {% if inventory.setup.is_blocked %}
+                        {% set provider_prerequisite_scope = "Inventory Readiness" %}
+                        {% set provider_prerequisite_title = "Registry Setup Required" %}
+                        {% set provider_prerequisite_info = "Register and validate a Registry provider before inventory can be collected." %}
+                        {% set provider_prerequisite_resource_icon = "blocks" %}
+                        {% set provider_prerequisite_resource_label = "Registered Providers" %}
+                        {% set provider_prerequisite_resource_value = "0" %}
+                        {% set provider_prerequisite_resource_supporting = "No Registry integration registered" %}
+                        {% set provider_prerequisite_state_label = "Inventory State" %}
+                        {% set provider_prerequisite_state_value = "Blocked" %}
+                        {% set provider_prerequisite_state_supporting = "Provider setup is required" %}
+                        {% include "components/provider_prerequisite/_hero_context.html" %}
+                    {% else %}
+                        {{ page_hero.context_card_body(
+                            'Inventory Authority',
+                            'Committed Snapshot',
+                            inventory.snapshot.freshness.label,
+                            inventory.snapshot.freshness.tone,
+                            [
+                                ('database-zap', 'Collected Sources', inventory.snapshot.collected_source_count ~ '/' ~ inventory.setup.registered_count, 'Committed Registry sources'),
+                                ('clock-3', 'Latest Observation', inventory.snapshot.latest_observed_at|user_datetime if inventory.snapshot.latest_observed_at else 'Not Collected', 'Provider collection boundary')
+                            ],
+                            'Open Registry Integrations',
+                            url_for('integrations.registry'),
+                            'package'
+                        ) }}
+                    {% endif %}
+                </aside>
+            </div>
+        </section>
+
+        {% if inventory.setup.is_blocked %}
+            {% set provider_prerequisite_icon = "package-plus" %}
+            {% set provider_prerequisite_label = "Setup Required" %}
+            {% set provider_prerequisite_title = "Register Your First Registry Provider" %}
+            {% set provider_prerequisite_description = "Connect a Registry provider and complete Full Validation before collecting Artifact Registry inventory." %}
+            {% set provider_prerequisite_steps = ["Open Registry Integrations", "Register Provider", "Run Full Validation", "Run Artifact Registry Sync"] %}
+            {% set provider_prerequisite_action_url = url_for('integrations.registry') %}
+            {% set provider_prerequisite_action_label = "Open Registry Integrations" %}
+            {% set provider_prerequisite_action_icon = "package" %}
+            {% set provider_prerequisite_permission = "integrations.manage" %}
+            {% include "components/provider_prerequisite/_setup_blocker.html" %}
+        {% else %}
+            <section class="{{ table_ui.block_classes() }}">
+                <header class="{{ table_ui.block_header_classes() }}">
+                    <div class="flex items-start gap-3">
+                        <span class="{{ table_ui.block_icon_classes() }}">
+                            <i data-lucide="package-search" class="h-5 w-5"></i>
+                        </span>
+                        <div>
+                            <h2 class="{{ table_ui.block_title_classes() }}">{{ inventory_title }} Inventory</h2>
+                            <p class="{{ table_ui.block_description_classes() }}">Provider-neutral committed evidence with provider provenance and snapshot freshness.</p>
+                        </div>
+                    </div>
+                    {% if current_user.has_permission('artifact_registry.sync') %}
+                        <form method="post" action="{{ url_for('artifact_registry.sync_inventory') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                            <button type="submit"
+                                    class="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover">
+                                <i data-lucide="refresh-cw" class="h-3.5 w-3.5"></i>
+                                Sync Inventory
+                            </button>
+                        </form>
+                    {% endif %}
+                </header>
+                <form method="get" class="{{ table_ui.filter_bar_classes() }}">
+                    <label>
+                        <span class="{{ table_ui.filter_label_classes() }}">Search</span>
+                        {{ table_ui.search_field('q', request.args.get('q', ''), 'Search committed inventory…') }}
+                    </label>
+                    <label>
+                        <span class="{{ table_ui.filter_label_classes() }}">Provider</span>
+                        <select name="provider" class="{{ table_ui.filter_select_classes() }}">
+                            <option value="">All Providers</option>
+                            {% for option in inventory.providers %}
+                                <option value="{{ option.value }}" {% if request.args.get('provider') == option.value %}selected{% endif %}>{{ option.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label>
+                        <span class="{{ table_ui.filter_label_classes() }}">Source</span>
+                        <select name="source_id" class="{{ table_ui.filter_select_classes() }}">
+                            <option value="">All Sources</option>
+                            {% for source in inventory.sources %}
+                                <option value="{{ source.id }}" {% if request.args.get('source_id')|int == source.id %}selected{% endif %}>{{ source.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <button data-kaori-filter-action type="submit" class="{{ table_ui.action_classes() }}">Apply</button>
+                </form>
+
+                <div class="overflow-x-auto">
+                    <table class="{{ table_ui.table_classes('min-w-[900px]') }}">
+                        <thead class="{{ table_ui.head_classes() }}">
+                            <tr>
+                                <th class="{{ table_ui.header_cell_classes() }}">{{ inventory_title[:-1] if inventory_title.endswith('s') else inventory_title }}</th>
+                                {% if inventory_kind == 'repositories' %}<th class="{{ table_ui.header_cell_classes() }}">Project</th>{% endif %}
+                                {% if inventory_kind == 'artifacts' %}<th class="{{ table_ui.header_cell_classes() }}">Repository / Project</th>{% endif %}
+                                <th class="{{ table_ui.header_cell_classes() }}">Provider</th>
+                                <th class="{{ table_ui.header_cell_classes() }}">
+                                    {% if inventory_kind == 'projects' %}Repositories{% elif inventory_kind == 'repositories' %}Artifacts{% else %}Tags / Size{% endif %}
+                                </th>
+                                <th class="{{ table_ui.header_cell_classes() }}">Snapshot</th>
+                            </tr>
+                        </thead>
+                        <tbody class="{{ table_ui.body_classes() }}">
+                            {% for row in inventory.rows %}
+                                <tr class="{{ table_ui.row_classes() }}">
+                                    <td class="{{ table_ui.cell_classes() }}">
+                                        {% if inventory_kind == 'projects' %}
+                                            {{ table_ui.title_cell(row.name, row.source_name, 'folder-tree') }}
+                                        {% elif inventory_kind == 'repositories' %}
+                                            {{ table_ui.title_cell(row.name, row.source_name, 'package-open') }}
+                                        {% else %}
+                                            {{ table_ui.title_cell(row.digest_short, row.artifact_type, 'package-search') }}
+                                        {% endif %}
+                                    </td>
+                                    {% if inventory_kind == 'repositories' %}
+                                        <td class="{{ table_ui.cell_classes() }}">{{ row.project_name }}</td>
+                                    {% endif %}
+                                    {% if inventory_kind == 'artifacts' %}
+                                        <td class="{{ table_ui.cell_classes() }}">
+                                            <p class="font-semibold text-content-primary">{{ row.repository_name }}</p>
+                                            <p class="mt-0.5 text-xs text-content-muted">{{ row.project_name }}</p>
+                                        </td>
+                                    {% endif %}
+                                    <td class="{{ table_ui.cell_classes() }}">
+                                        {{ table_label.metadata_label(row.provider_label, 'blocks') }}
+                                        <p class="mt-1 text-xs text-content-muted">{{ row.source_name }}</p>
+                                    </td>
+                                    <td class="{{ table_ui.cell_classes() }}">
+                                        {% if inventory_kind == 'projects' %}
+                                            {{ row.repository_count if row.repository_count is not none else 'Not Observed' }}
+                                        {% elif inventory_kind == 'repositories' %}
+                                            {{ row.artifact_count if row.artifact_count is not none else 'Not Observed' }}
+                                        {% else %}
+                                            <p class="font-semibold text-content-primary">{{ row.tag_label }}</p>
+                                            <p class="mt-0.5 text-xs text-content-muted">{{ row.size_label }}</p>
+                                        {% endif %}
+                                    </td>
+                                    <td class="{{ table_ui.cell_classes() }}">
+                                        {{ table_label.status_indicator_label(row.freshness.label, row.freshness.tone) }}
+                                        <p class="mt-1 text-xs text-content-muted">{{ row.observed_at|user_datetime }}</p>
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" class="px-5 py-10 text-center text-sm text-content-muted">
+                                        No committed {{ inventory_title|lower }} match the current filters.
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if inventory.pagination.total_pages > 1 %}
+                    <footer class="{{ pagination_ui.footer_classes() }}">
+                        <span>{{ inventory.total }} committed record(s)</span>
+                        {{ pagination_ui.numeric_pages(inventory.pagination.page, inventory.pagination.total_pages) }}
+                    </footer>
+                {% endif %}
+            </section>
+        {% endif %}
+    </div>
+{% endblock dashboard_content %}

@@ -1,0 +1,137 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "components/operational_section_card.html" as section_card %}
+{% import "components/table_label.html" as table_label %}
+{% block title %}Artifact Registry Overview{% endblock title %}
+{% block dashboard_content %}
+    <div class="space-y-6" data-artifact-registry-workspace="overview">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('package-search', 'Artifact Registry', 'package-search') %}
+                        <h1 class="{{ page_hero.title_classes() }}">Overview</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">
+                            Review committed Registry inventory, provider coverage, freshness, and normalized OCI artifact evidence.
+                        </p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('blocks', overview.provider_count ~ ' Providers') }}
+                            {{ page_hero.meta_label('folder-tree', overview.project_count ~ ' Projects') }}
+                            {{ page_hero.meta_label('package-search', overview.artifact_count ~ ' Artifacts') }}
+                        </div>
+                    {% endcall %}
+                </div>
+                <aside class="{{ page_hero.aside_classes() }}" aria-label="Artifact Registry readiness">
+                    {% if overview.setup.is_blocked %}
+                        {% set provider_prerequisite_scope = "Artifact Registry" %}
+                        {% set provider_prerequisite_title = "Registry Setup Required" %}
+                        {% set provider_prerequisite_info = "Register and validate a Registry provider before Artifact Registry inventory can be collected." %}
+                        {% set provider_prerequisite_resource_icon = "blocks" %}
+                        {% set provider_prerequisite_resource_label = "Registered Providers" %}
+                        {% set provider_prerequisite_resource_value = "0" %}
+                        {% set provider_prerequisite_resource_supporting = "No Registry integration registered" %}
+                        {% set provider_prerequisite_state_label = "Inventory State" %}
+                        {% set provider_prerequisite_state_value = "Blocked" %}
+                        {% set provider_prerequisite_state_supporting = "Provider setup is required" %}
+                        {% include "components/provider_prerequisite/_hero_context.html" %}
+                    {% else %}
+                        {{ page_hero.context_card_body(
+                            'Committed Inventory',
+                            'Registry Estate',
+                            overview.snapshot.freshness.label,
+                            overview.snapshot.freshness.tone,
+                            [
+                                ('circle-check', 'Ready Providers', overview.ready_provider_count, 'Ready or degraded validated sources'),
+                                ('database-zap', 'Collected Sources', overview.snapshot.collected_source_count ~ '/' ~ overview.provider_count, 'Committed snapshot coverage')
+                            ],
+                            'Open Registry Integrations',
+                            url_for('integrations.registry'),
+                            'package'
+                        ) }}
+                    {% endif %}
+                </aside>
+            </div>
+        </section>
+
+        {% if overview.setup.is_blocked %}
+            {% set provider_prerequisite_icon = "package-plus" %}
+            {% set provider_prerequisite_label = "Setup Required" %}
+            {% set provider_prerequisite_title = "Register Your First Registry Provider" %}
+            {% set provider_prerequisite_description = "Connect a Registry provider, complete Full Validation, then collect the first committed Artifact Registry snapshot." %}
+            {% set provider_prerequisite_steps = ["Open Registry Integrations", "Register Provider", "Run Full Validation", "Run Artifact Registry Sync"] %}
+            {% set provider_prerequisite_action_url = url_for('integrations.registry') %}
+            {% set provider_prerequisite_action_label = "Open Registry Integrations" %}
+            {% set provider_prerequisite_action_icon = "package" %}
+            {% set provider_prerequisite_permission = "integrations.manage" %}
+            {% include "components/provider_prerequisite/_setup_blocker.html" %}
+        {% else %}
+            {% call section_card.render(
+                'Committed Inventory Snapshot',
+                'Normal Artifact Registry pages read committed KAORI state; provider APIs are collected by inventory jobs.',
+                'database-zap',
+                body_classes='p-0'
+            ) %}
+                <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
+                    {% for label, value, icon in [
+                        ('Projects', overview.project_count, 'folder-tree'),
+                        ('Repositories', overview.repository_count, 'package-open'),
+                        ('Artifacts', overview.artifact_count, 'package-search'),
+                        ('Observed Tags', overview.tag_count, 'tags')
+                    ] %}
+                        <div class="p-5">
+                            <div class="flex items-center gap-2 text-xs font-semibold text-content-muted">
+                                <i data-lucide="{{ icon }}" class="h-4 w-4 text-kaori-primary"></i>
+                                {{ label }}
+                            </div>
+                            <p class="mt-2 text-2xl font-semibold text-content-primary">{{ value }}</p>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <p class="text-xs font-semibold text-content-secondary">Latest committed observation</p>
+                        <p class="mt-1 text-sm font-semibold text-content-primary">
+                            {{ overview.snapshot.latest_observed_at|user_datetime if overview.snapshot.latest_observed_at else 'Not Collected' }}
+                        </p>
+                    </div>
+                    {% if current_user.has_permission('artifact_registry.sync') %}
+                        <form method="post" action="{{ url_for('artifact_registry.sync_inventory') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                            <button type="submit"
+                                    class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover">
+                                <i data-lucide="refresh-cw" class="h-4 w-4"></i>
+                                Sync Artifact Registry
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            {% endcall %}
+
+            {% call section_card.render(
+                'Inventory Domains',
+                'Drill into provider-neutral project, repository, and digest-oriented artifact inventory.',
+                'package-open',
+                body_classes='p-5'
+            ) %}
+                <div class="grid gap-3 md:grid-cols-3">
+                    {% for title, description, icon, href, count in [
+                        ('Projects', 'Registry projects or namespaces across providers.', 'folder-tree', url_for('artifact_registry.projects'), overview.project_count),
+                        ('Repositories', 'Normalized OCI repositories inside committed projects.', 'package-open', url_for('artifact_registry.repositories'), overview.repository_count),
+                        ('Artifacts', 'Digest-oriented OCI artifacts and observed mutable tags.', 'package-search', url_for('artifact_registry.artifacts'), overview.artifact_count)
+                    ] %}
+                        <a href="{{ href }}"
+                           class="rounded-xl border border-outline-default bg-surface-card p-4 transition hover:border-brand-outline hover:bg-kaori-soft">
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                                    <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                                </span>
+                                <span class="text-xl font-semibold text-content-primary">{{ count }}</span>
+                            </div>
+                            <h3 class="mt-3 text-sm font-semibold text-content-primary">{{ title }}</h3>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% endcall %}
+        {% endif %}
+    </div>
+{% endblock dashboard_content %}

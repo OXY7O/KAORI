@@ -1,0 +1,37 @@
+{% import "components/operational_section_card.html" as section_card %}
+{% import "components/table_label.html" as table_label %}
+{% set definition = selected_job.definition %}
+{% set policy = selected_job.policy %}
+{% set can_configure = current_user.has_permission(definition.configure_permission) %}
+{% set overview_metrics = [
+    ('calendar-clock', 'Automatic Policy', selected_job.interval_label, 'Saved scheduler cadence'),
+    ('package-search', 'Registry Readiness', selected_job.eligible_source_count ~ ' of ' ~ selected_job.registered_source_count, 'Qualified inventory sources')
+] %}
+{% set overview_notice = 'Registry inventory jobs collect provider evidence and commit normalized snapshots atomically. User page requests never collect live provider inventory.' %}
+<div class="space-y-5">
+    {% include "platform_operations/jobs/configuration/_job_overview.html" %}
+    {% call section_card.render(
+        'Artifact Registry Inventory Policy',
+        'Control automatic committed Registry inventory refresh through the canonical inventory worker.',
+        'package-search'
+    ) %}
+        <div class="flex flex-col gap-4">
+            <div class="grid gap-3 sm:grid-cols-2">
+                <div class="rounded-lg border border-outline-default bg-surface-hover p-4">
+                    <p class="text-xs font-semibold text-content-muted">Scheduler</p>
+                    <div class="mt-2">{{ table_label.status_indicator_label(selected_job.scheduler_state.label, selected_job.scheduler_state.tone) }}</div>
+                    <p class="mt-2 text-xs leading-5 text-content-secondary">{{ selected_job.scheduler_state.description }}</p>
+                </div>
+                <div class="rounded-lg border border-outline-default bg-surface-hover p-4">
+                    <p class="text-xs font-semibold text-content-muted">Provider Readiness</p>
+                    <div class="mt-2">{{ table_label.status_indicator_label(selected_job.readiness_state.label, selected_job.readiness_state.tone) }}</div>
+                    <p class="mt-2 text-xs leading-5 text-content-secondary">{{ selected_job.readiness_state.description }}</p>
+                </div>
+            </div>
+            <p class="text-xs leading-5 text-content-muted">
+                Policy editing continues through the shared Job Configuration contract. Provider mutation is not part of this job.
+            </p>
+        </div>
+    {% endcall %}
+    {% include "platform_operations/jobs/configuration/_execution_activity.html" %}
+</div>
