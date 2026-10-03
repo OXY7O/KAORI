@@ -7,17 +7,18 @@
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% set readiness = instance.readiness_status or "validation_required" %}
 {% set readiness_label = "Ready" if readiness == "ready" else ("Blocked" if readiness == "blocked" else "Validation Required") %}
-{% set capability_ready = capability_registry.ready_count %}
-{% set capability_total = capability_registry.total_contracts %}
-{% set capability_blocked = capability_total - capability_ready %}
-{% set capability_percent = ((capability_ready * 100 / capability_total) if capability_total else 0) %}
+{% set required_ready = capability_registry.required_ready_count %}
+{% set required_total = capability_registry.required_count %}
+{% set capability_blocked = capability_registry.required_missing_count %}
+{% set optional_ready = capability_registry.optional_ready_count %}
+{% set capability_percent = ((required_ready * 100 / required_total) if required_total else 0) %}
 {% set capability_metadata = [
     "Profile · " ~ (instance.compatibility_profile or "Validation Required")
 ] %}
 {% set capability_metrics = [
-    {"icon": "layers-3", "tone": "normal", "label": "Validated Capabilities", "value": capability_ready, "description": "Harbor API contracts observed by Full Validation."},
-    {"icon": "list-checks", "tone": "neutral", "label": "Required Contracts", "value": capability_registry.required_count, "description": "Required provider contracts in the Registry capability profile."},
-    {"icon": "shield-x", "tone": "critical" if capability_blocked else "normal", "label": "Capability Gaps", "value": capability_blocked, "description": "Provider API contracts not currently evidenced."}
+    {"icon": "layers-3", "tone": "normal", "label": "Required Ready", "value": required_ready ~ " / " ~ required_total, "description": "Required Harbor API contracts observed by Full Validation."},
+    {"icon": "scan-search", "tone": "neutral", "label": "Optional Observed", "value": optional_ready, "description": "Optional follow-on capability evidence observed without affecting readiness."},
+    {"icon": "shield-x", "tone": "critical" if capability_blocked else "normal", "label": "Required Gaps", "value": capability_blocked, "description": "Required Harbor API contracts not currently evidenced."}
 ] %}
 <section id="harbor-core-validation"
          class="relative font-sans {{ integration_ui.section_shell_classes() }}">
@@ -59,8 +60,8 @@
             "Required Harbor API identity, compatibility, health, and read capability evidence for the qualified release.",
             readiness,
             readiness_label,
-            "Validated Capabilities",
-            capability_ready ~ " / " ~ capability_total,
+            "Required Capability Coverage",
+            required_ready ~ " / " ~ required_total,
             capability_percent,
             capability_metadata,
             capability_metrics,
@@ -87,7 +88,7 @@
             readiness_decision_title,
             readiness_decision_message,
             readiness_decision_tone,
-            [capability_blocked ~ " capability gaps", "Validated " ~ validated_at_display]
+            [capability_blocked ~ " required capability gaps", "Validated " ~ validated_at_display]
         ) }}
         {% include "integrations/registry/providers/harbor/partials/_capability_registry.html" %}
     </div>

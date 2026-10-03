@@ -87,6 +87,7 @@
                     <option value="" {% if not filters.status %}selected{% endif %}>All Statuses</option>
                     <option value="ready" {% if filters.status == "ready" %}selected{% endif %}>Ready</option>
                     <option value="blocked" {% if filters.status == "blocked" %}selected{% endif %}>Blocked</option>
+                    <option value="degraded" {% if filters.status == "degraded" %}selected{% endif %}>Not Observed</option>
                 </select>
             </label>
         </div>

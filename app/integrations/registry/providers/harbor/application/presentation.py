@@ -152,7 +152,7 @@ def build_harbor_capability_registry(
     rows: list[dict[str, Any]] = []
     for definition in CAPABILITIES:
         available = definition.key in observed
-        row_status = 'ready' if available else 'blocked'
+        row_status = 'ready' if available else ('blocked' if definition.required else 'degraded')
         rows.append(
             {
                 'key': definition.key,
@@ -161,7 +161,7 @@ def build_harbor_capability_registry(
                 'required': bool(definition.required),
                 'requirement_label': 'Required' if definition.required else 'Optional',
                 'status': row_status,
-                'status_label': 'Ready' if available else 'Blocked',
+                'status_label': 'Ready' if available else ('Blocked' if definition.required else 'Not Observed'),
                 'available': available,
                 'contract': CAPABILITY_PROFILE,
                 'category': definition.category,
@@ -169,7 +169,11 @@ def build_harbor_capability_registry(
                 'evidence': (
                     f'Full Validation observed {definition.label} in the persisted Harbor capability snapshot.'
                     if available
-                    else f'Full Validation did not observe {definition.label} in the current Harbor capability snapshot.'
+                    else (
+                        f'Full Validation did not observe required capability {definition.label}.'
+                        if definition.required
+                        else f'Optional capability {definition.label} is not observed in this foundation validation scope.'
+                    )
                 ),
                 'success_criteria': definition.success_criteria or definition.description,
                 'impact': definition.impact or (
@@ -180,15 +184,23 @@ def build_harbor_capability_registry(
                 'next_action': (
                     'No corrective action is required. Revalidate after Harbor upgrades or credential changes.'
                     if available
-                    else 'Verify Harbor endpoint access and read permissions, then rerun Full Validation.'
+                    else (
+                        'Verify Harbor endpoint access and read permissions, then rerun Full Validation.'
+                        if definition.required
+                        else 'No readiness remediation is required; this optional capability belongs to a follow-on Registry workstream.'
+                    )
                 ),
-                'remediation': list(definition.remediation) if definition.remediation else (
+                'remediation': (
                     []
-                    if available
-                    else [
-                        'Verify the registered Harbor endpoint and read-only credential permissions.',
-                        'Rerun Full Validation and confirm this capability becomes Ready.',
-                    ]
+                    if available or not definition.required
+                    else (
+                        list(definition.remediation)
+                        if definition.remediation
+                        else [
+                            'Verify the registered Harbor endpoint and read-only credential permissions.',
+                            'Rerun Full Validation and confirm this capability becomes Ready.',
+                        ]
+                    )
                 ),
                 'technical_checks': [],
             }
@@ -211,12 +223,16 @@ def build_harbor_capability_registry(
         rows = [row for row in rows if row['required'] is want_required]
     else:
         normalized_requirement = ''
-    if normalized_status in {'ready', 'blocked'}:
+    if normalized_status in {'ready', 'blocked', 'degraded'}:
         rows = [row for row in rows if row['status'] == normalized_status]
     else:
         normalized_status = ''
 
     page_rows, pagination = paginate_sequence(rows, page=page, per_page=per_page)
+    required_keys = {item.key for item in CAPABILITIES if item.required}
+    optional_keys = {item.key for item in CAPABILITIES if not item.required}
+    required_ready_count = len(observed.intersection(required_keys))
+    optional_ready_count = len(observed.intersection(optional_keys))
     return {
         'rows': page_rows,
         'pagination': pagination,
@@ -227,8 +243,11 @@ def build_harbor_capability_registry(
         },
         'total_contracts': len(CAPABILITIES),
         'ready_count': len(observed.intersection({item.key for item in CAPABILITIES})),
-        'required_count': sum(1 for item in CAPABILITIES if item.required),
-        'optional_count': sum(1 for item in CAPABILITIES if not item.required),
+        'required_count': len(required_keys),
+        'required_ready_count': required_ready_count,
+        'required_missing_count': len(required_keys) - required_ready_count,
+        'optional_count': len(optional_keys),
+        'optional_ready_count': optional_ready_count,
     }
 
 

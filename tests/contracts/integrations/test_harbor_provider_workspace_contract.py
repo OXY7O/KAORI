@@ -82,6 +82,7 @@ def test_harbor_registry_and_capabilities_use_standard_pagination_with_default_f
     assert 'provider_registry.pagination_footer' in registry
     assert 'swap="outerHTML"' in registry
     assert 'pagination_ui.numeric_pages' in capabilities
+    assert 'Not Observed' in capabilities
     assert 'per_page: int = 5' in presentation
     assert 'capability_per_page: int = 5' in presentation
     assert 'history_per_page: int = 5' in presentation
@@ -117,3 +118,17 @@ def test_harbor_workspace_does_not_add_provider_mutation_or_secret_evidence() ->
     assert 'requests.patch(' not in client
     assert 'requests.delete(' not in client
     assert "'password'" not in validation
+
+
+def test_harbor_optional_capabilities_do_not_count_as_required_readiness_gaps() -> None:
+    presentation = read('app/integrations/registry/providers/harbor/application/presentation.py')
+    validation = read(
+        'app/templates/integrations/registry/providers/harbor/partials/_detail_validation.html'
+    )
+
+    assert "row_status = 'ready' if available else ('blocked' if definition.required else 'degraded')" in presentation
+    assert "'required_missing_count': len(required_keys) - required_ready_count" in presentation
+    assert "'optional_ready_count': optional_ready_count" in presentation
+    assert 'Required Capability Coverage' in validation
+    assert 'Required Gaps' in validation
+    assert 'Optional Observed' in validation
