@@ -19,6 +19,8 @@ control_modules:
   label: Object Storage Inventory
 - key: storage_analytics
   label: Object Storage Analytics
+- key: artifact_registry
+  label: Artifact Registry
 - key: integrations
   label: Integrations
 - key: platform_operations
@@ -64,6 +66,14 @@ permissions:
   module: storage_inventory
   action: sync
   description: Run object-storage inventory synchronization through canonical Job Execution.
+- key: artifact_registry.view
+  module: artifact_registry
+  action: view
+  description: View committed Artifact Registry inventory, provider provenance, and normalized OCI artifact evidence.
+- key: artifact_registry.sync
+  module: artifact_registry
+  action: sync
+  description: Run Artifact Registry inventory synchronization through canonical Job Execution.
 - key: kubernetes_configmaps.view
   module: k8s_operations
   action: view_configmap_management
@@ -288,6 +298,7 @@ permission_dependencies:
   clusters.manage: [clusters.view]
   clusters.sync: [clusters.view, jobs.execute]
   storage.sync: [object_storage_inventory.view, jobs.execute]
+  artifact_registry.sync: [artifact_registry.view, jobs.execute]
   kubernetes_configmaps.create: [kubernetes_configmaps.view]
   kubernetes_configmaps.update: [kubernetes_configmaps.view]
   kubernetes_configmaps.delete: [kubernetes_configmaps.view]
@@ -337,6 +348,7 @@ system_roles:
   description: Broad read-only infrastructure visibility across dashboard, cluster inventory, analytics, governance, intelligence,
     ConfigMaps, and reports.
   permissions:
+  - artifact_registry.view
   - analytics.view
   - clusters.view
   - dashboard.view
@@ -357,6 +369,8 @@ system_roles:
   description: Daily infrastructure operations including sync, report generation, ConfigMap changes, TLS inventory refresh,
     and controlled TLS Secret rotation.
   permissions:
+  - artifact_registry.view
+  - artifact_registry.sync
   - analytics.view
   - clusters.sync
   - clusters.view
@@ -389,6 +403,8 @@ system_roles:
   description: Infrastructure configuration access for clusters, integrations, Secrets, bulk TLS rotation, report templates,
     schedules, and storage operations.
   permissions:
+  - artifact_registry.view
+  - artifact_registry.sync
   - analytics.view
   - clusters.manage
   - clusters.sync
@@ -435,6 +451,8 @@ system_roles:
   description: Application administration across users, roles, integrations, operations, retention, and protected settings,
     excluding direct Secret reveal.
   permissions:
+  - artifact_registry.view
+  - artifact_registry.sync
   - analytics.view
   - clusters.manage
   - clusters.sync
@@ -501,6 +519,7 @@ system_roles:
   description: Read-only infrastructure, user, role, system, audit, and archive-export visibility without operational write
     access.
   permissions:
+  - artifact_registry.view
   - analytics.view
   - clusters.view
   - dashboard.view
