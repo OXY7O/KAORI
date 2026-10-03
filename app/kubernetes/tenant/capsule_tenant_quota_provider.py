@@ -8,7 +8,7 @@ from kubernetes.client.rest import ApiException
 
 from app.extensions.db import db
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
-from app.kubernetes.tenant.allocation_observation import (
+from app.kubernetes.tenant.capsule_allocation_observation import (
     observe_capsule_tenant_allocation,
     observe_capsule_tenant_resource_quota,
 )

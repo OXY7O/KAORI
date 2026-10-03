@@ -9,8 +9,8 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.common.pagination import paginate_sequence
 from app.extensions.db import db
-from app.kubernetes.tenant.allocation_observation import observe_capsule_tenant_resource_quota
 from app.kubernetes.tenant.capacity_governance import enforce_capsule_tenant_resource_quota_preflight
+from app.kubernetes.tenant.capsule_allocation_observation import observe_capsule_tenant_resource_quota
 from app.kubernetes.tenant.capsule_tenant_quota_contract import (
     _AUTHORITY,
     _CAPABILITY,

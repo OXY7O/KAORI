@@ -8,6 +8,7 @@ from typing import Any
 
 from kubernetes.utils.quantity import parse_quantity
 
+from app.kubernetes.tenant.service_contracts import RESOURCE_PROFILE_PRESETS
 from app.kubernetes.tenant.validation import (
     COUNT_QUOTA_KEYS,
     SUPPORTED_LIMIT_KEYS,
@@ -277,8 +278,6 @@ def profile_lineage_for_observed_allocation(
     limits: Mapping[str, Mapping[str, str]],
     storage_policy: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
-    from app.kubernetes.tenant.service import RESOURCE_PROFILE_PRESETS
-
     for profile_class, preset in RESOURCE_PROFILE_PRESETS.items():
         preset_quota = {str(key): str(value) for key, value in dict(preset['quota']).items()}
         preset_limits = {
@@ -423,19 +422,3 @@ def observe_native_namespace_allocation(api: Any, namespace: str) -> dict[str, A
         limit_range_items=list(_value(limit_payload, 'items', []) or []),
     )
 
-
-def observe_capsule_tenant_resource_quota(tenant_item: Mapping[str, Any]) -> dict[str, Any] | None:
-    from app.kubernetes.tenant.capsule_allocation_observation import observe_capsule_tenant_resource_quota as _impl
-
-    return _impl(tenant_item)
-
-
-def observe_capsule_tenant_allocation(
-    client: Any,
-    *,
-    tenant_name: str,
-    tenant_item: Mapping[str, Any],
-) -> dict[str, Any]:
-    from app.kubernetes.tenant.capsule_allocation_observation import observe_capsule_tenant_allocation as _impl
-
-    return _impl(client, tenant_name=tenant_name, tenant_item=tenant_item)

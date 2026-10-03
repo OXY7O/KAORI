@@ -44,10 +44,8 @@ from app.kubernetes.tenant.decommission_service import (
     TenantDecommissionBlocked,
     request_tenant_decommission_committed,
 )
-from app.kubernetes.tenant.discovery_service import (
-    adopt_discovered_tenant_committed,
-    get_tenant_adoption_preflight_context,
-)
+from app.kubernetes.tenant.discovery_adoption import adopt_discovered_tenant_committed
+from app.kubernetes.tenant.discovery_service import get_tenant_adoption_preflight_context
 from app.kubernetes.tenant.job_adapter import (
     build_tenant_sync_state,
     dispatch_tenant_decommission,

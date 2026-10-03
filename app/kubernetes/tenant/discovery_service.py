@@ -10,10 +10,8 @@ from app.common.pagination import paginate_sequence
 from app.common.presentation import present_user_datetime
 from app.extensions.db import db
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
-from app.kubernetes.tenant.allocation_observation import (
-    observe_capsule_tenant_allocation,
-    observe_native_namespace_allocation,
-)
+from app.kubernetes.tenant.allocation_observation import observe_native_namespace_allocation
+from app.kubernetes.tenant.capsule_allocation_observation import observe_capsule_tenant_allocation
 from app.kubernetes.tenant.capsule_provider import discover_capsule
 from app.models import Cluster
 from app.models.kubernetes import KubernetesConnection
@@ -682,12 +680,3 @@ def _take_over_capsule_allocation(
         )
     return profile
 
-
-def adopt_discovered_tenant_committed(
-    source: Mapping[str, Any],
-) -> tuple[Tenant, TenantEnvironment, TenantNamespace | None]:
-    """Adopt provider state through the dedicated governed adoption boundary."""
-
-    from app.kubernetes.tenant.discovery_adoption import adopt_discovered_tenant_committed as _impl
-
-    return _impl(source)
