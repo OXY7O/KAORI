@@ -101,6 +101,31 @@ jobs:
   execution_summary: Refresh committed security evidence for artifacts already present in Artifact Registry inventory.
   recent_execution_summary: Latest scheduled and manual Artifact Registry security evidence synchronizations.
   legacy_module: artifact_registry_security_sync
+- key: artifact_registry.runtime_correlation.materialize
+  name: Artifact Registry Runtime Correlation
+  domain: Artifact Registry Security
+  description: Materialize committed Registry artifact to Kubernetes runtime image usage correlation.
+  icon: waypoints
+  queue_name: inventory
+  workload_class: standard
+  job_type: artifact_registry_runtime_correlation
+  operation: materialize_artifact_registry_runtime_correlation
+  scope_type: registry_kubernetes_correlation
+  scope_key: all
+  configure_permission: jobs.configure
+  execute_permission: jobs.execute
+  domain_execute_permission: artifact_registry.sync
+  dispatcher_path: app.artifact_registry.correlation.job_adapter:dispatch_artifact_registry_runtime_correlation
+  context_builder_path: app.artifact_registry.correlation.job_adapter:build_artifact_registry_runtime_correlation_context
+  configuration_template: platform_operations/jobs/configuration/definitions/artifact_registry_runtime_correlation.html
+  default_enabled: true
+  default_interval_minutes: 60
+  minimum_interval_minutes: 15
+  maximum_interval_minutes: 1440
+  safety_summary: Correlation reads committed KAORI Registry and Kubernetes inventory only; digest matches are authoritative and tag-only matches stay explicitly weaker.
+  execution_summary: Rebuild committed runtime blast-radius evidence without live Registry or Kubernetes requests.
+  recent_execution_summary: Latest scheduled and manual Registry to Kubernetes runtime correlation materializations.
+  legacy_module: artifact_registry_runtime_correlation
 - key: object_storage.inventory.sync
   name: Object Storage Inventory Sync
   domain: Object Storage Inventory
