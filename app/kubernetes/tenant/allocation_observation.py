@@ -421,4 +421,3 @@ def observe_native_namespace_allocation(api: Any, namespace: str) -> dict[str, A
         quota_items=list(_value(quota_payload, 'items', []) or []),
         limit_range_items=list(_value(limit_payload, 'items', []) or []),
     )
-
