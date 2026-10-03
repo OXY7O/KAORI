@@ -9,7 +9,7 @@ from app.integrations.compatibility import evaluate_compatibility
 from app.integrations.registry.providers.harbor.capabilities import CAPABILITY_PROFILE
 from app.integrations.registry.providers.harbor.client_factory import build_client
 from app.integrations.registry.providers.harbor.contracts import ValidationResult, ValidationStep
-from app.integrations.registry.providers.harbor.exceptions import HarborError
+from app.integrations.registry.providers.harbor.exceptions import HarborError, HarborResponseError
 from app.integrations.registry.providers.harbor.status import mark_status
 from app.models.harbor import HarborInstance
 
@@ -54,6 +54,7 @@ def validate_source(source: HarborInstance, *, source_label: str) -> ValidationR
     )
 
     health_summary: dict[str, object] = {}
+    projects: list[dict[str, object]] = []
     project_count = 0
     repository_count = 0
 
@@ -91,7 +92,20 @@ def validate_source(source: HarborInstance, *, source_label: str) -> ValidationR
         logger.warning('Harbor project probe failed for %s: %s', source_label, exc)
 
     try:
-        repositories = client.list_repositories(page=1, page_size=1)
+        if not projects:
+            raise HarborResponseError(
+                'Harbor project listing returned no visible project, so repository discovery could not be proven.'
+            )
+        project_scope = projects[0].get('name') or projects[0].get('project_id')
+        if project_scope in {None, ''}:
+            raise HarborResponseError(
+                'Harbor project evidence did not include a project name or id for repository discovery.'
+            )
+        repositories = client.list_repositories(
+            project_name_or_id=str(project_scope),
+            page=1,
+            page_size=1,
+        )
         repository_count = len(repositories)
         capabilities.add('repository_discovery')
         steps.append(
@@ -99,7 +113,7 @@ def validate_source(source: HarborInstance, *, source_label: str) -> ValidationR
                 'repository_discovery',
                 'Repository Discovery',
                 'success',
-                'Harbor authorized repository listing is readable.',
+                f'Harbor repository listing is readable for project {project_scope}.',
             )
         )
     except HarborError as exc:

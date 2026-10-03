@@ -36,8 +36,8 @@ def test_harbor_client_discovers_identity_and_read_capabilities(monkeypatch) -> 
         if url.endswith('/api/v2.0/health'):
             return _Response(200, {'status': 'healthy', 'components': []})
         if url.endswith('/api/v2.0/projects'):
-            return _Response(200, [])
-        if url.endswith('/api/v2.0/repositories'):
+            return _Response(200, [{'name': 'library'}])
+        if url.endswith('/api/v2.0/projects/library/repositories'):
             return _Response(200, [])
         raise AssertionError(url)
 
@@ -54,12 +54,12 @@ def test_harbor_client_discovers_identity_and_read_capabilities(monkeypatch) -> 
     connection = client.test_connection()
     health = client.get_health()
     projects = client.list_projects()
-    repositories = client.list_repositories()
+    repositories = client.list_repositories(project_name_or_id='library')
 
     assert connection['version'] == 'v2.15.2-abc123'
     assert connection['registry_url'] == 'registry.example.test'
     assert health['status'] == 'healthy'
-    assert projects == []
+    assert projects == [{'name': 'library'}]
     assert repositories == []
     assert {url.rsplit('/', 1)[-1] for url, _ in calls} >= {
         'systeminfo',
@@ -104,7 +104,7 @@ def test_harbor_client_uses_get_only_for_foundation_probes(monkeypatch) -> None:
     client = HarborClient(endpoint='https://harbor.example.test')
     client.test_connection()
     client.list_projects()
-    client.list_repositories()
+    client.list_repositories(project_name_or_id='library')
 
     assert methods == ['GET', 'GET', 'GET']
 

@@ -48,9 +48,9 @@ capabilities:
   category: inventory
   description: List authorized repositories without requiring provider mutation privileges.
   required: true
-  probe: GET /api/v2.0/repositories?page=1&page_size=1
-  success_criteria: Harbor returns HTTP 200 with a JSON array; an empty array is valid inventory evidence.
-  configuration_guidance: Grant read/list repository permissions for the Registry scope KAORI observes.
+  probe: GET /api/v2.0/projects/{project_name_or_id}/repositories?page=1&page_size=1
+  success_criteria: Harbor returns HTTP 200 with a JSON array for a visible representative project; an empty repository array is valid evidence.
+  configuration_guidance: Grant project visibility plus read/list repository permissions for the Registry scope KAORI observes.
   impact: Required for repository reconciliation and artifact discovery planning.
   remediation:
   - Confirm the Harbor credential has repository list/read permission for the intended scope.

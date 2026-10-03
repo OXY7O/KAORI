@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from time import perf_counter
 from typing import Any
+from urllib.parse import quote
 
 import requests
 from requests import Response
@@ -65,8 +66,21 @@ class HarborClient:
         payload = self._request_json('/api/v2.0/projects', params={'page': page, 'page_size': page_size})
         return self._object_list(payload, 'projects')
 
-    def list_repositories(self, *, page: int = 1, page_size: int = 1) -> list[dict[str, Any]]:
-        payload = self._request_json('/api/v2.0/repositories', params={'page': page, 'page_size': page_size})
+    def list_repositories(
+        self,
+        *,
+        project_name_or_id: str | int,
+        page: int = 1,
+        page_size: int = 1,
+    ) -> list[dict[str, Any]]:
+        project_scope = str(project_name_or_id).strip()
+        if not project_scope:
+            raise HarborResponseError('Harbor project name or id is required for repository discovery.')
+        encoded_scope = quote(project_scope, safe='')
+        payload = self._request_json(
+            f'/api/v2.0/projects/{encoded_scope}/repositories',
+            params={'page': page, 'page_size': page_size},
+        )
         return self._object_list(payload, 'repositories')
 
     @staticmethod

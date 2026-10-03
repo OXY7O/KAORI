@@ -22,9 +22,10 @@ class _ReadyClient:
         return {'status': 'unhealthy', 'components': [{'name': 'database', 'status': 'unhealthy'}]}
 
     def list_projects(self, *, page=1, page_size=1):
-        return []
+        return [{'name': 'library'}]
 
-    def list_repositories(self, *, page=1, page_size=1):
+    def list_repositories(self, *, project_name_or_id, page=1, page_size=1):
+        assert project_name_or_id == 'library'
         return []
 
 
@@ -32,8 +33,16 @@ class _MissingRepositoryClient(_ReadyClient):
     def get_health(self):
         return {'status': 'healthy', 'components': []}
 
-    def list_repositories(self, *, page=1, page_size=1):
+    def list_repositories(self, *, project_name_or_id, page=1, page_size=1):
         raise HarborAuthError('Harbor authentication or authorization failed with HTTP 403.', status=403)
+
+
+class _NoVisibleProjectClient(_ReadyClient):
+    def list_projects(self, *, page=1, page_size=1):
+        return []
+
+    def list_repositories(self, *, project_name_or_id, page=1, page_size=1):
+        raise AssertionError('Repository discovery must not run without a visible project.')
 
 
 def _source():
@@ -131,6 +140,25 @@ def test_full_validation_blocks_when_required_repository_capability_is_missing(m
     assert source.readiness_status == 'blocked'
     assert 'repository_discovery' in (result.error or '')
     assert any(step.key == 'repository_discovery' and step.status == 'failed' for step in result.validation_steps)
+
+
+def test_full_validation_blocks_when_no_project_can_anchor_repository_discovery(monkeypatch) -> None:
+    source = _source()
+    _stub_persistence(monkeypatch, validation)
+    monkeypatch.setattr(validation, 'build_client', lambda _source: _NoVisibleProjectClient())
+
+    result = validation.validate_source(source, source_label='Harbor Test')
+
+    assert result.connected is True
+    assert result.readiness_status == 'blocked'
+    assert 'project_discovery' in result.capabilities
+    assert 'repository_discovery' not in result.capabilities
+    assert any(
+        step.key == 'repository_discovery'
+        and step.status == 'failed'
+        and 'no visible project' in step.detail
+        for step in result.validation_steps
+    )
 
 
 def test_runtime_refresh_updates_health_without_rebuilding_validation_authority(monkeypatch) -> None:
