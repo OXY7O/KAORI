@@ -8,7 +8,7 @@ from app.integrations.observability.alert_source.providers.alertmanager.applicat
 from app.integrations.observability.alert_source.providers.alertmanager.application.resolver import (
     resolve_alertmanager_sources,
 )
-from app.integrations.registry import get_integration
+from app.integrations.kernel.registry import get_integration
 from app.models.alertmanager import AlertmanagerInstance
 from app.models.integration import IntegrationBinding
 

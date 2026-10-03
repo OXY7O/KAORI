@@ -38,7 +38,7 @@ from app.integrations.observability.alert_source.providers.alertmanager.applicat
     resolve_alertmanager_sources,
 )
 from app.integrations.observability.alert_source.providers.alertmanager.exceptions import AlertmanagerError
-from app.integrations.registry import get_integration
+from app.integrations.kernel.registry import get_integration
 from app.models.alertmanager import AlertmanagerInstance
 from app.models.cluster import Cluster
 from app.models.integration import IntegrationBinding, IntegrationInstance

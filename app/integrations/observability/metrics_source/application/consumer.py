@@ -20,7 +20,7 @@ from app.integrations.observability.metrics_source.exceptions import (
 )
 from app.integrations.observability.metrics_source.query_profiles import resolve_query_reference
 from app.integrations.observability.metrics_source.routing import query_horizon_for_range, query_horizon_for_timestamp
-from app.integrations.registry import get_integration
+from app.integrations.kernel.registry import get_integration
 from app.models import Cluster
 
 DEFAULT_QUERY_CAPABILITIES = ('instant_query',)

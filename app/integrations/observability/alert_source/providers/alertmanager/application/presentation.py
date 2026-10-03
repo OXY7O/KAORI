@@ -29,7 +29,7 @@ from app.integrations.observability.alert_source.providers.alertmanager.capabili
 )
 from app.integrations.observability.alert_source.providers.alertmanager.requirements import evaluate_module_readiness
 from app.integrations.readiness import resolve_binding_operational_status
-from app.integrations.registry import get_integration
+from app.integrations.kernel.registry import get_integration
 from app.integrations.runtime.presentation import runtime_history_view, runtime_state_view
 from app.integrations.runtime.repository import paginate_runtime_history
 from app.models.alertmanager import AlertmanagerInstance

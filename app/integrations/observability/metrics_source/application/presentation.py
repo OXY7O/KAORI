@@ -21,7 +21,7 @@ from app.integrations.observability.metrics_source.providers import provider_def
 from app.integrations.observability.metrics_source.routing import normalize_routing_policy, recent_window_hours
 from app.integrations.observability.metrics_source.scope import KUBERNETES_CLUSTER_SCOPE, bindings_for_instance
 from app.integrations.readiness import resolve_binding_operational_status
-from app.integrations.registry import get_integration
+from app.integrations.kernel.registry import get_integration
 from app.integrations.runtime.presentation import runtime_history_view, runtime_state_view
 from app.integrations.runtime.repository import paginate_runtime_history
 from app.models import Cluster, MetricsSource, ObjectStorageSystem
