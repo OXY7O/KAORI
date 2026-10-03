@@ -54,6 +54,20 @@ providers:
     admission_help: One domain per line or comma separated. The provider must return a verified email in an approved domain.
     client_secret_placeholder: KAORI_GOOGLE_CLIENT_SECRET
     guidance_partial: access/identity_providers/providers/google/_guidance.html
+    browser_profile:
+      protocol: oidc
+      scopes:
+        - openid
+        - email
+        - profile
+      discovery_url: https://accounts.google.com/.well-known/openid-configuration
+      authorization_url: null
+      token_url: null
+      userinfo_url: null
+      identity_resolver_key: oidc_claims
+      pkce_policy: preferred
+      authorization_parameters:
+        prompt: select_account
 
   - provider_key: github
     adapter_key: github_oauth2
@@ -72,3 +86,16 @@ providers:
     admission_help: One subject per line or comma separated. Prefer immutable external subject IDs when the provider exposes them.
     client_secret_placeholder: KAORI_GITHUB_CLIENT_SECRET
     guidance_partial: access/identity_providers/providers/github/_guidance.html
+    browser_profile:
+      protocol: oauth2
+      scopes:
+        - read:user
+        - user:email
+      discovery_url: null
+      authorization_url: https://github.com/login/oauth/authorize
+      token_url: https://github.com/login/oauth/access_token
+      userinfo_url: https://api.github.com/user
+      identity_resolver_key: github
+      pkce_policy: preferred
+      authorization_parameters:
+        allow_signup: 'false'
