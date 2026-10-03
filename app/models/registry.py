@@ -122,9 +122,21 @@ class RegistryArtifact(db.Model):
     size_bytes: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     push_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     pull_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    scan_status: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    scan_completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    vulnerability_summary: Mapped[dict | None] = mapped_column(db.JSON, nullable=True, default=dict)
+    signature_status: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    sbom_status: Mapped[str | None] = mapped_column(String(40), nullable=True)
     provider_metadata: Mapped[dict | None] = mapped_column(db.JSON, nullable=True, default=dict)
     observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
+    scan_snapshots: Mapped[list['RegistryScanSnapshot']] = relationship(
+        'RegistryScanSnapshot',
+        back_populates='artifact',
+        cascade='all, delete-orphan',
+        passive_deletes=True,
+        order_by='RegistryScanSnapshot.observed_at.desc()',
+    )
     repository: Mapped[RegistryRepository] = relationship('RegistryRepository', back_populates='artifacts', lazy='joined')
     tags: Mapped[list['RegistryTag']] = relationship(
         'RegistryTag',
@@ -158,3 +170,71 @@ class RegistryTag(db.Model):
     observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     artifact: Mapped[RegistryArtifact] = relationship('RegistryArtifact', back_populates='tags', lazy='joined')
+
+
+class RegistryScanSnapshot(db.Model):
+    """Normalized vulnerability scan evidence for one immutable artifact digest."""
+
+    __tablename__ = 'registry_scan_snapshots'
+    __table_args__ = (
+        Index('ix_registry_scan_artifact_observed', 'artifact_id', 'observed_at'),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    artifact_id: Mapped[int] = mapped_column(
+        ForeignKey('registry_artifacts.id', ondelete='CASCADE'),
+        nullable=False,
+        index=True,
+    )
+    scanner: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    scanner_version: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    report_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    status: Mapped[str] = mapped_column(String(40), nullable=False, default='not_scanned')
+    severity_summary: Mapped[dict | None] = mapped_column(db.JSON, nullable=True, default=dict)
+    provider_metadata: Mapped[dict | None] = mapped_column(db.JSON, nullable=True, default=dict)
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    artifact: Mapped[RegistryArtifact] = relationship('RegistryArtifact', back_populates='scan_snapshots', lazy='joined')
+    vulnerabilities: Mapped[list['RegistryVulnerability']] = relationship(
+        'RegistryVulnerability',
+        back_populates='scan_snapshot',
+        cascade='all, delete-orphan',
+        passive_deletes=True,
+        order_by='RegistryVulnerability.severity',
+    )
+
+
+class RegistryVulnerability(db.Model):
+    """Normalized vulnerability finding derived from provider scan evidence."""
+
+    __tablename__ = 'registry_vulnerabilities'
+    __table_args__ = (
+        UniqueConstraint(
+            'scan_snapshot_id',
+            'vulnerability_id',
+            'package',
+            'installed_version',
+            name='uq_registry_vulnerability_scan_identity',
+        ),
+        Index('ix_registry_vulnerabilities_severity', 'severity'),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    scan_snapshot_id: Mapped[int] = mapped_column(
+        ForeignKey('registry_scan_snapshots.id', ondelete='CASCADE'),
+        nullable=False,
+        index=True,
+    )
+    vulnerability_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    package: Mapped[str] = mapped_column(String(512), nullable=False, default='unknown')
+    installed_version: Mapped[str] = mapped_column(String(255), nullable=False, default='unknown')
+    fixed_version: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    severity: Mapped[str] = mapped_column(String(30), nullable=False, default='unknown')
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    provider_metadata: Mapped[dict | None] = mapped_column(db.JSON, nullable=True, default=dict)
+
+    scan_snapshot: Mapped[RegistryScanSnapshot] = relationship(
+        'RegistryScanSnapshot',
+        back_populates='vulnerabilities',
+        lazy='joined',
+    )

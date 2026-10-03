@@ -5,7 +5,7 @@ from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
 from app.access.rbac.decorators import permission_required
-from app.artifact_registry.presentation import build_inventory, build_overview
+from app.artifact_registry.presentation import build_inventory, build_overview, build_security
 from app.artifact_registry.sync_jobs import NoEligibleRegistryTargets, enqueue_all_registry_inventory_sync
 from app.platform_operations.notifications.service import record_operational_activity
 
@@ -29,6 +29,18 @@ def inventory() -> ResponseReturnValue:
     )
     template = 'artifact_registry/partials/_inventory_workspace.html' if request.headers.get('HX-Request') == 'true' else 'artifact_registry/inventory.html'
     return render_template(template, inventory=context)
+
+
+@artifact_registry_bp.get('/security')
+@permission_required('artifact_registry.view')
+def security() -> ResponseReturnValue:
+    return render_template(
+        'artifact_registry/security.html',
+        security=build_security(
+            page=request.args.get('page', 1, type=int) or 1,
+            per_page=request.args.get('per_page', 5, type=int) or 5,
+        ),
+    )
 
 
 @artifact_registry_bp.post('/sync')

@@ -47,7 +47,15 @@ from app.models.notification_channel import NotificationChannel, NotificationDel
 from app.models.object_storage import ObjectStorageBucket, ObjectStorageSystem
 from app.models.object_storage_analytics import ObjectStorageAnalyticsSnapshot, ObjectStorageForecastSnapshot
 from app.models.rbac import Permission, Role, RolePermission
-from app.models.registry import RegistryArtifact, RegistryCollectionState, RegistryProject, RegistryRepository, RegistryTag
+from app.models.registry import (
+    RegistryArtifact,
+    RegistryCollectionState,
+    RegistryProject,
+    RegistryRepository,
+    RegistryScanSnapshot,
+    RegistryTag,
+    RegistryVulnerability,
+)
 from app.models.report import Report, ReportSchedule, ReportScheduleRun, ReportTemplate
 from app.models.resolver import (
     ResolverDeploymentPolicy,
@@ -219,6 +227,8 @@ __all__ = [
     'RegistryRepository',
     'RegistryArtifact',
     'RegistryTag',
+    'RegistryScanSnapshot',
+    'RegistryVulnerability',
     'Report',
     'ReportTemplate',
     'ReportSchedule',

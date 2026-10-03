@@ -40,6 +40,7 @@ _ENDPOINT_LABELS: dict[str, str] = {
     # Artifact Registry
     'artifact_registry.overview': 'Overview',
     'artifact_registry.inventory': 'Inventory',
+    'artifact_registry.security': 'Security',
     # Analytics
     'analytics.overview': 'Overview',
     'analytics.utilization': 'Utilization',

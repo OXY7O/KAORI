@@ -159,6 +159,30 @@ class HarborClient:
             page_size=page_size,
         )
 
+
+    def get_vulnerability_report(
+        self,
+        *,
+        project_name_or_id: str | int,
+        repository_name: str,
+        reference: str,
+    ) -> dict[str, Any]:
+        project_scope = quote(str(project_name_or_id).strip(), safe='')
+        repository_scope = quote(quote(str(repository_name).strip().strip('/'), safe=''), safe='')
+        artifact_reference = quote(str(reference).strip(), safe='')
+        payload = self._request_json(
+            f'/api/v2.0/projects/{project_scope}/repositories/{repository_scope}/artifacts/{artifact_reference}/additions/vulnerabilities',
+            headers={
+                'X-Accept-Vulnerabilities': (
+                    'application/vnd.security.vulnerability.report; version=1.1, '
+                    'application/vnd.scanner.adapter.vuln.report.harbor+json; version=1.0'
+                )
+            },
+        )
+        if not isinstance(payload, dict):
+            raise HarborResponseError('Harbor vulnerability report response is not an object.')
+        return payload
+
     @staticmethod
     def _paged(fetch_page, *, page_size: int) -> list[dict[str, Any]]:
         size = max(1, min(int(page_size or 100), 100))

@@ -147,6 +147,13 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
                 'artifact_registry.inventory',
                 ('artifact_registry.view',),
             ),
+            WorkspaceCapabilityDefinition(
+                'security',
+                'Security',
+                'shield-check',
+                'artifact_registry.security',
+                ('artifact_registry.view',),
+            ),
         ),
     ),
     WorkspaceDefinition(
