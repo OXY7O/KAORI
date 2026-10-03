@@ -73,26 +73,27 @@ Real-device UAT may add evidence, but physical device names do not become CSS co
 
 The approved Database Setup Required surface is a non-Hero operational readiness workspace. It uses the global **Major Page Title outside Hero** typography authority: 24 px (`text-2xl`), semibold, compact line height, with no Hero minimum-height or promotional title treatment.
 
+The page uses **one unified operational surface**. Readiness content is separated by shared spacing and subtle dividers rather than a peer card for every information group.
+
 The composition is:
 
 ```text
-Compact Page Identity + Shared Readiness Labels
-→ Development Bootstrap
-→ Shared Initialization Info Flow
-→ Security / Readiness Supporting Evidence
-→ Progressive Setup Details
-→ Retry Setup Check
+Unified Operational Surface
+├── Compact Page Identity + Shared Readiness Labels
+├── Primary Development Bootstrap | Readiness + Security Boundary
+├── Embedded Initialization Info Flow | Progressive Setup Details
+└── Read-only Boundary + Retry Setup Check
 ```
 
 Shared ownership is mandatory:
 
+- `components/operational_section_card.html::shell_classes()` owns the single outer operational surface;
 - `components/table_label.html` owns PostgreSQL/schema semantic labels;
-- `components/operational_section_card.html` owns primary operational surfaces;
-- `components/info_flow.html` owns the initialization sequence;
+- `components/info_flow.html` owns the initialization sequence and uses `embedded=true` inside the parent-owned surface;
 - `components/terminal_command.html` owns copyable bootstrap/check commands;
 - `components/operational_callout.html` owns semantic security/recovery callouts.
 
-The setup page must not introduce authenticated Hero geometry, page-local semantic badge styling, a copied timeline implementation, arbitrary typography, or database mutation from presentation code.
+The setup page must not introduce authenticated Hero geometry, multiple peer operational cards, page-local semantic badge styling, a copied timeline implementation, arbitrary typography, or database mutation from presentation code.
 
 ## Locked Security Contract
 

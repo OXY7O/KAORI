@@ -81,6 +81,17 @@ Boundary note:
 - 12 px text;
 - one contextual 16 px icon.
 
+## Embedded composition
+
+When Info Flow belongs inside a larger canonical operational surface, use `embedded=true`.
+Embedded mode preserves the shared header, ordered timeline, typography, markers, connector,
+and optional boundary note while removing the component's independent card border, radius,
+shadow, and outer padding. This prevents nested-card proliferation without copying timeline
+classes into the page template.
+
+Use embedded mode only when the parent already owns the visible surface boundary. Do not use
+it to remove hierarchy from a standalone Info Flow.
+
 ## Shared implementation
 
 ```jinja
@@ -100,6 +111,15 @@ Boundary note:
     icon='waypoints',
     note='Registration alone does not establish readiness or scope eligibility.'
 ) }}
+
+{# Inside an existing operational surface #}
+{{ info_flow.render(
+    'Initialization Path',
+    'Complete the controlled bootstrap sequence.',
+    steps,
+    icon='list-checks',
+    embedded=true
+) }}
 ```
 
 Do not copy timeline classes into page-local templates.
@@ -118,6 +138,7 @@ Do not copy timeline classes into page-local templates.
 - Title Case title and step names.
 - Sentence-case descriptions.
 - Shared component used.
+- Embedded mode is used only inside a parent-owned surface.
 - One optional flow-wide boundary note.
 - No metrics, tables, or embedded actions inside steps.
 - Technical casing preserved.
