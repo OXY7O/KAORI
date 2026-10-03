@@ -154,5 +154,8 @@ def test_object_storage_analytics_dependency_path_keeps_metrics_and_alert_eviden
     assert 'Alertmanager or qualified metrics-backed alert evidence' in blocker
     assert 'Object Storage → Metrics Source → Alert Source' in blocker
     assert 'Object Storage → Metrics Source → Alert Source → Analytics Snapshot' in blocker
+    assert 'Prometheus-compatible operational metrics source' in blocker
+    assert 'Alertmanager when available' in blocker
+    assert 'components/provider_prerequisite/_setup_blocker.html' not in blocker
     assert 'dependency_blocked_step = 4' in blocker
     assert 'dependency_blocked_step|default(dependency_blocker.stage|int)' in shared

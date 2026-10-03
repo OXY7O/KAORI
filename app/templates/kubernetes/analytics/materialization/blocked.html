@@ -24,19 +24,6 @@
                 </aside>
             </div>
         </section>
-        {% if dependency_blocker.kind == 'cluster_required' %}
-            {% set provider_prerequisite_icon = "server-cog" %}
-            {% set provider_prerequisite_label = "Setup Required" %}
-            {% set provider_prerequisite_title = "Connect Your First Kubernetes Cluster" %}
-            {% set provider_prerequisite_description = "Add a cluster before KAORI materializes Kubernetes analytics evidence." %}
-            {% set provider_prerequisite_steps = ["Open Cluster Integrations", "Register Cluster", "Run Sync"] %}
-            {% set provider_prerequisite_action_url = url_for('integrations.kubernetes') %}
-            {% set provider_prerequisite_action_label = "Open Cluster Integrations" %}
-            {% set provider_prerequisite_action_icon = "plug-zap" %}
-            {% set provider_prerequisite_permission = "clusters.manage" %}
-            {% include "components/provider_prerequisite/_setup_blocker.html" %}
-        {% else %}
-            {% include "components/dependencies/_blocker.html" %}
-        {% endif %}
+        {% include "components/dependencies/_blocker.html" %}
     </div>
 {% endblock dashboard_content %}

@@ -51,23 +51,24 @@ This is not a setup-absent state.
 - `components/provider_prerequisite/_setup_blocker.html` — provider-neutral mapping into the canonical blocked-state renderer.
 - `components/states/_blocked_state.html` — visual blocker geometry and action/permission behavior.
 - `components/workspace_tabs.html` — route-level Integrated Workspace Tabs.
-- `components/dependencies/_blocker.html` — secondary dependency path after provider setup exists.
+- `components/dependencies/_blocker.html` — Analytics end-to-end dependency path and other secondary dependency paths.
 
 Domain wrappers may provide nouns, icons, routes, permissions, evidence labels, and steps. They must not own a new geometry.
 
 ## Analytics
 
-Analytics uses the provider-prerequisite grammar only for the first provider/source prerequisite.
+Analytics is the deliberate exception to the single-provider setup blocker.
 
-After a provider is registered, missing committed inventory, metrics, alerts, history, or analytics snapshots remain secondary dependencies and continue through the shared dependency blocker.
+An Analytics route must show the complete capability dependency path even when the first provider/source has not been configured yet. This keeps downstream requirements visible instead of making the operator discover Metrics and Alert dependencies one setup step at a time.
 
 ```text
-provider absent
-→ Provider Prerequisite Blocker
+first analytics prerequisite missing
+→ Analytics Dependency Blocker
+→ current dependency = Current Blocker
+→ downstream dependencies = Pending
 
-provider present
-→ analytics-specific dependency missing
-→ Dependency Blocker
+provider/source prerequisites ready
+→ committed analytics evidence/materialization becomes available
 ```
 
 The source-dependency grammar is consistent across Analytics domains:

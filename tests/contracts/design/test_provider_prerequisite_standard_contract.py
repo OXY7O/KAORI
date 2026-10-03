@@ -66,17 +66,22 @@ def test_inventory_blocked_state_preserves_normal_metadata_roles() -> None:
     assert 'Object Storage Setup Required' not in assets_metadata
 
 
-def test_analytics_provider_absence_uses_provider_prerequisite_before_secondary_dependencies() -> None:
+def test_analytics_provider_absence_keeps_full_dependency_path_visible() -> None:
     kubernetes_page = read('app/templates/kubernetes/analytics/materialization/blocked.html')
     kubernetes_posture = read('app/templates/kubernetes/analytics/components/_blocked_posture.html')
     storage_blocker = read('app/templates/storage/object_storage/analytics/partials/_dependency_blocker.html')
     storage_posture = read('app/templates/storage/object_storage/analytics/partials/_hero_blocked_posture.html')
 
-    assert "dependency_blocker.kind == 'cluster_required'" in kubernetes_page
-    assert 'components/provider_prerequisite/_setup_blocker.html' in kubernetes_page
+    assert 'components/dependencies/_blocker.html' in kubernetes_page
+    assert 'components/provider_prerequisite/_setup_blocker.html' not in kubernetes_page
     assert 'components/provider_prerequisite/_hero_context.html' in kubernetes_posture
-    assert "dependency_blocker.kind == 'system_required'" in storage_blocker
-    assert 'components/provider_prerequisite/_setup_blocker.html' in storage_blocker
+
+    assert '"Object Storage"' in storage_blocker
+    assert '"Metrics Source"' in storage_blocker
+    assert '"Alert Source"' in storage_blocker
+    assert 'Object Storage → Metrics Source → Alert Source' in storage_blocker
+    assert 'components/dependencies/_blocker.html' in storage_blocker
+    assert 'components/provider_prerequisite/_setup_blocker.html' not in storage_blocker
     assert 'components/provider_prerequisite/_hero_context.html' in storage_posture
 
 
