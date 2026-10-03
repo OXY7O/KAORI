@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from typing import Any
+from urllib.parse import urlparse
 
 from app.artifact_registry.inventory.contracts import (
     RegistryArtifactEvidence,
@@ -61,6 +62,16 @@ def collect_harbor_inventory(source: HarborInstance) -> RegistryInventoryEvidenc
 
     client = build_client(source)
     observed_at = datetime.now(UTC)
+    system_info = client.get_system_info()
+    registry_hosts: list[str] = []
+    for candidate in (system_info.get('registry_url'), system_info.get('external_url'), source.endpoint):
+        text = str(candidate or '').strip()
+        if not text:
+            continue
+        parsed = urlparse(text if '://' in text else f'//{text}')
+        host = (parsed.netloc or parsed.path.split('/', 1)[0]).strip().lower()
+        if host and host not in registry_hosts:
+            registry_hosts.append(host)
     project_rows = _all_pages(
         lambda page, page_size: client.list_projects(page=page, page_size=page_size)
     )
@@ -162,6 +173,7 @@ def collect_harbor_inventory(source: HarborInstance) -> RegistryInventoryEvidenc
                 metadata={
                     'owner_id': project_row.get('owner_id'),
                     'current_user_role_id': project_row.get('current_user_role_id'),
+                    'registry_hosts': registry_hosts,
                 },
             )
         )
