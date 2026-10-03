@@ -1,0 +1,232 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "components/table_primitives.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/pagination.html" as pagination_ui %}
+{% import "components/operational_section_card.html" as section_card %}
+{% block title %}Runtime Usage · Artifact Registry Security{% endblock title %}
+{% block dashboard_content %}
+    <div class="space-y-6" data-artifact-registry-runtime-usage>
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('waypoints', 'Artifact Registry Security', 'waypoints') %}
+                        <h1 class="{{ page_hero.title_classes() }}">Runtime Usage</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">
+                            Correlate committed OCI artifact identity with committed Kubernetes runtime image usage and review blast radius without live provider calls.
+                        </p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('fingerprint', runtime.digest_match_count ~ ' Digest Matches') }}
+                            {{ page_hero.meta_label('tags', runtime.tag_match_count ~ ' Tag Matches') }}
+                            {{ page_hero.meta_label('database-zap', runtime.freshness.label) }}
+                        </div>
+                    {% endcall %}
+                </div>
+                <aside class="{{ page_hero.aside_classes() }}" aria-label="Runtime correlation context">
+                    {% if runtime.is_blocked %}
+                        {{ page_hero.blocked_context_body(
+                            'Correlation Readiness',
+                            'Committed Evidence Required',
+                            [
+                                ('package-search', 'Registry Artifacts', runtime.artifact_count, 'Committed Artifact Registry inventory'),
+                                ('box', 'Pod Inventory', runtime.pod_inventory_count, 'Committed Kubernetes Pod inventory')
+                            ],
+                            'Collect both Artifact Registry and Kubernetes Pod inventory before materializing runtime correlation.',
+                            'Blocked',
+                            'warning',
+                            'lock-keyhole',
+                            'triangle-alert'
+                        ) }}
+                    {% else %}
+                        {{ page_hero.context_card_body(
+                            'Correlation Authority',
+                            'Committed Runtime Bindings',
+                            runtime.freshness.label,
+                            runtime.freshness.tone,
+                            [
+                                ('fingerprint', 'Digest Match', runtime.digest_match_count, 'Authoritative immutable identity match'),
+                                ('tags', 'Tag Match', runtime.tag_match_count, 'Weaker mutable-reference match')
+                            ],
+                            'Open Kubernetes Pods',
+                            url_for('inventory.pods'),
+                            'box'
+                        ) }}
+                    {% endif %}
+                </aside>
+            </div>
+        </section>
+
+        {% if runtime.is_blocked %}
+            {% set blocked_state_icon = "waypoints" %}
+            {% set blocked_state_label = "Correlation Blocked" %}
+            {% set blocked_state_title = "Collect Both Inventory Domains First" %}
+            {% set blocked_state_description = "Runtime correlation is database-only and requires committed Artifact Registry artifacts plus committed Kubernetes Pod runtime evidence." %}
+            {% set blocked_state_steps = ["Sync Artifact Registry Inventory", "Sync Kubernetes Inventory", "Return To Runtime Usage", "Rebuild Correlation"] %}
+            {% set blocked_state_action_url = url_for('artifact_registry.projects') %}
+            {% set blocked_state_action_label = "Open Registry Inventory" %}
+            {% set blocked_state_action_icon = "package-open" %}
+            {% set blocked_state_permission = "artifact_registry.view" %}
+            {% set blocked_state_variant = "section" %}
+            {% include "components/states/_blocked_state.html" %}
+        {% else %}
+            {% call section_card.render(
+                'Runtime Blast Radius',
+                'Digest matches are authoritative. Tag-only matches are retained as weaker evidence and never promoted to digest certainty.',
+                'waypoints',
+                body_classes='p-0'
+            ) %}
+                <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
+                    {% for label, value, icon, helper in [
+                        ('Clusters', runtime.cluster_count, 'boxes', 'Clusters using matched Registry artifacts'),
+                        ('Namespaces', runtime.namespace_count, 'folders', 'Namespaces in the current scope'),
+                        ('Workloads', runtime.workload_count, 'layers-3', 'Resolved workload identities'),
+                        ('Pods', runtime.pod_count, 'box', 'Pods using matched artifacts')
+                    ] %}
+                        <div class="p-5">
+                            <div class="flex items-center gap-2 text-xs font-semibold text-content-muted">
+                                <i data-lucide="{{ icon }}" class="h-4 w-4 text-kaori-primary"></i>
+                                {{ label }}
+                            </div>
+                            <p class="mt-2 text-2xl font-semibold text-content-primary">{{ value }}</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle sm:grid-cols-3">
+                    <div class="bg-surface-card p-4">
+                        <p class="text-xs font-semibold text-content-muted">Authoritative</p>
+                        <p class="mt-1 text-lg font-semibold text-content-primary">{{ runtime.digest_match_count }} Digest Match</p>
+                    </div>
+                    <div class="bg-surface-card p-4">
+                        <p class="text-xs font-semibold text-content-muted">Needs Caution</p>
+                        <p class="mt-1 text-lg font-semibold text-content-primary">{{ runtime.tag_match_count }} Tag Match · {{ runtime.ambiguous_count }} Ambiguous</p>
+                    </div>
+                    <div class="bg-surface-card p-4">
+                        <p class="text-xs font-semibold text-content-muted">Unmatched</p>
+                        <p class="mt-1 text-lg font-semibold text-content-primary">{{ runtime.unmatched_count }} Runtime Reference</p>
+                    </div>
+                </div>
+            {% endcall %}
+
+            <section class="{{ table_ui.block_classes() }}">
+                <header class="{{ table_ui.block_header_classes() }}">
+                    <div class="flex items-start gap-3">
+                        <span class="{{ table_ui.block_icon_classes() }}">
+                            <i data-lucide="waypoints" class="h-5 w-5"></i>
+                        </span>
+                        <div>
+                            <h2 class="{{ table_ui.block_title_classes() }}">Committed Runtime Bindings</h2>
+                            <p class="{{ table_ui.block_description_classes() }}">
+                                {% if runtime.artifact_filter %}
+                                    Artifact-scoped blast radius. Only bindings resolved to the selected immutable artifact are shown.
+                                {% else %}
+                                    Registry-to-runtime matches, ambiguous references, and unmatched image evidence from the latest materialization.
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    {% if current_user.has_permission('artifact_registry.sync') %}
+                        <form method="post" action="{{ url_for('artifact_registry.materialize_runtime_usage') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                            <button type="submit"
+                                    class="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover">
+                                <i data-lucide="refresh-cw" class="h-3.5 w-3.5"></i>
+                                Rebuild Correlation
+                            </button>
+                        </form>
+                    {% endif %}
+                </header>
+
+                <form method="get" class="{{ table_ui.filter_bar_classes() }}">
+                    {% if runtime.artifact_filter %}<input type="hidden" name="artifact_id" value="{{ runtime.artifact_filter }}" />{% endif %}
+                    <label>
+                        <span class="{{ table_ui.filter_label_classes() }}">Search</span>
+                        {{ table_ui.search_field('q', request.args.get('q', ''), 'Search artifact or runtime…') }}
+                    </label>
+                    <label>
+                        <span class="{{ table_ui.filter_label_classes() }}">Match</span>
+                        <select name="match_type" class="{{ table_ui.filter_select_classes() }}">
+                            <option value="">All Match States</option>
+                            {% for option in runtime.match_options %}
+                                <option value="{{ option.value }}" {% if request.args.get('match_type') == option.value %}selected{% endif %}>{{ option.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label>
+                        <span class="{{ table_ui.filter_label_classes() }}">Cluster</span>
+                        <select name="cluster_id" class="{{ table_ui.filter_select_classes() }}">
+                            <option value="">All Clusters</option>
+                            {% for cluster in runtime.clusters %}
+                                <option value="{{ cluster.id }}" {% if request.args.get('cluster_id') == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <button data-kaori-filter-action type="submit" class="{{ table_ui.action_classes() }}">Apply</button>
+                    {% if runtime.artifact_filter %}
+                        <a data-kaori-filter-action href="{{ url_for('artifact_registry.security_runtime_usage') }}" class="{{ table_ui.action_classes() }}">Clear Artifact Scope</a>
+                    {% endif %}
+                </form>
+
+                <div class="overflow-x-auto">
+                    <table class="{{ table_ui.table_classes('min-w-[1120px]') }}">
+                        <thead class="{{ table_ui.head_classes() }}">
+                            <tr>
+                                <th class="{{ table_ui.header_cell_classes() }}">Artifact</th>
+                                <th class="{{ table_ui.header_cell_classes() }}">Runtime Scope</th>
+                                <th class="{{ table_ui.header_cell_classes() }}">Container</th>
+                                <th class="{{ table_ui.header_cell_classes() }}">Correlation</th>
+                                <th class="{{ table_ui.header_cell_classes() }}">Evidence Freshness</th>
+                            </tr>
+                        </thead>
+                        <tbody class="{{ table_ui.body_classes() }}">
+                            {% for row in runtime.rows %}
+                                <tr class="{{ table_ui.row_classes() }}">
+                                    <td class="{{ table_ui.cell_classes() }}">
+                                        {{ table_ui.title_cell(row.repository_name, row.project_name ~ ' · ' ~ row.digest_short, 'package-search') }}
+                                        <p class="mt-1 text-xs text-content-muted">{{ row.provider_label }} · {{ row.registry_source_name }}</p>
+                                    </td>
+                                    <td class="{{ table_ui.cell_classes() }}">
+                                        <p class="font-semibold text-content-primary">{{ row.cluster_name }} · {{ row.namespace }}</p>
+                                        <p class="mt-0.5 text-xs text-content-muted">{{ row.workload_type }} · {{ row.workload_name }}</p>
+                                        <p class="mt-0.5 text-xs text-content-muted">Pod {{ row.pod_name }}</p>
+                                    </td>
+                                    <td class="{{ table_ui.cell_classes() }}">
+                                        <p class="font-semibold text-content-primary">{{ row.container_kind }} · {{ row.container_name }}</p>
+                                        <p class="mt-1 max-w-[22rem] break-all text-xs text-content-muted">{{ row.image_reference }}</p>
+                                    </td>
+                                    <td class="{{ table_ui.cell_classes() }}">
+                                        {{ table_label.status_indicator_label(row.match.label, row.match.tone) }}
+                                        <p class="mt-1 text-xs font-semibold text-content-secondary">{{ row.match.confidence_label }}</p>
+                                        {% if row.candidate_count > 1 %}
+                                            <p class="mt-1 text-xs text-content-muted">{{ row.candidate_count }} candidate artifacts; no canonical binding recorded.</p>
+                                        {% elif row.match_type == 'tag_reference' %}
+                                            <p class="mt-1 text-xs text-status-warning-text">Mutable tag evidence; do not treat as digest certainty.</p>
+                                        {% endif %}
+                                    </td>
+                                    <td class="{{ table_ui.cell_classes() }}">
+                                        <p class="text-xs font-semibold text-content-secondary">Kubernetes</p>
+                                        <p class="mt-1 text-xs text-content-muted">{{ row.kubernetes_observed_at|user_datetime }}</p>
+                                        <p class="mt-2 text-xs font-semibold text-content-secondary">Registry</p>
+                                        <p class="mt-1 text-xs text-content-muted">{{ row.registry_observed_at|user_datetime if row.registry_observed_at else 'No Canonical Match' }}</p>
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="px-5 py-10 text-center text-sm text-content-muted">
+                                        No committed runtime bindings match the current filters. Rebuild correlation after inventory refresh if evidence changed.
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if runtime.pagination.total_pages > 1 %}
+                    <footer class="{{ pagination_ui.footer_classes() }}">
+                        <span>{{ runtime.total }} runtime reference(s)</span>
+                        {{ pagination_ui.numeric_pages(runtime.pagination.page, runtime.pagination.total_pages) }}
+                    </footer>
+                {% endif %}
+            </section>
+        {% endif %}
+    </div>
+{% endblock dashboard_content %}
