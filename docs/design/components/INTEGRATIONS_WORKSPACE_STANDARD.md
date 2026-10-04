@@ -662,7 +662,9 @@ Kubernetes, MinIO, and Registry / Harbor are asset-owner provider surfaces. Thei
 - `Configuration` owns the persisted connection contract.
 - `Validation & Capabilities` owns compatibility, provider capability readiness, an HTMX-filtered capability registry, and `5/10/25/50` pagination.
 - `Runtime & History` owns operation-scoped runtime refresh plus the canonical shared runtime-history table with HTMX filters and pagination.
-- the fourth asset-owner workspace is `Inventory & Lifecycle`. Kubernetes, MinIO, and Harbor render bound Metrics Source/Alertmanager sources through the shared asset-owner source table with HTMX pagination; this workspace is read-only for binding mutation and owns KAORI-side asset lifecycle actions such as governed deletion. Harbor additionally summarizes its committed provider-neutral Registry snapshot and links to Artifact Registry for detailed inventory.
+- the fourth asset-owner workspace is `Inventory & Lifecycle`. Kubernetes, MinIO, and Harbor render bound Metrics Source/Alertmanager sources through the shared asset-owner source table with HTMX pagination; this workspace is read-only for binding mutation and owns KAORI-side asset lifecycle actions such as governed deletion. Harbor additionally summarizes its committed provider-neutral Registry snapshot; detailed inventory remains owned by Artifact Registry without a provider-local product CTA.
+- the fourth-domain header status MUST represent that domain's evidence plane. For asset-owner `Inventory & Lifecycle`, the badge reflects committed inventory state (for example `Committed Snapshot`, `No Committed Inventory`, collection-in-progress, or collection failure), never provider Full Validation readiness.
+- asset-owner lifecycle action areas MUST NOT add provider-local job-management or product-navigation shortcuts. The canonical cross-workspace handoff is the read-only binding-owner action to `Open Observability`; lifecycle mutation remains the governed asset-owner action.
 
 Provider-owned API identity MUST NOT be duplicated as a consumer binding. MinIO API ownership is represented by the MinIO/ObjectStorageSystem relationship; Kubernetes API ownership is represented by the Kubernetes connection/cluster relationship.
 
@@ -702,7 +704,7 @@ Provider detail Hero posture evidence is sourced as **Produced by Full Validatio
 
 **Runtime Decision Primary Finding contract.** Primary Finding is one short, state-first operational point: provider/runtime identity plus the current health, readiness, lifecycle, or named diagnostic requiring attention. It must not repeat full diagnostic prose and must not expose an Info Tip / hover disclosure. Detailed lifecycle, compatibility, capability, diagnostic, and remediation evidence stays in Runtime Evidence and Recent Runtime Observations. This rule applies equally to Kubernetes, Prometheus/Thanos through Metrics Source, Alertmanager, MinIO, Harbor, and future provider runtimes.
 
-Bindings remain source-owned mutations. Asset-owner workspaces expose observability binding evidence read-only. Object Storage Inventory remains committed-snapshot owned and must not be recomputed by opening the MinIO integration detail page.
+Bindings remain source-owned mutations. Asset-owner workspaces expose observability binding evidence read-only. Object Storage Inventory remains committed-snapshot owned and must not be recomputed by opening the MinIO integration detail page. Asset-owner fourth-domain status is inventory-owned, and provider-local job/product shortcuts are not part of the lifecycle action contract.
 
 
 ## Notification Channels
