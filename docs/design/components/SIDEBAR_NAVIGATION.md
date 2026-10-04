@@ -1,4 +1,4 @@
-# KAORI Sidebar Navigation Standard v2.1
+# KAORI Sidebar Navigation Standard v2.2
 
 **Status:** Locked application-shell navigation contract  
 **Foundation authority:** #747  
@@ -249,6 +249,30 @@ KAORI / Intelligence / Recommendations
 KAORI / Integrations / Observability
 ```
 
+Breadcrumb rendering is a bounded application-shell contract:
+
+- normal semantic depth should not exceed **5 levels including `KAORI`** without explicit navigation-authority review;
+- desktop renders at most **4 visible breadcrumb items**;
+- `KAORI` and the current/leaf page are always visible;
+- when semantic depth exceeds four visible items, retain the first non-root owner and current leaf, and collapse every middle level behind one `…` disclosure;
+- hidden middle levels retain semantic order inside the disclosure and are informational path context, not a new navigation family;
+- visible intermediate labels use a maximum width of **9rem**;
+- the current/leaf label uses a maximum width of **12rem**;
+- truncated visible labels expose their full value through native title text;
+- the existing breadcrumb container remains bounded to its canonical maximum width;
+- mobile continues to render only the current page label;
+- the desktop disclosure closes on outside click or Escape, restores trigger focus on Escape, and closes when another navbar menu opens.
+
+Canonical deep-path example:
+
+```text
+Semantic: KAORI / Integrations / Observability / Metrics Sources / Connection Details
+Visible:  KAORI / Integrations / … / Connection Details
+Hidden:   Observability / Metrics Sources
+```
+
+The renderer remains defensive if a future route exceeds five semantic levels: additional middle levels collapse into the same disclosure rather than creating horizontal overflow.
+
 ## Provider Boundary
 
 Do not add provider/vendor roots such as Harbor, GitHub, Ansible, Prometheus, Alertmanager, MinIO, Vault/OpenBao, VMware, Proxmox, Cilium, or NetBox simply because they are connected.
@@ -280,8 +304,11 @@ Global renderer:
 Detailed page navigation:
 `app/templates/components/content_tabs.html` and other registered local tab components
 
-Breadcrumb authority:
+Breadcrumb semantic authority:
 `app/common/navigation.py`
+
+Breadcrumb renderer:
+`app/templates/components/navigation/navbar.html`
 
 Legacy `*_menu.html` templates may remain temporarily as historical/migration files but must not be included by the v2.1 sidebar.
 
