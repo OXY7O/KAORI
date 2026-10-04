@@ -93,7 +93,7 @@
                     <section class="relative overflow-hidden rounded-lg border border-outline-subtle bg-surface-elevated">
                         {% call connection_validation_header.render(
                             "Endpoint & Access",
-                            "Define MinIO S3 API access and credentials, verify reachability, then save. Use the S3 API URL, not the Console URL.",
+                            "Configure MinIO S3 API access and credentials, then test reachability. Use the API URL, not the Console URL.",
                             icon="network",
                             loading_id="minio-connection-test-loading",
                             loading_label="Testing MinIO connection"
@@ -171,7 +171,7 @@
                             {% call operational_toggle.render("Verify TLS Certificate", "Reject untrusted or mismatched MinIO certificates.") %}
                                 {{ form.verify_ssl(class_="h-4 w-4 rounded border-outline-strong text-kaori-primary focus:ring-outline-focus") }}
                             {% endcall %}
-                            {% call operational_toggle.render("Allow KAORI to Use This Connection", "Disabled connections stay registered but are excluded from provider resolution.") %}
+                            {% call operational_toggle.render("Allow KAORI to Use This Connection", "Disabled connections remain registered but are not resolved for use.") %}
                                 {{ form.enabled(class_="h-4 w-4 rounded border-outline-strong text-kaori-primary focus:ring-outline-focus") }}
                             {% endcall %}
                         </div>
@@ -206,14 +206,14 @@
                 {% else %}
                     {% set minio_flow_items = [('Define Connection Identity', 'Create the reusable KAORI identity for this MinIO endpoint and object-storage asset.'), ('Configure Endpoint Access', 'Set the S3 API endpoint, credentials, TLS behavior, and supported release contract.'), ('Test Connection', 'Verify S3 API reachability, credential access, and read-only bucket discovery before registration is enabled.'), ('Register Connection', 'Create the provider identity before Core Validation and consumer binding.')] %}
                     {% set flow_title = "MinIO Registration Flow" %}
-                    {% set flow_description = "How a reusable object-storage connection is registered in KAORI." %}
+                    {% set flow_description = "How KAORI registers a reusable object-storage connection." %}
                     {% set flow_note = "Registration proves only the MinIO connection contract; metrics and alerts remain independent consumer bindings." %}
                 {% endif %}
                 {{ provider_registration_context.render(flow_title,
                                 flow_description,
                                 minio_flow_items,
                                 "Storage Integrations",
-                                "MinIO supplies the object-storage API plane while Metrics Source data and Alertmanager alerts remain independent consumer bindings on the same managed asset.",
+                                "MinIO provides the object-storage API; Metrics Source and Alertmanager remain independent bindings to the same asset.",
                                 url_for("integrations.storage") ,
                 "Open Storage Integrations",
                 flow_icon="workflow",
