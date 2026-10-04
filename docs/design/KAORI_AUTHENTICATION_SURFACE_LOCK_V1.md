@@ -71,33 +71,45 @@ Real-device UAT may add evidence, but physical device names do not become CSS co
 
 ### Canonical Database Setup Workspace Composition
 
-The approved Database Setup Required surface is a non-Hero operational readiness workspace. It uses the global **Major Page Title outside Hero** typography authority: 24 px (`text-2xl`), semibold, compact line height, with no Hero minimum-height or promotional title treatment.
+The approved Database Setup Required surface is a non-Hero, compact operational readiness workspace optimized for the canonical laptop targets. It uses an explicit Authentication Surface typography exception rather than the ordinary application-page title scale:
 
-The page uses **one unified operational surface** with a control-workspace hierarchy. Current state is summarized once in a compact readiness strip; the primary bootstrap action receives the strongest content weight; security and troubleshooting remain supporting context.
+- page title: 20 px (`text-xl`), semibold;
+- primary setup section title: 16 px (`text-base`), semibold;
+- supporting rail title: 14 px (`text-sm`), semibold;
+- explanatory copy: 12 px (`text-xs`) with readable 20 px line height;
+- semantic state labels remain owned by the shared label component.
+
+This exception is limited to the one-time pre-authentication setup workspace. It does not change the ordinary authenticated-page typography hierarchy.
+
+The page uses one unified operational surface without stacked full-width content bands. Current readiness stays inside the compact page header. The main workspace then uses the same 12-column responsive composition already established by Authentication: primary bootstrap and initialization guidance occupy eight columns, while security and troubleshooting occupy a four-column supporting rail.
 
 The composition is:
 
 ```text
 Unified Operational Surface
-├── Compact Page Identity + Initialization State
-├── Readiness Strip: Database | Application Schema | Normal Sign-In
-├── Primary Development Bootstrap | Security Boundary
-├── Embedded Initialization Info Flow | Progressive Setup Details
+├── Compact Page Identity + Inline Readiness
+├── Main Control Grid (12 columns)
+│   ├── Primary 8 columns
+│   │   ├── Development Bootstrap
+│   │   └── Embedded Initialization Path
+│   └── Supporting 4 columns
+│       ├── Security Boundary
+│       └── Progressive Setup Details
 └── Read-only Boundary + Retry Setup Check
 ```
 
-The readiness strip is a neutral definition-list composition, not a second card family. It must use shared semantic labels for state and must not repeat the same information in a separate `Readiness Summary` card.
+The readiness strip is a neutral definition-list composition inside the page header, not a second card family. It must use shared semantic labels and must not be repeated in a separate Readiness Summary panel.
 
 Shared ownership is mandatory:
 
 - `components/operational_section_card.html::shell_classes()` owns the single outer operational surface;
 - `components/table_label.html` owns installation, PostgreSQL, schema, and sign-in semantic labels;
-- `components/info_flow.html` owns the initialization sequence and uses `embedded=true` inside the parent-owned surface;
+- `components/info_flow.html` owns the initialization sequence and uses its documented compact `embedded=true` density;
 - `components/terminal_command.html` owns copyable bootstrap/check commands;
 - `components/operational_callout.html` owns semantic security/recovery callouts;
-- `components/action_button.html` owns Retry Setup Check geometry and interaction state.
+- `components/section_link_button.html` owns the compact Retry Setup Check navigation action.
 
-The setup page must not introduce authenticated Hero geometry, multiple peer operational cards, a duplicate readiness-summary panel, page-local semantic badge styling, a copied timeline implementation, arbitrary typography, or database mutation from presentation code.
+The setup page must not introduce authenticated Hero geometry, full-width stacked content blocks for each subsection, multiple peer operational cards, a duplicate readiness-summary panel, page-local semantic badge styling, a copied timeline implementation, arbitrary typography, or database mutation from presentation code.
 
 ## Locked Security Contract
 
