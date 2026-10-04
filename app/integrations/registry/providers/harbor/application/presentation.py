@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from app.artifact_registry.eligibility import RegistryInventoryEligibility, registry_inventory_eligibility
 from app.artifact_registry.observability import registry_metrics_readiness
 from app.common.pagination import paginate_sequence
 from app.common.presentation import present_user_datetime
@@ -90,7 +91,8 @@ def build_index_context(query: HarborIndexQuery | None = None) -> dict[str, Any]
         collection = collection_states.get(int(identity.id))
         webhook = webhook_endpoints.get(int(identity.id))
         api_status = _provider_status(instance)
-        inventory_status = _inventory_status(collection)
+        inventory_eligibility = registry_inventory_eligibility(identity)
+        inventory_status = _inventory_status(collection, eligibility=inventory_eligibility)
         metrics_status = _metrics_status(metrics)
         webhook_status = _webhook_status(webhook)
 
@@ -208,9 +210,29 @@ def _provider_status(instance: HarborInstance) -> dict[str, str]:
     return {'status': 'attention', 'label': 'Validation Required', 'detail': 'Run Full Validation'}
 
 
-def _inventory_status(state: RegistryCollectionState | None) -> dict[str, str]:
-    if state is None:
-        return {'status': 'unknown', 'label': 'Not Collected', 'detail': 'No committed inventory snapshot'}
+def _inventory_status(
+    state: RegistryCollectionState | None,
+    *,
+    eligibility: RegistryInventoryEligibility | None = None,
+) -> dict[str, str]:
+    if state is None or state.status == 'not_collected':
+        if eligibility is not None and not eligibility.eligible:
+            if eligibility.readiness == 'blocked':
+                return {
+                    'status': 'blocked',
+                    'label': 'Validation Blocked',
+                    'detail': eligibility.reason,
+                }
+            return {
+                'status': 'attention',
+                'label': 'Validation Required',
+                'detail': eligibility.reason,
+            }
+        return {
+            'status': 'unknown',
+            'label': 'Not Collected',
+            'detail': 'No committed inventory snapshot; run Artifact Registry inventory synchronization.',
+        }
     if state.status == 'ready':
         observed = present_user_datetime(state.last_observed_at, empty='Committed')
         return {'status': 'ready', 'label': 'Ready', 'detail': observed}
@@ -314,6 +336,7 @@ def build_detail_context(
     collection_state = RegistryCollectionState.query.filter_by(
         integration_instance_id=identity.id,
     ).first()
+    inventory_eligibility = registry_inventory_eligibility(identity)
     webhook_endpoint = RegistryWebhookEndpoint.query.filter_by(
         integration_instance_id=identity.id,
     ).first()
@@ -342,7 +365,8 @@ def build_detail_context(
         'checked_at_display': present_user_datetime(instance.last_checked_at, empty='Not observed'),
         'capability_count': len(instance.capabilities or ()),
         'collection_state': collection_state,
-        'inventory_status': _inventory_status(collection_state),
+        'inventory_status': _inventory_status(collection_state, eligibility=inventory_eligibility),
+        'inventory_eligibility': inventory_eligibility,
         'inventory_counts': inventory_counts,
         'inventory_observed_at_display': present_user_datetime(
             collection_state.last_observed_at if collection_state else None,
