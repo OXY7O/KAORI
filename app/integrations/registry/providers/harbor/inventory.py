@@ -53,6 +53,8 @@ def collect_harbor_inventory(
     """
 
     client = build_client(instance)
+    if progress_callback is not None:
+        progress_callback(0, 0, 'Project Discovery')
     raw_projects = client.list_all_projects()
     repository_hint = sum(max(_as_int(project.get('repo_count')) or 0, 0) for project in raw_projects)
     repository_processed = 0
