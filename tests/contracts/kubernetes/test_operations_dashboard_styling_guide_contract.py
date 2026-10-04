@@ -166,7 +166,8 @@ def test_cluster_health_uses_canonical_table_and_pagination_contract() -> None:
 
     assert '{% import "components/table.html" as table_ui %}' in source
     assert '{% import "components/pagination.html" as pagination_ui %}' in source
-    assert 'for size in [5, 10, 25, 50]' in source
+    assert 'for size in pagination.allowed_per_page' in source
+    assert '[5, 10, 25, 50]' not in source
     assert 'pagination_ui.numeric_pages(' in source
     assert 'pagination_ui.navigation_classes()' in source
     assert 'pagination_ui.navigation_classes(disabled=true)' in source

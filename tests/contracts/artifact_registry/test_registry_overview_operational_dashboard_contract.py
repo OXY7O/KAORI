@@ -132,7 +132,8 @@ def test_artifact_registry_operations_overview_matches_reference_dashboard_gramm
     for source in ('Inventory', 'Metrics Source', 'Security Evidence'):
         assert source in health
     assert 'components/pagination.html' in health
-    assert "for size in [5, 10, 25, 50]" in health
+    assert "for size in pagination.allowed_per_page" in health
+    assert "[5, 10, 25, 50]" not in health
 
     for label in (
         "'Projects'",

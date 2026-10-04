@@ -129,7 +129,7 @@
                             hx-trigger="change"
                             hx-disabled-elt="this"
                             hx-indicator="#artifact-registry-provider-health-loading">
-                        {% for size in [5, 10, 25, 50] %}
+                        {% for size in pagination.allowed_per_page %}
                             <option value="{{ size }}" {% if pagination.per_page == size %}selected{% endif %}>{{ size }}</option>
                         {% endfor %}
                     </select>

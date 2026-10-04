@@ -161,7 +161,7 @@ def test_system_health_summary_matches_kubernetes_pagination_contract() -> None:
     assert 'DASHBOARD_PAGE_SIZES = PER_PAGE_OPTIONS' in application_contract
     assert 'PER_PAGE_OPTIONS: tuple[int, ...] = (5, 10, 25, 50)' in pagination
     assert "request.args.get('system_health_page', '1')" in routes
-    assert "request.args.get('system_health_per_page', '5')" in routes
+    assert "normalize_dashboard_page_size(request.args.get('system_health_per_page'))" in routes
     assert "'system_health': 'storage/object_storage/dashboard/partials/_system_health.html'" in routes
     assert 'from app.common.pagination import paginate_sequence' in service
     assert "'empty_observed_systems': len(empty_observed_systems)" in service
@@ -184,8 +184,8 @@ def test_system_health_summary_matches_kubernetes_pagination_contract() -> None:
     ):
         assert token in health
 
-    for size in ('5', '10', '25', '50'):
-        assert size in health
+    assert 'for size in pagination.allowed_per_page' in health
+    assert '[5, 10, 25, 50]' not in health
     assert 'components/pagination.html' in kubernetes_health
     assert 'cluster_health_per_page' in kubernetes_health
     assert 'pagination_ui.numeric_pages' in kubernetes_health
