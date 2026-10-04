@@ -51,7 +51,7 @@
     {{ provider_job_status.render(validation_job, 'MinIO validation running in worker', 'MinIO') }}
     <div class="p-5 sm:p-6">
         {{ capability_readiness.render("MinIO Capability Readiness",
-                "Required MinIO identity, compatibility, and S3 capability evidence for the qualified release.",
+                "MinIO identity, compatibility, and required S3 capability evidence.",
                 readiness,
                 readiness_label,
                 "Validated Capabilities",
@@ -62,8 +62,8 @@
                 "Object Storage Provider Eligible" if readiness == "ready" else "Remediation Required",
                 "Required MinIO S3 contracts are usable." if readiness == "ready" else "Resolve required MinIO API or compatibility gaps.",
                 "normal" if readiness == "ready" else "critical",
-                "Full Validation owns S3 capabilities; Runtime Refresh owns live health; Inventory Sync owns committed assets; bindings own consumer evidence.",
-                "Revalidate after MinIO, credential, or S3 API changes." if readiness == "ready" else "Resolve MinIO gaps, then rerun Full Validation.") }}
+                "Full Validation owns S3 capabilities; Runtime Refresh owns health; Inventory Sync owns assets; bindings own consumer evidence.",
+                "Revalidate after MinIO release, credential, endpoint, TLS, region, addressing, or S3 API changes to refresh governed readiness evidence." if readiness == "ready" else "Resolve MinIO gaps, then rerun Full Validation.") }}
         {% if readiness == "ready" %}
             {% set readiness_decision_title = "Provider Readiness Is Ready" %}
             {% set readiness_decision_message = "MinIO identity, compatibility, S3 access, and required provider capabilities are ready. Observability evidence remains binding-specific." %}
