@@ -19,8 +19,10 @@ def test_authentication_surface_final_lock_is_release_gated_and_documented() -> 
     assert 'Database Setup Required' in lock
     assert 'Canonical Database Setup Workspace Composition' in lock
     assert 'compact operational readiness workspace' in lock
-    assert 'page title: 20 px (`text-xl`), semibold' in lock
-    assert 'components/info_flow.html' in lock
+    assert 'page title: 18 px (`text-lg`), semibold' in lock
+    assert 'components/operational_flow_steps.html' in lock
+    assert 'components/view_more_content.html' in lock
+    assert 'components/terminal_command.html' in lock
     assert 'components/table_label.html' in lock
 
 
