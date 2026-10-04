@@ -84,13 +84,19 @@ Boundary note:
 ## Embedded composition
 
 When Info Flow belongs inside a larger canonical operational surface, use `embedded=true`.
-Embedded mode preserves the shared header, ordered timeline, typography, markers, connector,
-and optional boundary note while removing the component's independent card border, radius,
-shadow, and outer padding. This prevents nested-card proliferation without copying timeline
-classes into the page template.
+Embedded mode removes the independent card border, radius, shadow, and outer padding while
+keeping the shared ordered-timeline authority.
 
-Use embedded mode only when the parent already owns the visible surface boundary. Do not use
-it to remove hierarchy from a standalone Info Flow.
+Embedded mode is intentionally denser than the standalone card:
+- 32 px icon surface with a 16 px icon;
+- 16 px semibold title;
+- 12 px supporting description;
+- 12 px vertical step rhythm;
+- the canonical 32 px sequence marker and 14/12 px step typography remain unchanged.
+
+This density is for parent-owned operational surfaces where the surrounding workspace already
+provides hierarchy. Do not copy timeline classes into the page template and do not use embedded
+mode merely to make a standalone Info Flow smaller.
 
 ## Shared implementation
 
