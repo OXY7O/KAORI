@@ -5,9 +5,9 @@ from typing import Any
 
 from sqlalchemy.orm import joinedload
 
+from app.artifact_registry.observability import registry_metrics_readiness
 from app.common.pagination import paginate_sequence
 from app.models.integration import IntegrationInstance
-from app.artifact_registry.observability import registry_metrics_readiness
 from app.models.registry import (
     RegistryArtifact,
     RegistryCollectionState,

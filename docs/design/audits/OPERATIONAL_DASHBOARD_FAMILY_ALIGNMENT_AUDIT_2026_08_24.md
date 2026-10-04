@@ -61,3 +61,30 @@ Both dashboards retain URL-backed active tabs, `role=tablist/tab/tabpanel`, keyb
 ## Future operational dashboards
 
 Server/VM, HCI, Network, Backup, and other future operational dashboards must begin from this family pattern: the **same four workspace tabs**, Hero geometry, Operational Signal Overview placement, peer-grid rhythm, typography, color semantics, and committed-snapshot boundary. Domain-specific content may change; the shell must not fork into a new page-local dashboard style.
+
+
+## Artifact Registry adoption — 2026-10-04
+
+Artifact Registry Overview now consumes the locked Operational Dashboard family rather than a page-local Hero/KPI/table layout.
+
+The adopted composition is:
+
+```text
+Operational Dashboard Hero
+→ Operational Signal Overview
+→ Operations Overview
+→ Capacity & Demand
+→ Signals & Actions
+→ Reporting
+```
+
+Artifact Registry preserves its own evidence semantics:
+
+- Registry provider scope replaces cluster/system scope;
+- Projects / Repositories / Artifacts / Tags are the four committed inventory indicators;
+- provider readiness and inventory snapshot freshness remain independent facts;
+- capacity/demand uses committed artifact footprint and provider-supplied pull evidence only;
+- Security, Runtime Usage, Governance, Analytics, and Reports remain authoritative detailed workspaces;
+- normal Overview rendering remains database/committed-state backed and does not query Harbor at request time.
+
+Kubernetes and Object Storage remain the paired reference implementations. Artifact Registry is the first later operational-domain consumer proving that the framework can be reused without copying provider-specific dashboard geometry.

@@ -24,6 +24,14 @@ OBJECT_ALERT_GUIDANCE = OBJECT_DASHBOARD_DIR / 'partials' / '_alert_response_gui
 OBJECT_REPORTING_GUIDANCE = OBJECT_DASHBOARD_DIR / 'partials' / '_reporting_guidance.html'
 OBJECT_REPORTING_SUMMARY = OBJECT_DASHBOARD_DIR / 'partials' / '_reporting_summary.html'
 OBJECT_DASHBOARD_SERVICE = ROOT / 'app' / 'storage' / 'object_storage' / 'dashboard' / 'service.py'
+ARTIFACT_OVERVIEW = ROOT / 'app' / 'templates' / 'artifact_registry' / 'overview.html'
+ARTIFACT_CONTENT = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_content.html'
+ARTIFACT_HERO = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_hero.html'
+ARTIFACT_SIGNAL_OVERVIEW = (
+    ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_signal_overview.html'
+)
+ARTIFACT_ROUTES = ROOT / 'app' / 'artifact_registry' / 'routes.py'
+ARTIFACT_PRESENTATION = ROOT / 'app' / 'artifact_registry' / 'presentation.py'
 PAGE_HERO = ROOT / 'app' / 'templates' / 'components' / 'page_hero.html'
 WORKSPACE_TABS = ROOT / 'app' / 'templates' / 'components' / 'workspace_tabs.html'
 DASHBOARD_WORKSPACE = ROOT / 'app' / 'templates' / 'components' / 'operational_dashboard_workspace.html'
@@ -194,6 +202,104 @@ def _verify_dashboard_hero_profile(hero: str, object_hero: str, page_hero: str) 
                 raise AssertionError(f'{owner}: Hero profile consumer must not assemble {primitive} locally')
 
 
+def _verify_artifact_registry_dashboard(
+    overview: str,
+    content: str,
+    hero: str,
+    signal_overview: str,
+    routes: str,
+    presentation: str,
+) -> None:
+    _require(
+        overview,
+        (
+            'artifact_registry/partials/_overview_content.html',
+            'artifact-registry-dashboard-content',
+        ),
+        'Artifact Registry dashboard page shell',
+    )
+    _require(
+        hero,
+        (
+            'page_hero.operational_dashboard(',
+            'Artifact Registry Operations',
+            "'Overview'",
+            "'Committed Snapshots'",
+            "'Open Registry Integrations'",
+            "url_for('integrations.registry')",
+        ),
+        'Artifact Registry operational dashboard Hero consumer',
+    )
+    for primitive in (
+        'page_hero.shell_classes()',
+        'page_hero.layout_classes()',
+        'page_hero.content_classes()',
+        'page_hero.context_panel_classes()',
+    ):
+        if primitive in hero:
+            raise AssertionError(
+                f'Artifact Registry dashboard: Hero profile consumer must not assemble {primitive} locally'
+            )
+
+    _require(
+        content,
+        (
+            'components/operational_dashboard_workspace.html',
+            'dashboard_workspace.controller(',
+            'dashboard_workspace.navigation(',
+            'dashboard_workspace.panel(',
+            'artifact_registry/partials/_overview_signal_overview.html',
+            'artifact_registry/components/_setup_blocker.html',
+        ),
+        'Artifact Registry dashboard family composition',
+    )
+    if content.count('dashboard_workspace.panel(') != 4:
+        raise AssertionError('Artifact Registry dashboard: expected four canonical framework panels')
+
+    _require(
+        signal_overview,
+        (
+            'Operational Signal Overview',
+            'components/operational_metric_card.html',
+            'provider_id',
+            'hx-push-url="true"',
+            'hx-include="#artifact-registry-dashboard-active-tab"',
+            'All Registry Providers',
+        ),
+        'Artifact Registry scope and signal overview',
+    )
+    _require(
+        routes,
+        (
+            "@permission_required('artifact_registry.view')",
+            "request.args.get('provider_id', type=int)",
+            "request.args.get('tab', 'overview', type=str)",
+            'artifact_registry/partials/_overview_content.html',
+        ),
+        'Artifact Registry dashboard route boundary',
+    )
+    _require(
+        presentation,
+        (
+            "allowed_tabs = {'overview', 'capacity', 'signals', 'reporting'}",
+            'RegistryProject.integration_instance_id == selected_provider.id',
+            "registry_metrics_readiness(provider).get('status') == 'ready'",
+            "'scope_label': scope_label",
+            "'kpis': [",
+        ),
+        'Artifact Registry committed dashboard projection',
+    )
+    for token in (
+        'HarborClient(',
+        'requests.get',
+        'httpx.get',
+    ):
+        if token in routes or token in presentation:
+            raise AssertionError(
+                f'Artifact Registry dashboard web boundary contains live provider access: {token}'
+            )
+
+
 def verify() -> None:
     content = _read(CONTENT)
     hero = _read(HERO)
@@ -213,6 +319,12 @@ def verify() -> None:
     object_reporting_guidance = _read(OBJECT_REPORTING_GUIDANCE)
     object_reporting_summary = _read(OBJECT_REPORTING_SUMMARY)
     object_dashboard_service = _read(OBJECT_DASHBOARD_SERVICE)
+    artifact_overview = _read(ARTIFACT_OVERVIEW)
+    artifact_content = _read(ARTIFACT_CONTENT)
+    artifact_hero = _read(ARTIFACT_HERO)
+    artifact_signal_overview = _read(ARTIFACT_SIGNAL_OVERVIEW)
+    artifact_routes = _read(ARTIFACT_ROUTES)
+    artifact_presentation = _read(ARTIFACT_PRESENTATION)
     page_hero = _read(PAGE_HERO)
     workspace_tabs = _read(WORKSPACE_TABS)
     dashboard_workspace = _read(DASHBOARD_WORKSPACE)
@@ -242,6 +354,14 @@ def verify() -> None:
     e2e_test = _read(E2E_TEST)
 
     _verify_dashboard_hero_profile(hero, object_hero, page_hero)
+    _verify_artifact_registry_dashboard(
+        artifact_overview,
+        artifact_content,
+        artifact_hero,
+        artifact_signal_overview,
+        artifact_routes,
+        artifact_presentation,
+    )
     _require(
         content,
         ('{% include "components/cluster/_onboarding_banner.html" %}',),
@@ -627,6 +747,7 @@ def verify() -> None:
             'Web requests read committed database rows and worker snapshots only',
             'Layered release evidence',
             'Registry/Harbor',
+            'Artifact Registry Overview',
             'Source Control/GitHub',
             'components/operational_dashboard_workspace.html',
             'components/reporting_dashboard_workspace.html',
@@ -703,7 +824,8 @@ def verify() -> None:
     print(
         'KAORI operational dashboard standard passed: shared Hero profile parity, canonical composition, '
         'snapshot-only web boundary, authorization-first lazy sections, URL-backed keyboard-accessible tabs, '
-        'shared style ownership, shared dashboard/reporting frameworks, five-record alert previews, four-record report previews, '
+        'shared style ownership, Kubernetes/Object Storage references plus Artifact Registry conformance, '
+        'shared dashboard/reporting frameworks, five-record alert previews, four-record report previews, '
         'behavioral release evidence, documentation, and quality-gate enforcement match v1.7.'
     )
 

@@ -3,7 +3,8 @@
 **Status:** Locked reference pattern  
 **Reference implementations:** Kubernetes Operations Dashboard and Object Storage Operations Dashboard  
 **Canonical framework:** `app/templates/components/operational_dashboard_workspace.html`  
-**Reference consumers:** `app/templates/kubernetes/dashboard/partials/_content.html` and `app/templates/storage/object_storage/dashboard/partials/_content.html`
+**Reference consumers:** `app/templates/kubernetes/dashboard/partials/_content.html` and `app/templates/storage/object_storage/dashboard/partials/_content.html`  
+**Additional conforming consumer:** `Artifact Registry → Overview` through `app/templates/artifact_registry/partials/_overview_content.html`
 
 ## Purpose
 
@@ -165,6 +166,7 @@ Use consistent evidence terminology such as `Cluster Signals Available`, `Select
 
 - Kubernetes and Object Storage consume the same `components/operational_dashboard_workspace.html` framework and therefore share the four workspace tabs, active-tab state, URL synchronization, keyboard navigation, panel semantics, outer `space-y-5` rhythm, and section hierarchy.
 - Domain-specific templates own only Hero values/readiness, Operational Signal Overview content, section data, and domain-specific copy/actions.
+- Artifact Registry Overview is a conforming operational-domain consumer: it uses the same Hero profile, Operational Signal Overview, four workspace tabs, provider scope, committed-snapshot boundary, and shared section/peer-grid components while keeping detailed Inventory, Security, Runtime Usage, Governance, and Analytics in their owning workspaces.
 - Future capability dashboards—including Registry/Harbor and Source Control/GitHub, plus Server/VM, HCI, network, backup, and other operational domains—must start by consuming `operational_dashboard_workspace.html`; copying Alpine tab state or local panel geometry is prohibited.
 - Reusable layout changes happen in shared components first, then all dashboard consumers inherit the change. Family-level contract tests and `scripts/verify_operational_dashboard_standard.py` protect this invariant.
 
