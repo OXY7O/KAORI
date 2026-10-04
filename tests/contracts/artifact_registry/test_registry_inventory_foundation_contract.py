@@ -37,3 +37,18 @@ def test_harbor_is_collector_not_operational_page_authority() -> None:
     assert 'RegistryInventoryEvidence' in collector
     assert 'list_all_artifacts' in client
     assert 'with_scan_overview=True' in collector
+
+
+def test_registry_inventory_sync_uses_operational_read_contract_eligibility() -> None:
+    eligibility = (ROOT / 'app/artifact_registry/eligibility.py').read_text()
+    sync = (ROOT / 'app/artifact_registry/sync.py').read_text()
+    sync_jobs = (ROOT / 'app/artifact_registry/sync_jobs.py').read_text()
+
+    assert "normalized_readiness == 'ready'" in eligibility
+    assert "normalized_readiness == 'degraded'" in eligibility
+    assert "normalized_compatibility == 'compatible_with_warnings'" in eligibility
+    assert "unverified_version" not in eligibility.split('def inventory_read_contract_eligible', 1)[1].split('def registry_inventory_eligibility', 1)[0]
+    assert 'registry_inventory_eligibility(identity, provider_record=provider_record)' in sync
+    assert "identity.readiness_status != 'ready'" not in sync
+    assert 'registry_inventory_eligibility(identity)' in sync_jobs
+    assert "IntegrationInstance.readiness_status == 'ready'" not in sync_jobs

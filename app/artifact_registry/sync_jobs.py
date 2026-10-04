@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from app.artifact_registry.eligibility import registry_inventory_eligibility
 from app.common.job_execution_contract import ARTIFACT_REGISTRY_INVENTORY_SYNC_OPERATION
 from app.models.integration import IntegrationInstance
 from app.models.job import JobExecution
@@ -10,7 +11,7 @@ INVENTORY_QUEUE = 'inventory'
 
 
 class NoEligibleRegistryTargets(RuntimeError):
-    """Raised when no validated Registry provider can be synchronized."""
+    """Raised when no operationally eligible Registry provider can be synchronized."""
 
 
 def build_registry_inventory_targets() -> list[dict[str, str]]:
@@ -20,12 +21,14 @@ def build_registry_inventory_targets() -> list[dict[str, str]]:
             IntegrationInstance.integration_type == 'registry',
             IntegrationInstance.enabled.is_(True),
             IntegrationInstance.lifecycle_status == 'active',
-            IntegrationInstance.readiness_status == 'ready',
         )
         .order_by(IntegrationInstance.id.asc())
         .all()
     )
     for identity in identities:
+        eligibility = registry_inventory_eligibility(identity)
+        if not eligibility.eligible:
+            continue
         targets.append(
             {
                 'integration_instance_id': str(identity.id),
@@ -46,7 +49,7 @@ def enqueue_all_registry_inventory_sync(
     targets = build_registry_inventory_targets()
     if not targets:
         raise NoEligibleRegistryTargets(
-            'No Registry provider is enabled and Ready for inventory synchronization.'
+            'No Registry provider has an operationally eligible validated read contract for inventory synchronization.'
         )
     return enqueue_canonical_job(
         task=sync_all_registry_task,
@@ -85,8 +88,9 @@ def enqueue_registry_target_refresh(
     ).first()
     if identity is None:
         raise NoEligibleRegistryTargets('The Registry provider no longer exists.')
-    if not identity.enabled or identity.lifecycle_status != 'active' or identity.readiness_status != 'ready':
-        raise NoEligibleRegistryTargets('The Registry provider is not enabled and Ready for reconciliation.')
+    eligibility = registry_inventory_eligibility(identity)
+    if not eligibility.eligible:
+        raise NoEligibleRegistryTargets(eligibility.reason)
 
     target = {
         'integration_instance_id': str(identity.id),

@@ -155,7 +155,7 @@ def sync_inventory() -> ResponseReturnValue:
             status='warning',
             title='Artifact Registry Sync Blocked',
             message=str(exc),
-            detail='Run Full Validation for an enabled Registry provider before retrying.',
+            detail='Validate the Registry read contract, then retry inventory synchronization.',
             action_url=url_for('artifact_registry.overview'),
             action_label='Open Artifact Registry',
             action_icon='package',

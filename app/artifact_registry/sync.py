@@ -8,6 +8,7 @@ from sqlalchemy import select
 
 from app.artifact_registry.collectors import get_registry_collector
 from app.artifact_registry.contracts import ProjectRecord, RegistryInventoryEvidence
+from app.artifact_registry.eligibility import registry_inventory_eligibility
 from app.extensions.db import db
 from app.integrations.kernel.registry import get_integration
 from app.models.integration import IntegrationInstance
@@ -190,13 +191,13 @@ def commit_registry_inventory(
 def sync_registry_inventory(identity: IntegrationInstance) -> dict[str, Any]:
     if identity.integration_type != 'registry':
         raise RuntimeError('Artifact Registry inventory requires a canonical Registry integration identity.')
-    if not identity.enabled or identity.lifecycle_status != 'active':
-        raise RuntimeError('The Registry integration is not active for inventory synchronization.')
-    if identity.readiness_status != 'ready':
-        raise RuntimeError('Run Registry provider Full Validation successfully before Artifact Registry inventory synchronization.')
 
     provider_module = get_integration('registry')
     provider_record = provider_module.require_record_for_canonical(int(identity.id))
+    eligibility = registry_inventory_eligibility(identity, provider_record=provider_record)
+    if not eligibility.eligible:
+        raise RuntimeError(eligibility.reason)
+
     collector = get_registry_collector(identity.provider_key)
     observed_at = datetime.now(UTC)
     state = _lock_collection_state(int(identity.id))
