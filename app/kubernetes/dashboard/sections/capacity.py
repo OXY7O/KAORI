@@ -147,7 +147,7 @@ def _capacity_risk_guidance(
     if risk == 'Medium':
         return (
             f'{resource} utilization is {utilization:.0f}%. Capacity remains usable, but the operational buffer is narrowing.',
-            'Validate workload requests and limits, monitor the growth trend, and confirm that planned deployments fit within current worker headroom.',
+            'Validate requests/limits, growth, and planned deployments against current worker headroom.',
         )
     if risk == 'Low':
         return (
