@@ -53,13 +53,17 @@ def test_registry_inventory_sync_uses_operational_read_contract_eligibility() ->
     assert 'registry_inventory_eligibility(identity)' in sync_jobs
     assert "IntegrationInstance.readiness_status == 'ready'" not in sync_jobs
 
+
 def test_global_sync_all_inventory_includes_artifact_registry() -> None:
     routes = (ROOT / 'app/platform_operations/jobs/routes.py').read_text()
     navbar = (ROOT / 'app/templates/components/navigation/navbar.html').read_text()
 
     assert "current_user.has_permission('artifact_registry.sync')" in routes
     assert "job_keys.append('artifact_registry.inventory.sync')" in routes
-    assert "can_sync_artifact_registry_inventory = current_user.has_permission('artifact_registry.sync')" in navbar
+    assert (
+        "can_sync_artifact_registry_inventory = "
+        "current_user.has_permission('artifact_registry.sync')"
+    ) in navbar
     assert (
         'can_sync_kubernetes_inventory or can_sync_object_storage_inventory or '
         'can_sync_artifact_registry_inventory'
