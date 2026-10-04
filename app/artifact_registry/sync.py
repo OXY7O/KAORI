@@ -84,11 +84,9 @@ def commit_registry_inventory(
             observed_at=observed_at,
         )
         db.session.add(project)
-        db.session.flush()
         project_count += 1
         for repo_record in project_record.repositories:
             repository = RegistryRepository(
-                project_id=project.id,
                 provider_native_id=repo_record.provider_native_id,
                 name=repo_record.name,
                 artifact_count=repo_record.artifact_count,
@@ -99,13 +97,11 @@ def commit_registry_inventory(
                 provider_metadata=repo_record.provider_metadata,
                 observed_at=observed_at,
             )
-            db.session.add(repository)
-            db.session.flush()
+            project.repositories.append(repository)
             repository_count += 1
             for artifact_record in repo_record.artifacts:
                 digest_algorithm = artifact_record.digest.split(':', 1)[0] if ':' in artifact_record.digest else 'unknown'
                 artifact = RegistryArtifact(
-                    repository_id=repository.id,
                     provider_native_id=artifact_record.provider_native_id,
                     digest=artifact_record.digest,
                     digest_algorithm=digest_algorithm,
@@ -122,13 +118,11 @@ def commit_registry_inventory(
                     provider_metadata=artifact_record.provider_metadata,
                     observed_at=observed_at,
                 )
-                db.session.add(artifact)
-                db.session.flush()
+                repository.artifacts.append(artifact)
                 artifact_count += 1
                 if artifact_record.scan_snapshot is not None:
                     snapshot_data = artifact_record.scan_snapshot
                     snapshot = RegistryScanSnapshot(
-                        artifact_id=artifact.id,
                         scanner=snapshot_data.get('scanner'),
                         scanner_version=snapshot_data.get('scanner_version'),
                         report_id=snapshot_data.get('report_id'),
@@ -137,36 +131,37 @@ def commit_registry_inventory(
                         provider_metadata=snapshot_data.get('provider_metadata') or {},
                         observed_at=observed_at,
                     )
-                    db.session.add(snapshot)
-                    db.session.flush()
+                    artifact.scan_snapshots.append(snapshot)
                     for finding in artifact_record.vulnerabilities:
-                        db.session.add(RegistryVulnerability(
-                            scan_snapshot_id=snapshot.id,
-                            vulnerability_id=finding['vulnerability_id'],
-                            package=finding['package'],
-                            installed_version=finding['installed_version'],
-                            fixed_version=finding['fixed_version'],
-                            severity=finding['severity'],
-                            description=finding['description'],
-                            provider_metadata=finding['provider_metadata'],
-                        ))
+                        snapshot.vulnerabilities.append(
+                            RegistryVulnerability(
+                                vulnerability_id=finding['vulnerability_id'],
+                                package=finding['package'],
+                                installed_version=finding['installed_version'],
+                                fixed_version=finding['fixed_version'],
+                                severity=finding['severity'],
+                                description=finding['description'],
+                                provider_metadata=finding['provider_metadata'],
+                            )
+                        )
                 for raw_tag in artifact_record.tags:
                     tag_name = str(raw_tag.get('name') or '').strip()
                     if not tag_name:
                         continue
-                    db.session.add(RegistryTag(
-                        artifact_id=artifact.id,
-                        name=tag_name,
-                        provider_native_id=str(raw_tag.get('id') or '') or None,
-                        push_time=_parse_datetime(raw_tag.get('push_time')),
-                        pull_time=_parse_datetime(raw_tag.get('pull_time')),
-                        provider_metadata={
-                            key: raw_tag.get(key)
-                            for key in ('immutable', 'signed')
-                            if raw_tag.get(key) is not None
-                        },
-                        observed_at=observed_at,
-                    ))
+                    artifact.tags.append(
+                        RegistryTag(
+                            name=tag_name,
+                            provider_native_id=str(raw_tag.get('id') or '') or None,
+                            push_time=_parse_datetime(raw_tag.get('push_time')),
+                            pull_time=_parse_datetime(raw_tag.get('pull_time')),
+                            provider_metadata={
+                                key: raw_tag.get(key)
+                                for key in ('immutable', 'signed')
+                                if raw_tag.get(key) is not None
+                            },
+                            observed_at=observed_at,
+                        )
+                    )
                     tag_count += 1
 
     state.status = 'ready'
