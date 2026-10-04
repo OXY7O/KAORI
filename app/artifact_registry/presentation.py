@@ -114,6 +114,78 @@ def _analytics_snapshot_view(snapshot: RegistryAnalyticsSnapshot | None) -> dict
     }
 
 
+def _analytics_payload(snapshot: RegistryAnalyticsSnapshot | None) -> dict[str, Any]:
+    return snapshot.payload_json if snapshot is not None and isinstance(snapshot.payload_json, dict) else {}
+
+
+def _capacity_dashboard_view(
+    scoped_providers: list[IntegrationInstance],
+    analytics_by_provider: dict[int, RegistryAnalyticsSnapshot | None],
+) -> dict[str, Any]:
+    forecasts: list[dict[str, Any]] = []
+    growth_size_per_day = 0.0
+    growth_samples = 0
+    for provider in scoped_providers:
+        payload = _analytics_payload(analytics_by_provider.get(int(provider.id)))
+        growth = payload.get('growth') if isinstance(payload.get('growth'), dict) else {}
+        size_growth = growth.get('size_growth_bytes_per_day')
+        if isinstance(size_growth, (int, float)):
+            growth_size_per_day += float(size_growth)
+            growth_samples += 1
+        capacity = payload.get('capacity') if isinstance(payload.get('capacity'), dict) else {}
+        for row in capacity.get('project_forecasts') or ():
+            if not isinstance(row, dict):
+                continue
+            normalized = dict(row)
+            normalized['provider_name'] = provider.name
+            normalized['usage_display'] = _fmt_bytes(int(float(row.get('usage_bytes') or 0)))
+            normalized['quota_display'] = _fmt_bytes(int(float(row.get('quota_bytes') or 0)))
+            normalized['growth_display'] = (
+                f"{_fmt_bytes(int(abs(float(row.get('growth_bytes_per_day') or 0))))}/day"
+                if isinstance(row.get('growth_bytes_per_day'), (int, float))
+                else 'Not Available'
+            )
+            forecasts.append(normalized)
+
+    forecasts.sort(
+        key=lambda row: (
+            row.get('days_to_quota') is None,
+            float(row.get('days_to_quota') or 1e18),
+            -float(row.get('utilization_percent') or 0),
+        )
+    )
+    highest = max((float(row.get('utilization_percent') or 0) for row in forecasts), default=None)
+    at_risk = sum(
+        row.get('days_to_quota') is not None and float(row.get('days_to_quota') or 0) <= 90
+        for row in forecasts
+    )
+    if highest is None:
+        risk = 'Unknown'
+    elif highest >= 90 or any(
+        row.get('days_to_quota') is not None and float(row.get('days_to_quota') or 0) <= 30
+        for row in forecasts
+    ):
+        risk = 'Critical'
+    elif highest >= 75 or at_risk:
+        risk = 'Warning'
+    else:
+        risk = 'Normal'
+    return {
+        'source_status': 'Available' if forecasts else 'Unavailable',
+        'project_count': len(forecasts),
+        'highest_utilization_percent': highest,
+        'at_risk_count': at_risk,
+        'risk': risk,
+        'growth_size_per_day': growth_size_per_day if growth_samples else None,
+        'forecasts': forecasts[:5],
+        'top_consumers': sorted(
+            forecasts,
+            key=lambda row: float(row.get('usage_bytes') or 0),
+            reverse=True,
+        )[:5],
+    }
+
+
 def build_overview(
     *,
     provider_id: int | None = None,
@@ -190,17 +262,20 @@ def build_overview(
             .first()
         )
 
-    ready_states = [
-        state
-        for state in states
-        if state.status == 'ready' and state.last_committed_at is not None
-    ]
+    committed_states = [state for state in states if state.last_committed_at is not None]
     latest = max(
-        (state.last_committed_at for state in ready_states if state.last_committed_at),
+        (state.last_committed_at for state in committed_states if state.last_committed_at),
         default=None,
     )
-    stale_count = sum(bool(_state_view(state)['is_stale']) for state in ready_states)
-    pending_snapshot_count = max(len(scoped_providers) - len(ready_states), 0)
+    stale_count = sum(
+        bool(_state_view(state)['is_stale']) or str(state.status or '').lower() == 'stale'
+        for state in committed_states
+    )
+    committed_provider_ids = {int(state.integration_instance_id) for state in committed_states}
+    pending_snapshot_count = sum(
+        int(provider.id) not in committed_provider_ids
+        for provider in scoped_providers
+    )
 
     tag_count = sum(len(item.tags) for item in artifacts)
     total_size_bytes = sum(int(item.size_bytes or 0) for item in artifacts)
@@ -232,7 +307,7 @@ def build_overview(
 
     if not providers:
         posture = {'label': 'Setup Required', 'tone': 'unknown'}
-    elif not ready_states:
+    elif not committed_states:
         posture = {'label': 'Inventory Pending', 'tone': 'warning'}
     elif stale_count:
         posture = {'label': 'Attention Required', 'tone': 'warning'}
@@ -285,8 +360,8 @@ def build_overview(
         readiness = str(provider.readiness_status or 'validation_required')
         inventory_ready = bool(
             state is not None
-            and state.status == 'ready'
             and state.last_committed_at is not None
+            and str(state.status or '').lower() not in {'failed', 'not_collected'}
         )
         security_ready = bool(security['scanned'])
 
@@ -452,15 +527,15 @@ def build_overview(
                 'label': 'Inventory Snapshot',
                 'status': (
                     'Ready'
-                    if len(ready_states) == len(scoped_providers) and scoped_providers
-                    else ('Partial' if ready_states else 'Required')
+                    if len(committed_states) == len(scoped_providers) and scoped_providers
+                    else ('Partial' if committed_states else 'Required')
                 ),
                 'tone': (
                     'normal'
-                    if len(ready_states) == len(scoped_providers) and scoped_providers
-                    else ('warning' if ready_states else 'unknown')
+                    if len(committed_states) == len(scoped_providers) and scoped_providers
+                    else ('warning' if committed_states else 'unknown')
                 ),
-                'value': f'{len(ready_states)} / {len(scoped_providers)} providers',
+                'value': f'{len(committed_states)} / {len(scoped_providers)} providers',
                 'description': 'Registry providers with a committed inventory snapshot.',
                 'icon': 'database-zap',
             },
@@ -536,7 +611,7 @@ def build_overview(
         'tag_count': tag_count,
         'latest_committed_at': latest,
         'posture': posture,
-        'snapshot_count': len(ready_states),
+        'snapshot_count': len(committed_states),
         'stale_snapshot_count': stale_count,
         'pending_snapshot_count': pending_snapshot_count,
         'total_size_bytes': total_size_bytes,
@@ -551,6 +626,7 @@ def build_overview(
         'digest_runtime_binding_count': digest_runtime_bindings,
         'metrics_ready_count': metrics_ready_count,
         'analytics_ready_count': analytics_ready_count,
+        'capacity': _capacity_dashboard_view(scoped_providers, analytics_by_provider),
         'provider_rows': visible_provider_rows,
         'provider_health_pagination': provider_health_pagination,
         'inventory_items': inventory_items,
