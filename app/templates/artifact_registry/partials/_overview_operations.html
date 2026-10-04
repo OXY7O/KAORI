@@ -1,5 +1,6 @@
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/peer_content_grid.html" as peer_content_grid %}
+{% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 <div class="space-y-5">
     {% include "artifact_registry/partials/_overview_provider_health.html" %}
@@ -29,6 +30,24 @@
                         </article>
                     {% endfor %}
                 </div>
+                {% if current_user.has_permission('artifact_registry.sync') %}
+                    <form method="post"
+                          action="{{ url_for('artifact_registry.sync_inventory') }}"
+                          class="mt-4 flex flex-col gap-3 border-t border-outline-subtle pt-4 sm:flex-row sm:items-center sm:justify-between">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <p class="text-xs leading-5 text-content-muted">
+                            {% if overview.sync_required %}
+                                Inventory is missing for part of this scope. Queue the inventory worker.
+                            {% else %}
+                                Refresh committed inventory after provider-side changes.
+                            {% endif %}
+                        </p>
+                        <button type="submit" class="{{ table_ui.action_classes() }}">
+                            <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
+                            Sync Inventory
+                        </button>
+                    </form>
+                {% endif %}
             {% endcall %}
         </div>
         <div class="{{ peer_content_grid.column_classes('secondary') }}">
