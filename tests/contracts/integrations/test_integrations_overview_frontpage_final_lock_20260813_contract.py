@@ -63,6 +63,8 @@ def test_provider_frontpage_consistency_verifier_uses_current_title_case_contrac
 
     assert "'Pre-Save Requirements'" in verifier
     assert "'Pre-save Requirements'" not in verifier
+    assert "'Full Validation'" in verifier
+    assert "'Core Validation'" not in verifier
     assert '├── Coverage Gaps' in standard
     assert 'fourth metric is always `Coverage Gaps`' in standard
     assert 'Provider Catalog shows registered count, ready count, real readiness percentage' in standard
@@ -88,3 +90,24 @@ def test_current_provider_shell_standard_includes_harbor() -> None:
     assert "'app/templates/integrations/registry/providers/harbor/partials/_registry.html'" in verifier
     assert "'app/templates/integrations/registry/providers/harbor/instance_form.html'" in verifier
     assert "'app/templates/integrations/registry/providers/harbor/instance_detail.html'" in verifier
+
+
+def test_provider_registration_copy_uses_full_validation_operator_terminology() -> None:
+    hero = read('app/templates/integrations/components/_provider_registration_hero.html')
+    registration_pages = {
+        'Kubernetes': read('app/templates/kubernetes/cluster/add.html'),
+        'Metrics Source': read('app/templates/integrations/observability/metrics_source/instance_form.html'),
+        'Alertmanager': read(
+            'app/templates/integrations/observability/alert_source/providers/alertmanager/instance_form.html'
+        ),
+        'MinIO': read('app/templates/integrations/storage/object_storage/providers/minio/instance_form.html'),
+        'Harbor': read('app/templates/integrations/registry/providers/harbor/instance_form.html'),
+    }
+
+    assert 'after_save_label="Full Validation"' in hero
+    assert 'after_save_description="Then establish provider readiness"' in hero
+    assert 'after_save_label="Core Validation"' not in hero
+
+    for provider, source in registration_pages.items():
+        assert 'Core Validation' not in source, provider
+        assert 'Full Validation' in source, provider
