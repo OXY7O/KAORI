@@ -184,10 +184,10 @@ def test_capability_copy_keeps_optional_governance_concise() -> None:
     registry = REGISTRY.read_text(encoding='utf-8')
 
     assert (
-        'Core API/RBAC is ready; optional Tenant access remains workflow-scoped.'
+        'Core API/RBAC is ready; Tenant access remains workflow-scoped.'
         in workspace
     )
-    assert 'Kubernetes core API/RBAC is validated; optional Tenant contracts remain separate.' in workspace
+    assert 'Core API/RBAC is validated; Tenant contracts remain optional.' in workspace
     assert 'Optional gaps do not affect core readiness.' in workspace
     assert 'without broadening the baseline ClusterRole.' in workspace
     assert 'Optional workflows must establish their own approved access boundary.' in registry
