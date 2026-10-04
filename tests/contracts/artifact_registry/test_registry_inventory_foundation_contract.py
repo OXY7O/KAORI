@@ -69,6 +69,7 @@ def test_global_sync_all_inventory_includes_artifact_registry() -> None:
         'can_sync_artifact_registry_inventory'
     ) in navbar
 
+
 def test_registry_inventory_worker_registration_matches_dispatch_contract() -> None:
     config = (ROOT / 'app/config/default.py').read_text()
     sync_jobs = (ROOT / 'app/artifact_registry/sync_jobs.py').read_text()
