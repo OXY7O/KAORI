@@ -34,12 +34,45 @@ def test_harbor_registration_reuses_canonical_connection_workflow() -> None:
     assert 'connectionVerified' in form
     assert 'provider_registration_hero.render' in form
     assert 'after_save_label="Full Validation"' in form
-    assert 'after_save_description="Then establish compatibility and capability readiness"' in form
+    assert 'after_save_description="Then validate compatibility and capabilities"' in form
     assert 'provider_registration_actions.render' in form
     assert 'REGISTRATION_PROOF_MAX_AGE_SECONDS = 600' in registration
     assert "'password'," in registration
     assert "canonical.readiness_status = 'validation_required'" in service
     assert 'client.test_connection()' in service
+
+
+def test_harbor_authentication_fields_follow_selected_auth_mode() -> None:
+    form = read('app/templates/integrations/registry/providers/harbor/instance_form.html')
+    forms = read('app/integrations/registry/providers/harbor/application/forms.py')
+
+    assert "authType: {{ (form.auth_type.data or 'basic')|tojson }}" in form
+    assert 'x-on:change="authType = $event.target.value"' in form
+    assert 'x-show="authType === \'basic\'"' in form
+    assert 'x-cloak' in form
+    assert 'Ignored when Anonymous / Public Read-Only is selected.' not in form
+    assert 'Stored encrypted and never emitted into validation evidence.' not in form
+    assert 'Blank preserves the existing encrypted password.' not in form
+    assert "('basic', 'Basic Authentication')" in forms
+    assert "('anonymous', 'Anonymous / Public Read-Only')" in forms
+    assert "if auth_type == 'anonymous':" in forms
+    assert 'username = None' in forms
+    assert 'password = None' in forms
+
+
+def test_harbor_registration_copy_is_concise_and_preserves_authority_boundaries() -> None:
+    form = read('app/templates/integrations/registry/providers/harbor/instance_form.html')
+    index = read('app/templates/integrations/registry/providers/harbor/index.html')
+
+    assert 'Configure Harbor identity, API access, TLS trust, and request controls. Full Validation owns readiness.' in form
+    assert 'Configure Harbor API v2.0 access and test identity/reachability. Full Validation establishes readiness.' in form
+    assert 'Disabled connections remain registered but are not resolved for use.' in form
+    assert 'Harbor executes Registry APIs; KAORI owns normalized identity, evidence, readiness, runtime observations, and audit.' in form
+    assert 'How KAORI registers a reusable Registry connection.' in form
+    assert (
+        'Register Harbor once; committed Registry inventory, Metrics Source bindings, webhook readiness, '
+        'and provider validation remain independent.'
+    ) in index
 
 
 def test_harbor_detail_uses_shared_provider_domains_without_premature_inventory_surface() -> None:
