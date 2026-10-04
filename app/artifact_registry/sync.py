@@ -209,17 +209,6 @@ def sync_registry_inventory(identity: IntegrationInstance) -> dict[str, Any]:
         evidence = collector.collect(provider_record)
         counts = commit_registry_inventory(identity, evidence, observed_at=observed_at)
         db.session.commit()
-        try:
-            from app.artifact_registry.correlation import refresh_registry_workload_bindings
-            correlation = refresh_registry_workload_bindings(integration_instance_id=int(identity.id))
-        except Exception as correlation_exc:
-            db.session.rollback()
-            logger.exception('Artifact Registry runtime correlation failed for Registry instance %s.', identity.id)
-            correlation = {
-                'status': 'failed',
-                'error_type': type(correlation_exc).__name__,
-                'message': str(correlation_exc)[:1000],
-            }
     except Exception as exc:
         db.session.rollback()
         state = _lock_collection_state(int(identity.id))
@@ -233,6 +222,5 @@ def sync_registry_inventory(identity: IntegrationInstance) -> dict[str, Any]:
         'instance_name': identity.name,
         'provider_key': identity.provider_key,
         'observed_at': observed_at.isoformat(),
-        'correlation': correlation,
         **counts,
     }
