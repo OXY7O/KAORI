@@ -8,6 +8,7 @@ from app.integrations.service import (
     _capability_attention_display,
     _coverage_stats,
     _portfolio_posture,
+    _provider_portfolio_counts,
     _runtime_scope_label,
     _runtime_stats,
 )
@@ -182,3 +183,38 @@ def test_generic_overview_aggregation_includes_object_storage_canonical_instance
         'attention': 1,
         'blocked': 0,
     }
+
+
+def test_provider_portfolio_counts_projects_generic_object_storage_readiness() -> None:
+    counts = _provider_portfolio_counts(
+        kubernetes_connections=[],
+        metrics_sources=[],
+        alertmanager_instances=[],
+        extension_instances=[
+            SimpleNamespace(
+                integration_type='object_storage',
+                enabled=True,
+                readiness_status='ready',
+            ),
+            SimpleNamespace(
+                integration_type='registry',
+                enabled=True,
+                readiness_status='degraded',
+            ),
+        ],
+    )
+
+    assert counts['object_storage'] == {
+        'configured': 1,
+        'ready': 1,
+        'degraded': 0,
+        'blocked': 0,
+        'validation_required': 0,
+        'disabled': 0,
+        'not_configured': 0,
+        'total': 1,
+        'attention': 0,
+    }
+    assert counts['registry']['configured'] == 1
+    assert counts['registry']['degraded'] == 1
+    assert counts['registry']['ready'] == 0
