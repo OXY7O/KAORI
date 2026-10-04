@@ -48,8 +48,10 @@
         const clusterSelect = documentRoot.getElementById('cluster-select')
         const namespaceSelect = documentRoot.getElementById('namespace-select')
         const objectStorageSystemSelect = documentRoot.getElementById('object-storage-system-select')
+        const artifactRegistrySelect = documentRoot.getElementById('artifact-registry-select')
         const kubernetesScopeFields = documentRoot.getElementById('kubernetes-scope-fields')
         const objectStorageScopeFields = documentRoot.getElementById('object-storage-scope-fields')
+        const artifactRegistryScopeFields = documentRoot.getElementById('artifact-registry-scope-fields')
         const scopeTipCopy = documentRoot.getElementById('scope-tip-copy')
         const namespaceOptionCount = documentRoot.getElementById('namespace-option-count')
         const reportNameInput = documentRoot.getElementById('report-name-input')
@@ -536,7 +538,11 @@
             const selectedSections = getSelectedSections()
             const sectionLabel = selectedSections.length === 1 ? 'Section' : 'Sections'
             const scopeLabel =
-                reportType.scope_asset_type === 'object_storage_system' ? 'Object Storage System' : 'Kubernetes Cluster'
+                reportType.scope_asset_type === 'object_storage_system'
+                    ? 'Object Storage System'
+                    : reportType.scope_asset_type === 'registry_integration'
+                      ? 'Artifact Registry'
+                      : 'Kubernetes Cluster'
             if (selectedReportLabel) selectedReportLabel.textContent = reportType.label
             if (selectedReportDescription) selectedReportDescription.textContent = reportType.description
             if (selectedReportScope) selectedReportScope.textContent = scopeLabel
@@ -606,6 +612,9 @@
             if (scopeType === 'object_storage_system') {
                 return Boolean(objectStorageSystemSelect && objectStorageSystemSelect.value)
             }
+            if (scopeType === 'registry_integration') {
+                return Boolean(artifactRegistrySelect && artifactRegistrySelect.value)
+            }
             if (reportType && reportType.requires_cluster === false) {
                 return true
             }
@@ -617,12 +626,22 @@
             const scopeType =
                 reportType && reportType.scope_asset_type ? reportType.scope_asset_type : 'kubernetes_cluster'
             const objectStorageScope = scopeType === 'object_storage_system'
+            const artifactRegistryScope = scopeType === 'registry_integration'
+            if (kubernetesScopeFields) kubernetesScopeFields.classList.toggle('hidden', objectStorageScope || artifactRegistryScope)
+            if (objectStorageScopeFields) objectStorageScopeFields.classList.toggle('hidden', !objectStorageScope)
+            if (artifactRegistryScopeFields) artifactRegistryScopeFields.classList.toggle('hidden', !artifactRegistryScope)
             const hasSelectedSections = getSelectedSections().length > 0
             const scopeReady = scopeSelectionIsReady()
             const shouldBlock = !scopeReady || !hasSelectedSections || !storageGenerationReady
             const readinessBlockers = []
             if (!scopeReady) {
-                readinessBlockers.push(objectStorageScope ? 'Object Storage system scope' : 'Kubernetes cluster scope')
+                readinessBlockers.push(
+                    objectStorageScope
+                        ? 'Object Storage system scope'
+                        : artifactRegistryScope
+                          ? 'Artifact Registry scope'
+                          : 'Kubernetes cluster scope',
+                )
             }
             if (!hasSelectedSections) {
                 readinessBlockers.push('report section selection')
@@ -632,7 +651,9 @@
                 wizardScopeValidation.classList.toggle('hidden', scopeReady)
                 wizardScopeValidation.textContent = objectStorageScope
                     ? 'Select one registered Object Storage system before continuing.'
-                    : 'Select one validated Kubernetes cluster before continuing.'
+                    : artifactRegistryScope
+                      ? 'Select one active Artifact Registry integration before continuing.'
+                      : 'Select one validated Kubernetes cluster before continuing.'
             }
             setElementVisibility(kubernetesScopeFields, !objectStorageScope)
             setElementVisibility(objectStorageScopeFields, objectStorageScope)
@@ -796,7 +817,11 @@
             if (step === 2) {
                 const reportType = getReportTypeOption()
                 const target =
-                    reportType.scope_asset_type === 'object_storage_system' ? objectStorageSystemSelect : clusterSelect
+                    reportType.scope_asset_type === 'object_storage_system'
+                        ? objectStorageSystemSelect
+                        : reportType.scope_asset_type === 'registry_integration'
+                          ? artifactRegistrySelect
+                          : clusterSelect
                 if (target) target.focus()
             } else if (step === 4) {
                 const firstSection = selectedSectionList.querySelector('input[type="checkbox"]')
