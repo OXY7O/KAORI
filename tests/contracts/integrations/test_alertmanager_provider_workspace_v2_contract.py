@@ -95,3 +95,52 @@ def test_alertmanager_runtime_history_accepts_server_side_filters():
     assert "trigger_type: str = ''" in presentation
     assert "health_status: str = ''" in presentation
     assert "readiness: str = ''" in presentation
+
+
+
+def test_alertmanager_connection_type_is_legacy_not_operator_configuration():
+    form = read('app/templates/integrations/observability/alert_source/providers/alertmanager/instance_form.html')
+    card = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_inventory_card.html'
+    )
+    content = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_inventory_content.html'
+    )
+    presentation = read(
+        'app/integrations/observability/alert_source/providers/alertmanager/application/presentation.py'
+    )
+    routes = read('app/integrations/routes.py')
+    registration = read(
+        'app/integrations/observability/alert_source/providers/alertmanager/application/registration_web.py'
+    )
+
+    assert '>Connection Type</label>' not in form
+    assert '<select id="alertmanager-deployment-type"' not in form
+    assert 'type="hidden"' in form
+    assert 'name="deployment_type"' in form
+
+    assert 'selected_deployment_type' not in card
+    assert "'deployment_type'" not in card
+    assert 'row.deployment_type' not in content
+    assert "'deployment_type': selected_deployment_type" not in content
+    assert "deployment_type: str = ''" not in presentation
+    assert "'deployment_type': instance.deployment_type" not in presentation
+    assert "deployment_type=request.args.get('deployment_type'" not in routes
+    assert "deployment_type='cluster_managed'" not in registration
+
+
+def test_observability_connection_copy_is_concise_and_binding_scoped():
+    alertmanager = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/instance_form.html'
+    )
+    metrics = read('app/templates/integrations/observability/metrics_source/instance_form.html')
+
+    assert (
+        'One Alertmanager runtime can serve multiple integrations through independent bindings and selectors.'
+        in alertmanager
+    )
+    assert (
+        'Update metrics connections while preserving governed validation, bindings, and consumer context.'
+        in metrics
+    )
+    assert 'Maintain governed validation and consumer-binding context.' not in metrics

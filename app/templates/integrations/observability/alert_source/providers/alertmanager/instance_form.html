@@ -295,7 +295,7 @@
                     authority_boundary="Alertmanager remains authoritative for routing, grouping, inhibition, silences, and notification delivery. KAORI owns provider readiness and governed consumer-binding evidence.") }}
                 {% else %}
                     {% set alertmanager_flow_items = [('Define Connection Identity', 'Create one reusable Alertmanager connection for the endpoint and its ownership context.'), ('Configure Endpoint Access', 'Set authentication, TLS behavior, request timeout, and the supported Alertmanager API contract.'), ('Test Connection', 'Verify endpoint reachability and API access before KAORI enables registration.'), ('Register Connection', 'Create the reusable connection identity before Core Validation and consumer binding.')] %}
-                    {% set alertmanager_related_description = "A single Alertmanager runtime can serve Kubernetes, Object Storage, and future integrations through independent consumer bindings and selectors." %}
+                    {% set alertmanager_related_description = "One Alertmanager runtime can serve multiple integrations through independent bindings and selectors." %}
                     {% if initial_cluster %}
                         {% set alertmanager_related_description = alertmanager_related_description ~ " This registration will also create the initial alert binding for " ~ initial_cluster.name ~ "." %}
                     {% endif %}

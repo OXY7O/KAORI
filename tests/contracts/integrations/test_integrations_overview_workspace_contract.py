@@ -215,7 +215,7 @@ def test_integration_overview_readiness_copy_is_explicit_and_actionable() -> Non
     overview = read('app/templates/integrations/overview.html')
 
     assert (
-        'Targets that completed required validation and are currently eligible for governed operational use.'
+        'Validated targets eligible for governed operational use.'
         in overview
     )
     assert (
@@ -223,6 +223,6 @@ def test_integration_overview_readiness_copy_is_explicit_and_actionable() -> Non
         in overview
     )
     assert (
-        'Targets that completed required validation and are currently eligible for governed operational use'
+        'Validated targets eligible for governed operational use'
         in overview
     )
