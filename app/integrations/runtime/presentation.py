@@ -340,6 +340,21 @@ def _diagnostic_summary(detail: str, *, label: str = 'Diagnostic') -> str:
     return f'{clipped}…'
 
 
+def _compact_kubernetes_extended_summary(value: str) -> str | None:
+    """Return the canonical concise Extended-support decision for Kubernetes."""
+    text = ' '.join(str(value or '').split()).strip()
+    lowered = text.lower()
+    marker = ' uses kaori extended support.'
+    marker_index = lowered.find(marker)
+    if marker_index < 0:
+        return None
+
+    subject = text[:marker_index].strip()
+    if not subject.lower().startswith('kubernetes '):
+        return None
+    return f'{subject} uses KAORI Extended support. Upgrade recommended.'
+
+
 def _runtime_primary_summary(
     *,
     integration_type: str,
@@ -356,10 +371,18 @@ def _runtime_primary_summary(
         if str(item.get('status') or '').lower() in priority:
             summary = str(item.get('summary') or '').strip()
             if summary:
-                if integration_type == 'container_orchestrator' and summary.startswith('Provider '):
-                    return 'Kubernetes API ' + summary[len('Provider ') :]
+                if integration_type == 'container_orchestrator':
+                    extended_summary = _compact_kubernetes_extended_summary(summary)
+                    if extended_summary:
+                        return extended_summary
+                    if summary.startswith('Provider '):
+                        return 'Kubernetes API ' + summary[len('Provider ') :]
                 return summary
     if message:
+        if integration_type == 'container_orchestrator':
+            extended_summary = _compact_kubernetes_extended_summary(compact_readiness_reason(message))
+            if extended_summary:
+                return extended_summary
         label = 'Kubernetes API' if integration_type == 'container_orchestrator' else 'Runtime'
         return _diagnostic_summary(message, label=label)
     return 'No current runtime issue was recorded.'
@@ -382,13 +405,21 @@ def _runtime_decision_summary(
             continue
         detail = compact_readiness_reason(str(item.get('detail') or ''))
         if detail:
-            if integration_type == 'container_orchestrator' and detail.startswith('Provider '):
-                return 'Kubernetes API ' + detail[len('Provider ') :]
+            if integration_type == 'container_orchestrator':
+                extended_summary = _compact_kubernetes_extended_summary(detail)
+                if extended_summary:
+                    return extended_summary
+                if detail.startswith('Provider '):
+                    return 'Kubernetes API ' + detail[len('Provider ') :]
             return detail
     if message:
         value = compact_readiness_reason(message)
-        if integration_type == 'container_orchestrator' and value.startswith('Provider '):
-            return 'Kubernetes API ' + value[len('Provider ') :]
+        if integration_type == 'container_orchestrator':
+            extended_summary = _compact_kubernetes_extended_summary(value)
+            if extended_summary:
+                return extended_summary
+            if value.startswith('Provider '):
+                return 'Kubernetes API ' + value[len('Provider ') :]
         return value
     return 'No current runtime issue was recorded.'
 
