@@ -20,7 +20,7 @@
                         "Metrics Integration",
                         "chart-spline",
                         'Edit ' ~ metrics_source_label ~ ' Connection',
-                        "Update metrics connections while preserving governed validation, bindings, and consumer context.",
+                        "Update metrics connections while preserving validation, bindings, and consumer context.",
                         "database-zap",
                         metrics_source_label ~ " API",
                         "Connection",
@@ -238,7 +238,7 @@
                 {% if instance %}
                     {% set metrics_source_flow_items = [('Save Changes', 'Update the reusable connection contract and return readiness to Validation Required.'), ('Test Connection', 'Confirm the saved endpoint remains reachable with the selected access settings.'), ('Run Core Validation', 'Rebuild provider compatibility and adapter and query-contract readiness evidence.'), ('Review Consumer Bindings', 'Confirm Kubernetes, Object Storage, and future consumers retain independent validated bindings.')] %}
                     {{ provider_registration_context.render(metrics_source_label ~ " Configuration Flow",
-                                        "How saved connection changes return to governed operational use.",
+                                        "How saved changes return to governed use.",
                                         metrics_source_flow_items,
                                         "Observability Integrations",
                                         "Review " ~ metrics_source_label ~ " coverage, connection readiness, and consumer bindings from the observability workspace.",
