@@ -181,6 +181,7 @@ def test_harbor_detail_uses_shared_provider_domains_with_inventory_lifecycle() -
     assert 'integrations/registry/providers/harbor/partials/_detail_scope.html' in detail
     assert 'integrations/registry/providers/harbor/partials/_delete_modal.html' in detail
     assert 'Inventory &amp; Lifecycle Decision' in inventory
+    assert 'Snapshot freshness, Registry evidence, observability, reconciliation, and deletion guardrails at a glance.' in inventory
     assert 'Snapshot Freshness' in inventory
     assert 'Lifecycle Gate' in inventory
     assert 'KAORI Operational Consumers' in inventory
@@ -380,7 +381,7 @@ def test_harbor_inventory_lifecycle_reuses_asset_owner_contract_without_provider
     assert 'Next Lifecycle Action' in inventory
     assert 'Delete Connection' in inventory
     assert "url_for('harbor.delete_instance'" in inventory
-    assert "url_for('artifact_registry.inventory')" in inventory
+    assert "url_for('artifact_registry.inventory')" not in inventory
     assert 'asset_owner_delete_modal.render(' in modal
     assert 'This action cannot be undone.' in shared_modal
 
@@ -408,7 +409,7 @@ def test_harbor_inventory_lifecycle_keeps_artifact_registry_as_detail_owner() ->
     presentation = read('app/integrations/registry/providers/harbor/application/presentation.py')
     sync = read('app/artifact_registry/sync.py')
 
-    assert 'Open Artifact Registry' in inventory
+    assert 'Open Artifact Registry' not in inventory
     assert (
         'Use Artifact Registry for committed artifact evidence. Manage Metrics Source and Alertmanager bindings in '
         'Observability; Harbor remains read-only for binding changes.'
