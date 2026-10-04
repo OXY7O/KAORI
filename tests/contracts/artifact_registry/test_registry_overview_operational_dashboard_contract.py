@@ -63,8 +63,7 @@ def test_artifact_registry_overview_reuses_shared_sections_and_domain_handoffs()
     signals = read('app/templates/artifact_registry/partials/_overview_signals.html')
     reporting = read('app/templates/artifact_registry/partials/_overview_reporting.html')
 
-    for source in (operations, capacity, signals, reporting):
-        assert 'components/operational_section_card.html' in source
+    assert 'components/operational_section_card.html' in operations
     assert 'components/peer_content_grid.html' in operations
     assert 'components/peer_content_grid.html' in capacity
     assert 'components/peer_content_grid.html' in reporting
@@ -134,6 +133,7 @@ def test_artifact_registry_operations_overview_matches_reference_dashboard_gramm
         "'Analytics Snapshot'",
     ):
         assert label in presentation
+    assert 'Snapshot Stale' in signal
     assert 'Inventory Sync Required' in signal
 
 
@@ -148,6 +148,7 @@ def test_artifact_registry_overview_keeps_reference_information_hierarchy() -> N
     assert "current_user.has_permission('artifact_registry.sync')" in operations
     assert "url_for('artifact_registry.sync_inventory')" in operations
     assert 'Sync Inventory' in operations
+    assert 'Inventory is missing for part of this scope. Queue the inventory worker.' not in operations
 
     for label in (
         "'Inventory Snapshot'",
@@ -162,17 +163,22 @@ def test_artifact_registry_overview_keeps_reference_information_hierarchy() -> N
     assert "loading_bar_id='artifact-registry-provider-health-loading'" in health
     assert 'hx-indicator="#artifact-registry-provider-health-loading"' in health
 
-    assert 'components/peer_content_grid.html' in capacity
-    assert 'components/operational_callout.html' in capacity
-    assert 'Inventory Footprint & Demand' in capacity
-    assert 'Analytics Handoff' in capacity
-    assert 'unsupported provider capacity is not inferred' in capacity
+    assert 'artifact_registry/partials/_overview_capacity_snapshot.html' in capacity
+    assert 'artifact_registry/partials/_overview_forecast_risk.html' in capacity
+    assert 'artifact_registry/partials/_overview_top_consumers.html' in capacity
 
-    assert 'components/peer_content_grid.html' in signals
-    assert 'Security & Runtime Signals' in signals
-    assert 'Evidence & Actions' in signals
-    assert "overview.critical_findings if overview.scanned_count else 'N/A'" in signals
-    assert "overview.high_findings if overview.scanned_count else 'N/A'" in signals
+    assert 'artifact_registry/partials/_overview_alerts_summary.html' in signals
+    assert 'artifact_registry/partials/_overview_alert_response_guidance.html' in signals
+    assert 'artifact_registry/partials/_overview_recommended_actions.html' in signals
 
-    assert reporting.index('Reporting Evidence') < reporting.index('reporting_workspace.guidance(')
-    assert 'Reports owns definitions, generation, schedules, retained artifacts, and audit.' in reporting
+    assert 'reporting_workspace.summary(' in reporting
+    assert reporting.index('reporting_workspace.summary(') < reporting.index('reporting_workspace.guidance(')
+
+    assert 'committed_states = [state for state in states if state.last_committed_at is not None]' in presentation
+    build_overview = presentation.split('def build_overview(', 1)[1].split('def _project_row', 1)[0]
+    assert "state.status == 'ready' and state.last_committed_at is not None" not in build_overview
+    assert "'failed_refresh_count': failed_refresh_count" in presentation
+    assert "'capacity': capacity" in presentation
+    assert "'alerts': alerts" in presentation
+    assert "'recommended_actions': recommended_actions" in presentation
+    assert "'reporting': reporting" in presentation

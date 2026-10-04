@@ -320,6 +320,7 @@ _WORKSPACE_ACTIVE_PREFIXES: dict[str, tuple[tuple[str, str], ...]] = {
 _WORKSPACE_ACTIVE_DEFAULTS = {
     'kubernetes': 'analytics',
     'object_storage': 'analytics',
+    'artifact_registry': 'overview',
     'settings': 'general',
 }
 
