@@ -1,58 +1,68 @@
-{% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/operational_metric_card.html" as operational_metric_card %}
+{% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/peer_content_grid.html" as peer_content_grid %}
 {% import "components/section_link_button.html" as section_link_button %}
-{% call operational_section_card.render(
-    'Security & Runtime Signals',
-    'Committed security coverage and Kubernetes runtime correlation for the active Registry scope.',
-    'bell-ring',
-    body_classes='p-5'
-    ) %}
-    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {{ operational_metric_card.render(
-            'Scan Coverage',
-            overview.scan_coverage ~ '%',
-            overview.scanned_count ~ ' of ' ~ overview.artifact_count ~ ' artifacts carry scan evidence.',
-            'scan-search',
-            source_label='Committed Security',
-            scope_label=overview.scope_label
-        ) }}
-        {{ operational_metric_card.render(
-            'Critical Findings',
-            overview.critical_findings,
-            'Critical vulnerability findings in committed artifact summaries.',
-            'shield-alert',
-            source_label='Committed Security',
-            scope_label=overview.scope_label
-        ) }}
-        {{ operational_metric_card.render(
-            'High Findings',
-            overview.high_findings,
-            'High-severity vulnerability findings in committed artifact summaries.',
-            'triangle-alert',
-            source_label='Committed Security',
-            scope_label=overview.scope_label
-        ) }}
-        {{ operational_metric_card.render(
-            'Runtime Bindings',
-            overview.runtime_binding_count,
-            overview.digest_runtime_binding_count ~ ' bindings are digest-authoritative runtime matches.',
-            'waypoints',
-            source_label='Committed Correlation',
-            scope_label=overview.scope_label
-        ) }}
+<div class="{{ peer_content_grid.layout_classes() }}">
+    <div class="{{ peer_content_grid.column_classes('primary') }}">
+        {% call operational_section_card.render(
+            'Security & Runtime Signals',
+            'Committed security and Kubernetes runtime correlation for the active Registry scope.',
+            'bell-ring',
+            body_classes='p-5',
+            extra_classes='h-full'
+            ) %}
+            <div class="grid gap-3 sm:grid-cols-2">
+                {{ operational_metric_card.render(
+                    'Scan Coverage',
+                    (overview.scan_coverage ~ '%') if overview.artifact_count else 'N/A',
+                    (overview.scanned_count ~ ' of ' ~ overview.artifact_count ~ ' artifacts carry scan evidence.') if overview.artifact_count else 'No committed artifacts are available for scan coverage.',
+                    'scan-search',
+                    source_label='Committed Security',
+                    scope_label=overview.scope_label
+                ) }}
+                {{ operational_metric_card.render(
+                    'Critical Findings',
+                    overview.critical_findings if overview.scanned_count else 'N/A',
+                    'Critical findings in committed scan evidence.' if overview.scanned_count else 'Scan evidence has not been collected.',
+                    'shield-alert',
+                    source_label='Committed Security',
+                    scope_label=overview.scope_label
+                ) }}
+                {{ operational_metric_card.render(
+                    'High Findings',
+                    overview.high_findings if overview.scanned_count else 'N/A',
+                    'High-severity findings in committed scan evidence.' if overview.scanned_count else 'Scan evidence has not been collected.',
+                    'triangle-alert',
+                    source_label='Committed Security',
+                    scope_label=overview.scope_label
+                ) }}
+                {{ operational_metric_card.render(
+                    'Runtime Bindings',
+                    overview.runtime_binding_count,
+                    overview.digest_runtime_binding_count ~ ' bindings use digest-authoritative runtime matches.',
+                    'waypoints',
+                    source_label='Committed Correlation',
+                    scope_label=overview.scope_label
+                ) }}
+            </div>
+        {% endcall %}
     </div>
-{% endcall %}
-{% call operational_section_card.render(
-    'Operational Workspaces',
-    'Detailed evidence and governed action remain in the owning Artifact Registry and Intelligence workspaces.',
-    'workflow',
-    body_classes='p-5'
-    ) %}
-    <div class="flex flex-wrap gap-2">
-        {{ section_link_button.render(url_for('artifact_registry.security'), 'Security', icon='shield-check') }}
-        {{ section_link_button.render(url_for('artifact_registry.runtime'), 'Runtime Usage', icon='waypoints') }}
-        {{ section_link_button.render(url_for('artifact_registry.governance'), 'Governance', icon='scale') }}
-        {{ section_link_button.render(url_for('artifact_registry.analytics'), 'Analytics', icon='chart-no-axes-combined') }}
-        {{ section_link_button.render(url_for('intelligence.recommendations'), 'Recommendations', icon='list-checks') }}
+    <div class="{{ peer_content_grid.column_classes('secondary') }}">
+        {% call operational_section_card.render(
+            'Evidence & Actions',
+            'Review detailed evidence and governed follow-up in the owning workspace.',
+            'workflow',
+            body_classes='space-y-4 p-5',
+            extra_classes='h-full'
+            ) %}
+            <p class="text-sm leading-6 text-content-secondary">Overview summarizes committed posture only. Detailed security, runtime, governance, analytics, and recommendation lifecycle stay with their authoritative domains.</p>
+            <div class="flex flex-wrap gap-2">
+                {{ section_link_button.render(url_for('artifact_registry.security'), 'Security', icon='shield-check') }}
+                {{ section_link_button.render(url_for('artifact_registry.runtime'), 'Runtime Usage', icon='waypoints') }}
+                {{ section_link_button.render(url_for('artifact_registry.governance'), 'Governance', icon='scale') }}
+                {{ section_link_button.render(url_for('artifact_registry.analytics'), 'Analytics', icon='chart-no-axes-combined') }}
+                {{ section_link_button.render(url_for('intelligence.recommendations'), 'Recommendations', icon='list-checks') }}
+            </div>
+        {% endcall %}
     </div>
-{% endcall %}
+</div>
