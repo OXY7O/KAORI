@@ -56,6 +56,6 @@ Do not use Tab Style 2 for two or three local visualization modes. Those use Tab
 
 - horizontal overflow belongs to the shared framed navigation container, never to the page;
 - the navigation container explicitly suppresses vertical overflow so active-tab border offsets cannot surface a native vertical scrollbar;
-- the inner tab row keeps max-content width so narrow viewports scroll only along the horizontal axis;
+- the inner tab row keeps max-content width with a full-width minimum and owns the bottom divider, so the active `-mb-px` connection remains inside the bounded scroll area;
 - provider/page adapters must not add page-local overflow wrappers around the shared tab owner;
 - keyboard focus remains visible through the existing inset focus treatment while the tab strip stays locally scrollable.
