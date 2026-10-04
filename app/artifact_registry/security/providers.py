@@ -53,4 +53,7 @@ def get_registry_security_collector(provider_key: str) -> RegistrySecurityCollec
 
 
 def registered_registry_security_collectors() -> tuple[RegistrySecurityCollector, ...]:
+    from app.integrations.kernel.registry import get_integration
+
+    get_integration('registry')
     return tuple(_COLLECTORS[key] for key in sorted(_COLLECTORS))
