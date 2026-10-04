@@ -5,7 +5,7 @@ from app.common.job_execution_contract import ARTIFACT_REGISTRY_INVENTORY_SYNC_O
 from app.models.integration import IntegrationInstance
 from app.models.job import JobExecution
 from app.platform_operations.jobs.constants import WORKLOAD_STANDARD
-from app.platform_operations.jobs.dispatcher import enqueue_canonical_job
+from app.platform_operations.jobs.dispatcher import JobDispatchOptions, enqueue_canonical_job
 
 INVENTORY_QUEUE = 'inventory'
 
@@ -67,6 +67,7 @@ def enqueue_all_registry_inventory_sync(
         parameters={'scope': 'all'},
         payload={'total_count': len(targets), 'targets': targets, 'trigger_type': trigger_type},
         max_attempts=3,
+        dispatch_options=JobDispatchOptions(require_registered_worker=True),
     )
 
 
@@ -123,4 +124,5 @@ def enqueue_registry_target_refresh(
             'scope_hint': dict(scope_hint or {}),
         },
         max_attempts=3,
+        dispatch_options=JobDispatchOptions(require_registered_worker=True),
     )
