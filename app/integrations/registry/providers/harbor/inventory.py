@@ -132,8 +132,7 @@ def collect_harbor_inventory(
         projects.append(project)
 
     if progress_callback is not None:
-        completed_total = max(repository_processed, 1)
-        progress_callback(completed_total, completed_total, '')
+        progress_callback(repository_processed, repository_processed, '')
 
     parsed = urlparse(instance.endpoint)
     return RegistryInventoryEvidence(
