@@ -7,6 +7,8 @@ from sqlalchemy.orm import joinedload
 
 from app.artifact_registry.observability import registry_metrics_readiness
 from app.common.pagination import paginate_sequence
+from app.intelligence.alert_intelligence.dashboard_cases import active_recommendation_alert_cases
+from app.intelligence.dashboard_recommendations import get_dashboard_recommendation_findings
 from app.models.integration import IntegrationInstance
 from app.models.registry import (
     RegistryAnalyticsSnapshot,
@@ -464,6 +466,45 @@ def build_overview(
         },
     ]
 
+    recommendation_findings = get_dashboard_recommendation_findings(
+        domain='registry',
+        asset_key=str(selected_provider.id) if selected_provider is not None else None,
+    )
+    recommended_actions = [
+        {
+            'rule_key': str(item.get('rule_key') or ''),
+            'title': str(item.get('title') or 'Review Registry recommendation'),
+            'description': str(item.get('recommended_action') or item.get('summary') or ''),
+            'category': str(item.get('category_label') or item.get('category') or 'Registry'),
+            'severity': str(item.get('severity') or 'info'),
+            'priority': str(item.get('priority') or 'P3'),
+            'source': str(item.get('signal_source_label') or item.get('signal_source') or 'Intelligence'),
+            'icon': 'sparkles',
+        }
+        for item in recommendation_findings
+    ]
+    alert_cases = active_recommendation_alert_cases(
+        domain='registry',
+        asset_key=str(selected_provider.id) if selected_provider is not None else None,
+    )
+    alert_summary = {
+        'available': True,
+        'critical': sum(str(case.severity or '').lower() == 'critical' for case in alert_cases),
+        'warning': sum(str(case.severity or '').lower() == 'warning' for case in alert_cases),
+        'info': sum(str(case.severity or '').lower() not in {'critical', 'warning'} for case in alert_cases),
+        'total': len(alert_cases),
+        'rows': [
+            {
+                'public_id': case.public_id,
+                'name': str(case.alert_name or 'KAORI Alert Case'),
+                'severity': str(case.severity or 'info'),
+                'summary': str(case.summary or case.target or 'Registry recommendation alert case.'),
+                'state': str(case.workflow_state or 'open').replace('_', ' ').title(),
+            }
+            for case in alert_cases[:5]
+        ],
+    }
+
     if selected_provider is not None:
         selected_key = int(selected_provider.id)
         selected_state = _state_view(state_by_provider.get(selected_key))
@@ -627,6 +668,8 @@ def build_overview(
         'metrics_ready_count': metrics_ready_count,
         'analytics_ready_count': analytics_ready_count,
         'capacity': _capacity_dashboard_view(scoped_providers, analytics_by_provider),
+        'alerts': alert_summary,
+        'recommended_actions': recommended_actions,
         'provider_rows': visible_provider_rows,
         'provider_health_pagination': provider_health_pagination,
         'inventory_items': inventory_items,
