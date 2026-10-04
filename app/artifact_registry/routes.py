@@ -28,7 +28,11 @@ artifact_registry_bp = Blueprint('artifact_registry', __name__, url_prefix='/art
 
 PROVIDER_HEALTH_PAGE_SIZES = {5, 10, 25, 50}
 OVERVIEW_SECTION_TEMPLATES = {
+    'overview': 'artifact_registry/partials/_overview_operations.html',
     'provider_health': 'artifact_registry/partials/_overview_provider_health.html',
+    'capacity': 'artifact_registry/partials/_overview_capacity.html',
+    'signals': 'artifact_registry/partials/_overview_signals.html',
+    'reporting': 'artifact_registry/partials/_overview_reporting.html',
 }
 
 
@@ -65,7 +69,7 @@ def overview_section(section: str) -> ResponseReturnValue:
         abort(404)
     context = build_overview(
         provider_id=request.args.get('provider_id', type=int),
-        active_tab='overview',
+        active_tab=section if section in {'overview', 'capacity', 'signals', 'reporting'} else 'overview',
         provider_health_page=request.args.get('provider_health_page', 1),
         provider_health_per_page=_provider_health_per_page(),
     )
