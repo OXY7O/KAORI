@@ -83,6 +83,8 @@ def test_operational_dashboards_share_peer_grid_and_reporting_proportions() -> N
         assert 'Controlled Response Flow' in source
 
     assert 'Governed Reporting Flow' in reporting_workspace
+    assert '<span class="font-semibold text-content-primary">One-time</span> · Manual' in reporting_workspace
+    assert 'Generate manually' not in reporting_workspace
 
 
 def test_operational_dashboard_family_uses_canonical_palette_and_typography() -> None:
@@ -120,6 +122,7 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
     assert 'Committed analytics available' in freshness
     assert 'Generated reports are retained artifacts, separate from current Kubernetes health.' in freshness
     assert 'No immediate scaling required.' in capacity
+    assert 'Validate requests/limits, growth, and planned deployments against current worker headroom.' in capacity
     assert (
         'Verify the selected cluster Metrics Source and kube-state-metrics node-role labels, then reload the snapshot.'
         in capacity
@@ -224,6 +227,21 @@ def test_response_and_reporting_flows_use_current_shared_governance_owners() -> 
     assert 'Governed Reporting Flow' in reporting_workspace
     for step in ('Validate', 'Select', 'Create', 'Generate', 'Schedule', 'Retain'):
         assert f"'{step}'" in reporting_workspace
+
+
+def test_alerts_summary_is_bounded_to_five_in_both_reference_dashboards() -> None:
+    kubernetes_summary = read('app/templates/kubernetes/dashboard/partials/_alerts_summary.html')
+    kubernetes_builder = read('app/kubernetes/dashboard/sections/alerts.py')
+    object_summary = read('app/templates/storage/object_storage/dashboard/partials/_alerts_summary.html')
+    object_service = read('app/storage/object_storage/dashboard/service.py')
+
+    assert 'dashboard.alerts_snapshot.items[:5]' in kubernetes_summary
+    assert 'for item in raw_items[:5]' in kubernetes_builder
+    assert 'dashboard.alerts.rows[:5]' in object_summary
+    assert "for case in posture['cases'][:5]" in object_service
+
+    for source in (kubernetes_summary, kubernetes_builder, object_summary, object_service):
+        assert '[:6]' not in source
 
 
 def test_recent_report_activity_is_bounded_to_four_in_both_reference_dashboards() -> None:
