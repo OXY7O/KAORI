@@ -533,6 +533,8 @@ def _provider_portfolio_counts(
             [(True, bool(item.enabled), item.readiness_status) for item in targets]
         )
     return counts
+
+
 def _coverage(
     *,
     kubernetes_connections: list[KubernetesConnection],
