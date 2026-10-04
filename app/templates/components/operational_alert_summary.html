@@ -3,8 +3,8 @@
 {#
   Canonical Operational Dashboard Alerts Summary presentation.
 
-  Domains supply projected AlertCase rows and semantic copy. Alert Intelligence
-  remains the data/lifecycle authority.
+  Domains supply canonical AlertCase rows with title, description, severity,
+  state, and display-ready age. Alert Intelligence remains the lifecycle authority.
 #}
 {% macro render(
     description,
@@ -19,12 +19,6 @@
     scope_selected=true,
     scope_blocked_title='Select Scope',
     scope_blocked_description='Select a scope to review KAORI Alert Intelligence cases.',
-    row_title_key='title',
-    row_description_key='description',
-    row_severity_key='severity',
-    row_state_key=None,
-    row_age_key=None,
-    row_age_datetime=false,
     empty_label='Healthy',
     empty_title='No Active Alerts',
     empty_description='KAORI has no active alert cases for this scope.',
@@ -78,27 +72,21 @@
             <div class="mt-4 space-y-2.5">
                 {% if rows %}
                     {% for alert in rows[:5] %}
-                        {% set row_severity = alert[row_severity_key]|default('info', true)|lower %}
+                        {% set row_severity = alert.severity|default('info', true)|lower %}
                         <article class="flex items-start gap-3 rounded-lg border border-outline-subtle bg-surface-elevated p-3">
                             <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full {% if row_severity == 'critical' %}bg-status-critical{% elif row_severity == 'warning' %}bg-status-warning{% else %}bg-status-info{% endif %}"
                                   aria-hidden="true"></span>
                             <div class="min-w-0 flex-1">
-                                <p class="truncate text-sm font-semibold text-content-primary">{{ alert[row_title_key]|default('Alert Signal', true) }}</p>
-                                <p class="mt-1 line-clamp-2 text-xs leading-5 text-content-muted">{{ alert[row_description_key]|default('Committed alert evidence.', true) }}</p>
+                                <p class="truncate text-sm font-semibold text-content-primary">{{ alert.title|default('Alert Signal', true) }}</p>
+                                <p class="mt-1 line-clamp-2 text-xs leading-5 text-content-muted">{{ alert.description|default('Committed alert evidence.', true) }}</p>
                             </div>
-                            {% if row_state_key or row_age_key %}
+                            {% if alert.state or alert.age %}
                                 <div class="shrink-0 text-right">
-                                    {% if row_state_key %}
-                                        {{ table_label.status_label(alert[row_state_key]|default('Active', true), 'critical' if row_severity == 'critical' else ('warning' if row_severity == 'warning' else 'info')) }}
+                                    {% if alert.state %}
+                                        {{ table_label.status_label(alert.state, 'critical' if row_severity == 'critical' else ('warning' if row_severity == 'warning' else 'info')) }}
                                     {% endif %}
-                                    {% if row_age_key %}
-                                        <p class="{% if row_state_key %}mt-1 {% endif %}text-xs text-content-muted">
-                                            {% if row_age_datetime %}
-                                                {{ alert[row_age_key]|user_datetime }}
-                                            {% else %}
-                                                {{ alert[row_age_key] }}
-                                            {% endif %}
-                                        </p>
+                                    {% if alert.age %}
+                                        <p class="{% if alert.state %}mt-1 {% endif %}text-xs text-content-muted">{{ alert.age }}</p>
                                     {% endif %}
                                 </div>
                             {% endif %}

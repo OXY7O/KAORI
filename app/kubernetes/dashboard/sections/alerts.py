@@ -27,6 +27,7 @@ def build_alerts_snapshot(*, context: dict[str, Any] | None, unavailable_reason:
             title=str(item.get('title') or 'Unknown Alert'),
             description=str(item.get('description') or '-'),
             severity=str(item.get('severity') or 'None'),
+            state=str(item.get('state') or ''),
             age=str(item.get('age') or ''),
         )
         for item in raw_items[:5]

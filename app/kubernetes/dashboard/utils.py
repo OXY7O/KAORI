@@ -3,8 +3,6 @@ from __future__ import annotations
 from collections.abc import Iterable
 from datetime import UTC, datetime
 from typing import Any
-from urllib.parse import quote
-
 from app.kubernetes.dashboard.schema import CapacityItem, CapacitySnapshot, DashboardClusterOption
 
 
@@ -59,13 +57,6 @@ def recommendation_icon(card: dict[str, Any]) -> str:
         'tls_secret': 'shield-check',
         'cluster': 'gauge',
     }.get(str(card.get('source_kind') or ''), 'sparkles')
-
-
-def recommendation_href(card: dict[str, Any]) -> str:
-    rule_key = str(card.get('rule_key') or '').strip()
-    if not rule_key:
-        return '/intelligence/recommendations'
-    return f'/intelligence/recommendations?q={quote(rule_key, safe="")}'
 
 
 def plural_suffix(value: int) -> str:

@@ -146,9 +146,14 @@ def _alerts_snapshot_from_cases(cases: list[Any]) -> AlertsSnapshot:
                 title=str(case.alert_name or 'KAORI Alert Case'),
                 description=str(case.summary or case.target or 'KAORI AlertCase.'),
                 severity=str(case.severity or 'info'),
-                age=case.first_seen_at.isoformat() if case.first_seen_at is not None else '',
+                state=(
+                    'Source Unknown'
+                    if case.source_state == 'unknown'
+                    else str(case.workflow_state or 'active').replace('_', ' ').title()
+                ),
+                age=human_time(case.first_seen_at) if case.first_seen_at is not None else '',
             )
-            for case in cases[:3]
+            for case in cases[:5]
         ],
         source_status='Available',
         message='KAORI Alert Intelligence active AlertCase records.',

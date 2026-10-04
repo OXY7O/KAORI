@@ -108,6 +108,7 @@ class AlertItem:
     title: str
     description: str
     severity: str
+    state: str = ''
     age: str = ''
 
 
@@ -219,7 +220,6 @@ class RecommendationItem:
     category: str
     severity: str
     icon: str
-    href: str = '#'
     priority: str = 'P3'
     source: str = 'Intelligence engine'
     rule_key: str = ''

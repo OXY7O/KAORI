@@ -396,12 +396,15 @@ def _alerts(selected: ObjectStorageSystem | None) -> dict[str, Any]:
     posture = _kaori_alert_posture(selected)
     rows = [
         {
-            'name': case.alert_name,
-            'severity': case.severity,
-            'summary': case.summary or case.target or 'KAORI recommendation alert case.',
+            'title': str(case.alert_name or 'KAORI Alert Case'),
+            'description': str(case.summary or case.target or 'KAORI recommendation alert case.'),
+            'severity': str(case.severity or 'info'),
             'state': (
-                'Source Unknown' if case.source_state == 'unknown' else case.workflow_state.replace('_', ' ').title()
+                'Source Unknown'
+                if case.source_state == 'unknown'
+                else str(case.workflow_state or 'active').replace('_', ' ').title()
             ),
+            'age': _human_time(case.first_seen_at),
             'case_id': case.public_id,
         }
         for case in posture['cases'][:5]

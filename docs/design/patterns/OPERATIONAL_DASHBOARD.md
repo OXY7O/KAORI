@@ -85,6 +85,7 @@ Kubernetes maps the health table to clusters and Object Storage maps it to regis
 - Use `components/operational_alert_summary.html` for the bounded AlertCase summary/insight presentation.
 - Use `components/operational_alert_response.html` for **Alert Interpretation & Response**; it delegates the six-step flow to `components/numbered_governance_steps.html` and accepts domain-specific response wording plus optional handoff content.
 - Use `components/operational_recommendation_cards.html` for central Intelligence recommendation cards.
+- Recommendation projections use `title`, `description`, `category`, `severity`, `priority`, `source`, `rule_key`, and `icon`; the shared renderer owns the canonical Intelligence detail destination and domain DTOs do not carry local `href` values.
 - Reporting uses the shared compact `components/reporting_dashboard_workspace.html` presentation so dashboard consumers cannot drift.
 - Use `components/operational_callout.html` for interpretation/supporting guidance.
 - Use `components/forecast_projection_chart.html` for historical/projected utilization.
@@ -107,6 +108,8 @@ The Hero establishes identity, evidence boundary, and readiness. Operational Sig
 `Governed Reporting Flow` remains `Validate → Select → Create → Generate → Schedule → Retain`, but its geometry is owned by `components/reporting_dashboard_workspace.html`. Domain wrappers provide scope/evidence wording only. Capacity remains on `components/operational_flow_steps.html` where directional action progression is the intended semantic.
 
 ### Alerts Summary preview contract
+
+Every projected alert row uses one presentation shape: `title`, `description`, `severity`, `state`, and display-ready `age`. Shared templates do not accept domain field-name aliases or perform domain-specific datetime conversion.
 
 `Alerts Summary` is a bounded dashboard preview, not an alert registry. Kubernetes, Object Storage, and Artifact Registry consume `components/operational_alert_summary.html`, which renders at most **five** projected recent AlertCase records while severity totals continue to represent the complete selected scope. Domain services remain responsible for bounded committed projections, and the full case set remains available through **Open Alert Intelligence**.
 

@@ -316,9 +316,9 @@ def _registry_alerts(scoped_providers: list[IntegrationInstance]) -> dict[str, A
         ),
         'rows': [
             {
-                'name': str(case.alert_name or 'KAORI Alert Case'),
+                'title': str(case.alert_name or 'KAORI Alert Case'),
+                'description': str(case.summary or case.target or 'KAORI Registry recommendation alert case.'),
                 'severity': str(case.severity or 'info'),
-                'summary': str(case.summary or case.target or 'KAORI Registry recommendation alert case.'),
                 'state': (
                     'Source Unknown'
                     if case.source_state == 'unknown'
