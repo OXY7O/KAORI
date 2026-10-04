@@ -118,12 +118,12 @@
             loading_label='Registering Connection...'
             ) }}
         {% else %}
-            {% call form_action_bar.render(action_helper, aria_label='Cluster Form Actions') %}
+            {% call form_action_bar.render(action_helper, aria_label='Kubernetes Configuration Actions', embedded=true) %}
                 <a href="{{ url_for('integrations.kubernetes') }}"
                    class="{{ action_button.classes('secondary') }}">Cancel</a>
                 <button type="submit"
                         data-operation-submit
-                        data-loading-label="Updating Connection..."
+                        data-loading-label="Saving changes..."
                         class="{{ action_button.classes('primary') }}">
                     <i data-lucide="save" class="h-4 w-4"></i><span data-operation-submit-label>{{ submit_label }}</span>
                 </button>
