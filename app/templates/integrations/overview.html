@@ -40,7 +40,7 @@
             </header>
             <div class="{{ integration_ui.metric_grid_classes(4) }}">
                 {{ integration_ui.metric_card('Configured Targets', stats.configured, 'Registered targets with a usable endpoint or canonical Kubernetes connection.', 'plug-zap', 'brand') }}
-                {{ integration_ui.metric_card('Ready for Use', stats.ready, 'Validated targets ready for governed operational use.', 'badge-check', 'brand') }}
+                {{ integration_ui.metric_card('Ready for Use', stats.ready, 'Targets that completed required validation and are currently eligible for governed operational use.', 'badge-check', 'brand') }}
                 {{ integration_ui.metric_card('Readiness Review', stats.readiness_review, 'Configured targets that are disabled, degraded, blocked, or awaiting validation.', 'scan-search', 'brand') }}
                 {{ integration_ui.metric_card('Not Configured', stats.not_configured, 'Registered targets that still lack a complete, usable connection configuration and cannot enter readiness validation.', 'circle-dashed', 'brand') }}
             </div>
@@ -160,7 +160,7 @@
                                 {% for label, value, helper in [
                                     ('Available Domains', coverage_stats.available_domains, 'Domains with configurable provider workspaces'),
                                     ('Configured Targets', coverage_stats.configured_targets, 'Targets with usable connection settings'),
-                                    ('Ready Targets', coverage_stats.ready_targets, 'Validated targets ready for governed operational use'),
+                                    ('Ready Targets', coverage_stats.ready_targets, 'Targets that completed required validation and are currently eligible for governed operational use'),
                                     ('Needs Review', coverage_stats.attention_targets, 'Targets not ready or not configured')
                                     ] %}
                                     <div class="bg-surface-card px-5 py-4">
