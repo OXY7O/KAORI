@@ -140,3 +140,44 @@ def test_kubernetes_bound_source_registry_is_paginated_server_side() -> None:
     assert 'hx-target="#kubernetes-binding-registry"' in registry
     assert 'pagination_ui.numeric_pages(' in registry
     assert 'source_binding_pagination.allowed_per_page' in registry
+
+
+def test_asset_owner_lifecycle_status_and_actions_match_locked_contract() -> None:
+    kubernetes = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/'
+        '_inventory_lifecycle.html'
+    )
+    minio = read(
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_scope.html'
+    )
+    minio_presentation = read(
+        'app/integrations/storage/object_storage/providers/minio/application/presentation.py'
+    )
+    harbor = read(
+        'app/templates/integrations/registry/providers/harbor/partials/_detail_scope.html'
+    )
+    harbor_presentation = read(
+        'app/integrations/registry/providers/harbor/application/presentation.py'
+    )
+
+    assert "operational_use.inventory_status" in kubernetes
+    assert "operational_use.inventory_status_label" in kubernetes
+
+    assert 'inventory_status_label' in minio
+    assert 'instance.readiness_status' not in minio
+    assert "'Committed Snapshot' if inventory_observed_at else 'No Committed Inventory'" in minio_presentation
+    assert 'Manage Inventory Jobs' not in minio
+    assert "url_for('jobs.configuration', job_key='object_storage.inventory.sync')" not in minio
+
+    assert 'integration_status(inventory_status.status, inventory_status.label' in harbor
+    assert "'label': 'Committed Snapshot'" in harbor_presentation
+    assert "'label': 'No Committed Inventory'" in harbor_presentation
+    assert 'Open Artifact Registry' not in harbor
+    assert "url_for('artifact_registry.inventory')" not in harbor
+    assert 'Open Observability' in harbor
+
+    for provider, source in (('kubernetes', kubernetes), ('minio', minio), ('harbor', harbor)):
+        assert 'Inventory &amp; Lifecycle Decision' in source, provider
+        assert 'Snapshot Freshness' in source, provider
+        assert 'Lifecycle Gate' in source, provider
+        assert 'Delete Connection' in source, provider
