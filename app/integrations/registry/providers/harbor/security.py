@@ -165,8 +165,15 @@ def _scan_identity_changed(
         return True
     if target.scan_status != scan_status:
         return True
-    if target.scan_completed_at != scan_completed_at:
-        return True
+
+    # Harbor scan completion time is the strongest available change marker. When
+    # either side exposes it, do not let summary-shape differences force a full
+    # vulnerability report fetch on every scheduled refresh.
+    if target.scan_completed_at is not None or scan_completed_at is not None:
+        return target.scan_completed_at != scan_completed_at
+
+    # Older/limited Harbor responses may omit completion time. Fall back to the
+    # normalized severity summary so changed scan evidence can still be detected.
     return dict(target.vulnerability_summary or {}) != dict(vulnerability_summary or {})
 
 
