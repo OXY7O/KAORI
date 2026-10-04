@@ -182,3 +182,38 @@ def test_artifact_registry_overview_keeps_reference_information_hierarchy() -> N
     assert "'alerts': alerts" in presentation
     assert "'recommended_actions': recommended_actions" in presentation
     assert "'reporting': reporting" in presentation
+
+
+def test_artifact_registry_dashboard_state_semantics_and_jinja_mapping_safety() -> None:
+    presentation = read('app/artifact_registry/presentation.py')
+    capacity_snapshot = read('app/templates/artifact_registry/partials/_overview_capacity_snapshot.html')
+    forecast = read('app/templates/artifact_registry/partials/_overview_forecast_risk.html')
+    consumers = read('app/templates/artifact_registry/partials/_overview_top_consumers.html')
+    alerts = read('app/templates/artifact_registry/partials/_overview_alerts_summary.html')
+    health = read('app/templates/artifact_registry/partials/_overview_provider_health.html')
+    signal = read('app/templates/artifact_registry/partials/_overview_signal_overview.html')
+
+    assert 'overview.capacity.items' not in capacity_snapshot
+    assert 'overview.capacity.metrics' in capacity_snapshot
+    assert "'metrics': [" in presentation
+    assert "'source_ready': metrics_ready_count > 0" in presentation
+    assert "'security_not_applicable': security_not_applicable" in presentation
+
+    assert 'Sync Required' in capacity_snapshot
+    assert 'components/states/_empty_state.html' in capacity_snapshot
+    assert 'Source Unavailable' in forecast
+    assert 'Sync Required' in forecast
+    assert 'Source Unavailable' in consumers
+    assert 'Sync Required' in consumers
+
+    assert 'data-kaori-alert-insight="stacked"' in alerts
+    assert 'Cases Available' in alerts
+    assert 'No Findings' in alerts
+    assert 'empty_state_tone = "normal"' in alerts
+
+    assert 'row.security_not_applicable' in health
+    assert 'No Artifacts' in health
+    assert 'No Registry Providers Available' in health
+
+    assert 'status_indicator_label(overview.posture.label, overview.posture.tone' in signal
+    assert "Updated {{ overview.latest_committed_at|user_datetime }}" in signal

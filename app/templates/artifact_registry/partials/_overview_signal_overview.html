@@ -18,25 +18,14 @@
                 wrap=true,
                 size='detail'
             ) }}
-            {% if overview.selected_provider and overview.snapshot_count > 0 and overview.stale_snapshot_count > 0 %}
-                {{ table_label.status_indicator_label('Snapshot Stale', 'warning', size='detail') }}
-            {% elif overview.selected_provider and overview.snapshot_count > 0 and overview.failed_refresh_count > 0 %}
-                {{ table_label.status_indicator_label('Refresh Attention', 'warning', size='detail') }}
-            {% elif overview.selected_provider and overview.snapshot_count > 0 %}
-                {{ table_label.status_indicator_label('Provider Signals Available', 'normal', size='detail') }}
-            {% elif overview.selected_provider %}
-                {{ table_label.status_indicator_label('Inventory Sync Required', 'warning', size='detail') }}
-            {% elif overview.pending_snapshot_count > 0 %}
-                {{ table_label.status_indicator_label('Inventory Coverage Partial', 'warning', size='detail') }}
-            {% elif overview.stale_snapshot_count > 0 or overview.failed_refresh_count > 0 %}
-                {{ table_label.status_indicator_label('Inventory Coverage Needs Attention', 'warning', size='detail') }}
-            {% else %}
-                {{ table_label.status_indicator_label('Aggregate Provider Scope', 'info', size='detail') }}
-            {% endif %}
+            {{ table_label.status_indicator_label(overview.posture.label, overview.posture.tone, size='detail') }}
             <span class="inline-flex items-center gap-1.5 text-xs text-content-muted">
                 <i data-lucide="clock-3" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                Updated
-                {{ overview.latest_committed_at|user_datetime if overview.latest_committed_at else 'Not Collected' }}
+                {% if overview.latest_committed_at %}
+                    Updated {{ overview.latest_committed_at|user_datetime }}
+                {% else %}
+                    Not Collected
+                {% endif %}
             </span>
         </div>
         <div class="flex w-full items-center gap-2 lg:w-auto">

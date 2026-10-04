@@ -8,6 +8,7 @@ from app.reports.catalog import REPORT_TYPE_OPTIONS, get_report_type_label
 from app.reports.generate.form_options import PERIOD_OPTIONS
 from app.reports.schedules.support import ensure_utc, format_datetime, get_default_timezone
 from app.reports.scope import (
+    ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE,
     KUBERNETES_CLUSTER_ASSET_TYPE,
     OBJECT_STORAGE_SYSTEM_ASSET_TYPE,
     resolve_report_scope,
@@ -65,10 +66,14 @@ def serialize_schedule(
     scope_asset_type = schedule.scope_asset_type or KUBERNETES_CLUSTER_ASSET_TYPE
     scope_asset_id = schedule.scope_asset_id or schedule.cluster_id or ''
     scope_label = (
-        'Object Storage System' if scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE else 'Kubernetes Cluster'
+        'Object Storage System'
+        if scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE
+        else ('Artifact Registry' if scope_asset_type == ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE else 'Kubernetes Cluster')
     )
     namespace_label = schedule.namespace or (
-        'System Scope' if scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE else 'All Namespaces'
+        'System Scope'
+        if scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE
+        else ('Integration Scope' if scope_asset_type == ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE else 'All Namespaces')
     )
     return {
         'id': schedule.id,
@@ -83,6 +88,9 @@ def serialize_schedule(
         'object_storage_system_id': (
             schedule.scope_asset_id if schedule.scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE else ''
         ),
+        'registry_integration_id': (
+            schedule.scope_asset_id if schedule.scope_asset_type == ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE else ''
+        ),
         'scope_asset_type': scope_asset_type,
         'scope_asset_id': scope_asset_id,
         'scope_asset_filter_key': f'{scope_asset_type}:{scope_asset_id}' if scope_asset_id else '',
@@ -93,7 +101,7 @@ def serialize_schedule(
         'namespace': namespace_label,
         'scope_detail': (
             scope_label
-            if scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE
+            if scope_asset_type in {OBJECT_STORAGE_SYSTEM_ASSET_TYPE, ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE}
             else f'{scope_label} · {namespace_label}'
         ),
         'period': format_period_label(schedule.period),
@@ -237,6 +245,9 @@ def schedule_edit_state(schedule: ReportSchedule) -> dict[str, Any]:
         'namespace': schedule.namespace or '',
         'object_storage_system_id': (
             schedule.scope_asset_id if schedule.scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE else ''
+        ),
+        'registry_integration_id': (
+            schedule.scope_asset_id if schedule.scope_asset_type == ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE else ''
         ),
         'report_type': schedule.report_type,
         'period': schedule.period,

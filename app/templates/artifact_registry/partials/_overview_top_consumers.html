@@ -17,7 +17,7 @@
                             <p class="truncate text-sm font-semibold text-content-primary" title="{{ item.project_name }}">{{ item.project_name }}</p>
                             <p class="mt-0.5 truncate text-xs text-content-muted" title="{{ item.provider_name }}">{{ item.provider_name }}</p>
                         </div>
-                        {% set consumer_tone = 'critical' if item.days_to_quota is not none and item.days_to_quota <= 30 else ('warning' if item.days_to_quota is not none and item.days_to_quota <= 90 else 'info') %}
+                        {% set consumer_tone = 'critical' if (item.days_to_quota is not none and item.days_to_quota <= 30) or (item.utilization_percent is not none and item.utilization_percent >= 90) else ('warning' if (item.days_to_quota is not none and item.days_to_quota <= 90) or (item.utilization_percent is not none and item.utilization_percent >= 75) else ('normal' if item.utilization_percent is not none or item.days_to_quota is not none else 'unknown')) %}
                         {{ table_label.status_label(item.utilization_display, consumer_tone, size='detail') }}
                     </div>
                     <dl class="mt-3 space-y-2 text-xs">
@@ -34,13 +34,25 @@
         {% set empty_state_title = "No Project Consumer Ranking Yet" %}
         {% set empty_state_description = "Registry Analytics is available, but no project quota usage evidence is committed for this scope." %}
         {% set empty_state_variant = "panel" %}
+        {% set empty_state_min_height = "min-h-[170px]" %}
         {% include 'components/states/_empty_state.html' %}
-    {% else %}
+    {% elif not overview.forecast.source_ready %}
         {% set blocked_state_icon = "database-zap" %}
-        {% set blocked_state_label = "Analytics Required" %}
-        {% set blocked_state_title = "Top Consumers Unavailable" %}
-        {% set blocked_state_description = "Materialize Registry Analytics after validating the Registry Metrics Source binding." %}
+        {% set blocked_state_label = "Source Unavailable" %}
+        {% set blocked_state_title = "Registry Metrics Source Required" %}
+        {% set blocked_state_description = "Validate a Registry Metrics Source binding before collecting project quota consumer evidence." %}
         {% set blocked_state_tone = "warning" %}
+        {% set blocked_state_variant = "table" %}
+        {% set blocked_state_min_height = "min-h-[170px]" %}
         {% include 'components/states/_blocked_state.html' %}
+    {% else %}
+        {% set empty_state_icon = "database-zap" %}
+        {% set empty_state_label = "Sync Required" %}
+        {% set empty_state_tone = "warning" %}
+        {% set empty_state_title = "Top Consumers Not Collected" %}
+        {% set empty_state_description = "Run Registry Analytics refresh to materialize project quota consumer evidence." %}
+        {% set empty_state_variant = "panel" %}
+        {% set empty_state_min_height = "min-h-[170px]" %}
+        {% include 'components/states/_empty_state.html' %}
     {% endif %}
 {% endcall %}

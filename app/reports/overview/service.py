@@ -378,7 +378,7 @@ def get_report_type_coverage() -> dict[str, Any]:
         )
 
     coverage_by_domain = {domain.key: domain for domain in REPORT_COVERAGE_DOMAINS}
-    domain_order = ['kubernetes', 'object_storage', 'server', 'hci']
+    domain_order = ['kubernetes', 'object_storage', 'artifact_registry', 'server', 'hci']
     domains: list[dict[str, Any]] = []
 
     for domain_key in domain_order:

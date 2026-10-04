@@ -14,7 +14,7 @@
     {% if overview.capacity.available %}
         <div class="space-y-4">
             <div class="grid gap-3 lg:grid-cols-3">
-                {% for item in overview.capacity.items %}
+                {% for item in overview.capacity.metrics %}
                     <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
                         <div class="flex items-center justify-between gap-3">
                             <span class="text-sm font-semibold text-content-primary">{{ item.label }}</span>
@@ -53,11 +53,13 @@
             </div>
         </div>
     {% else %}
-        {% set blocked_state_icon = "database-zap" %}
-        {% set blocked_state_label = "Snapshot Required" %}
-        {% set blocked_state_title = "Capacity Snapshot Unavailable" %}
-        {% set blocked_state_description = "Commit Registry inventory and materialize Registry Analytics to establish capacity evidence." %}
-        {% set blocked_state_tone = "warning" %}
-        {% include 'components/states/_blocked_state.html' %}
+        {% set empty_state_icon = "database-zap" %}
+        {% set empty_state_label = "Sync Required" %}
+        {% set empty_state_tone = "warning" %}
+        {% set empty_state_title = "Capacity Snapshot Not Collected" %}
+        {% set empty_state_description = "Run Registry Inventory Sync to establish committed footprint evidence for this scope." %}
+        {% set empty_state_variant = "panel" %}
+        {% set empty_state_min_height = "min-h-[180px]" %}
+        {% include 'components/states/_empty_state.html' %}
     {% endif %}
 {% endcall %}

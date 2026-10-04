@@ -130,6 +130,8 @@ def _registry_capacity_views(
     analytics_by_provider: dict[int, RegistryAnalyticsSnapshot | None],
     total_size_bytes: int,
     artifact_total: int,
+    committed_snapshot_count: int,
+    metrics_ready_count: int,
 ) -> tuple[dict[str, Any], dict[str, Any], list[dict[str, Any]]]:
     provider_names = {int(provider.id): provider.name for provider in scoped_providers}
     project_forecasts: list[dict[str, Any]] = []
@@ -230,8 +232,8 @@ def _registry_capacity_views(
         recommended_action = 'Refresh Registry Analytics after validating the Registry Metrics Source binding.'
 
     capacity = {
-        'available': bool(scoped_providers) and bool(total_size_bytes or artifact_total or analytics_count),
-        'items': [
+        'available': bool(scoped_providers) and bool(committed_snapshot_count or analytics_count),
+        'metrics': [
             {
                 'label': 'Artifact Footprint',
                 'value': _fmt_bytes(total_size_bytes),
@@ -262,6 +264,7 @@ def _registry_capacity_views(
     }
     forecast = {
         'available': analytics_count > 0,
+        'source_ready': metrics_ready_count > 0,
         'analytics_count': analytics_count,
         'size_growth_per_day': _fmt_bytes(round(size_growth_per_day)) if growth_observed else 'N/A',
         'artifact_growth_per_day': f'{artifact_growth_per_day:.1f} artifacts/day' if growth_observed else 'N/A',
@@ -483,7 +486,9 @@ def build_overview(
         security = security_counts.get(key, {'scanned': 0, 'critical': 0, 'high': 0})
         readiness = str(provider.readiness_status or 'validation_required')
         inventory_ready = bool(state is not None and state.last_committed_at is not None)
+        provider_artifact_count = artifact_counts.get(key, 0)
         security_ready = bool(security['scanned'])
+        security_not_applicable = inventory_ready and provider_artifact_count == 0
 
         if readiness == 'blocked':
             overall_status, overall_tone, status_reason = 'Critical', 'critical', 'Provider readiness is blocked.'
@@ -519,12 +524,13 @@ def build_overview(
                 'readiness': readiness,
                 'project_count': project_counts.get(key, 0),
                 'repository_count': repository_counts.get(key, 0),
-                'artifact_count': artifact_counts.get(key, 0),
+                'artifact_count': provider_artifact_count,
                 'critical_findings': security['critical'],
                 'high_findings': security['high'],
                 'inventory_ready': inventory_ready,
                 'metrics_ready': metrics.get('status') == 'ready',
                 'security_ready': security_ready,
+                'security_not_applicable': security_not_applicable,
                 'snapshot': snapshot,
             }
         )
@@ -587,6 +593,8 @@ def build_overview(
         analytics_by_provider=analytics_by_provider,
         total_size_bytes=total_size_bytes,
         artifact_total=artifact_total,
+        committed_snapshot_count=len(committed_states),
+        metrics_ready_count=metrics_ready_count,
     )
     alerts = _registry_alerts(scoped_providers)
     recommended_actions = _registry_recommended_actions(selected_provider)

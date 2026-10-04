@@ -29,7 +29,8 @@
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
-                {% for row in overview.provider_rows %}
+                {% if overview.provider_rows %}
+                    {% for row in overview.provider_rows %}
                     <tr class="{{ table_ui.row_classes() }}">
                         <td class="{{ table_ui.cell_classes() }} align-top">
                             {{ table_ui.title_cell(row.name, row.provider_label ~ ' · ' ~ row.environment|title, 'package') }}
@@ -53,7 +54,10 @@
                             <p class="mt-1 text-xs text-content-muted">Digest Identities</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} align-top">
-                            {% if row.security_ready %}
+                            {% if row.security_not_applicable %}
+                                <p class="text-sm font-semibold text-content-disabled">N/A</p>
+                                <p class="mt-1 text-xs text-status-info-text">No Artifacts</p>
+                            {% elif row.security_ready %}
                                 <p class="text-sm font-semibold {% if row.critical_findings > 0 %}text-status-critical-text{% elif row.high_findings > 0 %}text-status-warning-text{% else %}text-status-normal-text{% endif %}">
                                     {{ row.critical_findings }} Critical
                                 </p>
@@ -76,13 +80,25 @@
                                     Metrics Source
                                 </span>
                                 <span class="inline-flex items-center gap-2 text-content-muted">
-                                    <span class="h-2 w-2 rounded-full {% if row.security_ready %}bg-status-normal{% else %}bg-status-unknown{% endif %}"></span>
+                                    <span class="h-2 w-2 rounded-full {% if row.security_ready %}bg-status-normal{% elif row.security_not_applicable %}bg-status-info{% else %}bg-status-unknown{% endif %}"></span>
                                     Security Evidence
                                 </span>
                             </div>
                         </td>
                     </tr>
-                {% endfor %}
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="px-5 py-4">
+                            {% set empty_state_icon = "package-search" %}
+                            {% set empty_state_label = "No Data" %}
+                            {% set empty_state_title = "No Registry Providers Available" %}
+                            {% set empty_state_description = "No Registry provider rows are available for the current dashboard scope." %}
+                            {% set empty_state_min_height = "min-h-[160px]" %}
+                            {% include 'components/states/_empty_state.html' %}
+                        </td>
+                    </tr>
+                {% endif %}
             </tbody>
         </table>
     </div>
