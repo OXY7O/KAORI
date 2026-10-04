@@ -2,67 +2,177 @@
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/peer_content_grid.html" as peer_content_grid %}
 {% import "components/section_link_button.html" as section_link_button %}
-<div class="{{ peer_content_grid.layout_classes() }}">
-    <div class="{{ peer_content_grid.column_classes('primary') }}">
-        {% call operational_section_card.render(
-            'Security & Runtime Signals',
-            'Committed security and Kubernetes runtime correlation for the active Registry scope.',
-            'bell-ring',
-            body_classes='p-5',
-            extra_classes='h-full'
-            ) %}
-            <div class="grid gap-3 sm:grid-cols-2">
-                {{ operational_metric_card.render(
-                    'Scan Coverage',
-                    (overview.scan_coverage ~ '%') if overview.artifact_count else 'N/A',
-                    (overview.scanned_count ~ ' of ' ~ overview.artifact_count ~ ' artifacts carry scan evidence.') if overview.artifact_count else 'No committed artifacts are available for scan coverage.',
-                    'scan-search',
-                    source_label='Committed Security',
-                    scope_label=overview.scope_label
-                ) }}
-                {{ operational_metric_card.render(
-                    'Critical Findings',
-                    overview.critical_findings if overview.scanned_count else 'N/A',
-                    'Critical findings in committed scan evidence.' if overview.scanned_count else 'Scan evidence has not been collected.',
-                    'shield-alert',
-                    source_label='Committed Security',
-                    scope_label=overview.scope_label
-                ) }}
-                {{ operational_metric_card.render(
-                    'High Findings',
-                    overview.high_findings if overview.scanned_count else 'N/A',
-                    'High-severity findings in committed scan evidence.' if overview.scanned_count else 'Scan evidence has not been collected.',
-                    'triangle-alert',
-                    source_label='Committed Security',
-                    scope_label=overview.scope_label
-                ) }}
-                {{ operational_metric_card.render(
-                    'Runtime Bindings',
-                    overview.runtime_binding_count,
-                    overview.digest_runtime_binding_count ~ ' bindings use digest-authoritative runtime matches.',
-                    'waypoints',
-                    source_label='Committed Correlation',
-                    scope_label=overview.scope_label
-                ) }}
-            </div>
-        {% endcall %}
+{% import "components/table_label.html" as table_label %}
+<div id="artifact-registry-dashboard-section-signals" class="space-y-5">
+    <div class="{{ peer_content_grid.layout_classes() }}">
+        <div class="{{ peer_content_grid.column_classes('primary') }}">
+            {% call operational_section_card.render(
+                'Security & Runtime Signals',
+                'Committed Registry security posture and Kubernetes runtime correlation.',
+                'shield-alert',
+                action_href=url_for('artifact_registry.security'),
+                action_label='Open Security',
+                body_classes='p-5',
+                extra_classes='h-full'
+                ) %}
+                <div class="grid gap-3 sm:grid-cols-2">
+                    {{ operational_metric_card.render(
+                        'Scan Coverage',
+                        (overview.scan_coverage ~ '%') if overview.artifact_count else 'N/A',
+                        (overview.scanned_count ~ ' of ' ~ overview.artifact_count ~ ' artifacts carry scan evidence.') if overview.artifact_count else 'No committed artifacts are available for scan coverage.',
+                        'scan-search',
+                        source_label='Committed Security',
+                        scope_label=overview.scope_label
+                    ) }}
+                    {{ operational_metric_card.render(
+                        'Critical Findings',
+                        overview.critical_findings if overview.scanned_count else 'N/A',
+                        'Critical findings in committed scan evidence.' if overview.scanned_count else 'Scan evidence has not been collected.',
+                        'shield-alert',
+                        source_label='Committed Security',
+                        scope_label=overview.scope_label
+                    ) }}
+                    {{ operational_metric_card.render(
+                        'High Findings',
+                        overview.high_findings if overview.scanned_count else 'N/A',
+                        'High-severity findings in committed scan evidence.' if overview.scanned_count else 'Scan evidence has not been collected.',
+                        'triangle-alert',
+                        source_label='Committed Security',
+                        scope_label=overview.scope_label
+                    ) }}
+                    {{ operational_metric_card.render(
+                        'Runtime Bindings',
+                        overview.runtime_binding_count,
+                        overview.digest_runtime_binding_count ~ ' bindings use digest-authoritative runtime matches.',
+                        'waypoints',
+                        source_label='Committed Correlation',
+                        scope_label=overview.scope_label
+                    ) }}
+                </div>
+            {% endcall %}
+        </div>
+        <div class="{{ peer_content_grid.column_classes('secondary') }}">
+            {% call operational_section_card.render(
+                'KAORI Alert Intelligence',
+                'Operational alert cases derived from central Intelligence escalation, not raw Registry findings.',
+                'brain-circuit',
+                action_href=url_for('alert_intelligence.index'),
+                action_label='Open Alert Intelligence',
+                body_classes='p-5',
+                extra_classes='h-full'
+                ) %}
+                {% set alert_total = overview.alerts.total %}
+                <div class="grid gap-3 sm:grid-cols-3">
+                    {% for label, value, tone in [
+                        ('Critical', overview.alerts.critical, 'critical'),
+                        ('Warning', overview.alerts.warning, 'warning'),
+                        ('Info', overview.alerts.info, 'info')
+                    ] %}
+                        <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-3.5">
+                            <p class="text-xs font-semibold text-content-muted">{{ label }}</p>
+                            <p class="mt-2 text-xl font-semibold text-content-primary">{{ value }}</p>
+                            <div class="mt-2">{{ table_label.status_label(label, tone) }}</div>
+                        </article>
+                    {% endfor %}
+                </div>
+                <div class="mt-4 border-t border-outline-subtle pt-4">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <p class="text-xs font-semibold text-content-primary">Active Cases</p>
+                        {{ table_label.metadata_label(alert_total ~ ' Cases', icon='triangle-alert') }}
+                    </div>
+                    {% if overview.alerts.rows %}
+                        <div class="mt-3 space-y-2">
+                            {% for item in overview.alerts.rows[:3] %}
+                                <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                                    <div class="flex items-start justify-between gap-3">
+                                        <div class="min-w-0">
+                                            <p class="truncate text-xs font-semibold text-content-primary">{{ item.name }}</p>
+                                            <p class="mt-1 line-clamp-2 text-xs leading-5 text-content-muted">{{ item.summary }}</p>
+                                        </div>
+                                        {{ table_label.status_label(item.severity|title, item.severity) }}
+                                    </div>
+                                </article>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="mt-3 text-xs leading-5 text-content-muted">No active Registry AlertCase is open for the current scope.</p>
+                    {% endif %}
+                </div>
+            {% endcall %}
+        </div>
     </div>
-    <div class="{{ peer_content_grid.column_classes('secondary') }}">
-        {% call operational_section_card.render(
-            'Evidence & Actions',
-            'Review detailed evidence and governed follow-up in the owning workspace.',
-            'workflow',
-            body_classes='space-y-4 p-5',
-            extra_classes='h-full'
-            ) %}
-            <p class="text-sm leading-6 text-content-secondary">Overview summarizes committed posture only. Detailed security, runtime, governance, analytics, and recommendation lifecycle stay with their authoritative domains.</p>
-            <div class="flex flex-wrap gap-2">
-                {{ section_link_button.render(url_for('artifact_registry.security'), 'Security', icon='shield-check') }}
-                {{ section_link_button.render(url_for('artifact_registry.runtime'), 'Runtime Usage', icon='waypoints') }}
-                {{ section_link_button.render(url_for('artifact_registry.governance'), 'Governance', icon='scale') }}
-                {{ section_link_button.render(url_for('artifact_registry.analytics'), 'Analytics', icon='chart-no-axes-combined') }}
-                {{ section_link_button.render(url_for('intelligence.recommendations'), 'Recommendations', icon='list-checks') }}
+
+    {% set recommendation_count = overview.recommended_actions|length %}
+    {% call operational_section_card.render(
+        'Recommended Actions',
+        'Top active Registry findings from the canonical Intelligence Rule Catalog.',
+        'sparkles',
+        action_href=url_for('intelligence.recommendations'),
+        action_label='Open Recommendations',
+        header_badge=table_label.metadata_label(recommendation_count ~ ' Active', icon='list-checks'),
+        body_classes='grid gap-3 p-5 md:grid-cols-2 xl:grid-cols-5'
+        ) %}
+        {% for action in overview.recommended_actions %}
+            <a href="{{ url_for('intelligence.recommendation_details', recommendation_key=action.rule_key) }}"
+               title="{{ action.rule_key }}"
+               class="group flex min-h-[190px] flex-col rounded-lg border border-outline-subtle bg-surface-elevated p-4 transition-colors hover:border-outline-focus hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                <div class="mb-3 flex items-start justify-between gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {% if action.severity == 'critical' %}bg-status-critical-soft text-status-critical{% elif action.severity == 'warning' %}bg-status-warning-soft text-status-warning{% else %}bg-status-info-soft text-status-info{% endif %}"
+                          aria-hidden="true">
+                        <i data-lucide="{{ action.icon }}" class="h-4 w-4"></i>
+                    </span>
+                    <div class="flex flex-wrap justify-end gap-1.5">
+                        {% set normalized_priority = action.priority|default('P3', true)|upper %}
+                        {% set priority_tone = 'critical' if normalized_priority == 'P1' else ('warning' if normalized_priority == 'P2' else 'info') %}
+                        {{ table_label.status_label(normalized_priority, tone=priority_tone) }}
+                        {{ table_label.metadata_label(action.category) }}
+                    </div>
+                </div>
+                <p class="text-sm font-semibold leading-5 text-content-primary transition-colors group-hover:text-kaori-primary">{{ action.title }}</p>
+                <p class="mt-2 line-clamp-4 text-xs leading-5 text-content-muted">{{ action.description }}</p>
+                <div class="mt-auto flex items-center gap-2 border-t border-outline-subtle pt-3 text-xs font-medium text-content-muted">
+                    <i data-lucide="brain-circuit" class="h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                    <span class="truncate">{{ action.source }}</span>
+                </div>
+            </a>
+        {% else %}
+            <div class="md:col-span-2 xl:col-span-5">
+                {% set empty_state_icon = "sparkles" %}
+                {% set empty_state_label = "No Findings" %}
+                {% set empty_state_title = "No Active Recommendations" %}
+                {% set empty_state_description = "No central Intelligence recommendation matches the current Registry scope." %}
+                {% set empty_state_variant = "panel" %}
+                {% include 'components/states/_empty_state.html' %}
             </div>
-        {% endcall %}
-    </div>
+        {% endfor %}
+    {% endcall %}
+
+    {% call operational_section_card.render(
+        'Signal Ownership & Action Path',
+        'Registry evidence stays domain-owned; Intelligence owns rules, recommendations, alert escalation, and governed action semantics.',
+        'workflow',
+        body_classes='space-y-4 p-5'
+        ) %}
+        <div class="grid gap-3 md:grid-cols-4">
+            {% for label, detail, icon in [
+                ('Registry Evidence', 'Inventory, security, governance, runtime correlation, and analytics.', 'package-search'),
+                ('Rule Catalog', 'Provider-neutral registry.* rules evaluate committed evidence.', 'list-checks'),
+                ('Recommendations', 'Central Intelligence owns finding lifecycle and prioritization.', 'sparkles'),
+                ('Alert Intelligence', 'Only operationally relevant findings escalate to AlertCase.', 'triangle-alert')
+            ] %}
+                <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+                    <i data-lucide="{{ icon }}" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                    <p class="mt-2 text-sm font-semibold text-content-primary">{{ label }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ detail }}</p>
+                </article>
+            {% endfor %}
+        </div>
+        <div class="flex flex-wrap gap-2">
+            {{ section_link_button.render(url_for('intelligence.catalog'), 'Rule Catalog', icon='list-checks') }}
+            {{ section_link_button.render(url_for('intelligence.recommendations'), 'Recommendations', icon='sparkles') }}
+            {{ section_link_button.render(url_for('alert_intelligence.index'), 'Alert Intelligence', icon='triangle-alert') }}
+            {{ section_link_button.render(url_for('artifact_registry.governance'), 'Governance Evidence', icon='scale') }}
+            {{ section_link_button.render(url_for('artifact_registry.analytics'), 'Registry Analytics', icon='chart-no-axes-combined') }}
+        </div>
+    {% endcall %}
 </div>
