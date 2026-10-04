@@ -232,11 +232,18 @@ class HarborClient:
         size = max(1, min(int(page_size or 100), 100))
         page = 1
         records: list[dict[str, Any]] = []
+        previous_batch: list[dict[str, Any]] | None = None
         while True:
             batch = list(fetch_page(page, size))
+            if previous_batch is not None and batch and batch == previous_batch:
+                raise HarborResponseError(
+                    f'Harbor pagination repeated an identical full page at page {page}; '
+                    'KAORI stopped the collection instead of looping indefinitely.'
+                )
             records.extend(batch)
             if len(batch) < size:
                 return records
+            previous_batch = batch
             page += 1
             if page > 10000:
                 raise HarborResponseError('Harbor pagination exceeded the safety limit.')
