@@ -7,7 +7,7 @@
     ("Compatibility", instance.compatibility_profile or "Validation Required", "Harbor compatibility profile")
 ] %}
 {% set evidence_items = [
-    ("server", "brand", "Harbor API Endpoint", instance.endpoint, "Base Harbor API endpoint used by KAORI for read-oriented discovery and validation."),
+    ("server", "brand", "Harbor API Endpoint", instance.endpoint, "Base Harbor API endpoint KAORI uses for read-oriented provider discovery, identity checks, compatibility validation, capability probing, and governed Registry evidence collection."),
     ("shield-check", "success" if instance.verify_ssl else "warning", "TLS Verification", "Enabled" if instance.verify_ssl else "Disabled", "Certificate validation policy for Harbor API requests."),
     ("key-round", "info", "Access Contract", instance.auth_type|replace("_", " ")|title, "Credentials remain encrypted and are never retained in validation evidence."),
     ("package-search", "success", "Registry Authority", "Harbor", "Harbor remains authoritative for native Registry state and policies.")
