@@ -39,6 +39,9 @@ ARTIFACT_PROVIDER_HEALTH = (
 )
 ARTIFACT_ROUTES = ROOT / 'app' / 'artifact_registry' / 'routes.py'
 ARTIFACT_PRESENTATION = ROOT / 'app' / 'artifact_registry' / 'presentation.py'
+OBJECT_ROUTES = ROOT / 'app' / 'storage' / 'object_storage' / 'dashboard' / 'routes.py'
+DASHBOARD_APPLICATION_CONTRACT = ROOT / 'app' / 'dashboards' / 'common' / 'operational.py'
+COMMON_PAGINATION = ROOT / 'app' / 'common' / 'pagination.py'
 PAGE_HERO = ROOT / 'app' / 'templates' / 'components' / 'page_hero.html'
 WORKSPACE_TABS = ROOT / 'app' / 'templates' / 'components' / 'workspace_tabs.html'
 DASHBOARD_WORKSPACE = ROOT / 'app' / 'templates' / 'components' / 'operational_dashboard_workspace.html'
@@ -433,6 +436,9 @@ def verify() -> None:
     artifact_provider_health = _read(ARTIFACT_PROVIDER_HEALTH)
     artifact_routes = _read(ARTIFACT_ROUTES)
     artifact_presentation = _read(ARTIFACT_PRESENTATION)
+    object_routes = _read(OBJECT_ROUTES)
+    dashboard_application_contract = _read(DASHBOARD_APPLICATION_CONTRACT)
+    common_pagination = _read(COMMON_PAGINATION)
     page_hero = _read(PAGE_HERO)
     workspace_tabs = _read(WORKSPACE_TABS)
     dashboard_workspace = _read(DASHBOARD_WORKSPACE)
@@ -891,15 +897,67 @@ def verify() -> None:
 
     _verify_route_authorization_order(routes)
     _require(
+        dashboard_application_contract,
+        (
+            "OPERATIONAL_DASHBOARD_TABS: tuple[str, ...] = (",
+            "'overview'",
+            "'capacity'",
+            "'signals'",
+            "'reporting'",
+            'DASHBOARD_PAGE_SIZES = PER_PAGE_OPTIONS',
+            'normalize_operational_tab',
+            'normalize_dashboard_page_size',
+            'is_htmx_request',
+        ),
+        'shared Operational Dashboard application contract',
+    )
+    _require(
+        common_pagination,
+        (
+            'DEFAULT_PER_PAGE = 5',
+            'PER_PAGE_OPTIONS: tuple[int, ...] = (5, 10, 25, 50)',
+            'def normalize_per_page(',
+        ),
+        'canonical pagination contract',
+    )
+    for owner, source in (
+        ('Kubernetes dashboard routes', routes),
+        ('Object Storage dashboard routes', object_routes),
+        ('Artifact Registry dashboard routes', artifact_routes),
+    ):
+        _require(
+            source,
+            (
+                'normalize_operational_tab',
+                'normalize_dashboard_page_size',
+            ),
+            owner,
+        )
+        for stale in (
+            "DASHBOARD_TABS = {'overview', 'capacity', 'signals', 'reporting'}",
+            '_PAGE_SIZES = {5, 10, 25, 50}',
+            'def _active_tab(',
+        ):
+            if stale in source:
+                raise AssertionError(f'{owner}: local dashboard application contract remains: {stale}')
+    for owner, source in (
+        ('Kubernetes dashboard routes', routes),
+        ('Object Storage dashboard routes', object_routes),
+    ):
+        _require(source, ('is_htmx_request(request.headers)',), f'{owner} shared HTMX request contract')
+    _require(
         routes,
         (
             "@permission_required('dashboard.view')",
-            "DASHBOARD_TABS = {'overview', 'capacity', 'signals', 'reporting'}",
-            'CLUSTER_HEALTH_PAGE_SIZES = {5, 10, 25, 50}',
             'SECTION_TEMPLATES = {',
             'if has_registered_clusters() is False:',
         ),
-        'dashboard route boundary',
+        'Kubernetes dashboard route boundary',
+    )
+    _require(
+        artifact_presentation,
+        ('normalize_operational_tab(active_tab)',),
+        'Artifact Registry dashboard tab normalization',
     )
     _require(
         service,
@@ -963,6 +1021,8 @@ def verify() -> None:
             'Registry/Harbor',
             'Artifact Registry Overview',
             'Source Control/GitHub',
+            'app/dashboards/common/operational.py',
+            'app/common/pagination.py',
             'components/operational_dashboard_workspace.html',
             'components/operational_signal_overview.html',
             'components/operational_evidence_tile.html',
@@ -1044,7 +1104,7 @@ def verify() -> None:
         'KAORI operational dashboard standard passed: shared Hero profile parity, canonical composition, '
         'snapshot-only web boundary, authorization-first lazy sections, URL-backed keyboard-accessible tabs, '
         'shared style ownership, Kubernetes/Object Storage references plus Artifact Registry conformance, '
-        'shared dashboard/reporting frameworks, five-record alert previews, four-record report previews, '
+        'shared application/presentation/reporting contracts, five-record alert previews, four-record report previews, '
         'behavioral release evidence, documentation, and quality-gate enforcement match v1.7.'
     )
 

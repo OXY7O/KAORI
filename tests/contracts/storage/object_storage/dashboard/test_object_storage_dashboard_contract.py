@@ -32,7 +32,9 @@ def test_dashboard_route_and_service_are_snapshot_only() -> None:
 
     assert "url_prefix='/dashboards/object-storage'" in routes
     assert routes.count("@permission_required('dashboard.view')") == 2
-    assert "DASHBOARD_TABS = {'overview', 'capacity', 'signals', 'reporting'}" in routes
+    assert 'normalize_operational_tab' in routes
+    assert 'normalize_dashboard_page_size' in routes
+    assert 'is_htmx_request(request.headers)' in routes
     assert "'kpi_cards': 'storage/object_storage/dashboard/partials/_kpi_cards.html'" in routes
     assert "'overview': 'storage/object_storage/dashboard/partials/_overview.html'" in routes
     assert "'system_health': 'storage/object_storage/dashboard/partials/_system_health.html'" in routes
@@ -154,7 +156,10 @@ def test_system_health_summary_matches_kubernetes_pagination_contract() -> None:
     health = read('app/templates/storage/object_storage/dashboard/partials/_system_health.html')
     kubernetes_health = read('app/templates/kubernetes/dashboard/partials/_cluster_health.html')
 
-    assert 'SYSTEM_HEALTH_PAGE_SIZES = {5, 10, 25, 50}' in routes
+    application_contract = read('app/dashboards/common/operational.py')
+    pagination = read('app/common/pagination.py')
+    assert 'DASHBOARD_PAGE_SIZES = PER_PAGE_OPTIONS' in application_contract
+    assert 'PER_PAGE_OPTIONS: tuple[int, ...] = (5, 10, 25, 50)' in pagination
     assert "request.args.get('system_health_page', '1')" in routes
     assert "request.args.get('system_health_per_page', '5')" in routes
     assert "'system_health': 'storage/object_storage/dashboard/partials/_system_health.html'" in routes

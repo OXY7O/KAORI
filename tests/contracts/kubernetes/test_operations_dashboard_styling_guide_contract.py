@@ -15,6 +15,7 @@ def test_dashboard_uses_shared_workspace_tabs_and_persists_url_state() -> None:
     source = read('app/templates/kubernetes/dashboard/partials/_content.html')
     selector = read('app/templates/kubernetes/dashboard/partials/_signal_overview.html')
     routes = read('app/kubernetes/dashboard/routes.py')
+    application_contract = read('app/dashboards/common/operational.py')
     schema = read('app/kubernetes/dashboard/schema.py')
 
     framework = read('app/templates/components/operational_dashboard_workspace.html')
@@ -28,7 +29,10 @@ def test_dashboard_uses_shared_workspace_tabs_and_persists_url_state() -> None:
     assert "window.history.replaceState({}, '', url)" in framework
     assert 'id="{{ input_id }}"' in framework
     assert 'hx-include="#dashboard-active-tab"' in selector
-    assert "DASHBOARD_TABS = {'overview', 'capacity', 'signals', 'reporting'}" in routes
+    assert 'normalize_operational_tab' in routes
+    assert "OPERATIONAL_DASHBOARD_TABS: tuple[str, ...] = (" in application_contract
+    for tab in ("'overview'", "'capacity'", "'signals'", "'reporting'"):
+        assert tab in application_contract
     assert "active_tab: str = 'overview'" in schema
 
 
@@ -157,6 +161,8 @@ def test_dashboard_and_analytics_share_the_forecast_projection_chart() -> None:
 def test_cluster_health_uses_canonical_table_and_pagination_contract() -> None:
     source = read('app/templates/kubernetes/dashboard/partials/_cluster_health.html')
     routes = read('app/kubernetes/dashboard/routes.py')
+    application_contract = read('app/dashboards/common/operational.py')
+    pagination = read('app/common/pagination.py')
 
     assert '{% import "components/table.html" as table_ui %}' in source
     assert '{% import "components/pagination.html" as pagination_ui %}' in source
@@ -173,8 +179,9 @@ def test_cluster_health_uses_canonical_table_and_pagination_contract() -> None:
     assert 'of {{ pagination.total_items }} clusters' not in source
     assert "url_for('integrations.kubernetes')" in source
     assert "url_for('cluster.list_clusters')" not in source
-    assert 'CLUSTER_HEALTH_PAGE_SIZES = {5, 10, 25, 50}' in routes
-    assert "request.args.get('cluster_health_per_page', '5')" in routes
+    assert 'normalize_dashboard_page_size' in routes
+    assert 'DASHBOARD_PAGE_SIZES = PER_PAGE_OPTIONS' in application_contract
+    assert 'PER_PAGE_OPTIONS: tuple[int, ...] = (5, 10, 25, 50)' in pagination
 
 
 def test_dashboard_page_templates_have_no_local_typography_or_shell_drift() -> None:

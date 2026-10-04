@@ -41,10 +41,38 @@ def _load_routes(monkeypatch, *, authorized: bool = True, has_clusters: bool = T
         'render_calls': [],
     }
 
-    for package in ('app', 'app.kubernetes.cluster', 'app.dashboards', 'app.kubernetes.dashboard', 'app.access.rbac'):
+    for package in (
+        'app',
+        'app.kubernetes.cluster',
+        'app.dashboards',
+        'app.dashboards.common',
+        'app.kubernetes.dashboard',
+        'app.access.rbac',
+    ):
         module = ModuleType(package)
         module.__path__ = []
         monkeypatch.setitem(sys.modules, package, module)
+
+    operational = ModuleType('app.dashboards.common.operational')
+
+    def normalize_operational_tab(value: Any) -> str:
+        normalized = str(value or 'overview').strip().lower()
+        return normalized if normalized in ('overview', 'capacity', 'signals', 'reporting') else 'overview'
+
+    def normalize_dashboard_page_size(value: Any) -> int:
+        try:
+            parsed = int(value)
+        except (TypeError, ValueError):
+            return 5
+        return parsed if parsed in (5, 10, 25, 50) else 5
+
+    def is_htmx_request(headers: Any) -> bool:
+        return str(headers.get('HX-Request') or '').strip().lower() == 'true'
+
+    operational.normalize_operational_tab = normalize_operational_tab
+    operational.normalize_dashboard_page_size = normalize_dashboard_page_size
+    operational.is_htmx_request = is_htmx_request
+    monkeypatch.setitem(sys.modules, operational.__name__, operational)
 
     request = SimpleNamespace(args={}, headers={}, endpoint='kubernetes_dashboard.section')
     flask = ModuleType('flask')
@@ -185,25 +213,20 @@ def test_authorized_section_reads_dashboard_only_after_cluster_readiness(monkeyp
 
 
 def test_dashboard_tab_selection_is_bounded_to_canonical_tabs(monkeypatch) -> None:
-    routes, _state, request, _blueprint = _load_routes(monkeypatch)
+    routes, _state, _request, _blueprint = _load_routes(monkeypatch)
 
-    request.args = {'tab': 'capacity'}
-    assert routes._active_tab() == 'capacity'
-
-    request.args = {'tab': 'unknown'}
-    assert routes._active_tab() == 'overview'
+    assert routes.normalize_operational_tab('capacity') == 'capacity'
+    assert routes.normalize_operational_tab('unknown') == 'overview'
 
 
 def test_cluster_health_page_size_rejects_unbounded_values(monkeypatch) -> None:
-    routes, _state, request, _blueprint = _load_routes(monkeypatch)
+    routes, _state, _request, _blueprint = _load_routes(monkeypatch)
 
     for value in ('5', '10', '25', '50'):
-        request.args = {'cluster_health_per_page': value}
-        assert routes._cluster_health_per_page() == int(value)
+        assert routes.normalize_dashboard_page_size(value) == int(value)
 
     for value in ('0', '5000', 'invalid'):
-        request.args = {'cluster_health_per_page': value}
-        assert routes._cluster_health_per_page() == 5
+        assert routes.normalize_dashboard_page_size(value) == 5
 
 
 def test_dashboard_index_requires_permission_before_building_context(monkeypatch) -> None:

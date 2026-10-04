@@ -44,11 +44,13 @@ def test_artifact_registry_overview_scope_is_committed_and_provider_neutral() ->
     assert "request.args.get('provider_id', type=int)" in routes
     assert "request.args.get('tab', 'overview', type=str)" in routes
     assert "request.args.get('provider_health_page', 1)" in routes
-    assert "PROVIDER_HEALTH_PAGE_SIZES = {5, 10, 25, 50}" in routes
+    assert 'normalize_dashboard_page_size' in routes
     for section in ('overview', 'capacity', 'signals', 'reporting'):
         assert f"'{section}': 'artifact_registry/partials/_overview_" in routes
     assert 'artifact_registry/partials/_overview_content.html' in routes
-    assert "allowed_tabs = {'overview', 'capacity', 'signals', 'reporting'}" in presentation
+    assert 'normalize_operational_tab' in routes
+    assert 'normalize_operational_tab(active_tab)' in presentation
+    assert 'is_htmx_request(request.headers)' in routes
     assert 'RegistryProject.integration_instance_id == selected_provider.id' in presentation
     assert "registry_metrics_readiness(provider).get('status') == 'ready'" in presentation
     assert 'HarborClient(' not in presentation
