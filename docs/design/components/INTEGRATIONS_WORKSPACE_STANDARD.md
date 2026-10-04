@@ -89,6 +89,7 @@ Only the selected deep workspace is built for a request. The page may always loa
 Operational semantics are explicit:
 
 - `Ready for Use` requires a configured, enabled target with persisted readiness `ready`; a disabled target is never counted as ready for use.
+- Overview portfolio aggregation uses canonical `IntegrationInstance` rows for registered integration types unless that type has an explicit specialized overview projection. The specialized set is limited to Kubernetes / Container Orchestrator, Metrics Source, and Alert Source; Object Storage, Registry, and future generic providers must not be excluded from canonical aggregation merely because they have provider-specific runtime adapters.
 - an available Integration domain with zero registered targets is `Not Configured`, never `Ready`; workspace availability and target readiness are separate concepts.
 - the Domain Coverage workspace labels implemented domains as `Available Domains`; `Operational Readiness` is derived from their actual targets.
 - Runtime Overview uses the canonical shared Empty State contract: no targets is `Setup Required`, filtered zero is `No Results`.
