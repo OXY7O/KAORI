@@ -103,3 +103,14 @@ def test_object_storage_system_detail_uses_compact_release_and_profile_labels() 
     assert "'compatibility_profile_label': _compatibility_profile_display" in presentation
     assert "detail.inventory_row('Release', system.release_label, nowrap=true)" in detail
     assert "detail.inventory_row('Compatibility Profile', system.compatibility_profile_label, nowrap=true)" in detail
+
+
+
+def test_public_exposure_clean_state_names_committed_inventory_evidence() -> None:
+    presentation = read('app/storage/object_storage/inventory/presentation.py')
+
+    assert (
+        'No committed asset is currently classified as public in the latest Object Storage inventory evidence.'
+        in presentation
+    )
+    assert 'No committed asset is currently classified as public.' not in presentation
