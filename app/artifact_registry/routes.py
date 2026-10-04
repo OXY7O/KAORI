@@ -22,7 +22,16 @@ artifact_registry_bp = Blueprint('artifact_registry', __name__, url_prefix='/art
 @artifact_registry_bp.get('/')
 @permission_required('artifact_registry.view')
 def overview() -> ResponseReturnValue:
-    return render_template('artifact_registry/overview.html', overview=build_overview())
+    context = build_overview(
+        provider_id=request.args.get('provider_id', type=int),
+        active_tab=request.args.get('tab', 'overview', type=str),
+    )
+    template = (
+        'artifact_registry/partials/_overview_content.html'
+        if request.headers.get('HX-Request') == 'true'
+        else 'artifact_registry/overview.html'
+    )
+    return render_template(template, overview=context)
 
 
 @artifact_registry_bp.get('/inventory')

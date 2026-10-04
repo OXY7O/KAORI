@@ -1,0 +1,31 @@
+{% import "components/operational_dashboard_workspace.html" as dashboard_workspace %}
+<div class="space-y-5">
+    {% include "artifact_registry/partials/_overview_hero.html" %}
+    {% if overview.setup.is_blocked %}
+        {% include "artifact_registry/components/_setup_blocker.html" %}
+    {% else %}
+        {% call dashboard_workspace.controller(
+            overview.active_tab,
+            'artifact-registry-dashboard',
+            input_id='artifact-registry-dashboard-active-tab'
+            ) %}
+            {% include "artifact_registry/partials/_overview_signal_overview.html" %}
+            <div class="mt-5 space-y-5">
+                {{ dashboard_workspace.navigation('artifact-registry-dashboard',
+                                'Artifact Registry Overview Sections') }}
+                {% call dashboard_workspace.panel('overview', overview.active_tab, 'artifact-registry-dashboard') %}
+                    {% include "artifact_registry/partials/_overview_operations.html" %}
+                {% endcall %}
+                {% call dashboard_workspace.panel('capacity', overview.active_tab, 'artifact-registry-dashboard') %}
+                    {% include "artifact_registry/partials/_overview_capacity.html" %}
+                {% endcall %}
+                {% call dashboard_workspace.panel('signals', overview.active_tab, 'artifact-registry-dashboard') %}
+                    {% include "artifact_registry/partials/_overview_signals.html" %}
+                {% endcall %}
+                {% call dashboard_workspace.panel('reporting', overview.active_tab, 'artifact-registry-dashboard') %}
+                    {% include "artifact_registry/partials/_overview_reporting.html" %}
+                {% endcall %}
+            </div>
+        {% endcall %}
+    {% endif %}
+</div>

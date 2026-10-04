@@ -1,0 +1,90 @@
+{% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/peer_content_grid.html" as peer_content_grid %}
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+{% call operational_section_card.render(
+    'Registry Provider Health',
+    'Provider readiness and committed inventory freshness remain independent operational evidence.',
+    'server-cog',
+    action_href=url_for('integrations.registry'),
+    action_label='Open Registry Integrations',
+    body_classes='p-0'
+    ) %}
+    <div class="overflow-x-auto">
+        <table class="{{ table_ui.table_classes('min-w-[52rem]') }}">
+            <thead class="{{ table_ui.head_classes() }}">
+                <tr>
+                    <th class="{{ table_ui.header_cell_classes() }}">Provider</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Environment</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Provider Readiness</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Committed Snapshot</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Observed</th>
+                </tr>
+            </thead>
+            <tbody class="{{ table_ui.body_classes() }}">
+                {% for row in overview.provider_rows %}
+                    <tr class="{{ table_ui.row_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <p class="font-semibold text-content-primary">{{ row.name }}</p>
+                            <p class="mt-0.5 text-xs text-content-muted">{{ row.provider_label }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">{{ row.environment }}</td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ integration_status(row.readiness, row.readiness|replace('_', ' ')|title, display='indicator') }}
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ table_label.status_indicator_label(row.snapshot.label, row.snapshot.tone) }}
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ row.snapshot.observed_at|user_datetime if row.snapshot.observed_at else 'Not Collected' }}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endcall %}
+<div class="{{ peer_content_grid.layout_classes() }}">
+    <div class="{{ peer_content_grid.column_classes('primary') }}">
+        {% call operational_section_card.render(
+            'Snapshot Freshness',
+            'Committed collection evidence for the active Registry scope.',
+            'database-backup',
+            body_classes='p-5',
+            extra_classes='h-full'
+            ) %}
+            <dl class="grid gap-3 sm:grid-cols-3">
+                <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4">
+                    <dt class="text-xs font-semibold text-content-muted">Current Snapshots</dt>
+                    <dd class="mt-2 text-xl font-semibold text-content-primary">{{ overview.snapshot_count }}</dd>
+                </div>
+                <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4">
+                    <dt class="text-xs font-semibold text-content-muted">Stale Snapshots</dt>
+                    <dd class="mt-2 text-xl font-semibold text-content-primary">{{ overview.stale_snapshot_count }}</dd>
+                </div>
+                <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4">
+                    <dt class="text-xs font-semibold text-content-muted">Pending</dt>
+                    <dd class="mt-2 text-xl font-semibold text-content-primary">{{ overview.pending_snapshot_count }}</dd>
+                </div>
+            </dl>
+        {% endcall %}
+    </div>
+    <div class="{{ peer_content_grid.column_classes('secondary') }}">
+        {% call operational_section_card.render(
+            'Evidence Boundary',
+            'Artifact Registry reads committed KAORI state; providers remain authoritative for native Registry state.',
+            'landmark',
+            action_href=url_for('artifact_registry.inventory'),
+            action_label='Open Inventory',
+            body_classes='p-5',
+            extra_classes='h-full'
+            ) %}
+            <div class="space-y-3 text-sm leading-6 text-content-secondary">
+                <p><span class="font-semibold text-content-primary">Provider:</span> Registry API state, repositories, artifacts, and native policy authority.</p>
+                <p><span class="font-semibold text-content-primary">KAORI:</span> normalized inventory, evidence freshness, correlation, governance, analytics, and audit.</p>
+                <p>No provider request is issued by this Overview page.</p>
+            </div>
+        {% endcall %}
+    </div>
+</div>
