@@ -133,7 +133,12 @@ def build_kubernetes_capability_registry(
     }
 
 
-def build_kubernetes_detail(cluster_id: str) -> dict[str, Any] | None:
+def build_kubernetes_detail(
+    cluster_id: str,
+    *,
+    binding_page: int = 1,
+    binding_per_page: int = 5,
+) -> dict[str, Any] | None:
     from app.integrations.runtime.presentation import runtime_observation_state_view
     from app.integrations.runtime.repository import list_runtime_history
 
@@ -218,9 +223,14 @@ def build_kubernetes_detail(cluster_id: str) -> dict[str, Any] | None:
         integration_instance_id=connection.integration_instance_id,
         cluster_id=cluster.id,
     )
-    source_bindings = build_bound_observability_source_rows(
+    all_source_bindings = build_bound_observability_source_rows(
         asset_type='kubernetes_cluster',
         asset_key=cluster.id,
+    )
+    source_bindings, source_binding_pagination = _paginate(
+        all_source_bindings,
+        page=binding_page,
+        per_page=binding_per_page,
     )
     return {
         'connection': connection,
@@ -242,6 +252,8 @@ def build_kubernetes_detail(cluster_id: str) -> dict[str, Any] | None:
         'selected_adapters': selected_adapters,
         'capability_scope': capability_scope,
         'source_bindings': source_bindings,
+        'source_binding_total': len(all_source_bindings),
+        'source_binding_pagination': source_binding_pagination,
         'deletion_guard': deletion_guard,
         'validated_feature_count': len(selected_adapters),
         'operational_domain_count': len(capability_scope),
@@ -249,7 +261,7 @@ def build_kubernetes_detail(cluster_id: str) -> dict[str, Any] | None:
             'node_count': int(cluster.node_count or 0),
             'validated_feature_count': len(selected_adapters),
             'operational_domain_count': len(capability_scope),
-            'binding_count': sum(1 for row in source_bindings if row['binding_validation'] != 'not_bound'),
+            'binding_count': len(all_source_bindings),
             'report_count': report_count,
             'schedule_count': schedule_count,
             'inventory_status': 'committed' if latest_inventory else 'not_collected',
