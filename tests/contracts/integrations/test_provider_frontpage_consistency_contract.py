@@ -28,6 +28,26 @@ def test_provider_front_pages_share_one_canonical_hierarchy() -> None:
         assert 'integration_tabs.render(' in template, provider
 
 
+def test_kubernetes_minio_harbor_keep_same_dashboard_frame_order() -> None:
+    templates = {
+        'kubernetes': read(
+            'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/frontpage.html'
+        ),
+        'minio': read('app/templates/integrations/storage/object_storage/providers/minio/index.html'),
+        'harbor': read('app/templates/integrations/registry/providers/harbor/index.html'),
+    }
+
+    for provider, template in templates.items():
+        hero = template.index('provider_front.hero(')
+        overview = template.index('provider_front.overview(')
+        workspace = template.index('integration_tabs.render(')
+
+        assert hero < overview < workspace, provider
+        assert template.count('provider_front.hero(') == 1, provider
+        assert template.count('provider_front.overview(') == 1, provider
+        assert 'overview_metrics = [' in template, provider
+
+
 def test_shared_overview_owns_summary_and_boundary_geometry() -> None:
     overview = read('app/templates/integrations/components/_provider_frontpage.html')
 
