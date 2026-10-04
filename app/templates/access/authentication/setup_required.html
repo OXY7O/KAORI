@@ -1,8 +1,8 @@
 {% extends "layouts/auth.html" %}
-{% import "components/action_button.html" as action_button %}
 {% import "components/info_flow.html" as info_flow %}
 {% import "components/operational_callout.html" as operational_callout %}
 {% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/section_link_button.html" as section_link_button %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/terminal_command.html" as terminal_command %}
 {% block title %}Database Setup Required · KAORI{% endblock title %}
@@ -16,17 +16,17 @@
         docker compose ps
         pg_isready -h db -p 5432
     {%- endset %}
-    {% set initialization_steps = [('Confirm the Encryption Boundary', 'Set INTEGRATION_CREDENTIAL_KEY before migration and keep the same value after encrypted integration credentials are created.'), ('Run the Initial KAORI Database Bootstrap', 'Apply the migration chain, seed canonical RBAC, and bootstrap the first local administrator in one controlled command.'), ('Return to the Readiness Check', 'Retry setup after bootstrap completes. KAORI admits normal sign-in only when the required schema is present.')] %}
-    <main class="min-h-screen bg-surface-page px-4 py-4 sm:px-5 lg:py-5">
+    {% set initialization_steps = [('Confirm the Encryption Boundary', 'Set INTEGRATION_CREDENTIAL_KEY before migration and preserve the same value after encrypted integration credentials are created.'), ('Run the Initial KAORI Database Bootstrap', 'Apply migrations, seed canonical RBAC, and bootstrap the first local administrator.'), ('Return to the Readiness Check', 'Retry setup after bootstrap. Normal sign-in is admitted only when the required schema is present.')] %}
+    <main class="min-h-screen bg-surface-page px-3 py-3 sm:px-4 lg:py-4">
         <div class="mx-auto w-full max-w-5xl">
             <section class="{{ operational_section_card.shell_classes() }}"
-                     data-kaori-setup-workspace="release-v2"
+                     data-kaori-setup-workspace="release-v3"
                      data-kaori-setup-unified-surface
                      aria-labelledby="setup-required-title">
-                <header class="px-5 py-4">
-                    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                        <div class="flex min-w-0 items-start gap-3">
-                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                <header class="px-4 py-3 sm:px-5">
+                    <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                        <div class="flex min-w-0 items-start gap-2.5">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                                   aria-hidden="true">
                                 <i data-lucide="database" class="h-4 w-4"></i>
                             </span>
@@ -34,12 +34,12 @@
                                 <p class="text-xs font-semibold text-kaori-primary">KAORI Initialization</p>
                                 <h1 id="setup-required-title"
                                     data-kaori-auth-setup-heading-authority="readiness-workspace"
-                                    class="mt-0.5 text-2xl font-semibold leading-8 text-content-primary">Database Setup Required</h1>
-                                <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">
+                                    class="text-xl font-semibold leading-7 text-content-primary">Database Setup Required</h1>
+                                <p class="mt-0.5 max-w-2xl text-xs leading-5 text-content-muted">
                                     {% if readiness.setup_required %}
-                                        PostgreSQL is reachable, but KAORI has not been initialized yet. Complete the controlled bootstrap before normal sign-in and background workflows are admitted.
+                                        PostgreSQL is reachable, but the KAORI schema is not initialized. Complete bootstrap before normal sign-in and background workflows are admitted.
                                     {% else %}
-                                        PostgreSQL is unavailable. Restore database connectivity before KAORI can verify or initialize the application schema.
+                                        PostgreSQL is unavailable. Restore database connectivity before KAORI can verify the application schema.
                                     {% endif %}
                                 </p>
                             </div>
@@ -52,221 +52,195 @@
                             {% endif %}
                         </div>
                     </div>
+
+                    <dl class="mt-3 grid gap-2 border-t border-outline-subtle pt-3 sm:grid-cols-3 sm:gap-0"
+                        data-kaori-setup-readiness-strip
+                        aria-label="Initialization readiness">
+                        {% if readiness.setup_required %}
+                            <div class="flex items-center justify-between gap-2 sm:pr-3">
+                                <dt class="text-xs font-semibold text-content-secondary">Database</dt>
+                                <dd>{{ table_label.status_indicator_label('Reachable', 'normal') }}</dd>
+                            </div>
+                            <div class="flex items-center justify-between gap-2 border-t border-outline-subtle pt-2 sm:border-l sm:border-t-0 sm:px-3 sm:pt-0">
+                                <dt class="text-xs font-semibold text-content-secondary">Application Schema</dt>
+                                <dd>{{ table_label.status_indicator_label('Missing', 'warning') }}</dd>
+                            </div>
+                            <div class="flex items-center justify-between gap-2 border-t border-outline-subtle pt-2 sm:border-l sm:border-t-0 sm:pl-3 sm:pt-0">
+                                <dt class="text-xs font-semibold text-content-secondary">Normal Sign-In</dt>
+                                <dd>{{ table_label.status_indicator_label('Blocked', 'critical') }}</dd>
+                            </div>
+                        {% else %}
+                            <div class="flex items-center justify-between gap-2 sm:pr-3">
+                                <dt class="text-xs font-semibold text-content-secondary">Database</dt>
+                                <dd>{{ table_label.status_indicator_label('Unavailable', 'critical') }}</dd>
+                            </div>
+                            <div class="flex items-center justify-between gap-2 border-t border-outline-subtle pt-2 sm:border-l sm:border-t-0 sm:px-3 sm:pt-0">
+                                <dt class="text-xs font-semibold text-content-secondary">Application Schema</dt>
+                                <dd>{{ table_label.status_indicator_label('Not Checked', 'unknown') }}</dd>
+                            </div>
+                            <div class="flex items-center justify-between gap-2 border-t border-outline-subtle pt-2 sm:border-l sm:border-t-0 sm:pl-3 sm:pt-0">
+                                <dt class="text-xs font-semibold text-content-secondary">Normal Sign-In</dt>
+                                <dd>{{ table_label.status_indicator_label('Blocked', 'critical') }}</dd>
+                            </div>
+                        {% endif %}
+                    </dl>
                 </header>
 
                 {% if readiness.setup_required %}
-                    <div class="border-t border-outline-subtle bg-surface-muted px-5 py-3"
-                         data-kaori-setup-readiness-strip
-                         aria-label="Initialization readiness">
-                        <dl class="grid gap-3 sm:grid-cols-3 sm:gap-0">
-                            <div class="flex items-center justify-between gap-3 sm:pr-4">
-                                <div class="min-w-0">
-                                    <dt class="text-xs font-semibold text-content-secondary">Database</dt>
-                                    <dd class="mt-0.5 text-xs text-content-muted">PostgreSQL endpoint</dd>
-                                </div>
-                                {{ table_label.status_indicator_label('Reachable', 'normal') }}
-                            </div>
-                            <div class="flex items-center justify-between gap-3 border-t border-outline-subtle pt-3 sm:border-l sm:border-t-0 sm:px-4 sm:pt-0">
-                                <div class="min-w-0">
-                                    <dt class="text-xs font-semibold text-content-secondary">Application Schema</dt>
-                                    <dd class="mt-0.5 text-xs text-content-muted">Required KAORI objects</dd>
-                                </div>
-                                {{ table_label.status_indicator_label('Missing', 'warning') }}
-                            </div>
-                            <div class="flex items-center justify-between gap-3 border-t border-outline-subtle pt-3 sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0">
-                                <div class="min-w-0">
-                                    <dt class="text-xs font-semibold text-content-secondary">Normal Sign-In</dt>
-                                    <dd class="mt-0.5 text-xs text-content-muted">Admission boundary</dd>
-                                </div>
-                                {{ table_label.status_indicator_label('Blocked', 'critical') }}
-                            </div>
-                        </dl>
-                    </div>
-
-                    <div class="grid border-t border-outline-subtle lg:grid-cols-3"
-                         data-kaori-setup-primary-action>
-                        <section class="px-5 py-5 lg:col-span-2 lg:border-r lg:border-outline-subtle"
-                                 aria-labelledby="development-bootstrap-title">
-                            <div class="flex items-start gap-3">
-                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                                      aria-hidden="true">
-                                    <i data-lucide="square-terminal" class="h-4 w-4"></i>
-                                </span>
-                                <div class="min-w-0 flex-1">
-                                    <div class="flex flex-wrap items-center gap-2">
-                                        {{ table_label.metadata_label('Required Action', icon='circle-dot') }}
-                                        {{ table_label.metadata_label('KAORI Dev Container', icon='container') }}
+                    <div class="grid border-t border-outline-subtle lg:grid-cols-12"
+                         data-kaori-setup-control-grid>
+                        <div class="px-4 py-4 sm:px-5 lg:col-span-8 lg:border-r lg:border-outline-subtle">
+                            <section aria-labelledby="development-bootstrap-title">
+                                <div class="flex items-start gap-2.5">
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                          aria-hidden="true">
+                                        <i data-lucide="square-terminal" class="h-4 w-4"></i>
+                                    </span>
+                                    <div class="min-w-0 flex-1">
+                                        <div class="flex flex-wrap items-center justify-between gap-2">
+                                            <h2 id="development-bootstrap-title"
+                                                class="text-base font-semibold text-content-primary">Development Bootstrap</h2>
+                                            {{ table_label.metadata_label('KAORI Dev Container', icon='container') }}
+                                        </div>
+                                        <p class="mt-0.5 text-xs leading-5 text-content-muted">Initialize the schema, seed canonical RBAC, and create the first local administrator.</p>
                                     </div>
-                                    <h2 id="development-bootstrap-title"
-                                        class="mt-2 text-lg font-semibold text-content-primary">Development Bootstrap</h2>
-                                    <p class="mt-1 max-w-2xl text-sm leading-6 text-content-secondary">
-                                        Initialize the migration schema, seed canonical RBAC, and bootstrap the first local administrator with the canonical one-command path.
-                                    </p>
                                 </div>
-                            </div>
-                            <div class="mt-5">
-                                {{ terminal_command.render(bootstrap_command, label='KAORI Dev Container', copy_label='Copy Command') }}
-                            </div>
-                            <div class="mt-4 flex items-start gap-2 text-xs leading-5 text-content-muted">
-                                <i data-lucide="shield-check"
-                                   class="mt-0.5 h-4 w-4 shrink-0"
-                                   aria-hidden="true"></i>
-                                <p>Run the command once after confirming the encryption boundary. Background workers remain gated until migration readiness is established, then continue automatically.</p>
-                            </div>
-                        </section>
 
-                        <aside class="border-t border-outline-subtle px-5 py-5 lg:border-t-0"
-                               aria-labelledby="security-boundary-title">
-                            <div class="flex items-start gap-3">
-                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                                      aria-hidden="true">
-                                    <i data-lucide="key-round" class="h-4 w-4"></i>
-                                </span>
-                                <div class="min-w-0">
-                                    <h2 id="security-boundary-title"
-                                        class="text-base font-semibold text-content-primary">Security Boundary</h2>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Confirm this installation-level prerequisite before the first migration.</p>
+                                <div class="mt-3">
+                                    {{ terminal_command.render(bootstrap_command, label='KAORI Dev Container', copy_label='Copy Command') }}
                                 </div>
-                            </div>
-                            <div class="mt-4">
-                                {{ operational_callout.render(
-                                    "Encryption Key Requirement",
-                                    "Set INTEGRATION_CREDENTIAL_KEY before bootstrap and preserve the same value as installation state. Changing it later can make stored integration credentials unreadable.",
-                                    icon="key-round",
-                                    tone="warning",
-                                    variant="semantic"
+                                <p class="mt-2 flex items-start gap-2 text-xs leading-5 text-content-muted">
+                                    <i data-lucide="shield-check"
+                                       class="mt-0.5 h-3.5 w-3.5 shrink-0"
+                                       aria-hidden="true"></i>
+                                    <span>Confirm the encryption boundary first. Workers remain gated until migration readiness is established.</span>
+                                </p>
+                            </section>
+
+                            <div class="mt-4 border-t border-outline-subtle pt-4">
+                                {{ info_flow.render(
+                                    "Initialization Path",
+                                    "Complete the controlled bootstrap sequence before normal sign-in.",
+                                    initialization_steps,
+                                    icon="list-checks",
+                                    embedded=true
                                 ) }}
                             </div>
-                        </aside>
-                    </div>
-
-                    <div class="grid border-t border-outline-subtle lg:grid-cols-3"
-                         data-kaori-setup-supporting-grid>
-                        <div class="px-5 py-5 lg:col-span-2 lg:border-r lg:border-outline-subtle">
-                            {{ info_flow.render(
-                                "Initialization Path",
-                                "Three controlled steps take this installation from reachable database to normal KAORI sign-in.",
-                                initialization_steps,
-                                icon="list-checks",
-                                embedded=true
-                            ) }}
                         </div>
 
-                        <section class="border-t border-outline-subtle px-5 py-5 lg:border-t-0"
-                                 aria-labelledby="setup-details-title">
-                            <div class="flex items-start gap-3">
-                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                                      aria-hidden="true">
-                                    <i data-lucide="sliders-horizontal" class="h-4 w-4"></i>
-                                </span>
-                                <div class="min-w-0">
-                                    <h2 id="setup-details-title"
-                                        class="text-lg font-semibold text-content-primary">Setup Details</h2>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Secondary commands and schema evidence stay available without competing with the primary bootstrap path.</p>
-                                </div>
-                            </div>
-
-                            <div class="mt-4 divide-y divide-outline-subtle border-y border-outline-subtle">
-                                <details data-kaori-setup-manual-commands>
-                                    <summary class="flex cursor-pointer list-none items-center justify-between gap-3 py-3.5 text-sm font-semibold text-content-primary">
-                                        <span class="flex min-w-0 items-center gap-2">
-                                            <i data-lucide="square-terminal"
-                                               class="h-4 w-4 shrink-0 text-content-muted"
-                                               aria-hidden="true"></i>
-                                            <span>Manual Initialization Commands</span>
-                                        </span>
-                                        <i data-lucide="chevron-down"
-                                           class="h-4 w-4 shrink-0 text-content-muted"
-                                           aria-hidden="true"></i>
-                                    </summary>
-                                    <div class="pb-4">
-                                        <p class="mb-3 text-xs leading-5 text-content-muted">Use these only when the migration and RBAC seed steps intentionally need to run separately.</p>
-                                        {{ terminal_command.render(manual_bootstrap_commands, label='Manual Bootstrap', prompt='', copy_label='Copy Commands') }}
+                        <aside class="border-t border-outline-subtle lg:col-span-4 lg:border-l-0 lg:border-t-0"
+                               aria-label="Database setup supporting context">
+                            <section class="px-4 py-4 sm:px-5"
+                                     aria-labelledby="security-boundary-title">
+                                <div class="flex items-start gap-2.5">
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                          aria-hidden="true">
+                                        <i data-lucide="key-round" class="h-4 w-4"></i>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <h2 id="security-boundary-title"
+                                            class="text-sm font-semibold text-content-primary">Security Boundary</h2>
+                                        <p class="mt-0.5 text-xs leading-5 text-content-muted">Confirm this installation prerequisite before the first migration.</p>
                                     </div>
-                                </details>
+                                </div>
+                                <div class="mt-3">
+                                    {{ operational_callout.render(
+                                        "Encryption Key Requirement",
+                                        "Set INTEGRATION_CREDENTIAL_KEY before bootstrap and preserve the same value for this installation. Changing it later can make stored integration credentials unreadable.",
+                                        icon="key-round",
+                                        tone="warning",
+                                        variant="semantic"
+                                    ) }}
+                                </div>
+                            </section>
 
-                                {% if readiness.missing_tables %}
-                                    <details data-kaori-setup-missing-schema>
-                                        <summary class="flex cursor-pointer list-none items-center justify-between gap-3 py-3.5 text-sm font-semibold text-content-primary">
+                            <section class="border-t border-outline-subtle px-4 py-4 sm:px-5"
+                                     aria-labelledby="setup-details-title">
+                                <div class="flex items-start gap-2.5">
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                          aria-hidden="true">
+                                        <i data-lucide="sliders-horizontal" class="h-4 w-4"></i>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <h2 id="setup-details-title"
+                                            class="text-sm font-semibold text-content-primary">Setup Details</h2>
+                                        <p class="mt-0.5 text-xs leading-5 text-content-muted">Manual recovery commands and schema evidence.</p>
+                                    </div>
+                                </div>
+
+                                <div class="mt-3 divide-y divide-outline-subtle border-y border-outline-subtle">
+                                    <details data-kaori-setup-manual-commands>
+                                        <summary class="flex cursor-pointer list-none items-center justify-between gap-2 py-2.5 text-xs font-semibold text-content-primary">
                                             <span class="flex min-w-0 items-center gap-2">
-                                                <i data-lucide="database-zap"
-                                                   class="h-4 w-4 shrink-0 text-content-muted"
+                                                <i data-lucide="square-terminal"
+                                                   class="h-3.5 w-3.5 shrink-0 text-content-muted"
                                                    aria-hidden="true"></i>
-                                                <span>Missing Schema Objects</span>
+                                                <span>Manual Initialization Commands</span>
                                             </span>
-                                            {{ table_label.status_label(readiness.missing_tables|length ~ ' missing', 'warning') }}
+                                            <i data-lucide="chevron-down"
+                                               class="h-3.5 w-3.5 shrink-0 text-content-muted"
+                                               aria-hidden="true"></i>
                                         </summary>
-                                        <div class="pb-4">
-                                            <p class="text-xs leading-5 text-content-muted">KAORI did not find the following required schema objects:</p>
-                                            <div class="mt-3 flex flex-wrap gap-2">
-                                                {% for table in readiness.missing_tables %}
-                                                    <code class="rounded-md bg-surface-muted px-2 py-1 text-xs text-content-primary">{{ table }}</code>
-                                                {% endfor %}
-                                            </div>
+                                        <div class="pb-3">
+                                            <p class="mb-2 text-xs leading-5 text-content-muted">Use only when migration and RBAC seed steps must run separately.</p>
+                                            {{ terminal_command.render(manual_bootstrap_commands, label='Manual Bootstrap', prompt='', copy_label='Copy Commands') }}
                                         </div>
                                     </details>
-                                {% endif %}
-                            </div>
-                        </section>
+
+                                    {% if readiness.missing_tables %}
+                                        <details data-kaori-setup-missing-schema>
+                                            <summary class="flex cursor-pointer list-none items-center justify-between gap-2 py-2.5 text-xs font-semibold text-content-primary">
+                                                <span class="flex min-w-0 items-center gap-2">
+                                                    <i data-lucide="database-zap"
+                                                       class="h-3.5 w-3.5 shrink-0 text-content-muted"
+                                                       aria-hidden="true"></i>
+                                                    <span>Missing Schema Objects</span>
+                                                </span>
+                                                {{ table_label.status_label(readiness.missing_tables|length ~ ' missing', 'warning') }}
+                                            </summary>
+                                            <div class="pb-3">
+                                                <p class="text-xs leading-5 text-content-muted">Required schema objects not found:</p>
+                                                <div class="mt-2 flex flex-wrap gap-1.5">
+                                                    {% for table in readiness.missing_tables %}
+                                                        <code class="rounded-md bg-surface-muted px-1.5 py-0.5 text-xs text-content-primary">{{ table }}</code>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        </details>
+                                    {% endif %}
+                                </div>
+                            </section>
+                        </aside>
                     </div>
                 {% else %}
-                    <div class="border-t border-outline-subtle bg-surface-muted px-5 py-3"
-                         data-kaori-setup-readiness-strip
-                         aria-label="Database recovery readiness">
-                        <dl class="grid gap-3 sm:grid-cols-3 sm:gap-0">
-                            <div class="flex items-center justify-between gap-3 sm:pr-4">
-                                <div class="min-w-0">
-                                    <dt class="text-xs font-semibold text-content-secondary">Database</dt>
-                                    <dd class="mt-0.5 text-xs text-content-muted">PostgreSQL endpoint</dd>
-                                </div>
-                                {{ table_label.status_indicator_label('Unavailable', 'critical') }}
-                            </div>
-                            <div class="flex items-center justify-between gap-3 border-t border-outline-subtle pt-3 sm:border-l sm:border-t-0 sm:px-4 sm:pt-0">
-                                <div class="min-w-0">
-                                    <dt class="text-xs font-semibold text-content-secondary">Application Schema</dt>
-                                    <dd class="mt-0.5 text-xs text-content-muted">Verification state</dd>
-                                </div>
-                                {{ table_label.status_indicator_label('Not Checked', 'unknown') }}
-                            </div>
-                            <div class="flex items-center justify-between gap-3 border-t border-outline-subtle pt-3 sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0">
-                                <div class="min-w-0">
-                                    <dt class="text-xs font-semibold text-content-secondary">Normal Sign-In</dt>
-                                    <dd class="mt-0.5 text-xs text-content-muted">Admission boundary</dd>
-                                </div>
-                                {{ table_label.status_indicator_label('Blocked', 'critical') }}
-                            </div>
-                        </dl>
-                    </div>
-
-                    <div class="grid border-t border-outline-subtle lg:grid-cols-3"
-                         data-kaori-setup-primary-action>
-                        <section class="px-5 py-5 lg:col-span-2 lg:border-r lg:border-outline-subtle"
+                    <div class="grid border-t border-outline-subtle lg:grid-cols-12"
+                         data-kaori-setup-control-grid>
+                        <section class="px-4 py-4 sm:px-5 lg:col-span-8 lg:border-r lg:border-outline-subtle"
                                  aria-labelledby="development-checks-title">
-                            <div class="flex items-start gap-3">
-                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                            <div class="flex items-start gap-2.5">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                                       aria-hidden="true">
                                     <i data-lucide="square-terminal" class="h-4 w-4"></i>
                                 </span>
                                 <div class="min-w-0 flex-1">
-                                    <div class="flex flex-wrap items-center gap-2">
-                                        {{ table_label.metadata_label('Recovery Action', icon='refresh-cw') }}
+                                    <div class="flex flex-wrap items-center justify-between gap-2">
+                                        <h2 id="development-checks-title"
+                                            class="text-base font-semibold text-content-primary">Development Checks</h2>
                                         {{ table_label.metadata_label('KAORI Dev Container', icon='container') }}
                                     </div>
-                                    <h2 id="development-checks-title"
-                                        class="mt-2 text-lg font-semibold text-content-primary">Development Checks</h2>
-                                    <p class="mt-1 max-w-2xl text-sm leading-6 text-content-secondary">Verify the development database service and PostgreSQL endpoint before retrying schema readiness.</p>
+                                    <p class="mt-0.5 text-xs leading-5 text-content-muted">Verify PostgreSQL connectivity before retrying schema readiness.</p>
                                 </div>
                             </div>
-                            <div class="mt-5">
+                            <div class="mt-3">
                                 {{ terminal_command.render(database_checks, label='Database Connectivity', prompt='', copy_label='Copy Checks') }}
                             </div>
                         </section>
 
-                        <aside class="border-t border-outline-subtle px-5 py-5 lg:border-t-0"
+                        <aside class="border-t border-outline-subtle px-4 py-4 sm:px-5 lg:col-span-4 lg:border-t-0"
                                aria-label="Database recovery context">
                             {{ operational_callout.render(
                                 "PostgreSQL Is Unavailable",
-                                "Restore database connectivity before attempting schema initialization or normal authentication. The readiness check remains fail-closed until PostgreSQL is reachable.",
+                                "Restore database connectivity before schema initialization or normal authentication. The readiness check remains fail-closed until PostgreSQL is reachable.",
                                 icon="database-x",
                                 tone="critical",
                                 variant="semantic"
@@ -275,18 +249,14 @@
                     </div>
                 {% endif %}
 
-                <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-muted px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div class="flex items-start gap-2">
+                <footer class="flex flex-col gap-2 border-t border-outline-subtle bg-surface-muted px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                    <p class="flex items-start gap-2 text-xs leading-5 text-content-muted">
                         <i data-lucide="shield-check"
-                           class="mt-0.5 h-4 w-4 shrink-0 text-content-muted"
+                           class="mt-0.5 h-3.5 w-3.5 shrink-0"
                            aria-hidden="true"></i>
-                        <p class="max-w-2xl text-xs leading-5 text-content-muted">This readiness workspace is read-only. It does not display or modify application data.</p>
-                    </div>
-                    <a href="{{ url_for('auth.login') }}"
-                       class="{{ action_button.classes('secondary') }}">
-                        <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
-                        Retry Setup Check
-                    </a>
+                        <span>This readiness workspace is read-only. It does not display or modify application data.</span>
+                    </p>
+                    {{ section_link_button.render(url_for('auth.login'), 'Retry Setup Check', icon='refresh-cw') }}
                 </footer>
             </section>
         </div>
