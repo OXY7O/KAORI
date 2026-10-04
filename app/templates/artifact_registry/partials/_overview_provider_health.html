@@ -51,14 +51,16 @@
                             <p class="mt-1 text-xs text-content-muted">Digest Identities</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} align-top">
-                            {% if row.inventory_ready %}
+                            {% if row.security_ready %}
                                 <p class="text-sm font-semibold {% if row.critical_findings > 0 %}text-status-critical-text{% elif row.high_findings > 0 %}text-status-warning-text{% else %}text-status-normal-text{% endif %}">
                                     {{ row.critical_findings }} Critical
                                 </p>
                                 <p class="mt-1 text-xs text-content-muted">{{ row.high_findings }} High</p>
                             {% else %}
                                 <p class="text-sm font-semibold text-content-disabled">N/A</p>
-                                <p class="mt-1 text-xs text-status-unknown-text">Inventory Not Collected</p>
+                                <p class="mt-1 text-xs text-status-unknown-text">
+                                    {{ 'Security Not Collected' if row.inventory_ready else 'Inventory Not Collected' }}
+                                </p>
                             {% endif %}
                         </td>
                         <td class="{{ table_ui.cell_classes(action=true) }} align-top">

@@ -131,7 +131,6 @@ def build_overview(
         None,
     )
     scoped_providers = [selected_provider] if selected_provider is not None else providers
-    scoped_provider_ids = {int(provider.id) for provider in scoped_providers}
 
     states_query = RegistryCollectionState.query
     project_query = RegistryProject.query
