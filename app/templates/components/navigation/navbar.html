@@ -150,7 +150,8 @@
                     <div class="space-y-2 p-2.5">
                         {% set can_sync_kubernetes_inventory = current_user.has_permission('clusters.sync') %}
                         {% set can_sync_object_storage_inventory = current_user.has_permission('storage.sync') %}
-                        {% if current_user.has_permission('jobs.execute') and (can_sync_kubernetes_inventory or can_sync_object_storage_inventory) %}
+                        {% set can_sync_artifact_registry_inventory = current_user.has_permission('artifact_registry.sync') %}
+                        {% if current_user.has_permission('jobs.execute') and (can_sync_kubernetes_inventory or can_sync_object_storage_inventory or can_sync_artifact_registry_inventory) %}
                             <form id="quick-sync-form"
                                   method="POST"
                                   action="{{ url_for('jobs.quick_sync_all_inventory') }}">
