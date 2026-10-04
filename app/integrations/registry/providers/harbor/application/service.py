@@ -138,7 +138,6 @@ def update_harbor_instance(instance: HarborInstance, values: HarborRegistrationI
     return instance
 
 
-
 def delete_harbor_instance(instance: HarborInstance) -> dict[str, int]:
     """Delete KAORI-owned Harbor registration state without mutating Harbor.
 

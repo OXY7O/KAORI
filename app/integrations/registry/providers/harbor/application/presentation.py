@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from app.common.pagination import paginate_sequence
 from app.artifact_registry.observability import registry_metrics_readiness
+from app.common.pagination import paginate_sequence
 from app.common.presentation import present_user_datetime
 from app.integrations.asset_owner_sources import build_bound_observability_source_rows
 from app.integrations.deletion import asset_owner_deletion_guard
