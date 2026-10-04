@@ -10,7 +10,7 @@
     ("server", "brand", "Harbor API Endpoint", instance.endpoint, "Base Harbor API endpoint used by KAORI for read-oriented discovery and validation."),
     ("shield-check", "success" if instance.verify_ssl else "warning", "TLS Verification", "Enabled" if instance.verify_ssl else "Disabled", "Certificate validation policy for Harbor API requests."),
     ("key-round", "info", "Access Contract", instance.auth_type|replace("_", " ")|title, "Credentials remain encrypted and are never retained in validation evidence."),
-    ("package-search", "success", "Registry Authority", "Harbor", "Harbor remains authoritative for native projects, repositories, artifacts, and provider policies.")
+    ("package-search", "success", "Registry Authority", "Harbor", "Harbor remains authoritative for native Registry state and policies.")
 ] %}
 {% set flow_items = [
     ('Configure', 'Register Harbor endpoint identity, authentication, TLS policy, and timeout.', 'settings-2'),
@@ -29,7 +29,7 @@
     readiness,
     summary_items,
     evidence_items,
-    "Harbor owns native Registry state and policy. KAORI owns normalized registration, committed validation evidence, runtime observation, governance context, and audit.",
+    "Harbor owns Registry state and policy; KAORI owns registration, validation evidence, runtime observation, governance, and audit.",
     flow_items,
     "Connection-sensitive changes reset readiness until Full Validation confirms the updated Harbor contract. Artifact inventory and provider mutation are outside this foundation slice.",
     url_for("harbor.edit_instance", instance_id=instance.id),
