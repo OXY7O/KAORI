@@ -77,10 +77,19 @@ def test_dashboard_sections_use_the_canonical_operational_section_card() -> None
         '_section_loading.html',
     ]
 
+    shared_owners = {
+        '_signal_overview.html': 'components/operational_signal_overview.html',
+        '_alerts_summary.html': 'components/operational_alert_summary.html',
+        '_recommended_actions.html': 'components/operational_recommendation_cards.html',
+        '_alert_response_guidance.html': 'components/operational_alert_response.html',
+    }
     for name in partials:
         source = (DASHBOARD_TEMPLATES / 'partials' / name).read_text(encoding='utf-8')
-        assert 'components/operational_section_card.html' in source, name
-        assert 'operational_section_card.render(' in source, name
+        if name in shared_owners:
+            assert shared_owners[name] in source, name
+        else:
+            assert 'components/operational_section_card.html' in source, name
+            assert 'operational_section_card.render(' in source, name
 
     reporting_summary = read('app/templates/kubernetes/dashboard/partials/_reporting_summary.html')
     reporting_guidance = read('app/templates/kubernetes/dashboard/partials/_reporting_guidance.html')
@@ -100,6 +109,7 @@ def test_primary_and_peer_operational_flows_are_static_and_controlled_flows_reus
     info_flow = read('app/templates/components/info_flow.html')
     flow_steps = read('app/templates/components/operational_flow_steps.html')
     numbered_steps = read('app/templates/components/numbered_governance_steps.html')
+    alert_response = read('app/templates/components/operational_alert_response.html')
     alert_guidance = read('app/templates/kubernetes/dashboard/partials/_alert_response_guidance.html')
     reporting_guidance = read('app/templates/kubernetes/dashboard/partials/_reporting_guidance.html')
     reporting_workspace = read('app/templates/components/reporting_dashboard_workspace.html')
@@ -112,7 +122,8 @@ def test_primary_and_peer_operational_flows_are_static_and_controlled_flows_reus
     assert '<details' not in flow_steps
     assert '<details' not in numbered_steps
     assert 'divide-y divide-outline-subtle' in numbered_steps
-    assert 'components/numbered_governance_steps.html' in alert_guidance
+    assert 'components/operational_alert_response.html' in alert_guidance
+    assert 'components/numbered_governance_steps.html' in alert_response
     assert 'components/operational_flow_steps.html' not in alert_guidance
     assert 'components/reporting_dashboard_workspace.html' in reporting_guidance
     assert 'components/numbered_governance_steps.html' not in reporting_workspace
@@ -227,11 +238,15 @@ def test_dashboard_restores_card_grid_freshness_and_visible_action_flows() -> No
     alert = read('app/templates/kubernetes/dashboard/partials/_alert_response_guidance.html')
     reporting = read('app/templates/kubernetes/dashboard/partials/_reporting_guidance.html')
     reporting_workspace = read('app/templates/components/reporting_dashboard_workspace.html')
+    evidence_tile = read('app/templates/components/operational_evidence_tile.html')
+    alert_response = read('app/templates/components/operational_alert_response.html')
 
     assert "body_classes='grid gap-3 p-5 sm:grid-cols-2'" in freshness
-    assert 'bg-surface-elevated p-3.5' in freshness
+    assert 'components/operational_evidence_tile.html' in freshness
+    assert 'bg-surface-elevated p-3.5' in evidence_tile
     assert 'Recommended Capacity Action Flow' in capacity
     assert 'Controlled Alert Response Flow' in alert
+    assert 'Alert Interpretation & Response' in alert_response
     assert 'components/reporting_dashboard_workspace.html' in reporting
     assert 'Reporting Workflow' in reporting_workspace
     assert 'Scope Bound' in reporting_workspace
@@ -247,7 +262,7 @@ def test_dashboard_restores_card_grid_freshness_and_visible_action_flows() -> No
     assert '<details' not in reporting_workspace
     assert "extra_classes='h-full'" in freshness
     assert "extra_classes='h-full'" in capacity
-    assert "extra_classes='h-full'" in alert
+    assert "extra_classes='h-full'" in alert_response
 
 
 def test_dashboard_tabs_support_canonical_keyboard_navigation() -> None:
