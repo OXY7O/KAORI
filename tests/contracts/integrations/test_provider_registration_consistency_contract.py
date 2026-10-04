@@ -253,3 +253,24 @@ def test_metrics_source_and_alertmanager_detail_configuration_link_to_edit_pages
     assert 'url_for("alertmanager.edit_instance"' in alertmanager
     assert "@metrics_bp.route('/instances/<int:instance_id>/edit'" in prom_routes
     assert "@alertmanager_bp.route('/instances/<int:instance_id>/edit'" in am_routes
+
+
+def test_provider_registration_and_metrics_validation_guidance_stays_concise() -> None:
+    kubernetes_add = read('app/templates/kubernetes/cluster/add.html')
+    kubernetes_edit = read('app/templates/kubernetes/cluster/edit.html')
+    metrics_source = read('app/templates/integrations/observability/metrics_source/instance_form.html')
+    metrics_validation = read(
+        'app/templates/integrations/observability/metrics_source/partials/_detail_validation_content.html'
+    )
+
+    assert 'Review Kubernetes coverage, readiness, and consumer bindings.' in kubernetes_add
+    assert 'Kubernetes owns live cluster state. KAORI governs connection readiness, synchronized evidence, and consumer bindings.' in kubernetes_add
+    assert 'Review Kubernetes coverage, API readiness, and consumer bindings.' in kubernetes_edit
+    assert 'Kubernetes owns live resources and API authorization. KAORI governs provider readiness, normalized evidence, and consumer resolution.' in kubernetes_edit
+
+    assert 'Provider identity is immutable. Bindings use the global Metrics Source contract; adapter and query-language details remain provider-defined.' in metrics_source
+    assert 'One metrics source can serve multiple managed assets through independent bindings and horizon-aware routing.' in metrics_source
+    assert 'executes metric queries; the source platform owns collection and retention. KAORI governs readiness, binding validation, and source resolution.' in metrics_source
+
+    assert 'Validate provider compatibility and the Prometheus HTTP API v1 / PromQL core. Consumer contracts remain in Bindings & Consumers.' in metrics_validation
+    assert 'Core API evidence sets provider readiness; consumer evidence stays with each binding.' in metrics_validation
