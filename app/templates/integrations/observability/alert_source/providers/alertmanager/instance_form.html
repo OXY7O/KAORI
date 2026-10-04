@@ -283,7 +283,7 @@
                 {% if instance %}
                     {% set alertmanager_flow_items = [('Save Changes', 'Update the reusable connection contract and return readiness to Validation Required.'), ('Test Connection', 'Confirm the saved endpoint remains reachable with the selected authentication and TLS settings.'), ('Run Core Validation', 'Rebuild Alertmanager API compatibility and provider readiness evidence.'), ('Review Consumer Bindings', 'Confirm Kubernetes, Object Storage, and future consumers retain independent alert bindings and selectors.')] %}
                     {{ provider_registration_context.render("Alertmanager Configuration Flow",
-                                        "How saved connection changes return to governed operational use.",
+                                        "How saved changes return to governed use.",
                                         alertmanager_flow_items,
                                         "Observability Integrations",
                                         "Review Alertmanager provider coverage, connection readiness, and alert consumer bindings from the observability workspace.",
