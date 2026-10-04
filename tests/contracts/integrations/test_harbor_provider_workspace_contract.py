@@ -142,7 +142,7 @@ def test_harbor_validation_and_authority_copy_is_compact() -> None:
     assert 'Optional follow-on capability evidence observed without affecting readiness.' not in validation
 
 
-def test_harbor_detail_uses_shared_provider_domains_without_premature_inventory_surface() -> None:
+def test_harbor_detail_uses_shared_provider_domains_with_inventory_lifecycle() -> None:
     detail = read('app/templates/integrations/registry/providers/harbor/instance_detail.html')
     configuration = read(
         'app/templates/integrations/registry/providers/harbor/partials/_detail_configuration.html'
@@ -151,13 +151,21 @@ def test_harbor_detail_uses_shared_provider_domains_without_premature_inventory_
         'app/templates/integrations/registry/providers/harbor/partials/_detail_validation.html'
     )
     runtime = read('app/templates/integrations/registry/providers/harbor/partials/_detail_runtime.html')
+    inventory = read('app/templates/integrations/registry/providers/harbor/partials/_detail_scope.html')
 
-    assert "x-data=\"integrationWorkspaceTabs(['configuration', 'validation', 'runtime']" in detail
+    assert "x-data=\"integrationWorkspaceTabs(['configuration', 'validation', 'runtime', 'inventory']" in detail
     assert 'framed_workspace_tabs.render' in detail
-    assert 'Configuration' in detail
-    assert 'Validation & Capabilities' in detail
-    assert 'Runtime & History' in detail
-    assert 'Inventory & Lifecycle' not in detail
+    for label in ('Configuration', 'Validation & Capabilities', 'Runtime & History', 'Inventory & Lifecycle'):
+        assert label in detail
+    assert 'integrations/registry/providers/harbor/partials/_detail_scope.html' in detail
+    assert 'integrations/registry/providers/harbor/partials/_delete_modal.html' in detail
+    assert 'Inventory &amp; Lifecycle Decision' in inventory
+    assert 'Snapshot Freshness' in inventory
+    assert 'Lifecycle Gate' in inventory
+    assert 'KAORI Operational Consumers' in inventory
+    assert 'Bound Observability Sources' in read(
+        'app/templates/integrations/registry/providers/harbor/partials/_binding_registry.html'
+    )
     assert 'provider_detail_posture.render' in detail
     assert 'provider_configuration_contract.render' in configuration
     assert 'connection_validation_header.render' in validation
@@ -324,3 +332,65 @@ def test_harbor_coverage_does_not_force_desktop_horizontal_scroll() -> None:
     assert "table_ui.table_classes('min-w-[" not in coverage
     assert 'table_ui.table_classes()' in coverage
     assert 'class="min-w-0"' in coverage
+
+
+
+def test_harbor_inventory_lifecycle_reuses_asset_owner_contract_without_provider_mutation() -> None:
+    detail = read('app/templates/integrations/registry/providers/harbor/instance_detail.html')
+    inventory = read('app/templates/integrations/registry/providers/harbor/partials/_detail_scope.html')
+    binding_registry = read('app/templates/integrations/registry/providers/harbor/partials/_binding_registry.html')
+    modal = read('app/templates/integrations/registry/providers/harbor/partials/_delete_modal.html')
+    shared_modal = read('app/templates/integrations/components/_asset_owner_delete_modal.html')
+    presentation = read('app/integrations/registry/providers/harbor/application/presentation.py')
+    service = read('app/integrations/registry/providers/harbor/application/service.py')
+    routes = read('app/integrations/registry/providers/harbor/application/routes.py')
+    deletion = read('app/integrations/deletion.py')
+
+    assert 'Inventory & Lifecycle' in detail
+    assert 'data-kaori-harbor-inventory-lifecycle' in inventory
+    assert 'Inventory &amp; Lifecycle Decision' in inventory
+    assert 'Removed With Connection' in inventory
+    assert 'Retained After Removal' in inventory
+    assert 'Next Lifecycle Action' in inventory
+    assert 'Delete Connection' in inventory
+    assert "url_for('harbor.delete_instance'" in inventory
+    assert "url_for('artifact_registry.inventory')" in inventory
+    assert 'asset_owner_delete_modal.render(' in modal
+    assert 'This action cannot be undone.' in shared_modal
+
+    assert "asset_type='registry_instance'" in presentation
+    assert 'build_bound_observability_source_rows(' in presentation
+    assert 'asset_owner_deletion_guard(' in presentation
+    assert 'binding_per_page: int = 5' in presentation
+    assert 'RegistryProject.query' not in presentation
+    assert 'HarborClient(' not in presentation
+
+    assert 'def delete_harbor_instance(' in service
+    assert 'asset_owner_deletion_guard(' in service
+    assert "IntegrationBinding.asset_type == 'registry_instance'" in service
+    assert 'db.session.delete(canonical)' in service
+    assert 'Harbor projects' in routes
+    assert "@harbor_bp.post('/instances/<int:instance_id>/delete')" in routes
+    assert "@harbor_bp.get('/instances/<int:instance_id>/bindings/registry')" in routes
+    assert 'def asset_owner_deletion_guard(' in deletion
+    assert 'JobExecution.scope_type == asset_type' in deletion
+    assert 'asset_owner_sources.render(' in binding_registry
+
+
+def test_harbor_inventory_lifecycle_keeps_artifact_registry_as_detail_owner() -> None:
+    inventory = read('app/templates/integrations/registry/providers/harbor/partials/_detail_scope.html')
+    presentation = read('app/integrations/registry/providers/harbor/application/presentation.py')
+    sync = read('app/artifact_registry/sync.py')
+
+    assert 'Open Artifact Registry' in inventory
+    assert (
+        'Detailed Projects, Repositories, Artifacts, Security, Runtime Usage, Governance, '
+        'and Analytics remain owned by Artifact Registry.'
+    ) in inventory
+    assert "key: int(raw_counts.get(key) or 0)" in presentation
+    for key in ("'projects'", "'repositories'", "'artifacts'", "'tags'"):
+        assert key in presentation
+        assert key in sync
+    assert 'client.' not in inventory
+    assert 'list_projects' not in presentation
+    assert 'list_repositories' not in presentation
