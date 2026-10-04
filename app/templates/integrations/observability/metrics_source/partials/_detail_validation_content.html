@@ -27,7 +27,7 @@
          data-kaori-provider-capability-matrix>
     {% call connection_validation_header.render(
         'Metrics Source Full Validation',
-        'Validate provider compatibility and Prometheus API v1 / PromQL core; consumer contracts stay in Bindings & Consumers.',
+        'Validate compatibility and Prometheus/PromQL core; consumer contracts stay in Bindings & Consumers.',
         icon='scan-search',
         loading_id='metrics-source-validation-loading',
         loading_active=validation_job and validation_job.is_active,
@@ -55,7 +55,7 @@
     {{ provider_job_status.render(validation_job, 'Metrics Source validation running in worker', 'Metrics Source') }}
     <div class="space-y-4 p-4 sm:p-5">
         {{ capability_readiness.render('Metrics Source Provider Readiness',
-                'Core API sets provider readiness; binding evidence stays with each consumer.',
+                'Core APIs define readiness; consumer evidence stays with each binding.',
                 readiness,
                 readiness|replace('_', ' ') |title,
         'Validated Capabilities',
