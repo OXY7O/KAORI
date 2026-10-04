@@ -217,15 +217,9 @@ def _inventory_status(
 ) -> dict[str, str]:
     if state is None or state.status == 'not_collected':
         if eligibility is not None and not eligibility.eligible:
-            if eligibility.readiness == 'blocked':
-                return {
-                    'status': 'blocked',
-                    'label': 'Validation Blocked',
-                    'detail': eligibility.reason,
-                }
             return {
-                'status': 'attention',
-                'label': 'Validation Required',
+                'status': 'blocked' if eligibility.readiness == 'blocked' else 'attention',
+                'label': 'No Committed Inventory',
                 'detail': eligibility.reason,
             }
         return {
