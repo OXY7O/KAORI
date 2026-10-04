@@ -95,7 +95,7 @@ def test_harbor_degraded_full_validation_is_not_presented_as_validation_required
     assert '{% elif readiness == "degraded" %}' in validation
     assert '{% set readiness_label = "Degraded" %}' in validation
     assert '{% set gate_label = "Eligible with Attention" %}' in validation
-    assert 'Required contracts are complete; compatibility remains in KAORI Extended Support.' in validation
+    assert 'Required contracts are complete; release is in Extended Support.' in validation
     assert (
         'Plan an upgrade to a current qualified Harbor release, then rerun Full Validation '
         'to refresh compatibility and readiness evidence.'

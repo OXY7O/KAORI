@@ -15,7 +15,7 @@
 {% elif readiness == "degraded" %}
     {% set readiness_label = "Degraded" %}
     {% set gate_label = "Eligible with Attention" %}
-    {% set gate_body = "Required contracts are complete; compatibility remains in KAORI Extended Support." %}
+    {% set gate_body = "Required contracts are complete; release is in Extended Support." %}
     {% set gate_tone = "warning" %}
     {% set next_action = "Plan an upgrade to a current qualified Harbor release, then rerun Full Validation to refresh compatibility and readiness evidence." %}
 {% elif readiness == "blocked" %}
