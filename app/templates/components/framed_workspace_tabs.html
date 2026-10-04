@@ -15,8 +15,8 @@
   updates can target validation/runtime badges without page-local geometry.
 #}
 {% macro render(tabs, prefix='workspace', aria_label='Workspace Sections') -%}
-<nav class="border-b border-outline-default bg-surface-hover px-4 pt-4 sm:px-5" aria-label="{{ aria_label }}" data-kaori-tab-variant="framed-workspace-v2">
-<div class="flex min-w-max gap-2 overflow-x-auto" role="tablist" aria-label="{{ aria_label }}">
+<nav class="overflow-x-auto overflow-y-hidden border-b border-outline-default bg-surface-hover px-4 pt-4 sm:px-5" aria-label="{{ aria_label }}" data-kaori-tab-variant="framed-workspace-v2">
+<div class="flex min-w-max gap-2" role="tablist" aria-label="{{ aria_label }}">
 {% for tab in tabs %}
 {% set tab_key = tab[0] %}
 {% set tab_label = tab[1] %}
@@ -47,8 +47,8 @@
       (key, label, icon, href, badge)
 #}
 {% macro render_navigation(tabs, active_key, prefix='workspace', aria_label='Workspace Sections', hx_target=none, hx_select=none, hx_swap='outerHTML', hx_push_url='true') -%}
-<nav class="border-b border-outline-default bg-surface-hover px-4 pt-4 sm:px-5" aria-label="{{ aria_label }}" data-kaori-tab-variant="framed-workspace-v2-server">
-<div class="flex min-w-max gap-2 overflow-x-auto">
+<nav class="overflow-x-auto overflow-y-hidden border-b border-outline-default bg-surface-hover px-4 pt-4 sm:px-5" aria-label="{{ aria_label }}" data-kaori-tab-variant="framed-workspace-v2-server">
+<div class="flex min-w-max gap-2">
 {% for tab in tabs %}
 {% set tab_key = tab[0] %}
 {% set tab_label = tab[1] %}
