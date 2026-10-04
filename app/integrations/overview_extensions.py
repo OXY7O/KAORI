@@ -9,7 +9,7 @@ from app.models.kubernetes import KubernetesConnection
 from app.models.metrics_source import MetricsSource
 from app.models.runtime import IntegrationRuntimeObservation
 
-CORE_OVERVIEW_PROVIDERS = frozenset({'container_orchestrator', 'metrics_source', 'alert_source', 'object_storage'})
+SPECIALIZED_OVERVIEW_TYPES = frozenset({'container_orchestrator', 'metrics_source', 'alert_source'})
 
 
 def build_overview_stats(
@@ -66,7 +66,9 @@ def build_overview_stats(
 
 def load_extension_integration_instances() -> list[IntegrationInstance]:
     integration_types = tuple(
-        module.integration_type for module in registry.all() if module.integration_type not in CORE_OVERVIEW_PROVIDERS
+        module.integration_type
+        for module in registry.all()
+        if module.integration_type not in SPECIALIZED_OVERVIEW_TYPES
     )
     if not integration_types:
         return []
