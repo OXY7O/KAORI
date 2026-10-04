@@ -31,7 +31,7 @@
                         <div class="min-w-0">
                             <h3 id="harbor-inventory-lifecycle-decision-title"
                                 class="text-base font-semibold leading-6 text-content-primary">Inventory &amp; Lifecycle Decision</h3>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">Committed snapshot freshness, Registry evidence coverage, observability/reconciliation posture, and deletion guardrails are summarized before detailed ownership evidence.</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Snapshot freshness, Registry evidence, observability, reconciliation, and deletion guardrails at a glance.</p>
                         </div>
                     </div>
                     <div class="flex flex-wrap items-center gap-2 lg:justify-end">
@@ -126,11 +126,6 @@
                         </div>
                     </div>
                     <div class="flex shrink-0 flex-wrap items-center gap-2">
-                        <a href="{{ url_for('artifact_registry.inventory') }}"
-                           class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-4 text-sm font-semibold text-kaori-primary transition hover:bg-kaori-soft dark:text-kaori-accent">
-                            <i data-lucide="boxes" class="h-4 w-4" aria-hidden="true"></i>
-                            Open Artifact Registry
-                        </a>
                         <button type="button"
                                 data-delete-url="{{ url_for('harbor.delete_instance', instance_id=instance.id) }}"
                                 data-delete-name="{{ instance.name }}"
@@ -195,11 +190,6 @@
                         </div>
                     </div>
                     <div class="flex shrink-0 flex-wrap items-center gap-2">
-                        <a href="{{ url_for('artifact_registry.inventory') }}"
-                           class="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-3 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-soft dark:text-kaori-accent">
-                            <i data-lucide="package-search" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                            Open Artifact Registry
-                        </a>
                         <a href="{{ url_for('integrations.observability') }}"
                            class="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-3 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-soft dark:text-kaori-accent">
                             <i data-lucide="activity" class="h-3.5 w-3.5" aria-hidden="true"></i>
