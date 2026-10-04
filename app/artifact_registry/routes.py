@@ -21,6 +21,7 @@ from app.artifact_registry.webhooks import (
     ingest_webhook,
 )
 from app.extensions import limiter
+from app.platform_operations.jobs.dispatcher import JobWorkerUnavailable
 from app.platform_operations.notifications.service import record_operational_activity
 
 artifact_registry_bp = Blueprint('artifact_registry', __name__, url_prefix='/artifact-registry')
@@ -177,6 +178,19 @@ def sync_inventory() -> ResponseReturnValue:
         job, created = enqueue_all_registry_inventory_sync(
             requested_by_user_id=int(current_user.id),
             trigger_type='manual',
+        )
+    except JobWorkerUnavailable as exc:
+        record_operational_activity(
+            user_id=int(current_user.id),
+            event_type='artifact_registry_inventory_sync',
+            status='warning',
+            title='Artifact Registry Worker Unavailable',
+            message=str(exc),
+            detail='Restart the inventory worker so it advertises the Registry inventory task, then retry synchronization.',
+            action_url=url_for('artifact_registry.overview'),
+            action_label='Open Artifact Registry',
+            action_icon='package',
+            queue_feedback=True,
         )
     except NoEligibleRegistryTargets as exc:
         record_operational_activity(
