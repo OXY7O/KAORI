@@ -125,7 +125,7 @@ def test_harbor_validation_and_authority_copy_is_compact() -> None:
     )
 
     assert 'Harbor remains authoritative for native Registry state and policies.' in configuration
-    assert 'Harbor API base URL used for read-only discovery, identity, compatibility, capability checks, and governed Registry evidence.' in configuration
+    assert 'Harbor API base URL for read-only discovery, identity, compatibility, capabilities, and Registry evidence.' in configuration
     assert (
         'Harbor owns Registry state and policy; KAORI owns registration, validation evidence, '
         'runtime observation, governance, and audit.'
@@ -143,6 +143,8 @@ def test_harbor_validation_and_authority_copy_is_compact() -> None:
     )
     assert 'Minimum Harbor API Access Example' in access_reference
     assert 'Open Access Examples' in access_reference
+    assert "setTab(tab) { this.activeTab = tab; }" in access_reference
+    assert "const tabs = ['baseline', 'optional'];" in access_reference
     assert 'Required API reads:' in access_reference
     assert 'GET /api/v2.0/systeminfo' in access_reference
     assert 'Optional Metadata Reader' in access_reference
