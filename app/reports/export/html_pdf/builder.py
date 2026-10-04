@@ -40,7 +40,11 @@ from app.reports.export.html_pdf.storage_analysis import build_storage_analysis_
 from app.reports.export.html_pdf.top_consumers_analysis import build_top_consumers_analysis_presentation
 from app.reports.export.html_pdf.workload_analysis import build_workload_analysis_presentation
 from app.reports.reference import build_report_reference
-from app.reports.scope import OBJECT_STORAGE_SYSTEM_ASSET_TYPE, resolve_report_scope
+from app.reports.scope import (
+    ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE,
+    OBJECT_STORAGE_SYSTEM_ASSET_TYPE,
+    resolve_report_scope,
+)
 
 _SECTION_SOURCE_PATHS: dict[str, tuple[str, ...]] = {
     # Analytics Overview publication sections map to committed payload evidence.
@@ -636,6 +640,8 @@ def _secondary_scope(report: Any) -> str:
     scope_asset_type = str(getattr(report, 'scope_asset_type', '') or '')
     if scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE:
         return 'System Scope'
+    if scope_asset_type == ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE:
+        return 'Integration Scope'
     return sanitize_text(getattr(report, 'namespace', None), fallback='All Namespaces')
 
 
