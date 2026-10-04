@@ -197,3 +197,20 @@ def test_minio_asset_owner_lifecycle_preserves_observability_sources() -> None:
     assert 'asset_owner_deletion_guard(' in service
     assert 'reusable Metrics Source or Alertmanager connections remain retained' in scope
     assert 'Inventory & Lifecycle' in detail
+
+
+
+def test_minio_review_copy_keeps_secret_and_revalidation_guidance_concise() -> None:
+    configuration = read(
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_configuration.html'
+    )
+    validation = read(
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_validation.html'
+    )
+
+    assert 'Secret keys stay encrypted; registration and Full Validation use governed S3 discovery.' in configuration
+    assert (
+        'Revalidate after MinIO release, credential, endpoint, TLS, region, addressing, or S3 API changes.'
+        in validation
+    )
+    assert 'to refresh governed readiness evidence.' not in validation
