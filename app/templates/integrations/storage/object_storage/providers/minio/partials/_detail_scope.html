@@ -15,7 +15,7 @@
                     <div class="min-w-0">
                         <h2 id="minio-inventory-operational-use-title"
                             class="text-base font-semibold text-content-primary">Inventory &amp; Lifecycle</h2>
-                        <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">Review object-storage inventory, KAORI consumers, observability bindings, evidence boundaries, and connection lifecycle in one workspace.</p>
+                        <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">Review inventory, consumers, observability bindings, evidence boundaries, and connection lifecycle.</p>
                     </div>
                 </div>
                 <div class="shrink-0">{{ integration_status(readiness, readiness|replace("_", " ") |title, display="text") }}</div>
@@ -89,7 +89,7 @@
                         </div>
                         {{ integration_ui.palette_icon("shield-alert" if deletion_guard.blocked else "shield-check", "warning" if deletion_guard.blocked else "normal", size="md") }}
                     </div>
-                    <p class="mt-2 text-xs leading-5 text-content-secondary">{{ (deletion_guard.reasons|length) ~ " blocking condition" ~ ("" if deletion_guard.reasons|length == 1 else "s") if deletion_guard.blocked else "No active KAORI job currently blocks connection removal." }}</p>
+                    <p class="mt-2 text-xs leading-5 text-content-secondary">{{ (deletion_guard.reasons|length) ~ " blocking condition" ~ ("" if deletion_guard.reasons|length == 1 else "s") if deletion_guard.blocked else "No active KAORI job blocks removal." }}</p>
                 </article>
             </div>
             <div class="grid gap-px bg-outline-subtle lg:grid-cols-2"
