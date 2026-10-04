@@ -91,3 +91,14 @@ Intentional differences remain explicit: Kubernetes keeps subsection-level lazy 
 The review also removes the redundant Kubernetes Capacity Action Flow callout and aligns the Object Storage Hero action grammar to `Open Object Storage Integrations`.
 
 No provider API access, provider mutation, readiness reinterpretation, recommendation lifecycle, or report lifecycle moved into the dashboard layer. Developer Check, Full Admission, staging PR, deployment, and UAT remain held for explicit human acceptance.
+
+
+## Multi-domain application and projection hardening — 2026-10-05
+
+Issues #924 and #925 harden the Operational Dashboard family for additional domains without introducing a route factory or service inheritance hierarchy.
+
+#924 centralizes stable request mechanics in `app/dashboards/common/operational.py`: canonical tab keys/order, canonical pagination facade over `app/common/pagination.py`, and HTMX request detection. Page-size selectors consume `pagination.allowed_per_page` instead of copying 5/10/25/50 into templates. Domain Blueprints, permissions, readiness, section maps, services, schemas, and provider evidence remain explicit.
+
+#925 normalizes shared presentation projections. Alert rows now expose `title / description / severity / state / age` in every current consumer, and recommendation cards expose `title / description / category / severity / priority / source / rule_key / icon`. Shared templates no longer accept field-name aliases or domain-local recommendation destinations. The Kubernetes Alert Intelligence preview is corrected from three to five rows to match the locked family boundary.
+
+These changes are scalability hardening only. They do not change provider authority, request-time evidence boundaries, mutation ownership, or the intentionally different lazy-loading architecture of current domains.

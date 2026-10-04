@@ -27,6 +27,11 @@ def test_dashboard_recommended_actions_share_intelligence_copy_and_detail_owner(
     object_storage = read('app/templates/storage/object_storage/dashboard/partials/_recommended_actions.html')
     registry = read('app/templates/artifact_registry/partials/_overview_recommended_actions.html')
     shared = read('app/templates/components/operational_recommendation_cards.html')
+    kubernetes_projection = read('app/kubernetes/dashboard/sections/recommendations.py')
+    kubernetes_schema = read('app/kubernetes/dashboard/schema.py')
+    kubernetes_utils = read('app/kubernetes/dashboard/utils.py')
+    object_projection = read('app/storage/object_storage/dashboard/service.py')
+    registry_projection = read('app/artifact_registry/presentation.py')
 
     canonical = 'Top active findings from the Intelligence recommendation catalog.'
     assert canonical in kubernetes
@@ -36,7 +41,44 @@ def test_dashboard_recommended_actions_share_intelligence_copy_and_detail_owner(
         assert 'recommendation_cards.render(' in source
 
     assert 'intelligence.recommendation_details' in shared
+    assert 'action.href' not in shared
     assert 'normalized_priority' in shared
     assert "'Recommended Actions'" in shared
     assert 'analytics.object_storage_capacity' not in object_storage
     assert 'analytics.object_storage_forecast' not in object_storage
+
+
+def test_dashboard_recommendation_projection_has_one_canonical_shape() -> None:
+    kubernetes = read('app/kubernetes/dashboard/sections/recommendations.py')
+    schema = read('app/kubernetes/dashboard/schema.py')
+    utils = read('app/kubernetes/dashboard/utils.py')
+    object_storage = read('app/storage/object_storage/dashboard/service.py')
+    registry = read('app/artifact_registry/presentation.py')
+
+    for token in (
+        'title=',
+        'description=',
+        'category=',
+        'severity=',
+        'icon=',
+        'priority=',
+        'source=',
+        'rule_key=',
+    ):
+        assert token in kubernetes
+    assert 'href=' not in kubernetes
+    assert 'href: str' not in schema
+    assert 'recommendation_href' not in utils
+
+    for source in (object_storage, registry):
+        for field in (
+            "'title':",
+            "'description':",
+            "'category':",
+            "'severity':",
+            "'priority':",
+            "'source':",
+            "'rule_key':",
+            "'icon':",
+        ):
+            assert field in source

@@ -15,6 +15,7 @@ REPORTING_GUIDANCE = DASHBOARD_DIR / 'partials' / '_reporting_guidance.html'
 REPORTING_SUMMARY = DASHBOARD_DIR / 'partials' / '_reporting_summary.html'
 ALERTS_BUILDER = ROOT / 'app' / 'kubernetes' / 'dashboard' / 'sections' / 'alerts.py'
 REPORTING_BUILDER = ROOT / 'app' / 'kubernetes' / 'dashboard' / 'sections' / 'reporting.py'
+RECOMMENDATIONS_BUILDER = ROOT / 'app' / 'kubernetes' / 'dashboard' / 'sections' / 'recommendations.py'
 OBJECT_DASHBOARD_DIR = ROOT / 'app' / 'templates' / 'storage' / 'object_storage' / 'dashboard'
 OBJECT_CONTENT = OBJECT_DASHBOARD_DIR / 'partials' / '_content.html'
 OBJECT_HERO = OBJECT_DASHBOARD_DIR / 'partials' / '_hero.html'
@@ -417,6 +418,7 @@ def verify() -> None:
     reporting_summary = _read(REPORTING_SUMMARY)
     alerts_builder = _read(ALERTS_BUILDER)
     reporting_builder = _read(REPORTING_BUILDER)
+    recommendations_builder = _read(RECOMMENDATIONS_BUILDER)
     object_content = _read(OBJECT_CONTENT)
     object_hero = _read(OBJECT_HERO)
     object_signal_overview = _read(OBJECT_SIGNAL_OVERVIEW)
@@ -707,9 +709,24 @@ def verify() -> None:
             'data-kaori-alert-insight="stacked"',
             'data-kaori-alert-insight-metrics="dedicated-row"',
             'Open Alert Intelligence',
+            'alert.title',
+            'alert.description',
+            'alert.severity',
+            'alert.state',
+            'alert.age',
         ),
         'shared Alerts Summary workspace',
     )
+    for retired in (
+        'row_title_key',
+        'row_description_key',
+        'row_severity_key',
+        'row_state_key',
+        'row_age_key',
+        'row_age_datetime',
+    ):
+        if retired in alert_summary_workspace:
+            raise AssertionError(f'shared Alerts Summary retains domain adapter API: {retired}')
     for owner, source, row_token in (
         ('Kubernetes Alerts Summary', alert_summary, 'rows=dashboard.alerts_snapshot.items'),
         ('Object Storage Alerts Summary', object_alert_summary, 'rows=dashboard.alerts.rows'),
@@ -731,6 +748,11 @@ def verify() -> None:
         'Kubernetes Alerts Summary snapshot builder',
     )
     _require(
+        service,
+        ('for case in cases[:5]',),
+        'Kubernetes Alert Intelligence dashboard preview',
+    )
+    _require(
         object_dashboard_service,
         ("for case in posture['cases'][:5]",),
         'Object Storage Alerts Summary snapshot builder',
@@ -738,6 +760,7 @@ def verify() -> None:
     for owner, source in (
         ('shared Alerts Summary template', alert_summary_workspace),
         ('Kubernetes Alerts Summary builder', alerts_builder),
+        ('Kubernetes dashboard service', service),
         ('Object Storage Alerts Summary builder', object_dashboard_service),
     ):
         if '[:3]' in source and 'alert' in owner.lower():
@@ -826,6 +849,29 @@ def verify() -> None:
         ),
         'shared Operational Dashboard recommendation cards',
     )
+    if 'action.href' in recommendation_cards:
+        raise AssertionError('shared recommendation renderer must own the canonical Intelligence destination')
+    _require(
+        recommendations_builder,
+        (
+            'title=',
+            'description=',
+            'category=',
+            'severity=',
+            'icon=',
+            'priority=',
+            'source=',
+            'rule_key=',
+        ),
+        'Kubernetes recommendation projection',
+    )
+    if 'href=' in recommendations_builder or 'href: str' in schema or 'recommendation_href' in utils:
+        raise AssertionError('Kubernetes recommendation projection retains a domain-local destination')
+    for owner, source in (
+        ('Object Storage alert projection', object_dashboard_service),
+        ('Artifact Registry alert projection', artifact_presentation),
+    ):
+        _require(source, ("'title':", "'description':", "'severity':", "'state':", "'age':"), owner)
     for owner, source in (
         ('Kubernetes Recommended Actions', _read(DASHBOARD_DIR / 'partials' / '_recommended_actions.html')),
         ('Object Storage Recommended Actions', _read(OBJECT_DASHBOARD_DIR / 'partials' / '_recommended_actions.html')),

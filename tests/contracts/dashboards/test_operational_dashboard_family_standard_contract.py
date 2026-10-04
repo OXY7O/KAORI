@@ -240,6 +240,7 @@ def test_response_and_reporting_flows_use_current_shared_governance_owners() -> 
 def test_alerts_summary_is_bounded_to_five_in_both_reference_dashboards() -> None:
     kubernetes_summary = read('app/templates/kubernetes/dashboard/partials/_alerts_summary.html')
     kubernetes_builder = read('app/kubernetes/dashboard/sections/alerts.py')
+    kubernetes_service = read('app/kubernetes/dashboard/service.py')
     object_summary = read('app/templates/storage/object_storage/dashboard/partials/_alerts_summary.html')
     object_service = read('app/storage/object_storage/dashboard/service.py')
 
@@ -247,11 +248,13 @@ def test_alerts_summary_is_bounded_to_five_in_both_reference_dashboards() -> Non
     assert 'rows[:5]' in shared_alert_summary
     assert 'rows=dashboard.alerts_snapshot.items' in kubernetes_summary
     assert 'for item in raw_items[:5]' in kubernetes_builder
+    assert 'for case in cases[:5]' in kubernetes_service
     assert 'rows=dashboard.alerts.rows' in object_summary
     assert "for case in posture['cases'][:5]" in object_service
 
-    for source in (shared_alert_summary, kubernetes_builder, object_service):
+    for source in (shared_alert_summary, kubernetes_builder, kubernetes_service, object_service):
         assert '[:6]' not in source
+        assert '[:3]' not in source
 
 
 def test_recent_report_activity_is_bounded_to_four_in_both_reference_dashboards() -> None:

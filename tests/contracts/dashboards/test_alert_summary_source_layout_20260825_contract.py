@@ -19,6 +19,7 @@ def test_dashboard_alert_summary_preview_is_bounded_to_five_recent_cases() -> No
     shared = read('app/templates/components/operational_alert_summary.html')
     kubernetes_template = read('app/templates/kubernetes/dashboard/partials/_alerts_summary.html')
     kubernetes_builder = read('app/kubernetes/dashboard/sections/alerts.py')
+    kubernetes_service = read('app/kubernetes/dashboard/service.py')
     object_template = read('app/templates/storage/object_storage/dashboard/partials/_alerts_summary.html')
     object_service = read('app/storage/object_storage/dashboard/service.py')
 
@@ -26,10 +27,16 @@ def test_dashboard_alert_summary_preview_is_bounded_to_five_recent_cases() -> No
     assert 'up to five recent cases' in kubernetes_template
     assert 'rows=dashboard.alerts_snapshot.items' in kubernetes_template
     assert 'for item in raw_items[:5]' in kubernetes_builder
+    assert 'for case in cases[:5]' in kubernetes_service
 
     assert 'up to five recent cases' in object_template
     assert 'rows=dashboard.alerts.rows' in object_template
     assert "for case in posture['cases'][:5]" in object_service
 
-    for source in (shared, kubernetes_builder, object_service):
+    for source in (shared, kubernetes_builder, kubernetes_service, object_service):
         assert '[:3]' not in source
+
+    for token in ('alert.title', 'alert.description', 'alert.severity', 'alert.state', 'alert.age'):
+        assert token in shared
+    for retired in ('row_title_key', 'row_description_key', 'row_severity_key', 'row_state_key', 'row_age_key', 'row_age_datetime'):
+        assert retired not in shared
