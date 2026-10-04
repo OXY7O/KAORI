@@ -155,11 +155,12 @@ def test_optional_capability_gaps_are_separate_from_core_readiness() -> None:
     assert "'Optional Gap' if optional_gap else 'Required Block'" in registry
     assert 'Optional Capability Unavailable' in registry
     assert (
-        'Core Kubernetes readiness is unaffected; only approved workflows that require this contract remain unavailable.'
+        'This optional Tenant capability is unavailable. Core readiness is unaffected; '
+        'no supported API contract currently satisfies the required verbs.'
         in registry
     )
     assert 'Cluster-scoped optional governance contract' in registry
-    assert 'contract-specific access required by an approved governed workflow' in registry
+    assert 'workflow-required access; do not broaden the baseline ClusterRole' in registry
 
 
 def test_capability_modal_does_not_guess_commands_without_selected_contract() -> None:
@@ -169,5 +170,20 @@ def test_capability_modal_does_not_guess_commands_without_selected_contract() ->
     assert "row.key[:17] == 'tenant.admission.'" in registry
     assert 'data-kaori-capability-verification-unavailable' in registry
     assert 'No executable command is generated without a selected API/resource contract.' in registry
-    assert 'Full Validation did not select an API/resource contract for this optional capability.' in registry
+    assert 'No API/resource contract was selected. Enable the approved workflow, then rerun Full Validation.' in registry
     assert 'Optional admission-governance access is cluster scoped' in registry
+
+
+def test_capability_copy_keeps_optional_governance_concise() -> None:
+    workspace = _source()
+    registry = REGISTRY.read_text(encoding='utf-8')
+
+    assert (
+        'Required API/RBAC contracts are usable; optional Tenant access stays workflow-scoped.'
+        in workspace
+    )
+    assert 'Optional workflows must establish their own approved access boundary.' in registry
+    assert (
+        'Full Validation owns API/RBAC readiness; runtime and inventory remain separate.'
+        in registry
+    )

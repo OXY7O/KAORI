@@ -69,7 +69,8 @@ def test_runtime_observation_boundary_remains_explicit_without_duplicate_error_c
     source = _source()
     assert 'data-kaori-runtime-observation-boundary' in source
     assert (
-        'Runtime Refresh owns reachability, latency, and current health; Full Validation owns API discovery' in source
+        'Runtime Refresh owns live health; Full Validation owns API, compatibility, capabilities, and RBAC evidence.'
+        in source
     )
-    assert 'Full Validation owns API discovery, compatibility, capability contracts, and effective RBAC.' in source
+    assert 'Detailed diagnostics stay in Runtime Observations.' in source
     assert 'runtime_state.message' not in source

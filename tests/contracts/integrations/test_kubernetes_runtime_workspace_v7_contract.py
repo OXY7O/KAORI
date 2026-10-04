@@ -58,7 +58,7 @@ def test_runtime_copy_and_extended_lifecycle_summary_are_compact() -> None:
         'Runtime health gates current operation; Full Validation readiness remains independently evaluated.'
     ) in source
     assert 'uses KAORI Extended support. Upgrade recommended.' in messages
-    assert 'Optional capability access is limited; core Kubernetes readiness is unaffected.' in messages
+    assert "return 'Optional gaps do not affect core readiness.'" in messages
 
     presentation = (ROOT / 'app/integrations/runtime/presentation.py').read_text(encoding='utf-8')
     assert 'def _compact_kubernetes_extended_summary(' in presentation
