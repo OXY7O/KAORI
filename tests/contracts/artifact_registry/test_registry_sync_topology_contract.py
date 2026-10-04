@@ -73,3 +73,26 @@ def test_registry_worker_task_registration_matches_separated_jobs() -> None:
         'app.artifact_registry.correlation_tasks.materialize_registry_runtime_correlation',
     ):
         assert task in config
+
+def test_harbor_security_uses_scan_completion_as_primary_incremental_marker() -> None:
+    harbor_security = (
+        ROOT / 'app/integrations/registry/providers/harbor/security.py'
+    ).read_text()
+
+    identity = harbor_security.split('def _scan_identity_changed', 1)[1].split(
+        'def collect_harbor_security',
+        1,
+    )[0]
+    assert 'target.scan_completed_at is not None or scan_completed_at is not None' in identity
+    assert 'return target.scan_completed_at != scan_completed_at' in identity
+
+
+def test_registry_evidence_jobs_fail_terminally_when_every_provider_fails() -> None:
+    security_task = (ROOT / 'app/artifact_registry/security/tasks.py').read_text()
+    governance_task = (ROOT / 'app/artifact_registry/governance_tasks.py').read_text()
+
+    assert 'All eligible Registry providers failed security synchronization.' in security_task
+    assert 'All eligible Registry providers failed governance synchronization.' in governance_task
+    assert "context.fail(" in security_task
+    assert "context.fail(" in governance_task
+
