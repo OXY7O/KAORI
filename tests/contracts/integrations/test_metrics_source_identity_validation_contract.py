@@ -77,7 +77,7 @@ def test_provider_capability_registry_stays_core_only_and_binding_results_stay_w
     assert 'Provider Core Capability' in registry
     assert 'Consumer Contract Evidence' not in registry
     assert 'Consumer contracts stay in Bindings & Consumers.' in validation
-    assert 'Core API evidence sets provider readiness; consumer evidence stays binding-scoped.' in validation
+    assert 'Core APIs set readiness; bindings own consumer evidence.' in validation
     assert '_binding_validation_result.html' in binding_registry
     assert 'View More' in binding_registry
     assert 'data-kaori-binding-view-more' in binding_registry
