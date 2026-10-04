@@ -144,14 +144,20 @@ def test_optional_capability_gaps_are_separate_from_core_readiness() -> None:
     assert "{% set capability_readiness_state = 'blocked' %}" in workspace
     assert "{% elif legacy_features %}" in workspace
     assert "{% set capability_readiness_state = 'ready' %}" in workspace
-    assert 'Core required API and RBAC evidence for Kubernetes workspaces; optional Tenant contracts are tracked separately.' in workspace
+    assert (
+        'Core required API and RBAC evidence for Kubernetes workspaces; optional Tenant contracts are tracked separately.'
+        in workspace
+    )
     assert 'Why Provider Validation Is {{ validation_state.readiness_label }}' in workspace
     assert "' required blocks'" in workspace
     assert "' optional gaps'" in workspace
     assert '>Unavailable / Gap</option>' in registry
     assert "'Optional Gap' if optional_gap else 'Required Block'" in registry
     assert 'Optional Capability Unavailable' in registry
-    assert 'Core Kubernetes readiness is unaffected; only approved workflows that require this contract remain unavailable.' in registry
+    assert (
+        'Core Kubernetes readiness is unaffected; only approved workflows that require this contract remain unavailable.'
+        in registry
+    )
     assert 'Cluster-scoped optional governance contract' in registry
     assert 'contract-specific access required by an approved governed workflow' in registry
 
