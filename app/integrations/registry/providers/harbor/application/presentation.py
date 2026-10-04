@@ -230,17 +230,17 @@ def _inventory_status(
             }
         return {
             'status': 'unknown',
-            'label': 'Not Collected',
+            'label': 'No Committed Inventory',
             'detail': 'No committed inventory snapshot; run Artifact Registry inventory synchronization.',
         }
     if state.status == 'ready':
         observed = present_user_datetime(state.last_observed_at, empty='Committed')
-        return {'status': 'ready', 'label': 'Ready', 'detail': observed}
+        return {'status': 'ready', 'label': 'Committed Snapshot', 'detail': observed}
     if state.status == 'failed':
-        return {'status': 'blocked', 'label': 'Failed', 'detail': 'Last reconciliation failed'}
+        return {'status': 'blocked', 'label': 'Collection Failed', 'detail': 'Last reconciliation failed'}
     if state.status == 'collecting':
         return {'status': 'attention', 'label': 'Collecting', 'detail': 'Reconciliation in progress'}
-    return {'status': 'unknown', 'label': 'Not Collected', 'detail': 'No committed inventory snapshot'}
+    return {'status': 'unknown', 'label': 'No Committed Inventory', 'detail': 'No committed inventory snapshot'}
 
 
 def _metrics_status(metrics: dict[str, object]) -> dict[str, str]:
