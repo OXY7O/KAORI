@@ -176,8 +176,10 @@ def test_registry_domain_exposes_parent_context_guidance() -> None:
 def test_harbor_frontpage_hero_uses_canonical_copy_budget() -> None:
     index = read('app/templates/integrations/registry/providers/harbor/index.html')
 
-    assert 'Register Harbor connections with governed Registry validation and evidence.' in index
+    assert 'Register Harbor connections with governed readiness and evidence.' in index
     assert (
         'Register and validate reusable Harbor Registry connections while Harbor remains authoritative '
         'for native registry state.'
     ) not in index
+    assert len('Register Harbor connections with governed readiness and evidence.') <= 68
+    assert len('Register Harbor connections with governed readiness and evidence.'.split()) == 8
