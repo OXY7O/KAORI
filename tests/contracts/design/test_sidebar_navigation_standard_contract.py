@@ -168,8 +168,7 @@ def test_analytics_overview_keeps_route_navigation_and_subordinate_summary_tabs(
     overview = _read('app/templates/kubernetes/analytics/overview/index.html')
 
     assert "capability_key == 'kubernetes_analytics' and resolved_endpoint == 'analytics.overview'" not in model
-    assert '{% block page_capability_navigation %}' in overview
-    assert '{% if dependency_blocker %}{{ super() }}{% endif %}' in overview
+    assert '{% block page_capability_navigation %}' not in overview
     assert "content_tabs.render_buttons('overview-content'" in overview
 
 
@@ -227,6 +226,5 @@ def test_kubernetes_analytics_overview_always_uses_layout_route_navigation() -> 
 
     assert '{% block page_capability_navigation %}' in layout
     assert "capability_key == 'kubernetes_analytics' and resolved_endpoint == 'analytics.overview'" not in model
-    assert '{% block page_capability_navigation %}' in overview
-    assert '{% if dependency_blocker %}{{ super() }}{% endif %}' in overview
+    assert '{% block page_capability_navigation %}' not in overview
     assert "content_tabs.render_buttons('overview-content'" in overview
