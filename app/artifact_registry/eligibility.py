@@ -81,7 +81,7 @@ def registry_inventory_eligibility(
             'Extended Support compatible-with-warnings result.'
         )
     elif runtime_readiness == 'validation_required':
-        reason = 'Run Full Validation before Artifact Registry inventory synchronization.'
+        reason = 'Run Full Validation before Registry inventory sync.'
     elif runtime_readiness == 'blocked':
         reason = 'Registry provider readiness is blocked; resolve validation failures before synchronization.'
     else:
