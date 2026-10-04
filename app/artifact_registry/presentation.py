@@ -11,13 +11,13 @@ from app.models.integration import IntegrationInstance
 from app.models.registry import (
     RegistryArtifact,
     RegistryCollectionState,
-    RegistryProject,
-    RegistryRepository,
-    RegistryWorkloadBinding,
     RegistryGovernanceState,
+    RegistryProject,
     RegistryProjectGovernance,
     RegistryReplicationPolicy,
+    RegistryRepository,
     RegistryWebhookEndpoint,
+    RegistryWorkloadBinding,
 )
 
 FRESHNESS_HOURS = 24

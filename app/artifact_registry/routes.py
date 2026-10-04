@@ -5,7 +5,14 @@ from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
 from app.access.rbac.decorators import permission_required
-from app.artifact_registry.presentation import build_analytics, build_governance, build_inventory, build_overview, build_runtime_usage, build_security
+from app.artifact_registry.presentation import (
+    build_analytics,
+    build_governance,
+    build_inventory,
+    build_overview,
+    build_runtime_usage,
+    build_security,
+)
 from app.artifact_registry.sync_jobs import NoEligibleRegistryTargets, enqueue_all_registry_inventory_sync
 from app.artifact_registry.webhooks import (
     RegistryWebhookAuthError,

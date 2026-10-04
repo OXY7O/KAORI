@@ -30,6 +30,7 @@ ARTIFACT_HERO = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / 
 ARTIFACT_SIGNAL_OVERVIEW = (
     ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_signal_overview.html'
 )
+ARTIFACT_REPORTING = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_reporting.html'
 ARTIFACT_ROUTES = ROOT / 'app' / 'artifact_registry' / 'routes.py'
 ARTIFACT_PRESENTATION = ROOT / 'app' / 'artifact_registry' / 'presentation.py'
 PAGE_HERO = ROOT / 'app' / 'templates' / 'components' / 'page_hero.html'
@@ -207,6 +208,7 @@ def _verify_artifact_registry_dashboard(
     content: str,
     hero: str,
     signal_overview: str,
+    reporting: str,
     routes: str,
     presentation: str,
 ) -> None:
@@ -269,6 +271,15 @@ def _verify_artifact_registry_dashboard(
         'Artifact Registry scope and signal overview',
     )
     _require(
+        reporting,
+        (
+            'components/reporting_dashboard_workspace.html',
+            'reporting_workspace.guidance(',
+            "url_for('reports.overview')",
+        ),
+        'Artifact Registry reporting dashboard handoff',
+    )
+    _require(
         routes,
         (
             "@permission_required('artifact_registry.view')",
@@ -323,6 +334,7 @@ def verify() -> None:
     artifact_content = _read(ARTIFACT_CONTENT)
     artifact_hero = _read(ARTIFACT_HERO)
     artifact_signal_overview = _read(ARTIFACT_SIGNAL_OVERVIEW)
+    artifact_reporting = _read(ARTIFACT_REPORTING)
     artifact_routes = _read(ARTIFACT_ROUTES)
     artifact_presentation = _read(ARTIFACT_PRESENTATION)
     page_hero = _read(PAGE_HERO)
@@ -359,6 +371,7 @@ def verify() -> None:
         artifact_content,
         artifact_hero,
         artifact_signal_overview,
+        artifact_reporting,
         artifact_routes,
         artifact_presentation,
     )

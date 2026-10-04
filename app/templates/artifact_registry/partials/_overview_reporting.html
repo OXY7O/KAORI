@@ -1,43 +1,37 @@
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/peer_content_grid.html" as peer_content_grid %}
+{% import "components/reporting_dashboard_workspace.html" as reporting_workspace %}
 {% import "components/section_link_button.html" as section_link_button %}
 <div class="{{ peer_content_grid.layout_classes() }}">
     <div class="{{ peer_content_grid.column_classes('primary', 'seven-five') }}">
-        {% call operational_section_card.render(
-            'Reporting Evidence Boundary',
-            'Artifact Registry supplies committed Registry evidence; the Reports domain owns generated report lifecycle.',
-            'file-check-2',
-            body_classes='p-5',
-            extra_classes='h-full'
-            ) %}
-            <dl class="grid gap-3 sm:grid-cols-3">
-                <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4">
-                    <dt class="text-xs font-semibold text-content-muted">Active Scope</dt>
-                    <dd class="mt-2 text-sm font-semibold text-content-primary">{{ overview.scope_label }}</dd>
-                </div>
-                <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4">
-                    <dt class="text-xs font-semibold text-content-muted">Committed Snapshots</dt>
-                    <dd class="mt-2 text-sm font-semibold text-content-primary">{{ overview.snapshot_count }}</dd>
-                </div>
-                <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4">
-                    <dt class="text-xs font-semibold text-content-muted">Latest Commit</dt>
-                    <dd class="mt-2 text-sm font-semibold text-content-primary">
-                        {{ overview.latest_committed_at|user_datetime if overview.latest_committed_at else 'Not Collected' }}
-                    </dd>
-                </div>
-            </dl>
-        {% endcall %}
+        {{ reporting_workspace.guidance(
+            overview.scope_label,
+            'committed Artifact Registry snapshots',
+            'Registry provider scope'
+        ) }}
     </div>
     <div class="{{ peer_content_grid.column_classes('secondary', 'seven-five') }}">
         {% call operational_section_card.render(
             'Reporting Ownership',
-            'Use the canonical Reports workspace for report definitions, generation, schedules, retained artifacts, and audit.',
+            'Reports owns definitions, generation, schedules, retained artifacts, and audit.',
             'file-text',
-            body_classes='p-5',
+            body_classes='space-y-4 p-5',
             extra_classes='h-full'
             ) %}
-            <p class="text-sm leading-6 text-content-secondary">Artifact Registry does not create a parallel reporting subsystem. Report generation consumes governed KAORI evidence through the Reports domain.</p>
-            <div class="mt-4">
+            <div class="grid gap-3 sm:grid-cols-2">
+                <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4">
+                    <p class="text-xs font-semibold text-content-muted">Committed Snapshots</p>
+                    <p class="mt-2 text-xl font-semibold text-content-primary">{{ overview.snapshot_count }}</p>
+                </div>
+                <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4">
+                    <p class="text-xs font-semibold text-content-muted">Latest Commit</p>
+                    <p class="mt-2 text-sm font-semibold text-content-primary">
+                        {{ overview.latest_committed_at|user_datetime if overview.latest_committed_at else 'Not Collected' }}
+                    </p>
+                </div>
+            </div>
+            <p class="text-sm leading-6 text-content-secondary">Artifact Registry does not create a parallel reporting subsystem. Generated-report lifecycle remains in Reports.</p>
+            <div>
                 {{ section_link_button.render(url_for('reports.overview'), 'Open Reports', icon='arrow-up-right') }}
             </div>
         {% endcall %}

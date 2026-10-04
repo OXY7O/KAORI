@@ -64,6 +64,9 @@ def test_artifact_registry_overview_reuses_shared_sections_and_domain_handoffs()
     assert "url_for('artifact_registry.security')" in signals
     assert "url_for('artifact_registry.runtime')" in signals
     assert "url_for('artifact_registry.governance')" in signals
+    assert "url_for('intelligence.recommendations')" in signals
+    assert 'components/reporting_dashboard_workspace.html' in reporting
+    assert 'reporting_workspace.guidance(' in reporting
     assert "url_for('reports.overview')" in reporting
     assert 'does not create a parallel reporting subsystem' in reporting
 
