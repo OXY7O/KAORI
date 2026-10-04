@@ -8,7 +8,9 @@ from typing import Any
 from app.artifact_registry.contracts import RegistryInventoryEvidence
 
 
+InventoryProgressCallback = Callable[[int, int, str], None]
 CollectorCallable = Callable[[Any], RegistryInventoryEvidence]
+ProgressCollectorCallable = Callable[[Any, InventoryProgressCallback | None], RegistryInventoryEvidence]
 
 
 @dataclass(frozen=True, slots=True)
@@ -17,6 +19,7 @@ class RegistryInventoryCollector:
 
     provider_key: str
     collect: CollectorCallable
+    collect_with_progress: ProgressCollectorCallable | None = None
 
 
 _COLLECTORS: dict[str, RegistryInventoryCollector] = {}
