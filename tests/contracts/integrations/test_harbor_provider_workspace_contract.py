@@ -46,7 +46,7 @@ def test_harbor_authentication_fields_follow_selected_auth_mode() -> None:
     form = read('app/templates/integrations/registry/providers/harbor/instance_form.html')
     forms = read('app/integrations/registry/providers/harbor/application/forms.py')
 
-    assert "authType: {{ (form.auth_type.data or 'basic')|tojson }}" in form
+    assert "authType: {{ (form.auth_type.data or 'basic')|tojson|forceescape }}" in form
     assert 'x_model="authType"' in form
     assert 'class="contents"' not in form
     assert form.count('x-show="authType === \'basic\'"') == 2
@@ -60,6 +60,9 @@ def test_harbor_authentication_fields_follow_selected_auth_mode() -> None:
     assert "if auth_type == 'anonymous':" in forms
     assert 'username = None' in forms
     assert 'password = None' in forms
+    registration_actions = read('app/templates/integrations/components/_provider_registration_actions.html')
+    assert 'Connection Test Required' in registration_actions
+    assert 'Complete Test Connection before registration.' in registration_actions
 
 
 def test_harbor_registration_copy_is_concise_and_preserves_authority_boundaries() -> None:
