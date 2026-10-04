@@ -11,6 +11,7 @@ from app.reports.catalog import (
     get_report_type_spec,
     validate_report_instance,
 )
+from app.reports.export.payloads.artifact_registry_inventory import get_report_artifact_registry_inventory_payload
 from app.reports.export.payloads.inventory import get_report_kubernetes_inventory_payload
 from app.reports.export.payloads.object_storage_inventory import get_report_object_storage_inventory_payload
 from app.reports.export.payloads.tls_inventory import get_report_tls_inventory_payload
@@ -20,7 +21,11 @@ from app.reports.export.xlsx.standard import (
     get_inventory_workbook_profile,
 )
 from app.reports.reference import build_report_reference
-from app.reports.scope import OBJECT_STORAGE_SYSTEM_ASSET_TYPE, resolve_report_scope
+from app.reports.scope import (
+    ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE,
+    OBJECT_STORAGE_SYSTEM_ASSET_TYPE,
+    resolve_report_scope,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -158,6 +163,8 @@ def collect_inventory_payload(report: Report) -> dict[str, Any]:
     validate_report_instance(report)
     if report.report_type == 'object_storage_inventory':
         return get_report_object_storage_inventory_payload(report)
+    if report.report_type == 'artifact_registry_inventory':
+        return get_report_artifact_registry_inventory_payload(report)
     if report.report_type == 'tls_inventory':
         return get_report_tls_inventory_payload(report)
     return get_report_kubernetes_inventory_payload(report)
@@ -176,6 +183,7 @@ def build_inventory_export_context(
 
     generated_at = generated_at or datetime.now(UTC)
     object_storage_scope = scope.asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE
+    artifact_registry_scope = scope.asset_type == ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE
     return InventoryExportContext(
         report_id=build_report_reference(report, generated_at=generated_at),
         report_name=report.name,
@@ -183,13 +191,21 @@ def build_inventory_export_context(
         generated_at=generated_at,
         generated_by=generated_by_label(report),
         cluster_scope=scope.label,
-        namespace_scope='Not Applicable' if object_storage_scope else (report.namespace or 'All Namespaces'),
+        namespace_scope=(
+            'Not Applicable'
+            if object_storage_scope or artifact_registry_scope
+            else (report.namespace or 'All Namespaces')
+        ),
         period_label=PERIOD_LABELS.get(report.period, report.period or 'Current Inventory Snapshot'),
         data_cutoff=payload.get('data_cutoff') or payload.get('collected_at') or generated_at,
         source_label=(
             str(payload.get('source_label') or 'Object Storage Committed Inventory')
             if object_storage_scope
-            else 'Kubernetes Committed Inventory'
+            else (
+                str(payload.get('source_label') or 'Artifact Registry Committed Inventory')
+                if artifact_registry_scope
+                else 'Kubernetes Committed Inventory'
+            )
         ),
         scope_label=scope.scope_label,
         scope_asset_type=scope.asset_type,
