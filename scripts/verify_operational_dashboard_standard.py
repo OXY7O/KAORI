@@ -31,6 +31,8 @@ ARTIFACT_SIGNAL_OVERVIEW = (
     ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_signal_overview.html'
 )
 ARTIFACT_REPORTING = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_reporting.html'
+ARTIFACT_CAPACITY = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_capacity.html'
+ARTIFACT_SIGNALS = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_signals.html'
 ARTIFACT_OPERATIONS = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_operations.html'
 ARTIFACT_PROVIDER_HEALTH = (
     ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_provider_health.html'
@@ -213,6 +215,8 @@ def _verify_artifact_registry_dashboard(
     hero: str,
     signal_overview: str,
     reporting: str,
+    capacity: str,
+    signals: str,
     operations: str,
     provider_health: str,
     routes: str,
@@ -294,6 +298,8 @@ def _verify_artifact_registry_dashboard(
             'Security Signals',
             'Snapshot Sources',
             'components/pagination.html',
+            "loading_bar_id='artifact-registry-provider-health-loading'",
+            'hx-indicator="#artifact-registry-provider-health-loading"',
             'Inventory',
             'Metrics Source',
             'Security Evidence',
@@ -301,14 +307,39 @@ def _verify_artifact_registry_dashboard(
         'Artifact Registry provider health register',
     )
     _require(
+        capacity,
+        (
+            'components/peer_content_grid.html',
+            'components/operational_callout.html',
+            'Inventory Footprint & Demand',
+            'Analytics Handoff',
+            'unsupported provider capacity is not inferred',
+        ),
+        'Artifact Registry capacity peer dashboard grammar',
+    )
+    _require(
+        signals,
+        (
+            'components/peer_content_grid.html',
+            'Security & Runtime Signals',
+            'Evidence & Actions',
+            "overview.critical_findings if overview.scanned_count else 'N/A'",
+            "overview.high_findings if overview.scanned_count else 'N/A'",
+        ),
+        'Artifact Registry signals peer dashboard grammar',
+    )
+    _require(
         reporting,
         (
             'components/reporting_dashboard_workspace.html',
+            'Reporting Evidence',
             'reporting_workspace.guidance(',
             "url_for('reports.overview')",
         ),
         'Artifact Registry reporting dashboard handoff',
     )
+    if reporting.index('Reporting Evidence') >= reporting.index('reporting_workspace.guidance('):
+        raise AssertionError('Artifact Registry reporting must present evidence before governed guidance')
     _require(
         routes,
         (
@@ -326,6 +357,10 @@ def _verify_artifact_registry_dashboard(
             'RegistryProject.integration_instance_id == selected_provider.id',
             "registry_metrics_readiness(provider).get('status') == 'ready'",
             "'scope_label': scope_label",
+            "'label': 'Inventory Snapshot'",
+            "'label': 'Metrics Snapshot'",
+            "'label': 'Security Snapshot'",
+            "'label': 'Analytics Snapshot'",
             "'kpis': [",
         ),
         'Artifact Registry committed dashboard projection',
@@ -365,6 +400,8 @@ def verify() -> None:
     artifact_hero = _read(ARTIFACT_HERO)
     artifact_signal_overview = _read(ARTIFACT_SIGNAL_OVERVIEW)
     artifact_reporting = _read(ARTIFACT_REPORTING)
+    artifact_capacity = _read(ARTIFACT_CAPACITY)
+    artifact_signals = _read(ARTIFACT_SIGNALS)
     artifact_operations = _read(ARTIFACT_OPERATIONS)
     artifact_provider_health = _read(ARTIFACT_PROVIDER_HEALTH)
     artifact_routes = _read(ARTIFACT_ROUTES)
@@ -404,6 +441,8 @@ def verify() -> None:
         artifact_hero,
         artifact_signal_overview,
         artifact_reporting,
+        artifact_capacity,
+        artifact_signals,
         artifact_operations,
         artifact_provider_health,
         artifact_routes,
