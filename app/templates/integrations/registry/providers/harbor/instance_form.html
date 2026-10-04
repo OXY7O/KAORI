@@ -123,24 +123,24 @@
                             <div class="grid gap-4 md:grid-cols-2">
                                 <label class="block">
                                     <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.auth_type.label.text }}</span>
-                                    {{ form.auth_type(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", x_model="authType") }}
+                                    {{ form.auth_type(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", **{'x-model':'authType'}) }}
                                 </label>
                                 <label class="block">
                                     <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.timeout.label.text }}</span>
                                     {{ form.timeout(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20") }}
                                 </label>
-                                <label class="block"
-                                       x-show="authType === 'basic'"
-                                       x-cloak>
+                            </div>
+                            <div class="mt-4 grid gap-4 md:grid-cols-2"
+                                 x-show="authType === 'basic'"
+                                 x-cloak>
+                                <label class="block">
                                     <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.username.label.text }}</span>
-                                    {{ form.username(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autocomplete="off") }}
+                                    {{ form.username(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autocomplete="off", **{':required':"authType === 'basic'"}) }}
                                     {% for error in form.username.errors %}<p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>{% endfor %}
                                 </label>
-                                <label class="block"
-                                       x-show="authType === 'basic'"
-                                       x-cloak>
+                                <label class="block">
                                     <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.password.label.text }}</span>
-                                    {{ form.password(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autocomplete="new-password") }}
+                                    {{ form.password(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autocomplete="new-password", **{':required':"authType === 'basic' && " + ('false' if instance is defined and instance else 'true')}) }}
                                     {% for error in form.password.errors %}<p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>{% endfor %}
                                 </label>
                             </div>
