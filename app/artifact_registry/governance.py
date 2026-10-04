@@ -6,6 +6,8 @@ from datetime import UTC, datetime
 from threading import RLock
 from typing import Any
 
+from app.artifact_registry.collectors import InventoryProgressCallback
+from app.artifact_registry.eligibility import registry_inventory_eligibility
 from app.extensions.db import db
 from app.integrations.kernel.registry import get_integration
 from app.models.integration import IntegrationInstance
@@ -54,6 +56,10 @@ class RegistryGovernanceEvidence:
 class RegistryGovernanceCollector:
     provider_key: str
     collect: Callable[[Any], RegistryGovernanceEvidence]
+    collect_with_progress: Callable[
+        [Any, InventoryProgressCallback | None],
+        RegistryGovernanceEvidence,
+    ] | None = None
 
 
 _COLLECTORS: dict[str, RegistryGovernanceCollector] = {}
@@ -83,21 +89,31 @@ def get_registry_governance_collector(provider_key: str) -> RegistryGovernanceCo
     return collector
 
 
-def sync_registry_governance(identity: IntegrationInstance) -> dict[str, Any]:
+def sync_registry_governance(
+    identity: IntegrationInstance,
+    *,
+    progress_callback: InventoryProgressCallback | None = None,
+) -> dict[str, Any]:
     """Collect optional governance evidence without changing provider state."""
 
     if identity.integration_type != 'registry':
         raise RuntimeError('Registry governance requires a canonical Registry integration identity.')
     if not identity.enabled or identity.lifecycle_status != 'active':
         raise RuntimeError('The Registry integration is not active.')
-    if identity.readiness_status != 'ready':
-        raise RuntimeError('Registry provider Full Validation must be Ready before governance collection.')
 
     module = get_integration('registry')
     provider_record = module.require_record_for_canonical(int(identity.id))
+    eligibility = registry_inventory_eligibility(identity, provider_record=provider_record)
+    if not eligibility.eligible:
+        raise RuntimeError(eligibility.reason)
+
     collector = get_registry_governance_collector(identity.provider_key)
     observed_at = datetime.now(UTC)
-    evidence = collector.collect(provider_record)
+    evidence = (
+        collector.collect_with_progress(provider_record, progress_callback)
+        if collector.collect_with_progress is not None
+        else collector.collect(provider_record)
+    )
 
     state = db.session.get(RegistryGovernanceState, identity.id)
     if state is None:
