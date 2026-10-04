@@ -37,7 +37,7 @@
     {% set capability_readiness_state = 'ready' %}
     {% set capability_readiness_label = 'Ready' %}
     {% set capability_gate_title = 'Core Workspaces Eligible' %}
-    {% set capability_gate_description = 'Required API/RBAC is ready; optional Tenant access stays workflow-scoped.' %}
+    {% set capability_gate_description = 'Core API/RBAC is ready; optional Tenant access remains workflow-scoped.' %}
     {% set capability_gate_tone = 'normal' %}
 {% endif %}
 {% set capability_readiness_percent = ((validated_feature_count * 100 / capability_total) if capability_total else 0) %}
@@ -101,7 +101,7 @@
     {{ provider_job_status.render(validation_job, 'Kubernetes validation running in worker', 'Kubernetes') }}
     <div class="p-5 sm:p-6">
         {{ capability_readiness.render('Kubernetes Capability Readiness',
-                'Core API/RBAC evidence for Kubernetes; optional Tenant contracts stay separate.',
+                'Kubernetes core API/RBAC is validated; optional Tenant contracts remain separate.',
                 capability_readiness_state,
                 capability_readiness_label,
                 'Validated Capabilities',
@@ -126,7 +126,7 @@
                                 <p class="mt-1 text-sm leading-6 text-content-secondary">{{ validation_state.message }}</p>
                             {% else %}
                                 <p class="text-sm font-semibold text-content-primary">Optional Capability Access Is Limited</p>
-                                <p class="mt-1 text-sm leading-6 text-content-secondary">Optional sensitive-resource gaps do not affect core readiness. Review {{ optional_blocked_features|join(", ") }} without expanding the baseline ClusterRole.</p>
+                                <p class="mt-1 text-sm leading-6 text-content-secondary">Optional gaps do not affect core readiness. Review {{ optional_blocked_features|join(", ") }} without broadening the baseline ClusterRole.</p>
                             {% endif %}
                         </div>
                     </div>
