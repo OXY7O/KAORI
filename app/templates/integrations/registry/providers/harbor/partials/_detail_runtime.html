@@ -28,6 +28,8 @@
     {% set runtime_next_action = "Run Runtime Refresh to establish persisted Harbor health evidence." %}
 {% elif runtime_state.health_status in ["unhealthy", "failed"] %}
     {% set runtime_next_action = "Restore Harbor endpoint health, refresh runtime evidence, and rerun Full Validation only when identity, compatibility, or authorization changed." %}
+{% elif runtime_state.readiness == "degraded" %}
+    {% set runtime_next_action = "This provider remains usable with degraded compatibility. Plan an upgrade to a current qualified Harbor release, then rerun Full Validation." %}
 {% elif runtime_state.readiness != "ready" %}
     {% set runtime_next_action = "Resolve Full Validation blockers before relying on this Registry provider." %}
 {% elif runtime_attention %}
