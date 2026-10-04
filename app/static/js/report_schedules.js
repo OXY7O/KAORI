@@ -34,7 +34,9 @@
             const sectionError = form.querySelector('[data-schedule-section-error]')
             const kubernetesScope = form.querySelector('[data-schedule-kubernetes-scope]')
             const objectStorageScope = form.querySelector('[data-schedule-object-storage-scope]')
+            const artifactRegistryScope = form.querySelector('[data-schedule-artifact-registry-scope]')
             const clusterSelect = form.querySelector('[data-schedule-cluster]')
+            const artifactRegistrySelect = form.querySelector('[data-schedule-artifact-registry]')
             const namespaceSelect = form.querySelector('[data-schedule-namespace]')
             const objectStorageSelect = form.querySelector('[data-schedule-object-storage-system]')
 
@@ -77,13 +79,16 @@
                 const scopeAssetType = scopeByType[selectedType] || 'kubernetes_cluster'
                 const reportDomain = domainByType[selectedType] || 'kubernetes'
                 const usesObjectStorage = scopeAssetType === 'object_storage_system'
+                const usesArtifactRegistry = scopeAssetType === 'registry_integration'
 
-                kubernetesScope?.classList.toggle('hidden', usesObjectStorage)
+                kubernetesScope?.classList.toggle('hidden', usesObjectStorage || usesArtifactRegistry)
                 objectStorageScope?.classList.toggle('hidden', !usesObjectStorage)
-                if (clusterSelect) clusterSelect.disabled = usesObjectStorage
-                if (namespaceSelect) namespaceSelect.disabled = usesObjectStorage || !clusterSelect?.value
+                artifactRegistryScope?.classList.toggle('hidden', !usesArtifactRegistry)
+                if (clusterSelect) clusterSelect.disabled = usesObjectStorage || usesArtifactRegistry
+                if (namespaceSelect) namespaceSelect.disabled = usesObjectStorage || usesArtifactRegistry || !clusterSelect?.value
                 if (objectStorageSelect) objectStorageSelect.disabled = !usesObjectStorage
-                if (!usesObjectStorage) syncNamespaceOptions()
+                if (artifactRegistrySelect) artifactRegistrySelect.disabled = !usesArtifactRegistry
+                if (!usesObjectStorage && !usesArtifactRegistry) syncNamespaceOptions()
                 form.querySelectorAll('[data-schedule-channel-domains]').forEach((input) => {
                     const domains = String(input.dataset.scheduleChannelDomains || '')
                         .split(',')
