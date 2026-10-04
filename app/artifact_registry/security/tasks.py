@@ -191,11 +191,17 @@ def sync_all_registry_security_task(
                 action_url='/artifact-registry/security',
                 metadata={'task_id': task_id, 'job_execution_id': job_execution_id, **result},
             )
-        context.succeed(
-            result_summary=result,
-            result_type='artifact_registry_security_sync',
-            partial=bool(failures),
-        )
+        if failures and not synced:
+            context.fail(
+                'All eligible Registry providers failed security synchronization.',
+                error_code='artifact_registry_security_sync_failed',
+            )
+        else:
+            context.succeed(
+                result_summary=result,
+                result_type='artifact_registry_security_sync',
+                partial=bool(failures),
+            )
         return result
     except Exception as exc:
         db.session.rollback()
