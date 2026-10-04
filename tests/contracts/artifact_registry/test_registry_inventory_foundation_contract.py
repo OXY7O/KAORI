@@ -99,3 +99,18 @@ def test_registry_inventory_worker_does_not_cross_into_other_registry_workstream
     assert 'sync_registry_governance' not in task
     assert 'refresh_registry_workload_bindings' not in sync
 
+
+def test_registry_inventory_reports_live_provider_progress() -> None:
+    collectors = (ROOT / 'app/artifact_registry/collectors.py').read_text()
+    harbor = (ROOT / 'app/integrations/registry/providers/harbor/inventory.py').read_text()
+    sync = (ROOT / 'app/artifact_registry/sync.py').read_text()
+    task = (ROOT / 'app/artifact_registry/tasks.py').read_text()
+
+    assert 'InventoryProgressCallback' in collectors
+    assert 'collect_with_progress' in collectors
+    assert 'progress_callback' in harbor
+    assert 'repository_processed' in harbor
+    assert 'collect_with_progress(provider_record, progress_callback)' in sync
+    assert 'report_inventory_progress' in task
+    assert "self.update_state(state='PROGRESS'" in task
+
