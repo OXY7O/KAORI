@@ -119,6 +119,11 @@ _SECTION_SOURCE_PATHS: dict[str, tuple[str, ...]] = {
         'operational_posture',
         'alert_posture',
     ),
+    'artifact_registry_capacity_usage': ('artifact_registry_capacity_usage',),
+    'artifact_registry_security_posture': ('artifact_registry_security_posture',),
+    'artifact_registry_runtime_usage': ('artifact_registry_runtime_usage',),
+    'artifact_registry_governance_posture': ('artifact_registry_governance_posture',),
+    'artifact_registry_alerts_actions': ('artifact_registry_alerts_actions',),
     'methodology_evidence_boundary': ('evidence_boundary',),
 }
 
@@ -147,6 +152,11 @@ _SECTION_DESCRIPTIONS: dict[str, str] = {
     'object_storage_forecast': 'Worker-materialized Object Storage forecast evidence and its current publication readiness.',
     'object_storage_top_consumers': 'Highest retained Object Storage consumers in the selected committed inventory boundary.',
     'object_storage_risk_findings': 'Operational signals, alert posture, and risk conditions requiring accountable review.',
+    'artifact_registry_capacity_usage': 'Committed Registry storage demand, growth, forecast, and consumer concentration evidence.',
+    'artifact_registry_security_posture': 'Committed scan coverage, vulnerability severity, signature, and SBOM posture.',
+    'artifact_registry_runtime_usage': 'Registry artifact correlation with committed runtime workload evidence.',
+    'artifact_registry_governance_posture': 'Retention, immutability, replication, webhook, and governance collection posture.',
+    'artifact_registry_alerts_actions': 'KAORI Alert Intelligence cases plus central Intelligence recommendations for accountable follow-up.',
     'methodology_evidence_boundary': 'Authoritative source ownership, data cut-off, and limitations used to build this governed publication.',
 }
 
@@ -358,6 +368,8 @@ def build_report_document(
         )
     elif report.report_type == 'tenant_governance':
         template_name = 'reports/pdf/tenant_governance.html'
+    elif report.report_type == 'artifact_registry_analysis':
+        template_name = 'reports/pdf/artifact_registry_analysis.html'
 
     return finalize_report_document(
         report,
