@@ -82,10 +82,11 @@ def test_overview_ready_counts_require_enabled_targets_and_domain_zero_targets_a
     assert "item.enabled and item.readiness_status == 'ready'" in service
 
     coverage = service.split('def _coverage(', 1)[1].split('def _coverage_stats', 1)[0]
-    assert 'elif total <= 0:' in coverage
-    assert "posture_state, posture_label = 'not_configured', 'Not Configured'" in coverage
-    assert "posture_state, posture_label = 'validation_required', 'Needs Review'" in coverage
-    assert "posture_state, posture_label = 'ready', 'Ready'" in coverage
+    posture = service.split('def _portfolio_posture(', 1)[1].split('def _provider_portfolio_counts', 1)[0]
+    assert 'posture_state, posture_label = _portfolio_posture(summary)' in coverage
+    assert "return 'not_configured', 'Not Configured'" in posture
+    assert "return 'ready', 'Ready'" in posture
+    assert "return 'attention', 'Needs Review'" in posture
     assert 'integration_status(item.posture_state, item.posture_label' in overview
     assert 'No targets registered' in overview
     assert 'Available Domains' in overview
