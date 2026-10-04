@@ -168,6 +168,9 @@ Use consistent evidence terminology such as `Cluster Signals Available`, `Select
 - Domain-specific templates own only Hero values/readiness, Operational Signal Overview content, section data, and domain-specific copy/actions.
 - Artifact Registry Overview is a conforming operational-domain consumer: it uses the same Hero profile, Operational Signal Overview, four workspace tabs, provider scope, committed-snapshot boundary, and shared section/peer-grid components while keeping detailed Inventory, Security, Runtime Usage, Governance, and Analytics in their owning workspaces.
 - Its Operations Overview follows the same reference composition: Registry Provider Health Summary → Inventory Snapshot / Data Freshness peer grid. Registry-specific evidence changes the nouns and source planes, not the layout grammar.
+- Artifact Registry keeps the four Data Freshness identities stable across aggregate and provider scopes: `Inventory Snapshot`, `Metrics Snapshot`, `Security Snapshot`, and `Analytics Snapshot`. Scope changes values and detail, not the evidence-plane name.
+- Artifact Registry security summaries must distinguish absent scan evidence from a clean scan result; missing evidence is `N/A` / not collected, never an inferred zero-finding posture.
+- Its Capacity and Signals panels use the canonical peer-content geometry when presenting evidence beside interpretation/handoff, and Reporting keeps committed evidence/handoff before governed reporting guidance.
 - Future capability dashboards—including Registry/Harbor and Source Control/GitHub, plus Server/VM, HCI, network, backup, and other operational domains—must start by consuming `operational_dashboard_workspace.html`; copying Alpine tab state or local panel geometry is prohibited.
 - Reusable layout changes happen in shared components first, then all dashboard consumers inherit the change. Family-level contract tests and `scripts/verify_operational_dashboard_standard.py` protect this invariant.
 
