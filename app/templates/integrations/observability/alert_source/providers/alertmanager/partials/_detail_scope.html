@@ -28,7 +28,7 @@
                     {{ integration_ui.palette_icon('route', 'brand', size='lg') }}
                     <div>
                         <h2 class="text-base font-semibold text-content-primary">Bindings &amp; Consumers</h2>
-                        <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">Review governed consumer bindings, alert identity selectors, consumer profiles, effective source resolution, and lifecycle guardrails.</p>
+                        <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">Review bindings, selectors, profiles, source resolution, and lifecycle guardrails.</p>
                     </div>
                 </div>
                 <button type="button"
@@ -76,7 +76,7 @@
         description='Source readiness, binding validation, resolver preference, alert identity, and operational eligibility remain independent evidence dimensions.',
         marker='data-kaori-alertmanager-binding-decision-horizontal',
         identity_title='Alert Identity Boundary',
-        identity_copy='Shared sources use stable alert selectors to isolate Kubernetes, Object Storage, and future alert streams; selector changes reset validation.') }}
+        identity_copy='Stable selectors isolate alert streams; changes require revalidation.') }}
     <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
              aria-labelledby="alertmanager-consumer-resolution-title"
              data-kaori-alertmanager-consumer-resolution-full-width>
