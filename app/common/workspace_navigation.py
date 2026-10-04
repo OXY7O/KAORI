@@ -220,6 +220,8 @@ def _workspace_key(endpoint: str) -> str | None:
         ('kubernetes_dashboard.', 'inventory.', 'kubernetes_operations.', 'governance.', 'tenant.', 'analytics.')
     ):
         return 'kubernetes'
+    if endpoint.startswith('artifact_registry.'):
+        return 'artifact_registry'
     if endpoint.startswith(('intelligence.', 'alert_intelligence.', 'automation_control.')):
         return 'intelligence'
     if endpoint.startswith('reports.'):
@@ -258,6 +260,14 @@ _WORKSPACE_ACTIVE_PREFIXES: dict[str, tuple[tuple[str, str], ...]] = {
     'object_storage': (
         ('object_storage_dashboard.', 'overview'),
         ('object_storage_inventory.', 'inventory'),
+    ),
+    'artifact_registry': (
+        ('artifact_registry.overview', 'overview'),
+        ('artifact_registry.inventory', 'inventory'),
+        ('artifact_registry.security', 'security'),
+        ('artifact_registry.runtime', 'runtime'),
+        ('artifact_registry.governance', 'governance'),
+        ('artifact_registry.analytics', 'analytics'),
     ),
     'intelligence': (
         ('alert_intelligence.', 'alert_intelligence'),
