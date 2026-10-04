@@ -149,6 +149,14 @@ def test_kubernetes_operations_workflows_keep_the_correct_active_detail_tab() ->
     assert "'kubernetes_operations': 'secrets'" in model
 
 
+def test_registry_domain_and_harbor_routes_keep_registry_sidebar_active() -> None:
+    model = _navigation_source()
+
+    assert "'integrations.registry': 'registry'" in model
+    assert "('harbor.', 'registry')" in model
+    assert "'harbor.'" in model
+
+
 def test_navigation_context_is_preserved_without_becoming_navigation_identity() -> None:
     model = _navigation_source()
     presentation = _read('app/bootstrap/presentation.py')
