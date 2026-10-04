@@ -187,7 +187,11 @@ def _kubernetes_detail_context(
     history_page: int | None = None,
     history_per_page: int | None = None,
 ) -> dict[str, object]:
-    context = build_kubernetes_detail(cluster_id)
+    context = build_kubernetes_detail(
+        cluster_id,
+        binding_page=request.args.get('binding_page', 1, type=int) or 1,
+        binding_per_page=request.args.get('binding_per_page', 5, type=int) or 5,
+    )
     if context is None:
         abort(404)
     connection = context['connection']
@@ -227,6 +231,16 @@ def _kubernetes_detail_context(
         )
         context['history'] = runtime_history_view(rows, pagination=pagination)
     return context
+
+
+@integrations_bp.get('/kubernetes/<string:cluster_id>/bindings/registry')
+@permission_required('clusters.view')
+def kubernetes_binding_registry(cluster_id: str) -> ResponseReturnValue:
+    context = _kubernetes_detail_context(cluster_id)
+    return render_template(
+        'integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_binding_registry.html',
+        **context,
+    )
 
 
 @integrations_bp.get('/kubernetes/<string:cluster_id>/registry-details')
