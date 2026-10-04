@@ -732,11 +732,14 @@ Contextual ownership, routing, and provider-boundary explanations that are usefu
 
 For Integration domain registries:
 
-- place one consolidated Info Tip beside the owning section/header title;
+- every implemented Integration domain page uses one consolidated Info Tip beside the parent **Registry and Consumer Bindings** title, before the Provider Registry / Consumer Bindings tab row;
+- the parent placement keeps guidance available regardless of the active tab and prevents filter/table headers from owning architecture guidance;
+- Orchestration explains execution and control-plane authority;
+- Observability explains Metrics Source / Alert Source routing authority;
+- Storage explains native storage-state authority plus independent telemetry and alert sources;
+- Registry explains provider-native Registry authority plus KAORI committed evidence ownership;
 - keep the full explanation available on hover, keyboard focus, and touch through the shared Info Tip controller;
-- do not reserve permanent vertical space for routing/authority helper copy;
+- do not reserve permanent vertical space for routing or authority helper copy;
 - do not hide validation failures, readiness blockers, destructive warnings, or required workflow state in an Info Tip;
 - domain-specific guidance remains provider-neutral where the owning boundary is provider-neutral;
-- Integrations Overview is excluded from this compact-guidance refinement because its summary and authority surfaces are first-class portfolio evidence, not subordinate helper guidance.
-
-The current Consumer Bindings workspace applies this rule to Observability Routing and the Storage Authority Boundary.
+- Integrations Overview is excluded because its portfolio and authority surfaces are first-class overview evidence rather than subordinate helper guidance.

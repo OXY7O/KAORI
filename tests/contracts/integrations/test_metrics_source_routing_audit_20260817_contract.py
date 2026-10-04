@@ -138,7 +138,7 @@ def test_metrics_source_workspace_filters_by_provider_key_not_product_category()
     assert 'components/info_tip.html' in domain
     assert 'info_tip.render(' in domain
     assert "'Observability Routing'" in domain
-    assert 'Alertmanager remains an alert source' in domain
+    assert 'Alertmanager remains an Alert Source' in domain
 
 
 def test_generalization_migration_removes_product_category_from_runtime_schema() -> None:
