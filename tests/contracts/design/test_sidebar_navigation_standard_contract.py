@@ -63,6 +63,7 @@ def test_current_workspace_capabilities_are_sidebar_children() -> None:
     for workspace in (
         "key='kubernetes'",
         "key='object_storage'",
+        "key='artifact_registry'",
         "key='intelligence'",
         "key='reports'",
         "key='operations_center'",

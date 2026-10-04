@@ -248,6 +248,11 @@ def validate_report_contract(
             raise ReportContractError('The selected report requires an Object Storage System scope.')
         if not normalized_scope_id:
             raise ReportContractError('A selected Object Storage system is required for this report.')
+    elif spec.scope_asset_type == 'registry_integration':
+        if normalized_scope_type and normalized_scope_type != spec.scope_asset_type:
+            raise ReportContractError('The selected report requires an Artifact Registry integration scope.')
+        if not normalized_scope_id:
+            raise ReportContractError('A selected Artifact Registry integration is required for this report.')
     elif normalized_scope_type and normalized_scope_type != spec.scope_asset_type:
         raise ReportContractError(f'{spec.label} requires {spec.scope_asset_type} scope.')
 
@@ -272,6 +277,16 @@ def require_object_storage_system(report: Any) -> str:
     scope_id = str(getattr(report, 'scope_asset_id', '') or '').strip()
     if not scope_id:
         raise ReportContractError('A selected Object Storage system is required for this report.')
+    return scope_id
+
+
+def require_artifact_registry_instance(report: Any) -> str:
+    spec = get_report_type_spec(str(getattr(report, 'report_type', '') or ''))
+    if spec.scope_asset_type != 'registry_integration':
+        raise ReportContractError(f'{spec.label} is not scoped to Artifact Registry.')
+    scope_id = str(getattr(report, 'scope_asset_id', '') or '').strip()
+    if not scope_id:
+        raise ReportContractError('A selected Artifact Registry integration is required for this report.')
     return scope_id
 
 

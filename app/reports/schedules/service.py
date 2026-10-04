@@ -18,6 +18,7 @@ from app.common.celery_queue_health import get_queue_readiness
 from app.common.pagination import PER_PAGE_OPTIONS, paginate_select, paginate_sequence
 from app.extensions.db import db
 from app.models.cluster import Cluster
+from app.models.integration import IntegrationInstance
 from app.models.object_storage import ObjectStorageSystem
 from app.models.report import Report, ReportSchedule, ReportScheduleRun
 from app.models.user import User
@@ -66,6 +67,7 @@ from app.reports.schedules.support import is_valid_timezone as _is_valid_timezon
 from app.reports.schedules.support import parse_optional_int as _parse_optional_int
 from app.reports.schedules.support import parse_run_time as _parse_run_time
 from app.reports.scope import (
+    ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE,
     KUBERNETES_CLUSTER_ASSET_TYPE,
     OBJECT_STORAGE_SYSTEM_ASSET_TYPE,
 )
@@ -123,6 +125,7 @@ def get_report_schedules_payload(
     )
     cluster_options = _get_cluster_options()
     object_storage_system_options = _get_object_storage_system_options()
+    artifact_registry_options = _get_artifact_registry_options()
     storage_context = _get_storage_context()
     worker_context = get_queue_readiness(get_reports_queue_name())
     selected_filters = _get_selected_filters(query_args)
@@ -185,6 +188,7 @@ def get_report_schedules_payload(
         'clusters': cluster_options,
         'namespace_options_by_cluster': _get_namespace_options_by_cluster(),
         'object_storage_systems': object_storage_system_options,
+        'artifact_registries': artifact_registry_options,
         'report_type_options': REPORT_TYPE_OPTIONS,
         'period_options': _title_case_period_options(),
         'output_format_options': OUTPUT_FORMAT_OPTIONS,
@@ -213,6 +217,7 @@ def get_report_schedules_payload(
             all_schedules,
             cluster_options,
             object_storage_system_options,
+            artifact_registry_options,
         ),
         'selected_filters': selected_filters,
         'pagination': pagination,
@@ -277,6 +282,7 @@ def build_default_schedule_form_state() -> dict[str, Any]:
         'cluster_id': '',
         'namespace': '',
         'object_storage_system_id': '',
+        'registry_integration_id': '',
         'report_type': report_type,
         'period': '30d',
         'output_format': get_report_primary_output_format(report_type),
@@ -675,6 +681,13 @@ def _apply_form_state_to_schedule(schedule: ReportSchedule, form_state: dict[str
         schedule.scope_asset_label_snapshot = system.name if system is not None else None
         schedule.cluster_id = None
         schedule.namespace = None
+    elif spec.scope_asset_type == ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE:
+        instance_id = str(form_state.get('registry_integration_id') or '').strip()
+        instance = db.session.get(IntegrationInstance, int(instance_id)) if instance_id.isdigit() else None
+        schedule.scope_asset_id = instance_id or None
+        schedule.scope_asset_label_snapshot = instance.name if instance is not None else None
+        schedule.cluster_id = None
+        schedule.namespace = None
     else:
         cluster_id = str(form_state.get('cluster_id') or '').strip()
         cluster = db.session.get(Cluster, cluster_id) if cluster_id else None
@@ -833,10 +846,35 @@ def _get_run_filter_options(
     }
 
 
+def _get_artifact_registry_options() -> list[dict[str, str]]:
+    instances = (
+        db.session.execute(
+            select(IntegrationInstance)
+            .where(
+                IntegrationInstance.integration_type == 'registry',
+                IntegrationInstance.lifecycle_status == 'active',
+            )
+            .order_by(IntegrationInstance.name.asc())
+        )
+        .scalars()
+        .all()
+    )
+    return [
+        {
+            'value': str(instance.id),
+            'label': instance.name,
+            'environment': instance.environment or 'Not Set',
+            'provider': instance.provider_key,
+        }
+        for instance in instances
+    ]
+
+
 def _get_schedule_filter_options(
     schedules: list[dict[str, Any]],
     cluster_options: list[dict[str, str]],
     object_storage_system_options: list[dict[str, str]],
+    artifact_registry_options: list[dict[str, str]],
 ) -> dict[str, list[dict[str, str]]]:
     delivery_catalog = _get_delivery_channel_options()
     asset_options: dict[str, str] = {
@@ -846,6 +884,12 @@ def _get_schedule_filter_options(
         {
             f'{OBJECT_STORAGE_SYSTEM_ASSET_TYPE}:{item["value"]}': f'Object Storage · {item["label"]}'
             for item in object_storage_system_options
+        }
+    )
+    asset_options.update(
+        {
+            f'{ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE}:{item["value"]}': f'Artifact Registry · {item["label"]}'
+            for item in artifact_registry_options
         }
     )
     for schedule in schedules:

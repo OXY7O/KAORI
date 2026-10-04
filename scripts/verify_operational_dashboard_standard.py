@@ -318,10 +318,9 @@ def _verify_artifact_registry_dashboard(
         capacity,
         (
             'components/peer_content_grid.html',
-            'components/operational_callout.html',
-            'Inventory Footprint & Demand',
-            'Analytics Handoff',
-            'unsupported provider capacity is not inferred',
+            'artifact_registry/partials/_overview_capacity_snapshot.html',
+            'artifact_registry/partials/_overview_forecast_risk.html',
+            'artifact_registry/partials/_overview_top_consumers.html',
         ),
         'Artifact Registry capacity peer dashboard grammar',
     )
@@ -329,10 +328,9 @@ def _verify_artifact_registry_dashboard(
         signals,
         (
             'components/peer_content_grid.html',
-            'Security & Runtime Signals',
-            'Evidence & Actions',
-            "overview.critical_findings if overview.scanned_count else 'N/A'",
-            "overview.high_findings if overview.scanned_count else 'N/A'",
+            'artifact_registry/partials/_overview_alerts_summary.html',
+            'artifact_registry/partials/_overview_alert_response_guidance.html',
+            'artifact_registry/partials/_overview_recommended_actions.html',
         ),
         'Artifact Registry signals peer dashboard grammar',
     )
@@ -340,14 +338,13 @@ def _verify_artifact_registry_dashboard(
         reporting,
         (
             'components/reporting_dashboard_workspace.html',
-            'Reporting Evidence',
+            'reporting_workspace.summary(',
             'reporting_workspace.guidance(',
-            "url_for('reports.overview')",
         ),
         'Artifact Registry reporting dashboard handoff',
     )
-    if reporting.index('Reporting Evidence') >= reporting.index('reporting_workspace.guidance('):
-        raise AssertionError('Artifact Registry reporting must present evidence before governed guidance')
+    if reporting.index('reporting_workspace.summary(') >= reporting.index('reporting_workspace.guidance('):
+        raise AssertionError('Artifact Registry reporting must present summary before governed guidance')
     _require(
         routes,
         (
@@ -369,6 +366,10 @@ def _verify_artifact_registry_dashboard(
             'RegistryProject.integration_instance_id == selected_provider.id',
             "registry_metrics_readiness(provider).get('status') == 'ready'",
             "'scope_label': scope_label",
+            "'capacity': capacity",
+            "'alerts': alerts",
+            "'recommended_actions': recommended_actions",
+            "'reporting': reporting",
             "'label': 'Inventory Snapshot'",
             "'label': 'Metrics Snapshot'",
             "'label': 'Security Snapshot'",

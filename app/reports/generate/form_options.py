@@ -399,6 +399,46 @@ SECTION_OPTIONS: list[dict[str, str]] = [
         'description': 'Object Storage inventory column definitions, data types, sources, and missing-value rules.',
     },
     {
+        'value': 'artifact_registry_capacity_usage',
+        'label': 'Capacity & Demand',
+        'description': 'Committed Registry size, artifact volume, growth, forecast, and top-consumer evidence.',
+    },
+    {
+        'value': 'artifact_registry_security_posture',
+        'label': 'Security Posture',
+        'description': 'Committed scan coverage, vulnerability severity, signature, and SBOM posture.',
+    },
+    {
+        'value': 'artifact_registry_runtime_usage',
+        'label': 'Runtime Correlation',
+        'description': 'Committed Registry-to-runtime bindings and digest correlation evidence.',
+    },
+    {
+        'value': 'artifact_registry_governance_posture',
+        'label': 'Governance Posture',
+        'description': 'Committed retention, immutability, replication, webhook, and provider governance evidence.',
+    },
+    {
+        'value': 'artifact_registry_alerts_actions',
+        'label': 'Alerts & Recommended Actions',
+        'description': 'KAORI Alert Intelligence cases, catalog coverage, and central Intelligence recommendations.',
+    },
+    {
+        'value': 'artifact_registry_inventory_assets',
+        'label': 'Artifact Registry Inventory Data',
+        'description': 'Committed Registry project, repository, artifact, tag, scan, signing, and SBOM evidence.',
+    },
+    {
+        'value': 'artifact_registry_inventory_metadata',
+        'label': 'Workbook Metadata',
+        'description': 'Registry scope, committed cut-off, ownership, and workbook-standard metadata.',
+    },
+    {
+        'value': 'artifact_registry_inventory_field_dictionary',
+        'label': 'Field Dictionary',
+        'description': 'Artifact Registry inventory column definitions, data types, sources, and missing-value rules.',
+    },
+    {
         'value': 'inventory_assets',
         'label': 'Inventory Data',
         'description': 'Primary Excel table containing committed asset identities and fields.',

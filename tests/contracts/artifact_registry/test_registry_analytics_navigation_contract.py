@@ -25,3 +25,18 @@ def test_artifact_registry_workspace_exposes_complete_review_surface() -> None:
         "def analytics()",
     ):
         assert route in routes
+
+
+def test_artifact_registry_routes_keep_artifact_registry_sidebar_active() -> None:
+    navigation = (ROOT / 'app/common/workspace_navigation.py').read_text()
+
+    assert "if endpoint.startswith('artifact_registry.'):" in navigation
+    assert "'artifact_registry': 'overview'" in navigation
+    for endpoint, capability in (
+        ('artifact_registry.inventory', 'inventory'),
+        ('artifact_registry.security', 'security'),
+        ('artifact_registry.runtime', 'runtime'),
+        ('artifact_registry.governance', 'governance'),
+        ('artifact_registry.analytics', 'analytics'),
+    ):
+        assert f"('{endpoint}', '{capability}')" in navigation

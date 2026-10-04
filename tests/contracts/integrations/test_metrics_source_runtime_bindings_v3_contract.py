@@ -80,3 +80,11 @@ def test_runtime_decision_primary_finding_is_plain_and_metrics_copy_is_concise()
     assert 'info_tip.render(' not in decision
     assert 'Primary Finding' in decision
     assert 'Validate compatibility and Prometheus/PromQL core; consumer contracts stay in Bindings & Consumers.' in validation
+
+
+def test_metrics_source_degraded_runtime_uses_compatibility_guidance() -> None:
+    runtime = read('app/templates/integrations/observability/metrics_source/partials/_runtime_panel.html')
+
+    assert "runtime_state.readiness == 'degraded'" in runtime
+    assert 'This source remains usable with degraded compatibility.' in runtime
+    assert 'Move to a current qualified release or qualify the detected release' in runtime
