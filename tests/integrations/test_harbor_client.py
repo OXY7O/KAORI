@@ -128,3 +128,12 @@ def test_harbor_client_normalizes_transport_failure_without_exposing_raw_excepti
 
     assert str(exc_info.value) == 'Harbor API request failed before a response was received.'
     assert secret not in str(exc_info.value)
+
+def test_harbor_pagination_stops_on_identical_repeated_full_page() -> None:
+    page = [{'name': f'project-{index}'} for index in range(100)]
+
+    with pytest.raises(Exception) as exc_info:
+        HarborClient._paged(lambda _page, _size: page, page_size=100)
+
+    assert 'repeated an identical full page' in str(exc_info.value)
+
