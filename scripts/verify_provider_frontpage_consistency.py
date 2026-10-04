@@ -167,7 +167,7 @@ def main() -> int:
         'Test Connection',
         'Registration reuses the verified payload',
         'After Save',
-        'Core Validation',
+        'Full Validation',
         'Then assign consumer bindings',
         'Back to Registry',
     ):
@@ -216,6 +216,7 @@ def main() -> int:
         assert 'integrations/components/_provider_registration_actions.html' in form, provider
         assert 'provider_registration_actions.render(' in form, provider
         assert 'Run Test Connection successfully before KAORI enables Register Connection.' not in form, provider
+        assert 'Core Validation' not in form, provider
 
     assert 'placeholder="Alertmanager Production"' in registration_forms['Alertmanager']
     assert 'placeholder="Operational purpose and ownership context"' in registration_forms['Alertmanager']
