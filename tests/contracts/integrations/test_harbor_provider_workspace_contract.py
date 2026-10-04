@@ -125,6 +125,7 @@ def test_harbor_validation_and_authority_copy_is_compact() -> None:
     )
 
     assert 'Harbor remains authoritative for native Registry state and policies.' in configuration
+    assert 'provider discovery, identity checks, compatibility validation, capability probing, and governed Registry evidence collection.' in configuration
     assert (
         'Harbor owns Registry state and policy; KAORI owns registration, validation evidence, '
         'runtime observation, governance, and audit.'
@@ -133,7 +134,7 @@ def test_harbor_validation_and_authority_copy_is_compact() -> None:
         "('Bind Metrics', 'Bind Prometheus/Thanos through Metrics Source for current and long-term "
         "Registry analytics.', 'chart-spline')"
     ) in configuration
-    assert 'Required Harbor identity, compatibility, health, and read-capability evidence.' in validation
+    assert 'Required Harbor readiness and read-capability evidence.' in validation
     assert 'Optional capability evidence; does not affect readiness.' in validation
     assert (
         'Resolve the identified Harbor API, authorization, or compatibility gaps, then rerun '
@@ -327,7 +328,8 @@ def test_harbor_coverage_keeps_independent_registry_readiness_planes() -> None:
             'app/templates/integrations/components/_provider_registry.html'
         )
     assert '_provider_status(instance)' in presentation
-    assert '_inventory_status(collection)' in presentation
+    assert 'inventory_eligibility = registry_inventory_eligibility(identity)' in presentation
+    assert '_inventory_status(collection, eligibility=inventory_eligibility)' in presentation
     assert '_metrics_status(metrics)' in presentation
     assert '_webhook_status(webhook)' in presentation
     assert "coverage_label = 'Complete' if complete else 'Partial'" in presentation
