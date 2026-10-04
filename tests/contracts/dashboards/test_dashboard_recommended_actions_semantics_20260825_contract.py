@@ -25,9 +25,18 @@ def test_both_dashboards_use_central_intelligence_top_five() -> None:
 def test_dashboard_recommended_actions_share_intelligence_copy_and_detail_owner() -> None:
     kubernetes = read('app/templates/kubernetes/dashboard/partials/_recommended_actions.html')
     object_storage = read('app/templates/storage/object_storage/dashboard/partials/_recommended_actions.html')
+    registry = read('app/templates/artifact_registry/partials/_overview_recommended_actions.html')
+    shared = read('app/templates/components/operational_recommendation_cards.html')
+
     canonical = 'Top active findings from the Intelligence recommendation catalog.'
     assert canonical in kubernetes
     assert canonical in object_storage
-    assert 'intelligence.recommendation_details' in object_storage
+    for source in (kubernetes, object_storage, registry):
+        assert 'components/operational_recommendation_cards.html' in source
+        assert 'recommendation_cards.render(' in source
+
+    assert 'intelligence.recommendation_details' in shared
+    assert 'normalized_priority' in shared
+    assert "'Recommended Actions'" in shared
     assert 'analytics.object_storage_capacity' not in object_storage
     assert 'analytics.object_storage_forecast' not in object_storage

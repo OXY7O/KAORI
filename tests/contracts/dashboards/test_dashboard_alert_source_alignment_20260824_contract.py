@@ -11,6 +11,8 @@ def test_object_storage_dashboard_uses_kaori_alert_cases_not_raw_source_rows() -
     service = read('app/storage/object_storage/dashboard/service.py')
     shared = read('app/intelligence/alert_intelligence/dashboard_cases.py')
     alerts = read('app/templates/storage/object_storage/dashboard/partials/_alerts_summary.html')
+    actions = read('app/templates/storage/object_storage/dashboard/partials/_recommended_actions.html')
+    recommendation_cards = read('app/templates/components/operational_recommendation_cards.html')
 
     assert 'active_recommendation_alert_cases' in service
     assert "domain='object_storage'" in service
@@ -21,8 +23,8 @@ def test_object_storage_dashboard_uses_kaori_alert_cases_not_raw_source_rows() -
     assert "'source_detail': 'Active AlertCase records'" in service
     assert 'Active KAORI AlertCase posture and up to five recent cases.' in alerts
     assert "url_for('alert_intelligence.index'" in alerts
-    actions = read('app/templates/storage/object_storage/dashboard/partials/_recommended_actions.html')
-    assert "url_for('intelligence.recommendation_details'" in actions
+    assert 'components/operational_recommendation_cards.html' in actions
+    assert 'intelligence.recommendation_details' in recommendation_cards
     assert 'get_dashboard_recommendation_findings' in service
     assert 'Active Alertmanager and Metrics Source Object Storage alert signals.' not in alerts
     assert 'Alert evidence is unavailable in the committed analytics snapshot.' not in alerts
@@ -30,14 +32,17 @@ def test_object_storage_dashboard_uses_kaori_alert_cases_not_raw_source_rows() -
 
 
 def test_dashboard_response_guidance_explains_alert_provenance() -> None:
-    kubernetes = read('app/templates/kubernetes/dashboard/partials/_alert_response_guidance.html')
-    object_storage = read('app/templates/storage/object_storage/dashboard/partials/_alert_response_guidance.html')
+    shared_response = read('app/templates/components/operational_alert_response.html')
+    for content in (
+        read('app/templates/kubernetes/dashboard/partials/_alert_response_guidance.html'),
+        read('app/templates/storage/object_storage/dashboard/partials/_alert_response_guidance.html'),
+    ):
+        assert 'components/operational_alert_response.html' in content
 
-    for content in (kubernetes, object_storage):
-        assert 'Alert Data Source' in content
-        assert 'KAORI Alert Intelligence · Active AlertCase records' in content
-        assert 'Recommendation-origin durable alert cases' not in content
-        assert 'Raw source alerts remain in Analytics' not in content
+    assert "source_title='Alert Data Source'" in shared_response
+    assert 'KAORI Alert Intelligence · Active AlertCase records' in shared_response
+    assert 'Recommendation-origin durable alert cases' not in shared_response
+    assert 'Raw source alerts remain in Analytics' not in shared_response
 
 
 def test_topology_details_matches_notification_deck_desktop_width() -> None:

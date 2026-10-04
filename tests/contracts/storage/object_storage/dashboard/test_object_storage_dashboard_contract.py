@@ -119,8 +119,8 @@ def test_dashboard_sections_are_object_storage_specific_and_committed_evidence_o
     assert 'Forecast & Growth Risk' in forecast
     assert 'Top Bucket Consumers' in consumers
     assert 'storage/object_storage/dashboard/partials/_alerts_summary.html' in signals
-    assert 'Alert Interpretation & Response' in response
-    assert 'Recommended Actions' in actions
+    assert 'components/operational_alert_response.html' in response
+    assert 'components/operational_recommendation_cards.html' in actions
     assert 'storage/object_storage/dashboard/partials/_reporting_summary.html' in reporting
     assert 'reporting_workspace.summary(' in reporting_summary
     assert 'reporting_workspace.guidance(' in reporting_guidance
@@ -253,6 +253,9 @@ def test_signals_and_reporting_match_kubernetes_dashboard_composition() -> None:
     reporting_summary = read('app/templates/storage/object_storage/dashboard/partials/_reporting_summary.html')
     reporting_guidance = read('app/templates/storage/object_storage/dashboard/partials/_reporting_guidance.html')
     reporting_workspace = read('app/templates/components/reporting_dashboard_workspace.html')
+    shared_alerts = read('app/templates/components/operational_alert_summary.html')
+    shared_response = read('app/templates/components/operational_alert_response.html')
+    shared_recommendations = read('app/templates/components/operational_recommendation_cards.html')
     kubernetes_signals = read('app/templates/kubernetes/dashboard/partials/_content.html')
     kubernetes_reporting = read('app/templates/kubernetes/dashboard/partials/_reporting_guidance.html')
     service = read('app/storage/object_storage/dashboard/service.py')
@@ -263,14 +266,17 @@ def test_signals_and_reporting_match_kubernetes_dashboard_composition() -> None:
         'storage/object_storage/dashboard/partials/_recommended_actions.html',
     ):
         assert token in signals
-    assert 'Alerts Summary' in alerts
+    assert 'components/operational_alert_summary.html' in alerts
+    assert 'Alerts Summary' in shared_alerts
     assert 'def _alerts(selected: ObjectStorageSystem | None)' in service
     assert "for case in posture['cases'][:5]" in service
-    assert 'Alert Interpretation & Response' in response
-    assert 'Controlled Response Flow' in response
-    assert 'components/numbered_governance_steps.html' in response
+    assert 'components/operational_alert_response.html' in response
+    assert 'Alert Interpretation & Response' in shared_response
+    assert 'Controlled Response Flow' in shared_response
+    assert 'components/numbered_governance_steps.html' in shared_response
     assert 'components/operational_flow_steps.html' not in response
-    assert 'Recommended Actions' in actions
+    assert 'components/operational_recommendation_cards.html' in actions
+    assert 'Recommended Actions' in shared_recommendations
     assert 'dashboard-recommended-actions' in kubernetes_signals
     assert "dashboard['recommended_actions'] = _recommended_actions(selected)" in service
     assert 'get_dashboard_recommendation_findings' in service

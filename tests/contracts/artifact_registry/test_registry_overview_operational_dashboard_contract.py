@@ -28,7 +28,8 @@ def test_artifact_registry_overview_consumes_operational_dashboard_family() -> N
     assert 'hx-trigger="revealed"' in content
     assert 'Preparing committed Artifact Registry dashboard evidence.' in content
 
-    assert 'Operational Signal Overview' in signal
+    assert 'components/operational_signal_overview.html' in signal
+    assert 'signal_overview.render(' in signal
     assert 'components/operational_metric_card.html' in signal
     assert 'hx-push-url="true"' in signal
     assert 'hx-include="#artifact-registry-dashboard-active-tab"' in signal
@@ -204,8 +205,10 @@ def test_artifact_registry_dashboard_state_semantics_and_jinja_mapping_safety() 
     forecast = read('app/templates/artifact_registry/partials/_overview_forecast_risk.html')
     consumers = read('app/templates/artifact_registry/partials/_overview_top_consumers.html')
     alerts = read('app/templates/artifact_registry/partials/_overview_alerts_summary.html')
+    shared_alerts = read('app/templates/components/operational_alert_summary.html')
     health = read('app/templates/artifact_registry/partials/_overview_provider_health.html')
     signal = read('app/templates/artifact_registry/partials/_overview_signal_overview.html')
+    shared_signal = read('app/templates/components/operational_signal_overview.html')
 
     assert 'overview.capacity.items' not in capacity_snapshot
     assert 'overview.capacity.metrics' in capacity_snapshot
@@ -220,14 +223,18 @@ def test_artifact_registry_dashboard_state_semantics_and_jinja_mapping_safety() 
     assert 'Source Unavailable' in consumers
     assert 'Sync Required' in consumers
 
-    assert 'data-kaori-alert-insight="stacked"' in alerts
+    assert 'components/operational_alert_summary.html' in alerts
+    assert 'data-kaori-alert-insight="stacked"' in shared_alerts
     assert 'Cases Available' in alerts
     assert 'No Findings' in alerts
-    assert 'empty_state_tone = "normal"' in alerts
+    assert 'empty_state_tone = "normal"' in shared_alerts
 
     assert 'row.security_not_applicable' in health
     assert 'No Artifacts' in health
     assert 'No Registry Providers Available' in health
 
-    assert 'status_indicator_label(overview.posture.label, overview.posture.tone' in signal
-    assert "Updated {{ overview.latest_committed_at|user_datetime }}" in signal
+    assert 'components/operational_signal_overview.html' in signal
+    assert 'overview.posture.label' in signal
+    assert 'overview.posture.tone' in signal
+    assert 'signal_updated' in signal
+    assert 'status_indicator_label(status_label, status_tone' in shared_signal
