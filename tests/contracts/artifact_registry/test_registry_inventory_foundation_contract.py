@@ -115,3 +115,20 @@ def test_registry_inventory_reports_live_provider_progress() -> None:
     assert 'report_inventory_progress' in task
     assert "self.update_state(state='PROGRESS'" in task
 
+def test_registry_inventory_reconciles_stable_rows_without_erasing_downstream_evidence() -> None:
+    sync = (ROOT / 'app/artifact_registry/sync.py').read_text()
+
+    assert 'selectinload(RegistryProject.repositories)' in sync
+    assert 'existing_projects.pop(record.name, None)' in sync
+    assert 'existing.pop(record.digest, None)' in sync
+    assert 'RegistryProject.query.filter_by(integration_instance_id=integration_instance_id).delete' not in sync
+
+    reconcile_artifacts = sync.split('def _reconcile_artifacts', 1)[1].split(
+        'def _reconcile_repositories',
+        1,
+    )[0]
+    assert 'artifact.scan_status =' not in reconcile_artifacts
+    assert 'artifact.vulnerability_summary =' not in reconcile_artifacts
+    assert 'artifact.signature_status =' not in reconcile_artifacts
+    assert 'artifact.sbom_status =' not in reconcile_artifacts
+
