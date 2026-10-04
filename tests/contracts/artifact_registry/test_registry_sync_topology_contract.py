@@ -88,11 +88,14 @@ def test_harbor_security_uses_scan_completion_as_primary_incremental_marker() ->
 
 
 def test_registry_evidence_jobs_fail_terminally_when_every_provider_fails() -> None:
+    inventory_task = (ROOT / 'app/artifact_registry/tasks.py').read_text()
     security_task = (ROOT / 'app/artifact_registry/security/tasks.py').read_text()
     governance_task = (ROOT / 'app/artifact_registry/governance_tasks.py').read_text()
 
+    assert 'All eligible Registry providers failed inventory synchronization.' in inventory_task
     assert 'All eligible Registry providers failed security synchronization.' in security_task
     assert 'All eligible Registry providers failed governance synchronization.' in governance_task
+    assert "context.fail(" in inventory_task
     assert "context.fail(" in security_task
     assert "context.fail(" in governance_task
 
