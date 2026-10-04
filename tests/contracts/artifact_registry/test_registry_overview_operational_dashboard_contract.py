@@ -22,9 +22,11 @@ def test_artifact_registry_overview_consumes_operational_dashboard_family() -> N
     assert 'components/operational_dashboard_workspace.html' in content
     assert 'dashboard_workspace.controller(' in content
     assert 'dashboard_workspace.navigation(' in content
-    assert content.count('dashboard_workspace.panel(') == 4
-    for tab in ('overview', 'capacity', 'signals', 'reporting'):
-        assert f"dashboard_workspace.panel('{tab}'" in content
+    assert 'for tab_key, tab_label, tab_icon in dashboard_workspace.standard_tabs' in content
+    assert "dashboard_workspace.panel(" in content
+    assert "url_for('artifact_registry.overview_section', section=tab_key)" in content
+    assert 'hx-trigger="revealed"' in content
+    assert 'Preparing committed Artifact Registry dashboard evidence.' in content
 
     assert 'Operational Signal Overview' in signal
     assert 'components/operational_metric_card.html' in signal
@@ -42,6 +44,8 @@ def test_artifact_registry_overview_scope_is_committed_and_provider_neutral() ->
     assert "request.args.get('tab', 'overview', type=str)" in routes
     assert "request.args.get('provider_health_page', 1)" in routes
     assert "PROVIDER_HEALTH_PAGE_SIZES = {5, 10, 25, 50}" in routes
+    for section in ('overview', 'capacity', 'signals', 'reporting'):
+        assert f"'{section}': 'artifact_registry/partials/_overview_" in routes
     assert 'artifact_registry/partials/_overview_content.html' in routes
     assert "allowed_tabs = {'overview', 'capacity', 'signals', 'reporting'}" in presentation
     assert 'RegistryProject.integration_instance_id == selected_provider.id' in presentation
