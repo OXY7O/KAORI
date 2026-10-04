@@ -144,6 +144,9 @@ def test_observability_connection_copy_is_concise_and_binding_scoped():
         in metrics
     )
     assert 'Maintain governed validation and consumer-binding context.' not in metrics
+    assert 'Update Alertmanager while preserving governed bindings.' in alertmanager
+    assert 'Review Alertmanager coverage, readiness, and alert consumer bindings.' in alertmanager
+    assert 'Maintain governed validation and consumer-binding context.' not in alertmanager
 
 
 
