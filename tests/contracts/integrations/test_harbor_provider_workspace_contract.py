@@ -83,6 +83,65 @@ def test_harbor_registration_copy_is_concise_and_preserves_authority_boundaries(
     ) in index
 
 
+def test_harbor_degraded_full_validation_is_not_presented_as_validation_required() -> None:
+    validation = read(
+        'app/templates/integrations/registry/providers/harbor/partials/_detail_validation.html'
+    )
+    runtime = read('app/templates/integrations/registry/providers/harbor/partials/_detail_runtime.html')
+    presentation = read('app/integrations/registry/providers/harbor/application/presentation.py')
+    compatibility = read('app/definitions/catalogs/integrations/compatibility.yaml')
+
+    assert '{% elif readiness == "degraded" %}' in validation
+    assert '{% set readiness_label = "Degraded" %}' in validation
+    assert '{% set gate_label = "Eligible with Attention" %}' in validation
+    assert 'Required contracts are complete; compatibility remains in KAORI Extended Support.' in validation
+    assert (
+        'Plan an upgrade to a current qualified Harbor release, then rerun Full Validation '
+        'to refresh compatibility and readiness evidence.'
+    ) in validation
+    assert 'Why Readiness Is Degraded' in validation
+    assert 'Resolve Harbor gaps, then rerun Full Validation.' not in validation
+    assert "if readiness == 'degraded':" in presentation
+    assert "'label': 'Degraded'" in presentation
+    assert "{'value': 'degraded', 'label': 'Degraded'}" in presentation
+    assert 'runtime_state.readiness == "degraded"' in runtime
+    assert 'This provider remains usable with degraded compatibility.' in runtime
+
+    assert 'key: extended_supported' in compatibility
+    assert 'readiness: degraded' in compatibility
+    assert 'key: harbor-extended' in compatibility
+    assert "version_constraint: '>=2.4.1,<2.13'" in compatibility
+    assert 'key: harbor-current' in compatibility
+    assert "version_constraint: '>=2.13,<2.16'" in compatibility
+
+
+def test_harbor_validation_and_authority_copy_is_compact() -> None:
+    configuration = read(
+        'app/templates/integrations/registry/providers/harbor/partials/_detail_configuration.html'
+    )
+    validation = read(
+        'app/templates/integrations/registry/providers/harbor/partials/_detail_validation.html'
+    )
+
+    assert 'Harbor remains authoritative for native Registry state and policies.' in configuration
+    assert (
+        'Harbor owns Registry state and policy; KAORI owns registration, validation evidence, '
+        'runtime observation, governance, and audit.'
+    ) in configuration
+    assert 'Required Harbor identity, compatibility, health, and read-capability evidence.' in validation
+    assert 'Optional capability evidence; does not affect readiness.' in validation
+    assert (
+        'Resolve the identified Harbor API, authorization, or compatibility gaps, then rerun '
+        'Full Validation to refresh committed readiness evidence.'
+    ) in validation
+
+    assert (
+        'Required Harbor API identity, compatibility, health, and read capability evidence '
+        'for the qualified release.'
+    ) not in validation
+    assert 'Optional follow-on capability evidence observed without affecting readiness.' not in validation
+
+
 def test_harbor_detail_uses_shared_provider_domains_without_premature_inventory_surface() -> None:
     detail = read('app/templates/integrations/registry/providers/harbor/instance_detail.html')
     configuration = read(
