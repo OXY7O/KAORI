@@ -222,16 +222,19 @@ def test_minio_review_copy_keeps_secret_and_revalidation_guidance_concise() -> N
         'observability credentials here.'
     ) in form
     assert 'Secret keys stay encrypted; registration and Full Validation use governed S3 discovery.' in configuration
-    assert 'Persistent identity linking the provider connection, managed asset, validation evidence, bindings' in configuration
-    assert 'Environment context used to interpret coverage, policy scope, operational ownership' in configuration
-    assert 'Product family identified from provider evidence during Full Validation' in configuration
+    assert 'Persistent provider, asset, validation, binding, and audit identity.' in configuration
+    assert 'Environment context for coverage, policy, ownership, and consumer resolution.' in configuration
+    assert 'Product family resolved by Full Validation for compatibility and capability selection.' in configuration
     assert 'Canonical S3-compatible API base endpoint KAORI uses for identity checks' in configuration
+    assert 'MinIO owns S3 state; observability sources stay independent. KAORI correlates binding evidence without copying credentials.' in configuration
     assert (
         'setup_reference_template="integrations/storage/object_storage/providers/minio/partials/'
         '_minimum_validation_access.html"'
     ) in configuration
     assert 'Minimum S3 Access Example' in access_reference
     assert 'Open Access Examples' in access_reference
+    assert "setTab(tab) { this.activeTab = tab; }" in access_reference
+    assert "const tabs = ['baseline', 'inventory'];" in access_reference
     assert 's3:ListAllMyBuckets' in access_reference
     assert 'Optional Inventory Enrichment Reader' in access_reference
     assert 'MinIO Admin API quota or provider-aggregated usage evidence requires separate' in access_reference
