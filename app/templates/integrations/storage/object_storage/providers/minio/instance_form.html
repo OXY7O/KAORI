@@ -18,7 +18,7 @@
                         "Object Storage Integration",
                         "settings-2",
                         "Edit MinIO Connection",
-                        "Update S3 connections while preserving storage assets and bindings.",
+                        "Update S3 access while preserving storage assets, bindings, and validation context.",
                         "database-zap",
                         "MinIO-Compatible S3 API",
                         "Managed Asset",
@@ -57,7 +57,7 @@
                         </span>
                         <div>
                             <h2 class="text-base font-semibold text-content-primary">{{ "MinIO Connection Configuration" if instance is defined and instance else "Connection Configuration" }}</h2>
-                            <p class="mt-1 text-sm leading-6 text-content-secondary">{{ "Modify identity, credentials, transport trust, and request controls. Connection-sensitive changes reset readiness until Core Validation completes." if instance is defined and instance else "Define connection identity, MinIO S3 API access, compatibility contract, and operational controls." }}</p>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary">{{ "Modify identity, credentials, transport trust, and request controls. Connection-sensitive changes reset readiness until Full Validation completes." if instance is defined and instance else "Define connection identity, MinIO S3 API access, compatibility contract, and operational controls." }}</p>
                         </div>
                     </div>
                 </header>
@@ -178,11 +178,11 @@
                     </section>
                 </div>
                 {% if instance is defined and instance %}
-                    {% call form_action_bar.render("Save changes, then run Core Validation before interpreting provider readiness.", aria_label="MinIO Configuration Actions", embedded=true) %}
+                    {% call form_action_bar.render("Save changes, then run Full Validation.", aria_label="MinIO Configuration Actions", embedded=true) %}
                         <a href="{{ url_for('minio.index', tab='registry') }}"
-                           class="inline-flex h-10 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary">Cancel</a>
+                           class="{{ action_button.classes('secondary') }}">Cancel</a>
                         <button type="submit"
-                                class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover">
+                                class="{{ action_button.classes('primary') }}">
                             <i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i>
                             Save Changes
                         </button>
@@ -199,9 +199,9 @@
             </section>
             <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">
                 {% if instance is defined and instance %}
-                    {% set minio_flow_items = [('Review Identity & Environment', 'Keep the canonical object-storage asset stable while updating its connection metadata.'), ('Adjust Endpoint Access', 'Rotate credentials or transport settings only when operationally required.'), ('Test Configuration', 'Verify the submitted S3 transport contract using the effective secret key.'), ('Run Core Validation', 'Rebuild MinIO compatibility and provider capability evidence after saving.')] %}
+                    {% set minio_flow_items = [('Review Identity & Environment', 'Keep the canonical object-storage asset stable while updating its connection metadata.'), ('Adjust Endpoint Access', 'Rotate credentials or transport settings only when operationally required.'), ('Test Configuration', 'Verify the submitted S3 transport contract using the effective secret key.'), ('Run Full Validation', 'Rebuild MinIO compatibility and provider capability evidence after saving.')] %}
                     {% set flow_title = "MinIO Configuration Flow" %}
-                    {% set flow_description = "How connection changes return this object-storage provider to an operationally ready state." %}
+                    {% set flow_description = "How changes restore object-storage readiness." %}
                     {% set flow_note = "Consumer bindings remain attached to the canonical object-storage asset; only provider readiness is reset when connection-sensitive settings change." %}
                 {% else %}
                     {% set minio_flow_items = [('Define Connection Identity', 'Create the reusable KAORI identity for this MinIO endpoint and object-storage asset.'), ('Configure Endpoint Access', 'Set the S3 API endpoint, credentials, TLS behavior, and supported release contract.'), ('Test Connection', 'Verify S3 API reachability, credential access, and read-only bucket discovery before registration is enabled.'), ('Register Connection', 'Create the provider identity before Core Validation and consumer binding.')] %}
