@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from app.artifact_registry.collectors import InventoryProgressCallback, get_registry_collector
 from app.artifact_registry.contracts import ProjectRecord, RegistryInventoryEvidence
@@ -17,9 +18,7 @@ from app.models.registry import (
     RegistryCollectionState,
     RegistryProject,
     RegistryRepository,
-    RegistryScanSnapshot,
     RegistryTag,
-    RegistryVulnerability,
 )
 
 logger = logging.getLogger(__name__)
@@ -53,6 +52,116 @@ def _lock_collection_state(integration_instance_id: int) -> RegistryCollectionSt
     return state
 
 
+def _reconcile_tags(
+    artifact: RegistryArtifact,
+    raw_tags: list[dict[str, Any]],
+    *,
+    observed_at: datetime,
+) -> int:
+    existing = {tag.name: tag for tag in artifact.tags}
+    count = 0
+    for raw_tag in raw_tags:
+        tag_name = str(raw_tag.get('name') or '').strip()
+        if not tag_name:
+            continue
+        tag = existing.pop(tag_name, None)
+        if tag is None:
+            tag = RegistryTag(name=tag_name)
+            artifact.tags.append(tag)
+        tag.provider_native_id = str(raw_tag.get('id') or '') or None
+        tag.push_time = _parse_datetime(raw_tag.get('push_time'))
+        tag.pull_time = _parse_datetime(raw_tag.get('pull_time'))
+        tag.provider_metadata = {
+            key: raw_tag.get(key)
+            for key in ('immutable', 'signed')
+            if raw_tag.get(key) is not None
+        }
+        tag.observed_at = observed_at
+        count += 1
+
+    for stale in existing.values():
+        db.session.delete(stale)
+    return count
+
+
+def _reconcile_artifacts(
+    repository: RegistryRepository,
+    records: list[Any],
+    *,
+    observed_at: datetime,
+) -> tuple[int, int]:
+    existing = {artifact.digest: artifact for artifact in repository.artifacts}
+    artifact_count = tag_count = 0
+    for record in records:
+        artifact = existing.pop(record.digest, None)
+        if artifact is None:
+            digest_algorithm = record.digest.split(':', 1)[0] if ':' in record.digest else 'unknown'
+            artifact = RegistryArtifact(
+                digest=record.digest,
+                digest_algorithm=digest_algorithm,
+            )
+            repository.artifacts.append(artifact)
+        artifact.provider_native_id = record.provider_native_id
+        artifact.digest_algorithm = record.digest.split(':', 1)[0] if ':' in record.digest else 'unknown'
+        artifact.artifact_type = record.artifact_type
+        artifact.media_type = record.media_type
+        artifact.size_bytes = record.size_bytes
+        artifact.push_time = record.push_time
+        artifact.pull_time = record.pull_time
+        artifact.provider_metadata = record.provider_metadata
+        artifact.observed_at = observed_at
+
+        # Security posture is owned by the separate security workstream. Inventory
+        # reconciliation deliberately preserves scan/signature/SBOM evidence on
+        # stable artifact rows and only removes it when the artifact itself is stale.
+        tag_count += _reconcile_tags(
+            artifact,
+            list(record.tags),
+            observed_at=observed_at,
+        )
+        artifact_count += 1
+
+    for stale in existing.values():
+        db.session.delete(stale)
+    return artifact_count, tag_count
+
+
+def _reconcile_repositories(
+    project: RegistryProject,
+    records: list[Any],
+    *,
+    observed_at: datetime,
+) -> tuple[int, int, int]:
+    existing = {repository.name: repository for repository in project.repositories}
+    repository_count = artifact_count = tag_count = 0
+    for record in records:
+        repository = existing.pop(record.name, None)
+        if repository is None:
+            repository = RegistryRepository(name=record.name)
+            project.repositories.append(repository)
+        repository.provider_native_id = record.provider_native_id
+        repository.artifact_count = record.artifact_count
+        repository.pull_count = record.pull_count
+        repository.description = record.description
+        repository.provider_created_at = record.provider_created_at
+        repository.provider_updated_at = record.provider_updated_at
+        repository.provider_metadata = record.provider_metadata
+        repository.observed_at = observed_at
+
+        child_artifacts, child_tags = _reconcile_artifacts(
+            repository,
+            list(record.artifacts),
+            observed_at=observed_at,
+        )
+        repository_count += 1
+        artifact_count += child_artifacts
+        tag_count += child_tags
+
+    for stale in existing.values():
+        db.session.delete(stale)
+    return repository_count, artifact_count, tag_count
+
+
 def commit_registry_inventory(
     identity: IntegrationInstance,
     evidence: RegistryInventoryEvidence,
@@ -62,107 +171,49 @@ def commit_registry_inventory(
     integration_instance_id = int(identity.id)
     projects: list[ProjectRecord] = evidence.projects
     state = _lock_collection_state(integration_instance_id)
-    existing_count = RegistryProject.query.filter_by(integration_instance_id=integration_instance_id).count()
-    if existing_count and not projects:
+    existing_projects = {
+        project.name: project
+        for project in RegistryProject.query.options(
+            selectinload(RegistryProject.repositories)
+            .selectinload(RegistryRepository.artifacts)
+            .selectinload(RegistryArtifact.tags)
+        )
+        .filter_by(integration_instance_id=integration_instance_id)
+        .all()
+    }
+    if existing_projects and not projects:
         raise RuntimeError(
             'Registry project discovery returned zero projects while a previous committed snapshot exists. '
             'KAORI preserved the previous snapshot; verify provider scope and health before retrying.'
         )
 
-    RegistryProject.query.filter_by(integration_instance_id=integration_instance_id).delete(synchronize_session=False)
-    db.session.flush()
-
     project_count = repository_count = artifact_count = tag_count = 0
-    for project_record in projects:
-        project = RegistryProject(
-            integration_instance_id=integration_instance_id,
-            provider_native_id=project_record.provider_native_id,
-            name=project_record.name,
-            public=project_record.public,
-            repository_count=project_record.repository_count,
-            provider_metadata=project_record.provider_metadata,
+    for record in projects:
+        project = existing_projects.pop(record.name, None)
+        if project is None:
+            project = RegistryProject(
+                integration_instance_id=integration_instance_id,
+                name=record.name,
+            )
+            db.session.add(project)
+        project.provider_native_id = record.provider_native_id
+        project.public = record.public
+        project.repository_count = record.repository_count
+        project.provider_metadata = record.provider_metadata
+        project.observed_at = observed_at
+
+        child_repositories, child_artifacts, child_tags = _reconcile_repositories(
+            project,
+            list(record.repositories),
             observed_at=observed_at,
         )
-        db.session.add(project)
         project_count += 1
-        for repo_record in project_record.repositories:
-            repository = RegistryRepository(
-                provider_native_id=repo_record.provider_native_id,
-                name=repo_record.name,
-                artifact_count=repo_record.artifact_count,
-                pull_count=repo_record.pull_count,
-                description=repo_record.description,
-                provider_created_at=repo_record.provider_created_at,
-                provider_updated_at=repo_record.provider_updated_at,
-                provider_metadata=repo_record.provider_metadata,
-                observed_at=observed_at,
-            )
-            project.repositories.append(repository)
-            repository_count += 1
-            for artifact_record in repo_record.artifacts:
-                digest_algorithm = artifact_record.digest.split(':', 1)[0] if ':' in artifact_record.digest else 'unknown'
-                artifact = RegistryArtifact(
-                    provider_native_id=artifact_record.provider_native_id,
-                    digest=artifact_record.digest,
-                    digest_algorithm=digest_algorithm,
-                    artifact_type=artifact_record.artifact_type,
-                    media_type=artifact_record.media_type,
-                    size_bytes=artifact_record.size_bytes,
-                    push_time=artifact_record.push_time,
-                    pull_time=artifact_record.pull_time,
-                    scan_status=artifact_record.scan_status,
-                    scan_completed_at=artifact_record.scan_completed_at,
-                    vulnerability_summary=artifact_record.vulnerability_summary,
-                    signature_status=artifact_record.signature_status,
-                    sbom_status=artifact_record.sbom_status,
-                    provider_metadata=artifact_record.provider_metadata,
-                    observed_at=observed_at,
-                )
-                repository.artifacts.append(artifact)
-                artifact_count += 1
-                if artifact_record.scan_snapshot is not None:
-                    snapshot_data = artifact_record.scan_snapshot
-                    snapshot = RegistryScanSnapshot(
-                        scanner=snapshot_data.get('scanner'),
-                        scanner_version=snapshot_data.get('scanner_version'),
-                        report_id=snapshot_data.get('report_id'),
-                        status=str(snapshot_data.get('status') or 'not_scanned'),
-                        severity_summary=snapshot_data.get('severity_summary') or {},
-                        provider_metadata=snapshot_data.get('provider_metadata') or {},
-                        observed_at=observed_at,
-                    )
-                    artifact.scan_snapshots.append(snapshot)
-                    for finding in artifact_record.vulnerabilities:
-                        snapshot.vulnerabilities.append(
-                            RegistryVulnerability(
-                                vulnerability_id=finding['vulnerability_id'],
-                                package=finding['package'],
-                                installed_version=finding['installed_version'],
-                                fixed_version=finding['fixed_version'],
-                                severity=finding['severity'],
-                                description=finding['description'],
-                                provider_metadata=finding['provider_metadata'],
-                            )
-                        )
-                for raw_tag in artifact_record.tags:
-                    tag_name = str(raw_tag.get('name') or '').strip()
-                    if not tag_name:
-                        continue
-                    artifact.tags.append(
-                        RegistryTag(
-                            name=tag_name,
-                            provider_native_id=str(raw_tag.get('id') or '') or None,
-                            push_time=_parse_datetime(raw_tag.get('push_time')),
-                            pull_time=_parse_datetime(raw_tag.get('pull_time')),
-                            provider_metadata={
-                                key: raw_tag.get(key)
-                                for key in ('immutable', 'signed')
-                                if raw_tag.get(key) is not None
-                            },
-                            observed_at=observed_at,
-                        )
-                    )
-                    tag_count += 1
+        repository_count += child_repositories
+        artifact_count += child_artifacts
+        tag_count += child_tags
+
+    for stale in existing_projects.values():
+        db.session.delete(stale)
 
     state.status = 'ready'
     state.last_observed_at = observed_at
