@@ -19,6 +19,7 @@ def main() -> int:
             'app/templates/integrations/observability/alert_source/providers/alertmanager/frontpage.html'
         ),
         'MinIO': read('app/templates/integrations/storage/object_storage/providers/minio/index.html'),
+        'Harbor': read('app/templates/integrations/registry/providers/harbor/index.html'),
     }
     shared_frontpage = read('app/templates/integrations/components/_provider_frontpage.html')
     shared_registry = read('app/templates/integrations/components/_provider_registry.html')
@@ -36,6 +37,9 @@ def main() -> int:
         ),
         'MinIO': read(
             'app/templates/integrations/storage/object_storage/providers/minio/partials/_registry_content.html'
+        ),
+        'Harbor': read(
+            'app/templates/integrations/registry/providers/harbor/partials/_registry.html'
         ),
     }
     direct_coverage = {
@@ -61,6 +65,7 @@ def main() -> int:
             'app/templates/integrations/observability/alert_source/providers/alertmanager/instance_form.html'
         ),
         'MinIO': read('app/templates/integrations/storage/object_storage/providers/minio/instance_form.html'),
+        'Harbor': read('app/templates/integrations/registry/providers/harbor/instance_form.html'),
     }
 
     for provider, page in provider_pages.items():
@@ -194,6 +199,7 @@ def main() -> int:
         'Metrics Source': provider_registration_pages['Metrics Source'],
         'Alertmanager': provider_registration_pages['Alertmanager'],
         'MinIO': provider_registration_pages['MinIO'],
+        'Harbor': provider_registration_pages['Harbor'],
     }
     for marker in (
         'data-kaori-provider-registration-actions',
@@ -243,6 +249,21 @@ def main() -> int:
         'Back to Registry',
     ):
         assert marker in shared_detail_posture
+
+    provider_detail_pages = {
+        'Kubernetes': read(
+            'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/detail.html'
+        ),
+        'Metrics Source': read('app/templates/integrations/observability/metrics_source/instance_detail.html'),
+        'Alertmanager': read(
+            'app/templates/integrations/observability/alert_source/providers/alertmanager/instance_detail.html'
+        ),
+        'MinIO': read('app/templates/integrations/storage/object_storage/providers/minio/instance_detail.html'),
+        'Harbor': read('app/templates/integrations/registry/providers/harbor/instance_detail.html'),
+    }
+    for provider, page in provider_detail_pages.items():
+        assert 'integrations/components/_provider_detail_posture.html' in page, provider
+        assert 'provider_detail_posture.render' in page, provider
 
     for marker in (
         'data-kaori-provider-configuration-contract',
