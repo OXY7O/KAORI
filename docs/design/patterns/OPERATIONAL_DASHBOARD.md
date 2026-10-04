@@ -130,6 +130,7 @@ The Hero establishes identity, evidence boundary, and readiness. Operational Sig
 All Operational Dashboard consumers use `app/dashboards/common/operational.py` for the stable request-level contract:
 
 - canonical tab order is `overview → capacity → signals → reporting`;
+- `app/dashboards/common/operational.py` owns accepted tab keys/order; `operational_dashboard_workspace.html` owns their labels/icons and must mirror the same ordered keys;
 - invalid or missing tabs normalize to `overview`;
 - dashboard page-size normalization delegates to `app/common/pagination.py`, whose canonical options are `5 / 10 / 25 / 50` with default `5`;
 - page-size selectors render `pagination.allowed_per_page`; templates must not hardcode the numeric choices;

@@ -9,6 +9,10 @@
   Future operational dashboards should consume this component instead of
   copying Alpine state, URL synchronization, keyboard navigation, tab lists,
   or tab-panel geometry.
+
+  Request-level accepted tab keys/order are owned by
+  app/dashboards/common/operational.py. This template owns labels/icons only;
+  contract tests require standard_tabs to mirror the same ordered keys.
 #}
 {% set standard_tabs = [('overview', 'Operations Overview', 'activity'), ('capacity', 'Capacity & Demand', 'gauge'), ('signals', 'Signals & Actions', 'bell-ring'), ('reporting', 'Reporting', 'file-text')] %}
 {% macro controller(active_tab, prefix, input_id='dashboard-active-tab') -%}

@@ -1,3 +1,6 @@
+import re
+from pathlib import Path
+
 from app.common.pagination import DEFAULT_PER_PAGE, PER_PAGE_OPTIONS
 from app.dashboards.common.operational import (
     DASHBOARD_PAGE_SIZES,
@@ -16,6 +19,13 @@ def test_operational_dashboard_tabs_are_one_ordered_contract() -> None:
     assert normalize_operational_tab(None) == 'overview'
     assert normalize_operational_tab(' CAPACITY ') == 'capacity'
     assert normalize_operational_tab('unknown') == 'overview'
+
+
+def test_workspace_tab_presentation_matches_application_contract() -> None:
+    root = Path(__file__).resolve().parents[3]
+    workspace = (root / 'app/templates/components/operational_dashboard_workspace.html').read_text(encoding='utf-8')
+    rendered_keys = tuple(re.findall(r"\('([^']+)', '[^']+', '[^']+'\)", workspace))
+    assert rendered_keys == OPERATIONAL_DASHBOARD_TABS
 
 
 def test_dashboard_page_sizes_delegate_to_canonical_pagination_contract() -> None:
