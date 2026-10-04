@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Any
 from urllib.parse import urlparse
 
-from app.artifact_registry.collectors import RegistryInventoryCollector
+from app.artifact_registry.collectors import InventoryProgressCallback, RegistryInventoryCollector
 from app.artifact_registry.contracts import (
     ArtifactRecord,
     ProjectRecord,
@@ -42,7 +42,10 @@ def _repository_name(project_name: str, value: Any) -> str:
     return name[len(prefix):] if name.startswith(prefix) else name
 
 
-def collect_harbor_inventory(instance: HarborInstance) -> RegistryInventoryEvidence:
+def collect_harbor_inventory(
+    instance: HarborInstance,
+    progress_callback: InventoryProgressCallback | None = None,
+) -> RegistryInventoryEvidence:
     """Collect only the canonical inventory facts owned by #895.
 
     Security detail, governance, and runtime correlation have independent
@@ -50,8 +53,14 @@ def collect_harbor_inventory(instance: HarborInstance) -> RegistryInventoryEvide
     """
 
     client = build_client(instance)
+    raw_projects = client.list_all_projects()
+    repository_hint = sum(max(_as_int(project.get('repo_count')) or 0, 0) for project in raw_projects)
+    repository_processed = 0
+    if progress_callback is not None:
+        progress_callback(0, repository_hint, '')
+
     projects: list[ProjectRecord] = []
-    for raw_project in client.list_all_projects():
+    for raw_project in raw_projects:
         project_name = str(raw_project.get('name') or '').strip()
         if not project_name:
             continue
@@ -113,7 +122,18 @@ def collect_harbor_inventory(instance: HarborInstance) -> RegistryInventoryEvide
                     )
                 )
             project.repositories.append(repository)
+            repository_processed += 1
+            if progress_callback is not None:
+                progress_callback(
+                    repository_processed,
+                    max(repository_hint, repository_processed),
+                    f'{project_name}/{repo_name}',
+                )
         projects.append(project)
+
+    if progress_callback is not None:
+        completed_total = max(repository_processed, 1)
+        progress_callback(completed_total, completed_total, '')
 
     parsed = urlparse(instance.endpoint)
     return RegistryInventoryEvidence(
@@ -131,4 +151,5 @@ def collect_harbor_inventory(instance: HarborInstance) -> RegistryInventoryEvide
 collector = RegistryInventoryCollector(
     provider_key='harbor',
     collect=collect_harbor_inventory,
+    collect_with_progress=collect_harbor_inventory,
 )
