@@ -183,3 +183,34 @@ def test_harbor_frontpage_hero_uses_canonical_copy_budget() -> None:
     ) not in index
     assert len('Register Harbor connections with governed readiness and evidence.') <= 68
     assert len('Register Harbor connections with governed readiness and evidence.'.split()) == 8
+
+
+
+def test_harbor_frontpage_matches_canonical_provider_workspace_hierarchy() -> None:
+    index = read('app/templates/integrations/registry/providers/harbor/index.html')
+    coverage = read('app/templates/integrations/registry/providers/harbor/partials/_coverage.html')
+    registry = read('app/templates/integrations/registry/providers/harbor/partials/_registry.html')
+
+    assert 'components/integration_workspace_tabs.html' in index
+    assert 'integration_tabs.render("harbor"' in index
+    assert 'Harbor Integration Coverage' in coverage
+    assert 'Harbor Connection Registry' in registry
+    assert 'No Consumer Binding Surface Yet' not in index
+    assert 'committed Registry inventory' in index
+    assert 'Metrics Source bindings' in index
+    assert 'webhook readiness' in index
+
+
+def test_harbor_coverage_keeps_independent_registry_readiness_planes() -> None:
+    coverage = read('app/templates/integrations/registry/providers/harbor/partials/_coverage.html')
+    presentation = read('app/integrations/registry/providers/harbor/application/presentation.py')
+
+    for label in ('Harbor API', 'Inventory', 'Metrics Source', 'Webhook', 'Coverage'):
+        assert label in coverage or label in read(
+            'app/templates/integrations/components/_provider_registry.html'
+        )
+    assert '_provider_status(instance)' in presentation
+    assert '_inventory_status(collection)' in presentation
+    assert '_metrics_status(metrics)' in presentation
+    assert '_webhook_status(webhook)' in presentation
+    assert "coverage_label = 'Complete' if complete else 'Partial'" in presentation

@@ -770,6 +770,7 @@ def main() -> int:
             'app/templates/integrations/observability/alert_source/providers/alertmanager/frontpage.html'
         ),
         'MinIO': read('app/templates/integrations/storage/object_storage/providers/minio/index.html'),
+        'Harbor': read('app/templates/integrations/registry/providers/harbor/index.html'),
     }
     for provider, source in provider_front_pages.items():
         require('Coverage Gaps' in source, f'{provider}: fourth overview metric must be Coverage Gaps', errors)
@@ -778,6 +779,11 @@ def main() -> int:
         require(
             'provider_front.hero(' in source and 'provider_front.overview(' in source,
             f'{provider}: provider front page must remain shared-component owned',
+            errors,
+        )
+        require(
+            'integration_tabs.render(' in source,
+            f'{provider}: provider front page must retain Integration Coverage / Connection Registry',
             errors,
         )
     alertmanager_front = provider_front_pages['Alertmanager']

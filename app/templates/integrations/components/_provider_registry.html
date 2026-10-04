@@ -176,6 +176,30 @@
         </tr>
     </thead>
 {%- endmacro %}
+{% macro registry_evidence_coverage_colgroup() -%}
+    <colgroup>
+        <col class="w-[21%]">
+        <col class="w-[13%]">
+        <col class="w-[14%]">
+        <col class="w-[17%]">
+        <col class="w-[14%]">
+        <col class="w-[11%]">
+        <col class="w-[10%]">
+    </colgroup>
+{%- endmacro %}
+{% macro registry_evidence_coverage_head(provider_api_label='Provider API') -%}
+    <thead class="{{ table_ui.head_classes() }}">
+        <tr>
+            <th class="{{ table_ui.header_cell_classes() }}">Registry Instance</th>
+            <th class="{{ table_ui.header_cell_classes() }}">{{ provider_api_label }}</th>
+            <th class="{{ table_ui.header_cell_classes() }}">Inventory</th>
+            <th class="{{ table_ui.header_cell_classes() }}">Metrics Source</th>
+            <th class="{{ table_ui.header_cell_classes() }}">Webhook</th>
+            <th class="{{ table_ui.header_cell_classes() }}">Coverage</th>
+            <th class="{{ table_ui.header_cell_classes(action=true) }}">Actions</th>
+        </tr>
+    </thead>
+{%- endmacro %}
 {% macro scope_coverage_colgroup() -%}
     <colgroup>
         <col class="w-[24%]">

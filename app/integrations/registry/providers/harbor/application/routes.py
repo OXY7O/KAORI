@@ -76,17 +76,33 @@ def _queue_feedback(*, event_type: str, status: str, title: str, message: str, d
 def index() -> ResponseReturnValue:
     context = build_index_context(
         HarborIndexQuery(
+            tab=request.args.get('tab', 'coverage').strip(),
             query=request.args.get('q', '').strip(),
             environment=request.args.get('environment', '').strip(),
             readiness=request.args.get('readiness', '').strip(),
             compatibility=request.args.get('compatibility', '').strip(),
             page=request.args.get('page', 1, type=int) or 1,
             per_page=request.args.get('per_page', 5, type=int) or 5,
+            coverage_query=request.args.get('coverage_q', '').strip(),
+            coverage_environment=request.args.get('coverage_environment', '').strip(),
+            coverage_status=request.args.get('coverage_status', '').strip(),
+            coverage_page=request.args.get('coverage_page', 1, type=int) or 1,
+            coverage_per_page=request.args.get('coverage_per_page', 5, type=int) or 5,
         )
     )
     context['notification_context'] = get_navigation_notification_context(user_id=int(current_user.id))
     if request.headers.get('HX-Request') == 'true':
-        return render_template('integrations/registry/providers/harbor/partials/_registry.html', **context)
+        target = request.headers.get('HX-Target')
+        if target == 'harbor-integration-coverage':
+            return render_template(
+                'integrations/registry/providers/harbor/partials/_coverage.html',
+                **context,
+            )
+        if target == 'harbor-connection-registry':
+            return render_template(
+                'integrations/registry/providers/harbor/partials/_registry.html',
+                **context,
+            )
     return render_template('integrations/registry/providers/harbor/index.html', **context)
 
 

@@ -17,6 +17,7 @@ def test_provider_front_pages_share_one_canonical_hierarchy() -> None:
             'app/templates/integrations/observability/alert_source/providers/alertmanager/frontpage.html'
         ),
         'minio': read('app/templates/integrations/storage/object_storage/providers/minio/index.html'),
+        'harbor': read('app/templates/integrations/registry/providers/harbor/index.html'),
     }
 
     for provider, template in templates.items():
@@ -123,6 +124,7 @@ def test_provider_connection_registries_share_one_column_contract() -> None:
             'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_inventory_content.html'
         ),
         read('app/templates/integrations/storage/object_storage/providers/minio/partials/_registry_content.html'),
+        read('app/templates/integrations/registry/providers/harbor/partials/_registry.html'),
     ]
 
     for label in ('Connection', 'Endpoint / Scope', 'Core Readiness', 'Compatibility', 'Bindings', 'Actions'):
@@ -174,3 +176,35 @@ def test_metrics_source_provider_selector_uses_canonical_hero_shell_api() -> Non
     assert "page_hero.intro('chart-spline', 'Integrations', 'plus')" in selector
     assert '<h1 class="{{ page_hero.title_classes() }}">Register Metrics Source</h1>' in selector
     assert 'page_hero.hero(' not in selector
+
+
+
+def test_harbor_frontpage_uses_registry_evidence_coverage_contract() -> None:
+    page = read('app/templates/integrations/registry/providers/harbor/index.html')
+    coverage = read('app/templates/integrations/registry/providers/harbor/partials/_coverage.html')
+    registry = read('app/templates/integrations/registry/providers/harbor/partials/_registry.html')
+    provider_registry = read('app/templates/integrations/components/_provider_registry.html')
+    routes = read('app/integrations/registry/providers/harbor/application/routes.py')
+    presentation = read('app/integrations/registry/providers/harbor/application/presentation.py')
+
+    assert 'Harbor Integration Overview' in page
+    assert 'integration_tabs.render("harbor"' in page
+    assert '{% include "integrations/registry/providers/harbor/partials/_coverage.html" %}' in page
+    assert '{% include "integrations/registry/providers/harbor/partials/_registry.html" %}' in page
+
+    assert 'provider_registry.registry_evidence_coverage_colgroup()' in coverage
+    assert "provider_registry.registry_evidence_coverage_head('Harbor API')" in coverage
+    for label in ('Registry Instance', 'Inventory', 'Metrics Source', 'Webhook', 'Coverage', 'Actions'):
+        assert label in provider_registry
+
+    assert 'provider_registry.connection_registry_colgroup()' in registry
+    assert 'provider_registry.connection_registry_head()' in registry
+    assert '<input type="hidden" name="tab" value="registry">' in registry
+
+    assert "target == 'harbor-integration-coverage'" in routes
+    assert "target == 'harbor-connection-registry'" in routes
+    assert "request.args.get('coverage_q', '')" in routes
+    assert "'coverage_rows': coverage_page_rows" in presentation
+    assert 'registry_metrics_readiness(identity)' in presentation
+    assert 'RegistryCollectionState' in presentation
+    assert 'RegistryWebhookEndpoint' in presentation

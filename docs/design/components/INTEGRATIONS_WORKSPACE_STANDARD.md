@@ -41,7 +41,7 @@ Provider templates supply factual labels, icons, endpoint data, compatibility ev
 
 ## Domain Landing Workspace Contract
 
-`Orchestration`, `Observability`, and `Storage` use one shared domain landing pattern. Domain pages do not invent provider-specific cards or a Storage-only composition.
+`Orchestration`, `Observability`, `Storage`, and `Registry` use one shared domain landing pattern. Domain pages do not invent provider-specific cards or a Storage-only composition.
 
 ```text
 Hero / Domain Posture
