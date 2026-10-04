@@ -7,7 +7,7 @@
     ("Compatibility", instance.compatibility_profile or "Validation Required", "Harbor compatibility profile")
 ] %}
 {% set evidence_items = [
-    ("server", "brand", "Harbor API Endpoint", instance.endpoint, "Harbor API base URL used for read-only discovery, identity, compatibility, capability checks, and governed Registry evidence."),
+    ("server", "brand", "Harbor API Endpoint", instance.endpoint, "Harbor API base URL for read-only discovery, identity, compatibility, capabilities, and Registry evidence."),
     ("shield-check", "success" if instance.verify_ssl else "warning", "TLS Verification", "Enabled" if instance.verify_ssl else "Disabled", "Certificate validation policy for Harbor API requests."),
     ("key-round", "info", "Access Contract", instance.auth_type|replace("_", " ")|title, "Credentials remain encrypted and are never retained in validation evidence."),
     ("package-search", "success", "Registry Authority", "Harbor", "Harbor remains authoritative for native Registry state and policies.")
