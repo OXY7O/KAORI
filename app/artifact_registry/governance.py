@@ -89,6 +89,10 @@ def get_registry_governance_collector(provider_key: str) -> RegistryGovernanceCo
     return collector
 
 
+def registered_registry_governance_collectors() -> tuple[RegistryGovernanceCollector, ...]:
+    return tuple(_COLLECTORS[key] for key in sorted(_COLLECTORS))
+
+
 def sync_registry_governance(
     identity: IntegrationInstance,
     *,
