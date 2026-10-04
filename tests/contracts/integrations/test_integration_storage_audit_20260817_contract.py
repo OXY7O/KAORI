@@ -18,7 +18,10 @@ def test_storage_domain_keeps_owner_and_observability_source_boundaries_explicit
     assert '- key: block_storage' in taxonomy
     assert "domain_key='storage'" in registration
     assert "capability_key='object_storage'" in registration
-    assert 'data-kaori-storage-binding-boundary' in workspace
+    assert 'components/info_tip.html' in workspace
+    assert "'Storage Authority Boundary'" in workspace
+    assert "'integration-' ~ domain.key ~ '-binding-guidance'" in workspace
+    assert 'data-kaori-storage-binding-boundary' not in workspace
     assert 'MinIO owns the object-storage API and managed asset.' in workspace
     assert 'A Metrics Source provides metrics' in workspace
     assert 'File Storage and Block Storage remain capability placeholders' in workspace

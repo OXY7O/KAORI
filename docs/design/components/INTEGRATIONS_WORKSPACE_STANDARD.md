@@ -724,3 +724,19 @@ The Observability domain owns one canonical `metrics_source` integration categor
 Metrics bindings may coexist for one managed asset when their query-horizon roles differ. Canonical routing fields are `Query Horizon` (`Recent Preferred`, `Historical Preferred`, `Balanced`) and `Routing Weight` (`1..100`). The resolver must never select solely by weight: eligibility/runtime health precede horizon routing, source role remains the failover tier, weight ranks candidates inside a horizon/role, and priority is the final operator-defined tie-break.
 
 Metrics routing is horizon-aware and product-neutral. The configured `METRICS_RECENT_WINDOW_HOURS` boundary determines which horizon a time-aware query requests; each source advertises its default horizon through provider metadata and each binding owns its routing role/weight.
+
+
+## Compact Domain Guidance
+
+Contextual ownership, routing, and provider-boundary explanations that are useful during review but are not required operational state use the canonical `components/info_tip.html` pattern instead of permanent Violet guidance panels.
+
+For Integration domain registries:
+
+- place one consolidated Info Tip beside the owning section/header title;
+- keep the full explanation available on hover, keyboard focus, and touch through the shared Info Tip controller;
+- do not reserve permanent vertical space for routing/authority helper copy;
+- do not hide validation failures, readiness blockers, destructive warnings, or required workflow state in an Info Tip;
+- domain-specific guidance remains provider-neutral where the owning boundary is provider-neutral;
+- Integrations Overview is excluded from this compact-guidance refinement because its summary and authority surfaces are first-class portfolio evidence, not subordinate helper guidance.
+
+The current Consumer Bindings workspace applies this rule to Observability Routing and the Storage Authority Boundary.
