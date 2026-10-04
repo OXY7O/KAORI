@@ -109,6 +109,7 @@ def test_registry_inventory_reports_live_provider_progress() -> None:
     assert 'InventoryProgressCallback' in collectors
     assert 'collect_with_progress' in collectors
     assert 'progress_callback' in harbor
+    assert "progress_callback(0, 0, 'Project Discovery')" in harbor
     assert 'repository_processed' in harbor
     assert 'collect_with_progress(provider_record, progress_callback)' in sync
     assert 'report_inventory_progress' in task
