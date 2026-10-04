@@ -47,10 +47,12 @@ def test_harbor_authentication_fields_follow_selected_auth_mode() -> None:
     forms = read('app/integrations/registry/providers/harbor/application/forms.py')
 
     assert "authType: {{ (form.auth_type.data or 'basic')|tojson|forceescape }}" in form
-    assert 'x_model="authType"' in form
+    assert "**{'x-model':'authType'}" in form
     assert 'class="contents"' not in form
-    assert form.count('x-show="authType === \'basic\'"') == 2
+    assert form.count('x-show="authType === \'basic\'"') == 1
     assert 'x-show="authType === \'basic\'"' in form
+    assert "class=\"mt-4 grid gap-4 md:grid-cols-2\"" in form
+    assert "**{':required':\"authType === 'basic'\"}" in form
     assert 'x-cloak' in form
     assert 'Ignored when Anonymous / Public Read-Only is selected.' not in form
     assert 'Stored encrypted and never emitted into validation evidence.' not in form
