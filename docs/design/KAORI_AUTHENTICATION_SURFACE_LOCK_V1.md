@@ -71,45 +71,46 @@ Real-device UAT may add evidence, but physical device names do not become CSS co
 
 ### Canonical Database Setup Workspace Composition
 
-The approved Database Setup Required surface is a non-Hero, compact operational readiness workspace optimized for the canonical laptop targets. It uses an explicit Authentication Surface typography exception rather than the ordinary application-page title scale:
+The approved Database Setup Required surface is a non-Hero, console-first readiness workspace optimized for the canonical 1280×800 and 1024×768 laptop targets. The setup surface intentionally does **not** use the authenticated application page-title scale because this is a short, one-time pre-authentication operator workflow.
 
-- page title: 20 px (`text-xl`), semibold;
-- primary setup section title: 16 px (`text-base`), semibold;
-- supporting rail title: 14 px (`text-sm`), semibold;
-- explanatory copy: 12 px (`text-xs`) with readable 20 px line height;
+Compact setup typography:
+
+- page title: 18 px (`text-lg`), semibold;
+- operator section title: 14 px (`text-sm`), semibold;
+- explanatory and helper copy: 12 px (`text-xs`) with 20 px line height;
+- technical command text remains 12 px monospace;
 - semantic state labels remain owned by the shared label component.
 
-This exception is limited to the one-time pre-authentication setup workspace. It does not change the ordinary authenticated-page typography hierarchy.
+This exception is limited to Database Setup Required and must not be copied to ordinary authenticated application pages.
 
-The page uses one unified operational surface without stacked full-width content bands. Current readiness stays inside the compact page header. The main workspace then uses the same 12-column responsive composition already established by Authentication: primary bootstrap and initialization guidance occupy eight columns, while security and troubleshooting occupy a four-column supporting rail.
-
-The composition is:
+The setup page uses **no giant outer workspace card and no permanent right-side setup rail**. The page is composed as a short operator console:
 
 ```text
-Unified Operational Surface
-├── Compact Page Identity + Inline Readiness
-├── Main Control Grid (12 columns)
-│   ├── Primary 8 columns
-│   │   ├── Development Bootstrap
-│   │   └── Embedded Initialization Path
-│   └── Supporting 4 columns
-│       ├── Security Boundary
-│       └── Progressive Setup Details
-└── Read-only Boundary + Retry Setup Check
+Compact Page Identity
+↓
+Readiness Strip: Database | Application Schema | Normal Sign-In
+↓
+Bootstrap Console (2/3) | Encryption Boundary (1/3)
+↓
+Horizontal Initialization Path
+↓
+Advanced Setup (collapsed by default)
+↓
+Read-only Boundary + Retry Setup Check
 ```
 
-The readiness strip is a neutral definition-list composition inside the page header, not a second card family. It must use shared semantic labels and must not be repeated in a separate Readiness Summary panel.
+The primary path must fit within the first laptop viewport under normal browser zoom whenever ordinary browser chrome allows it. Secondary manual recovery commands and missing-schema evidence stay behind the shared expandable-content component so they do not permanently inflate the page.
 
 Shared ownership is mandatory:
 
-- `components/operational_section_card.html::shell_classes()` owns the single outer operational surface;
 - `components/table_label.html` owns installation, PostgreSQL, schema, and sign-in semantic labels;
-- `components/info_flow.html` owns the initialization sequence and uses its documented compact `embedded=true` density;
-- `components/terminal_command.html` owns copyable bootstrap/check commands;
-- `components/operational_callout.html` owns semantic security/recovery callouts;
-- `components/section_link_button.html` owns the compact Retry Setup Check navigation action.
+- `components/terminal_command.html` owns copyable bootstrap/check commands and uses `compact=true` on this setup surface;
+- `components/operational_callout.html` owns the encryption and connectivity semantic boundaries;
+- `components/operational_flow_steps.html` owns the visible three-stage initialization sequence;
+- `components/view_more_content.html` owns the collapsed Advanced Setup disclosure;
+- `components/section_link_button.html` owns Retry Setup Check.
 
-The setup page must not introduce authenticated Hero geometry, full-width stacked content blocks for each subsection, multiple peer operational cards, a duplicate readiness-summary panel, page-local semantic badge styling, a copied timeline implementation, arbitrary typography, or database mutation from presentation code.
+The setup page must not introduce authenticated Hero geometry, a giant parent card, a permanent troubleshooting rail, a vertical timeline that consumes most of the viewport, duplicate readiness summaries, page-local terminal chrome, arbitrary typography, custom CSS, provider calls, or database mutation from presentation code.
 
 ## Locked Security Contract
 
