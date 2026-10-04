@@ -17,6 +17,7 @@ def test_provider_frontpages_use_one_coverage_gap_metric_and_safe_posture_logic(
             'app/templates/integrations/observability/alert_source/providers/alertmanager/frontpage.html'
         ),
         'MinIO': read('app/templates/integrations/storage/object_storage/providers/minio/index.html'),
+        'Harbor': read('app/templates/integrations/registry/providers/harbor/index.html'),
     }
     for provider, page in pages.items():
         assert 'Coverage Gaps' in page, provider
@@ -65,3 +66,25 @@ def test_provider_frontpage_consistency_verifier_uses_current_title_case_contrac
     assert '├── Coverage Gaps' in standard
     assert 'fourth metric is always `Coverage Gaps`' in standard
     assert 'Provider Catalog shows registered count, ready count, real readiness percentage' in standard
+
+
+def test_current_provider_shell_standard_includes_harbor() -> None:
+    standard = read('docs/design/components/INTEGRATIONS_WORKSPACE_STANDARD.md')
+    verifier = read('scripts/verify_provider_frontpage_consistency.py')
+
+    for marker in (
+        'Kubernetes, Metrics Source, Alertmanager, MinIO, and Harbor provider landing pages',
+        'Canonical Connection Registry columns for Kubernetes, Metrics Source, Alertmanager, MinIO, and Harbor',
+        'New Kubernetes, Metrics Source, Alertmanager, MinIO, and Harbor connection forms',
+        'Kubernetes, Metrics Source, Alertmanager, MinIO, and Harbor expose registered identity',
+        'identical geometry across Kubernetes, Metrics Source, Alertmanager, MinIO, and Harbor',
+        'Kubernetes, Metrics Source, Alertmanager, MinIO, and Harbor MUST NOT copy their own registration-posture panel',
+        'Orchestration, Observability, Storage, or Registry',
+    ):
+        assert marker in standard
+
+    assert "'Harbor': read('app/templates/integrations/registry/providers/harbor/index.html')" in verifier
+    assert "'Harbor': read(" in verifier
+    assert "'app/templates/integrations/registry/providers/harbor/partials/_registry.html'" in verifier
+    assert "'app/templates/integrations/registry/providers/harbor/instance_form.html'" in verifier
+    assert "'app/templates/integrations/registry/providers/harbor/instance_detail.html'" in verifier
