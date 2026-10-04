@@ -170,3 +170,14 @@ def test_registry_domain_exposes_parent_context_guidance() -> None:
     assert 'Harbor is the first qualified Registry provider' in workspace
     assert 'provider-neutral Registry contracts' in workspace
     assert "'integration-' ~ domain.key ~ '-workspace-guidance'" in workspace
+
+
+
+def test_harbor_frontpage_hero_uses_canonical_copy_budget() -> None:
+    index = read('app/templates/integrations/registry/providers/harbor/index.html')
+
+    assert 'Register Harbor connections with governed Registry validation and evidence.' in index
+    assert (
+        'Register and validate reusable Harbor Registry connections while Harbor remains authoritative '
+        'for native registry state.'
+    ) not in index

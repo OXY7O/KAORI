@@ -11,10 +11,11 @@ def read(relative: str) -> str:
 def test_framed_workspace_tabs_keep_overflow_horizontal_only() -> None:
     component = read('app/templates/components/framed_workspace_tabs.html')
 
-    assert component.count('overflow-x-auto overflow-y-hidden') == 2
+    assert component.count('overflow-x-auto bg-surface-hover') == 2
     assert component.count('class="flex w-max min-w-full gap-2 border-b border-outline-default"') == 2
     assert 'flex min-w-max gap-2 overflow-x-auto' not in component
-    assert 'overflow-x-auto overflow-y-hidden border-b border-outline-default' not in component
+    assert 'overflow-y-hidden' not in component
+    assert '-mb-px' not in component
 
 
 def test_integration_workspaces_delegate_framed_tab_overflow_to_shared_owner() -> None:
