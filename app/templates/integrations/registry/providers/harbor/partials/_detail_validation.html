@@ -6,7 +6,31 @@
 {% import "integrations/components/_readiness_explanation.html" as readiness_explanation %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% set readiness = instance.readiness_status or "validation_required" %}
-{% set readiness_label = "Ready" if readiness == "ready" else ("Blocked" if readiness == "blocked" else "Validation Required") %}
+{% if readiness == "ready" %}
+    {% set readiness_label = "Ready" %}
+    {% set gate_label = "Registry Provider Eligible" %}
+    {% set gate_body = "Required Harbor contracts are usable." %}
+    {% set gate_tone = "normal" %}
+    {% set next_action = "Revalidate after Harbor upgrades, credential changes, or API access changes." %}
+{% elif readiness == "degraded" %}
+    {% set readiness_label = "Degraded" %}
+    {% set gate_label = "Eligible with Attention" %}
+    {% set gate_body = "Required contracts are complete; compatibility remains in KAORI Extended Support." %}
+    {% set gate_tone = "warning" %}
+    {% set next_action = "Plan an upgrade to a current qualified Harbor release, then rerun Full Validation to refresh compatibility and readiness evidence." %}
+{% elif readiness == "blocked" %}
+    {% set readiness_label = "Blocked" %}
+    {% set gate_label = "Remediation Required" %}
+    {% set gate_body = "Resolve required Harbor API or compatibility gaps." %}
+    {% set gate_tone = "critical" %}
+    {% set next_action = "Resolve the identified Harbor API, authorization, or compatibility gaps, then rerun Full Validation to refresh committed readiness evidence." %}
+{% else %}
+    {% set readiness_label = "Validation Required" %}
+    {% set gate_label = "Validation Required" %}
+    {% set gate_body = "Run Full Validation to establish Harbor readiness evidence." %}
+    {% set gate_tone = "warning" %}
+    {% set next_action = "Run Full Validation to establish committed Harbor identity, compatibility, health, and capability evidence." %}
+{% endif %}
 {% set required_ready = capability_registry.required_ready_count %}
 {% set required_total = capability_registry.required_count %}
 {% set capability_blocked = capability_registry.required_missing_count %}
@@ -17,7 +41,7 @@
 ] %}
 {% set capability_metrics = [
     {"icon": "layers-3", "tone": "normal", "label": "Required Ready", "value": required_ready ~ " / " ~ required_total, "description": "Required Harbor API contracts observed by Full Validation."},
-    {"icon": "scan-search", "tone": "neutral", "label": "Optional Observed", "value": optional_ready, "description": "Optional follow-on capability evidence observed without affecting readiness."},
+    {"icon": "scan-search", "tone": "neutral", "label": "Optional Observed", "value": optional_ready, "description": "Optional capability evidence; does not affect readiness."},
     {"icon": "shield-x", "tone": "critical" if capability_blocked else "normal", "label": "Required Gaps", "value": capability_blocked, "description": "Required Harbor API contracts not currently evidenced."}
 ] %}
 <section id="harbor-core-validation"
@@ -57,7 +81,7 @@
     <div class="p-5 sm:p-6">
         {{ capability_readiness.render(
             "Harbor Capability Readiness",
-            "Required Harbor API identity, compatibility, health, and read capability evidence for the qualified release.",
+            "Required Harbor identity, compatibility, health, and read-capability evidence.",
             readiness,
             readiness_label,
             "Required Capability Coverage",
@@ -65,22 +89,26 @@
             capability_percent,
             capability_metadata,
             capability_metrics,
-            "Registry Provider Eligible" if readiness == "ready" else "Remediation Required",
-            "Required Harbor contracts are usable." if readiness == "ready" else "Resolve required Harbor API or compatibility gaps.",
-            "normal" if readiness == "ready" else "critical",
+            gate_label,
+            gate_body,
+            gate_tone,
             "Full Validation owns Harbor identity, compatibility, health, and capability evidence. Runtime Refresh owns lightweight live health only.",
-            "Revalidate after Harbor upgrades, credential changes, or API access changes." if readiness == "ready" else "Resolve Harbor gaps, then rerun Full Validation."
+            next_action
         ) }}
         {% if readiness == "ready" %}
             {% set readiness_decision_title = "Provider Readiness Is Ready" %}
             {% set readiness_decision_message = "Harbor identity, compatibility, provider health, and required read capabilities satisfy the current Registry provider contract." %}
             {% set readiness_decision_tone = "normal" %}
+        {% elif readiness == "degraded" %}
+            {% set readiness_decision_title = "Why Readiness Is Degraded" %}
+            {% set readiness_decision_message = instance.validation_message or "Required Harbor capabilities are complete, but this release remains in KAORI Extended Support." %}
+            {% set readiness_decision_tone = "warning" %}
         {% elif readiness in ["blocked", "failed", "unavailable", "incompatible"] %}
             {% set readiness_decision_title = "Why Readiness Is Blocked" %}
             {% set readiness_decision_message = instance.validation_message or "Resolve Harbor API or compatibility gaps, then rerun Full Validation." %}
             {% set readiness_decision_tone = "critical" %}
         {% else %}
-            {% set readiness_decision_title = "Why Readiness Needs Attention" %}
+            {% set readiness_decision_title = "Why Validation Is Required" %}
             {% set readiness_decision_message = instance.validation_message or "Run Full Validation to establish Harbor provider evidence." %}
             {% set readiness_decision_tone = "warning" %}
         {% endif %}
