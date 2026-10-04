@@ -88,3 +88,15 @@ Artifact Registry preserves its own evidence semantics:
 - normal Overview rendering remains database/committed-state backed and does not query Harbor at request time.
 
 Kubernetes and Object Storage remain the paired reference implementations. Artifact Registry is the first later operational-domain consumer proving that the framework can be reused without copying provider-specific dashboard geometry.
+
+
+### Artifact Registry Operations Overview parity refinement — 2026-10-04
+
+Human review tightened the first Artifact Registry adoption so its Operations Overview now mirrors the paired reference dashboards directly:
+
+```text
+Registry Provider Health Summary
+→ Inventory Snapshot | Data Freshness
+```
+
+The health register uses Registry-specific columns and independent Inventory / Metrics Source / Security Evidence source indicators. Inventory Snapshot keeps six domain inventory facts. Data Freshness keeps four evidence planes: Inventory, Metrics, Security, and Analytics. Missing committed inventory is presented as **Inventory Sync Required**, never as a green provider-signal state.

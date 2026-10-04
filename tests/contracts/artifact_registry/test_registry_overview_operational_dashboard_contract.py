@@ -40,13 +40,17 @@ def test_artifact_registry_overview_scope_is_committed_and_provider_neutral() ->
 
     assert "request.args.get('provider_id', type=int)" in routes
     assert "request.args.get('tab', 'overview', type=str)" in routes
+    assert "request.args.get('provider_health_page', 1)" in routes
+    assert "PROVIDER_HEALTH_PAGE_SIZES = {5, 10, 25, 50}" in routes
     assert 'artifact_registry/partials/_overview_content.html' in routes
     assert "allowed_tabs = {'overview', 'capacity', 'signals', 'reporting'}" in presentation
     assert 'RegistryProject.integration_instance_id == selected_provider.id' in presentation
     assert "registry_metrics_readiness(provider).get('status') == 'ready'" in presentation
     assert 'HarborClient(' not in presentation
     assert 'requests.' not in routes
-    assert 'No provider request is issued by this Overview page.' in operations
+    assert 'Registry Provider Health Summary' in operations
+    assert 'Inventory Snapshot' in operations
+    assert 'Data Freshness' in operations
 
 
 def test_artifact_registry_overview_reuses_shared_sections_and_domain_handoffs() -> None:
@@ -79,3 +83,51 @@ def test_operational_dashboard_standard_registers_artifact_registry_consumer() -
     assert 'Artifact Registry Overview is a conforming operational-domain consumer' in standard
     assert 'ARTIFACT_CONTENT' in verifier
     assert '_verify_artifact_registry_dashboard(' in verifier
+
+
+def test_artifact_registry_operations_overview_matches_reference_dashboard_grammar() -> None:
+    operations = read('app/templates/artifact_registry/partials/_overview_operations.html')
+    health = read('app/templates/artifact_registry/partials/_overview_provider_health.html')
+    signal = read('app/templates/artifact_registry/partials/_overview_signal_overview.html')
+    presentation = read('app/artifact_registry/presentation.py')
+
+    assert 'artifact_registry/partials/_overview_provider_health.html' in operations
+    assert 'Inventory Snapshot' in operations
+    assert 'Data Freshness' in operations
+    assert 'overview.inventory_items' in operations
+    assert 'overview.freshness' in operations
+    assert "current_user.has_permission('artifact_registry.sync')" in operations
+    assert "url_for('artifact_registry.sync_inventory')" in operations
+
+    for label in (
+        'Registry Provider',
+        'Overall',
+        'Projects',
+        'Repositories',
+        'Artifacts',
+        'Security Signals',
+        'Snapshot Sources',
+    ):
+        assert label in health
+    for source in ('Inventory', 'Metrics Source', 'Security Evidence'):
+        assert source in health
+    assert 'components/pagination.html' in health
+    assert "for size in [5, 10, 25, 50]" in health
+
+    for label in (
+        "'Projects'",
+        "'Repositories'",
+        "'Artifacts'",
+        "'Tags'",
+        "'Artifact Footprint'",
+        "'Public Projects'",
+    ):
+        assert label in presentation
+    for label in (
+        "'Inventory Snapshot'",
+        "'Metrics Snapshot'",
+        "'Security Snapshot'",
+        "'Analytics Snapshot'",
+    ):
+        assert label in presentation
+    assert 'Inventory Sync Required' in signal

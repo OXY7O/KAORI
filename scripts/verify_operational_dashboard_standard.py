@@ -31,6 +31,10 @@ ARTIFACT_SIGNAL_OVERVIEW = (
     ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_signal_overview.html'
 )
 ARTIFACT_REPORTING = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_reporting.html'
+ARTIFACT_OPERATIONS = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_operations.html'
+ARTIFACT_PROVIDER_HEALTH = (
+    ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_provider_health.html'
+)
 ARTIFACT_ROUTES = ROOT / 'app' / 'artifact_registry' / 'routes.py'
 ARTIFACT_PRESENTATION = ROOT / 'app' / 'artifact_registry' / 'presentation.py'
 PAGE_HERO = ROOT / 'app' / 'templates' / 'components' / 'page_hero.html'
@@ -209,6 +213,8 @@ def _verify_artifact_registry_dashboard(
     hero: str,
     signal_overview: str,
     reporting: str,
+    operations: str,
+    provider_health: str,
     routes: str,
     presentation: str,
 ) -> None:
@@ -269,6 +275,30 @@ def _verify_artifact_registry_dashboard(
             'All Registry Providers',
         ),
         'Artifact Registry scope and signal overview',
+    )
+    _require(
+        operations,
+        (
+            'artifact_registry/partials/_overview_provider_health.html',
+            'Inventory Snapshot',
+            'Data Freshness',
+            "current_user.has_permission('artifact_registry.sync')",
+            "url_for('artifact_registry.sync_inventory')",
+        ),
+        'Artifact Registry Operations Overview parity',
+    )
+    _require(
+        provider_health,
+        (
+            'Registry Provider Health Summary',
+            'Security Signals',
+            'Snapshot Sources',
+            'components/pagination.html',
+            'Inventory',
+            'Metrics Source',
+            'Security Evidence',
+        ),
+        'Artifact Registry provider health register',
     )
     _require(
         reporting,
@@ -335,6 +365,8 @@ def verify() -> None:
     artifact_hero = _read(ARTIFACT_HERO)
     artifact_signal_overview = _read(ARTIFACT_SIGNAL_OVERVIEW)
     artifact_reporting = _read(ARTIFACT_REPORTING)
+    artifact_operations = _read(ARTIFACT_OPERATIONS)
+    artifact_provider_health = _read(ARTIFACT_PROVIDER_HEALTH)
     artifact_routes = _read(ARTIFACT_ROUTES)
     artifact_presentation = _read(ARTIFACT_PRESENTATION)
     page_hero = _read(PAGE_HERO)
@@ -372,6 +404,8 @@ def verify() -> None:
         artifact_hero,
         artifact_signal_overview,
         artifact_reporting,
+        artifact_operations,
+        artifact_provider_health,
         artifact_routes,
         artifact_presentation,
     )
