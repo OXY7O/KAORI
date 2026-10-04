@@ -98,7 +98,7 @@ Top-level workspace switching uses `framed_workspace_tabs.render_navigation(...)
 
 ## Provider Front Page Contract
 
-Kubernetes, Metrics Source, Alertmanager, and MinIO provider landing pages use one canonical front-page hierarchy. Provider-specific technical evidence may differ inside the workspace, but the navigation and visual grammar must not.
+Kubernetes, Metrics Source, Alertmanager, MinIO, and Harbor provider landing pages use one canonical front-page hierarchy. Provider-specific technical evidence may differ inside the workspace, but the navigation and visual grammar must not.
 
 ```text
 Operational Integration Hero
@@ -140,7 +140,7 @@ app/templates/integrations/components/_provider_registry.html
 
 Provider pages supply provider-specific copy, routes, evidence, and row data. They must not duplicate the shared Hero, overview metrics, registry headers, `colgroup`, or table-width contract.
 
-Canonical Connection Registry columns for Kubernetes, Metrics Source, Alertmanager, and MinIO are:
+Canonical Connection Registry columns for Kubernetes, Metrics Source, Alertmanager, MinIO, and Harbor are:
 
 ```text
 Connection | Endpoint / Scope | Core Readiness | Compatibility | Bindings | Actions
@@ -176,7 +176,7 @@ Rules:
 
 ## Provider Registration Action Footer Contract
 
-New Kubernetes, Metrics Source, Alertmanager, and MinIO connection forms use one embedded registration-gate footer owned by:
+New Kubernetes, Metrics Source, Alertmanager, MinIO, and Harbor connection forms use one embedded registration-gate footer owned by:
 
 ```text
 app/templates/integrations/components/_provider_registration_actions.html
@@ -582,7 +582,7 @@ Kubernetes, Metrics Source, Alertmanager, Runtime Observations, and Integration 
 
 Before final lock, Integrations use the following canonical composition rules:
 
-- **Configuration** — provider detail pages are read-only connection-contract workspaces. Kubernetes, Metrics Source, Alertmanager, and MinIO expose registered identity, endpoint/transport evidence, authority boundary, operational flow, and a canonical `Configure Connection` action. Editing occurs on the dedicated `Edit <Provider> Connection` page; provider detail tabs MUST NOT embed editable forms.
+- **Configuration** — provider detail pages are read-only connection-contract workspaces. Kubernetes, Metrics Source, Alertmanager, MinIO, and Harbor expose registered identity, endpoint/transport evidence, authority boundary, operational flow, and a canonical `Configure Connection` action. Editing occurs on the dedicated `Edit <Provider> Connection` page; provider detail tabs MUST NOT embed editable forms.
 - **Provider workspace tabs** — Metrics Source and Alertmanager use `integration_workspace_tabs.js` as the shared tab-state controller. Page-local copies of URL/hash synchronization, keyboard navigation, and `moveTab()` logic are prohibited.
 - **Runtime Observation modal** — the content macro must call `_record_detail_modal.html` with `size='standard'`; it must not own a second standalone `<dialog>` shell. Diagnostic detail is shown once under `Diagnostic Review`; only a non-duplicative `standalone_message` may appear above it. Lifecycle and capability evidence remain optional dedicated boundaries.
 - **Integration Runtime Overview** — runtime records use a full-width fixed-layout KAORI table and the shared native `View More` modal. Inline `View More / Hide Details` expansion is prohibited for runtime record detail.
@@ -590,7 +590,7 @@ Before final lock, Integrations use the following canonical composition rules:
 - **Hero metrics** — provider Hero context metrics use `page_hero.context_metric()` instead of copied metric-card markup.
 - **Style debt** — no new Integration verifier debt may be added. When an Integration file drops below its recorded debt ceiling, update the baseline in the same patch.
 
-- Provider detail Hero posture is owned by `integrations/components/_provider_detail_posture.html` so the right-side posture card has identical geometry across Kubernetes, Metrics Source, Alertmanager, and MinIO. Provider-specific text and evidence values may differ; card structure, metric density, and actions do not.
+- Provider detail Hero posture is owned by `integrations/components/_provider_detail_posture.html` so the right-side posture card has identical geometry across Kubernetes, Metrics Source, Alertmanager, MinIO, and Harbor. Provider-specific text and evidence values may differ; card structure, metric density, and actions do not.
 
 ## Domain workspace visual and runtime feedback contract
 
@@ -607,16 +607,16 @@ Validation and Runtime HTMX responses MUST refresh their framed-tab status badge
 - Provider front pages are already protected by `integrations.manage`; registry and coverage empty states MUST NOT repeat the same authorization decision inside the template. If the page is renderable, the canonical `Register Connection` action is renderable when no filters suppress it.
 - Cross-provider consumer coverage uses the asset-centric term **Consumer Asset** and pagination uses **Assets**, not provider-specific `Scopes`.
 - Registration workspaces share the same interaction hierarchy: Hero → `Connection Configuration` → `Connection Identity` → `Endpoint & Access` with operation-scoped `Test Connection` → compatibility/request controls → action bar.
-- Registration Hero ownership is shared by `integrations/components/_provider_registration_hero.html`. Kubernetes, Metrics Source, Alertmanager, and MinIO MUST NOT copy their own registration-posture panel. The shared right-side contract is `Registration Posture` / `Pre-save Requirements` / `Draft`, with `Before Save · Test Connection` and `After Save · Core Validation`, followed by `Back to Registry`.
+- Registration Hero ownership is shared by `integrations/components/_provider_registration_hero.html`. Kubernetes, Metrics Source, Alertmanager, MinIO, and Harbor MUST NOT copy their own registration-posture panel. The shared right-side contract is `Registration Posture` / `Pre-save Requirements` / `Draft`, with `Before Save · Test Connection` and `After Save · Core Validation`, followed by `Back to Registry`.
 - Registration naming uses **Register `<Provider>` Connection**. `Add Kubernetes Connection` and `Register Alertmanager Instance` are retired operator-facing labels.
 - Registration/configuration right-context ownership is shared by `integrations/components/_provider_registration_context.html`. Provider connection forms render exactly two context surfaces: the provider flow and one `Related Operational Workspace` card. Do not restore separate expandable `Connection Identity & Contract`, `Compatibility Guide`, `After Registration`, or lifecycle cards beside the connection form; those details belong to Configuration, Validation & Capabilities, Runtime & History, or the provider's final lifecycle/source workspace after registration.
-- The related workspace points to the provider domain (`Orchestration`, `Observability`, or `Storage`) and keeps the authority boundary concise. Any initial consumer binding created by a registration shortcut is described inside that related-workspace context instead of adding a third side card.
+- The related workspace points to the provider domain (`Orchestration`, `Observability`, `Storage`, or `Registry`) and keeps the authority boundary concise. Any initial consumer binding created by a registration shortcut is described inside that related-workspace context instead of adding a third side card.
 - `Test Connection` MUST be an HTMX operation with its own loading indicator and signed registration proof; it MUST NOT submit or refresh the entire registration workspace.
 - Registration action bars use the shared gated-footer contract: `Connection Test Required` / `Complete Test Connection before registration.` before verification, then `Connection Verified` / `Verified connection payload is ready to register.` after verification, with `Cancel` + `Register Connection`. Metrics Source and Alertmanager MUST NOT omit Cancel or use `Instance` terminology in operator-facing actions.
 - Registration identity fields use one wording contract: `Connection Name`, `Environment` when the provider persists environment context, and `Description`. Canonical placeholders are `<Provider> Production` and `Operational purpose and ownership context`. Endpoint placeholders use `https://<provider>.example.internal`; basic-auth usernames use `service-account`; secret fields use action wording such as `Enter password`, `Enter bearer token`, or `Enter secret key`.
 - Keep field-level helper text sparse. Section headers own the explanation for Connection Identity, Endpoint & Access, compatibility, and operational controls. Per-field helper text is reserved for controls whose behavior cannot be expressed by label/placeholder alone (for example kubeconfig replacement behavior). Do not add explanatory mini-cards under ordinary registration fields.
 - MinIO `Test Connection` proves S3 endpoint reachability, request signing, and the read-only discovery permission required by the provider. MinIO product identity and release compatibility are Core Validation evidence. Product identity may use MinIO deployment/server headers or the unauthenticated `/minio/health/live` probe so a reverse proxy that strips response headers does not create a false registration failure.
-- Provider-specific fields may differ, but MinIO, Metrics Source, Alertmanager, and Kubernetes must keep the same visual and interaction hierarchy.
+- Provider-specific fields may differ, but Kubernetes, Metrics Source, Alertmanager, MinIO, and Harbor must keep the same visual and interaction hierarchy.
 
 
 ### Asset-owner provider lifecycle
