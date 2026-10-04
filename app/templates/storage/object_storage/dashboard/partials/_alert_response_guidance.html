@@ -1,43 +1,10 @@
-{% import "components/operational_callout.html" as operational_callout %}
-{% import "components/numbered_governance_steps.html" as numbered_steps %}
-{% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/operational_alert_response.html" as alert_response %}
 {% set alert_response_steps = [('scan-search', 'Validate', 'Confirm the selected system, committed snapshot freshness, and alert-source evidence before acting on the signal.'), ('list-filter', 'Triage', 'Rank severity and blast radius, identify the affected bucket or request path, and establish an accountable owner.'), ('chart-no-axes-combined', 'Investigate', 'Correlate capacity, request, growth, provider-state, and related alert evidence to test the suspected cause.'), ('shield-check', 'Respond', 'Run the approved storage response for the confirmed scope within safety guardrails.'), ('circle-check-big', 'Verify', 'Confirm alert recovery, request-path health, storage availability, and capacity signals remain stable after the response.'), ('clipboard-check', 'Record', 'Capture the decision, action, verification result, and follow-up evidence so the operational outcome remains auditable.')] %}
-{% call operational_section_card.render(
-    'Alert Interpretation & Response',
+{{ alert_response.render(
     'Meaning, triage order, and controlled response flow for active Object Storage alerts.',
-    'book-open-check',
-    body_classes='space-y-5 p-5',
-    extra_classes='h-full'
-    ) %}
-    <div class="grid gap-2 sm:grid-cols-3">
-        {{ operational_callout.render('Critical',
-                'Potential active impact. Start incident triage and establish storage ownership.',
-                icon='siren',
-                tone='critical',
-                variant='semantic',
-                extra_classes='h-full') }}
-        {{ operational_callout.render('Warning',
-                'Developing capacity, request-path, or availability risk. Investigate before escalation.',
-                icon='triangle-alert',
-                tone='warning',
-                variant='semantic',
-                extra_classes='h-full') }}
-        {{ operational_callout.render('Info',
-                'Low-risk operational signal. Validate relevance, recurrence, and scope.',
-                icon='circle-alert',
-                tone='info',
-                variant='semantic',
-                extra_classes='h-full') }}
-    </div>
-    <div>
-        <p class="text-xs font-semibold text-content-muted">Controlled Response Flow</p>
-        <div class="mt-3">
-            {{ numbered_steps.render(alert_response_steps, 'Controlled Object Storage Alert Response Flow') }}
-        </div>
-    </div>
-    {{ operational_callout.render('Alert Data Source',
-        'KAORI Alert Intelligence · Active AlertCase records.',
-        icon='brain-circuit',
-        tone='info',
-        variant='semantic') }}
-{% endcall %}
+    alert_response_steps,
+    'Controlled Object Storage Alert Response Flow',
+    'Potential active impact. Start incident triage and establish storage ownership.',
+    'Developing capacity, request-path, or availability risk. Investigate before escalation.',
+    'Low-risk operational signal. Validate relevance, recurrence, and scope.'
+) }}
