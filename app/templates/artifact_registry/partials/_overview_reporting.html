@@ -4,16 +4,9 @@
 {% import "components/section_link_button.html" as section_link_button %}
 <div class="{{ peer_content_grid.layout_classes() }}">
     <div class="{{ peer_content_grid.column_classes('primary', 'seven-five') }}">
-        {{ reporting_workspace.guidance(
-            overview.scope_label,
-            'committed Artifact Registry snapshots',
-            'Registry provider scope'
-        ) }}
-    </div>
-    <div class="{{ peer_content_grid.column_classes('secondary', 'seven-five') }}">
         {% call operational_section_card.render(
-            'Reporting Ownership',
-            'Reports owns definitions, generation, schedules, retained artifacts, and audit.',
+            'Reporting Evidence',
+            'Committed Registry evidence available to the governed Reports workflow.',
             'file-text',
             body_classes='space-y-4 p-5',
             extra_classes='h-full'
@@ -30,10 +23,17 @@
                     </p>
                 </div>
             </div>
-            <p class="text-sm leading-6 text-content-secondary">Artifact Registry does not create a parallel reporting subsystem. Generated-report lifecycle remains in Reports.</p>
+            <p class="text-sm leading-6 text-content-secondary">Reports owns definitions, generation, schedules, retained artifacts, and audit.</p>
             <div>
                 {{ section_link_button.render(url_for('reports.overview'), 'Open Reports', icon='arrow-up-right') }}
             </div>
         {% endcall %}
+    </div>
+    <div class="{{ peer_content_grid.column_classes('secondary', 'seven-five') }}">
+        {{ reporting_workspace.guidance(
+            overview.scope_label,
+            'committed Artifact Registry snapshots',
+            'Registry provider scope'
+        ) }}
     </div>
 </div>
