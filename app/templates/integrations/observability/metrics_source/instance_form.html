@@ -216,7 +216,7 @@
                          aria-hidden="true"></div>
                 {% endif %}
                 {% if instance %}
-                    {% call form_action_bar.render('Save changes, then run Full Validation.', aria_label=metrics_source_label ~ ' Connection Actions') %}
+                    {% call form_action_bar.render('Save changes, then run Full Validation.', aria_label=metrics_source_label ~ ' Configuration Actions', embedded=true) %}
                         <a href="{{ url_for('integrations.metrics_sources') }}"
                            class="{{ action_button.classes('secondary') }}">Cancel</a>
                         <button type="submit"
@@ -236,7 +236,7 @@
             </section>
             <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">
                 {% if instance %}
-                    {% set metrics_source_flow_items = [('Save Changes', 'Update the reusable connection contract and return readiness to Validation Required.'), ('Test Connection', 'Confirm the saved endpoint remains reachable with the selected access settings.'), ('Run Core Validation', 'Rebuild provider compatibility and adapter and query-contract readiness evidence.'), ('Review Consumer Bindings', 'Confirm Kubernetes, Object Storage, and future consumers retain independent validated bindings.')] %}
+                    {% set metrics_source_flow_items = [('Save Changes', 'Update the reusable connection contract and return readiness to Validation Required.'), ('Test Connection', 'Confirm the saved endpoint remains reachable with the selected access settings.'), ('Run Full Validation', 'Rebuild provider compatibility and adapter and query-contract readiness evidence.'), ('Review Consumer Bindings', 'Confirm Kubernetes, Object Storage, and future consumers retain independent validated bindings.')] %}
                     {{ provider_registration_context.render(metrics_source_label ~ " Configuration Flow",
                                         "How saved changes return to governed use.",
                                         metrics_source_flow_items,
@@ -245,7 +245,7 @@
                                         url_for("integrations.observability") ,
                     "Open Observability Integrations",
                     flow_icon="workflow",
-                    flow_note="Saving changes does not establish readiness until Core Validation succeeds.",
+                    flow_note="Saving changes does not establish readiness until Full Validation succeeds.",
                     related_icon="waypoints",
                     authority_boundary=metrics_source_label ~ " executes metric queries; the source platform owns collection and retention. KAORI governs readiness, binding validation, and source resolution.") }}
                 {% else %}
