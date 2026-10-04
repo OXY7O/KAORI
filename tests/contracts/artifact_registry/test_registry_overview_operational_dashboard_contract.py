@@ -60,22 +60,36 @@ def test_artifact_registry_overview_scope_is_committed_and_provider_neutral() ->
 def test_artifact_registry_overview_reuses_shared_sections_and_domain_handoffs() -> None:
     operations = read('app/templates/artifact_registry/partials/_overview_operations.html')
     capacity = read('app/templates/artifact_registry/partials/_overview_capacity.html')
+    capacity_snapshot = read('app/templates/artifact_registry/partials/_overview_capacity_snapshot.html')
+    forecast = read('app/templates/artifact_registry/partials/_overview_forecast_risk.html')
+    consumers = read('app/templates/artifact_registry/partials/_overview_top_consumers.html')
     signals = read('app/templates/artifact_registry/partials/_overview_signals.html')
+    alert_guidance = read('app/templates/artifact_registry/partials/_overview_alert_response_guidance.html')
     reporting = read('app/templates/artifact_registry/partials/_overview_reporting.html')
+    reporting_workspace = read('app/templates/components/reporting_dashboard_workspace.html')
 
     assert 'components/operational_section_card.html' in operations
     assert 'components/peer_content_grid.html' in operations
     assert 'components/peer_content_grid.html' in capacity
     assert 'components/peer_content_grid.html' in reporting
-    assert "url_for('artifact_registry.analytics')" in capacity
-    assert "url_for('artifact_registry.security')" in signals
-    assert "url_for('artifact_registry.runtime')" in signals
-    assert "url_for('artifact_registry.governance')" in signals
-    assert "url_for('intelligence.recommendations')" in signals
+    for source in (capacity_snapshot, forecast, consumers):
+        assert "url_for('artifact_registry.analytics')" in source
+    assert 'artifact_registry/partials/_overview_alerts_summary.html' in signals
+    assert 'artifact_registry/partials/_overview_alert_response_guidance.html' in signals
+    assert 'artifact_registry/partials/_overview_recommended_actions.html' in signals
+    for endpoint in (
+        "url_for('artifact_registry.security')",
+        "url_for('artifact_registry.runtime')",
+        "url_for('artifact_registry.governance')",
+        "url_for('artifact_registry.analytics')",
+        "url_for('intelligence.catalog')",
+        "url_for('intelligence.recommendations')",
+    ):
+        assert endpoint in alert_guidance
     assert 'components/reporting_dashboard_workspace.html' in reporting
+    assert 'reporting_workspace.summary(' in reporting
     assert 'reporting_workspace.guidance(' in reporting
-    assert "url_for('reports.overview')" in reporting
-    assert 'does not create a parallel reporting subsystem' in reporting
+    assert "url_for('reports.overview')" in reporting_workspace
 
 
 def test_operational_dashboard_standard_registers_artifact_registry_consumer() -> None:
@@ -133,8 +147,8 @@ def test_artifact_registry_operations_overview_matches_reference_dashboard_gramm
         "'Analytics Snapshot'",
     ):
         assert label in presentation
-    assert 'Snapshot Stale' in signal
-    assert 'Inventory Sync Required' in signal
+    assert 'overview.posture.label' in signal
+    assert 'overview.posture.tone' in signal
 
 
 def test_artifact_registry_overview_keeps_reference_information_hierarchy() -> None:
