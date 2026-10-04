@@ -6,6 +6,7 @@ from typing import Iterable
 
 from sqlalchemy.orm import joinedload
 
+from app.common.inventory_generation import filter_current_generation
 from app.extensions.db import db
 from app.models.inventory import PodInventory
 from app.models.registry import (
@@ -139,7 +140,8 @@ def refresh_registry_workload_bindings(
 
     binding_count = digest_matches = tag_matches = 0
     observed_at = datetime.now(UTC)
-    for pod in PodInventory.query.order_by(PodInventory.id.asc()).all():
+    pods = filter_current_generation(PodInventory.query, PodInventory).order_by(PodInventory.id.asc()).all()
+    for pod in pods:
         for raw_image, container_name, source_kind in _container_rows(pod):
             image = parse_image_reference(raw_image)
             for artifact, registry_host in by_path.get(image.repository, ()):
