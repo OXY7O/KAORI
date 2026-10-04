@@ -226,3 +226,14 @@ def test_integration_overview_readiness_copy_is_explicit_and_actionable() -> Non
         'Targets that completed required validation and remain eligible for governed operational use'
         in overview
     )
+
+
+def test_overview_generic_instance_loader_does_not_drop_object_storage() -> None:
+    extensions = read('app/integrations/overview_extensions.py')
+    workspace = read('app/integrations/overview_workspace.py')
+
+    assert "SPECIALIZED_OVERVIEW_TYPES = frozenset({'container_orchestrator', 'metrics_source', 'alert_source'})" in extensions
+    assert "'object_storage'" not in extensions.split('SPECIALIZED_OVERVIEW_TYPES =', 1)[1].split('\n\n', 1)[0]
+    assert 'IntegrationInstance.integration_type.in_(integration_types)' in extensions
+    assert 'extension_instances = load_extension_integration_instances()' in workspace
+    assert 'extension_instances=extension_instances' in workspace
