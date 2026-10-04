@@ -565,7 +565,6 @@ def alertmanager() -> ResponseReturnValue:
         query=request.args.get('q', '').strip(),
         compatibility=request.args.get('compatibility', '').strip(),
         readiness=request.args.get('readiness', '').strip(),
-        deployment_type=request.args.get('deployment_type', '').strip(),
         tab=request.args.get('tab', 'coverage').strip(),
         page=request.args.get('page', 1, type=int) or 1,
         per_page=request.args.get('per_page', 5, type=int) or 5,

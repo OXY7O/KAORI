@@ -96,30 +96,18 @@
                                     <p class="mt-0.5 text-xs leading-5 text-content-muted">Stable identity used by validation, consumer bindings, runtime history, notifications, and audit records.</p>
                                 </div>
                             </div>
-                            <div class="grid gap-4 lg:grid-cols-2">
-                                <div>
-                                    <label for="alertmanager-name"
-                                           class="mb-1.5 block text-sm font-semibold text-content-primary">Connection Name</label>
-                                    <input id="alertmanager-name"
-                                           name="name"
-                                           required
-                                           value="{{ instance.name if instance else (submitted_form.name if submitted_form else (initial_cluster.name ~ ' Alertmanager' if initial_cluster else '')) }}"
-                                           placeholder="Alertmanager Production"
-                                           class="{{ field_classes }}">
-                                </div>
-                                <div>
-                                    <label for="alertmanager-deployment-type"
-                                           class="mb-1.5 block text-sm font-semibold text-content-primary">Connection Type</label>
-                                    <select id="alertmanager-deployment-type"
-                                            name="deployment_type"
-                                            class="{{ field_classes }}">
-                                        {% set selected_deployment = instance.deployment_type if instance else (submitted_form.deployment_type if submitted_form else ('cluster_managed' if initial_cluster else 'external_managed')) %}
-                                        {% for value, label in [('external_managed','Externally managed'),('standalone','Standalone'),('shared','Shared service'),('cluster_managed','Managed for a specific scope')] %}
-                                            <option value="{{ value }}"
-                                                    {% if selected_deployment == value %}selected{% endif %}>{{ label }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
+                            <div>
+                                <label for="alertmanager-name"
+                                       class="mb-1.5 block text-sm font-semibold text-content-primary">Connection Name</label>
+                                <input id="alertmanager-name"
+                                       name="name"
+                                       required
+                                       value="{{ instance.name if instance else (submitted_form.name if submitted_form else (initial_cluster.name ~ ' Alertmanager' if initial_cluster else '')) }}"
+                                       placeholder="Alertmanager Production"
+                                       class="{{ field_classes }}">
+                                <input type="hidden"
+                                       name="deployment_type"
+                                       value="{{ instance.deployment_type if instance else (submitted_form.deployment_type if submitted_form else 'external_managed') }}">
                             </div>
                             <div class="mt-4">
                                 <label for="alertmanager-description"

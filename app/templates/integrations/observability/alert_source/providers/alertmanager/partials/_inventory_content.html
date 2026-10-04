@@ -34,7 +34,7 @@
                     <td class="{{ table_ui.cell_classes() }}">
                         <p class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]"
                            title="{{ row.endpoint }}">{{ row.endpoint }}</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ row.deployment_type|replace('_', ' ') |title }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Alertmanager API v2</p>
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">{{ integration_status(row.readiness, display="indicator") }}</td>
                     <td class="{{ table_ui.cell_classes() }}">
@@ -68,11 +68,11 @@
                 <tr>
                     <td colspan="6" class="p-0">
                         {% set empty_state_icon = "siren" %}
-                        {% set empty_state_label = "No Results" if selected_query or selected_readiness or selected_compatibility or selected_deployment_type else "Setup Required" %}
-                        {% set empty_state_title = "No Alertmanager Connections Match the Active Filters" if selected_query or selected_readiness or selected_compatibility or selected_deployment_type else "No Alertmanager Connections Found" %}
-                        {% set empty_state_description = "Adjust the registry filters to review another Alertmanager connection." if selected_query or selected_readiness or selected_compatibility or selected_deployment_type else "Register an Alertmanager connection to establish Core Validation and downstream consumer coverage." %}
+                        {% set empty_state_label = "No Results" if selected_query or selected_readiness or selected_compatibility else "Setup Required" %}
+                        {% set empty_state_title = "No Alertmanager Connections Match the Active Filters" if selected_query or selected_readiness or selected_compatibility else "No Alertmanager Connections Found" %}
+                        {% set empty_state_description = "Adjust the registry filters to review another Alertmanager connection." if selected_query or selected_readiness or selected_compatibility else "Register an Alertmanager connection to establish Core Validation and downstream consumer coverage." %}
                         {% set empty_state_min_height = "min-h-[190px]" %}
-                        {% set empty_state_action_url = url_for('alertmanager.new_instance') if not selected_query and not selected_readiness and not selected_deployment_type else none %}
+                        {% set empty_state_action_url = url_for('alertmanager.new_instance') if not selected_query and not selected_readiness and not selected_compatibility else none %}
                         {% set empty_state_action_label = 'Register Connection' if empty_state_action_url else none %}
                         {% set empty_state_action_icon = "plus" %}
                         {% include 'components/states/_empty_state.html' %}
@@ -87,7 +87,6 @@
     'q': selected_query,
     'compatibility': selected_compatibility,
     'readiness': selected_readiness,
-    'deployment_type': selected_deployment_type,
     'coverage_page': 1,
     'coverage_per_page': coverage_pagination.per_page,
     'coverage_q': selected_coverage_query,
