@@ -227,6 +227,8 @@ A deviation is valid only when at least one condition applies:
 - legally required wording;
 - an explicitly documented component-specific contract.
 
+The unauthenticated Database Setup Required workspace is one documented component-specific exception. Its Authentication Surface contract uses a compact 20 px (`text-xl`) page title, 16 px primary section title, 14 px supporting-rail title, and 12 px explanatory copy so the one-time initialization workflow remains proportionate at the canonical 1280×800 and 1024×768 laptop targets. This exception must not be copied to ordinary authenticated application pages.
+
 Document recurring exceptions instead of repeatedly introducing local utility combinations.
 
 ## 13. Implementation guardrails
