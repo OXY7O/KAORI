@@ -64,6 +64,19 @@ Object Storage inventory is registered as `object_storage.inventory.sync`:
 
 The Object Storage executor remains owned by `app.storage.object_storage.inventory`. It resolves the provider through the integration registry and may pass a domain progress callback to `inventory.sync`; `app.platform_operations.jobs` owns orchestration and lifecycle only.
 
+
+Artifact Registry uses independent registered jobs rather than one monolithic Harbor synchronization:
+
+- `artifact_registry.inventory.sync` — Projects, Repositories, Artifacts, and Tags; default 60 minutes.
+- `artifact_registry.security.sync` — incremental vulnerability/signature/SBOM evidence; default 60 minutes.
+- `artifact_registry.governance.sync` — retention/immutability/webhook/replication evidence; default 360 minutes.
+- `artifact_registry.runtime_correlation.materialize` — DB-only Registry ↔ current Kubernetes inventory materialization; default 60 minutes.
+- `artifact_registry.analytics.materialize` — committed analytics materialization on `analytics-batch`.
+
+The first four jobs currently use the existing `inventory` queue and remain independently deduplicated.
+Global **Sync All Inventory** dispatches `artifact_registry.inventory.sync` only. Heavy security evidence must
+not extend the inventory correctness path; Harbor vulnerability detail is refreshed only for new/changed scan evidence.
+
 ## RBAC
 
 - `jobs.view`: view executions, queues, and configuration catalog.
