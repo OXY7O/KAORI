@@ -382,3 +382,46 @@ report_types:
   domain: object_storage
   source_kind: object_storage
   scope_asset_type: object_storage_system
+- value: artifact_registry_inventory
+  label: Artifact Registry Inventory Report
+  description: Provider-neutral committed Registry projects, repositories, artifacts, tags, scan posture, signing, SBOM, and evidence timestamps.
+  icon: package-search
+  family: inventory
+  default_format: xlsx
+  allowed_formats:
+  - xlsx
+  - csv
+  default_sections:
+  - artifact_registry_inventory_assets
+  - artifact_registry_inventory_metadata
+  - artifact_registry_inventory_field_dictionary
+  period_mode: snapshot
+  requires_cluster: false
+  domain: artifact_registry
+  source_kind: artifact_registry
+  scope_asset_type: registry_integration
+- value: artifact_registry_analysis
+  label: Artifact Registry Analysis Report
+  description: Committed Registry capacity, growth, security, runtime correlation, governance, alerts, and KAORI Intelligence recommendations for one Registry integration.
+  icon: chart-no-axes-combined
+  family: analytics
+  default_format: pdf
+  allowed_formats:
+  - pdf
+  - xlsx
+  - csv
+  default_sections:
+  - executive_summary
+  - artifact_registry_capacity_usage
+  - artifact_registry_security_posture
+  - artifact_registry_runtime_usage
+  - artifact_registry_governance_posture
+  - artifact_registry_alerts_actions
+  - operational_recommendations
+  - methodology_evidence_boundary
+  period_mode: range
+  requires_cluster: false
+  domain: artifact_registry
+  source_kind: artifact_registry
+  scope_asset_type: registry_integration
+
