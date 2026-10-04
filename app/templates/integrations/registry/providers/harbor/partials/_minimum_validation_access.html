@@ -1,6 +1,6 @@
 {% import "components/workspace_tabs.html" as workspace_tabs %}
 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
-         x-data="{ accessOpen: false, activeTab: 'baseline', copied: '', copyText(target, label) { const node = this.$refs[target]; if (!node) return; navigator.clipboard?.writeText(node.textContent.trim()).then(() => { this.copied = label; window.setTimeout(() => { if (this.copied === label) this.copied = ''; }, 1800); }); } }"
+         x-data="{ accessOpen: false, activeTab: 'baseline', copied: '', setTab(tab) { this.activeTab = tab; }, moveTab(currentTab, direction, prefix) { const tabs = ['baseline', 'optional']; const currentIndex = tabs.indexOf(currentTab); let nextIndex = currentIndex; if (direction === 'home') nextIndex = 0; else if (direction === 'end') nextIndex = tabs.length - 1; else nextIndex = (currentIndex + direction + tabs.length) % tabs.length; this.activeTab = tabs[nextIndex]; this.$nextTick(() => document.getElementById(`${prefix}-tab-${tabs[nextIndex]}`)?.focus()); }, copyText(target, label) { const node = this.$refs[target]; if (!node) return; navigator.clipboard?.writeText(node.textContent.trim()).then(() => { this.copied = label; window.setTimeout(() => { if (this.copied === label) this.copied = ''; }, 1800); }); } }"
          data-kaori-provider-setup-reference="harbor">
     <header class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-hover px-4 py-3 sm:flex-row sm:items-start sm:justify-between">
         <div class="flex min-w-0 items-start gap-3">
