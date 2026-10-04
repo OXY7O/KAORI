@@ -36,7 +36,11 @@ def test_harbor_is_collector_not_operational_page_authority() -> None:
     assert 'collect_harbor_inventory' in collector
     assert 'RegistryInventoryEvidence' in collector
     assert 'list_all_artifacts' in client
-    assert 'with_scan_overview=True' in collector
+    assert 'get_vulnerability_report' not in collector
+    assert 'with_scan_overview=True' not in collector
+    assert 'with_sbom_overview=True' not in collector
+    assert 'with_signature=True' not in collector
+    assert 'with_immutable_status=True' not in collector
 
 
 def test_registry_inventory_sync_uses_operational_read_contract_eligibility() -> None:
@@ -87,4 +91,11 @@ def test_registry_inventory_worker_registration_matches_dispatch_contract() -> N
     assert sync_jobs.count('require_registered_worker=True') >= 2
     assert 'JobWorkerUnavailable' in routes
     assert 'Artifact Registry Worker Unavailable' in routes
+
+def test_registry_inventory_worker_does_not_cross_into_other_registry_workstreams() -> None:
+    task = (ROOT / 'app/artifact_registry/tasks.py').read_text()
+    sync = (ROOT / 'app/artifact_registry/sync.py').read_text()
+
+    assert 'sync_registry_governance' not in task
+    assert 'refresh_registry_workload_bindings' not in sync
 
