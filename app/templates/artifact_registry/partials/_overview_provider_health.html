@@ -11,6 +11,8 @@
     id='artifact-registry-provider-health-section',
     action_href=url_for('integrations.registry'),
     action_label='Open Registry Integrations',
+    loading_bar_id='artifact-registry-provider-health-loading',
+    loading_bar_label='Registry Provider Health Loading',
     body_classes='p-0'
     ) %}
     <div class="overflow-x-auto">
@@ -109,7 +111,8 @@
                             hx-swap="outerHTML"
                             hx-include="#artifact-registry-provider-health-scope, #artifact-registry-provider-health-page-reset"
                             hx-trigger="change"
-                            hx-disabled-elt="this">
+                            hx-disabled-elt="this"
+                            hx-indicator="#artifact-registry-provider-health-loading">
                         {% for size in [5, 10, 25, 50] %}
                             <option value="{{ size }}" {% if pagination.per_page == size %}selected{% endif %}>{{ size }}</option>
                         {% endfor %}
@@ -140,7 +143,7 @@
                     pagination.total_pages,
                     'provider_health_page',
                     '#artifact-registry-provider-health-section',
-                    '',
+                    '#artifact-registry-provider-health-loading',
                     'artifact_registry.overview_section',
                     {
                         'section': 'provider_health',
