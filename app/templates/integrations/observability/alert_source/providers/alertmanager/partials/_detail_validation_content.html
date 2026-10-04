@@ -12,8 +12,8 @@
 {% set required_ready = capability_summary.required_missing == 0 %}
 {% set capability_metrics = [
     {"icon": "list-checks", "tone": "normal", "label": "Validated Capabilities", "value": validated_count, "description": "Provider-owned Status, Alerts, and Silences API evidence."},
-    {"icon": "shield-x", "tone": "critical" if capability_summary.required_missing else "normal", "label": "Required Gaps", "value": capability_summary.required_missing, "description": "Required Alertmanager core contracts missing from provider evidence."},
-    {"icon": "waypoints", "tone": "normal", "label": "Consumer Bindings", "value": binding_rows|length, "description": "Asset-specific alert contracts validated independently after binding."}
+    {"icon": "shield-x", "tone": "critical" if capability_summary.required_missing else "normal", "label": "Required Gaps", "value": capability_summary.required_missing, "description": "Required Alertmanager core contracts are missing."},
+    {"icon": "waypoints", "tone": "normal", "label": "Consumer Bindings", "value": binding_rows|length, "description": "Asset-specific alert contracts validate after binding."}
 ] %}
 {% set capability_metadata = [
     "Profile · " ~ (instance.compatibility_profile or "alertmanager-core-v1")
