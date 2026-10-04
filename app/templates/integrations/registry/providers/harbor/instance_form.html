@@ -44,7 +44,7 @@
         <form id="harbor-instance-form"
               method="post"
               class="grid gap-6 xl:grid-cols-12 xl:items-start"
-              x-data="{ authType: {{ (form.auth_type.data or 'basic')|tojson }}{% if not (instance is defined and instance) %}, connectionVerified: {{ 'true' if registration_proof else 'false' }}, invalidateConnectionTest(event) { const fieldName = event.target?.name || ''; if (['csrf_token', 'connection_test_proof', 'action'].includes(fieldName)) return; this.connectionVerified = false; this.$refs.connectionProof.value = ''; }, applyConnectionTest(event) { this.connectionVerified = event.detail?.connected === true; this.$refs.connectionProof.value = event.detail?.proof || ''; }{% endif %} }"
+              x-data="{ authType: {{ (form.auth_type.data or 'basic')|tojson|forceescape }}{% if not (instance is defined and instance) %}, connectionVerified: {{ 'true' if registration_proof else 'false' }}, invalidateConnectionTest(event) { const fieldName = event.target?.name || ''; if (['csrf_token', 'connection_test_proof', 'action'].includes(fieldName)) return; this.connectionVerified = false; this.$refs.connectionProof.value = ''; }, applyConnectionTest(event) { this.connectionVerified = event.detail?.connected === true; this.$refs.connectionProof.value = event.detail?.proof || ''; }{% endif %} }"
               {% if not (instance is defined and instance) %}x-on:input.capture="invalidateConnectionTest($event)" x-on:change.capture="invalidateConnectionTest($event)" x-on:harbor-connection-tested.window="applyConnectionTest($event)"{% endif %}>
             {{ form.hidden_tag() }}
             {% if not (instance is defined and instance) %}
