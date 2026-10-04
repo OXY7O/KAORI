@@ -15,6 +15,7 @@ class RegistrySecurityTarget:
     digest: str
     scan_status: str | None
     scan_completed_at: datetime | None
+    vulnerability_summary: dict[str, int]
     signature_status: str | None
     sbom_status: str | None
     has_scan_snapshot: bool
