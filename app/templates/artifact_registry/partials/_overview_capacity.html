@@ -1,80 +1,12 @@
-{% import "components/operational_callout.html" as operational_callout %}
-{% import "components/operational_metric_card.html" as operational_metric_card %}
-{% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/peer_content_grid.html" as peer_content_grid %}
-<div class="{{ peer_content_grid.layout_classes() }}">
-    <div class="{{ peer_content_grid.column_classes('primary') }}">
-        {% call operational_section_card.render(
-            'Inventory Footprint & Demand',
-            'Committed Registry scale and provider-supplied demand evidence.',
-            'gauge',
-            action_href=url_for('artifact_registry.analytics'),
-            action_label='Open Analytics',
-            body_classes='space-y-4 p-5',
-            extra_classes='h-full'
-            ) %}
-            <div class="grid gap-3 sm:grid-cols-2">
-                {{ operational_metric_card.render(
-                    'Artifact Footprint',
-                    overview.total_size,
-                    'Committed artifact size where providers supplied size evidence.',
-                    'database',
-                    source_label='Committed Inventory',
-                    scope_label=overview.scope_label
-                ) }}
-                {{ operational_metric_card.render(
-                    'Pull Evidence',
-                    overview.pull_count,
-                    'Provider-supplied repository pull counters when available.',
-                    'download',
-                    source_label='Committed Inventory',
-                    scope_label=overview.scope_label
-                ) }}
-                {{ operational_metric_card.render(
-                    'Repositories',
-                    overview.repository_count,
-                    'Repositories in the committed Registry scope.',
-                    'package-open',
-                    source_label='Committed Inventory',
-                    scope_label=overview.scope_label
-                ) }}
-                {{ operational_metric_card.render(
-                    'Artifacts',
-                    overview.artifact_count,
-                    'Digest-oriented artifacts in committed inventory.',
-                    'fingerprint',
-                    source_label='Committed Inventory',
-                    scope_label=overview.scope_label
-                ) }}
-            </div>
-            {{ operational_callout.render(
-                'Evidence Boundary',
-                'KAORI reports committed footprint and demand evidence only; unsupported provider capacity is not inferred.',
-                icon='scale',
-                tone='info',
-                variant='semantic'
-            ) }}
-        {% endcall %}
+<div id="artifact-registry-dashboard-section-capacity" class="space-y-5">
+    <div class="{{ peer_content_grid.layout_classes() }}">
+        <div class="{{ peer_content_grid.column_classes('primary') }}">
+            {% include "artifact_registry/partials/_overview_capacity_snapshot.html" %}
+        </div>
+        <div class="{{ peer_content_grid.column_classes('secondary') }}">
+            {% include "artifact_registry/partials/_overview_forecast_risk.html" %}
+        </div>
     </div>
-    <div class="{{ peer_content_grid.column_classes('secondary') }}">
-        {% call operational_section_card.render(
-            'Analytics Handoff',
-            'Use committed analytics for growth, quota horizon, stale candidates, and Metrics Source trends.',
-            'chart-no-axes-combined',
-            action_href=url_for('artifact_registry.analytics'),
-            action_label='Review Analytics',
-            body_classes='space-y-4 p-5',
-            extra_classes='h-full'
-            ) %}
-            {{ operational_metric_card.render(
-                'Metrics Ready',
-                overview.metrics_ready_count ~ ' / ' ~ overview.provider_count,
-                'Providers with an eligible validated Metrics Source binding.',
-                'chart-spline',
-                source_label='Metrics Source',
-                scope_label=overview.scope_label
-            ) }}
-            <p class="text-sm leading-6 text-content-secondary">Growth, forecast, quota, and stale-candidate materializations remain authoritative in Artifact Registry Analytics.</p>
-        {% endcall %}
-    </div>
+    {% include "artifact_registry/partials/_overview_top_consumers.html" %}
 </div>

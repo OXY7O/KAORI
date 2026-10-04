@@ -212,6 +212,8 @@ def _resolved_capability_endpoint(workspace_key: str, tab: WorkspaceCapabilityDe
 
 
 def _workspace_key(endpoint: str) -> str | None:
+    if endpoint.startswith('artifact_registry.'):
+        return 'artifact_registry'
     if endpoint.startswith('analytics.object_storage_'):
         return 'object_storage'
     if endpoint.startswith(('object_storage_dashboard.', 'object_storage_inventory.')):
@@ -258,6 +260,13 @@ _WORKSPACE_ACTIVE_PREFIXES: dict[str, tuple[tuple[str, str], ...]] = {
     'object_storage': (
         ('object_storage_dashboard.', 'overview'),
         ('object_storage_inventory.', 'inventory'),
+    ),
+    'artifact_registry': (
+        ('artifact_registry.inventory', 'inventory'),
+        ('artifact_registry.security', 'security'),
+        ('artifact_registry.runtime', 'runtime'),
+        ('artifact_registry.governance', 'governance'),
+        ('artifact_registry.analytics', 'analytics'),
     ),
     'intelligence': (
         ('alert_intelligence.', 'alert_intelligence'),

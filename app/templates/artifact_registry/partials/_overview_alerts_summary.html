@@ -1,0 +1,41 @@
+{% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/table_label.html" as table_label %}
+{% set total_alerts = overview.alerts.critical + overview.alerts.warning + overview.alerts.info %}
+{% call operational_section_card.render(
+    'Alerts Summary',
+    'Active KAORI AlertCase posture and up to five recent Registry cases.',
+    'bell-ring',
+    action_href=url_for('alert_intelligence.index', domain='registry', asset=overview.selected_provider_id or '', tab='active'),
+    action_label='Open Alert Intelligence',
+    body_classes='p-5',
+    extra_classes='h-full'
+    ) %}
+    <div class="grid grid-cols-3 gap-3">
+        <article class="rounded-lg bg-status-critical-soft p-4 text-center"><p class="text-xs font-semibold text-status-critical-text">Critical</p><p class="mt-1 text-2xl font-semibold text-status-critical-text">{{ overview.alerts.critical }}</p></article>
+        <article class="rounded-lg bg-status-warning-soft p-4 text-center"><p class="text-xs font-semibold text-status-warning-text">Warning</p><p class="mt-1 text-2xl font-semibold text-status-warning-text">{{ overview.alerts.warning }}</p></article>
+        <article class="rounded-lg bg-status-info-soft p-4 text-center"><p class="text-xs font-semibold text-status-info-text">Info</p><p class="mt-1 text-2xl font-semibold text-status-info-text">{{ overview.alerts.info }}</p></article>
+    </div>
+    <div class="mt-4 space-y-2.5">
+        {% if overview.alerts.rows %}
+            {% for alert in overview.alerts.rows[:5] %}
+                <article class="flex items-start gap-3 rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                    <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full {% if alert.severity|lower == 'critical' %}bg-status-critical{% elif alert.severity|lower == 'warning' %}bg-status-warning{% else %}bg-status-info{% endif %}" aria-hidden="true"></span>
+                    <div class="min-w-0 flex-1"><p class="truncate text-sm font-semibold text-content-primary">{{ alert.name }}</p><p class="mt-1 line-clamp-2 text-xs leading-5 text-content-muted">{{ alert.summary }}</p></div>
+                    <div class="shrink-0 text-right">{{ table_label.status_label(alert.state, 'critical' if alert.severity|lower == 'critical' else ('warning' if alert.severity|lower == 'warning' else 'info')) }}<p class="mt-1 text-xs text-content-muted">{{ alert.age }}</p></div>
+                </article>
+            {% endfor %}
+        {% else %}
+            {% set empty_state_icon = "circle-check" %}
+            {% set empty_state_label = "Healthy" %}
+            {% set empty_state_tone = "normal" %}
+            {% set empty_state_title = "No Active Alerts" %}
+            {% set empty_state_description = "KAORI has no active recommendation-origin AlertCase records for this Registry scope." %}
+            {% set empty_state_variant = "panel" %}
+            {% include 'components/states/_empty_state.html' %}
+        {% endif %}
+    </div>
+    <div class="mt-4 flex flex-wrap gap-2">
+        {{ table_label.status_indicator_label('KAORI Alert Cases Available', 'normal') }}
+        {{ table_label.metadata_label(overview.alerts.catalog_rules ~ ' Registry Catalog Rules', icon='list-checks') }}
+    </div>
+{% endcall %}
