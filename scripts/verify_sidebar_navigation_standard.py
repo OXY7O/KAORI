@@ -143,6 +143,7 @@ def verify() -> None:
         raise AssertionError('presentation still publishes retired horizontal workspace navigation')
 
     navbar = _read(ROOT / 'app' / 'templates' / 'components' / 'navigation' / 'navbar.html')
+    navbar_js = _read(ROOT / 'app' / 'static' / 'js' / 'navbar.js')
     if "namespace(label='Welcome')" in navbar:
         raise AssertionError(
             'navbar mobile label must not call the Jinja namespace() builtin because route context may own a namespace variable'
@@ -152,9 +153,31 @@ def verify() -> None:
         (
             "mobile_page_candidates = breadcrumb_items | rejectattr('label', 'equalto', 'KAORI') | list",
             "mobile_page_label = mobile_page_candidates[-1].label if mobile_page_candidates else 'Welcome'",
+            "desktop_breadcrumb_items = breadcrumb_items | rejectattr('label', 'equalto', 'KAORI') | list",
+            'breadcrumb_compacted = desktop_breadcrumb_items|length > 3',
+            'breadcrumb_hidden_items = desktop_breadcrumb_items[1:-1] if breadcrumb_compacted else []',
+            'surface_ui.block_classes(allow_overflow=true)',
+            'max-w-[9rem]',
+            'max-w-[12rem]',
+            'data-breadcrumb-overflow-trigger',
+            'aria-controls="breadcrumb-overflow-path"',
+            ':aria-expanded="breadcrumbOpen.toString()"',
+            '@click.outside="breadcrumbOpen = false"',
             '{{ mobile_page_label }}',
         ),
-        'navbar mobile breadcrumb label',
+        'navbar bounded breadcrumb renderer',
+    )
+    _require(
+        navbar_js,
+        (
+            'breadcrumbOpen: false',
+            'breadcrumbReturnTarget: null',
+            'toggleBreadcrumb()',
+            'const breadcrumbReturnTarget = this.breadcrumbOpen ? this.breadcrumbReturnTarget : null',
+            'this.breadcrumbOpen = false',
+            'this.restoreFocus(breadcrumbReturnTarget)',
+        ),
+        'navbar breadcrumb disclosure behavior',
     )
 
     _require(
@@ -189,14 +212,18 @@ def verify() -> None:
     _require(
         sidebar_standard,
         (
-            '# KAORI Sidebar Navigation Standard v2.1',
+            '# KAORI Sidebar Navigation Standard v2.2',
             'Level 1 — Workspace / Domain',
             'Level 2 — Capability',
             'a third nested sidebar level is prohibited',
             'Reserved Future Ownership',
             'no horizontal Domain Workspace strip',
+            '5 levels including `KAORI`',
+            '4 visible breadcrumb items',
+            'maximum width of **9rem**',
+            'maximum width of **12rem**',
         ),
-        'sidebar v2.1 documentation',
+        'sidebar v2.2 documentation',
     )
 
     _require(
@@ -217,7 +244,8 @@ def verify() -> None:
 
     print(
         'KAORI sidebar navigation standard passed: two-level Workspace -> Capability sidebar, '
-        'page-owned level-3 detail navigation, permission-aware disclosure, and future-domain guardrails are locked.'
+        'bounded breadcrumb compression, page-owned level-3 detail navigation, permission-aware disclosure, '
+        'and future-domain guardrails are locked.'
     )
 
 
