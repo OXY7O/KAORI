@@ -6,7 +6,7 @@ from typing import Any
 
 from sqlalchemy import select
 
-from app.artifact_registry.collectors import get_registry_collector
+from app.artifact_registry.collectors import InventoryProgressCallback, get_registry_collector
 from app.artifact_registry.contracts import ProjectRecord, RegistryInventoryEvidence
 from app.artifact_registry.eligibility import registry_inventory_eligibility
 from app.extensions.db import db
@@ -188,7 +188,11 @@ def commit_registry_inventory(
     return dict(state.counts)
 
 
-def sync_registry_inventory(identity: IntegrationInstance) -> dict[str, Any]:
+def sync_registry_inventory(
+    identity: IntegrationInstance,
+    *,
+    progress_callback: InventoryProgressCallback | None = None,
+) -> dict[str, Any]:
     if identity.integration_type != 'registry':
         raise RuntimeError('Artifact Registry inventory requires a canonical Registry integration identity.')
 
@@ -206,7 +210,11 @@ def sync_registry_inventory(identity: IntegrationInstance) -> dict[str, Any]:
     state.last_error = None
     db.session.flush()
     try:
-        evidence = collector.collect(provider_record)
+        evidence = (
+            collector.collect_with_progress(provider_record, progress_callback)
+            if collector.collect_with_progress is not None
+            else collector.collect(provider_record)
+        )
         counts = commit_registry_inventory(identity, evidence, observed_at=observed_at)
         db.session.commit()
     except Exception as exc:
