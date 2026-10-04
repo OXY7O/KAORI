@@ -172,6 +172,9 @@ def test_asset_owner_lifecycle_status_and_actions_match_locked_contract() -> Non
     assert 'integration_status(inventory_status.status, inventory_status.label' in harbor
     assert "'label': 'Committed Snapshot'" in harbor_presentation
     assert "'label': 'No Committed Inventory'" in harbor_presentation
+    inventory_status_function = harbor_presentation.split('def _inventory_status(', 1)[1].split('def _metrics_status(', 1)[0]
+    assert "'label': 'Validation Required'" not in inventory_status_function
+    assert "'label': 'Validation Blocked'" not in inventory_status_function
     assert 'Open Artifact Registry' not in harbor
     assert "url_for('artifact_registry.inventory')" not in harbor
     assert 'Open Observability' in harbor
