@@ -133,21 +133,34 @@ def main() -> int:
         require(required in setup, f'Setup Required Title Case contract missing: {required}', errors)
 
     for required in (
-        'data-kaori-setup-workspace="release-v2"',
+        'data-kaori-setup-workspace="release-v3"',
+        'data-kaori-setup-readiness-strip',
+        'data-kaori-setup-control-grid',
         'Initialization Path',
-        'PostgreSQL Reachable',
-        'Schema Missing',
         'components/terminal_command.html',
         'components/info_flow.html',
         'components/operational_section_card.html',
+        'components/section_link_button.html',
         'components/table_label.html',
         'table_label.status_indicator_label',
         'info_flow.render',
-        'operational_section_card.render',
+        'embedded=true',
+        'operational_section_card.shell_classes()',
+        'section_link_button.render',
         'Copy Command',
-        'This readiness check is read-only.',
+        'This readiness workspace is read-only.',
     ):
         require(required in setup, f'Setup Required release workspace contract missing: {required}', errors)
+
+    require(
+        'class="text-xl font-semibold leading-7 text-content-primary"' in setup,
+        'Setup Required compact title contract drifted',
+        errors,
+    )
+    require('lg:grid-cols-12' in setup, 'Setup Required 12-column laptop grid missing', errors)
+    require('lg:col-span-8' in setup and 'lg:col-span-4' in setup, 'Setup Required control-grid spans drifted', errors)
+    require('Readiness Summary' not in setup, 'Setup Required must not duplicate readiness in a summary panel', errors)
+    require('operational_section_card.render(' not in setup, 'Setup Required must keep one outer operational surface', errors)
 
     for required in (
         'data-kaori-terminal-command',
