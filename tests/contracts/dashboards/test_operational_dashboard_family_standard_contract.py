@@ -113,6 +113,7 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
     kubernetes_alerts = read('app/templates/kubernetes/dashboard/partials/_alerts_summary.html')
     kubernetes_reporting = read('app/templates/kubernetes/dashboard/partials/_reporting_guidance.html')
     object_capacity = read('app/templates/storage/object_storage/dashboard/partials/_capacity.html')
+    object_service = read('app/storage/object_storage/dashboard/service.py')
     object_alert_guidance = read(
         'app/templates/storage/object_storage/dashboard/partials/_alert_response_guidance.html'
     )
@@ -138,6 +139,8 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
     assert 'Governed Reporting Flow' in reporting_workspace
     assert 'Review before reuse.' in reporting_workspace
     assert 'Committed capacity, usage, headroom, and response path.' in object_capacity
+    assert "'Worker Data Needed'" in object_service
+    assert "'Worker Data Required'" not in object_service
     assert (
         'Capacity uses the committed Object Storage Analytics snapshot; no live provider query is issued.'
         in object_capacity
