@@ -202,7 +202,7 @@ def _health_rows(systems: list[ObjectStorageSystem]) -> list[dict[str, Any]]:
                 'bucket_count': len(buckets),
                 'stored_display': format_bytes(stored_bytes),
                 'usage_source': usage_source,
-                'snapshot_label': str(snapshot_state.get('label') or 'Worker Data Required'),
+                'snapshot_label': str(snapshot_state.get('label') or 'Worker Data Needed'),
                 'snapshot_tone': str(snapshot_state.get('tone') or 'unknown'),
                 'snapshot_ready': analytics_usable,
                 'utilization_display': str(overview.get('utilization_display') or 'N/A'),
