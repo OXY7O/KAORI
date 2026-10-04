@@ -348,6 +348,7 @@ class Config:
             'app.storage.object_storage.analytics.tasks',
             'app.kubernetes.cluster.tasks',
             'app.storage.object_storage.inventory.tasks',
+            'app.artifact_registry.tasks',
             'app.kubernetes.governance.tls_certificates.tasks',
             'app.kubernetes.tenant.tasks',
             'app.platform_operations.data_lifecycle.retention.tasks',
@@ -379,6 +380,9 @@ class Config:
                 'queue': 'inventory',
             },
             'app.storage.object_storage.inventory.tasks.sync_all_object_storage': {
+                'queue': 'inventory',
+            },
+            'app.artifact_registry.tasks.sync_all_registry': {
                 'queue': 'inventory',
             },
             'app.kubernetes.governance.tls_certificates.tasks.sync_tls_certificates': {
