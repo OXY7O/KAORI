@@ -131,3 +131,44 @@ def test_artifact_registry_operations_overview_matches_reference_dashboard_gramm
     ):
         assert label in presentation
     assert 'Inventory Sync Required' in signal
+
+
+def test_artifact_registry_overview_keeps_reference_information_hierarchy() -> None:
+    operations = read('app/templates/artifact_registry/partials/_overview_operations.html')
+    health = read('app/templates/artifact_registry/partials/_overview_provider_health.html')
+    capacity = read('app/templates/artifact_registry/partials/_overview_capacity.html')
+    signals = read('app/templates/artifact_registry/partials/_overview_signals.html')
+    reporting = read('app/templates/artifact_registry/partials/_overview_reporting.html')
+    presentation = read('app/artifact_registry/presentation.py')
+
+    assert "current_user.has_permission('artifact_registry.sync')" in operations
+    assert "url_for('artifact_registry.sync_inventory')" in operations
+    assert 'Sync Inventory' in operations
+
+    for label in (
+        "'Inventory Snapshot'",
+        "'Metrics Snapshot'",
+        "'Security Snapshot'",
+        "'Analytics Snapshot'",
+    ):
+        assert presentation.count(label) >= 2
+    for retired in ("'Inventory Fleet'", "'Metrics Fleet'", "'Security Coverage'", "'Analytics Fleet'"):
+        assert retired not in presentation
+
+    assert "loading_bar_id='artifact-registry-provider-health-loading'" in health
+    assert 'hx-indicator="#artifact-registry-provider-health-loading"' in health
+
+    assert 'components/peer_content_grid.html' in capacity
+    assert 'components/operational_callout.html' in capacity
+    assert 'Inventory Footprint & Demand' in capacity
+    assert 'Analytics Handoff' in capacity
+    assert 'unsupported provider capacity is not inferred' in capacity
+
+    assert 'components/peer_content_grid.html' in signals
+    assert 'Security & Runtime Signals' in signals
+    assert 'Evidence & Actions' in signals
+    assert "overview.critical_findings if overview.scanned_count else 'N/A'" in signals
+    assert "overview.high_findings if overview.scanned_count else 'N/A'" in signals
+
+    assert reporting.index('Reporting Evidence') < reporting.index('reporting_workspace.guidance(')
+    assert 'Reports owns definitions, generation, schedules, retained artifacts, and audit.' in reporting
