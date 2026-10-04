@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from app.artifact_registry.eligibility import registry_inventory_eligibility
-from app.artifact_registry.governance import _COLLECTORS as GOVERNANCE_COLLECTORS
+from app.artifact_registry.governance import registered_registry_governance_collectors
 from app.common.job_execution_contract import ARTIFACT_REGISTRY_GOVERNANCE_SYNC_OPERATION
 from app.models.integration import IntegrationInstance
 from app.models.job import JobExecution
@@ -17,6 +17,7 @@ class NoEligibleRegistryGovernanceTargets(RuntimeError):
 
 
 def build_registry_governance_targets() -> list[dict[str, str]]:
+    provider_keys = {collector.provider_key for collector in registered_registry_governance_collectors()}
     identities = (
         IntegrationInstance.query.filter(
             IntegrationInstance.integration_type == 'registry',
@@ -28,7 +29,7 @@ def build_registry_governance_targets() -> list[dict[str, str]]:
     )
     targets: list[dict[str, str]] = []
     for identity in identities:
-        if identity.provider_key not in GOVERNANCE_COLLECTORS:
+        if identity.provider_key not in provider_keys:
             continue
         state = RegistryCollectionState.query.filter_by(
             integration_instance_id=int(identity.id)
