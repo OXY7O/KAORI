@@ -78,4 +78,4 @@ def test_runtime_decision_supports_primary_finding_info_tip_and_metrics_copy_is_
     assert 'components/info_tip.html' in decision
     assert 'primary_finding_info_title' in decision
     assert 'info_tip.render(primary_finding_info_id' in decision
-    assert 'Validate provider compatibility and Prometheus API v1 / PromQL core. Consumer contracts stay in Bindings & Consumers.' in validation
+    assert 'Validate provider compatibility and Prometheus API/PromQL core. Consumer contracts stay in Bindings & Consumers.' in validation
