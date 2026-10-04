@@ -186,7 +186,10 @@ def sync_inventory() -> ResponseReturnValue:
             status='warning',
             title='Artifact Registry Worker Unavailable',
             message=str(exc),
-            detail='Restart the inventory worker so it advertises the Registry inventory task, then retry synchronization.',
+            detail=(
+                'Restart the inventory worker so it advertises the Registry inventory task, '
+                'then retry synchronization.'
+            ),
             action_url=url_for('artifact_registry.overview'),
             action_label='Open Artifact Registry',
             action_icon='package',
