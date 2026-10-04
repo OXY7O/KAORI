@@ -350,6 +350,8 @@ class Config:
             'app.storage.object_storage.inventory.tasks',
             'app.artifact_registry.tasks',
             'app.artifact_registry.security.tasks',
+            'app.artifact_registry.governance_tasks',
+            'app.artifact_registry.correlation_tasks',
             'app.kubernetes.governance.tls_certificates.tasks',
             'app.kubernetes.tenant.tasks',
             'app.platform_operations.data_lifecycle.retention.tasks',
@@ -387,6 +389,12 @@ class Config:
                 'queue': 'inventory',
             },
             'app.artifact_registry.security.tasks.sync_all_registry_security': {
+                'queue': 'inventory',
+            },
+            'app.artifact_registry.governance_tasks.sync_all_registry_governance': {
+                'queue': 'inventory',
+            },
+            'app.artifact_registry.correlation_tasks.materialize_registry_runtime_correlation': {
                 'queue': 'inventory',
             },
             'app.kubernetes.governance.tls_certificates.tasks.sync_tls_certificates': {
