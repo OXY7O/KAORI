@@ -181,3 +181,15 @@ def test_asset_owner_lifecycle_status_and_actions_match_locked_contract() -> Non
         assert 'Snapshot Freshness' in source, provider
         assert 'Lifecycle Gate' in source, provider
         assert 'Delete Connection' in source, provider
+
+
+def test_asset_owner_standard_names_all_current_asset_owner_providers() -> None:
+    standard = read('docs/design/components/INTEGRATIONS_WORKSPACE_STANDARD.md')
+
+    assert 'Kubernetes/MinIO/Harbor asset-owner pages expose bound-source evidence read-only' in standard
+    assert (
+        'Kubernetes, Object Storage / MinIO, and Registry / Harbor asset-owner workspaces '
+        'remain read-only for binding mutation.'
+    ) in standard
+    assert 'fourth-domain header status MUST represent that domain\'s evidence plane' in standard
+    assert 'provider-local job-management or product-navigation shortcuts' in standard
