@@ -17,18 +17,18 @@
         pg_isready -h db -p 5432
     {%- endset %}
     {% set initialization_steps = [('Confirm the Encryption Boundary', 'Set INTEGRATION_CREDENTIAL_KEY before migration and keep the same value after encrypted integration credentials are created.'), ('Run the Initial KAORI Database Bootstrap', 'Apply the migration chain, seed canonical RBAC, and bootstrap the first local administrator in one controlled command.'), ('Return to the Readiness Check', 'Retry setup after bootstrap completes. KAORI admits normal sign-in only when the required schema is present.')] %}
-    <main class="min-h-screen bg-surface-page px-4 py-6 sm:px-6 lg:py-8">
-        <div class="mx-auto w-full max-w-6xl">
+    <main class="min-h-screen bg-surface-page px-4 py-4 sm:px-5 lg:py-5">
+        <div class="mx-auto w-full max-w-5xl">
             <section class="{{ operational_section_card.shell_classes() }}"
                      data-kaori-setup-workspace="release-v2"
                      data-kaori-setup-unified-surface
                      aria-labelledby="setup-required-title">
-                <header class="px-5 py-5 sm:px-6">
+                <header class="px-5 py-4">
                     <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                         <div class="flex min-w-0 items-start gap-3">
-                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                                   aria-hidden="true">
-                                <i data-lucide="database" class="h-5 w-5"></i>
+                                <i data-lucide="database" class="h-4 w-4"></i>
                             </span>
                             <div class="min-w-0">
                                 <p class="text-xs font-semibold text-kaori-primary">KAORI Initialization</p>
@@ -55,7 +55,7 @@
                 </header>
 
                 {% if readiness.setup_required %}
-                    <div class="border-t border-outline-subtle bg-surface-muted px-5 py-4 sm:px-6"
+                    <div class="border-t border-outline-subtle bg-surface-muted px-5 py-3"
                          data-kaori-setup-readiness-strip
                          aria-label="Initialization readiness">
                         <dl class="grid gap-3 sm:grid-cols-3 sm:gap-0">
@@ -83,14 +83,14 @@
                         </dl>
                     </div>
 
-                    <div class="grid border-t border-outline-subtle lg:grid-cols-[minmax(0,1.55fr)_minmax(19rem,0.75fr)]"
+                    <div class="grid border-t border-outline-subtle lg:grid-cols-3"
                          data-kaori-setup-primary-action>
-                        <section class="px-5 py-6 sm:px-6 lg:border-r lg:border-outline-subtle"
+                        <section class="px-5 py-5 lg:col-span-2 lg:border-r lg:border-outline-subtle"
                                  aria-labelledby="development-bootstrap-title">
                             <div class="flex items-start gap-3">
-                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                                       aria-hidden="true">
-                                    <i data-lucide="square-terminal" class="h-5 w-5"></i>
+                                    <i data-lucide="square-terminal" class="h-4 w-4"></i>
                                 </span>
                                 <div class="min-w-0 flex-1">
                                     <div class="flex flex-wrap items-center gap-2">
@@ -115,12 +115,12 @@
                             </div>
                         </section>
 
-                        <aside class="border-t border-outline-subtle px-5 py-6 sm:px-6 lg:border-t-0"
+                        <aside class="border-t border-outline-subtle px-5 py-5 lg:border-t-0"
                                aria-labelledby="security-boundary-title">
                             <div class="flex items-start gap-3">
-                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                                       aria-hidden="true">
-                                    <i data-lucide="key-round" class="h-5 w-5"></i>
+                                    <i data-lucide="key-round" class="h-4 w-4"></i>
                                 </span>
                                 <div class="min-w-0">
                                     <h2 id="security-boundary-title"
@@ -140,9 +140,9 @@
                         </aside>
                     </div>
 
-                    <div class="grid border-t border-outline-subtle lg:grid-cols-[minmax(0,1.35fr)_minmax(19rem,0.85fr)]"
+                    <div class="grid border-t border-outline-subtle lg:grid-cols-3"
                          data-kaori-setup-supporting-grid>
-                        <div class="px-5 py-6 sm:px-6 lg:border-r lg:border-outline-subtle">
+                        <div class="px-5 py-5 lg:col-span-2 lg:border-r lg:border-outline-subtle">
                             {{ info_flow.render(
                                 "Initialization Path",
                                 "Three controlled steps take this installation from reachable database to normal KAORI sign-in.",
@@ -152,12 +152,12 @@
                             ) }}
                         </div>
 
-                        <section class="border-t border-outline-subtle px-5 py-6 sm:px-6 lg:border-t-0"
+                        <section class="border-t border-outline-subtle px-5 py-5 lg:border-t-0"
                                  aria-labelledby="setup-details-title">
                             <div class="flex items-start gap-3">
-                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                                       aria-hidden="true">
-                                    <i data-lucide="sliders-horizontal" class="h-5 w-5"></i>
+                                    <i data-lucide="sliders-horizontal" class="h-4 w-4"></i>
                                 </span>
                                 <div class="min-w-0">
                                     <h2 id="setup-details-title"
@@ -210,7 +210,7 @@
                         </section>
                     </div>
                 {% else %}
-                    <div class="border-t border-outline-subtle bg-surface-muted px-5 py-4 sm:px-6"
+                    <div class="border-t border-outline-subtle bg-surface-muted px-5 py-3"
                          data-kaori-setup-readiness-strip
                          aria-label="Database recovery readiness">
                         <dl class="grid gap-3 sm:grid-cols-3 sm:gap-0">
@@ -238,14 +238,14 @@
                         </dl>
                     </div>
 
-                    <div class="grid border-t border-outline-subtle lg:grid-cols-[minmax(0,1.55fr)_minmax(19rem,0.75fr)]"
+                    <div class="grid border-t border-outline-subtle lg:grid-cols-3"
                          data-kaori-setup-primary-action>
-                        <section class="px-5 py-6 sm:px-6 lg:border-r lg:border-outline-subtle"
+                        <section class="px-5 py-5 lg:col-span-2 lg:border-r lg:border-outline-subtle"
                                  aria-labelledby="development-checks-title">
                             <div class="flex items-start gap-3">
-                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                                       aria-hidden="true">
-                                    <i data-lucide="square-terminal" class="h-5 w-5"></i>
+                                    <i data-lucide="square-terminal" class="h-4 w-4"></i>
                                 </span>
                                 <div class="min-w-0 flex-1">
                                     <div class="flex flex-wrap items-center gap-2">
@@ -262,7 +262,7 @@
                             </div>
                         </section>
 
-                        <aside class="border-t border-outline-subtle px-5 py-6 sm:px-6 lg:border-t-0"
+                        <aside class="border-t border-outline-subtle px-5 py-5 lg:border-t-0"
                                aria-label="Database recovery context">
                             {{ operational_callout.render(
                                 "PostgreSQL Is Unavailable",
@@ -275,7 +275,7 @@
                     </div>
                 {% endif %}
 
-                <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-muted px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-muted px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
                     <div class="flex items-start gap-2">
                         <i data-lucide="shield-check"
                            class="mt-0.5 h-4 w-4 shrink-0 text-content-muted"
