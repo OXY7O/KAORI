@@ -33,3 +33,9 @@ def test_terminal_command_owns_copyable_command_chrome_across_shells() -> None:
     assert "filename='js/clipboard.js'" in auth_layout
     assert 'shared component standard' in standard
     assert 'must not require Alpine or HTMX' in standard
+    assert "compact=false" in component
+    assert 'data-kaori-terminal-density' in component
+    assert "'min-h-6' if compact else 'min-h-7'" in component
+    assert "'px-2.5 py-2 leading-4' if compact else 'px-3 py-3 leading-5'" in component
+    assert 'Use `compact=true`' in standard
+    assert 'command text remains 12 px' in standard
