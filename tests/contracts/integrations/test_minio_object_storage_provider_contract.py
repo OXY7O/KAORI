@@ -201,16 +201,46 @@ def test_minio_asset_owner_lifecycle_preserves_observability_sources() -> None:
 
 
 def test_minio_review_copy_keeps_secret_and_revalidation_guidance_concise() -> None:
+    form = read('app/templates/integrations/storage/object_storage/providers/minio/instance_form.html')
     configuration = read(
         'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_configuration.html'
     )
     validation = read(
         'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_validation.html'
     )
+    access_reference = read(
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_minimum_validation_access.html'
+    )
 
+    assert 'Configure MinIO S3 credentials, then test the S3 API endpoint—not the Console URL.' in form
+    assert (
+        'MinIO provides the storage API; Metrics Source and Alertmanager remain separate bindings to the same asset.'
+        in form
+    )
+    assert (
+        'MinIO remains the storage authority. KAORI keeps provider readiness and binding evidence without storing '
+        'observability credentials here.'
+    ) in form
     assert 'Secret keys stay encrypted; registration and Full Validation use governed S3 discovery.' in configuration
+    assert 'Persistent identity linking the provider connection, managed asset, validation evidence, bindings' in configuration
+    assert 'Environment context used to interpret coverage, policy scope, operational ownership' in configuration
+    assert 'Product family identified from provider evidence during Full Validation' in configuration
+    assert 'Canonical S3-compatible API base endpoint KAORI uses for identity checks' in configuration
+    assert (
+        'setup_reference_template="integrations/storage/object_storage/providers/minio/partials/'
+        '_minimum_validation_access.html"'
+    ) in configuration
+    assert 'Minimum S3 Access Example' in access_reference
+    assert 'Open Access Examples' in access_reference
+    assert 's3:ListAllMyBuckets' in access_reference
+    assert 'Optional Inventory Enrichment Reader' in access_reference
+    assert 'MinIO Admin API quota or provider-aggregated usage evidence requires separate' in access_reference
     assert (
         'Revalidate after MinIO release, credential, endpoint, TLS, region, addressing, or S3 API changes.'
         in validation
     )
+    assert (
+        'Resolve the identified MinIO API, credential, TLS, compatibility, or required-capability gaps, then rerun '
+        'Full Validation to refresh committed readiness evidence.'
+    ) in validation
     assert 'to refresh governed readiness evidence.' not in validation
