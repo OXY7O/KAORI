@@ -9,10 +9,12 @@ from app.common.inventory_generation import filter_current_generation
 from app.extensions.db import db
 from app.models.cluster import Cluster
 from app.models.inventory import NamespaceInventory
+from app.models.integration import IntegrationInstance
 from app.models.object_storage import ObjectStorageSystem
 
 KUBERNETES_CLUSTER_ASSET_TYPE = 'kubernetes_cluster'
 OBJECT_STORAGE_SYSTEM_ASSET_TYPE = 'object_storage_system'
+ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE = 'registry_integration'
 
 
 @dataclass(frozen=True, slots=True)
@@ -28,12 +30,16 @@ class ReportScope:
     def scope_label(self) -> str:
         if self.asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE:
             return 'Object Storage System'
+        if self.asset_type == ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE:
+            return 'Artifact Registry'
         return 'Kubernetes Cluster'
 
     @property
     def secondary_label(self) -> str:
         if self.asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE:
             return 'System Scope'
+        if self.asset_type == ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE:
+            return 'Integration Scope'
         return self.namespace or 'All Namespaces'
 
 
@@ -92,6 +98,24 @@ def resolve_report_scope(record: Any) -> ReportScope | None:
             label=label,
             domain=domain or 'object_storage',
             source_kind=source_kind or 'object_storage',
+        )
+
+    if asset_type == ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE:
+        if not asset_id:
+            return None
+        try:
+            instance_id = int(asset_id)
+        except (TypeError, ValueError):
+            return None
+        instance = db.session.get(IntegrationInstance, instance_id)
+        if instance is None or instance.integration_type != 'registry':
+            return None
+        return ReportScope(
+            asset_type=asset_type,
+            asset_id=asset_id,
+            label=snapshot or instance.name or asset_id,
+            domain=domain or 'artifact_registry',
+            source_kind=source_kind or 'artifact_registry',
         )
 
     if asset_type and asset_id:
