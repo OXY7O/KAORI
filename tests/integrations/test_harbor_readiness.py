@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+from app.artifact_registry.eligibility import RegistryInventoryEligibility
 from app.integrations.registry.providers.harbor import runtime, validation
+from app.integrations.registry.providers.harbor.application import presentation
 from app.integrations.registry.providers.harbor import _record_failure
 from app.integrations.registry.providers.harbor.adapter import HarborRuntimeAdapter
 from app.integrations.registry.providers.harbor.exceptions import HarborAuthError
@@ -211,3 +213,37 @@ def test_failure_recorder_persists_normalized_detail_without_raw_secret() -> Non
     assert 'KAORI could not complete the Harbor connection test' in (source.last_error or '')
     assert source.last_checked_at is not None
     assert source.last_response_time_ms is None
+
+
+def test_inventory_status_surfaces_validation_prerequisite_before_first_snapshot() -> None:
+    status = presentation._inventory_status(
+        None,
+        eligibility=RegistryInventoryEligibility(
+            eligible=False,
+            readiness='validation_required',
+            compatibility_status='',
+            reason='Run Full Validation before Artifact Registry inventory synchronization.',
+        ),
+    )
+
+    assert status == {
+        'status': 'attention',
+        'label': 'Validation Required',
+        'detail': 'Run Full Validation before Artifact Registry inventory synchronization.',
+    }
+
+
+def test_inventory_status_keeps_not_collected_after_validation_until_inventory_sync() -> None:
+    status = presentation._inventory_status(
+        None,
+        eligibility=RegistryInventoryEligibility(
+            eligible=True,
+            readiness='ready',
+            compatibility_status='compatible',
+            reason='Registry provider is fully ready for inventory collection.',
+        ),
+    )
+
+    assert status['status'] == 'unknown'
+    assert status['label'] == 'Not Collected'
+    assert 'Artifact Registry inventory synchronization' in status['detail']
