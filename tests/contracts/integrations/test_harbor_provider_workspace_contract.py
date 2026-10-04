@@ -47,7 +47,9 @@ def test_harbor_authentication_fields_follow_selected_auth_mode() -> None:
     forms = read('app/integrations/registry/providers/harbor/application/forms.py')
 
     assert "authType: {{ (form.auth_type.data or 'basic')|tojson }}" in form
-    assert 'x-on:change="authType = $event.target.value"' in form
+    assert 'x_model="authType"' in form
+    assert 'class="contents"' not in form
+    assert form.count('x-show="authType === \'basic\'"') == 2
     assert 'x-show="authType === \'basic\'"' in form
     assert 'x-cloak' in form
     assert 'Ignored when Anonymous / Public Read-Only is selected.' not in form
@@ -67,7 +69,7 @@ def test_harbor_registration_copy_is_concise_and_preserves_authority_boundaries(
     assert 'Configure Harbor identity, API access, TLS trust, and request controls. Full Validation owns readiness.' in form
     assert 'Configure Harbor API v2.0 access and test identity/reachability. Full Validation establishes readiness.' in form
     assert 'Disabled connections remain registered but are not resolved for use.' in form
-    assert 'Harbor executes Registry APIs; KAORI owns normalized identity, evidence, readiness, runtime observations, and audit.' in form
+    assert 'Harbor executes Registry APIs; KAORI owns normalized identity, evidence, readiness, runtime, and audit.' in form
     assert 'How KAORI registers a reusable Registry connection.' in form
     assert (
         'Register Harbor once; committed Registry inventory, Metrics Source bindings, webhook readiness, '
