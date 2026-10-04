@@ -295,6 +295,8 @@ def build_detail_context(
         per_page=query.capability_per_page,
     )
 
+    inventory_observed_at = instance.object_storage_system.inventory_observed_at
+
     return {
         'instance': instance,
         'asset': instance.object_storage_system,
@@ -317,8 +319,12 @@ def build_detail_context(
         'validated_at_display': present_user_datetime(instance.last_validated_at, empty='Not validated'),
         'checked_at_display': present_user_datetime(instance.last_checked_at, empty='Not observed'),
         'bucket_count': len(instance.object_storage_system.buckets or ()),
+        'inventory_status': 'ready' if inventory_observed_at else 'unknown',
+        'inventory_status_label': (
+            'Committed Snapshot' if inventory_observed_at else 'No Committed Inventory'
+        ),
         'inventory_observed_at_display': present_user_datetime(
-            instance.object_storage_system.inventory_observed_at,
+            inventory_observed_at,
             empty='Not Collected',
         ),
         'capability_count': len(instance.capabilities or ()),
