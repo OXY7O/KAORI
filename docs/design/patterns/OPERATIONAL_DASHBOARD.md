@@ -77,12 +77,15 @@ Kubernetes maps the health table to clusters and Object Storage maps it to regis
 ## Visual contract
 
 - Use `components/page_hero.html` and the `operational_dashboard(...)` profile renderer for the Hero.
-- Use `components/operational_metric_card.html` for the KPI grid.
+- Use `components/operational_metric_card.html` for KPI cards and `components/operational_signal_overview.html` for the shared scope/status/update/selector shell around them.
 - Consume `components/operational_dashboard_workspace.html` for canonical four-tab navigation, URL state, keyboard behavior, and panel geometry. It delegates tab rendering to `components/workspace_tabs.html` with semantic key `integrated-workspace`.
-- Use `components/operational_section_card.html` for repeated section shells.
+- Use `components/operational_section_card.html` for repeated section shells and `components/operational_evidence_tile.html` for the repeated Inventory Snapshot / Data Freshness evidence-tile geometry.
 - Use `components/peer_content_grid.html` for equal-height peer content.
 - Use `components/operational_flow_steps.html` for capacity and other directional action flows where arrow-connected progression remains meaningful.
-- Use `components/numbered_governance_steps.html` for **Alert Interpretation & Response**. Reporting uses the shared compact `components/reporting_dashboard_workspace.html` presentation so Kubernetes and Object Storage cannot drift.
+- Use `components/operational_alert_summary.html` for the bounded AlertCase summary/insight presentation.
+- Use `components/operational_alert_response.html` for **Alert Interpretation & Response**; it delegates the six-step flow to `components/numbered_governance_steps.html` and accepts domain-specific response wording plus optional handoff content.
+- Use `components/operational_recommendation_cards.html` for central Intelligence recommendation cards.
+- Reporting uses the shared compact `components/reporting_dashboard_workspace.html` presentation so dashboard consumers cannot drift.
 - Use `components/operational_callout.html` for interpretation/supporting guidance.
 - Use `components/forecast_projection_chart.html` for historical/projected utilization.
 - Use canonical table, label, empty-state, loading, and pagination components.
@@ -105,7 +108,7 @@ The Hero establishes identity, evidence boundary, and readiness. Operational Sig
 
 ### Alerts Summary preview contract
 
-`Alerts Summary` is a bounded dashboard preview, not an alert registry. Kubernetes and Object Storage expose and render at most **five** recent active AlertCase records while severity totals continue to represent the complete selected scope. The full case set remains available through **Open Alert Intelligence**.
+`Alerts Summary` is a bounded dashboard preview, not an alert registry. Kubernetes, Object Storage, and Artifact Registry consume `components/operational_alert_summary.html`, which renders at most **five** projected recent AlertCase records while severity totals continue to represent the complete selected scope. Domain services remain responsible for bounded committed projections, and the full case set remains available through **Open Alert Intelligence**.
 
 ### Recent Report Activity preview contract
 
@@ -165,7 +168,7 @@ Use consistent evidence terminology such as `Cluster Signals Available`, `Select
 ## Dashboard family consistency
 
 - Kubernetes and Object Storage consume the same `components/operational_dashboard_workspace.html` framework and therefore share the four workspace tabs, active-tab state, URL synchronization, keyboard navigation, panel semantics, outer `space-y-5` rhythm, and section hierarchy.
-- Domain-specific templates own only Hero values/readiness, Operational Signal Overview content, section data, and domain-specific copy/actions.
+- Domain-specific templates own Hero values/readiness, Operational Signal semantics/KPI content, section data, and domain-specific copy/actions. Shared Signal Overview, evidence-tile, alert-summary, response-wrapper, recommendation-card, and reporting geometry remains component-owned.
 - Artifact Registry Overview is a conforming operational-domain consumer: it uses the same Hero profile, Operational Signal Overview, four workspace tabs, provider scope, committed-snapshot boundary, and shared section/peer-grid components while keeping detailed Inventory, Security, Runtime Usage, Governance, and Analytics in their owning workspaces.
 - Its Operations Overview follows the same reference composition: Registry Provider Health Summary → Inventory Snapshot / Data Freshness peer grid. Registry-specific evidence changes the nouns and source planes, not the layout grammar.
 - Artifact Registry keeps the four Data Freshness identities stable across aggregate and provider scopes: `Inventory Snapshot`, `Metrics Snapshot`, `Security Snapshot`, and `Analytics Snapshot`. Scope changes values and detail, not the evidence-plane name.
@@ -186,7 +189,7 @@ Required sequence:
 1. render the domain Hero with `page_hero.operational_dashboard(...)`;
 2. render the domain onboarding/readiness blocker when required;
 3. enter `operational_dashboard_workspace.controller(...)`;
-4. render the domain Operational Signal Overview;
+4. render the domain Operational Signal Overview through `operational_signal_overview.render(...)`;
 5. render `operational_dashboard_workspace.navigation(...)`;
 6. provide content for the canonical `overview`, `capacity`, `signals`, and `reporting` panels through `operational_dashboard_workspace.panel(...)`;
 7. use shared section-card, peer-grid, table, label, loading, chart, and reporting components rather than page-local geometry.

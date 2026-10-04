@@ -44,6 +44,18 @@ WORKSPACE_TABS = ROOT / 'app' / 'templates' / 'components' / 'workspace_tabs.htm
 DASHBOARD_WORKSPACE = ROOT / 'app' / 'templates' / 'components' / 'operational_dashboard_workspace.html'
 REPORTING_WORKSPACE = ROOT / 'app' / 'templates' / 'components' / 'reporting_dashboard_workspace.html'
 METRIC_CARD = ROOT / 'app' / 'templates' / 'components' / 'operational_metric_card.html'
+SIGNAL_OVERVIEW_WORKSPACE = ROOT / 'app' / 'templates' / 'components' / 'operational_signal_overview.html'
+EVIDENCE_TILE = ROOT / 'app' / 'templates' / 'components' / 'operational_evidence_tile.html'
+ALERT_SUMMARY_WORKSPACE = ROOT / 'app' / 'templates' / 'components' / 'operational_alert_summary.html'
+ALERT_RESPONSE_WORKSPACE = ROOT / 'app' / 'templates' / 'components' / 'operational_alert_response.html'
+RECOMMENDATION_CARDS = ROOT / 'app' / 'templates' / 'components' / 'operational_recommendation_cards.html'
+KUBERNETES_CAPACITY = DASHBOARD_DIR / 'partials' / '_capacity_snapshot.html'
+KUBERNETES_INVENTORY = DASHBOARD_DIR / 'partials' / '_inventory_summary.html'
+KUBERNETES_FRESHNESS = DASHBOARD_DIR / 'partials' / '_data_freshness.html'
+OBJECT_OVERVIEW = OBJECT_DASHBOARD_DIR / 'partials' / '_overview.html'
+ARTIFACT_ALERT_SUMMARY = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_alerts_summary.html'
+ARTIFACT_ALERT_GUIDANCE = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_alert_response_guidance.html'
+ARTIFACT_RECOMMENDATIONS = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_recommended_actions.html'
 TENANT_SETUP_WORKSPACE = (
     ROOT / 'app' / 'templates' / 'kubernetes' / 'tenant' / 'partials' / '_tenant_setup_workspace.html'
 )
@@ -192,6 +204,7 @@ def _verify_dashboard_hero_profile(hero: str, object_hero: str, page_hero: str) 
             "'Committed Snapshots'",
             'Object Storage Operations',
             "'Dashboard'",
+            "'Open Object Storage Integrations'",
         ),
         'Object Storage dashboard Hero profile consumer',
     )
@@ -279,7 +292,8 @@ def _verify_artifact_registry_dashboard(
     _require(
         signal_overview,
         (
-            'Operational Signal Overview',
+            'components/operational_signal_overview.html',
+            'signal_overview.render(',
             'components/operational_metric_card.html',
             'provider_id',
             'hx-push-url="true"',
@@ -424,6 +438,18 @@ def verify() -> None:
     dashboard_workspace = _read(DASHBOARD_WORKSPACE)
     reporting_workspace = _read(REPORTING_WORKSPACE)
     metric_card = _read(METRIC_CARD)
+    signal_overview_workspace = _read(SIGNAL_OVERVIEW_WORKSPACE)
+    evidence_tile = _read(EVIDENCE_TILE)
+    alert_summary_workspace = _read(ALERT_SUMMARY_WORKSPACE)
+    alert_response_workspace = _read(ALERT_RESPONSE_WORKSPACE)
+    recommendation_cards = _read(RECOMMENDATION_CARDS)
+    kubernetes_capacity = _read(KUBERNETES_CAPACITY)
+    kubernetes_inventory = _read(KUBERNETES_INVENTORY)
+    kubernetes_freshness = _read(KUBERNETES_FRESHNESS)
+    object_overview = _read(OBJECT_OVERVIEW)
+    artifact_alert_summary = _read(ARTIFACT_ALERT_SUMMARY)
+    artifact_alert_guidance = _read(ARTIFACT_ALERT_GUIDANCE)
+    artifact_recommendations = _read(ARTIFACT_RECOMMENDATIONS)
     tenant_setup_workspace = _read(TENANT_SETUP_WORKSPACE)
     kpi_cards = _read(KPI_CARDS)
     top_consumers = _read(TOP_CONSUMERS)
@@ -588,16 +614,26 @@ def verify() -> None:
         ('Tenant Governance Flow', 'components/numbered_governance_steps.html'),
         'Tenant Governance Flow shared numbered sequence',
     )
+    _require(
+        alert_response_workspace,
+        (
+            'components/numbered_governance_steps.html',
+            'components/operational_callout.html',
+            'Controlled Response Flow',
+            'numbered_steps.render(steps, flow_aria_label)',
+        ),
+        'shared alert response workspace',
+    )
     for owner, source in (
         ('Kubernetes alert response guidance', alert_guidance),
         ('Object Storage alert response guidance', object_alert_guidance),
+        ('Artifact Registry alert response guidance', artifact_alert_guidance),
     ):
         _require(
             source,
             (
-                'components/numbered_governance_steps.html',
+                'components/operational_alert_response.html',
                 'alert_response_steps',
-                'Controlled Response Flow',
                 "'Validate'",
                 "'Triage'",
                 "'Investigate'",
@@ -608,7 +644,7 @@ def verify() -> None:
             owner,
         )
         if 'components/operational_flow_steps.html' in source:
-            raise AssertionError(f'{owner}: alert response must use the shared numbered governance sequence')
+            raise AssertionError(f'{owner}: alert response must not own a local operational-flow variant')
 
     for owner, source in (
         ('Kubernetes reporting guidance', reporting_guidance),
@@ -658,19 +694,35 @@ def verify() -> None:
             f'{owner} detailed step copy',
         )
     _require(
-        alert_summary,
-        ('up to five recent cases', 'dashboard.alerts_snapshot.items[:5]'),
-        'Kubernetes Alerts Summary preview',
+        alert_summary_workspace,
+        (
+            'macro render(',
+            'rows[:5]',
+            'data-kaori-alert-insight="stacked"',
+            'data-kaori-alert-insight-metrics="dedicated-row"',
+            'Open Alert Intelligence',
+        ),
+        'shared Alerts Summary workspace',
     )
+    for owner, source, row_token in (
+        ('Kubernetes Alerts Summary', alert_summary, 'rows=dashboard.alerts_snapshot.items'),
+        ('Object Storage Alerts Summary', object_alert_summary, 'rows=dashboard.alerts.rows'),
+        ('Artifact Registry Alerts Summary', artifact_alert_summary, 'rows=overview.alerts.rows'),
+    ):
+        _require(
+            source,
+            (
+                'components/operational_alert_summary.html',
+                'alert_summary.render(',
+                'up to five recent',
+                row_token,
+            ),
+            owner,
+        )
     _require(
         alerts_builder,
         ('for item in raw_items[:5]',),
         'Kubernetes Alerts Summary snapshot builder',
-    )
-    _require(
-        object_alert_summary,
-        ('up to five recent cases', 'dashboard.alerts.rows[:5]'),
-        'Object Storage Alerts Summary preview',
     )
     _require(
         object_dashboard_service,
@@ -678,9 +730,8 @@ def verify() -> None:
         'Object Storage Alerts Summary snapshot builder',
     )
     for owner, source in (
-        ('Kubernetes Alerts Summary template', alert_summary),
+        ('shared Alerts Summary template', alert_summary_workspace),
         ('Kubernetes Alerts Summary builder', alerts_builder),
-        ('Object Storage Alerts Summary template', object_alert_summary),
         ('Object Storage Alerts Summary builder', object_dashboard_service),
     ):
         if '[:3]' in source and 'alert' in owner.lower():
@@ -726,6 +777,61 @@ def verify() -> None:
         ),
         'Object Storage compact alert guidance',
     )
+    _require(
+        signal_overview_workspace,
+        (
+            'Operational Signal Overview',
+            'Active Scope',
+            'selector_html|safe',
+            'caller()',
+        ),
+        'shared Operational Signal Overview',
+    )
+    for owner, source in (
+        ('Kubernetes Operational Signal Overview', signal_overview),
+        ('Object Storage Operational Signal Overview', object_signal_overview),
+        ('Artifact Registry Operational Signal Overview', artifact_signal_overview),
+    ):
+        _require(
+            source,
+            ('components/operational_signal_overview.html', 'signal_overview.render('),
+            owner,
+        )
+    _require(
+        evidence_tile,
+        ('macro snapshot(', 'macro freshness(', 'components/table_label.html'),
+        'shared Operational Dashboard evidence tiles',
+    )
+    for owner, source in (
+        ('Kubernetes Inventory Snapshot', kubernetes_inventory),
+        ('Kubernetes Data Freshness', kubernetes_freshness),
+        ('Object Storage Operations Overview', object_overview),
+        ('Artifact Registry Operations Overview', artifact_operations),
+    ):
+        _require(source, ('components/operational_evidence_tile.html', 'evidence_tile.'), owner)
+    _require(
+        recommendation_cards,
+        (
+            'macro render(',
+            "'Recommended Actions'",
+            "intelligence.recommendation_details",
+            'normalized_priority',
+            'No Active Recommendations',
+        ),
+        'shared Operational Dashboard recommendation cards',
+    )
+    for owner, source in (
+        ('Kubernetes Recommended Actions', _read(DASHBOARD_DIR / 'partials' / '_recommended_actions.html')),
+        ('Object Storage Recommended Actions', _read(OBJECT_DASHBOARD_DIR / 'partials' / '_recommended_actions.html')),
+        ('Artifact Registry Recommended Actions', artifact_recommendations),
+    ):
+        _require(
+            source,
+            ('components/operational_recommendation_cards.html', 'recommendation_cards.render('),
+            owner,
+        )
+    if "operational_callout.render('Capacity Action Flow'" in kubernetes_capacity:
+        raise AssertionError('Kubernetes Capacity retains redundant Capacity Action Flow callout')
     if reporting_workspace.index('Review First') >= reporting_workspace.index('Governed Flow'):
         raise AssertionError('shared reporting workspace must present review guardrails before the governed flow')
 
@@ -766,13 +872,22 @@ def verify() -> None:
     if 'from Prometheus' in top_consumers:
         raise AssertionError('dashboard top-consumer presentation must use committed-snapshot wording')
 
+    shared_section_owner = {
+        '_signal_overview.html': 'components/operational_signal_overview.html',
+        '_alerts_summary.html': 'components/operational_alert_summary.html',
+        '_recommended_actions.html': 'components/operational_recommendation_cards.html',
+        '_alert_response_guidance.html': 'components/operational_alert_response.html',
+    }
     for name in SECTION_PARTIALS:
         source = _read(DASHBOARD_DIR / 'partials' / name)
-        _require(
-            source,
-            ('components/operational_section_card.html', 'operational_section_card.render('),
-            f'dashboard section {name}',
-        )
+        if name in shared_section_owner:
+            _require(source, (shared_section_owner[name],), f'dashboard section {name}')
+        else:
+            _require(
+                source,
+                ('components/operational_section_card.html', 'operational_section_card.render('),
+                f'dashboard section {name}',
+            )
 
     _verify_route_authorization_order(routes)
     _require(
@@ -849,6 +964,11 @@ def verify() -> None:
             'Artifact Registry Overview',
             'Source Control/GitHub',
             'components/operational_dashboard_workspace.html',
+            'components/operational_signal_overview.html',
+            'components/operational_evidence_tile.html',
+            'components/operational_alert_summary.html',
+            'components/operational_alert_response.html',
+            'components/operational_recommendation_cards.html',
             'components/reporting_dashboard_workspace.html',
             'components/numbered_governance_steps.html',
             'Arrow Left/Right wrap; Home selects first; End selects last;',

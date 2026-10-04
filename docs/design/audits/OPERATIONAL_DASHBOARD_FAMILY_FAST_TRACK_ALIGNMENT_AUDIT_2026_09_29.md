@@ -4,6 +4,7 @@
 
 - Issue #753 — Lock dashboard family standard and align alert response governance flow.
 - Issue #758 — Refine Operational Dashboard alert density and reporting governance flow.
+- Issue #923 — Consolidate reusable Operational Dashboard presentation across Kubernetes, Object Storage, and Artifact Registry.
 - `docs/design/patterns/OPERATIONAL_DASHBOARD.md` v1.7.
 - Kubernetes Operations Dashboard and Object Storage Operations Dashboard as the paired reference implementation.
 - Tenant Governance Flow as the existing numbered, non-arrow governance-sequence reference.
@@ -71,3 +72,22 @@ The existing Operational Dashboard verifier and focused dashboard contract tests
 - continued use of arrow-connected operational flow only where the locked pattern still requires it, including capacity.
 
 Developer Check, Full Admission, staging PR, UAT, and promotion remain outside this Fast Track step until explicit human acceptance.
+
+
+## Reusable presentation consolidation — 2026-10-05
+
+Issue #923 extends the family lock from shared outer composition into the repeated inner presentation grammar across the three current consumers: Kubernetes, Object Storage, and Artifact Registry.
+
+The consolidation keeps domain evidence and loading ownership unchanged while moving reusable geometry to canonical components:
+
+- `operational_signal_overview.html` owns scope/status/update/selector geometry;
+- `operational_evidence_tile.html` owns Inventory Snapshot and Data Freshness evidence tiles;
+- `operational_alert_summary.html` owns bounded AlertCase severity/recent-case/insight presentation;
+- `operational_alert_response.html` owns severity guidance plus the controlled response wrapper and delegates the six-step sequence to `numbered_governance_steps.html`;
+- `operational_recommendation_cards.html` owns central Intelligence recommendation-card geometry and tone mapping.
+
+Intentional differences remain explicit: Kubernetes keeps subsection-level lazy loading, Object Storage and Artifact Registry keep section-level lazy loading, Registry retains its source-domain and Intelligence handoffs, and each domain continues to own its factual evidence model.
+
+The review also removes the redundant Kubernetes Capacity Action Flow callout and aligns the Object Storage Hero action grammar to `Open Object Storage Integrations`.
+
+No provider API access, provider mutation, readiness reinterpretation, recommendation lifecycle, or report lifecycle moved into the dashboard layer. Developer Check, Full Admission, staging PR, deployment, and UAT remain held for explicit human acceptance.

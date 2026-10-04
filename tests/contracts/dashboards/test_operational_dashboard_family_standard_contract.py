@@ -80,8 +80,9 @@ def test_operational_dashboards_share_peer_grid_and_reporting_proportions() -> N
         assert source.count('peer_content_grid.layout_classes()') >= 4
         assert "column_classes('primary', 'seven-five')" in source
         assert "column_classes('secondary', 'seven-five')" in source
-        assert 'Controlled Response Flow' in source
 
+    alert_response_workspace = read('app/templates/components/operational_alert_response.html')
+    assert 'Controlled Response Flow' in alert_response_workspace
     assert 'Governed Reporting Flow' in reporting_workspace
     assert '<span class="font-semibold text-content-primary">One-time</span> · Manual' in reporting_workspace
     assert 'Generate manually' not in reporting_workspace
@@ -210,8 +211,12 @@ def test_response_and_reporting_flows_use_current_shared_governance_owners() -> 
     assert 'Tenant Governance Flow' in tenant
     assert 'components/numbered_governance_steps.html' in tenant
 
+    shared_response = read('app/templates/components/operational_alert_response.html')
+    assert 'components/numbered_governance_steps.html' in shared_response
+    assert 'Controlled Response Flow' in shared_response
+
     for source in (kubernetes_response, object_response):
-        assert 'components/numbered_governance_steps.html' in source
+        assert 'components/operational_alert_response.html' in source
         assert 'components/operational_flow_steps.html' not in source
         assert 'alert_response_steps' in source
         assert 'before acting on the signal' in source
@@ -238,12 +243,14 @@ def test_alerts_summary_is_bounded_to_five_in_both_reference_dashboards() -> Non
     object_summary = read('app/templates/storage/object_storage/dashboard/partials/_alerts_summary.html')
     object_service = read('app/storage/object_storage/dashboard/service.py')
 
-    assert 'dashboard.alerts_snapshot.items[:5]' in kubernetes_summary
+    shared_alert_summary = read('app/templates/components/operational_alert_summary.html')
+    assert 'rows[:5]' in shared_alert_summary
+    assert 'rows=dashboard.alerts_snapshot.items' in kubernetes_summary
     assert 'for item in raw_items[:5]' in kubernetes_builder
-    assert 'dashboard.alerts.rows[:5]' in object_summary
+    assert 'rows=dashboard.alerts.rows' in object_summary
     assert "for case in posture['cases'][:5]" in object_service
 
-    for source in (kubernetes_summary, kubernetes_builder, object_summary, object_service):
+    for source in (shared_alert_summary, kubernetes_builder, object_service):
         assert '[:6]' not in source
 
 
@@ -263,6 +270,34 @@ def test_recent_report_activity_is_bounded_to_four_in_both_reference_dashboards(
     for source in (reporting_workspace, kubernetes_builder, object_service):
         assert 'limit=5' not in source
         assert 'latest_reports[:5]' not in source
+
+
+def test_operational_dashboard_inner_presentation_is_shared_across_three_consumers() -> None:
+    signal = read('app/templates/components/operational_signal_overview.html')
+    evidence = read('app/templates/components/operational_evidence_tile.html')
+    alerts = read('app/templates/components/operational_alert_summary.html')
+    response = read('app/templates/components/operational_alert_response.html')
+    recommendations = read('app/templates/components/operational_recommendation_cards.html')
+
+    for wrapper in (
+        read('app/templates/kubernetes/dashboard/partials/_signal_overview.html'),
+        read('app/templates/storage/object_storage/dashboard/partials/_signal_overview.html'),
+        read('app/templates/artifact_registry/partials/_overview_signal_overview.html'),
+    ):
+        assert 'components/operational_signal_overview.html' in wrapper
+        assert 'signal_overview.render(' in wrapper
+
+    assert 'Operational Signal Overview' in signal
+    assert 'macro snapshot(' in evidence
+    assert 'macro freshness(' in evidence
+    assert 'rows[:5]' in alerts
+    assert 'components/numbered_governance_steps.html' in response
+    assert "'Recommended Actions'" in recommendations
+
+    kubernetes_capacity = read('app/templates/kubernetes/dashboard/partials/_capacity_snapshot.html')
+    object_hero = read('app/templates/storage/object_storage/dashboard/partials/_hero.html')
+    assert "operational_callout.render('Capacity Action Flow'" not in kubernetes_capacity
+    assert "'Open Object Storage Integrations'" in object_hero
 
 
 def test_operational_dashboard_standard_is_family_owned() -> None:
