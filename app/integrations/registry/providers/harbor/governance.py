@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.artifact_registry.collectors import InventoryProgressCallback
 from app.artifact_registry.governance import (
     ProjectGovernanceRecord,
     RegistryGovernanceCollector,
@@ -43,7 +44,10 @@ def _endpoint_name(value: Any) -> str | None:
     return None
 
 
-def collect_harbor_governance(instance: HarborInstance) -> RegistryGovernanceEvidence:
+def collect_harbor_governance(
+    instance: HarborInstance,
+    progress_callback: InventoryProgressCallback | None = None,
+) -> RegistryGovernanceEvidence:
     client = build_client(instance)
     project_records: list[ProjectGovernanceRecord] = []
     capability_states: dict[str, dict[str, Any]] = {
@@ -52,9 +56,14 @@ def collect_harbor_governance(instance: HarborInstance) -> RegistryGovernanceEvi
         'replication': _state(supported=True, observed=True),
         'webhook': _state(supported=True, observed=True),
     }
+    if progress_callback is not None:
+        progress_callback(0, 0, 'Project Discovery')
     projects = client.list_all_projects()
+    total_projects = len(projects)
+    if progress_callback is not None:
+        progress_callback(0, total_projects, '')
 
-    for summary in projects:
+    for project_index, summary in enumerate(projects, start=1):
         project_name = str(summary.get('name') or '').strip()
         if not project_name:
             continue
@@ -149,6 +158,8 @@ def collect_harbor_governance(instance: HarborInstance) -> RegistryGovernanceEvi
                 },
             )
         )
+        if progress_callback is not None:
+            progress_callback(project_index, total_projects, project_name)
 
     replication_records: list[ReplicationPolicyRecord] = []
     try:
@@ -208,4 +219,5 @@ def collect_harbor_governance(instance: HarborInstance) -> RegistryGovernanceEvi
 collector = RegistryGovernanceCollector(
     provider_key='harbor',
     collect=collect_harbor_governance,
+    collect_with_progress=collect_harbor_governance,
 )
