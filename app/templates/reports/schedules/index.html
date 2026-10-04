@@ -209,6 +209,21 @@
                         {% endfor %}
                     </select>
                 </label>
+                <label class="hidden sm:col-span-2" data-schedule-artifact-registry-scope>
+                    <span class="text-xs font-semibold text-content-muted">Artifact Registry</span>
+                    <select name="registry_integration_id"
+                            data-schedule-artifact-registry
+                            class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                        <option value=""
+                                disabled
+                                {% if not form_state.registry_integration_id %}selected{% endif %}>Select Artifact Registry</option>
+                        {% for option in payload.artifact_registries %}
+                            <option value="{{ option.value }}"
+                                    {% if form_state.registry_integration_id == option.value %}selected{% endif %}>{{ option.label }} · {{ option.environment }}</option>
+                        {% endfor %}
+                    </select>
+                    <span class="mt-1.5 block text-xs leading-5 text-content-muted">Scheduled Registry reports render committed KAORI evidence for one active Registry integration.</span>
+                </label>
             </div>
         </section>
         <section data-schedule-form-block="timing-delivery"
