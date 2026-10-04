@@ -4,6 +4,7 @@ from app.integrations.overview_extensions import build_overview_stats
 from app.integrations.service import (
     _capability_attention_display,
     _coverage_stats,
+    _portfolio_posture,
     _runtime_scope_label,
     _runtime_stats,
 )
@@ -105,3 +106,39 @@ def test_coverage_stats_separate_available_and_planned_domains() -> None:
         'ready_targets': 3,
         'attention_targets': 3,
     }
+
+
+def test_portfolio_posture_preserves_single_target_degraded_state() -> None:
+    state, label = _portfolio_posture(
+        {
+            'total': 1,
+            'configured': 1,
+            'ready': 0,
+            'degraded': 1,
+            'blocked': 0,
+            'validation_required': 0,
+            'disabled': 0,
+            'not_configured': 0,
+        }
+    )
+
+    assert state == 'degraded'
+    assert label == 'Degraded'
+
+
+def test_portfolio_posture_uses_needs_review_for_mixed_readiness() -> None:
+    state, label = _portfolio_posture(
+        {
+            'total': 2,
+            'configured': 2,
+            'ready': 1,
+            'degraded': 1,
+            'blocked': 0,
+            'validation_required': 0,
+            'disabled': 0,
+            'not_configured': 0,
+        }
+    )
+
+    assert state == 'attention'
+    assert label == 'Needs Review'

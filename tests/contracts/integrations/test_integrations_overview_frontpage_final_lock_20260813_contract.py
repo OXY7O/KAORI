@@ -39,6 +39,8 @@ def test_integrations_provider_catalog_surfaces_real_persisted_readiness() -> No
         "'readiness_percent': round((ready / total) * 100, 1) if total else 0.0",
         "'posture_state': posture_state",
         "'posture_label': posture_label",
+        "'degraded': int(counts.get('degraded') or 0)",
+        "'blocked': int(counts.get('blocked') or 0)",
     ):
         assert marker in service
 
@@ -47,7 +49,7 @@ def test_integrations_provider_catalog_surfaces_real_persisted_readiness() -> No
         'integration_status(item.posture_state, item.posture_label',
         '{{ item.total }}',
         '{{ item.ready }}',
-        'Operational Readiness',
+        'Ready Coverage',
         'progress_bar.bar(item.readiness_percent',
         'Open Workspace',
     ):

@@ -441,6 +441,71 @@ def build_alertmanager_page(
     )
 
 
+def _portfolio_counts(states: list[tuple[bool, bool, str | None]]) -> dict[str, int]:
+    counts = {
+        'configured': 0,
+        'ready': 0,
+        'degraded': 0,
+        'blocked': 0,
+        'validation_required': 0,
+        'disabled': 0,
+        'not_configured': 0,
+        'total': 0,
+        'attention': 0,
+    }
+    for is_configured, is_enabled, readiness in states:
+        counts['total'] += 1
+        if not is_configured:
+            counts['not_configured'] += 1
+            continue
+        counts['configured'] += 1
+        if not is_enabled:
+            counts['disabled'] += 1
+            continue
+        state = str(readiness or 'validation_required').strip().lower()
+        if state == 'ready':
+            counts['ready'] += 1
+        elif state == 'degraded':
+            counts['degraded'] += 1
+        elif state in {'blocked', 'unavailable', 'failed', 'incompatible'}:
+            counts['blocked'] += 1
+        else:
+            counts['validation_required'] += 1
+    counts['attention'] = max(counts['total'] - counts['ready'], 0)
+    return counts
+
+
+def _portfolio_posture(counts: dict[str, int]) -> tuple[str, str]:
+    total = int(counts.get('total') or 0)
+    configured = int(counts.get('configured') or 0)
+    ready = int(counts.get('ready') or 0)
+    if total <= 0 or configured <= 0:
+        return 'not_configured', 'Not Configured'
+    if ready == total:
+        return 'ready', 'Ready'
+    if total == 1:
+        for key, label in (
+            ('degraded', 'Degraded'),
+            ('blocked', 'Blocked'),
+            ('validation_required', 'Validation Required'),
+            ('disabled', 'Disabled'),
+            ('not_configured', 'Not Configured'),
+        ):
+            if int(counts.get(key) or 0) == 1:
+                return key, label
+    if int(counts.get('disabled') or 0) == total:
+        return 'disabled', 'Disabled'
+    if ready == 0 and int(counts.get('not_configured') or 0) == 0 and int(counts.get('disabled') or 0) == 0:
+        for key, label in (
+            ('blocked', 'Blocked'),
+            ('degraded', 'Degraded'),
+            ('validation_required', 'Validation Required'),
+        ):
+            if int(counts.get(key) or 0) == configured:
+                return key, label
+    return 'attention', 'Needs Review'
+
+
 def _provider_portfolio_counts(
     *,
     kubernetes_connections: list[KubernetesConnection],
@@ -449,36 +514,25 @@ def _provider_portfolio_counts(
     extension_instances: list[IntegrationInstance],
 ) -> dict[str, dict[str, int]]:
     counts = {
-        'container_orchestrator': {
-            'configured': len(kubernetes_connections),
-            'ready': sum(
-                1
+        'container_orchestrator': _portfolio_counts(
+            [
+                (True, bool(item.integration_instance.enabled), _kubernetes_readiness(item))
                 for item in kubernetes_connections
-                if item.integration_instance.enabled and _kubernetes_readiness(item) == 'ready'
-            ),
-            'total': len(kubernetes_connections),
-        },
-        'metrics_source': {
-            'configured': sum(1 for item in metrics_sources if item.endpoint),
-            'ready': sum(1 for item in metrics_sources if item.enabled and item.readiness_status == 'ready'),
-            'total': len(metrics_sources),
-        },
-        'alert_source': {
-            'configured': sum(1 for item in alertmanager_instances if item.endpoint),
-            'ready': sum(1 for item in alertmanager_instances if item.enabled and item.readiness_status == 'ready'),
-            'total': len(alertmanager_instances),
-        },
+            ]
+        ),
+        'metrics_source': _portfolio_counts(
+            [(bool(item.endpoint), bool(item.enabled), item.readiness_status) for item in metrics_sources]
+        ),
+        'alert_source': _portfolio_counts(
+            [(bool(item.endpoint), bool(item.enabled), item.readiness_status) for item in alertmanager_instances]
+        ),
     }
     for integration_type in {item.integration_type for item in extension_instances}:
         targets = [item for item in extension_instances if item.integration_type == integration_type]
-        counts[integration_type] = {
-            'configured': len(targets),
-            'ready': sum(1 for item in targets if item.enabled and item.readiness_status == 'ready'),
-            'total': len(targets),
-        }
+        counts[integration_type] = _portfolio_counts(
+            [(True, bool(item.enabled), item.readiness_status) for item in targets]
+        )
     return counts
-
-
 def _coverage(
     *,
     kubernetes_connections: list[KubernetesConnection],
@@ -498,22 +552,32 @@ def _coverage(
         domain_modules = [module for module in modules if module.domain_key == domain.key]
         lifecycle = 'available' if domain_modules else 'planned'
         counts = [provider_counts.get(module.integration_type, {}) for module in domain_modules]
-        configured = sum(int(item.get('configured') or 0) for item in counts)
-        ready = sum(int(item.get('ready') or 0) for item in counts)
-        total = sum(int(item.get('total') or 0) for item in counts)
+        summary = {
+            key: sum(int(item.get(key) or 0) for item in counts)
+            for key in (
+                'configured',
+                'ready',
+                'degraded',
+                'blocked',
+                'validation_required',
+                'disabled',
+                'not_configured',
+                'total',
+                'attention',
+            )
+        }
+        configured = summary['configured']
+        ready = summary['ready']
+        total = summary['total']
         if domain_modules:
             providers = ' · '.join(module.label for module in domain_modules)
         else:
             providers = ' · '.join(capability.label for capability in capability_definitions_for_domain(domain.key))
-        attention = max(total - ready, 0) if lifecycle == 'available' else 0
+        attention = summary['attention'] if lifecycle == 'available' else 0
         if lifecycle != 'available':
             posture_state, posture_label = 'planned', 'Planned'
-        elif total <= 0:
-            posture_state, posture_label = 'not_configured', 'Not Configured'
-        elif attention > 0:
-            posture_state, posture_label = 'validation_required', 'Needs Review'
         else:
-            posture_state, posture_label = 'ready', 'Ready'
+            posture_state, posture_label = _portfolio_posture(summary)
         rows.append(
             {
                 'key': domain.key,
@@ -526,6 +590,11 @@ def _coverage(
                 'total': total,
                 'lifecycle': lifecycle,
                 'attention': attention,
+                'degraded': summary['degraded'],
+                'blocked': summary['blocked'],
+                'validation_required': summary['validation_required'],
+                'disabled': summary['disabled'],
+                'not_configured': summary['not_configured'],
                 'readiness_percent': round((ready / total) * 100, 1) if total else 0.0,
                 'posture_state': posture_state,
                 'posture_label': posture_label,
@@ -564,16 +633,8 @@ def _catalog(
         configured = int(counts.get('configured') or 0)
         ready = int(counts.get('ready') or 0)
         total = int(counts.get('total') or 0)
-        attention = max(total - ready, 0)
-        if total <= 0:
-            posture_state = 'not_configured'
-            posture_label = 'Not Configured'
-        elif attention > 0:
-            posture_state = 'validation_required'
-            posture_label = 'Needs Review'
-        else:
-            posture_state = 'ready'
-            posture_label = 'Ready'
+        attention = int(counts.get('attention') or 0)
+        posture_state, posture_label = _portfolio_posture(counts)
         rows.append(
             {
                 'key': module.integration_type,
@@ -586,6 +647,11 @@ def _catalog(
                 'ready': ready,
                 'total': total,
                 'attention': attention,
+                'degraded': int(counts.get('degraded') or 0),
+                'blocked': int(counts.get('blocked') or 0),
+                'validation_required': int(counts.get('validation_required') or 0),
+                'disabled': int(counts.get('disabled') or 0),
+                'not_configured': int(counts.get('not_configured') or 0),
                 'readiness_percent': round((ready / total) * 100, 1) if total else 0.0,
                 'posture_state': posture_state,
                 'posture_label': posture_label,

@@ -112,7 +112,7 @@ def test_portfolio_and_domain_coverage_use_neutral_card_semantics() -> None:
     assert 'Available Domains' in overview
     assert 'Planned Domains' in overview
     assert 'Provider Workspaces' in overview
-    assert 'Operational Readiness' in overview
+    assert 'Ready Coverage' in overview
     assert 'Planned Provider Ownership' in overview
     assert 'Coverage Boundary' in overview
     assert "coverage|selectattr('lifecycle', 'equalto', 'available')|list" in overview
@@ -129,6 +129,8 @@ def test_portfolio_and_domain_coverage_use_neutral_card_semantics() -> None:
     assert 'Compute & Infrastructure' not in service
     assert 'Vault · OpenBao' not in service
     assert "'readiness_percent'" in service
+    assert "'degraded': summary['degraded']" in service
+    assert "'blocked': summary['blocked']" in service
     assert "'attention_targets'" in service
 
 
