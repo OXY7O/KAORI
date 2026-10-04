@@ -135,3 +135,33 @@ def test_capability_registry_keeps_readiness_progress_and_modal_detail_boundary(
     assert 'Validation Evidence' in source
     assert 'Operational Decision' in source
     assert 'Verification Command' in source
+
+
+def test_optional_capability_gaps_are_separate_from_core_readiness() -> None:
+    workspace = _source()
+    registry = REGISTRY.read_text(encoding='utf-8')
+
+    assert "{% set capability_readiness_state = 'blocked' %}" in workspace
+    assert "{% elif legacy_features %}" in workspace
+    assert "{% set capability_readiness_state = 'ready' %}" in workspace
+    assert 'Core required API and RBAC evidence for Kubernetes workspaces; optional Tenant contracts are tracked separately.' in workspace
+    assert 'Why Provider Validation Is {{ validation_state.readiness_label }}' in workspace
+    assert "' required blocks'" in workspace
+    assert "' optional gaps'" in workspace
+    assert '>Unavailable / Gap</option>' in registry
+    assert "'Optional Gap' if optional_gap else 'Required Block'" in registry
+    assert 'Optional Capability Unavailable' in registry
+    assert 'Core Kubernetes readiness is unaffected; only approved workflows that require this contract remain unavailable.' in registry
+    assert 'Cluster-scoped optional governance contract' in registry
+    assert 'contract-specific access required by an approved governed workflow' in registry
+
+
+def test_capability_modal_does_not_guess_commands_without_selected_contract() -> None:
+    registry = REGISTRY.read_text(encoding='utf-8')
+
+    assert "has_selected_contract = row.api_version != 'Not selected' and row.resource != '-'" in registry
+    assert "row.key[:17] == 'tenant.admission.'" in registry
+    assert 'data-kaori-capability-verification-unavailable' in registry
+    assert 'No executable command is generated without a selected API/resource contract.' in registry
+    assert 'Full Validation did not select an API/resource contract for this optional capability.' in registry
+    assert 'Optional admission-governance access is cluster scoped' in registry
