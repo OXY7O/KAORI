@@ -224,20 +224,26 @@ def collect_harbor_security(
                 reused_reports += int(target.has_scan_snapshot)
             else:
                 scan = _scan_overview(raw.get('scan_overview'))
-                scan_status = (
-                    str((scan or {}).get('scan_status') or (scan or {}).get('status') or '').strip().lower()
-                    or None
-                )
-                scan_completed_at = _parse_datetime((scan or {}).get('end_time'))
-                scan_summary = _summary_from_scan(scan)
+                if scan is None and target.has_scan_snapshot:
+                    scan_status = target.scan_status
+                    scan_completed_at = target.scan_completed_at
+                    scan_summary = dict(target.vulnerability_summary or {})
+                    changed = False
+                else:
+                    scan_status = (
+                        str((scan or {}).get('scan_status') or (scan or {}).get('status') or '').strip().lower()
+                        or None
+                    )
+                    scan_completed_at = _parse_datetime((scan or {}).get('end_time'))
+                    scan_summary = _summary_from_scan(scan)
+                    changed = _scan_identity_changed(
+                        target,
+                        scan_status=scan_status,
+                        scan_completed_at=scan_completed_at,
+                        vulnerability_summary=scan_summary,
+                    )
                 signature_status = _artifact_signature_status(raw)
                 sbom_status = _artifact_sbom_status(raw)
-                changed = _scan_identity_changed(
-                    target,
-                    scan_status=scan_status,
-                    scan_completed_at=scan_completed_at,
-                    vulnerability_summary=scan_summary,
-                )
 
                 vulnerabilities: list[dict[str, Any]] = []
                 report_summary: dict[str, int] = {}
