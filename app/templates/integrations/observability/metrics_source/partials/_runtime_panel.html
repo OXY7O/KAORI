@@ -18,15 +18,27 @@
 {% set runtime_observed = runtime_state.observed_at is not none %}
 {% set health_tone = 'ready' if runtime_observed and runtime_state.health_status == 'healthy' else ('degraded' if runtime_observed and runtime_state.health_status in ['degraded', 'warning'] else ('blocked' if runtime_observed and runtime_state.health_status in ['unhealthy', 'failed'] else 'not_observed')) %}
 {% set runtime_gate_label = 'Observation Required' if not runtime_observed else ('Runtime Healthy' if runtime_state.health_status == 'healthy' else ('Runtime Blocked' if runtime_state.health_status in ['unhealthy', 'failed'] else 'Runtime Attention Required')) %}
-{% if runtime_state.diagnostics %}
-    {% set runtime_primary_finding = runtime_state.diagnostics[0].summary %}
-{% elif runtime_state.health_summary %}
-    {% set runtime_primary_finding = runtime_state.health_summary %}
-{% elif runtime_state.message %}
-    {% set runtime_primary_finding = runtime_state.message %}
-{% else %}
-    {% set runtime_primary_finding = "No current runtime finding requires operator attention." %}
+{% set runtime_identity = runtime_product|replace('_', ' ')|title %}
+{% if runtime_version and runtime_version != 'Not Detected' %}
+    {% set runtime_identity = runtime_identity ~ ' ' ~ runtime_version %}
 {% endif %}
+{% if not runtime_observed %}
+    {% set runtime_primary_finding = "No persisted runtime observation yet." %}
+{% elif runtime_state.health_status in ['unhealthy', 'failed'] %}
+    {% set runtime_primary_finding = runtime_identity ~ ' runtime is ' ~ runtime_state.health_status_label ~ '; provider readiness: ' ~ runtime_state.readiness_label ~ '.' %}
+{% elif runtime_state.readiness != 'ready' %}
+    {% set runtime_primary_finding = runtime_identity ~ ' detected; provider readiness: ' ~ runtime_state.readiness_label ~ '.' %}
+{% elif runtime_attention and runtime_state.diagnostics %}
+    {% set runtime_primary_finding = runtime_state.diagnostics[0].label ~ ': ' ~ runtime_state.diagnostics[0].summary %}
+{% else %}
+    {% set runtime_primary_finding = runtime_identity ~ ' runtime is healthy and provider-ready.' %}
+{% endif %}
+{% set runtime_primary_finding_info = [
+    'Runtime health: ' ~ (runtime_state.health_status_label if runtime_observed else 'Not Observed'),
+    'Provider readiness: ' ~ runtime_state.readiness_label,
+    'Observed: ' ~ runtime_state.observed_at_display,
+    'Diagnostics: ' ~ (runtime_state.diagnostics|length) ~ ' persisted checks'
+] %}
 {% if not runtime_observed %}
     {% set runtime_next_action = "Run Runtime Refresh to establish persisted provider-health evidence." %}
 {% elif runtime_state.health_status in ['unhealthy', 'failed'] %}
@@ -88,7 +100,11 @@
                 runtime_primary_finding,
                 runtime_attention|length,
                 runtime_next_action,
-                'Full technical diagnostic detail and remediation stay in Recent Runtime Observations. This workspace keeps only the current operational summary.') }}
+                'Full technical diagnostic detail and remediation stay in Recent Runtime Observations. This workspace keeps only the current operational summary.',
+                'metrics-source-runtime-primary-finding-info',
+                'Primary Finding context',
+                'Latest persisted Runtime Refresh context; full diagnostics remain in Runtime Evidence.',
+                runtime_primary_finding_info) }}
         <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
                  aria-labelledby="metrics-source-runtime-evidence-title"
                  data-kaori-metrics-source-runtime-evidence>

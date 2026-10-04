@@ -1,4 +1,5 @@
 {% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% macro render(
@@ -15,7 +16,11 @@
     primary_finding,
     finding_count,
     next_action,
-    evidence_handoff
+    evidence_handoff,
+    primary_finding_info_id='provider-runtime-primary-finding-info',
+    primary_finding_info_title='',
+    primary_finding_info_text='',
+    primary_finding_info_items=none
     ) -%}
     <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
              data-kaori-provider-runtime-decision
@@ -78,7 +83,16 @@
                     <div class="flex items-start gap-3">
                         {{ integration_ui.palette_icon('scan-line', 'brand', size='sm') }}
                         <div class="min-w-0">
-                            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Primary Finding</p>
+                            <div class="flex min-w-0 items-center gap-1.5">
+                                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Primary Finding</p>
+                                {% if primary_finding_info_title %}
+                                    {{ info_tip.render(primary_finding_info_id,
+                                                                            primary_finding_info_title,
+                                                                            text=primary_finding_info_text,
+                                                                            items=primary_finding_info_items,
+                                                                            placement='right') }}
+                                {% endif %}
+                            </div>
                             <p class="mt-2 text-sm font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ primary_finding }}</p>
                         </div>
                     </div>
