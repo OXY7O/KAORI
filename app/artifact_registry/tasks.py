@@ -52,6 +52,55 @@ def sync_all_registry_task(
         for index, target in enumerate(targets, start=1):
             instance_name = target['instance_name']
             canonical_id = int(target['integration_instance_id'])
+            progress_meta = {
+                'requested_by_user_id': requested_by_user_id,
+                'job_execution_id': job_execution_id,
+                'total_count': total,
+                'processed_count': index - 1,
+                'synced_count': synced,
+                'failed_count': len(failures),
+                'current_instance_name': instance_name,
+                'heartbeat_at': _now_iso(),
+            }
+            last_reported_percent = -1
+
+            def report_inventory_progress(item_current: int, item_total: int, item_name: str) -> None:
+                nonlocal last_reported_percent
+                local_fraction = item_current / max(item_total, 1) if item_total else 0
+                completed_fraction = (index - 1) + local_fraction
+                overall_percent = min(5 + int((completed_fraction / max(total, 1)) * 88), 93)
+                is_boundary = item_current in {0, item_total}
+                if not is_boundary and overall_percent <= last_reported_percent:
+                    return
+                last_reported_percent = overall_percent
+                stage = 'Discovering Registry Inventory' if item_total == 0 else 'Collecting Registry Inventory'
+                target_label = f'{instance_name} · {item_name}' if item_name else instance_name
+                message = (
+                    f'Collected {item_current} of {item_total} repositories for {instance_name}.'
+                    if item_total
+                    else f'Discovering Registry inventory for {instance_name}.'
+                )
+                context.checkpoint(
+                    current=index - 1,
+                    total=total,
+                    percent=overall_percent,
+                    stage=stage,
+                    target=target_label,
+                    message=message,
+                )
+                progress_meta.update(
+                    {
+                        'progress_percent': overall_percent,
+                        'progress_stage': stage,
+                        'message': message,
+                        'current_item_name': item_name,
+                        'item_processed_count': item_current,
+                        'item_total_count': item_total,
+                        'heartbeat_at': _now_iso(),
+                    }
+                )
+                self.update_state(state='PROGRESS', meta=progress_meta)
+
             context.checkpoint(
                 current=index - 1,
                 total=total,
@@ -66,7 +115,10 @@ def sync_all_registry_task(
                     raise LookupError(
                         'The Registry integration was deleted after the inventory job was admitted.'
                     )
-                result = sync_registry_inventory(identity)
+                result = sync_registry_inventory(
+                    identity,
+                    progress_callback=report_inventory_progress,
+                )
                 synced += 1
                 artifact_count += int(result.get('artifacts') or 0)
             except Exception as exc:
