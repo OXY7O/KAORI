@@ -1,80 +1,171 @@
 {% import "components/operational_callout.html" as operational_callout %}
-{% import "components/operational_metric_card.html" as operational_metric_card %}
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/peer_content_grid.html" as peer_content_grid %}
-<div class="{{ peer_content_grid.layout_classes() }}">
-    <div class="{{ peer_content_grid.column_classes('primary') }}">
-        {% call operational_section_card.render(
-            'Inventory Footprint & Demand',
-            'Committed Registry scale and provider-supplied demand evidence.',
-            'gauge',
-            action_href=url_for('artifact_registry.analytics'),
-            action_label='Open Analytics',
-            body_classes='space-y-4 p-5',
-            extra_classes='h-full'
-            ) %}
-            <div class="grid gap-3 sm:grid-cols-2">
-                {{ operational_metric_card.render(
-                    'Artifact Footprint',
-                    overview.total_size,
-                    'Committed artifact size where providers supplied size evidence.',
-                    'database',
-                    source_label='Committed Inventory',
-                    scope_label=overview.scope_label
-                ) }}
-                {{ operational_metric_card.render(
-                    'Pull Evidence',
-                    overview.pull_count,
-                    'Provider-supplied repository pull counters when available.',
-                    'download',
-                    source_label='Committed Inventory',
-                    scope_label=overview.scope_label
-                ) }}
-                {{ operational_metric_card.render(
-                    'Repositories',
-                    overview.repository_count,
-                    'Repositories in the committed Registry scope.',
-                    'package-open',
-                    source_label='Committed Inventory',
-                    scope_label=overview.scope_label
-                ) }}
-                {{ operational_metric_card.render(
-                    'Artifacts',
-                    overview.artifact_count,
-                    'Digest-oriented artifacts in committed inventory.',
-                    'fingerprint',
-                    source_label='Committed Inventory',
-                    scope_label=overview.scope_label
-                ) }}
-            </div>
-            {{ operational_callout.render(
-                'Evidence Boundary',
-                'KAORI reports committed footprint and demand evidence only; unsupported provider capacity is not inferred.',
-                icon='scale',
-                tone='info',
-                variant='semantic'
-            ) }}
-        {% endcall %}
-    </div>
-    <div class="{{ peer_content_grid.column_classes('secondary') }}">
-        {% call operational_section_card.render(
-            'Analytics Handoff',
-            'Use committed analytics for growth, quota horizon, stale candidates, and Metrics Source trends.',
-            'chart-no-axes-combined',
-            action_href=url_for('artifact_registry.analytics'),
-            action_label='Review Analytics',
-            body_classes='space-y-4 p-5',
-            extra_classes='h-full'
-            ) %}
-            {{ operational_metric_card.render(
-                'Metrics Ready',
-                overview.metrics_ready_count ~ ' / ' ~ overview.provider_count,
-                'Providers with an eligible validated Metrics Source binding.',
+{% import "components/progress_bar.html" as progress_bar %}
+{% import "components/table_label.html" as table_label %}
+<div id="artifact-registry-dashboard-section-capacity" class="space-y-5">
+    <div class="{{ peer_content_grid.layout_classes() }}">
+        <div class="{{ peer_content_grid.column_classes('primary') }}">
+            {% call operational_section_card.render(
+                'Capacity Snapshot',
+                'Committed artifact footprint, observed Registry quota usage, and current demand evidence.',
+                'gauge',
+                action_href=url_for('artifact_registry.analytics'),
+                action_label='View Analytics',
+                body_classes='p-5',
+                extra_classes='h-full'
+                ) %}
+                <div class="space-y-4">
+                    {{ operational_callout.render(
+                        'Data Scope',
+                        'Capacity uses committed Registry inventory plus worker-materialized Metrics Source evidence; Overview issues no live provider query.',
+                        icon='info',
+                        tone='info'
+                    ) }}
+                    <div class="grid gap-3 sm:grid-cols-3">
+                        {% set capacity_metrics = [
+                            ('Artifact Footprint', overview.total_size, 'database', 'Committed artifact bytes in the active Registry scope'),
+                            ('Pull Evidence', overview.pull_count, 'download', 'Provider-supplied repository pull counters when available'),
+                            ('Quota Projects', overview.capacity.project_count, 'gauge', 'Projects with committed usage and quota evidence')
+                        ] %}
+                        {% for label, value, icon, helper in capacity_metrics %}
+                            <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+                                <div class="flex items-center gap-2">
+                                    <span class="h-2.5 w-2.5 rounded-full bg-kaori-primary" aria-hidden="true"></span>
+                                    <p class="text-xs font-semibold text-content-secondary">{{ label }}</p>
+                                </div>
+                                <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ value }}</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
+                            </article>
+                        {% endfor %}
+                    </div>
+                    {% if overview.capacity.highest_utilization_percent is not none %}
+                        {% set capacity_tone = 'critical' if overview.capacity.risk == 'Critical' else ('warning' if overview.capacity.risk == 'Warning' else 'normal') %}
+                        <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+                            <div class="flex flex-wrap items-center justify-between gap-3">
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="gauge" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                                    <h3 class="text-sm font-semibold text-content-primary">Highest Project Quota Utilization</h3>
+                                </div>
+                                <span class="text-sm font-semibold tabular-nums text-content-primary">{{ overview.capacity.highest_utilization_percent|round(1) }}%</span>
+                            </div>
+                            {{ progress_bar.semantic_bar(
+                                overview.capacity.highest_utilization_percent if overview.capacity.highest_utilization_percent <= 100 else 100,
+                                capacity_tone,
+                                track_classes='mt-3 h-2 overflow-hidden rounded-full bg-surface-hover',
+                                label='Registry project quota utilization'
+                            ) }}
+                            <div class="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+                                <span class="text-content-muted">{{ overview.capacity.at_risk_count }} project(s) projected to reach quota within 90 days.</span>
+                                {{ table_label.status_label(overview.capacity.risk, capacity_tone, size='detail') }}
+                            </div>
+                        </div>
+                    {% else %}
+                        {% set blocked_state_icon = "database-zap" %}
+                        {% set blocked_state_label = "Analytics Required" %}
+                        {% set blocked_state_title = "Quota Capacity Evidence Unavailable" %}
+                        {% set blocked_state_description = "Registry inventory remains available, but quota utilization and growth require a current Analytics materialization with Metrics Source evidence." %}
+                        {% set blocked_state_tone = "warning" %}
+                        {% include 'components/states/_blocked_state.html' %}
+                    {% endif %}
+                </div>
+            {% endcall %}
+        </div>
+        <div class="{{ peer_content_grid.column_classes('secondary') }}">
+            {% call operational_section_card.render(
+                'Forecast & Growth Risk',
+                'Worker-materialized Registry project growth and quota-exhaustion evidence.',
                 'chart-spline',
-                source_label='Metrics Source',
-                scope_label=overview.scope_label
-            ) }}
-            <p class="text-sm leading-6 text-content-secondary">Growth, forecast, quota, and stale-candidate materializations remain authoritative in Artifact Registry Analytics.</p>
-        {% endcall %}
+                action_href=url_for('artifact_registry.analytics'),
+                action_label='View Forecast Evidence',
+                body_classes='p-5',
+                extra_classes='h-full'
+                ) %}
+                {% if overview.capacity.forecasts %}
+                    <div class="space-y-3">
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+                                <p class="text-xs font-semibold text-content-muted">At-Risk Projects</p>
+                                <p class="mt-2 text-xl font-semibold text-content-primary">{{ overview.capacity.at_risk_count }}</p>
+                                <p class="mt-1 text-xs text-content-muted">Projected quota exhaustion within 90 days.</p>
+                            </article>
+                            <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+                                <p class="text-xs font-semibold text-content-muted">Observed Growth</p>
+                                <p class="mt-2 text-xl font-semibold text-content-primary">
+                                    {{ (overview.capacity.growth_size_per_day|int)|filesizeformat ~ '/day' if overview.capacity.growth_size_per_day is not none else 'N/A' }}
+                                </p>
+                                <p class="mt-1 text-xs text-content-muted">Aggregate committed artifact-size growth when available.</p>
+                            </article>
+                        </div>
+                        <div class="divide-y divide-outline-subtle rounded-lg border border-outline-subtle bg-surface-elevated">
+                            {% for item in overview.capacity.forecasts[:3] %}
+                                {% set days = item.days_to_quota %}
+                                {% set tone = 'critical' if days is not none and days <= 30 else ('warning' if days is not none and days <= 90 else 'normal') %}
+                                <article class="p-3.5">
+                                    <div class="flex items-start justify-between gap-3">
+                                        <div class="min-w-0">
+                                            <p class="truncate text-sm font-semibold text-content-primary">{{ item.project_name }}</p>
+                                            <p class="mt-1 text-xs text-content-muted">{{ item.provider_name }} · {{ item.usage_display }} / {{ item.quota_display }}</p>
+                                        </div>
+                                        {{ table_label.status_label(
+                                            (days|round(0)|int ~ 'd to quota') if days is not none else 'No Exhaustion',
+                                            tone
+                                        ) }}
+                                    </div>
+                                </article>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% else %}
+                    {% set blocked_state_icon = "chart-spline" %}
+                    {% set blocked_state_label = "Source Unavailable" %}
+                    {% set blocked_state_title = "Forecast Data Not Available" %}
+                    {% set blocked_state_description = "Materialize Registry Analytics after validating the Registry Metrics Source binding." %}
+                    {% set blocked_state_tone = "warning" %}
+                    {% include 'components/states/_blocked_state.html' %}
+                {% endif %}
+            {% endcall %}
+        </div>
     </div>
+    {% call operational_section_card.render(
+        'Top Consumers',
+        'Projects ranked by committed quota-usage evidence.',
+        'users',
+        action_href=url_for('artifact_registry.analytics'),
+        action_label='View Analytics',
+        body_classes='p-5'
+        ) %}
+        {% if overview.capacity.top_consumers %}
+            <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {% for item in overview.capacity.top_consumers[:6] %}
+                    {% set utilization = item.utilization_percent|default(0, true) %}
+                    {% set tone = 'critical' if utilization >= 90 else ('warning' if utilization >= 75 else 'normal') %}
+                    <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="truncate text-sm font-semibold text-content-primary">{{ item.project_name }}</p>
+                                <p class="mt-1 text-xs text-content-muted">{{ item.provider_name }}</p>
+                            </div>
+                            {{ table_label.status_label((utilization|round(0)|int) ~ '%', tone) }}
+                        </div>
+                        <p class="mt-3 text-sm font-semibold text-content-primary">{{ item.usage_display }}</p>
+                        <p class="mt-1 text-xs text-content-muted">Quota {{ item.quota_display }} · Growth {{ item.growth_display }}</p>
+                        {{ progress_bar.semantic_bar(
+                            utilization if utilization <= 100 else 100,
+                            tone,
+                            track_classes='mt-3 h-2 overflow-hidden rounded-full bg-surface-hover',
+                            label=item.project_name ~ ' quota utilization'
+                        ) }}
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            {% set empty_state_icon = "users" %}
+            {% set empty_state_label = "No Consumer Evidence" %}
+            {% set empty_state_title = "No Project Quota Consumers Available" %}
+            {% set empty_state_description = "Top consumers appear after Registry Analytics materializes project usage and quota evidence." %}
+            {% set empty_state_variant = "panel" %}
+            {% include 'components/states/_empty_state.html' %}
+        {% endif %}
+    {% endcall %}
 </div>
