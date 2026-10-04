@@ -89,8 +89,8 @@
             </div>
         </form>
     </div>
-    <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[1180px]') }}">
+    <div class="min-w-0">
+        <table class="{{ table_ui.table_classes() }}">
             {{ provider_registry.registry_evidence_coverage_colgroup() }}
             {{ provider_registry.registry_evidence_coverage_head('Harbor API') }}
             <tbody class="{{ table_ui.body_classes() }}">

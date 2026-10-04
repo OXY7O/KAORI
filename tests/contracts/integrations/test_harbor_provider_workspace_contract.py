@@ -214,3 +214,13 @@ def test_harbor_coverage_keeps_independent_registry_readiness_planes() -> None:
     assert '_metrics_status(metrics)' in presentation
     assert '_webhook_status(webhook)' in presentation
     assert "coverage_label = 'Complete' if complete else 'Partial'" in presentation
+
+
+
+def test_harbor_coverage_does_not_force_desktop_horizontal_scroll() -> None:
+    coverage = read('app/templates/integrations/registry/providers/harbor/partials/_coverage.html')
+
+    assert 'overflow-x-auto' not in coverage
+    assert "table_ui.table_classes('min-w-[" not in coverage
+    assert 'table_ui.table_classes()' in coverage
+    assert 'class="min-w-0"' in coverage
