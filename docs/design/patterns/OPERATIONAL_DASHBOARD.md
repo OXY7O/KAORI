@@ -125,6 +125,17 @@ The Hero establishes identity, evidence boundary, and readiness. Operational Sig
 - Reporting guidance remains format-neutral.
 - Reporting guardrails state selected scope, committed-evidence authority, and review requirement before the governed reporting flow.
 
+## Application contract
+
+All Operational Dashboard consumers use `app/dashboards/common/operational.py` for the stable request-level contract:
+
+- canonical tab order is `overview → capacity → signals → reporting`;
+- invalid or missing tabs normalize to `overview`;
+- dashboard page-size normalization delegates to `app/common/pagination.py`, whose canonical options are `5 / 10 / 25 / 50` with default `5`;
+- HTMX partial detection uses one shared predicate rather than domain-local header truthiness.
+
+The common module is intentionally narrow. Blueprints, permission decorators, readiness checks, scope parameters, section maps, service/schema composition, provider evidence, and mutation boundaries remain domain-owned. A universal route factory or service base class is not part of the Operational Dashboard standard.
+
 ## Request authorization contract
 
 - Dashboard page and lazy-section views require `dashboard.view` where applicable.

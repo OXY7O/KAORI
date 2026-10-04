@@ -3,6 +3,11 @@ from __future__ import annotations
 from flask import Blueprint, abort, render_template, request
 
 from app.access.rbac.decorators import permission_required
+from app.dashboards.common.operational import (
+    is_htmx_request,
+    normalize_dashboard_page_size,
+    normalize_operational_tab,
+)
 from app.kubernetes.cluster.onboarding import has_registered_clusters
 from app.kubernetes.dashboard.service import get_dashboard_overview, get_dashboard_section
 
@@ -11,22 +16,6 @@ kubernetes_dashboard_bp = Blueprint(
     __name__,
     url_prefix='/dashboards/kubernetes',
 )
-
-DASHBOARD_TABS = {'overview', 'capacity', 'signals', 'reporting'}
-CLUSTER_HEALTH_PAGE_SIZES = {5, 10, 25, 50}
-
-
-def _active_tab() -> str:
-    value = str(request.args.get('tab') or 'overview').strip().lower()
-    return value if value in DASHBOARD_TABS else 'overview'
-
-
-def _cluster_health_per_page() -> int:
-    try:
-        value = int(request.args.get('cluster_health_per_page', '5'))
-    except (TypeError, ValueError):
-        return 5
-    return value if value in CLUSTER_HEALTH_PAGE_SIZES else 5
 
 
 SECTION_TEMPLATES = {
@@ -50,12 +39,12 @@ def index():
     dashboard = get_dashboard_overview(
         selected_cluster_id=selected_cluster_id,
         cluster_health_page=cluster_health_page,
-        cluster_health_per_page=_cluster_health_per_page(),
-        active_tab=_active_tab(),
+        cluster_health_per_page=normalize_dashboard_page_size(request.args.get('cluster_health_per_page')),
+        active_tab=normalize_operational_tab(request.args.get('tab')),
     )
     template_name = (
         'kubernetes/dashboard/partials/_content.html'
-        if request.headers.get('HX-Request')
+        if is_htmx_request(request.headers)
         else 'kubernetes/dashboard/index.html'
     )
     return render_template(template_name, dashboard=dashboard)

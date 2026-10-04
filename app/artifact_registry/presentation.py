@@ -8,6 +8,7 @@ from sqlalchemy.orm import joinedload
 
 from app.artifact_registry.observability import registry_metrics_readiness
 from app.common.pagination import paginate_sequence
+from app.dashboards.common.operational import normalize_operational_tab
 from app.intelligence.alert_intelligence.dashboard_cases import active_recommendation_alert_cases_by_asset
 from app.intelligence.catalog import INTELLIGENCE_CATALOG
 from app.intelligence.dashboard_recommendations import get_dashboard_recommendation_findings
@@ -452,8 +453,7 @@ def build_overview(
     else:
         posture = {'label': 'Ready', 'tone': 'normal'}
 
-    allowed_tabs = {'overview', 'capacity', 'signals', 'reporting'}
-    normalized_tab = active_tab if active_tab in allowed_tabs else 'overview'
+    normalized_tab = normalize_operational_tab(active_tab)
     scope_label = selected_provider.name if selected_provider is not None else 'All Registry Providers'
     artifact_total = len(artifacts)
     scan_coverage = round((scanned_count / artifact_total) * 100) if artifact_total else 0

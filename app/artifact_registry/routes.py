@@ -20,13 +20,17 @@ from app.artifact_registry.webhooks import (
     generate_webhook_token,
     ingest_webhook,
 )
+from app.dashboards.common.operational import (
+    is_htmx_request,
+    normalize_dashboard_page_size,
+    normalize_operational_tab,
+)
 from app.extensions import limiter
 from app.platform_operations.jobs.dispatcher import JobWorkerUnavailable
 from app.platform_operations.notifications.service import record_operational_activity
 
 artifact_registry_bp = Blueprint('artifact_registry', __name__, url_prefix='/artifact-registry')
 
-PROVIDER_HEALTH_PAGE_SIZES = {5, 10, 25, 50}
 OVERVIEW_SECTION_TEMPLATES = {
     'overview': 'artifact_registry/partials/_overview_operations.html',
     'provider_health': 'artifact_registry/partials/_overview_provider_health.html',
@@ -36,26 +40,18 @@ OVERVIEW_SECTION_TEMPLATES = {
 }
 
 
-def _provider_health_per_page() -> int:
-    try:
-        value = int(request.args.get('provider_health_per_page', '5'))
-    except (TypeError, ValueError):
-        return 5
-    return value if value in PROVIDER_HEALTH_PAGE_SIZES else 5
-
-
 @artifact_registry_bp.get('/')
 @permission_required('artifact_registry.view')
 def overview() -> ResponseReturnValue:
     context = build_overview(
         provider_id=request.args.get('provider_id', type=int),
-        active_tab=request.args.get('tab', 'overview', type=str),
+        active_tab=normalize_operational_tab(request.args.get('tab', type=str)),
         provider_health_page=request.args.get('provider_health_page', 1),
-        provider_health_per_page=_provider_health_per_page(),
+        provider_health_per_page=normalize_dashboard_page_size(request.args.get('provider_health_per_page')),
     )
     template = (
         'artifact_registry/partials/_overview_content.html'
-        if request.headers.get('HX-Request') == 'true'
+        if is_htmx_request(request.headers)
         else 'artifact_registry/overview.html'
     )
     return render_template(template, overview=context)
@@ -69,7 +65,7 @@ def overview_section(section: str) -> ResponseReturnValue:
         abort(404)
     context = build_overview(
         provider_id=request.args.get('provider_id', type=int),
-        active_tab=section if section in {'overview', 'capacity', 'signals', 'reporting'} else 'overview',
+        active_tab=normalize_operational_tab(section),
         provider_health_page=request.args.get('provider_health_page', 1),
         provider_health_per_page=_provider_health_per_page(),
     )
