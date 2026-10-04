@@ -184,7 +184,7 @@ def test_capability_copy_keeps_optional_governance_concise() -> None:
     registry = REGISTRY.read_text(encoding='utf-8')
 
     assert (
-        'Required API/RBAC is ready; optional Tenant access stays workflow-scoped.'
+        'Core API/RBAC is ready; optional Tenant access remains workflow-scoped.'
         in workspace
     )
     assert 'Optional workflows must establish their own approved access boundary.' in registry
