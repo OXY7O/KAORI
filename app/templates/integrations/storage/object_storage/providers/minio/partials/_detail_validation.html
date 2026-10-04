@@ -63,7 +63,7 @@
                 "Required MinIO S3 contracts are usable." if readiness == "ready" else "Resolve required MinIO API or compatibility gaps.",
                 "normal" if readiness == "ready" else "critical",
                 "Full Validation owns S3 capabilities; Runtime Refresh owns health; Inventory Sync owns assets; bindings own consumer evidence.",
-                "Revalidate after MinIO release, credential, endpoint, TLS, region, addressing, or S3 API changes." if readiness == "ready" else "Resolve MinIO gaps, then rerun Full Validation.") }}
+                "Revalidate after MinIO release, credential, endpoint, TLS, region, addressing, or S3 API changes." if readiness == "ready" else "Resolve the identified MinIO API, credential, TLS, compatibility, or required-capability gaps, then rerun Full Validation to refresh committed readiness evidence.") }}
         {% if readiness == "ready" %}
             {% set readiness_decision_title = "Provider Readiness Is Ready" %}
             {% set readiness_decision_message = "MinIO identity, compatibility, S3 access, and required provider capabilities are ready. Observability evidence remains binding-specific." %}
