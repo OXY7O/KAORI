@@ -1,6 +1,6 @@
 {% import "components/page_hero.html" as page_hero %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
-{% macro render(eyebrow_icon, eyebrow_label, leading_icon, title, description, api_icon, api_label, back_url, aria_label, binding_label="Governed Consumer Binding", after_save_label="Core Validation", after_save_description="Then assign consumer bindings") -%}
+{% macro render(eyebrow_icon, eyebrow_label, leading_icon, title, description, api_icon, api_label, back_url, aria_label, binding_label="Governed Consumer Binding", after_save_label="Full Validation", after_save_description="Then establish provider readiness") -%}
     <section class="{{ page_hero.shell_classes() }}"
              data-kaori-provider-registration-hero>
         <div class="{{ page_hero.layout_classes() }}">
