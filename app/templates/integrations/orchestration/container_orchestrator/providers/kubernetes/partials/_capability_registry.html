@@ -297,7 +297,11 @@
     {% set scope_label = 'Cluster-wide required contract' if row.required else ('Cluster-scoped optional governance contract' if is_cluster_scoped_optional else 'Governed optional contract') %}
     {% set authorization_scope = 'All namespaces' if row.required else ('Cluster-scoped governed workflow' if is_cluster_scoped_optional else 'Approved namespace only') %}
     {% if optional_gap %}
-        {% set decision_message = 'This optional Tenant capability is unavailable under the current API/RBAC evidence. Core Kubernetes readiness is unaffected; only approved workflows that require this contract remain unavailable.' ~ (' Validation detail: ' ~ row.message if row.message else '') %}
+        {% if row.message == 'No supported API candidate with the required verbs is available.' %}
+            {% set decision_message = 'This optional Tenant capability is unavailable. Core readiness is unaffected; no supported API contract currently satisfies the required verbs.' %}
+        {% else %}
+            {% set decision_message = 'This optional Tenant capability is unavailable. Core readiness is unaffected.' ~ (' ' ~ row.message if row.message else '') %}
+        {% endif %}
     {% else %}
         {% set decision_message = row.message or 'No validation message is available for this capability.' %}
     {% endif %}
@@ -369,7 +373,7 @@
                     {% if not has_selected_contract %}
                         {% set api_serving_description = 'Full Validation did not select an API version for this capability; KAORI does not infer one.' %}
                         {% set resource_discovery_description = 'Resource discovery remains unresolved until a supported API contract is selected.' %}
-                        {% set authorization_description = 'Authorization is not broadened by default; the optional workflow must establish its own approved access boundary.' if not row.required else 'Required authorization remains unresolved until a valid API/resource contract is selected.' %}
+                        {% set authorization_description = 'Optional workflows must establish their own approved access boundary.' if not row.required else 'Required authorization remains unresolved until a valid API/resource contract is selected.' %}
                     {% else %}
                         {% set api_serving_description = 'Selected API is served by the registered Kubernetes API.' %}
                         {% set resource_discovery_description = 'Expected resource is discoverable through the selected API contract.' %}
@@ -438,7 +442,7 @@
                                     {% elif row.required %}
                                         Serve the required API and grant only the required verbs. Do not use an older API to bypass missing authorization.
                                     {% else %}
-                                        Grant only the contract-specific access required by an approved governed workflow. Do not broaden the baseline ClusterRole.
+                                        Grant only workflow-required access; do not broaden the baseline ClusterRole.
                                     {% endif %}
                                 </p>
                             </div>
@@ -451,7 +455,7 @@
                         {{ integration_ui.palette_icon('shield-check', 'neutral', size='sm') }}
                         <div class="min-w-0">
                             <p class="text-xs font-semibold text-content-primary">Governance Boundary</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">{{ scope_label }}. Full Validation proves API and RBAC readiness only; runtime refresh and inventory synchronization remain separate operations.</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">{{ scope_label }}. Full Validation owns API/RBAC readiness; runtime and inventory remain separate.</p>
                         </div>
                     </div>
                 </div>
@@ -502,7 +506,7 @@
                             {% if row.required %}
                                 Full Validation did not select an API/resource contract. Resolve API serving or RBAC evidence, then rerun Full Validation before operator-side verification.
                             {% else %}
-                                Full Validation did not select an API/resource contract for this optional capability. Enable it only through an approved governed workflow, then rerun Full Validation.
+                                No API/resource contract was selected. Enable the approved workflow, then rerun Full Validation.
                             {% endif %}
                         </p>
                     </div>

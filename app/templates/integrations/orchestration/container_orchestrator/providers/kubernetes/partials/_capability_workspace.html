@@ -37,7 +37,7 @@
     {% set capability_readiness_state = 'ready' %}
     {% set capability_readiness_label = 'Ready' %}
     {% set capability_gate_title = 'Core Workspaces Eligible' %}
-    {% set capability_gate_description = 'Required API and RBAC contracts are usable; optional Tenant contracts remain workflow-scoped.' %}
+    {% set capability_gate_description = 'Required API/RBAC contracts are usable; optional Tenant access stays workflow-scoped.' %}
     {% set capability_gate_tone = 'normal' %}
 {% endif %}
 {% set capability_readiness_percent = ((validated_feature_count * 100 / capability_total) if capability_total else 0) %}
