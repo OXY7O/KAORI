@@ -125,7 +125,7 @@ def test_harbor_validation_and_authority_copy_is_compact() -> None:
     )
 
     assert 'Harbor remains authoritative for native Registry state and policies.' in configuration
-    assert 'provider discovery, identity checks, compatibility validation, capability probing, and governed Registry evidence collection.' in configuration
+    assert 'Harbor API base URL used for read-only discovery, identity, compatibility, capability checks, and governed Registry evidence.' in configuration
     assert (
         'Harbor owns Registry state and policy; KAORI owns registration, validation evidence, '
         'runtime observation, governance, and audit.'
@@ -134,6 +134,19 @@ def test_harbor_validation_and_authority_copy_is_compact() -> None:
         "('Bind Metrics', 'Bind Prometheus/Thanos through Metrics Source for current and long-term "
         "Registry analytics.', 'chart-spline')"
     ) in configuration
+    assert (
+        'setup_reference_template="integrations/registry/providers/harbor/partials/'
+        '_minimum_validation_access.html"'
+    ) in configuration
+    access_reference = read(
+        'app/templates/integrations/registry/providers/harbor/partials/_minimum_validation_access.html'
+    )
+    assert 'Minimum Harbor API Access Example' in access_reference
+    assert 'Open Access Examples' in access_reference
+    assert 'Required API reads:' in access_reference
+    assert 'GET /api/v2.0/systeminfo' in access_reference
+    assert 'Optional Metadata Reader' in access_reference
+    assert 'Harbor role and permission labels can differ by qualified release.' in access_reference
     assert 'Required Harbor readiness and read-capability evidence.' in validation
     assert 'Optional capability evidence; does not affect readiness.' in validation
     assert (
@@ -394,6 +407,10 @@ def test_harbor_inventory_lifecycle_keeps_artifact_registry_as_detail_owner() ->
     sync = read('app/artifact_registry/sync.py')
 
     assert 'Open Artifact Registry' in inventory
+    assert (
+        'Use Artifact Registry for committed artifact evidence. Manage Metrics Source and Alertmanager bindings in '
+        'Observability; Harbor remains read-only for binding changes.'
+    ) in inventory
     assert (
         'Detailed Projects, Repositories, Artifacts, Security, Runtime Usage, Governance, '
         'and Analytics remain owned by Artifact Registry.'
