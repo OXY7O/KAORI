@@ -46,6 +46,8 @@ def test_kubernetes_minio_harbor_keep_same_dashboard_frame_order() -> None:
         assert template.count('provider_front.hero(') == 1, provider
         assert template.count('provider_front.overview(') == 1, provider
         assert 'overview_metrics = [' in template, provider
+        for label in ('Registered Connections', 'Validated Connections', 'Needs Attention', 'Coverage Gaps'):
+            assert f'"label": "{label}"' in template, provider
 
 
 def test_shared_overview_owns_summary_and_boundary_geometry() -> None:

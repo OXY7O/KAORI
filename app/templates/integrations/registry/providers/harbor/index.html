@@ -7,7 +7,7 @@
     {% set overview_metrics = [
         {"label": "Registered Connections", "value": stats.total, "description": "Reusable Harbor Registry endpoints", "icon": "server-cog"},
         {"label": "Validated Connections", "value": stats.ready, "description": "Full Validation ready", "icon": "badge-check"},
-        {"label": "Consumer Bindings", "value": stats.bindings, "description": "Registry Metrics Source bindings", "icon": "git-branch"},
+        {"label": "Needs Attention", "value": stats.attention, "description": "Validation or runtime review", "icon": "triangle-alert"},
         {"label": "Coverage Gaps", "value": stats.uncovered, "description": "Registry instances with partial evidence coverage", "icon": "unlink"}
     ] %}
     <div class="kaori-integration-semantic space-y-6">

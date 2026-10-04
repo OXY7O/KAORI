@@ -77,6 +77,7 @@ def test_harbor_registration_copy_is_concise_and_preserves_authority_boundaries(
     assert 'Disabled connections remain registered but are not resolved for use.' in form
     assert 'Harbor executes Registry APIs; KAORI owns normalized identity, evidence, readiness, runtime, and audit.' in form
     assert 'How KAORI registers a reusable Registry connection.' in form
+    assert 'How changes restore Registry provider readiness.' in form
     assert (
         'Register Harbor once; committed Registry inventory, Metrics Source bindings, webhook readiness, '
         'and provider validation remain independent.'
@@ -128,6 +129,10 @@ def test_harbor_validation_and_authority_copy_is_compact() -> None:
         'Harbor owns Registry state and policy; KAORI owns registration, validation evidence, '
         'runtime observation, governance, and audit.'
     ) in configuration
+    assert (
+        "('Bind Metrics', 'Bind Prometheus/Thanos through Metrics Source for current and long-term "
+        "Registry analytics.', 'chart-spline')"
+    ) in configuration
     assert 'Required Harbor identity, compatibility, health, and read-capability evidence.' in validation
     assert 'Optional capability evidence; does not affect readiness.' in validation
     assert (
@@ -166,6 +171,8 @@ def test_harbor_detail_uses_shared_provider_domains_with_inventory_lifecycle() -
     assert 'Bound Observability Sources' in read(
         'app/templates/integrations/registry/providers/harbor/partials/_binding_registry.html'
     )
+    assert 'Review Harbor configuration, validation, and runtime evidence.' in detail
+    assert '"Harbor API read contracts"' in detail
     assert 'provider_detail_posture.render' in detail
     assert 'provider_configuration_contract.render' in configuration
     assert 'connection_validation_header.render' in validation
@@ -300,6 +307,8 @@ def test_harbor_frontpage_matches_canonical_provider_workspace_hierarchy() -> No
     registry = read('app/templates/integrations/registry/providers/harbor/partials/_registry.html')
 
     assert 'components/integration_workspace_tabs.html' in index
+    assert '"label": "Needs Attention"' in index
+    assert '"label": "Consumer Bindings"' not in index
     assert 'integration_tabs.render("harbor"' in index
     assert 'Harbor Integration Coverage' in coverage
     assert 'Harbor Connection Registry' in registry

@@ -15,7 +15,7 @@
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro("package", "Harbor Integration", "container") %}
                         <h1 class="{{ page_hero.title_classes() }}">{{ instance.name }}</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">Review Harbor connection configuration, Full Validation evidence, and committed runtime observations.</p>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Review Harbor configuration, validation, and runtime evidence.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label("shield-check", readiness|replace("_", " ")|title) }}
                             {{ page_hero.meta_label("layers-3", (capability_count|string) ~ " Validated Capabilities") }}
@@ -33,7 +33,7 @@
                                 "layers-3",
                                 "Validated Capabilities",
                                 capability_count,
-                                "Harbor API and provider-owned read contracts",
+                                "Harbor API read contracts",
                                 url_for("harbor.index")) }}
             </div>
         </section>
