@@ -10,18 +10,18 @@
     extra_classes=''
     ) -%}
     <section class="{% if embedded %}bg-transparent{% else %}overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm{% endif %} {{ extra_classes }}">
-        <header class="flex items-start gap-3 {{ 'pb-4' if embedded else 'px-5 py-4' }}">
-            <span class="flex {{ 'h-9 w-9 rounded-lg' if embedded else 'h-11 w-11 rounded-xl' }} shrink-0 items-center justify-center bg-kaori-soft text-kaori-primary dark:text-kaori-accent"
+        <header class="flex items-start gap-3 {{ 'pb-3' if embedded else 'px-5 py-4' }}">
+            <span class="flex {{ 'h-8 w-8 rounded-lg' if embedded else 'h-11 w-11 rounded-xl' }} shrink-0 items-center justify-center bg-kaori-soft text-kaori-primary dark:text-kaori-accent"
                   aria-hidden="true">
-                <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
+                <i data-lucide="{{ icon }}" class="{{ 'h-4 w-4' if embedded else 'h-5 w-5' }}"></i>
             </span>
             <div class="min-w-0">
-                <h2 class="{{ 'text-lg' if embedded else 'text-base' }} font-semibold text-content-primary">{{ title }}</h2>
-                <p class="mt-1 text-sm leading-6 text-content-secondary">{{ description }}</p>
+                <h2 class="text-base font-semibold text-content-primary">{{ title }}</h2>
+                <p class="mt-0.5 {{ 'text-xs leading-5 text-content-muted' if embedded else 'text-sm leading-6 text-content-secondary' }}">{{ description }}</p>
             </div>
         </header>
         <div class="{{ 'pt-0' if embedded else 'border-t border-outline-default px-5 py-4' }}">
-            <ol class="relative space-y-4 before:absolute before:bottom-4 before:left-4 before:top-4 before:w-px before:bg-outline-default">
+            <ol class="relative {{ 'space-y-3' if embedded else 'space-y-4' }} before:absolute before:bottom-4 before:left-4 before:top-4 before:w-px before:bg-outline-default">
                 {% for step in steps %}
                     <li class="relative flex gap-3">
                         <span class="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brand-outline bg-kaori-soft text-xs font-semibold text-kaori-primary dark:text-kaori-accent">
