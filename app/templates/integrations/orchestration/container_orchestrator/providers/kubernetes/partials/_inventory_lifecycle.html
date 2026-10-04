@@ -1,5 +1,4 @@
 {% import "components/table.html" as table_ui %}
-{% import "integrations/components/_asset_owner_observability_sources.html" as asset_owner_sources %}
 {% import "components/table_label.html" as table_label %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
@@ -177,9 +176,7 @@
                     {% endfor %}
                 </div>
             </section>
-            {{ asset_owner_sources.render(source_bindings,
-                        total_count=source_bindings|length,
-                        empty_message="No reusable observability source is currently bound to this Kubernetes connection.") }}
+            {% include "integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_binding_registry.html" %}
             <section class="rounded-xl border border-outline-subtle bg-surface-card px-5 py-4 sm:px-6"
                      data-kaori-kubernetes-binding-ownership>
                 <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
