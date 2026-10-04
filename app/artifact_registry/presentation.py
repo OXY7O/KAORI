@@ -449,7 +449,7 @@ def build_overview(
     else:
         freshness = [
             {
-                'label': 'Inventory Fleet',
+                'label': 'Inventory Snapshot',
                 'status': (
                     'Ready'
                     if len(ready_states) == len(scoped_providers) and scoped_providers
@@ -465,7 +465,7 @@ def build_overview(
                 'icon': 'database-zap',
             },
             {
-                'label': 'Metrics Fleet',
+                'label': 'Metrics Snapshot',
                 'status': (
                     'Ready'
                     if metrics_ready_count == len(scoped_providers) and scoped_providers
@@ -481,15 +481,27 @@ def build_overview(
                 'icon': 'activity',
             },
             {
-                'label': 'Security Coverage',
-                'status': 'Available' if scanned_count else 'Required',
-                'tone': 'normal' if scanned_count else 'unknown',
-                'value': f'{scanned_count} / {artifact_total} artifacts scanned',
+                'label': 'Security Snapshot',
+                'status': (
+                    'No Artifacts'
+                    if artifact_total == 0
+                    else ('Available' if scanned_count else 'Required')
+                ),
+                'tone': (
+                    'info'
+                    if artifact_total == 0
+                    else ('normal' if scanned_count else 'unknown')
+                ),
+                'value': (
+                    'No committed artifacts to scan'
+                    if artifact_total == 0
+                    else f'{scanned_count} / {artifact_total} artifacts scanned'
+                ),
                 'description': 'Committed vulnerability scan coverage across the current Registry scope.',
                 'icon': 'shield-check',
             },
             {
-                'label': 'Analytics Fleet',
+                'label': 'Analytics Snapshot',
                 'status': (
                     'Ready'
                     if analytics_ready_count == len(scoped_providers) and scoped_providers
