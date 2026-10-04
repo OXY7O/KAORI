@@ -3,10 +3,12 @@ from __future__ import annotations
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions.db import db
+from app.integrations.deletion import DeletionBlocked, asset_owner_deletion_guard
 from app.integrations.registry.providers.harbor.application.contracts import HarborRegistrationInput
 from app.integrations.registry.providers.harbor.client import HarborClient
 from app.models.harbor import HarborInstance
-from app.models.integration import IntegrationInstance
+from app.models.integration import IntegrationBinding, IntegrationInstance
+from app.platform_operations.jobs.service import acquire_resource_admission_locks
 
 
 def get_harbor_instance(instance_id: int) -> HarborInstance | None:
@@ -134,3 +136,51 @@ def update_harbor_instance(instance: HarborInstance, values: HarborRegistrationI
         db.session.rollback()
         raise
     return instance
+
+
+
+def delete_harbor_instance(instance: HarborInstance) -> dict[str, int]:
+    """Delete KAORI-owned Harbor registration state without mutating Harbor.
+
+    The canonical Registry integration identity is also the provider-neutral
+    ``registry_instance`` consumer asset. Deleting it removes committed
+    provider-derived Registry state through existing foreign-key ownership and
+    removes bindings that target this Registry instance. Reusable Metrics Source
+    and Alertmanager connections remain registered. Runtime observations,
+    JobExecution history, and Activity Audit evidence remain retained by their
+    independent history contracts.
+    """
+    integration_instance_id = int(instance.integration_instance_id)
+    asset_key = str(integration_instance_id)
+    acquire_resource_admission_locks(
+        f'integration:registry:{integration_instance_id}',
+        f'registry_instance:{asset_key}',
+    )
+    guard = asset_owner_deletion_guard(
+        integration_type='registry',
+        integration_instance_id=integration_instance_id,
+        asset_type='registry_instance',
+        asset_key=asset_key,
+    )
+    if guard.blocked:
+        raise DeletionBlocked(guard)
+
+    canonical = instance.integration_instance
+    deleted_bindings = IntegrationBinding.query.filter(
+        IntegrationBinding.asset_type == 'registry_instance',
+        IntegrationBinding.asset_key == asset_key,
+    ).delete(synchronize_session=False)
+
+    db.session.delete(instance)
+    db.session.flush()
+    if canonical is not None:
+        db.session.delete(canonical)
+    try:
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
+    return {
+        'asset_bindings': int(deleted_bindings or 0),
+        'canonical_instance_deleted': int(canonical is not None),
+    }

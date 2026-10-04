@@ -9,6 +9,7 @@ from flask_login import current_user
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.rbac.decorators import permission_required
+from app.integrations.deletion import DeletionBlocked
 from app.integrations.registry.providers.harbor.application.forms import HarborInstanceForm
 from app.integrations.registry.providers.harbor.application.presentation import (
     HarborIndexQuery,
@@ -21,6 +22,7 @@ from app.integrations.registry.providers.harbor.application.registration import 
 )
 from app.integrations.registry.providers.harbor.application.service import (
     create_harbor_instance,
+    delete_harbor_instance,
     get_harbor_instance,
     test_harbor_connection,
     update_harbor_instance,
@@ -468,3 +470,64 @@ def runtime_history(instance_id: int) -> ResponseReturnValue:
         runtime_history_filters_enabled=True,
         provider_label='Harbor',
     )
+
+
+
+@harbor_bp.get('/instances/<int:instance_id>/bindings/registry')
+@permission_required('integrations.manage')
+def binding_registry(instance_id: int) -> ResponseReturnValue:
+    instance = _instance_or_404(instance_id)
+    return render_template(
+        'integrations/registry/providers/harbor/partials/_binding_registry.html',
+        **build_detail_context(instance, detail_query_from_request()),
+    )
+
+
+@harbor_bp.post('/instances/<int:instance_id>/delete')
+@permission_required('integrations.manage')
+def delete_instance(instance_id: int) -> ResponseReturnValue:
+    instance = _instance_or_404(instance_id)
+    instance_name = instance.name
+    try:
+        summary = delete_harbor_instance(instance)
+    except DeletionBlocked as exc:
+        logger.warning('Harbor deletion blocked for %s: %s', instance_id, exc)
+        _queue_feedback(
+            event_type='harbor_instance_delete_rejected',
+            status='warning',
+            title='Harbor Connection Deletion Blocked',
+            message=f'{instance_name} still has active operational dependencies.',
+            detail=str(exc),
+            action_url=url_for('harbor.instance_detail', instance_id=instance_id, _anchor='inventory'),
+        )
+        return redirect(url_for('harbor.instance_detail', instance_id=instance_id, _anchor='inventory'))
+    except SQLAlchemyError:
+        logger.exception('Harbor instance deletion failed for %s.', instance_id)
+        _queue_feedback(
+            event_type='harbor_instance_delete_failed',
+            status='error',
+            title='Harbor Connection Not Deleted',
+            message=f'KAORI could not delete {instance_name}.',
+            detail='Review database connectivity and dependent committed Registry records before retrying.',
+            action_url=url_for('harbor.instance_detail', instance_id=instance_id, _anchor='inventory'),
+        )
+        return redirect(url_for('harbor.instance_detail', instance_id=instance_id, _anchor='inventory'))
+
+    record_operational_activity(
+        user_id=int(current_user.id),
+        event_type='harbor_instance_deleted',
+        status='success',
+        title='Harbor Connection Deleted',
+        message=f'{instance_name} was removed from the KAORI Registry integration.',
+        detail=(
+            f'Removed {summary["asset_bindings"]} binding(s) targeting this Registry instance. '
+            'Harbor projects, repositories, artifacts, policies, and other provider-owned resources were not changed. '
+            'Reusable observability sources, runtime history, JobExecution history, and Activity Audit evidence remain retained.'
+        ),
+        action_url=url_for('harbor.index', tab='registry'),
+        action_label='Open Harbor Registry',
+        action_icon='package',
+        metadata={'instance_name': instance_name, **summary},
+        queue_feedback=True,
+    )
+    return redirect(url_for('harbor.index', tab='registry'))

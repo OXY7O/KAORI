@@ -6,6 +6,8 @@ from typing import Any
 from app.common.pagination import paginate_sequence
 from app.artifact_registry.observability import registry_metrics_readiness
 from app.common.presentation import present_user_datetime
+from app.integrations.asset_owner_sources import build_bound_observability_source_rows
+from app.integrations.deletion import asset_owner_deletion_guard
 from app.integrations.registry.providers.harbor.capabilities import CAPABILITIES, CAPABILITY_PROFILE
 from app.integrations.runtime.presentation import runtime_history_view, runtime_observation_state_view
 from app.integrations.runtime.repository import paginate_runtime_history
@@ -42,6 +44,8 @@ class HarborDetailQuery:
     history_trigger: str = ''
     history_health: str = ''
     history_readiness: str = ''
+    binding_page: int = 1
+    binding_per_page: int = 5
 
 
 def build_index_context(query: HarborIndexQuery | None = None) -> dict[str, Any]:
@@ -306,15 +310,57 @@ def build_detail_context(
         page=query.capability_page,
         per_page=query.capability_per_page,
     )
+    identity = instance.integration_instance
+    collection_state = RegistryCollectionState.query.filter_by(
+        integration_instance_id=identity.id,
+    ).first()
+    webhook_endpoint = RegistryWebhookEndpoint.query.filter_by(
+        integration_instance_id=identity.id,
+    ).first()
+    metrics_readiness = registry_metrics_readiness(identity)
+    all_binding_rows = build_bound_observability_source_rows(
+        asset_type='registry_instance',
+        asset_key=str(identity.id),
+    )
+    binding_rows, binding_pagination = paginate_sequence(
+        all_binding_rows,
+        page=query.binding_page,
+        per_page=query.binding_per_page,
+    )
+    raw_counts = collection_state.counts if collection_state and isinstance(collection_state.counts, dict) else {}
+    inventory_counts = {
+        key: int(raw_counts.get(key) or 0)
+        for key in ('projects', 'repositories', 'artifacts', 'tags')
+    }
     return {
         'instance': instance,
-        'canonical': instance.integration_instance,
+        'canonical': identity,
         'runtime_state': runtime_state,
         'runtime_history': runtime_history_view(runtime_rows, pagination=runtime_pagination),
         'capability_registry': capability_registry,
         'validated_at_display': present_user_datetime(instance.last_validated_at, empty='Not validated'),
         'checked_at_display': present_user_datetime(instance.last_checked_at, empty='Not observed'),
         'capability_count': len(instance.capabilities or ()),
+        'collection_state': collection_state,
+        'inventory_status': _inventory_status(collection_state),
+        'inventory_counts': inventory_counts,
+        'inventory_observed_at_display': present_user_datetime(
+            collection_state.last_observed_at if collection_state else None,
+            empty='Not Collected',
+        ),
+        'metrics_readiness': metrics_readiness,
+        'metrics_status': _metrics_status(metrics_readiness),
+        'webhook_endpoint': webhook_endpoint,
+        'webhook_status': _webhook_status(webhook_endpoint),
+        'binding_rows': binding_rows,
+        'binding_total': len(all_binding_rows),
+        'binding_pagination': binding_pagination,
+        'deletion_guard': asset_owner_deletion_guard(
+            integration_type='registry',
+            integration_instance_id=int(identity.id),
+            asset_type='registry_instance',
+            asset_key=str(identity.id),
+        ),
     }
 
 

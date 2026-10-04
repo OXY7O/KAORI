@@ -25,6 +25,8 @@ def detail_query_from_request() -> HarborDetailQuery:
         history_trigger=request.args.get('history_trigger', '').strip(),
         history_health=request.args.get('history_health', '').strip(),
         history_readiness=request.args.get('history_readiness', '').strip(),
+        binding_page=request.args.get('binding_page', 1, type=int) or 1,
+        binding_per_page=request.args.get('binding_per_page', 5, type=int) or 5,
     )
 
 
