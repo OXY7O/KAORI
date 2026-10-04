@@ -168,6 +168,7 @@ def build_index_context(query: HarborIndexQuery | None = None) -> dict[str, Any]
         'environment_options': sorted({row['environment'] for row in rows if row.get('environment')}),
         'readiness_options': [
             {'value': 'ready', 'label': 'Ready'},
+            {'value': 'degraded', 'label': 'Degraded'},
             {'value': 'blocked', 'label': 'Blocked'},
             {'value': 'validation_required', 'label': 'Validation Required'},
         ],
@@ -196,6 +197,8 @@ def _provider_status(instance: HarborInstance) -> dict[str, str]:
     readiness = str(instance.readiness_status or 'validation_required')
     if readiness == 'ready':
         return {'status': 'ready', 'label': 'Ready', 'detail': 'Full Validation ready'}
+    if readiness == 'degraded':
+        return {'status': 'attention', 'label': 'Degraded', 'detail': 'Full Validation completed with compatibility attention'}
     if readiness == 'blocked':
         return {'status': 'blocked', 'label': 'Blocked', 'detail': 'Provider readiness blocked'}
     return {'status': 'attention', 'label': 'Validation Required', 'detail': 'Run Full Validation'}
