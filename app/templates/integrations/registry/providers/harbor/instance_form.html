@@ -168,9 +168,9 @@
                 {% if instance is defined and instance %}
                     {% call form_action_bar.render("Save changes, then run Full Validation before interpreting Registry provider readiness.", aria_label="Harbor Configuration Actions", embedded=true) %}
                         <a href="{{ url_for('harbor.instance_detail', instance_id=instance.id) }}"
-                           class="inline-flex h-10 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary">Cancel</a>
+                           class="{{ action_button.classes('secondary') }}">Cancel</a>
                         <button type="submit"
-                                class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover">
+                                class="{{ action_button.classes('primary') }}">
                             <i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i>
                             Save Changes
                         </button>
