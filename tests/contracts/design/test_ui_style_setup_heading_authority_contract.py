@@ -36,30 +36,38 @@ def test_unmarked_setup_heading_remains_custom_hero_title_debt() -> None:
     )
 
 
-def test_auth_setup_workspace_uses_one_unified_operational_surface() -> None:
+def test_auth_setup_workspace_uses_compact_control_workspace_hierarchy() -> None:
     source = SETUP_TEMPLATE.read_text(encoding='utf-8')
 
     assert 'data-kaori-setup-workspace="release-v2"' in source
     assert 'data-kaori-setup-unified-surface' in source
+    assert 'data-kaori-setup-readiness-strip' in source
+    assert 'data-kaori-setup-primary-action' in source
+    assert 'data-kaori-setup-supporting-grid' in source
     assert 'data-kaori-auth-setup-heading-authority="readiness-workspace"' in source
     assert 'class="mt-0.5 text-2xl font-semibold leading-8 text-content-primary"' in source
     assert 'tracking-tight' not in source
     assert 'sm:text-3xl' not in source
     assert 'max-w-4xl overflow-hidden rounded-2xl' not in source
 
+    assert '{% import "components/action_button.html" as action_button %}' in source
     assert '{% import "components/table_label.html" as table_label %}' in source
     assert '{% import "components/info_flow.html" as info_flow %}' in source
     assert '{% import "components/operational_section_card.html" as operational_section_card %}' in source
     assert 'operational_section_card.shell_classes()' in source
     assert source.count('operational_section_card.shell_classes()') == 1
     assert 'operational_section_card.render(' not in source
-    assert "table_label.status_indicator_label('PostgreSQL Reachable', 'normal')" in source
-    assert "table_label.status_indicator_label('Schema Missing', 'warning')" in source
+    assert "table_label.status_label('Initialization Required', 'warning', icon='database-zap')" in source
+    assert "table_label.status_indicator_label('Reachable', 'normal')" in source
+    assert "table_label.status_indicator_label('Missing', 'warning')" in source
+    assert "table_label.status_indicator_label('Blocked', 'critical')" in source
+    assert "action_button.classes('secondary')" in source
     assert 'embedded=true' in source
     assert '<ol ' not in source
 
     assert source.index('Development Bootstrap') < source.index('Initialization Path')
     assert source.index('Initialization Path') < source.index('Setup Details')
+    assert 'Readiness Summary' not in source
     assert 'Manual Initialization Commands' in source
     assert 'Missing Schema Objects' in source
     assert 'Retry Setup Check' in source
