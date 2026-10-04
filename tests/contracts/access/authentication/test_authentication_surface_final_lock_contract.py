@@ -18,7 +18,8 @@ def test_authentication_surface_final_lock_is_release_gated_and_documented() -> 
     assert 'Login' in lock
     assert 'Database Setup Required' in lock
     assert 'Canonical Database Setup Workspace Composition' in lock
-    assert 'Major Page Title outside Hero' in lock
+    assert 'compact operational readiness workspace' in lock
+    assert 'page title: 20 px (`text-xl`), semibold' in lock
     assert 'components/info_flow.html' in lock
     assert 'components/table_label.html' in lock
 
