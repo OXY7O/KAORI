@@ -34,6 +34,7 @@
         const namespaceOptionsByCluster = bootstrap.namespace_options_by_cluster || {}
         const hasRegisteredClusters = Boolean(bootstrap.has_clusters)
         const hasObjectStorageSystems = Boolean(bootstrap.has_object_storage_systems)
+        const hasArtifactRegistries = Boolean(bootstrap.has_artifact_registries)
         const initialSelectedSections = Array.isArray(bootstrap.initial_sections) ? bootstrap.initial_sections : []
         const initialNamespace = bootstrap.initial_namespace || ''
 
@@ -655,11 +656,14 @@
                       ? 'Select one active Artifact Registry integration before continuing.'
                       : 'Select one validated Kubernetes cluster before continuing.'
             }
-            setElementVisibility(kubernetesScopeFields, !objectStorageScope)
+            setElementVisibility(kubernetesScopeFields, !objectStorageScope && !artifactRegistryScope)
             setElementVisibility(objectStorageScopeFields, objectStorageScope)
-            if (clusterSelect) clusterSelect.disabled = objectStorageScope
-            if (namespaceSelect) namespaceSelect.disabled = objectStorageScope || !clusterSelect.value
+            setElementVisibility(artifactRegistryScopeFields, artifactRegistryScope)
+            if (clusterSelect) clusterSelect.disabled = objectStorageScope || artifactRegistryScope
+            if (namespaceSelect)
+                namespaceSelect.disabled = objectStorageScope || artifactRegistryScope || !clusterSelect.value
             if (objectStorageSystemSelect) objectStorageSystemSelect.disabled = !objectStorageScope
+            if (artifactRegistrySelect) artifactRegistrySelect.disabled = !artifactRegistryScope
 
             const clusterLabel =
                 clusterSelect && clusterSelect.options[clusterSelect.selectedIndex]
@@ -669,6 +673,10 @@
                 objectStorageSystemSelect && objectStorageSystemSelect.options[objectStorageSystemSelect.selectedIndex]
                     ? objectStorageSystemSelect.options[objectStorageSystemSelect.selectedIndex].text.trim()
                     : 'Select Object Storage System'
+            const registryLabel =
+                artifactRegistrySelect && artifactRegistrySelect.options[artifactRegistrySelect.selectedIndex]
+                    ? artifactRegistrySelect.options[artifactRegistrySelect.selectedIndex].text.trim()
+                    : 'Select Artifact Registry'
             const namespaceValue =
                 namespaceSelect && namespaceSelect.value
                     ? namespaceSelect.options[namespaceSelect.selectedIndex].text.trim()
@@ -677,31 +685,59 @@
             setReadinessItemTone(readinessScopeIcon, readinessScopeStatus, scopeReady)
             setReadinessStatusLabel(
                 readinessScopeStatus,
-                scopeReady ? 'Scope Ready' : objectStorageScope ? 'Select Object Storage System' : 'Select Cluster'
+                scopeReady
+                    ? 'Scope Ready'
+                    : objectStorageScope
+                      ? 'Select Object Storage System'
+                      : artifactRegistryScope
+                        ? 'Select Artifact Registry'
+                        : 'Select Cluster',
             )
             if (readinessScopeDescription) {
                 readinessScopeDescription.textContent = objectStorageScope
                     ? hasObjectStorageSystems
                         ? 'Select one registered Object Storage system for this report.'
                         : 'Register at least one Object Storage system before creating Object Storage reports.'
-                    : hasRegisteredClusters
-                      ? 'Select one validated Kubernetes cluster for this report.'
-                      : 'Register at least one Kubernetes cluster before creating Kubernetes reports.'
+                    : artifactRegistryScope
+                      ? hasArtifactRegistries
+                          ? 'Select one active Artifact Registry integration for this report.'
+                          : 'Register at least one Artifact Registry integration before creating Registry reports.'
+                      : hasRegisteredClusters
+                        ? 'Select one validated Kubernetes cluster for this report.'
+                        : 'Register at least one Kubernetes cluster before creating Kubernetes reports.'
             }
             if (scopeTipCopy) {
                 scopeTipCopy.textContent = objectStorageScope
                     ? 'This report is bound to one registered Object Storage system; Kubernetes cluster and namespace fields are not part of the contract.'
-                    : 'This report is bound to one Kubernetes cluster; namespace optionally narrows the selected cluster.'
+                    : artifactRegistryScope
+                      ? 'This report is bound to one active Artifact Registry integration and renders committed KAORI evidence only.'
+                      : 'This report is bound to one Kubernetes cluster; namespace optionally narrows the selected cluster.'
             }
             if (selectedReportScope)
-                selectedReportScope.textContent = objectStorageScope ? 'Object Storage System' : 'Kubernetes Cluster'
+                selectedReportScope.textContent = objectStorageScope
+                    ? 'Object Storage System'
+                    : artifactRegistryScope
+                      ? 'Artifact Registry'
+                      : 'Kubernetes Cluster'
             if (previewReportScopeRequirement) {
                 previewReportScopeRequirement.textContent = objectStorageScope
                     ? 'Object Storage System Required'
-                    : 'Selected Cluster Required'
+                    : artifactRegistryScope
+                      ? 'Artifact Registry Required'
+                      : 'Selected Cluster Required'
             }
-            if (previewCluster) previewCluster.textContent = objectStorageScope ? systemLabel : clusterLabel
-            if (previewNamespace) previewNamespace.textContent = objectStorageScope ? 'System Scope' : namespaceValue
+            if (previewCluster)
+                previewCluster.textContent = objectStorageScope
+                    ? systemLabel
+                    : artifactRegistryScope
+                      ? registryLabel
+                      : clusterLabel
+            if (previewNamespace)
+                previewNamespace.textContent = objectStorageScope
+                    ? 'System Scope'
+                    : artifactRegistryScope
+                      ? 'Integration Scope'
+                      : namespaceValue
 
             syncOverallReadiness(!shouldBlock, readinessBlockers)
             if (window.lucide) window.lucide.createIcons()
@@ -851,6 +887,7 @@
         clusterSelect.addEventListener('input', syncClusterSelection)
         clusterSelect.addEventListener('change', syncClusterSelection)
         if (objectStorageSystemSelect) objectStorageSystemSelect.addEventListener('change', syncClusterGuard)
+        if (artifactRegistrySelect) artifactRegistrySelect.addEventListener('change', syncClusterGuard)
         if (outputFormatSelect) outputFormatSelect.addEventListener('change', syncOutputFormatMode)
         if (periodSelect) {
             periodSelect.addEventListener('change', function () {
