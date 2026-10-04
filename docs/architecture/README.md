@@ -12,6 +12,7 @@ Read the references in this order:
 6. `capability-framework.md`: canonical capability discovery and feature-readiness rules.
 7. `compatibility-framework.md`: version/profile mapping and limitation rules.
 8. `consumer-pattern.md`: asset-consumer boundary and simplified primary/secondary/fallback flow.
+9. `artifact-registry-domain.md`: provider-neutral Artifact Registry ownership, scalable sync topology, and large-estate collection rules.
 
 Domain-specific rules live beside complex code in `app/<domain>/README.md`. General architecture rules belong here, while product direction belongs in `docs/product`, to avoid duplicated and drifting documentation.
 
