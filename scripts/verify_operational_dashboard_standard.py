@@ -265,8 +265,16 @@ def _verify_artifact_registry_dashboard(
         ),
         'Artifact Registry dashboard family composition',
     )
-    if content.count('dashboard_workspace.panel(') != 4:
-        raise AssertionError('Artifact Registry dashboard: expected four canonical framework panels')
+    _require(
+        content,
+        (
+            'for tab_key, tab_label, tab_icon in dashboard_workspace.standard_tabs',
+            "url_for('artifact_registry.overview_section', section=tab_key)",
+            'hx-trigger="revealed"',
+            'Preparing committed Artifact Registry dashboard evidence.',
+        ),
+        'Artifact Registry lazy canonical dashboard panels',
+    )
 
     _require(
         signal_overview,
@@ -346,6 +354,10 @@ def _verify_artifact_registry_dashboard(
             "@permission_required('artifact_registry.view')",
             "request.args.get('provider_id', type=int)",
             "request.args.get('tab', 'overview', type=str)",
+            "'overview': 'artifact_registry/partials/_overview_operations.html'",
+            "'capacity': 'artifact_registry/partials/_overview_capacity.html'",
+            "'signals': 'artifact_registry/partials/_overview_signals.html'",
+            "'reporting': 'artifact_registry/partials/_overview_reporting.html'",
             'artifact_registry/partials/_overview_content.html',
         ),
         'Artifact Registry dashboard route boundary',
