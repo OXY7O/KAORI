@@ -18,7 +18,9 @@
                 wrap=true,
                 size='detail'
             ) }}
-            {% if overview.selected_provider and overview.snapshot_count > 0 and overview.stale_snapshot_count == 0 %}
+            {% if overview.selected_provider and overview.snapshot_count > 0 and overview.stale_snapshot_count > 0 %}
+                {{ table_label.status_indicator_label('Snapshot Stale', 'warning', size='detail') }}
+            {% elif overview.selected_provider and overview.snapshot_count > 0 %}
                 {{ table_label.status_indicator_label('Provider Signals Available', 'normal', size='detail') }}
             {% elif overview.selected_provider %}
                 {{ table_label.status_indicator_label('Inventory Sync Required', 'warning', size='detail') }}
