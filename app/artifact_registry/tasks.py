@@ -7,7 +7,6 @@ from typing import Any
 
 from celery import shared_task
 
-from app.artifact_registry.governance import sync_registry_governance
 from app.artifact_registry.sync import sync_registry_inventory
 from app.extensions.db import db
 from app.models.integration import IntegrationInstance
@@ -68,17 +67,6 @@ def sync_all_registry_task(
                         'The Registry integration was deleted after the inventory job was admitted.'
                     )
                 result = sync_registry_inventory(identity)
-                try:
-                    governance_result = sync_registry_governance(identity)
-                except Exception as governance_exc:
-                    db.session.rollback()
-                    governance_result = {
-                        'status': 'failed',
-                        'error_type': type(governance_exc).__name__,
-                        'message': str(governance_exc)[:1000],
-                    }
-                    logger.exception('Registry governance collection failed for %s.', instance_name)
-                result['governance'] = governance_result
                 synced += 1
                 artifact_count += int(result.get('artifacts') or 0)
             except Exception as exc:
