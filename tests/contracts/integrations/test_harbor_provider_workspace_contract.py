@@ -53,6 +53,7 @@ def test_harbor_authentication_fields_follow_selected_auth_mode() -> None:
     assert 'x-show="authType === \'basic\'"' in form
     assert "class=\"mt-4 grid gap-4 md:grid-cols-2\"" in form
     assert "**{':required':\"authType === 'basic'\"}" in form
+    assert "**{':required':\"authType === 'basic' && \" + ('false' if instance is defined and instance else 'true')}" in form
     assert 'x-cloak' in form
     assert 'Ignored when Anonymous / Public Read-Only is selected.' not in form
     assert 'Stored encrypted and never emitted into validation evidence.' not in form
