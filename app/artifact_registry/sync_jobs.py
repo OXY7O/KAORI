@@ -71,7 +71,6 @@ def enqueue_all_registry_inventory_sync(
     )
 
 
-
 def enqueue_registry_target_refresh(
     *,
     integration_instance_id: int,
