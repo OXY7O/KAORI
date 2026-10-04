@@ -21,6 +21,10 @@ def test_primary_finding_is_compact_and_nonduplicative() -> None:
     assert '{{ runtime_state.summary }}' in source
     assert 'components/info_tip.html' in source
     assert 'Lifecycle and capability detail' in source
+    finding_label = finding.split('{{ runtime_state.summary }}', 1)[0]
+    finding_value = finding.split('{{ runtime_state.summary }}', 1)[1]
+    assert 'kubernetes-runtime-primary-finding-info' in finding_label
+    assert 'kubernetes-runtime-primary-finding-info' not in finding_value
     assert 'data-kaori-runtime-response' in source
     assert 'Operational Response' in source
     assert 'data-kaori-runtime-next-action-card' in source
@@ -56,3 +60,16 @@ def test_runtime_copy_and_extended_lifecycle_summary_are_compact() -> None:
     ) in source
     assert 'uses KAORI Extended support. Upgrade recommended.' in messages
     assert 'Optional capability access is limited; core Kubernetes readiness is unaffected.' in messages
+
+    presentation = (ROOT / 'app/integrations/runtime/presentation.py').read_text(encoding='utf-8')
+    assert 'def _compact_kubernetes_extended_summary(' in presentation
+    assert "return f'{subject} uses KAORI Extended support. Upgrade recommended.'" in presentation
+
+    primary_summary = presentation.split('def _runtime_primary_summary(', 1)[1].split(
+        'def _runtime_decision_summary(', 1
+    )[0]
+    decision_summary = presentation.split('def _runtime_decision_summary(', 1)[1].split(
+        'def _message_repeats_diagnostic(', 1
+    )[0]
+    assert '_compact_kubernetes_extended_summary(summary)' in primary_summary
+    assert '_compact_kubernetes_extended_summary(detail)' in decision_summary
