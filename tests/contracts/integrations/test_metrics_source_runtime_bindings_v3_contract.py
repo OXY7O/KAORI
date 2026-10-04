@@ -16,10 +16,10 @@ def test_metrics_source_runtime_matches_kubernetes_layout_and_filtered_history()
     assert 'data-kaori-provider-runtime-kubernetes-pattern' in runtime
     assert 'integrations/components/_runtime_decision.html' in runtime
     assert 'runtime_decision.render(' in runtime
-    assert "runtime_identity ~ ' detected; provider readiness: ' ~ runtime_state.readiness_label" in runtime
-    assert "'metrics-source-runtime-primary-finding-info'" in runtime
-    assert "'Primary Finding context'" in runtime
-    assert "'Runtime health: ' ~ (runtime_state.health_status_label if runtime_observed else 'Not Observed')" in runtime
+    assert "runtime_identity ~ ' · Readiness ' ~ runtime_state.readiness_label ~ '.'" in runtime
+    assert "'metrics-source-runtime-primary-finding-info'" not in runtime
+    assert "'Primary Finding context'" not in runtime
+    assert 'runtime_primary_finding_info' not in runtime
     assert 'Runtime Evidence' in runtime
     assert 'data-kaori-metrics-source-runtime-evidence' in runtime
     assert 'step.summary' in runtime
@@ -69,13 +69,14 @@ def test_runtime_history_presentation_exposes_posture_counts() -> None:
     assert "'posture_counts': posture_counts" in presentation
 
 
-def test_runtime_decision_supports_primary_finding_info_tip_and_metrics_copy_is_concise() -> None:
+def test_runtime_decision_primary_finding_is_plain_and_metrics_copy_is_concise() -> None:
     decision = read('app/templates/integrations/components/_runtime_decision.html')
     validation = read(
         'app/templates/integrations/observability/metrics_source/partials/_detail_validation_content.html'
     )
 
-    assert 'components/info_tip.html' in decision
-    assert 'primary_finding_info_title' in decision
-    assert 'info_tip.render(primary_finding_info_id' in decision
-    assert 'Validate provider compatibility and Prometheus API/PromQL core. Consumer contracts stay in Bindings & Consumers.' in validation
+    assert 'components/info_tip.html' not in decision
+    assert 'primary_finding_info_title' not in decision
+    assert 'info_tip.render(' not in decision
+    assert 'Primary Finding' in decision
+    assert 'Validate provider compatibility and Prometheus API v1 / PromQL core; consumer contracts stay in Bindings & Consumers.' in validation

@@ -23,22 +23,16 @@
     {% set runtime_identity = runtime_identity ~ ' ' ~ runtime_version %}
 {% endif %}
 {% if not runtime_observed %}
-    {% set runtime_primary_finding = "No persisted runtime observation yet." %}
+    {% set runtime_primary_finding = runtime_identity ~ ' · Runtime not observed.' %}
 {% elif runtime_state.health_status in ['unhealthy', 'failed'] %}
-    {% set runtime_primary_finding = runtime_identity ~ ' runtime is ' ~ runtime_state.health_status_label ~ '; provider readiness: ' ~ runtime_state.readiness_label ~ '.' %}
+    {% set runtime_primary_finding = runtime_identity ~ ' · Runtime ' ~ runtime_state.health_status_label ~ '; readiness ' ~ runtime_state.readiness_label ~ '.' %}
 {% elif runtime_state.readiness != 'ready' %}
-    {% set runtime_primary_finding = runtime_identity ~ ' detected; provider readiness: ' ~ runtime_state.readiness_label ~ '.' %}
+    {% set runtime_primary_finding = runtime_identity ~ ' · Readiness ' ~ runtime_state.readiness_label ~ '.' %}
 {% elif runtime_attention and runtime_state.diagnostics %}
-    {% set runtime_primary_finding = runtime_state.diagnostics[0].label ~ ': ' ~ runtime_state.diagnostics[0].summary %}
+    {% set runtime_primary_finding = runtime_identity ~ ' · ' ~ runtime_state.diagnostics[0].label ~ ' requires attention.' %}
 {% else %}
-    {% set runtime_primary_finding = runtime_identity ~ ' runtime is healthy and provider-ready.' %}
+    {% set runtime_primary_finding = runtime_identity ~ ' · Healthy · Ready.' %}
 {% endif %}
-{% set runtime_primary_finding_info = [
-    'Runtime health: ' ~ (runtime_state.health_status_label if runtime_observed else 'Not Observed'),
-    'Provider readiness: ' ~ runtime_state.readiness_label,
-    'Observed: ' ~ runtime_state.observed_at_display,
-    'Diagnostics: ' ~ (runtime_state.diagnostics|length) ~ ' persisted checks'
-] %}
 {% if not runtime_observed %}
     {% set runtime_next_action = "Run Runtime Refresh to establish persisted provider-health evidence." %}
 {% elif runtime_state.health_status in ['unhealthy', 'failed'] %}
@@ -100,11 +94,7 @@
                 runtime_primary_finding,
                 runtime_attention|length,
                 runtime_next_action,
-                'Full technical diagnostic detail and remediation stay in Recent Runtime Observations. This workspace keeps only the current operational summary.',
-                'metrics-source-runtime-primary-finding-info',
-                'Primary Finding context',
-                'Latest persisted Runtime Refresh context; full diagnostics remain in Runtime Evidence.',
-                runtime_primary_finding_info) }}
+                'Full technical diagnostic detail and remediation stay in Recent Runtime Observations. This workspace keeps only the current operational summary.') }}
         <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
                  aria-labelledby="metrics-source-runtime-evidence-title"
                  data-kaori-metrics-source-runtime-evidence>

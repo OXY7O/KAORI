@@ -3,13 +3,31 @@
 {% import "integrations/components/_provider_job_status.html" as provider_job_status %}
 {% import "integrations/components/_validation_poller.html" as validation_poller %}
 {% import "components/table_label.html" as table_label %}
-{% import "components/info_tip.html" as info_tip %}
 {% import "components/table_primitives.html" as surface_ui %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% set runtime_observed = runtime_state.has_observation|default(runtime_state.observed_at is not none) %}
 {% set runtime_gate = 'ready' if runtime_observed and runtime_state.health_status == 'healthy' else ('degraded' if runtime_observed and runtime_state.health_status in ['degraded', 'warning'] else ('blocked' if runtime_observed and runtime_state.health_status in ['unhealthy', 'failed'] else 'not_observed')) %}
 {% set runtime_gate_label = 'Observation Required' if not runtime_observed else ('Runtime Healthy' if runtime_state.health_status == 'healthy' else ('Runtime Blocked' if runtime_state.health_status in ['unhealthy', 'failed'] else 'Runtime Attention Required')) %}
+{% set runtime_identity = 'Kubernetes' %}
+{% if runtime_state.lifecycle_context and runtime_state.lifecycle_context.detected_version %}
+    {% set runtime_identity = runtime_identity ~ ' ' ~ runtime_state.lifecycle_context.detected_version %}
+{% endif %}
+{% if not runtime_observed %}
+    {% set runtime_primary_finding = runtime_identity ~ ' · Runtime not observed.' %}
+{% elif runtime_state.health_status in ['unhealthy', 'failed'] %}
+    {% set runtime_primary_finding = runtime_identity ~ ' · Runtime ' ~ runtime_state.health_status_label ~ '; readiness ' ~ runtime_state.readiness_label ~ '.' %}
+{% elif runtime_state.readiness != 'ready' %}
+    {% if runtime_state.lifecycle_context and runtime_state.lifecycle_context.lifecycle_status_label and runtime_state.lifecycle_context.lifecycle_status_label != 'Current' %}
+        {% set runtime_primary_finding = runtime_identity ~ ' · ' ~ runtime_state.lifecycle_context.lifecycle_status_label ~ ' lifecycle; readiness ' ~ runtime_state.readiness_label ~ '.' %}
+    {% else %}
+        {% set runtime_primary_finding = runtime_identity ~ ' · Readiness ' ~ runtime_state.readiness_label ~ '.' %}
+    {% endif %}
+{% elif runtime_state.attention_factors and runtime_state.diagnostics %}
+    {% set runtime_primary_finding = runtime_identity ~ ' · ' ~ runtime_state.diagnostics[0].label ~ ' requires attention.' %}
+{% else %}
+    {% set runtime_primary_finding = runtime_identity ~ ' · Healthy · Ready.' %}
+{% endif %}
 {% if not runtime_observed %}
     {% set runtime_next_action = "Run Runtime Refresh to establish persisted health evidence." %}
 {% elif runtime_state.health_status in ['unhealthy', 'failed'] %}
@@ -150,16 +168,8 @@
                         <div class="flex items-start gap-3">
                             {{ integration_ui.palette_icon('scan-line', 'brand', size='sm') }}
                             <div class="min-w-0 flex-1">
-                                <div class="flex min-w-0 items-center gap-1.5">
-                                    <p class="text-xs font-semibold text-content-muted">Primary Finding</p>
-                                    {% if runtime_state.lifecycle_context and runtime_state.lifecycle_context.readiness_reasons %}
-                                        {{ info_tip.render('kubernetes-runtime-primary-finding-info',
-                                                                                'Lifecycle and capability detail',
-                                                                                items=runtime_state.lifecycle_context.readiness_reasons,
-                                                                                placement='right') }}
-                                    {% endif %}
-                                </div>
-                                <p class="mt-2 min-w-0 text-sm font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ runtime_state.summary }}</p>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Primary Finding</p>
+                                <p class="mt-2 min-w-0 text-sm font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ runtime_primary_finding }}</p>
                             </div>
                         </div>
                     </section>

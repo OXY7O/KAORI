@@ -684,7 +684,7 @@ Provider-owned API identity MUST NOT be duplicated as a consumer binding. MinIO 
 
 ## Provider Detail Workspace Final Contract
 
-Kubernetes, Metrics Source, Alertmanager, and MinIO connection details share the same first three lifecycle domains:
+Kubernetes, Metrics Source, Alertmanager, MinIO, and Harbor connection details share the same first three lifecycle domains:
 
 1. **Configuration** — read-only `Connection Contract`; mutations happen in the dedicated edit workspace.
 2. **Validation & Capabilities** — operator-facing lifecycle name. The action is **Run Full Validation**. Provider Core Validation may remain an internal architecture term, but provider detail UI must not expose `Core Validation` as the tab or workspace title.
@@ -692,7 +692,9 @@ Kubernetes, Metrics Source, Alertmanager, and MinIO connection details share the
 
 The fourth domain is authority-specific: Kubernetes and MinIO use **Inventory & Lifecycle**; Metrics Source and Alertmanager use **Bindings & Consumers**.
 
-Provider detail Hero posture evidence is sourced as **Produced by Full Validation**. Capability counts use **Validated Capabilities** consistently. Metrics Source, Alertmanager, and MinIO runtime pages use the shared `integrations/components/_runtime_decision.html` decision surface; provider-specific technical evidence follows underneath. Kubernetes may retain additional lifecycle evidence, but its Runtime Decision semantics must remain equivalent.
+Provider detail Hero posture evidence is sourced as **Produced by Full Validation**. Capability counts use **Validated Capabilities** consistently. Metrics Source, Alertmanager, MinIO, and Harbor runtime pages use the shared `integrations/components/_runtime_decision.html` decision surface; provider-specific technical evidence follows underneath. Kubernetes may retain additional lifecycle evidence, but its Runtime Decision semantics must remain equivalent.
+
+**Runtime Decision Primary Finding contract.** Primary Finding is one short, state-first operational point: provider/runtime identity plus the current health, readiness, lifecycle, or named diagnostic requiring attention. It must not repeat full diagnostic prose and must not expose an Info Tip / hover disclosure. Detailed lifecycle, compatibility, capability, diagnostic, and remediation evidence stays in Runtime Evidence and Recent Runtime Observations. This rule applies equally to Kubernetes, Prometheus/Thanos through Metrics Source, Alertmanager, MinIO, Harbor, and future provider runtimes.
 
 Bindings remain source-owned mutations. Asset-owner workspaces expose observability binding evidence read-only. Object Storage Inventory remains committed-snapshot owned and must not be recomputed by opening the MinIO integration detail page.
 

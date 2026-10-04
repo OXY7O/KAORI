@@ -10,14 +10,20 @@
 {% set health_tone = 'ready' if runtime_observed and runtime_state.health_status == 'healthy' else ('degraded' if runtime_observed and runtime_state.health_status in ['degraded', 'warning'] else ('blocked' if runtime_observed and runtime_state.health_status in ['unhealthy', 'failed'] else 'not_observed')) %}
 {% set attention_factors = runtime_state.attention_factors or runtime_state.factors or [] %}
 {% set runtime_gate_label = 'Observation Required' if not runtime_observed else ('Runtime Healthy' if runtime_state.health_status == 'healthy' else ('Runtime Blocked' if runtime_state.health_status in ['unhealthy', 'failed'] else 'Runtime Attention Required')) %}
-{% if runtime_state.diagnostics %}
-    {% set runtime_primary_finding = runtime_state.diagnostics[0].summary %}
-{% elif runtime_state.health_summary %}
-    {% set runtime_primary_finding = runtime_state.health_summary %}
-{% elif runtime_state.message %}
-    {% set runtime_primary_finding = runtime_state.message %}
+{% set runtime_identity = 'Alertmanager' %}
+{% if instance.detected_version %}
+    {% set runtime_identity = runtime_identity ~ ' ' ~ instance.detected_version %}
+{% endif %}
+{% if not runtime_observed %}
+    {% set runtime_primary_finding = runtime_identity ~ ' · Runtime not observed.' %}
+{% elif runtime_state.health_status in ['unhealthy', 'failed'] %}
+    {% set runtime_primary_finding = runtime_identity ~ ' · Runtime ' ~ runtime_state.health_status_label ~ '; readiness ' ~ runtime_state.readiness_label ~ '.' %}
+{% elif runtime_state.readiness != 'ready' %}
+    {% set runtime_primary_finding = runtime_identity ~ ' · Readiness ' ~ runtime_state.readiness_label ~ '.' %}
+{% elif attention_factors and runtime_state.diagnostics %}
+    {% set runtime_primary_finding = runtime_identity ~ ' · ' ~ runtime_state.diagnostics[0].label ~ ' requires attention.' %}
 {% else %}
-    {% set runtime_primary_finding = "No current runtime finding requires operator attention." %}
+    {% set runtime_primary_finding = runtime_identity ~ ' · Healthy · Ready.' %}
 {% endif %}
 {% if not runtime_observed %}
     {% set runtime_next_action = "Run Runtime Refresh to establish persisted Alertmanager health evidence." %}
