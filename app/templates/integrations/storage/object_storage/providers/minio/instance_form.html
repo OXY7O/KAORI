@@ -204,7 +204,7 @@
                     {% set flow_description = "How changes restore object-storage readiness." %}
                     {% set flow_note = "Consumer bindings remain attached to the canonical object-storage asset; only provider readiness is reset when connection-sensitive settings change." %}
                 {% else %}
-                    {% set minio_flow_items = [('Define Connection Identity', 'Create the reusable KAORI identity for this MinIO endpoint and object-storage asset.'), ('Configure Endpoint Access', 'Set the S3 API endpoint, credentials, TLS behavior, and supported release contract.'), ('Test Connection', 'Verify S3 API reachability, credential access, and read-only bucket discovery before registration is enabled.'), ('Register Connection', 'Create the provider identity before Core Validation and consumer binding.')] %}
+                    {% set minio_flow_items = [('Define Connection Identity', 'Create the reusable KAORI identity for this MinIO endpoint and object-storage asset.'), ('Configure Endpoint Access', 'Set the S3 API endpoint, credentials, TLS behavior, and supported release contract.'), ('Test Connection', 'Verify S3 API reachability, credential access, and read-only bucket discovery before registration is enabled.'), ('Register Connection', 'Create the provider identity before Full Validation and consumer binding.')] %}
                     {% set flow_title = "MinIO Registration Flow" %}
                     {% set flow_description = "How KAORI registers a reusable object-storage connection." %}
                     {% set flow_note = "Registration proves only the MinIO connection contract; metrics and alerts remain independent consumer bindings." %}
