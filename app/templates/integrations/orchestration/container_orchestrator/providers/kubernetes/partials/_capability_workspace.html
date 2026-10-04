@@ -37,7 +37,7 @@
     {% set capability_readiness_state = 'ready' %}
     {% set capability_readiness_label = 'Ready' %}
     {% set capability_gate_title = 'Core Workspaces Eligible' %}
-    {% set capability_gate_description = 'Core API/RBAC is ready; optional Tenant access remains workflow-scoped.' %}
+    {% set capability_gate_description = 'Core API/RBAC is ready; Tenant access remains workflow-scoped.' %}
     {% set capability_gate_tone = 'normal' %}
 {% endif %}
 {% set capability_readiness_percent = ((validated_feature_count * 100 / capability_total) if capability_total else 0) %}
@@ -101,7 +101,7 @@
     {{ provider_job_status.render(validation_job, 'Kubernetes validation running in worker', 'Kubernetes') }}
     <div class="p-5 sm:p-6">
         {{ capability_readiness.render('Kubernetes Capability Readiness',
-                'Kubernetes core API/RBAC is validated; optional Tenant contracts remain separate.',
+                'Core API/RBAC is validated; Tenant contracts remain optional.',
                 capability_readiness_state,
                 capability_readiness_label,
                 'Validated Capabilities',
