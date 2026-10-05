@@ -25,22 +25,46 @@ def _scope_with_selected():
 
 def test_dashboard_shell_never_reads_analytics_snapshots(monkeypatch) -> None:
     monkeypatch.setattr(service, '_scope', lambda _selected: _scope_with_selected())
-    monkeypatch.setattr(service, '_inventory_snapshot', lambda _selected: InventorySnapshot())
     monkeypatch.setattr(service, '_latest_inventory_sync', lambda _selected: None)
-    monkeypatch.setattr(service, 'build_reporting_snapshot', lambda **_kwargs: SimpleNamespace())
 
     def unexpected_snapshot_read(*_args, **_kwargs):
-        raise AssertionError('The dashboard shell must not read analytics snapshots.')
+        raise AssertionError('The dashboard shell must not read section evidence.')
 
     monkeypatch.setattr(service, '_capacity_signal', unexpected_snapshot_read)
     monkeypatch.setattr(service, '_alerts_signal', unexpected_snapshot_read)
     monkeypatch.setattr(service, '_top_consumers_signal', unexpected_snapshot_read)
     monkeypatch.setattr(service, '_forecast_signal', unexpected_snapshot_read)
+    monkeypatch.setattr(service, '_inventory_snapshot', unexpected_snapshot_read)
+    monkeypatch.setattr(service, 'build_reporting_snapshot', unexpected_snapshot_read)
 
     dashboard = service.get_dashboard_overview(selected_cluster_id='cluster-1')
 
     assert dashboard.selected_cluster_id == 'cluster-1'
     assert dashboard.inventory_snapshot.pods == 0
+    assert dashboard.reporting_snapshot.generated_reports == 0
+
+
+def test_inventory_and_reporting_sections_are_independently_bounded(monkeypatch) -> None:
+    monkeypatch.setattr(service, '_scope', lambda _selected: _scope_with_selected())
+    inventory = InventorySnapshot(pods=17)
+    reporting = SimpleNamespace(generated_reports=4)
+    monkeypatch.setattr(service, '_inventory_snapshot', lambda _selected: inventory)
+    monkeypatch.setattr(service, 'build_reporting_snapshot', lambda **_kwargs: reporting)
+
+    def unexpected_read(*_args, **_kwargs):
+        raise AssertionError('Unrelated dashboard section evidence must not be read.')
+
+    monkeypatch.setattr(service, '_capacity_signal', unexpected_read)
+    monkeypatch.setattr(service, '_alerts_signal', unexpected_read)
+    monkeypatch.setattr(service, '_top_consumers_signal', unexpected_read)
+    monkeypatch.setattr(service, '_forecast_signal', unexpected_read)
+    monkeypatch.setattr(service, 'build_recommendations', unexpected_read)
+
+    inventory_dashboard = service.get_dashboard_section('inventory_summary', selected_cluster_id='cluster-1')
+    reporting_dashboard = service.get_dashboard_section('reporting_summary', selected_cluster_id='cluster-1')
+
+    assert inventory_dashboard.inventory_snapshot.pods == 17
+    assert reporting_dashboard.reporting_snapshot.generated_reports == 4
 
 
 def test_capacity_section_reads_only_committed_capacity_snapshot(monkeypatch) -> None:
