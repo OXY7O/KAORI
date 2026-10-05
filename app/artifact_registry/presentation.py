@@ -539,19 +539,12 @@ def _provider_health_projection(
             func.count(RegistryRepository.id),
         )
     )
-    artifact_counts_query = (
-        RegistryArtifact.query.join(RegistryRepository)
-        .join(RegistryProject)
-        .with_entities(
-            RegistryProject.integration_instance_id,
-            func.count(RegistryArtifact.id),
-        )
-    )
     security_counts_query = (
         RegistryArtifact.query.join(RegistryRepository)
         .join(RegistryProject)
         .with_entities(
             RegistryProject.integration_instance_id,
+            func.count(RegistryArtifact.id),
             func.count(RegistryArtifact.scan_status),
             func.coalesce(
                 func.sum(
@@ -574,9 +567,6 @@ def _provider_health_projection(
         repository_counts_query = repository_counts_query.filter(
             RegistryProject.integration_instance_id == selected_provider.id
         )
-        artifact_counts_query = artifact_counts_query.filter(
-            RegistryProject.integration_instance_id == selected_provider.id
-        )
         security_counts_query = security_counts_query.filter(
             RegistryProject.integration_instance_id == selected_provider.id
         )
@@ -593,19 +583,14 @@ def _provider_health_projection(
             RegistryProject.integration_instance_id
         ).all()
     }
-    artifact_counts = {
-        int(provider_id): int(count)
-        for provider_id, count in artifact_counts_query.group_by(
-            RegistryProject.integration_instance_id
-        ).all()
-    }
     security_counts = {
         int(provider_id): {
+            'artifacts': int(artifacts or 0),
             'scanned': int(scanned or 0),
             'critical': int(critical or 0),
             'high': int(high or 0),
         }
-        for provider_id, scanned, critical, high in security_counts_query.group_by(
+        for provider_id, artifacts, scanned, critical, high in security_counts_query.group_by(
             RegistryProject.integration_instance_id
         ).all()
     }
@@ -622,11 +607,11 @@ def _provider_health_projection(
         metrics = metrics_by_provider.get(key, {})
         security = security_counts.get(
             key,
-            {'scanned': 0, 'critical': 0, 'high': 0},
+            {'artifacts': 0, 'scanned': 0, 'critical': 0, 'high': 0},
         )
         readiness = str(provider.readiness_status or 'validation_required')
         inventory_ready = bool(state is not None and state.last_committed_at is not None)
-        provider_artifact_count = artifact_counts.get(key, 0)
+        provider_artifact_count = security['artifacts']
         security_ready = bool(security['scanned'])
         security_not_applicable = inventory_ready and provider_artifact_count == 0
 
