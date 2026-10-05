@@ -154,8 +154,14 @@ def test_registry_inventory_reuses_canonical_inventory_workspace_primitives() ->
     assert 'Registry Asset Catalog' in overview_template
     assert 'Inventory Assets' not in overview_template
     assert 'inventory.fleet_readings' in overview_template
+    assert "variant='neutral'" in overview_template
     assert "url_for(asset.endpoint)" in overview_template
     assert 'components/snapshot_context_bar.html' in resource_template
+    assert 'components/operational_section_card.html' in resource_template
+    assert 'components/resource_posture_grid.html' in resource_template
+    assert 'Project Inventory Posture' in resource_template
+    assert "inventory.resource == 'projects'" in resource_template
+    assert 'inventory.project_posture_metrics' in resource_template
     assert 'components/table.html' in resource_template
     assert 'components/states/_empty_state.html' in resource_template
     assert 'artifact-registry-inventory-content' in resource_template
@@ -181,6 +187,8 @@ def test_registry_inventory_reuses_canonical_inventory_workspace_primitives() ->
     assert "'fleet_readings': _inventory_fleet_readings(overview)" in presentation
     assert "'asset_catalog': list(resource_catalog.values())" in presentation
     assert "'resource_endpoint': selected_resource['endpoint']" in presentation
+    assert "'project_posture_metrics': project_posture_metrics" in presentation
+    assert "'Visibility Not Observed'" in presentation
     assert "row['provider_name']" in presentation
 
 
