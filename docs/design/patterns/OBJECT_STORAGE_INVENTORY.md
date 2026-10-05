@@ -34,7 +34,19 @@ Hero
 
 `Fleet Inventory Posture` and `Object Storage Asset Catalog` use the shared plain `section_intro.html` heading/description hierarchy outside their content blocks. Fleet readings render directly as `operational_callout.html` items, and inventory destinations render directly as `inventory_asset_card.html` items. Do not wrap either section in another `operational_section_card`; nested card shells duplicate hierarchy and weaken the scan path.
 
-The posture content remains domain-owned: quota evidence, normalized protection attention, public exposure, and optional usage evidence. The Asset Catalog remains provider-neutral and links to Systems and Buckets & Containers.
+The posture content remains domain-owned: quota evidence, normalized protection attention, public exposure, and optional usage evidence. Fleet posture uses the existing neutral operational-callout variant: standard white/elevated blocks with semantic meaning constrained to icon/status treatment rather than full-card tint. The Asset Catalog remains provider-neutral and links to Systems and Buckets & Containers.
+
+Systems and Buckets & Containers reuse the canonical Inventory Resource Page hierarchy:
+
+```text
+Inventory Data Snapshot
+Operational Posture — shared Section Intro
+└── System / Namespace posture block
+Inventory Records — shared Section Intro
+└── Shared Inventory table
+```
+
+The section title and supporting description sit outside the posture/table box. Existing `resource_posture_grid.html`, `operational_section_card.html`, and shared table primitives remain authoritative.
 
 ## Ownership
 
