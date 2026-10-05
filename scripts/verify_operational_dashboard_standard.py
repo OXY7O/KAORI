@@ -43,6 +43,7 @@ ARTIFACT_PRESENTATION = ROOT / 'app' / 'artifact_registry' / 'presentation.py'
 OBJECT_ROUTES = ROOT / 'app' / 'storage' / 'object_storage' / 'dashboard' / 'routes.py'
 DASHBOARD_APPLICATION_CONTRACT = ROOT / 'app' / 'dashboards' / 'common' / 'operational.py'
 COMMON_PAGINATION = ROOT / 'app' / 'common' / 'pagination.py'
+PAGINATION_COMPONENT = ROOT / 'app' / 'templates' / 'components' / 'pagination.html'
 PAGE_HERO = ROOT / 'app' / 'templates' / 'components' / 'page_hero.html'
 WORKSPACE_TABS = ROOT / 'app' / 'templates' / 'components' / 'workspace_tabs.html'
 DASHBOARD_WORKSPACE = ROOT / 'app' / 'templates' / 'components' / 'operational_dashboard_workspace.html'
@@ -441,6 +442,7 @@ def verify() -> None:
     object_routes = _read(OBJECT_ROUTES)
     dashboard_application_contract = _read(DASHBOARD_APPLICATION_CONTRACT)
     common_pagination = _read(COMMON_PAGINATION)
+    pagination_component = _read(PAGINATION_COMPONENT)
     page_hero = _read(PAGE_HERO)
     workspace_tabs = _read(WORKSPACE_TABS)
     dashboard_workspace = _read(DASHBOARD_WORKSPACE)
@@ -976,6 +978,17 @@ def verify() -> None:
             'def normalize_per_page(',
         ),
         'canonical pagination contract',
+    )
+    _require(
+        pagination_component,
+        (
+            'macro page_size_classes()',
+            'min-w-[4.5rem]',
+            'pl-3 pr-8',
+            'text-content-primary',
+            'focus:ring-2',
+        ),
+        'canonical page-size control presentation',
     )
     for owner, source in (
         ('Kubernetes dashboard routes', routes),
