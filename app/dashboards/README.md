@@ -61,7 +61,18 @@ Do not create a universal dashboard route factory, service base class, ORM repos
 
 Kubernetes currently demonstrates the preferred decomposition for a growing operational domain: overview orchestration in `service.py`, section builders under `sections/`, typed presentation objects in `schema.py`, and database reads isolated from request presentation.
 
-Object Storage and Artifact Registry may retain their current domain-owned service/presentation shape until a bounded refactor is justified by behavior, testability, or repeated domain semantics. Future dashboards should not copy large monolithic builders merely because those older domains contain them.
+Every Operational Dashboard now follows **Fast Shell & Bounded Section Loading**:
+
+```text
+Fast Shell
+→ bounded KPI projection
+→ bounded visible/active section projection
+→ committed KAORI state / materialized snapshots
+```
+
+The canonical invariant is **one HTTP request → one bounded presentation projection**. Initial requests render readiness/scope/active-tab/minimal context plus placeholders. KPI and tab sections load independently. A section endpoint must not rebuild the complete dashboard or project unrelated sections.
+
+Domain services remain explicit. This contract does not authorize a universal route factory, generic service base class, or shared ORM repository. Future Server/VM, HCI, Source Control/GitHub, Backup, Network, and other dashboard implementations must begin with this loading boundary rather than copying a monolithic builder.
 
 ## Request boundary
 
