@@ -104,7 +104,16 @@
                             </div>
                         </div>
                         <div class="{{ peer_content_grid.column_classes('secondary') }}">
-                            {% include "kubernetes/dashboard/partials/_alert_response_guidance.html" %}
+                            <div id="dashboard-alert-response-guidance"
+                                 class="h-full w-full"
+                                 hx-get="{{ url_for('kubernetes_dashboard.section', section='alert_response_guidance') }}?{{ dashboard_cluster_query }}"
+                                 hx-trigger="revealed"
+                                 hx-target="this"
+                                 hx-swap="outerHTML">
+                                {% with title="Alert Interpretation & Response", description="Preparing controlled response guidance from committed AlertCase evidence.", icon="book-open-check" %}
+                                    {% include "kubernetes/dashboard/partials/_section_loading.html" %}
+                                {% endwith %}
+                            </div>
                         </div>
                     </div>
                     <div id="dashboard-recommended-actions"
