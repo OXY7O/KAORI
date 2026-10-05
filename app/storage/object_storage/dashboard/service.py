@@ -485,16 +485,16 @@ def _reporting(selected: ObjectStorageSystem | None) -> dict[str, Any]:
     }
 
 
-def get_dashboard_overview(
+def _dashboard_shell_context(
     *,
-    selected_system_id: str | None = None,
-    system_health_page: str | int | None = 1,
-    system_health_per_page: int = 5,
+    systems: list[ObjectStorageSystem],
+    selected: ObjectStorageSystem | None,
+    system_health_page: str | int | None,
+    system_health_per_page: int,
     active_tab: str = 'overview',
 ) -> dict[str, Any]:
-    systems = _systems()
-    selected = _selected_system(systems, selected_system_id)
-    inventory = _inventory_summary([selected] if selected is not None else systems)
+    """Build only the Object Storage Fast Shell context."""
+
     health_scope = [selected] if selected is not None else systems
     _visible_systems, health_pagination = paginate_sequence(
         health_scope,
@@ -511,9 +511,26 @@ def get_dashboard_overview(
             if selected is not None
             else max(_inventory_observation_times(systems), default=None)
         ),
-        'inventory': inventory,
         'system_health_pagination': health_pagination,
     }
+
+
+def get_dashboard_overview(
+    *,
+    selected_system_id: str | None = None,
+    system_health_page: str | int | None = 1,
+    system_health_per_page: int = 5,
+    active_tab: str = 'overview',
+) -> dict[str, Any]:
+    systems = _systems()
+    selected = _selected_system(systems, selected_system_id)
+    return _dashboard_shell_context(
+        systems=systems,
+        selected=selected,
+        system_health_page=system_health_page,
+        system_health_per_page=system_health_per_page,
+        active_tab=active_tab,
+    )
 
 
 def get_dashboard_section(
@@ -525,8 +542,9 @@ def get_dashboard_section(
 ) -> dict[str, Any]:
     systems = _systems()
     selected = _selected_system(systems, selected_system_id)
-    dashboard = get_dashboard_overview(
-        selected_system_id=selected_system_id,
+    dashboard = _dashboard_shell_context(
+        systems=systems,
+        selected=selected,
         system_health_page=system_health_page,
         system_health_per_page=system_health_per_page,
     )
