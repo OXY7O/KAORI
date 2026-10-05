@@ -81,7 +81,7 @@ Loading presentation is also shared. Current and future consumers use `component
 - both replace their own container with `hx-target="this"` + `hx-swap="outerHTML"`;
 - no global dashboard loading overlay is allowed.
 
-Projection granularity stays domain-owned, but the default for a new Operational Dashboard is one bounded lazy projection per canonical tab. Split a tab into finer bounded sub-projections only when measured latency, independent evidence sources, or failure isolation justifies the extra requests. Kubernetes is the current finer-grained example. The visible loading grammar and request triggers do not fork.
+Projection granularity stays domain-owned, but the default for a new Operational Dashboard is one bounded lazy projection per canonical tab. Kubernetes, Object Storage, and Artifact Registry now use that default for initial tab loading. Split a tab into finer bounded sub-projections only when measured latency, independent evidence sources, or failure isolation justifies the extra requests. Interactive sub-resources such as table pagination may retain their own bounded endpoints. The visible loading grammar and request triggers do not fork.
 
 Domain services remain explicit. This contract does not authorize a universal route factory, generic service base class, or shared ORM repository. Future Server/VM, HCI, Source Control/GitHub, Backup, Network, and other dashboard implementations must begin with this loading boundary rather than copying a monolithic builder.
 
