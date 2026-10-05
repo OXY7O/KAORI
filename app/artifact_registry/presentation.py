@@ -33,7 +33,6 @@ from app.models.registry import (
     RegistryRepository,
     RegistryScanSnapshot,
     RegistryTag,
-    RegistryVulnerability,
     RegistryWebhookEndpoint,
     RegistryWorkloadBinding,
 )

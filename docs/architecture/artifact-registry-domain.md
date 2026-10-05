@@ -121,6 +121,27 @@ current committed Kubernetes Pod inventory generation.
 Digest matches are authoritative when available. Tag-only matches remain explicitly weaker. No live Harbor
 or Kubernetes call is allowed in the correlation materialization path.
 
+## Runtime Usage Workspace
+
+Runtime Usage is the operational blast-radius workspace for committed Artifact Registry × Kubernetes
+correlation. It is not a Harbor page and it is not a second vulnerability dashboard.
+
+The default view is provider-neutral and cluster-neutral:
+
+```text
+All Registry Sources × All Kubernetes Clusters
+```
+
+A Registry source or Kubernetes cluster name appears as the active scope only when the operator explicitly
+filters to it. The workspace exposes committed runtime bindings, digest matches, tag matches, and
+critical/high security exposure. Digest matches remain stronger evidence than mutable tag matches.
+
+Runtime Usage uses the canonical KAORI server-backed registry pattern: default pagination 5, search and
+source/cluster/namespace/match/exposure filters, bounded HTMX replacement, standard table actions, and a
+committed-evidence View More modal. Security findings may drill into Runtime Usage by immutable
+`artifact_id` so the operator can move directly from vulnerability evidence to the affected runtime
+blast radius without performing a live Registry or Kubernetes request.
+
 ## Operational UI Contract
 
 Normal Artifact Registry pages read committed KAORI state. Provider calls are worker-owned and never occur

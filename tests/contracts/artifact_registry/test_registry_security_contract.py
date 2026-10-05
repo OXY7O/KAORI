@@ -221,3 +221,14 @@ def test_harbor_security_refresh_is_repository_resilient_without_overriding_prov
     assert "repository_failure_count" in tasks
     assert "'warning_evidence': warning_evidence[:50]" in tasks
     assert "partial=bool(failures or has_partial_refresh)" in tasks
+
+
+
+def test_vulnerability_runtime_drilldown_preserves_artifact_context() -> None:
+    presentation = read('app/artifact_registry/security/presentation.py')
+    template = read('app/templates/artifact_registry/partials/_security_workspace.html')
+
+    assert "'artifact_id': int(artifact.id)" in presentation
+    assert "url_for('artifact_registry.runtime', artifact_id=row.artifact_id)" in template
+    assert 'Open Runtime' in template
+    assert 'source_id=security.filters.source_id' in template
