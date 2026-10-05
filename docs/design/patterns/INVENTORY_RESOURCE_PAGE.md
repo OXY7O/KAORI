@@ -102,7 +102,7 @@ The leading resource icon, title, metadata, and primary lifecycle/readiness/coll
 
 ### Full Workspace Modal resource-sheet symmetry and utility actions
 
-The four-column summary strip is the alignment reference for the evidence sheet below it. At `xl`, the descriptive rail uses the first quarter of the sheet and the evidence body uses the remaining three quarters. `detail.inventory_band_grid_classes()` owns this geometry and must also be reused by embedded metadata and related-resource collections; page-local fixed rail widths are not permitted.
+The four-column summary strip is a flush, full-width modal band immediately below the resource identity header; it must not use inset outer gutters, rounded card framing, or a detached outer border. The modal summary host owns the band boundary so scrolling evidence does not expose offset vertical framing. Its content remains the alignment reference for the evidence sheet below it. At `xl`, the descriptive rail uses the first quarter of the sheet and the evidence body uses the remaining three quarters. `detail.inventory_band_grid_classes()` owns this geometry and must also be reused by embedded metadata and related-resource collections; page-local fixed rail widths are not permitted.
 
 Technical identifiers that operators frequently transfer into operational tooling may expose the shared icon-only copy control. Kubernetes UID/UID, System UUID, and concrete IP addresses are approved examples. The action must have an accessible name, use the global Clipboard behavior, and disappear for unavailable values.
 
