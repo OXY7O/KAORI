@@ -61,7 +61,7 @@
             {% set empty_state_title = unavailable_title %}
             {% set empty_state_description = unavailable_description %}
             {% set empty_state_variant = "panel" %}
-            {% set empty_state_min_height = "min-h-[190px]" %}
+            {% set empty_state_min_height = "min-h-[220px]" %}
             {% include 'components/states/_empty_state.html' %}
         {% elif total_alerts == 0 %}
             {% set empty_state_icon = "circle-check" %}
@@ -70,7 +70,7 @@
             {% set empty_state_title = empty_title %}
             {% set empty_state_description = empty_description %}
             {% set empty_state_variant = "panel" %}
-            {% set empty_state_min_height = "min-h-[190px]" %}
+            {% set empty_state_min_height = "min-h-[220px]" %}
             {% include 'components/states/_empty_state.html' %}
         {% else %}
             <div class="grid grid-cols-3 gap-3">
