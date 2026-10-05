@@ -9,11 +9,18 @@ from app.artifact_registry.governance_sync_jobs import (
 )
 from app.common.job_execution_contract import ARTIFACT_REGISTRY_GOVERNANCE_SYNC_OPERATION
 from app.common.job_execution_presentation import present_job_execution
+from app.common.presentation import present_user_datetime
 from app.models.integration import IntegrationInstance
 from app.models.job import JobExecution, JobPolicy
 from app.platform_operations.jobs.constants import ACTIVE_JOB_STATUSES
 from app.platform_operations.jobs.definitions.base import RegisteredJobDispatchResult
 from app.platform_operations.jobs.policies.presentation import present_interval
+from app.platform_operations.jobs.policies.service import get_or_create_job_policy
+
+GOVERNANCE_SYNC_JOB_KEY = 'artifact_registry.governance.sync'
+GOVERNANCE_SYNC_JOB_TYPE = 'artifact_registry_governance'
+GOVERNANCE_SYNC_OPERATION = ARTIFACT_REGISTRY_GOVERNANCE_SYNC_OPERATION
+_SUCCESS_STATUSES = ('succeeded', 'partially_succeeded')
 
 
 def dispatch_registry_governance_sync(
@@ -40,6 +47,75 @@ def dispatch_registry_governance_sync(
         job=job,
         created=created,
     )
+
+
+def _present(job: JobExecution | None) -> dict[str, Any] | None:
+    return present_job_execution(job) if job is not None else None
+
+
+def get_registry_governance_sync_job(public_id: str) -> JobExecution | None:
+    return (
+        JobExecution.query.filter(
+            JobExecution.job_type == GOVERNANCE_SYNC_JOB_TYPE,
+            JobExecution.operation == GOVERNANCE_SYNC_OPERATION,
+            JobExecution.public_id == public_id,
+        )
+        .order_by(JobExecution.id.desc())
+        .first()
+    )
+
+
+def build_registry_governance_sync_state(*, policy: JobPolicy | None = None) -> dict[str, Any]:
+    resolved_policy = policy or get_or_create_job_policy(GOVERNANCE_SYNC_JOB_KEY)
+    jobs = JobExecution.query.filter(
+        JobExecution.job_type == GOVERNANCE_SYNC_JOB_TYPE,
+        JobExecution.operation == GOVERNANCE_SYNC_OPERATION,
+    )
+    active_job = (
+        jobs.filter(JobExecution.status.in_(ACTIVE_JOB_STATUSES), JobExecution.completed_at.is_(None))
+        .order_by(JobExecution.updated_at.desc(), JobExecution.id.desc())
+        .first()
+    )
+    recent_jobs = jobs.order_by(JobExecution.created_at.desc(), JobExecution.id.desc()).limit(50).all()
+    latest_job = recent_jobs[0] if recent_jobs else None
+    latest_success = next((item for item in recent_jobs if item.status in _SUCCESS_STATUSES), None)
+
+    if active_job is not None and active_job.status == 'queued':
+        label, tone, icon = 'Queued', 'pending', 'clock-3'
+        helper = active_job.progress_message or 'Waiting for the inventory worker to start Governance Sync.'
+    elif active_job is not None:
+        label, tone, icon = 'Syncing', 'pending', 'loader-circle'
+        helper = active_job.progress_message or 'Registry governance evidence is refreshing on the inventory worker.'
+    elif latest_job is not None and latest_job.status == 'failed':
+        label, tone, icon = 'Sync Failed', 'critical', 'circle-x'
+        helper = 'The latest Governance Sync failed. Previous committed governance evidence remains readable.'
+    elif latest_success is None:
+        label, tone, icon = 'Not Collected', 'warning', 'clock-alert'
+        helper = 'Run Governance Sync to collect committed provider policy and replication evidence.'
+    else:
+        label, tone, icon = 'Ready', 'normal', 'circle-check'
+        helper = 'Committed Governance evidence is available. Sync again when fresher provider evidence is needed.'
+
+    return {
+        'label': label,
+        'tone': tone,
+        'icon': icon,
+        'helper': helper,
+        'is_active': active_job is not None,
+        'active_job_public_id': active_job.public_id if active_job is not None else None,
+        'active_job': _present(active_job),
+        'latest_job': _present(latest_job),
+        'last_success_at': latest_success.completed_at if latest_success is not None else None,
+        'last_success_label': present_user_datetime(
+            latest_success.completed_at if latest_success is not None else None,
+            empty='Never',
+        ),
+        'automatic_enabled': bool(resolved_policy.enabled),
+        'automatic_label': 'Enabled' if resolved_policy.enabled else 'Manual Only',
+        'interval_label': present_interval(resolved_policy.interval_minutes),
+        'next_run_at': resolved_policy.next_run_at,
+        'next_run_label': present_user_datetime(resolved_policy.next_run_at, empty='Not Scheduled'),
+    }
 
 
 def build_registry_governance_sync_context(policy: JobPolicy) -> dict[str, Any]:
