@@ -38,7 +38,7 @@
 {% elif runtime_state.health_status in ['unhealthy', 'failed'] %}
     {% set runtime_next_action = "Restore metrics-source endpoint reachability, refresh runtime evidence, and rerun Full Validation when the provider compatibility or core API contract changed." %}
 {% elif runtime_state.readiness == 'degraded' %}
-    {% set runtime_next_action = "This source remains usable with degraded compatibility. Move to a current qualified release or qualify the detected release, then rerun Full Validation." %}
+    {% set runtime_next_action = "Source is usable with degraded compatibility. Upgrade or qualify the detected release, then rerun Full Validation." %}
 {% elif runtime_state.readiness != 'ready' %}
     {% set runtime_next_action = "Resolve provider-level Full Validation blockers before using this runtime as a metrics source." %}
 {% elif runtime_attention %}
