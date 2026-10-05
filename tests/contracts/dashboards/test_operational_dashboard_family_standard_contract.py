@@ -102,6 +102,20 @@ def test_operational_dashboard_family_uses_canonical_palette_and_typography() ->
             assert 'font-extrabold' not in source, path
 
 
+def test_kubernetes_cluster_health_uses_canonical_pagination_payload() -> None:
+    service = read('app/kubernetes/dashboard/service.py')
+    cluster_health = read('app/kubernetes/dashboard/sections/cluster_health.py')
+    schema = read('app/kubernetes/dashboard/schema.py')
+    template = read('app/templates/kubernetes/dashboard/partials/_cluster_health.html')
+
+    assert 'from app.common.pagination import paginate_sequence' in service
+    assert 'def paginate_sequence(' not in cluster_health
+    assert 'ClusterHealthPagination' not in cluster_health
+    assert 'class ClusterHealthPagination' not in schema
+    assert 'pagination_payload(build_pagination_window(total_items=0))' in schema
+    assert 'for size in pagination.allowed_per_page' in template
+
+
 def test_generic_summary_explanation_is_retired_from_operational_dashboards() -> None:
     assert 'What This Summary Means' not in combined(KUBERNETES)
     assert 'What This Summary Means' not in combined(OBJECT_STORAGE)
