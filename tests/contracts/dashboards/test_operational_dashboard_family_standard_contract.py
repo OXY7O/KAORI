@@ -524,7 +524,7 @@ def test_operational_dashboard_loading_presentation_is_shared_across_current_con
     assert 'item_count=4' in object_signal
     assert 'item_count=4' in registry_signal
 
-    assert not Path('app/templates/kubernetes/dashboard/partials/_section_loading.html').exists()
+    assert not (ROOT / 'app/templates/kubernetes/dashboard/partials/_section_loading.html').exists()
     for source in (object_storage, registry):
         assert '<div class="grid gap-3 sm:grid-cols-3" aria-busy="true">' not in source
     for source in (object_signal, registry_signal):
