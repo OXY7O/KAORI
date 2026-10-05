@@ -1339,7 +1339,7 @@ def _inventory_snapshot_context(overview: dict[str, Any]) -> dict[str, Any]:
             f'{snapshot_count} / {provider_count} Providers' if provider_count else 'No Providers'
         ),
         'coverage_tone': coverage_tone,
-        'coverage_supporting': 'Providers with committed inventory evidence.',
+        'coverage_supporting': 'Providers with committed evidence.',
         'exceptions_label': ' · '.join(exception_parts) if exception_parts else 'No Exceptions',
         'exceptions_tone': 'warning' if exception_count else 'normal',
         'exceptions_supporting': (
@@ -1370,7 +1370,7 @@ def _inventory_fleet_readings(overview: dict[str, Any]) -> list[dict[str, str]]:
         coverage_description = 'Register a Registry provider to establish committed inventory.'
     elif snapshot_count == provider_count:
         coverage_title, coverage_tone = f'{snapshot_count}/{provider_count} Providers Committed', 'normal'
-        coverage_description = 'Every Registry provider has retained committed inventory evidence.'
+        coverage_description = 'Every configured Registry provider has retained a committed inventory snapshot as current KAORI evidence.'
     else:
         coverage_title, coverage_tone = f'{snapshot_count}/{provider_count} Providers Committed', 'warning'
         coverage_description = 'One or more Registry providers still require a committed inventory snapshot.'
@@ -1458,7 +1458,7 @@ def _inventory_resource_posture_metrics(
                 'package-open',
                 'Repositories',
                 len(rows),
-                'Committed Registry repository identities.',
+                'Committed Registry repository identities retained across the current provider-neutral inventory snapshot.',
                 'brand',
             ),
             (
@@ -1539,7 +1539,7 @@ def _inventory_resource_posture_metrics(
             'globe-2',
             'Public Projects',
             public_projects,
-            'Projects declared public in committed provider evidence.',
+            'Projects marked public by provider evidence.',
             'info' if public_projects else 'normal',
         ),
         (
@@ -1587,42 +1587,41 @@ def build_inventory(
 
     rows = _decorate_inventory_provider_provenance(rows)
 
-    source_options: list[dict[str, Any]] = []
-    environment_options: list[str] = []
-    resource_posture_metrics = _inventory_resource_posture_metrics(resource, rows)
-    if resource == 'projects':
-        source_lookup: dict[int, dict[str, Any]] = {}
-        for row in rows:
-            provider_id = int(row['provider_id'])
-            source_lookup.setdefault(
-                provider_id,
-                {
-                    'id': provider_id,
-                    'name': row['provider_name'],
-                    'provider_label': row['provider_label'],
-                    'environment': row['provider_environment'],
-                },
-            )
-        source_options = sorted(
-            source_lookup.values(),
-            key=lambda item: (str(item['name']).lower(), int(item['id'])),
-        )
-        environment_options = sorted(
+    source_lookup: dict[int, dict[str, Any]] = {}
+    for row in rows:
+        provider_id = int(row['provider_id'])
+        source_lookup.setdefault(
+            provider_id,
             {
-                str(row['provider_environment'])
-                for row in rows
-                if str(row.get('provider_environment') or '').strip()
+                'id': provider_id,
+                'name': row['provider_name'],
+                'provider_label': row['provider_label'],
+                'environment': row['provider_environment'],
             },
-            key=str.lower,
         )
-        if source_id is not None:
-            rows = [row for row in rows if int(row['provider_id']) == int(source_id)]
-        if environment_value:
-            rows = [
-                row
-                for row in rows
-                if str(row['provider_environment']).lower() == environment_value.lower()
-            ]
+    source_options = sorted(
+        source_lookup.values(),
+        key=lambda item: (str(item['name']).lower(), int(item['id'])),
+    )
+    environment_options = sorted(
+        {
+            str(row['provider_environment'])
+            for row in rows
+            if str(row.get('provider_environment') or '').strip()
+        },
+        key=str.lower,
+    )
+    resource_posture_metrics = _inventory_resource_posture_metrics(resource, rows)
+
+    if source_id is not None:
+        rows = [row for row in rows if int(row['provider_id']) == int(source_id)]
+    if environment_value:
+        rows = [
+            row
+            for row in rows
+            if str(row['provider_environment']).lower() == environment_value.lower()
+        ]
+    if resource == 'projects':
         if visibility_value == 'public':
             rows = [row for row in rows if row['public'] is True]
         elif visibility_value == 'private':
@@ -1688,10 +1687,9 @@ def build_inventory(
     snapshot_count = int(context['overview']['snapshot_count'])
     has_filters = bool(
         search_value
-        or (
-            resource == 'projects'
-            and (source_id is not None or environment_value or visibility_value)
-        )
+        or source_id is not None
+        or environment_value
+        or (resource == 'projects' and visibility_value)
     )
 
     if has_filters:
@@ -1707,15 +1705,13 @@ def build_inventory(
             f"The current committed Registry snapshot contains no {selected_resource['title'].lower()}."
         )
 
-    filter_query: dict[str, Any] = {'q': search}
+    filter_query: dict[str, Any] = {
+        'q': search,
+        'source_id': source_id,
+        'environment': environment_value,
+    }
     if resource == 'projects':
-        filter_query.update(
-            {
-                'source_id': source_id,
-                'environment': environment_value,
-                'visibility': visibility_value,
-            }
-        )
+        filter_query['visibility'] = visibility_value
 
     return {
         **context,

@@ -33,12 +33,12 @@
                     'Artifact Identity',
                     'fingerprint',
                     artifact.type,
-                    description='Immutable digest-oriented identity retained in committed Artifact Registry inventory.'
+                    description='Immutable digest-oriented artifact identity.'
                 ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_technical_row('Digest', artifact.digest, copyable=true, class_name='lg:col-span-2') }}
                         {{ detail.inventory_row('Digest Algorithm', artifact.digest_algorithm) }}
-                        {{ detail.inventory_technical_row('Provider Native ID', artifact.provider_native_id, copyable=true) }}
+                        {{ detail.inventory_technical_row('Provider Native ID', artifact.provider_native_id) }}
                         {{ detail.inventory_row('Artifact Type', artifact.type) }}
                         {{ detail.inventory_row('Media Type', artifact.media_type) }}
                         {{ detail.inventory_row('Size', artifact.size) }}
@@ -64,7 +64,7 @@
                     'Tag References',
                     'tags',
                     artifact.tag_count ~ (' Tag' if artifact.tag_count == 1 else ' Tags'),
-                    description='Mutable tag references currently attached to this immutable digest in committed Inventory.'
+                    description='Mutable tags attached to this immutable digest.'
                 ) %}
                     {% if artifact.tag_preview %}
                         <div class="overflow-x-auto">
@@ -159,7 +159,7 @@
                     artifact.snapshot.label,
                     'status',
                     artifact.snapshot.tone,
-                    description='Collection freshness and committed evidence boundary for the source Registry.'
+                    description='Committed snapshot freshness and evidence boundary.'
                 ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_status_row('Snapshot State', artifact.snapshot.label, artifact.snapshot.tone) }}
@@ -179,7 +179,7 @@
                 ) }}
                 {{ operational_callout.render(
                     'Artifact Interpretation',
-                    'Digest, type, size, timing, and tag references are Inventory evidence. Vulnerability, signature, SBOM, runtime, and governance interpretation stay in their owning workspaces.',
+                    'Digest, type, size, timing, and tags are Inventory evidence.',
                     'scan-search',
                     'info',
                     extra_classes='xl:col-span-7'

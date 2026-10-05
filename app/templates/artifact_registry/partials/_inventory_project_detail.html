@@ -40,11 +40,11 @@
                     project.visibility.label,
                     'status',
                     project.visibility.tone,
-                    description='Provider-neutral project identity and visibility captured in committed Registry inventory.'
+                    description='Provider-neutral project identity and visibility.'
                 ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
-                        {{ detail.inventory_technical_row('Project Name', project.name, copyable=true, class_name='lg:col-span-2') }}
-                        {{ detail.inventory_technical_row('Provider Native ID', project.provider_native_id, copyable=true, class_name='lg:col-span-2') }}
+                        {{ detail.inventory_technical_row('Project Name', project.name, class_name='lg:col-span-2') }}
+                        {{ detail.inventory_technical_row('Provider Native ID', project.provider_native_id, class_name='lg:col-span-2') }}
                         {{ detail.inventory_status_row('Visibility', project.visibility.label, project.visibility.tone) }}
                         {{ detail.inventory_row('Repositories', project.repository_count) }}
                     </dl>
@@ -133,7 +133,7 @@
                     project.snapshot.label,
                     'status',
                     project.snapshot.tone,
-                    description='Collection freshness and committed evidence boundary for the source Registry.'
+                    description='Committed snapshot freshness and evidence boundary.'
                 ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_status_row('Snapshot State', project.snapshot.label, project.snapshot.tone) }}

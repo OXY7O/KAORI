@@ -33,11 +33,11 @@
                     'Repository Identity',
                     'badge-info',
                     repository.artifact_count ~ (' Artifact' if repository.artifact_count == 1 else ' Artifacts'),
-                    description='Provider-neutral repository identity captured in committed Artifact Registry inventory.'
+                    description='Provider-neutral repository identity.'
                 ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
-                        {{ detail.inventory_technical_row('Repository Name', repository.name, copyable=true, class_name='lg:col-span-2') }}
-                        {{ detail.inventory_technical_row('Provider Native ID', repository.provider_native_id, copyable=true, class_name='lg:col-span-2') }}
+                        {{ detail.inventory_technical_row('Repository Name', repository.name, class_name='lg:col-span-2') }}
+                        {{ detail.inventory_technical_row('Provider Native ID', repository.provider_native_id, class_name='lg:col-span-2') }}
                         {{ detail.inventory_row('Project', repository.project_name) }}
                         {{ detail.inventory_row('Artifacts', repository.artifact_count) }}
                         {{ detail.inventory_row('Pull Count', repository.pull_count if repository.pull_count is not none else 'Not Collected') }}
@@ -130,7 +130,7 @@
                     'Provider Timing',
                     'clock-3',
                     repository.observed_at|user_datetime,
-                    description='Provider-native lifecycle timestamps retained with this committed repository record.'
+                    description='Provider lifecycle timestamps for this repository.'
                 ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_row('Provider Created', repository.provider_created_at|user_datetime if repository.provider_created_at else 'Not Collected', nowrap=true) }}
@@ -155,7 +155,7 @@
                     repository.snapshot.label,
                     'status',
                     repository.snapshot.tone,
-                    description='Collection freshness and committed evidence boundary for the source Registry.'
+                    description='Committed snapshot freshness and evidence boundary.'
                 ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_status_row('Snapshot State', repository.snapshot.label, repository.snapshot.tone) }}
@@ -175,7 +175,7 @@
                 ) }}
                 {{ operational_callout.render(
                     'Repository Interpretation',
-                    'Artifact and pull counts are provider-observed Inventory evidence. Security and governance interpretation remain in their owning workspaces.',
+                    'Artifact and pull counts are provider-observed evidence.',
                     'scan-search',
                     'info',
                     extra_classes='xl:col-span-7'

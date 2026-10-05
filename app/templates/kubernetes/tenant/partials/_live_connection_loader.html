@@ -4,7 +4,7 @@
     {{ snapshot_context.render(source_label='Live Kubernetes API',
             status='On Demand',
             tone='pending',
-            description='Committed KAORI Tenant state is already loaded. Check live provider reachability only when provider-backed operations need confirmation.',
+            description='Committed Tenant state is loaded. Check live reachability only when required.',
             latest_collected='Not Checked',
             scope_label=(cluster_onboarding.cluster_count|default(0) ) ~ ' Registered',
             coverage_label='Not Checked',

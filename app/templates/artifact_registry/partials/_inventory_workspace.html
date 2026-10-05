@@ -15,7 +15,7 @@
                 {% call page_hero.intro('boxes', 'Artifact Registry Inventory', 'package-open') %}
                     <h1 class="{{ page_hero.title_classes() }}">{{ inventory.resource_label }}</h1>
                     <p class="mt-2 {{ page_hero.description_classes() }}">
-                        Review committed {{ inventory.resource_label|lower }} with provider provenance preserved across Registry instances.
+                        Review committed {{ inventory.resource_label|lower }} with Registry provenance.
                     </p>
                     <div class="{{ page_hero.metadata_row_classes() }}">
                         {{ page_hero.meta_label('folder-kanban', inventory.overview.project_count ~ ' Projects') }}
@@ -127,33 +127,33 @@
                             'artifact-registry-inventory-loading',
                             inventory.pagination.per_page
                         ) %}
+                            <div>
+                                <label for="artifact-registry-inventory-source"
+                                       class="{{ table_ui.filter_label_classes() }}">Registry Source</label>
+                                <select id="artifact-registry-inventory-source"
+                                        name="source_id"
+                                        class="{{ table_ui.filter_select_classes() }}">
+                                    <option value="">All Sources</option>
+                                    {% for source in inventory.source_options %}
+                                        <option value="{{ source.id }}"
+                                                {% if inventory.filters.source_id == source.id %}selected{% endif %}>{{ source.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label for="artifact-registry-inventory-environment"
+                                       class="{{ table_ui.filter_label_classes() }}">Environment</label>
+                                <select id="artifact-registry-inventory-environment"
+                                        name="environment"
+                                        class="{{ table_ui.filter_select_classes() }}">
+                                    <option value="">All Environments</option>
+                                    {% for environment in inventory.environment_options %}
+                                        <option value="{{ environment }}"
+                                                {% if inventory.filters.environment == environment %}selected{% endif %}>{{ environment|environment_name(empty='Not Set') }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
                             {% if inventory.resource == 'projects' %}
-                                <div>
-                                    <label for="artifact-registry-project-source"
-                                           class="{{ table_ui.filter_label_classes() }}">Registry Source</label>
-                                    <select id="artifact-registry-project-source"
-                                            name="source_id"
-                                            class="{{ table_ui.filter_select_classes() }}">
-                                        <option value="">All Sources</option>
-                                        {% for source in inventory.source_options %}
-                                            <option value="{{ source.id }}"
-                                                    {% if inventory.filters.source_id == source.id %}selected{% endif %}>{{ source.name }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label for="artifact-registry-project-environment"
-                                           class="{{ table_ui.filter_label_classes() }}">Environment</label>
-                                    <select id="artifact-registry-project-environment"
-                                            name="environment"
-                                            class="{{ table_ui.filter_select_classes() }}">
-                                        <option value="">All Environments</option>
-                                        {% for environment in inventory.environment_options %}
-                                            <option value="{{ environment }}"
-                                                    {% if inventory.filters.environment == environment %}selected{% endif %}>{{ environment|environment_name(empty='Not Set') }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
                                 <div>
                                     <label for="artifact-registry-project-visibility"
                                            class="{{ table_ui.filter_label_classes() }}">Visibility</label>

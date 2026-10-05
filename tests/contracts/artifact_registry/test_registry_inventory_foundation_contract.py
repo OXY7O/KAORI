@@ -236,6 +236,13 @@ def test_registry_project_inventory_reuses_canonical_filters_and_detail_modal() 
     assert 'name="source_id"' in workspace
     assert 'name="environment"' in workspace
     assert 'name="visibility"' in workspace
+    assert 'id="artifact-registry-inventory-source"' in workspace
+    assert 'id="artifact-registry-inventory-environment"' in workspace
+    assert "'source_id': source_id" in presentation
+    assert "'environment': environment_value" in presentation
+    assert "or source_id is not None" in presentation
+    assert "or environment_value" in presentation
+    assert "copyable=true, class_name='lg:col-span-2'" not in detail
     assert 'resource_detail_modal.detail_button' in workspace
     assert 'resource_detail_modal.inventory_host' in page
     assert "@artifact_registry_bp.get('/inventory/projects/<int:project_id>/details')" in routes
@@ -293,6 +300,9 @@ def test_registry_repository_and_artifact_inventory_reuse_full_workspace_detail_
     assert 'Artifact Identity' in artifact_detail
     assert 'Tag References' in artifact_detail
     assert 'artifact.tag_preview' in artifact_detail
+    assert "copyable=true, class_name='lg:col-span-2'" not in repository_detail
+    assert "detail.inventory_technical_row('Provider Native ID', artifact.provider_native_id, copyable=true)" not in artifact_detail
+    assert "detail.inventory_technical_row('Digest', artifact.digest, copyable=true" in artifact_detail
     assert 'artifact.scan_status' not in artifact_detail
     assert 'artifact.vulnerability_summary' not in artifact_detail
     assert 'artifact.signature_status' not in artifact_detail
