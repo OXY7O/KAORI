@@ -54,6 +54,7 @@ EVIDENCE_TILE = ROOT / 'app' / 'templates' / 'components' / 'operational_evidenc
 ALERT_SUMMARY_WORKSPACE = ROOT / 'app' / 'templates' / 'components' / 'operational_alert_summary.html'
 ALERT_RESPONSE_WORKSPACE = ROOT / 'app' / 'templates' / 'components' / 'operational_alert_response.html'
 RECOMMENDATION_CARDS = ROOT / 'app' / 'templates' / 'components' / 'operational_recommendation_cards.html'
+DASHBOARD_EMPTY_STATE = ROOT / 'app' / 'templates' / 'components' / 'states' / '_empty_state.html'
 KUBERNETES_CAPACITY = DASHBOARD_DIR / 'partials' / '_capacity_snapshot.html'
 KUBERNETES_INVENTORY = DASHBOARD_DIR / 'partials' / '_inventory_summary.html'
 KUBERNETES_FRESHNESS = DASHBOARD_DIR / 'partials' / '_data_freshness.html'
@@ -461,6 +462,7 @@ def verify() -> None:
     alert_summary_workspace = _read(ALERT_SUMMARY_WORKSPACE)
     alert_response_workspace = _read(ALERT_RESPONSE_WORKSPACE)
     recommendation_cards = _read(RECOMMENDATION_CARDS)
+    dashboard_empty_state = _read(DASHBOARD_EMPTY_STATE)
     kubernetes_capacity = _read(KUBERNETES_CAPACITY)
     kubernetes_inventory = _read(KUBERNETES_INVENTORY)
     kubernetes_freshness = _read(KUBERNETES_FRESHNESS)
@@ -860,6 +862,15 @@ def verify() -> None:
         ('Artifact Registry Operations Overview', artifact_operations),
     ):
         _require(source, ('components/operational_evidence_tile.html', 'evidence_tile.'), owner)
+    _require(
+        dashboard_empty_state,
+        (
+            "state_variant == 'panel'",
+            'border border-dashed border-outline-default',
+            'data-kaori-empty-state',
+        ),
+        'shared Operational Dashboard dashed panel empty state',
+    )
     _require(
         recommendation_cards,
         (
