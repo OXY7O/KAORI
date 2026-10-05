@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from flask import Blueprint, abort, jsonify, redirect, render_template, request, url_for
+import json
+
+from flask import Blueprint, abort, jsonify, make_response, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
@@ -17,6 +19,10 @@ from app.artifact_registry.presentation import (
     build_overview_section,
     build_runtime_usage,
 )
+from app.artifact_registry.security.job_adapter import (
+    build_registry_security_sync_state,
+    get_registry_security_sync_job,
+)
 from app.artifact_registry.security.presentation import build_security
 from app.artifact_registry.sync_jobs import NoEligibleRegistryTargets, enqueue_all_registry_inventory_sync
 from app.artifact_registry.webhooks import (
@@ -31,7 +37,7 @@ from app.dashboards.common.operational import (
     normalize_operational_tab,
 )
 from app.extensions import limiter
-from app.platform_operations.jobs.dispatcher import JobWorkerUnavailable
+from app.platform_operations.jobs.dispatcher import JobWorkerUnavailable, dispatch_registered_job
 from app.platform_operations.notifications.service import record_operational_activity
 
 artifact_registry_bp = Blueprint('artifact_registry', __name__, url_prefix='/artifact-registry')
@@ -187,6 +193,123 @@ def security() -> ResponseReturnValue:
 @permission_required('artifact_registry.view')
 def security_supply_chain() -> ResponseReturnValue:
     return _security_response('supply_chain')
+
+
+def _security_sync_context(kind: str) -> dict[str, object]:
+    return build_security(
+        kind=kind,
+        search=request.form.get('q', '', type=str),
+        severity=request.form.get('severity', '', type=str),
+        provider=request.form.get('provider', '', type=str),
+        source_id=request.form.get('source_id', type=int),
+        page=request.form.get('page', 1, type=int) or 1,
+        per_page=request.form.get('per_page', 5, type=int) or 5,
+    )
+
+
+@artifact_registry_bp.post('/security/sync')
+@permission_required('artifact_registry.sync')
+def security_sync() -> ResponseReturnValue:
+    is_htmx = request.headers.get('HX-Request') == 'true'
+    kind = 'supply_chain' if request.form.get('view') == 'supply_chain' else 'vulnerabilities'
+    outcome = None
+
+    try:
+        outcome = dispatch_registered_job(
+            job_key='artifact_registry.security.sync',
+            trigger_type='manual',
+            requested_by_user_id=int(current_user.id),
+        )
+    except JobWorkerUnavailable as exc:
+        accepted = False
+        status = 'error'
+        title = 'Security Sync Worker Unavailable'
+        message = str(exc)
+        detail = 'Restart the inventory worker so it advertises the Registry security task, then retry.'
+        job = None
+    else:
+        accepted = outcome.accepted
+        job = outcome.job
+        if accepted:
+            status = 'success' if outcome.created else 'info'
+            title = 'Security Sync Queued' if outcome.created else 'Security Sync Already Active'
+            message = outcome.message
+            detail = 'Security Sync is read-only and never triggers provider scans.'
+        else:
+            status = 'warning'
+            title = 'Security Sync Could Not Start'
+            message = outcome.message
+            detail = 'Committed Registry inventory and an eligible provider security collector are required.'
+
+    feedback = record_operational_activity(
+        user_id=int(current_user.id),
+        event_type='artifact_registry_security_sync',
+        status=status,
+        title=title,
+        message=message,
+        detail=detail,
+        action_url=url_for('artifact_registry.security'),
+        action_label='Open Registry Security',
+        action_icon='shield-check',
+        metadata={
+            'job_key': 'artifact_registry.security.sync',
+            'job_public_id': job.public_id if job is not None else None,
+            'created': bool(accepted and outcome is not None and outcome.created),
+        },
+        queue_feedback=not is_htmx,
+    )
+
+    if is_htmx:
+        rendered = ''.join(
+            (
+                render_template(
+                    'artifact_registry/partials/_security_workspace.html',
+                    security=_security_sync_context(kind),
+                ),
+                render_template(
+                    'components/operational_toast.html',
+                    **feedback,
+                    toast_oob=True,
+                ),
+            )
+        )
+        response = make_response(rendered, 202 if accepted else (409 if status == 'warning' else 503))
+        response.headers['Cache-Control'] = 'no-store, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        return response
+
+    return redirect(
+        url_for(
+            'artifact_registry.security_supply_chain'
+            if kind == 'supply_chain'
+            else 'artifact_registry.security'
+        )
+    )
+
+
+@artifact_registry_bp.get('/security/sync/status/<string:public_id>')
+@permission_required('artifact_registry.sync')
+def security_sync_status(public_id: str) -> ResponseReturnValue:
+    job = get_registry_security_sync_job(public_id)
+    if job is None:
+        abort(404)
+
+    response = make_response(
+        render_template(
+            'artifact_registry/partials/_security_sync_live_state.html',
+            security_sync_state=build_registry_security_sync_state(),
+        )
+    )
+    response.headers['Cache-Control'] = 'no-store, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    if not job.is_active:
+        response.headers['HX-Trigger-After-Swap'] = json.dumps(
+            {
+                'artifactRegistrySecuritySyncFinished': True,
+                'kaori:notifications-changed': True,
+            }
+        )
+    return response
 
 
 @artifact_registry_bp.get('/runtime')
