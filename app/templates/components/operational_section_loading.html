@@ -1,0 +1,48 @@
+{% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/table_label.html" as table_label %}
+{#
+  Canonical Operational Dashboard loading presentation.
+
+  Request/section ownership stays domain-local. This component owns only the
+  visible loading geometry used by Fast Shell KPI and bounded-section placeholders.
+#}
+{% macro section(
+    title,
+    description='Preparing committed dashboard evidence.',
+    icon='loader-circle',
+    loading_bar_id=none,
+    item_count=3
+    ) -%}
+    {% call operational_section_card.render(
+        title,
+        description,
+        icon,
+        header_badge=table_label.status_indicator_label('Preparing', 'pending'),
+        loading_bar_id=loading_bar_id,
+        loading_bar_active=loading_bar_id is not none,
+        loading_bar_label=title ~ ' Loading',
+        body_classes='p-5',
+        extra_classes='h-full'
+        ) %}
+        <div class="grid gap-3 sm:grid-cols-3"
+             aria-label="{{ title }} Loading"
+             aria-busy="true">
+            {% for _ in range(item_count) %}
+                <div class="h-14 animate-pulse rounded-lg bg-surface-hover" aria-hidden="true"></div>
+            {% endfor %}
+        </div>
+    {% endcall %}
+{%- endmacro %}
+
+{% macro kpis(
+    item_count=4,
+    aria_label='Operational Indicators Loading'
+    ) -%}
+    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+         aria-label="{{ aria_label }}"
+         aria-busy="true">
+        {% for _ in range(item_count) %}
+            <div class="h-28 animate-pulse rounded-lg bg-surface-hover" aria-hidden="true"></div>
+        {% endfor %}
+    </div>
+{%- endmacro %}
