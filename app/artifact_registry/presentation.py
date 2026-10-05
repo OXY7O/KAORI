@@ -2071,6 +2071,104 @@ def _runtime_parse_observed_at(value: Any) -> datetime | None:
         return None
 
 
+def _runtime_prerequisite_guidance(
+    prerequisites: dict[str, int | bool],
+    *,
+    has_committed_snapshot: bool,
+) -> dict[str, Any]:
+    eligible = bool(prerequisites.get('eligible'))
+    missing_registry = int(prerequisites.get('artifact_count') or 0) == 0
+    missing_kubernetes = int(prerequisites.get('pod_count') or 0) == 0
+    review_step = (
+        'Review Updated Bindings'
+        if has_committed_snapshot
+        else 'Review Committed Bindings'
+    )
+
+    if missing_registry and missing_kubernetes:
+        title = 'Committed Inventories Required'
+        description = (
+            'Runtime correlation requires committed Artifact Registry artifacts and '
+            'current Kubernetes Pod inventory before the first materialization.'
+        )
+        refresh_description = (
+            'Existing committed Runtime Usage remains readable, but correlation refresh '
+            'requires committed Artifact Registry artifacts and current Kubernetes Pod inventory.'
+        )
+        steps = [
+            'Sync Artifact Registry Inventory',
+            'Sync Kubernetes Inventory',
+            'Run Runtime Correlation',
+            review_step,
+        ]
+        action_endpoint = 'artifact_registry.inventory'
+        action_label = 'Open Registry Inventory'
+        action_icon = 'package-open'
+        action_permission = 'artifact_registry.view'
+    elif missing_registry:
+        title = 'Registry Inventory Required'
+        description = (
+            'Runtime correlation requires committed Artifact Registry artifacts before '
+            'the first materialization.'
+        )
+        refresh_description = (
+            'Existing committed Runtime Usage remains readable, but correlation refresh '
+            'requires committed Artifact Registry artifacts.'
+        )
+        steps = [
+            'Sync Artifact Registry Inventory',
+            'Run Runtime Correlation',
+            review_step,
+        ]
+        action_endpoint = 'artifact_registry.inventory'
+        action_label = 'Open Registry Inventory'
+        action_icon = 'package-open'
+        action_permission = 'artifact_registry.view'
+    elif missing_kubernetes:
+        title = 'Kubernetes Inventory Required'
+        description = (
+            'Runtime correlation requires a current committed Kubernetes Pod inventory '
+            'generation before the first materialization.'
+        )
+        refresh_description = (
+            'Existing committed Runtime Usage remains readable, but correlation refresh '
+            'requires a current committed Kubernetes Pod inventory generation.'
+        )
+        steps = [
+            'Sync Kubernetes Inventory',
+            'Run Runtime Correlation',
+            review_step,
+        ]
+        action_endpoint = 'inventory.overview'
+        action_label = 'Open Kubernetes Inventory'
+        action_icon = 'boxes'
+        action_permission = 'inventory.view'
+    else:
+        title = 'Correlation Prerequisites Ready'
+        description = 'Committed Registry and Kubernetes evidence is ready for correlation.'
+        refresh_description = description
+        steps = []
+        action_endpoint = None
+        action_label = None
+        action_icon = 'waypoints'
+        action_permission = None
+
+    return {
+        'is_blocked': bool(not eligible and not has_committed_snapshot),
+        'refresh_blocked': bool(not eligible and has_committed_snapshot),
+        'missing_registry': missing_registry,
+        'missing_kubernetes': missing_kubernetes,
+        'title': title,
+        'description': description,
+        'refresh_description': refresh_description,
+        'steps': steps,
+        'action_endpoint': action_endpoint,
+        'action_label': action_label,
+        'action_icon': action_icon,
+        'action_permission': action_permission,
+    }
+
+
 def build_runtime_usage(
     *,
     search: str = '',
@@ -2285,6 +2383,10 @@ def build_runtime_usage(
         else latest_binding_at
     )
     latest_correlated_at = _aware_datetime(latest_correlated_at)
+    setup = _runtime_prerequisite_guidance(
+        prerequisites,
+        has_committed_snapshot=latest_correlated_at is not None,
+    )
     refresh_failed = bool(
         latest_job is not None
         and latest_job.status == 'failed'
@@ -2299,20 +2401,21 @@ def build_runtime_usage(
         and latest_correlated_at < datetime.now(UTC) - timedelta(hours=FRESHNESS_HOURS)
     )
 
-    if not prerequisites['eligible']:
+    if refreshing:
+        snapshot_status, snapshot_tone = 'Refreshing', 'info'
+        snapshot_description = 'Runtime correlation is rebuilding from committed Registry and Kubernetes evidence.'
+    elif setup['refresh_blocked']:
+        snapshot_status, snapshot_tone = 'Refresh Blocked', 'warning'
+        snapshot_description = setup['refresh_description']
+    elif setup['is_blocked']:
         snapshot_status, snapshot_tone = 'Prerequisites Required', 'warning'
-        snapshot_description = (
-            'Committed Registry artifacts and Kubernetes Pod inventory are required before correlation.'
-        )
+        snapshot_description = setup['description']
     elif latest_correlated_at is None:
         snapshot_status, snapshot_tone = 'Not Materialized', 'unknown'
         snapshot_description = 'No committed runtime correlation snapshot is available yet.'
     elif refresh_failed:
         snapshot_status, snapshot_tone = 'Refresh Failed', 'warning'
         snapshot_description = 'The latest rebuild failed; the previous committed correlation remains readable.'
-    elif refreshing:
-        snapshot_status, snapshot_tone = 'Refreshing', 'info'
-        snapshot_description = 'Runtime correlation is rebuilding from committed Registry and Kubernetes evidence.'
     elif stale:
         snapshot_status, snapshot_tone = 'Stale', 'warning'
         snapshot_description = 'Committed runtime correlation is older than the current freshness window.'
@@ -2424,7 +2527,7 @@ def build_runtime_usage(
 
     return {
         'setup': {
-            'is_blocked': not bool(prerequisites['eligible']),
+            **setup,
             'provider_count': len(sources),
         },
         'prerequisites': prerequisites,
