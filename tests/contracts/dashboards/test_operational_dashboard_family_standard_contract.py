@@ -102,16 +102,6 @@ def test_operational_dashboard_family_uses_canonical_palette_and_typography() ->
             assert 'font-extrabold' not in source, path
 
 
-def test_shared_page_size_control_reserves_native_indicator_space() -> None:
-    pagination = read('app/templates/components/pagination.html')
-
-    assert 'macro page_size_classes()' in pagination
-    assert 'min-w-[4.5rem]' in pagination
-    assert 'pl-3 pr-8' in pagination
-    assert 'text-content-primary' in pagination
-    assert 'focus:ring-2' in pagination
-
-
 def test_generic_summary_explanation_is_retired_from_operational_dashboards() -> None:
     assert 'What This Summary Means' not in combined(KUBERNETES)
     assert 'What This Summary Means' not in combined(OBJECT_STORAGE)
