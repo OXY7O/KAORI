@@ -1270,6 +1270,10 @@ def verify() -> None:
         (
             "@permission_required('dashboard.view')",
             'SECTION_TEMPLATES = {',
+            "'overview': 'kubernetes/dashboard/partials/_overview.html'",
+            "'capacity': 'kubernetes/dashboard/partials/_capacity.html'",
+            "'signals': 'kubernetes/dashboard/partials/_signals.html'",
+            "'reporting': 'kubernetes/dashboard/partials/_reporting.html'",
             'if has_registered_clusters() is False:',
             "cluster_health_per_page=normalize_dashboard_page_size(request.args.get('cluster_health_per_page'))",
         ),
@@ -1294,13 +1298,35 @@ def verify() -> None:
         service,
         (
             'database-only dashboard shell',
-            'committed worker snapshots only',
+            'Build one bounded dashboard projection from committed KAORI state.',
+            "if section == 'overview':",
+            "if section == 'capacity':",
+            "if section == 'signals':",
+            "if section == 'reporting':",
+            'def _populate_cluster_health(',
+            'def _populate_data_freshness(',
+            'def _populate_capacity(',
+            'def _populate_signals(',
             'read_dashboard_snapshot(',
             'query_for_clusters(',
             'paginate_sequence(',
         ),
         'dashboard service boundary',
     )
+    freshness_projection = service.split('def _populate_data_freshness(', 1)[1].split(
+        'def _populate_capacity(', 1
+    )[0]
+    for broad_builder in (
+        '_capacity_signal(',
+        '_alerts_signal(',
+        '_top_consumers_signal(',
+        '_forecast_signal(',
+        'build_reporting_snapshot(',
+    ):
+        if broad_builder in freshness_projection:
+            raise AssertionError(
+                f'Kubernetes Data Freshness rebuilds unrelated presentation evidence: {broad_builder}'
+            )
     _require(
         service,
         ('from app.common.pagination import paginate_sequence',),
