@@ -227,6 +227,18 @@ def _build_workload_resource_governance_findings(
     return _build_workload_resource_governance_findings_impl(rules, rule_specs=_WORKLOAD_RESOURCE_RULE_SPECS)
 
 
+def _finalize_recommendation_findings(findings: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    normalized = [normalize_rule(finding) for finding in findings]
+    for finding in normalized:
+        finding.setdefault('affected_summary', format_affected_summary(finding))
+        finding.setdefault('affected_items', build_affected_items(finding))
+        finding.setdefault('affected_assets', build_affected_assets(finding))
+        finding.setdefault('evidence_details', build_evidence_details(finding))
+        finding.setdefault('fix_steps', build_fix_steps(finding))
+    normalized.sort(key=lambda item: (_severity_rank(str(item.get('severity'))), str(item.get('title', ''))))
+    return normalized
+
+
 def _build_recommendation_findings(catalog: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Evaluate currently available catalog rules into actionable findings.
 
@@ -248,14 +260,17 @@ def _build_recommendation_findings(catalog: list[dict[str, Any]]) -> list[dict[s
     findings.extend(build_registry_recommendation_findings(rules))
     findings.extend(build_tenant_governance_recommendation_findings(rules))
 
-    findings = [normalize_rule(finding) for finding in findings]
-    for finding in findings:
-        finding.setdefault('affected_summary', format_affected_summary(finding))
-        finding.setdefault('affected_items', build_affected_items(finding))
-        finding.setdefault('affected_assets', build_affected_assets(finding))
-        finding.setdefault('evidence_details', build_evidence_details(finding))
-        finding.setdefault('fix_steps', build_fix_steps(finding))
-    findings.sort(key=lambda item: (_severity_rank(str(item.get('severity'))), str(item.get('title', ''))))
+    return _finalize_recommendation_findings(findings)
+
+
+def get_active_tenant_governance_findings(*, limit: int | None = None) -> list[dict[str, Any]]:
+    """Evaluate only Tenant Governance rules for embedded Tenant surfaces."""
+
+    catalog = [normalize_rule(rule) for rule in INTELLIGENCE_CATALOG]
+    rules = {str(rule.get('rule_key')): rule for rule in catalog}
+    findings = _finalize_recommendation_findings(build_tenant_governance_recommendation_findings(rules))
+    if limit is not None:
+        return findings[: max(int(limit), 0)]
     return findings
 
 
