@@ -17,7 +17,7 @@ from app.kubernetes.tenant.admin_workspace import (
     get_tenant_summary_context,
 )
 from app.kubernetes.tenant.discovery_service import get_tenant_discovery_context
-from app.kubernetes.tenant.service import get_tenant_context, get_tenant_registry_context
+from app.kubernetes.tenant.service import get_tenant_registry_context, get_tenant_shell_context
 from app.kubernetes.tenant.workspace import (
     get_tenant_sync_workspace_context,
     get_tenant_workspace_context,
@@ -62,13 +62,22 @@ def _record(
     return feedback
 
 
-def _tenant_workspace_context() -> dict[str, Any]:
-    return {
-        **get_tenant_context(),
-        **get_tenant_access_context(),
-        **get_tenant_workspace_context(),
-        **get_tenant_sync_workspace_context(),
-    }
+def _tenant_workspace_context(*, include_sync: bool = True) -> dict[str, Any]:
+    context = get_tenant_shell_context()
+    if include_sync:
+        context.update(get_tenant_sync_workspace_context())
+    return context
+
+
+def _tenant_admin_support_context(section: str) -> dict[str, Any]:
+    if section in {'memberships', 'access-grants'}:
+        return get_tenant_access_context()
+    if section == 'credentials':
+        return {
+            **get_tenant_access_context(),
+            **get_tenant_workspace_context(),
+        }
+    return {}
 
 
 _TENANT_ADMIN_SECTIONS = {
@@ -92,8 +101,9 @@ def _tenant_section_redirect(section: str):
     if request.headers.get('HX-Request') != 'true':
         return redirect(url_for('tenant.tenants', section=resolved_section))
 
-    context = _tenant_workspace_context()
+    context = _tenant_workspace_context(include_sync=False)
     context.update(get_tenant_summary_context())
+    context.update(_tenant_admin_support_context(resolved_section))
     context.update(_tenant_active_section_context(resolved_section))
     rendered = render_template(
         'kubernetes/tenant/partials/_tenant_admin_workspace.html',
