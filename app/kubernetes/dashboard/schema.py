@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from app.common.pagination import build_pagination_window, pagination_payload
+
 
 @dataclass(slots=True)
 class DashboardClusterOption:
@@ -68,20 +70,6 @@ class ClusterHealthRow:
     active_alerts: int | None = None
     alerts_status: str = 'Unavailable'
     last_sync: str = 'No sync yet'
-
-
-@dataclass(slots=True)
-class ClusterHealthPagination:
-    page: int = 1
-    per_page: int = 5
-    total_items: int = 0
-    total_pages: int = 1
-    has_prev: bool = False
-    has_next: bool = False
-    prev_page: int = 1
-    next_page: int = 1
-    start_item: int = 0
-    end_item: int = 0
 
 
 @dataclass(slots=True)
@@ -233,7 +221,9 @@ class DashboardOverview:
     last_updated: str = 'Just now'
     global_kpis: list[DashboardKpi] = field(default_factory=list)
     cluster_health_snapshot: list[ClusterHealthRow] = field(default_factory=list)
-    cluster_health_pagination: ClusterHealthPagination = field(default_factory=ClusterHealthPagination)
+    cluster_health_pagination: dict[str, Any] = field(
+        default_factory=lambda: pagination_payload(build_pagination_window(total_items=0))
+    )
     capacity_snapshot: CapacitySnapshot = field(default_factory=CapacitySnapshot)
     alerts_snapshot: AlertsSnapshot = field(default_factory=AlertsSnapshot)
     top_consumers_snapshot: TopConsumersSnapshot = field(default_factory=TopConsumersSnapshot)
