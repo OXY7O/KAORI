@@ -97,12 +97,9 @@ from app.platform_operations.notifications.service import queue_transient_feedba
 @any_permission_required('tenant.view', 'tenant.manage')
 def index():
     context = _tenant_workspace_context(include_sync=False)
-    context.update(
-        get_tenant_overview_context(
-            cluster_page=request.args.get('cluster_page', 1, type=int) or 1,
-            cluster_per_page=request.args.get('cluster_per_page', 5, type=int) or 5,
-        )
-    )
+    context.update(get_tenant_overview_context())
+    context['tenant_cluster_page'] = request.args.get('cluster_page', 1, type=int) or 1
+    context['tenant_cluster_per_page'] = request.args.get('cluster_per_page', 5, type=int) or 5
     return render_template(
         'kubernetes/tenant/overview.html',
         tenant_page='overview',
@@ -396,6 +393,7 @@ def _operations_provisioning_context() -> dict[str, Any]:
         tenant_id=str(request.args.get('ops_namespace_tenant_id') or ''),
         environment=str(request.args.get('ops_namespace_environment') or ''),
         status=str(request.args.get('ops_namespace_status') or ''),
+        include_workflow_support=False,
     )
     return {
         'operations_namespace_rows': namespace_context['namespaces'],
@@ -415,6 +413,7 @@ def _operations_drift_context() -> dict[str, Any]:
         tenant_id=str(request.args.get('ops_drift_tenant_id') or ''),
         environment=str(request.args.get('ops_drift_environment') or ''),
         status='drifted',
+        include_workflow_support=False,
     )
     provider_context = get_tenant_registry_context(
         page=request.args.get('ops_provider_page', 1, type=int) or 1,
