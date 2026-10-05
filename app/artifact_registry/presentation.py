@@ -547,13 +547,24 @@ def _provider_health_projection(
             func.count(RegistryArtifact.id),
         )
     )
-    security_query = (
+    security_counts_query = (
         RegistryArtifact.query.join(RegistryRepository)
         .join(RegistryProject)
         .with_entities(
             RegistryProject.integration_instance_id,
-            RegistryArtifact.scan_status,
-            RegistryArtifact.vulnerability_summary,
+            func.count(RegistryArtifact.scan_status),
+            func.coalesce(
+                func.sum(
+                    RegistryArtifact.vulnerability_summary['critical'].as_integer()
+                ),
+                0,
+            ),
+            func.coalesce(
+                func.sum(
+                    RegistryArtifact.vulnerability_summary['high'].as_integer()
+                ),
+                0,
+            ),
         )
     )
     if selected_provider is not None:
@@ -566,7 +577,7 @@ def _provider_health_projection(
         artifact_counts_query = artifact_counts_query.filter(
             RegistryProject.integration_instance_id == selected_provider.id
         )
-        security_query = security_query.filter(
+        security_counts_query = security_counts_query.filter(
             RegistryProject.integration_instance_id == selected_provider.id
         )
 
@@ -588,17 +599,16 @@ def _provider_health_projection(
             RegistryProject.integration_instance_id
         ).all()
     }
-    security_counts: dict[int, dict[str, int]] = {}
-    for provider_id, scan_status, vulnerability_summary in security_query.all():
-        key = int(provider_id)
-        counts = security_counts.setdefault(
-            key,
-            {'scanned': 0, 'critical': 0, 'high': 0},
-        )
-        counts['scanned'] += int(bool(scan_status))
-        summary = vulnerability_summary if isinstance(vulnerability_summary, dict) else {}
-        counts['critical'] += int(summary.get('critical') or 0)
-        counts['high'] += int(summary.get('high') or 0)
+    security_counts = {
+        int(provider_id): {
+            'scanned': int(scanned or 0),
+            'critical': int(critical or 0),
+            'high': int(high or 0),
+        }
+        for provider_id, scanned, critical, high in security_counts_query.group_by(
+            RegistryProject.integration_instance_id
+        ).all()
+    }
 
     metrics_by_provider = {
         int(provider.id): registry_metrics_readiness(provider)
