@@ -153,9 +153,23 @@ The common module is intentionally narrow. Blueprints, permission decorators, re
 
 ## Request and loading contract
 
-- First request renders shell, Hero, scope, inventory aggregate, reporting summary, and local placeholders.
+Operational Dashboards use **Fast Shell & Bounded Section Loading**. The invariant is:
+
+```text
+1 HTTP request → 1 bounded presentation projection
+```
+
+The dashboard web request is a projection layer over committed KAORI state. It is not an inventory scan, analytics engine, or request-time provider client.
+
+- The first request renders only the Fast Shell: Hero/readiness, scope selector options, selected scope, active tab, minimal freshness/context, required pagination metadata, and section/KPI placeholders.
+- Operational Signal KPI content loads as a bounded section projection rather than forcing unrelated dashboard evidence into the shell.
 - Heavy sections load independently through HTMX.
 - Hidden tab sections load when revealed.
+- A lazy section request builds minimal scope context plus only the evidence required by that section.
+- Section requests must not call a full-dashboard builder or project unrelated tabs before returning the requested fragment.
+- Dashboard summaries prefer bounded database operations such as `COUNT`, `SUM`, `GROUP BY`, bounded `LIMIT`, canonical pagination, and latest committed/materialized snapshot reads.
+- Do not materialize full ORM collections when the rendered result only requires aggregate values.
+- Heavy forecast, correlation, vulnerability aggregation, analytics, and similar computation remains worker/materialization owned where applicable.
 - Loading and failures remain section-owned.
 - Do not add a global dashboard loading overlay.
 - One unavailable section must not prevent the rest of the dashboard from rendering.
@@ -205,13 +219,15 @@ A new operational dashboard is a **content implementation of the shared framewor
 
 Required sequence:
 
-1. render the domain Hero with `page_hero.operational_dashboard(...)`;
-2. render the domain onboarding/readiness blocker when required;
-3. enter `operational_dashboard_workspace.controller(...)`;
-4. render the domain Operational Signal Overview through `operational_signal_overview.render(...)`;
-5. render `operational_dashboard_workspace.navigation(...)`;
-6. provide content for the canonical `overview`, `capacity`, `signals`, and `reporting` panels through `operational_dashboard_workspace.panel(...)`;
-7. use shared section-card, peer-grid, table, label, loading, chart, and reporting components rather than page-local geometry.
+1. implement a domain-owned **Fast Shell** that reads only readiness/scope/active-tab/minimal context;
+2. render the domain Hero with `page_hero.operational_dashboard(...)`;
+3. render the domain onboarding/readiness blocker when required;
+4. enter `operational_dashboard_workspace.controller(...)`;
+5. render the domain Operational Signal Overview through `operational_signal_overview.render(...)` with bounded/lazy KPI content;
+6. render `operational_dashboard_workspace.navigation(...)`;
+7. provide content for the canonical `overview`, `capacity`, `signals`, and `reporting` panels through independently bounded lazy section endpoints;
+8. use shared section-card, peer-grid, table, label, loading, chart, and reporting components rather than page-local geometry;
+9. prove that one section request does not build unrelated sections and that dashboard aggregates do not require unbounded ORM materialization.
 
 A future framework-level redesign updates the shared components and this standard once; individual dashboard domains should not fork the layout.
 
@@ -219,7 +235,12 @@ A future framework-level redesign updates the shared components and this standar
 
 - Dashboard web code owns no provider clients or request-time provider access.
 - Internal naming distinguishes selected database scope from actual live/provider state.
+- Fast Shell code must stay independent from heavy tab/section builders.
+- One section request must not build unrelated dashboard sections.
 - Heavy analytical evidence loads through bounded/lazy sections.
+- Aggregate KPI and summary paths use database aggregation or committed/materialized summary evidence instead of loading full domain collections when possible.
+- Performance characterization should record shell and section query count/response timing against representative inventory cardinality before setting numeric release budgets.
+- Caching is not the first correction for an unbounded query/projection boundary.
 - Empty snapshot messaging describes committed worker evidence rather than provider request results.
 
 ## Layered release evidence
