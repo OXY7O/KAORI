@@ -33,7 +33,6 @@ from app.models.registry import (
     RegistryRepository,
     RegistryScanSnapshot,
     RegistryTag,
-    RegistryWebhookEndpoint,
     RegistryWorkloadBinding,
 )
 
@@ -2667,29 +2666,29 @@ def _policy_state_view(value: str | None) -> dict[str, str]:
     return {'label': 'Not Collected', 'tone': 'unknown'}
 
 
-def build_governance() -> dict[str, Any]:
-    from flask import url_for
+def build_governance(
+    *,
+    active_tab: str = 'policies',
+    page: int = 1,
+    per_page: int = 5,
+) -> dict[str, Any]:
+    from app.artifact_registry.governance_job_adapter import build_registry_governance_sync_state
 
     overview = build_overview()
     identities = _providers()
     identity_by_id = {int(item.id): item for item in identities}
-    collection_states = {
-        int(item.integration_instance_id): item
-        for item in RegistryCollectionState.query.all()
-    }
     governance_states = {
         int(item.integration_instance_id): item
         for item in RegistryGovernanceState.query.all()
-    }
-    webhook_endpoints = {
-        int(item.integration_instance_id): item
-        for item in RegistryWebhookEndpoint.query.all()
     }
 
     project_rows: list[dict[str, Any]] = []
     governance_items = RegistryProjectGovernance.query.options(
         joinedload(RegistryProjectGovernance.project),
-    ).order_by(RegistryProjectGovernance.observed_at.desc()).all()
+    ).order_by(
+        RegistryProjectGovernance.observed_at.desc(),
+        RegistryProjectGovernance.id.desc(),
+    ).all()
     for item in governance_items:
         identity = identity_by_id.get(int(item.project.integration_instance_id))
         retention = _policy_state_view(item.retention_status)
@@ -2697,10 +2696,16 @@ def build_governance() -> dict[str, Any]:
         project_rows.append(
             {
                 'project': item.project.name,
-                'provider_label': str((identity.metadata_json or {}).get('provider_label') or identity.provider_key.title())
-                if identity is not None else 'Registry',
+                'provider_label': str(
+                    (identity.metadata_json or {}).get('provider_label')
+                    or identity.provider_key.title()
+                )
+                if identity is not None
+                else 'Registry',
+                'retention_status': str(item.retention_status or 'not_collected'),
                 'retention_label': retention['label'],
                 'retention_tone': retention['tone'],
+                'immutability_status': str(item.immutability_status or 'not_collected'),
                 'immutability_label': immutability['label'],
                 'immutability_tone': immutability['tone'],
                 'observed_at': item.observed_at,
@@ -2708,116 +2713,194 @@ def build_governance() -> dict[str, Any]:
         )
 
     replication_rows: list[dict[str, Any]] = []
-    for item in RegistryReplicationPolicy.query.order_by(RegistryReplicationPolicy.name.asc()).all():
+    for item in RegistryReplicationPolicy.query.order_by(
+        RegistryReplicationPolicy.name.asc(),
+        RegistryReplicationPolicy.id.asc(),
+    ).all():
         identity = identity_by_id.get(int(item.integration_instance_id))
         replication_rows.append(
             {
                 'name': item.name,
-                'provider_label': str((identity.metadata_json or {}).get('provider_label') or identity.provider_key.title())
-                if identity is not None else 'Registry',
+                'provider_label': str(
+                    (identity.metadata_json or {}).get('provider_label')
+                    or identity.provider_key.title()
+                )
+                if identity is not None
+                else 'Registry',
                 'enabled': item.enabled,
                 'trigger_type': item.trigger_type,
+                'source_registry': item.source_registry,
                 'destination_registry': item.destination_registry,
                 'destination_namespace': item.destination_namespace,
                 'observed_at': item.observed_at,
             }
         )
 
-    metrics_by_id = {int(identity.id): registry_metrics_readiness(identity) for identity in identities}
-    webhook_rows: list[dict[str, Any]] = []
-    for identity in identities:
-        endpoint = webhook_endpoints.get(int(identity.id))
-        enabled = bool(endpoint and endpoint.enabled and endpoint.token_digest)
-        webhook_rows.append(
-            {
-                'id': int(identity.id),
-                'name': identity.name,
-                'enabled': enabled,
-                'status_label': 'Ready' if enabled else 'Not Configured',
-                'tone': 'normal' if enabled else 'unknown',
-                'last_event_at': endpoint.last_event_at if endpoint else None,
-                'url': url_for(
-                    'artifact_registry.webhook_receive',
-                    integration_instance_id=identity.id,
-                    _external=True,
-                ),
-            }
-        )
-
-    inventory_ready_count = sum(
-        1
-        for identity in identities
-        if (collection_states.get(int(identity.id)) is not None)
-        and collection_states[int(identity.id)].status == 'ready'
-    )
+    provider_count = len(identities)
     governance_ready_count = sum(
         1
         for identity in identities
         if (governance_states.get(int(identity.id)) is not None)
         and governance_states[int(identity.id)].status == 'ready'
+        and governance_states[int(identity.id)].last_committed_at is not None
     )
-    metrics_ready_count = sum(
-        1 for item in metrics_by_id.values() if item.get('status') == 'ready'
-    )
-    webhook_ready_count = sum(1 for row in webhook_rows if row['enabled'])
-
-    readiness_cards = [
-        {
-            'label': 'Provider Readiness',
-            'value': f"{sum(identity.readiness_status == 'ready' for identity in identities)}/{len(identities)} Ready",
-            'status_label': 'Independent',
-            'tone': 'info',
-            'detail': 'Harbor/API provider validation remains separate from inventory, metrics, and webhook readiness.',
-        },
-        {
-            'label': 'Inventory Readiness',
-            'value': f'{inventory_ready_count}/{len(identities)} Ready',
-            'status_label': 'Committed',
-            'tone': 'normal' if inventory_ready_count == len(identities) and identities else 'warning',
-            'detail': 'Scheduled reconciliation commits Registry truth and remains available during metrics outages.',
-        },
-        {
-            'label': 'Metrics Readiness',
-            'value': f'{metrics_ready_count}/{len(identities)} Ready',
-            'status_label': 'Optional Dependency',
-            'tone': 'normal' if metrics_ready_count else 'unknown',
-            'detail': 'Metrics Source binding is independently validated; it never controls Registry provider readiness.',
-        },
-        {
-            'label': 'Webhook Readiness',
-            'value': f'{webhook_ready_count}/{len(identities)} Ready',
-            'status_label': 'Fast Path',
-            'tone': 'normal' if webhook_ready_count else 'unknown',
-            'detail': 'Authenticated idempotent events accelerate refresh; scheduled reconciliation repairs missed events.',
-        },
+    state_views = [
+        _state_view(governance_states.get(int(identity.id)))
+        for identity in identities
     ]
+    exception_count = sum(
+        1
+        for view in state_views
+        if view['status'] != 'ready' or view.get('is_stale') or view.get('refresh_failed')
+    )
+    latest_committed_at = max(
+        (
+            _aware_datetime(state.last_committed_at)
+            for state in governance_states.values()
+            if state.last_committed_at is not None
+        ),
+        default=None,
+    )
+
+    retention_configured = sum(
+        1 for row in project_rows if row['retention_status'] == 'configured'
+    )
+    retention_unavailable = sum(
+        1 for row in project_rows if row['retention_status'] == 'unavailable'
+    )
+    retention_not_configured = sum(
+        1 for row in project_rows if row['retention_status'] == 'not_configured'
+    )
+    immutability_configured = sum(
+        1 for row in project_rows if row['immutability_status'] == 'configured'
+    )
+    immutability_unavailable = sum(
+        1 for row in project_rows if row['immutability_status'] == 'unavailable'
+    )
+    immutability_not_configured = sum(
+        1 for row in project_rows if row['immutability_status'] == 'not_configured'
+    )
+
+    capability_counts: dict[str, dict[str, int]] = {}
+    for capability in ('retention', 'immutability', 'replication'):
+        counts = {'observed': 0, 'unavailable': 0, 'unsupported': 0, 'unknown': 0}
+        for state in governance_states.values():
+            raw = (
+                (state.capability_states or {}).get(capability)
+                if isinstance(state.capability_states, dict)
+                else None
+            )
+            status = str(raw.get('status') or 'unknown') if isinstance(raw, dict) else 'unknown'
+            counts[status if status in counts else 'unknown'] += 1
+        capability_counts[capability] = counts
+
+    normalized_tab = active_tab if active_tab in {'policies', 'replication'} else 'policies'
+    active_rows = project_rows if normalized_tab == 'policies' else replication_rows
+    page_rows, pagination = paginate_sequence(active_rows, page=page, per_page=per_page)
 
     if not identities:
         posture = {'label': 'Setup Required', 'tone': 'unknown'}
-    elif inventory_ready_count < len(identities):
-        posture = {'label': 'Inventory Attention', 'tone': 'warning'}
-    elif governance_ready_count < len(identities):
-        posture = {'label': 'Governance Pending', 'tone': 'warning'}
+    elif governance_ready_count == 0:
+        posture = {'label': 'Governance Sync Required', 'tone': 'warning'}
+    elif exception_count:
+        posture = {'label': 'Evidence Attention', 'tone': 'warning'}
     else:
         posture = {'label': 'Committed Evidence Ready', 'tone': 'normal'}
 
-    return {
-        'setup': overview['setup'],
-        'provider_count': len(identities),
-        'project_count': len(project_rows),
-        'replication_count': len(replication_rows),
-        'inventory_ready_count': inventory_ready_count,
-        'governance_ready_count': governance_ready_count,
-        'metrics_ready_count': metrics_ready_count,
-        'webhook_ready_count': webhook_ready_count,
-        'posture': posture,
-        'readiness_cards': readiness_cards,
-        'project_rows': project_rows,
-        'replication_rows': replication_rows,
-        'webhook_rows': webhook_rows,
-        'metrics_by_id': metrics_by_id,
+    snapshot_status = (
+        'Current'
+        if provider_count and governance_ready_count == provider_count and exception_count == 0
+        else ('Not Collected' if governance_ready_count == 0 else 'Attention')
+    )
+    snapshot_tone = (
+        'normal'
+        if snapshot_status == 'Current'
+        else ('unknown' if snapshot_status == 'Not Collected' else 'warning')
+    )
+    snapshot_context = {
+        'source_label': 'Committed Registry Governance Evidence',
+        'status': snapshot_status,
+        'tone': snapshot_tone,
+        'description': 'Retention, immutability, and replication evidence committed from Registry providers.',
+        'latest_collected_at': latest_committed_at,
+        'scope_label': f'{provider_count} Registry Provider' + ('' if provider_count == 1 else 's'),
+        'coverage_label': f'{governance_ready_count}/{provider_count} Providers Committed',
+        'coverage_supporting': 'Provider-neutral Governance snapshots.',
+        'coverage_tone': (
+            'normal'
+            if provider_count and governance_ready_count == provider_count
+            else 'warning'
+        ),
+        'exception_count': exception_count,
+        'exceptions_label': (
+            'No Exceptions'
+            if exception_count == 0
+            else f'{exception_count} Evidence Exception' + ('' if exception_count == 1 else 's')
+        ),
+        'exceptions_supporting': (
+            'Missing, stale, or failed Governance collection.'
+            if exception_count
+            else 'No freshness or collection exceptions.'
+        ),
+        'exceptions_tone': 'normal' if exception_count == 0 else 'warning',
     }
 
+    posture_cards = [
+        {
+            'label': 'Policy Coverage',
+            'value': f'{len(project_rows)} Projects',
+            'status_label': 'Committed' if project_rows else 'Not Collected',
+            'tone': 'normal' if project_rows else 'unknown',
+            'detail': 'Project-scoped retention and immutability evidence from committed provider state.',
+        },
+        {
+            'label': 'Retention Coverage',
+            'value': f'{retention_configured}/{len(project_rows)} Configured',
+            'status_label': 'Observed',
+            'tone': 'normal' if project_rows else 'unknown',
+            'detail': (
+                f'{retention_not_configured} not configured · {retention_unavailable} unavailable. '
+                f"{capability_counts['retention']['unsupported']} provider(s) unsupported."
+            ),
+        },
+        {
+            'label': 'Immutability Coverage',
+            'value': f'{immutability_configured}/{len(project_rows)} Configured',
+            'status_label': 'Observed',
+            'tone': 'normal' if project_rows else 'unknown',
+            'detail': (
+                f'{immutability_not_configured} not configured · {immutability_unavailable} unavailable. '
+                f"{capability_counts['immutability']['unsupported']} provider(s) unsupported."
+            ),
+        },
+        {
+            'label': 'Replication Coverage',
+            'value': f'{len(replication_rows)} Policies',
+            'status_label': 'Observed' if governance_ready_count else 'Not Collected',
+            'tone': 'info' if governance_ready_count else 'unknown',
+            'detail': (
+                f"{capability_counts['replication']['observed']} provider(s) observed · "
+                f"{capability_counts['replication']['unavailable']} unavailable · "
+                f"{capability_counts['replication']['unsupported']} unsupported."
+            ),
+        },
+    ]
+
+    return {
+        'setup': overview['setup'],
+        'provider_count': provider_count,
+        'project_count': len(project_rows),
+        'replication_count': len(replication_rows),
+        'governance_ready_count': governance_ready_count,
+        'posture': posture,
+        'snapshot_context': snapshot_context,
+        'posture_cards': posture_cards,
+        'active_tab': normalized_tab,
+        'rows': page_rows,
+        'pagination': pagination,
+        'filter_query': {'tab': normalized_tab},
+        'sync_state': build_registry_governance_sync_state(),
+    }
 
 
 def build_analytics() -> dict[str, Any]:
