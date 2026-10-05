@@ -1527,7 +1527,7 @@ def build_inventory(
                 'Public Projects',
                 public_projects,
                 'Projects declared public in committed provider evidence.',
-                'warning' if public_projects else 'normal',
+                'info' if public_projects else 'normal',
             ),
             (
                 'circle-help',
