@@ -97,7 +97,7 @@ def test_runtime_usage_is_cross_domain_canonical_workspace() -> None:
     assert 'Committed Artifact Registry and Kubernetes inventory only' in detail
 
 
-def test_runtime_usage_keeps_committed_snapshot_readable_when_refresh_is_blocked() -> None:
+def test_runtime_usage_keeps_committed_snapshot_readable_when_refresh_is_unavailable() -> None:
     presentation = (ROOT / 'app/artifact_registry/presentation.py').read_text()
     workspace = (
         ROOT / 'app/templates/artifact_registry/partials/_runtime_workspace.html'
@@ -108,13 +108,11 @@ def test_runtime_usage_keeps_committed_snapshot_readable_when_refresh_is_blocked
     assert "'refresh_blocked': bool(not eligible and has_committed_snapshot)" in presentation
     assert "'Kubernetes Inventory Required'" in presentation
     assert "action_endpoint = 'inventory.overview'" in presentation
-    assert "snapshot_status, snapshot_tone = 'Refresh Blocked', 'warning'" in presentation
+    assert "snapshot_status, snapshot_tone = 'Refresh Unavailable', 'warning'" in presentation
     assert "has_committed_snapshot=latest_correlated_at is not None" in presentation
 
-    assert '{% if runtime.setup.refresh_blocked %}' in workspace
-    assert 'runtime.setup.refresh_description' in workspace
-    assert 'url_for(runtime.setup.action_endpoint)' in workspace
-    assert 'Open Registry Inventory' not in workspace
+    assert '{% if runtime.setup.refresh_blocked %}' not in workspace
+    assert 'Refresh Blocked' not in workspace
     assert 'Committed Inventory Required' not in workspace
 
 
