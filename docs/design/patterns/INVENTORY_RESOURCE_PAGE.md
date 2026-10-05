@@ -48,7 +48,14 @@ Inventory Records
 └── <resource> Inventory table
 ```
 
-This section hierarchy is also reused by Object Storage Systems, Object Storage Buckets & Containers, and Artifact Registry Projects when those pages expose a resource posture block. Domain evidence remains domain-owned; reuse applies to hierarchy and shared components rather than forcing identical metrics.
+This section hierarchy is also reused by Object Storage Systems, Object Storage Buckets & Containers, and Artifact Registry Projects, Repositories, and Artifacts. Domain evidence remains domain-owned; reuse applies to hierarchy and shared components rather than forcing identical metrics.
+
+Artifact Registry resource posture remains committed-inventory evidence only:
+- Projects summarize project identities, Registry-source participation, public visibility, and missing visibility evidence.
+- Repositories summarize repository identities, Registry-source participation, referenced artifact counts, and observed pull-count evidence.
+- Artifacts summarize digest-oriented identities, Registry-source participation, and tagged/untagged reference posture.
+
+Security scan, governance, and runtime-correlation interpretation stay in their owning workspaces and are not pulled into Inventory merely for visual parity.
 
 Inventory Overview uses `Inventory Assets` above the asset catalog and `Multi-Cluster Inventory` above the compact cluster table. Topology uses `Inventory Relationships` above the adaptive visualization workspace.
 
