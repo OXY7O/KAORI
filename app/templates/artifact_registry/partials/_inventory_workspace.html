@@ -11,9 +11,9 @@
         <div class="{{ page_hero.layout_classes() }}">
             <div class="{{ page_hero.content_classes() }}">
                 {% call page_hero.intro('boxes', 'Artifact Registry Inventory', 'package-open') %}
-                    <h1 class="{{ page_hero.title_classes() }}">Inventory</h1>
+                    <h1 class="{{ page_hero.title_classes() }}">{{ inventory.resource_label }}</h1>
                     <p class="mt-2 {{ page_hero.description_classes() }}">
-                        Review committed Registry projects, repositories, and digest-oriented artifacts across provider instances.
+                        Review committed {{ inventory.resource_label|lower }} with provider provenance preserved across Registry instances.
                     </p>
                     <div class="{{ page_hero.metadata_row_classes() }}">
                         {{ page_hero.meta_label('folder-kanban', inventory.overview.project_count ~ ' Projects') }}
@@ -59,38 +59,6 @@
             metric_icon_palette='brand'
         ) }}
 
-        <section class="space-y-4" aria-labelledby="registry-inventory-assets-heading">
-            {{ section_intro.render(
-                'Inventory Assets',
-                'Open a Registry asset inventory from the current committed provider-neutral snapshots.',
-                'registry-inventory-assets-heading'
-            ) }}
-            {% set asset_badge %}
-                {{ table_label.metadata_label(inventory.asset_catalog|length ~ ' Asset Types', icon='layers-3') }}
-            {% endset %}
-            {% call operational_section_card.render(
-                'Registry Asset Catalog',
-                'Projects define provider-neutral namespaces, repositories group content, and artifacts keep immutable digest identities.',
-                'layout-grid',
-                id='registry-inventory-asset-catalog',
-                header_badge=asset_badge,
-                body_classes='p-5'
-            ) %}
-                <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                    {% for asset in inventory.asset_catalog %}
-                        {{ inventory_asset_card.render(
-                            asset.title,
-                            asset.count,
-                            asset.description,
-                            url_for('artifact_registry.inventory', resource=asset.key, per_page=inventory.pagination.per_page),
-                            asset.icon,
-                            action_label=asset.action_label
-                        ) }}
-                    {% endfor %}
-                </div>
-            {% endcall %}
-        </section>
-
         <section class="space-y-4" aria-labelledby="registry-inventory-records-heading">
             {{ section_intro.render(
                 'Registry Inventory',
@@ -116,13 +84,12 @@
             ) %}
                 <div id="artifact-registry-inventory-content">
                     {% call registry.filter_form(
-                        'artifact_registry.inventory',
+                        inventory.resource_endpoint,
                         'artifact-registry-inventory-content',
                         'artifact-registry-inventory-loading',
                         inventory.pagination.per_page,
                         classes='border-b border-outline-subtle bg-surface-hover px-5 py-4'
                     ) %}
-                        <input type="hidden" name="resource" value="{{ inventory.resource }}">
                         <div class="min-w-0 flex-1">
                             <label for="artifact-registry-inventory-search"
                                    class="{{ table_ui.filter_label_classes() }}">Search {{ inventory.resource_label }}</label>
@@ -135,12 +102,12 @@
                         </div>
                         {% if inventory.search %}
                             {{ registry.clear_filters_link(
-                                'artifact_registry.inventory',
+                                inventory.resource_endpoint,
                                 'artifact-registry-inventory-content',
                                 'artifact-registry-inventory-loading',
                                 inventory.pagination.per_page,
                                 table_ui.action_classes(),
-                                query_params={'resource': inventory.resource}
+                                query_params={}
                             ) }}
                         {% endif %}
                     {% endcall %}
@@ -313,11 +280,11 @@
                         </table>
                     </div>
                     {{ registry.footer(
-                        'artifact_registry.inventory',
+                        inventory.resource_endpoint,
                         'artifact-registry-inventory-content',
                         'artifact-registry-inventory-loading',
                         inventory.pagination,
-                        {'resource': inventory.resource, 'q': inventory.search},
+                        {'q': inventory.search},
                         [5, 10, 25, 50],
                         resource_label=inventory.resource_label,
                         control_name='artifact-registry-inventory'
