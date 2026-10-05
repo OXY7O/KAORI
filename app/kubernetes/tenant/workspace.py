@@ -8,7 +8,7 @@ from sqlalchemy import func, or_
 from app.common.pagination import paginate_query, paginate_sequence
 from app.common.presentation import present_user_datetime
 from app.intelligence.service import get_active_tenant_governance_findings
-from app.kubernetes.tenant.capacity_governance import build_capacity_governance_summary
+from app.kubernetes.tenant.capacity_governance import build_capacity_governance_summaries
 from app.kubernetes.tenant.credential import build_namespace_access_package, credential_target_namespaces
 from app.kubernetes.tenant.job_adapter import build_tenant_sync_state
 from app.models import Cluster
@@ -307,12 +307,13 @@ def _build_tenant_cluster_rows(sync_state: dict[str, Any]) -> list[dict[str, Any
     namespace_counts = _cluster_namespace_counts()
     total_tenants = sum(tenant_counts.values())
     snapshot_clusters = _snapshot_cluster_rows(dict(sync_state.get('snapshot') or {}))
+    capacity_by_cluster = build_capacity_governance_summaries([str(cluster.id) for cluster in clusters])
 
     cluster_rows: list[dict[str, Any]] = []
     for cluster in clusters:
         cluster_id = str(cluster.id)
         tenant_count = tenant_counts.get(cluster_id, 0)
-        capacity = build_capacity_governance_summary(cluster.id)
+        capacity = capacity_by_cluster[cluster_id]
         snapshot_cluster = snapshot_clusters.get(cluster_id, {})
         capacity_available = capacity.get('budget') is not None and capacity.get('headroom') is not None
         cluster_rows.append(
