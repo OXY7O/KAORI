@@ -11,6 +11,7 @@ from app.artifact_registry.presentation import (
     build_inventory,
     build_inventory_overview,
     build_overview,
+    build_overview_section,
     build_runtime_usage,
     build_security,
 )
@@ -33,6 +34,7 @@ from app.platform_operations.notifications.service import record_operational_act
 artifact_registry_bp = Blueprint('artifact_registry', __name__, url_prefix='/artifact-registry')
 
 OVERVIEW_SECTION_TEMPLATES = {
+    'kpi_cards': 'artifact_registry/partials/_overview_kpi_cards.html',
     'overview': 'artifact_registry/partials/_overview_operations.html',
     'provider_health': 'artifact_registry/partials/_overview_provider_health.html',
     'capacity': 'artifact_registry/partials/_overview_capacity.html',
@@ -64,9 +66,9 @@ def overview_section(section: str) -> ResponseReturnValue:
     template = OVERVIEW_SECTION_TEMPLATES.get(section)
     if template is None:
         abort(404)
-    context = build_overview(
+    context = build_overview_section(
+        section,
         provider_id=request.args.get('provider_id', type=int),
-        active_tab=normalize_operational_tab(section),
         provider_health_page=request.args.get('provider_health_page', 1),
         provider_health_per_page=normalize_dashboard_page_size(request.args.get('provider_health_per_page')),
     )
