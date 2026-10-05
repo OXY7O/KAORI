@@ -48,6 +48,8 @@ Inventory Records
 └── <resource> Inventory table
 ```
 
+This section hierarchy is also reused by Object Storage Systems, Object Storage Buckets & Containers, and Artifact Registry Projects when those pages expose a resource posture block. Domain evidence remains domain-owned; reuse applies to hierarchy and shared components rather than forcing identical metrics.
+
 Inventory Overview uses `Inventory Assets` above the asset catalog and `Multi-Cluster Inventory` above the compact cluster table. Topology uses `Inventory Relationships` above the adaptive visualization workspace.
 
 The section title and child card title must not repeat the same phrase. Preserve the child's existing shared component ownership and HTMX target boundaries.
