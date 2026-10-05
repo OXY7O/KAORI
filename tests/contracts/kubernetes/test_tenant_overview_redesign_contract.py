@@ -76,15 +76,12 @@ def test_tenant_sync_matches_tls_background_behavior() -> None:
 def test_tenant_sync_workspace_context_is_constructed_from_sync_state() -> None:
     workspace = (ROOT / 'app/kubernetes/tenant/workspace.py').read_text(encoding='utf-8')
 
-    assert 'def get_tenant_sync_workspace_context() -> dict[str, Any]:' in workspace
-    assert "'tenant_collection_snapshot': _tenant_collection_snapshot(sync_state)" in workspace
-    assert "'tenant_sync_state': sync_state" in workspace
-    broken_helper = """def get_tenant_sync_workspace_context() -> dict[str, Any]:
-    sync_state = build_tenant_sync_state()
-    return {
-        **sync_context,
-    }"""
-    assert broken_helper not in workspace
+    assert 'def get_tenant_sync_workspace_context(*, sync_state: dict[str, Any] | None = None)' in workspace
+    assert 'resolved_sync_state = sync_state if sync_state is not None else build_tenant_sync_state()' in workspace
+    assert "'tenant_collection_snapshot': _tenant_collection_snapshot(resolved_sync_state)" in workspace
+    assert "'tenant_sync_state': resolved_sync_state" in workspace
+    assert 'get_tenant_sync_workspace_context(sync_state=sync_state)' in workspace
+    assert 'sync_state=sync_state' in workspace
 
 
 def test_tenant_overview_uses_tls_style_collection_snapshot_and_contextual_sync_actions() -> None:
