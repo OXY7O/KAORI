@@ -21,6 +21,21 @@ A registered system with no committed inventory is **not** setup-blocked. It is 
 
 Overview, Systems, and Buckets & Containers all place the canonical `Inventory Data Snapshot` immediately below the Hero in ready state. It reports committed source, freshness, active scope, system coverage, and snapshot exceptions using `components/snapshot_context_bar.html`.
 
+## Overview composition
+
+The ready-state Object Storage Inventory Overview uses the shared Inventory Overview reading order:
+
+```text
+Hero
+→ Inventory Data Snapshot
+→ Fleet Inventory Posture
+→ Object Storage Asset Catalog
+```
+
+`Fleet Inventory Posture` and `Object Storage Asset Catalog` use the shared plain `section_intro.html` heading/description hierarchy outside their content blocks. Fleet readings render directly as `operational_callout.html` items, and inventory destinations render directly as `inventory_asset_card.html` items. Do not wrap either section in another `operational_section_card`; nested card shells duplicate hierarchy and weaken the scan path.
+
+The posture content remains domain-owned: quota evidence, normalized protection attention, public exposure, and optional usage evidence. The Asset Catalog remains provider-neutral and links to Systems and Buckets & Containers.
+
 ## Ownership
 
 - Integrations → Storage: registration, configuration, validation, runtime health.
