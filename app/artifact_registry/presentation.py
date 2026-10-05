@@ -1456,76 +1456,10 @@ def build_inventory(*, resource: str, page: int, per_page: int, search: str = ''
 
 
 def build_security(*, page: int = 1, per_page: int = 5) -> dict[str, Any]:
-    artifacts = RegistryArtifact.query.options(
-        joinedload(RegistryArtifact.repository).joinedload(RegistryRepository.project),
-    ).all()
-    rows: list[dict[str, Any]] = []
-    critical_total = high_total = scanned = signed = sbom_available = 0
-    for artifact in artifacts:
-        summary = artifact.vulnerability_summary if isinstance(artifact.vulnerability_summary, dict) else {}
-        critical = int(summary.get('critical') or 0)
-        high = int(summary.get('high') or 0)
-        critical_total += critical
-        high_total += high
-        scan_status = str(artifact.scan_status or 'not_scanned')
-        scan_ready = registry_scan_evidence_ready(scan_status)
-        scanned += int(scan_ready)
-        signature = str(artifact.signature_status or 'not_observed')
-        sbom = str(artifact.sbom_status or 'not_observed')
-        signed += int(signature == 'signed')
-        sbom_available += int(sbom == 'available')
-        rows.append(
-            {
-                'id': artifact.id,
-                'digest': artifact.digest,
-                'digest_short': artifact.digest if len(artifact.digest) <= 28 else f'{artifact.digest[:18]}…{artifact.digest[-8:]}',
-                'repository': artifact.repository.name,
-                'project': artifact.repository.project.name,
-                'critical': critical,
-                'high': high,
-                'scan_label': scan_status.replace('_', ' ').title(),
-                'scan_tone': (
-                    'normal'
-                    if scan_ready
-                    else ('unknown' if scan_status == 'not_scanned' else 'warning')
-                ),
-                'signature_label': signature.replace('_', ' ').title(),
-                'signature_tone': 'normal' if signature == 'signed' else ('warning' if signature == 'unsigned' else 'unknown'),
-                'sbom_label': sbom.replace('_', ' ').title(),
-                'sbom_tone': 'normal' if sbom == 'available' else ('info' if sbom == 'observed' else 'unknown'),
-                'observed_at': artifact.observed_at,
-            }
-        )
-    rows.sort(key=lambda item: (-item['critical'], -item['high'], item['project'], item['repository']))
-    paged, pagination = paginate_sequence(rows, page=page, per_page=per_page)
-    total = len(artifacts)
-    coverage = round((scanned / total) * 100) if total else 0
-    sbom_coverage = round((sbom_available / total) * 100) if total else 0
-    if critical_total:
-        posture = {'label': 'Critical Findings', 'tone': 'critical'}
-    elif high_total:
-        posture = {'label': 'Review Required', 'tone': 'warning'}
-    elif total and scanned < total:
-        posture = {'label': 'Coverage Incomplete', 'tone': 'warning'}
-    elif total:
-        posture = {'label': 'No High-Risk Findings', 'tone': 'normal'}
-    else:
-        posture = {'label': 'No Evidence', 'tone': 'unknown'}
-    return {
-        'setup': build_overview()['setup'],
-        'total': total,
-        'scanned': scanned,
-        'scan_coverage': coverage,
-        'critical': critical_total,
-        'high': high_total,
-        'signed': signed,
-        'sbom_available': sbom_available,
-        'sbom_coverage': sbom_coverage,
-        'posture': posture,
-        'rows': paged,
-        'pagination': pagination,
-    }
+    """Compatibility projection for callers using the aggregate presentation module."""
+    from app.artifact_registry.security.presentation import build_security as build_security_workspace
 
+    return build_security_workspace(page=page, per_page=per_page)
 
 
 def build_runtime_usage(*, page: int = 1, per_page: int = 5) -> dict[str, Any]:

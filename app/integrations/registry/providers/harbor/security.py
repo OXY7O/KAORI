@@ -332,4 +332,5 @@ def collect_harbor_security(
 collector = RegistrySecurityCollector(
     provider_key='harbor',
     collect=collect_harbor_security,
+    capabilities=frozenset({'vulnerability', 'signature', 'sbom'}),
 )

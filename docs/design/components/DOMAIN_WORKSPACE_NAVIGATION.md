@@ -98,6 +98,20 @@ Kubernetes Analytics Overview always keeps the route-level Integrated Workspace 
 Overview · Systems · Buckets & Containers
 ```
 
+### Artifact Registry / Inventory
+
+```text
+Overview · Projects · Repositories · Artifacts
+```
+
+### Artifact Registry / Security
+
+```text
+Vulnerabilities · Supply Chain
+```
+
+Security detailed views remain route-level navigation above the Hero. Vulnerabilities owns committed scanner findings and runtime exposure context. Supply Chain owns provider-observed signature and SBOM evidence plus explicit provider capability gaps. Both views read committed KAORI security evidence and must not issue live provider requests during normal page rendering.
+
 ### Object Storage / Analytics
 
 ```text

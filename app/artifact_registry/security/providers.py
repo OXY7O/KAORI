@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from threading import RLock
 from typing import Any
 
@@ -19,6 +19,7 @@ SecurityCollectorCallable = Callable[
 class RegistrySecurityCollector:
     provider_key: str
     collect: SecurityCollectorCallable
+    capabilities: frozenset[str] = field(default_factory=frozenset)
 
 
 _COLLECTORS: dict[str, RegistrySecurityCollector] = {}

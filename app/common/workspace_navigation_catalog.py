@@ -395,6 +395,7 @@ _CAPABILITY_CONTEXT_KEYS: dict[str, tuple[str, ...]] = {
     'kubernetes_analytics': ('cluster_id', 'time_range'),
     'object_storage_inventory': ('system_id',),
     'object_storage_analytics': ('system_id', 'time_range'),
+    'artifact_registry_security': ('source_id',),
 }
 
 
@@ -521,6 +522,22 @@ _CAPABILITY_VIEWS: dict[str, tuple[CapabilityViewDefinition, ...]] = {
             'Artifacts',
             'fingerprint',
             'artifact_registry.inventory_artifacts',
+            ('artifact_registry.view',),
+        ),
+    ),
+    'artifact_registry_security': (
+        CapabilityViewDefinition(
+            'vulnerabilities',
+            'Vulnerabilities',
+            'shield-alert',
+            'artifact_registry.security',
+            ('artifact_registry.view',),
+        ),
+        CapabilityViewDefinition(
+            'supply_chain',
+            'Supply Chain',
+            'badge-check',
+            'artifact_registry.security_supply_chain',
             ('artifact_registry.view',),
         ),
     ),

@@ -13,8 +13,8 @@ from app.artifact_registry.presentation import (
     build_overview,
     build_overview_section,
     build_runtime_usage,
-    build_security,
 )
+from app.artifact_registry.security.presentation import build_security
 from app.artifact_registry.sync_jobs import NoEligibleRegistryTargets, enqueue_all_registry_inventory_sync
 from app.artifact_registry.webhooks import (
     RegistryWebhookAuthError,
@@ -117,16 +117,34 @@ def inventory_artifacts() -> ResponseReturnValue:
     return _inventory_resource_response('artifacts')
 
 
+def _security_response(kind: str) -> ResponseReturnValue:
+    context = build_security(
+        kind=kind,
+        search=request.args.get('q', '', type=str),
+        severity=request.args.get('severity', '', type=str),
+        provider=request.args.get('provider', '', type=str),
+        source_id=request.args.get('source_id', type=int),
+        page=request.args.get('page', 1, type=int) or 1,
+        per_page=request.args.get('per_page', 5, type=int) or 5,
+    )
+    template = (
+        'artifact_registry/partials/_security_workspace.html'
+        if request.headers.get('HX-Request') == 'true'
+        else 'artifact_registry/security.html'
+    )
+    return render_template(template, security=context)
+
+
 @artifact_registry_bp.get('/security')
 @permission_required('artifact_registry.view')
 def security() -> ResponseReturnValue:
-    return render_template(
-        'artifact_registry/security.html',
-        security=build_security(
-            page=request.args.get('page', 1, type=int) or 1,
-            per_page=request.args.get('per_page', 5, type=int) or 5,
-        ),
-    )
+    return _security_response('vulnerabilities')
+
+
+@artifact_registry_bp.get('/security/supply-chain')
+@permission_required('artifact_registry.view')
+def security_supply_chain() -> ResponseReturnValue:
+    return _security_response('supply_chain')
 
 
 @artifact_registry_bp.get('/runtime')

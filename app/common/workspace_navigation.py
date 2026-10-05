@@ -34,6 +34,8 @@ def _capability_key(endpoint: str) -> str | None:
         return 'object_storage_inventory'
     if endpoint.startswith('artifact_registry.inventory'):
         return 'artifact_registry_inventory'
+    if endpoint.startswith('artifact_registry.security'):
+        return 'artifact_registry_security'
     return None
 
 
@@ -47,6 +49,7 @@ def _capability_label(capability_key: str) -> str:
         'object_storage_inventory': 'Inventory',
         'object_storage_analytics': 'Analytics',
         'artifact_registry_inventory': 'Inventory',
+        'artifact_registry_security': 'Security',
     }[capability_key]
 
 
@@ -95,6 +98,10 @@ _CAPABILITY_ACTIVE_EXACT: dict[str, dict[str, str]] = {
         'artifact_registry.inventory_repositories': 'repositories',
         'artifact_registry.inventory_artifacts': 'artifacts',
     },
+    'artifact_registry_security': {
+        'artifact_registry.security': 'vulnerabilities',
+        'artifact_registry.security_supply_chain': 'supply_chain',
+    },
     'object_storage_analytics': {
         'analytics.object_storage_capacity': 'capacity',
         'analytics.object_storage_performance': 'performance',
@@ -119,6 +126,7 @@ _CAPABILITY_ACTIVE_PREFIXES: dict[str, tuple[tuple[str, str], ...]] = {
 
 _CAPABILITY_ACTIVE_DEFAULTS = {
     'kubernetes_operations': 'secrets',
+    'artifact_registry_security': 'vulnerabilities',
 }
 
 
