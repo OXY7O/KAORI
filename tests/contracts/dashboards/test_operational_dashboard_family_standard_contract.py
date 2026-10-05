@@ -353,3 +353,22 @@ def test_operational_dashboard_fast_shell_and_bounded_loading_are_locked() -> No
     assert 'Caching is not the first correction for an unbounded query/projection boundary.' in standard
     assert 'A section endpoint must not rebuild the complete dashboard' in architecture
     assert 'Future Server/VM, HCI, Source Control/GitHub, Backup, Network' in architecture
+
+
+def test_kubernetes_fast_shell_lazy_loads_inventory_and_reporting_evidence() -> None:
+    routes = read('app/kubernetes/dashboard/routes.py')
+    service = read('app/kubernetes/dashboard/service.py')
+    content = read('app/templates/kubernetes/dashboard/partials/_content.html')
+
+    assert "'inventory_summary': 'kubernetes/dashboard/partials/_inventory_summary.html'" in routes
+    assert "'reporting_summary': 'kubernetes/dashboard/partials/_reporting_summary.html'" in routes
+    assert "if section == 'inventory_summary':" in service
+    assert "if section == 'reporting_summary':" in service
+
+    overview = service.split('def get_dashboard_overview(', 1)[1].split('def get_dashboard_section(', 1)[0]
+    assert 'dashboard.inventory_snapshot = _inventory_snapshot' not in overview
+    assert 'dashboard.reporting_snapshot = build_reporting_snapshot' not in overview
+
+    assert "section='inventory_summary'" in content
+    assert "section='reporting_summary'" in content
+    assert 'hx-trigger="revealed"' in content
