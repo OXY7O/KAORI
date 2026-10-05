@@ -75,7 +75,8 @@ def test_registry_scan_gap_recommendation_uses_usable_scan_evidence_semantics() 
     assert 'from app.artifact_registry.security.contracts import registry_scan_evidence_ready' in evaluator
     assert "if not registry_scan_evidence_ready(artifact.scan_status):" in evaluator
     assert 'Running Registry artifact has no usable scan evidence' in evaluator
-    assert 'not a normalized successful scan state' in evaluator
+    assert 'not a normalized ' in evaluator
+    assert 'successful scan state.' in evaluator
 
     scan_gap = rules.split(
         '- rule_key: registry.security.scan_evidence_missing',
