@@ -25,6 +25,7 @@ SECTION_TEMPLATES = {
     'cluster_health': 'kubernetes/dashboard/partials/_cluster_health.html',
     'capacity_snapshot': 'kubernetes/dashboard/partials/_capacity_snapshot.html',
     'alerts_summary': 'kubernetes/dashboard/partials/_alerts_summary.html',
+    'alert_response_guidance': 'kubernetes/dashboard/partials/_alert_response_guidance.html',
     'top_consumers': 'kubernetes/dashboard/partials/_top_consumers.html',
     'forecast_risk': 'kubernetes/dashboard/partials/_forecast_risk.html',
     'data_freshness': 'kubernetes/dashboard/partials/_data_freshness.html',
