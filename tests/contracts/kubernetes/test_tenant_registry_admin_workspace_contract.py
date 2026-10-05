@@ -750,6 +750,8 @@ def test_tenant_routine_routes_use_bounded_context_composition() -> None:
     assert 'def get_tenant_shell_context() -> dict[str, Any]:' in registry
     assert 'def get_resource_profile_workspace_context() -> dict[str, Any]:' in registry
     assert 'def get_namespace_provisioning_support_context() -> dict[str, Any]:' in registry
+    assert 'def get_operations_namespace_registry_context(' in registry
+    assert 'def get_operations_tenant_registry_context(' in registry
     assert 'def _tenant_workspace_context(*, include_sync: bool = True)' in route_common
     bounded_context = route_common.split('def _tenant_workspace_context', 1)[1].split(
         '_TENANT_ADMIN_SECTIONS',
@@ -764,6 +766,9 @@ def test_tenant_routine_routes_use_bounded_context_composition() -> None:
     assert 'context.update(get_resource_profile_workspace_context())' in routes
     assert 'context.update(get_namespace_provisioning_support_context())' in routes
     assert 'context.update(get_tenant_operations_summary_context())' in routes
+    assert 'namespace_context = get_operations_namespace_registry_context(' in routes
+    assert 'drift_context = get_operations_namespace_registry_context(' in routes
+    assert 'provider_context = get_operations_tenant_registry_context(' in routes
 
     overview = workspace.split('def get_tenant_overview_context', 1)[1].split(
         'def get_tenant_operations_summary_context',
@@ -772,6 +777,7 @@ def test_tenant_routine_routes_use_bounded_context_composition() -> None:
     assert overview.count('build_tenant_sync_state()') == 1
     assert 'get_tenant_sync_workspace_context(sync_state=sync_state)' in overview
     assert 'sync_state=sync_state' in overview
+    assert 'get_active_tenant_governance_findings()' in overview
 
 
 def test_committed_tenant_snapshot_is_separate_from_on_demand_live_provider_connectivity() -> None:
