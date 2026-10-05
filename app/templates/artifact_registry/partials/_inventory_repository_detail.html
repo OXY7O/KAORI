@@ -1,0 +1,186 @@
+{% import "components/details/_detail_content.html" as detail %}
+{% import "components/operational_callout.html" as operational_callout %}
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/technical_metadata_collection.html" as metadata_collection %}
+<div data-kaori-detail-variant="full-workspace-modal"
+     data-kaori-detail-density="unified-resource-sheet"
+     data-kaori-inventory-detail="registry-repository"
+     data-kaori-inventory-detail-layout="unified-resource-sheet"
+     class="{{ detail.expanded_workspace_outer_classes() }}">
+    <div class="{{ detail.expanded_workspace_shell_classes() }}">
+        {% call detail.workspace_header(
+            'Repository identity, project scope, artifact coverage, provider provenance, and committed collection context.',
+            'package-open'
+        ) %}
+            {% call detail.header_identity_row() %}
+                {{ detail.inventory_title(repository.name) }}
+                {{ table_label.metadata_label(repository.project_name, 'folder-kanban') }}
+                {{ table_label.metadata_label(repository.provider_name, 'boxes') }}
+            {% endcall %}
+        {% endcall %}
+
+        {{ detail.inspector_summary_strip([
+            {'label': 'Project', 'value': repository.project_name, 'supporting': 'Owning Registry project', 'icon': 'folder-kanban', 'tone': 'brand'},
+            {'label': 'Artifacts', 'value': repository.artifact_count, 'supporting': 'Committed artifacts', 'icon': 'fingerprint', 'tone': 'brand'},
+            {'label': 'Pull Count', 'value': repository.pull_count if repository.pull_count is not none else 'Not Collected', 'supporting': 'Provider-observed evidence', 'icon': 'activity', 'tone': 'brand'},
+            {'label': 'Snapshot', 'value': repository.snapshot.label, 'supporting': 'Committed collection state', 'icon': 'database-backup', 'tone': repository.snapshot.tone}
+        ]) }}
+
+        <div class="min-w-0 space-y-4 p-4 sm:p-5 lg:p-6">
+            {% call detail.resource_sheet() %}
+                {% call detail.inventory_section(
+                    'Repository Identity',
+                    'badge-info',
+                    repository.artifact_count ~ (' Artifact' if repository.artifact_count == 1 else ' Artifacts'),
+                    description='Provider-neutral repository identity captured in committed Artifact Registry inventory.'
+                ) %}
+                    <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
+                        {{ detail.inventory_technical_row('Repository Name', repository.name, copyable=true, class_name='lg:col-span-2') }}
+                        {{ detail.inventory_technical_row('Provider Native ID', repository.provider_native_id, copyable=true, class_name='lg:col-span-2') }}
+                        {{ detail.inventory_row('Project', repository.project_name) }}
+                        {{ detail.inventory_row('Artifacts', repository.artifact_count) }}
+                        {{ detail.inventory_row('Pull Count', repository.pull_count if repository.pull_count is not none else 'Not Collected') }}
+                        {{ detail.inventory_row('Description', repository.description, class_name='lg:col-span-2') }}
+                    </dl>
+                {% endcall %}
+
+                {% call detail.inventory_section(
+                    'Registry Source',
+                    'boxes',
+                    repository.provider_label,
+                    description='Registry integration and environment that supplied this committed repository record.'
+                ) %}
+                    <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
+                        {{ detail.inventory_row('Source', repository.provider_name, class_name='lg:col-span-2') }}
+                        {{ detail.inventory_row('Provider', repository.provider_label) }}
+                        {{ detail.inventory_row('Environment', repository.provider_environment|environment_name(empty='Not Set')) }}
+                        {{ detail.inventory_technical_row('Source ID', repository.provider_id) }}
+                        {{ detail.inventory_row('Last Observed', repository.observed_at|user_datetime, nowrap=true) }}
+                    </dl>
+                {% endcall %}
+
+                {% call detail.inventory_section(
+                    'Artifact Coverage',
+                    'fingerprint',
+                    repository.artifact_count ~ (' Artifact' if repository.artifact_count == 1 else ' Artifacts'),
+                    description='Bounded artifact preview retained under this repository in the current committed Registry inventory.'
+                ) %}
+                    {% if repository.artifact_preview %}
+                        <div class="overflow-x-auto">
+                            <table class="{{ table_ui.table_classes('min-w-[52rem]') }}">
+                                <thead class="{{ table_ui.head_classes() }}">
+                                    <tr>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Digest</th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Type</th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Tags</th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Size</th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Last Observed</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="{{ table_ui.body_classes() }}">
+                                    {% for artifact in repository.artifact_preview %}
+                                        <tr class="{{ table_ui.row_classes() }}">
+                                            <td class="{{ table_ui.cell_classes() }}">
+                                                <span class="block max-w-56 truncate font-mono text-xs font-semibold text-content-primary"
+                                                      title="{{ artifact.digest }}">{{ artifact.digest_short }}</span>
+                                            </td>
+                                            <td class="{{ table_ui.cell_classes() }}">
+                                                <span class="text-sm text-content-secondary">{{ artifact.type }}</span>
+                                            </td>
+                                            <td class="{{ table_ui.cell_classes() }}">
+                                                <div class="flex max-w-xs flex-wrap gap-1.5">
+                                                    {% for tag in artifact.tags %}
+                                                        {{ table_label.metadata_label(tag, icon='tag') }}
+                                                    {% else %}
+                                                        <span class="text-xs text-content-muted">Untagged</span>
+                                                    {% endfor %}
+                                                    {% if artifact.tag_count > 3 %}
+                                                        {{ table_label.metadata_label('+' ~ (artifact.tag_count - 3) ~ ' more') }}
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                            <td class="{{ table_ui.cell_classes() }}">
+                                                <span class="whitespace-nowrap text-sm text-content-secondary">{{ artifact.size }}</span>
+                                            </td>
+                                            <td class="{{ table_ui.cell_classes() }}">
+                                                <span class="text-xs font-medium text-content-secondary">{{ artifact.observed_at|user_datetime }}</span>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% if repository.artifact_truncated %}
+                            {{ detail.inventory_note(
+                                'Showing the first 25 artifacts. Use Artifact Inventory for the complete committed repository catalog.',
+                                'info'
+                            ) }}
+                        {% endif %}
+                    {% else %}
+                        {{ detail.empty_evidence(
+                            'No Artifacts Collected',
+                            'The committed repository record does not currently contain artifact inventory.',
+                            'fingerprint'
+                        ) }}
+                    {% endif %}
+                {% endcall %}
+
+                {% call detail.inventory_section(
+                    'Provider Timing',
+                    'clock-3',
+                    repository.observed_at|user_datetime,
+                    description='Provider-native lifecycle timestamps retained with this committed repository record.'
+                ) %}
+                    <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
+                        {{ detail.inventory_row('Provider Created', repository.provider_created_at|user_datetime if repository.provider_created_at else 'Not Collected', nowrap=true) }}
+                        {{ detail.inventory_row('Provider Updated', repository.provider_updated_at|user_datetime if repository.provider_updated_at else 'Not Collected', nowrap=true) }}
+                        {{ detail.inventory_row('Observed At', repository.observed_at|user_datetime, nowrap=true) }}
+                    </dl>
+                {% endcall %}
+
+                {{ metadata_collection.render(
+                    'Provider Metadata',
+                    repository.provider_metadata,
+                    'braces',
+                    'No Provider Metadata Collected',
+                    'Provider metadata will appear when retained with the committed repository record.',
+                    'Provider-specific fields remain factual evidence and do not redefine the provider-neutral repository identity.',
+                    embedded=true
+                ) }}
+
+                {% call detail.inventory_section(
+                    'Snapshot Context',
+                    'database-backup',
+                    repository.snapshot.label,
+                    'status',
+                    repository.snapshot.tone,
+                    description='Collection freshness and committed evidence boundary for the source Registry.'
+                ) %}
+                    <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
+                        {{ detail.inventory_status_row('Snapshot State', repository.snapshot.label, repository.snapshot.tone) }}
+                        {{ detail.inventory_row('Committed At', repository.snapshot.committed_at|user_datetime if repository.snapshot.committed_at else 'Not Collected', nowrap=true) }}
+                        {{ detail.inventory_row('Observed At', repository.snapshot.observed_at|user_datetime if repository.snapshot.observed_at else repository.observed_at|user_datetime, nowrap=true) }}
+                    </dl>
+                {% endcall %}
+            {% endcall %}
+
+            <div class="grid min-w-0 gap-4 xl:grid-cols-12">
+                {{ operational_callout.render(
+                    'Committed Snapshot Boundary',
+                    'Latest committed Artifact Registry inventory; no live provider request.',
+                    'database',
+                    'info',
+                    extra_classes='xl:col-span-5'
+                ) }}
+                {{ operational_callout.render(
+                    'Repository Interpretation',
+                    'Artifact and pull counts are provider-observed Inventory evidence. Security and governance interpretation remain in their owning workspaces.',
+                    'scan-search',
+                    'info',
+                    extra_classes='xl:col-span-7'
+                ) }}
+            </div>
+        </div>
+    </div>
+</div>
