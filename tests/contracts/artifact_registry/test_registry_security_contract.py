@@ -204,3 +204,20 @@ def test_supply_chain_tables_use_standard_view_more_native_dialogs() -> None:
     assert 'Observed presence is not a KAORI trust-policy decision.' in modals
     assert 'No live provider request.' in modals
     assert 'Evidence Scope' not in modals
+
+
+def test_harbor_security_refresh_is_repository_resilient_without_overriding_provider_timeout() -> None:
+    collector = read('app/integrations/registry/providers/harbor/security.py')
+    tasks = read('app/artifact_registry/security/tasks.py')
+
+    assert "_SECURITY_DISCOVERY_PAGE_SIZES = (20, 10)" in collector
+    assert "build_client(instance, transport_retries=_SECURITY_TRANSPORT_RETRIES)" in collector
+    assert "repository_security_refresh_unavailable" in collector
+    assert "'repository_failure_count': len(repository_failures)" in collector
+    assert "'repository_failures': repository_failures[:_MAX_REPOSITORY_FAILURE_EVIDENCE]" in collector
+    assert "except HarborAuthError:" in collector
+    assert "Harbor security discovery was unavailable for every committed repository" in collector
+    assert "partial_source_count" in tasks
+    assert "repository_failure_count" in tasks
+    assert "'warning_evidence': warning_evidence[:50]" in tasks
+    assert "partial=bool(failures or has_partial_refresh)" in tasks
