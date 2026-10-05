@@ -20,6 +20,10 @@ from app.artifact_registry.presentation import (
     build_runtime_binding_detail,
     build_runtime_usage,
 )
+from app.artifact_registry.governance_job_adapter import (
+    build_registry_governance_sync_state,
+    get_registry_governance_sync_job,
+)
 from app.artifact_registry.security.job_adapter import (
     build_registry_security_sync_state,
     get_registry_security_sync_job,
@@ -414,6 +418,31 @@ def governance_sync() -> ResponseReturnValue:
         queue_feedback=True,
     )
     return redirect(url_for('artifact_registry.governance'))
+
+
+@artifact_registry_bp.get('/governance/sync/status/<string:public_id>')
+@permission_required('artifact_registry.sync')
+def governance_sync_status(public_id: str) -> ResponseReturnValue:
+    job = get_registry_governance_sync_job(public_id)
+    if job is None:
+        abort(404)
+
+    response = make_response(
+        render_template(
+            'artifact_registry/partials/_governance_sync_live_state.html',
+            governance_sync_state=build_registry_governance_sync_state(),
+        )
+    )
+    response.headers['Cache-Control'] = 'no-store, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    if not job.is_active:
+        response.headers['HX-Trigger-After-Swap'] = json.dumps(
+            {
+                'artifactRegistryGovernanceSyncFinished': True,
+                'kaori:notifications-changed': True,
+            }
+        )
+    return response
 
 
 @artifact_registry_bp.post('/webhooks/<int:integration_instance_id>')
