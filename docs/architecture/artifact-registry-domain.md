@@ -90,10 +90,15 @@ repository artifact page
 KAORI never triggers provider scans from this path. A slow or failed security refresh must not invalidate
 committed inventory.
 
-Harbor security discovery keeps enriched artifact pages bounded to 50 records and applies at most two
-transient transport retries with exponential backoff for read-only provider calls. Authentication failures
-and non-transient provider responses still fail fast; the configured provider timeout remains authoritative
-for each request attempt.
+Harbor security discovery keeps enriched artifact pages bounded to 20 records and retries one failed
+repository discovery with a smaller 10-record page before treating that repository as unavailable for the
+current refresh. The configured provider timeout remains authoritative for every request attempt, while the
+Harbor client still applies at most two transient transport retries with exponential backoff.
+
+Authentication failures remain source-wide and fail fast. Transport or non-auth provider-response failures
+are isolated at repository scope: KAORI retains the repository's previous committed security evidence,
+continues other repositories, and completes the canonical Security Sync as partial/warning when at least one
+repository refreshed successfully. The provider fails only when no committed repository can be refreshed.
 
 The existing `inventory` Celery queue is used initially to avoid introducing a new worker topology before
 runtime evidence proves it is necessary. If incremental security refresh later causes material queue
