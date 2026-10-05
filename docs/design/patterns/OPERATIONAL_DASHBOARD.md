@@ -78,6 +78,7 @@ Kubernetes maps the health table to clusters and Object Storage maps it to regis
 
 - Use `components/page_hero.html` and the `operational_dashboard(...)` profile renderer for the Hero.
 - Use `components/operational_metric_card.html` for KPI cards and `components/operational_signal_overview.html` for the shared scope/status/update/selector shell around them.
+- Operational Signal KPI cards use the fixed context badge **Active Scope**. The selected cluster, system, or provider identity is rendered once in the shared scope row/selector and is not repeated as a dynamic KPI-card badge.
 - Consume `components/operational_dashboard_workspace.html` for canonical four-tab navigation, URL state, keyboard behavior, and panel geometry. It delegates tab rendering to `components/workspace_tabs.html` with semantic key `integrated-workspace`.
 - Use `components/operational_section_card.html` for repeated section shells and `components/operational_evidence_tile.html` for the repeated Inventory Snapshot / Data Freshness evidence-tile geometry.
 - Use `components/peer_content_grid.html` for equal-height peer content.
@@ -92,6 +93,7 @@ Kubernetes maps the health table to clusters and Object Storage maps it to regis
 - Use canonical table, label, empty-state, loading, and pagination components.
 - Do not introduce page-local Hero/card/tab/label/pagination/chart geometry, arbitrary typography, or dark-mode colors.
 - The dashboard remains neutral-first in dark mode. Violet is limited to identity, active state, focus, links, progress, and primary actions.
+- Operational Dashboard content is a read-only committed-state projection. Navigation/handoff links are allowed, but job initiation and mutation controls such as inventory synchronization do not render inside dashboard KPI or evidence cards; those actions remain in their owning operational workflow.
 
 ## Information hierarchy
 

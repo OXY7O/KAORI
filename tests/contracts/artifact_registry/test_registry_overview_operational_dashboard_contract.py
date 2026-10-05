@@ -34,6 +34,7 @@ def test_artifact_registry_overview_consumes_operational_dashboard_family() -> N
     assert 'hx-push-url="true"' in signal
     assert 'hx-include="#artifact-registry-dashboard-active-tab"' in signal
     assert 'All Registry Providers' in signal
+    assert "scope_label='Active Scope'" in signal
 
 
 def test_artifact_registry_overview_scope_is_committed_and_provider_neutral() -> None:
@@ -51,6 +52,8 @@ def test_artifact_registry_overview_scope_is_committed_and_provider_neutral() ->
     assert 'normalize_operational_tab' in routes
     assert 'normalize_operational_tab(active_tab)' in presentation
     assert 'is_htmx_request(request.headers)' in routes
+    assert "@artifact_registry_bp.post('/sync')" in routes
+    assert "@permission_required('artifact_registry.sync')" in routes
     assert 'RegistryProject.integration_instance_id == selected_provider.id' in presentation
     assert "registry_metrics_readiness(provider).get('status') == 'ready'" in presentation
     assert 'HarborClient(' not in presentation
@@ -116,8 +119,9 @@ def test_artifact_registry_operations_overview_matches_reference_dashboard_gramm
     assert 'Data Freshness' in operations
     assert 'overview.inventory_items' in operations
     assert 'overview.freshness' in operations
-    assert "current_user.has_permission('artifact_registry.sync')" in operations
-    assert "url_for('artifact_registry.sync_inventory')" in operations
+    assert "current_user.has_permission('artifact_registry.sync')" not in operations
+    assert "url_for('artifact_registry.sync_inventory')" not in operations
+    assert 'Sync Inventory' not in operations
 
     for label in (
         'Registry Provider',
@@ -163,9 +167,9 @@ def test_artifact_registry_overview_keeps_reference_information_hierarchy() -> N
     reporting = read('app/templates/artifact_registry/partials/_overview_reporting.html')
     presentation = read('app/artifact_registry/presentation.py')
 
-    assert "current_user.has_permission('artifact_registry.sync')" in operations
-    assert "url_for('artifact_registry.sync_inventory')" in operations
-    assert 'Sync Inventory' in operations
+    assert "current_user.has_permission('artifact_registry.sync')" not in operations
+    assert "url_for('artifact_registry.sync_inventory')" not in operations
+    assert 'Sync Inventory' not in operations
     assert 'Inventory is missing for part of this scope. Queue the inventory worker.' not in operations
 
     for label in (

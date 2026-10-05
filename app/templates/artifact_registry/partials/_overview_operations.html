@@ -1,7 +1,6 @@
 {% import "components/operational_evidence_tile.html" as evidence_tile %}
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/peer_content_grid.html" as peer_content_grid %}
-{% import "components/table.html" as table_ui %}
 <div class="space-y-5">
     {% include "artifact_registry/partials/_overview_provider_health.html" %}
     <div class="{{ peer_content_grid.layout_classes() }}">
@@ -20,17 +19,6 @@
                         {{ evidence_tile.snapshot(item.label, item.value, item.icon, item.role) }}
                     {% endfor %}
                 </div>
-                {% if current_user.has_permission('artifact_registry.sync') %}
-                    <form method="post"
-                          action="{{ url_for('artifact_registry.sync_inventory') }}"
-                          class="mt-4 flex justify-end border-t border-outline-subtle pt-4">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="{{ table_ui.action_classes() }}">
-                            <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
-                            Sync Inventory
-                        </button>
-                    </form>
-                {% endif %}
             {% endcall %}
         </div>
         <div class="{{ peer_content_grid.column_classes('secondary') }}">

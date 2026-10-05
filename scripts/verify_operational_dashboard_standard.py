@@ -20,6 +20,7 @@ OBJECT_DASHBOARD_DIR = ROOT / 'app' / 'templates' / 'storage' / 'object_storage'
 OBJECT_CONTENT = OBJECT_DASHBOARD_DIR / 'partials' / '_content.html'
 OBJECT_HERO = OBJECT_DASHBOARD_DIR / 'partials' / '_hero.html'
 OBJECT_SIGNAL_OVERVIEW = OBJECT_DASHBOARD_DIR / 'partials' / '_signal_overview.html'
+OBJECT_KPI_CARDS = OBJECT_DASHBOARD_DIR / 'partials' / '_kpi_cards.html'
 OBJECT_ALERT_SUMMARY = OBJECT_DASHBOARD_DIR / 'partials' / '_alerts_summary.html'
 OBJECT_ALERT_GUIDANCE = OBJECT_DASHBOARD_DIR / 'partials' / '_alert_response_guidance.html'
 OBJECT_REPORTING_GUIDANCE = OBJECT_DASHBOARD_DIR / 'partials' / '_reporting_guidance.html'
@@ -313,11 +314,18 @@ def _verify_artifact_registry_dashboard(
             'artifact_registry/partials/_overview_provider_health.html',
             'Inventory Snapshot',
             'Data Freshness',
-            "current_user.has_permission('artifact_registry.sync')",
-            "url_for('artifact_registry.sync_inventory')",
         ),
         'Artifact Registry Operations Overview parity',
     )
+    for retired_action in (
+        "current_user.has_permission('artifact_registry.sync')",
+        "url_for('artifact_registry.sync_inventory')",
+        'Sync Inventory',
+    ):
+        if retired_action in operations:
+            raise AssertionError(
+                f'Artifact Registry Operational Dashboard retains dashboard-local sync action: {retired_action}'
+            )
     _require(
         provider_health,
         (
@@ -423,6 +431,7 @@ def verify() -> None:
     object_content = _read(OBJECT_CONTENT)
     object_hero = _read(OBJECT_HERO)
     object_signal_overview = _read(OBJECT_SIGNAL_OVERVIEW)
+    object_kpi_cards = _read(OBJECT_KPI_CARDS)
     object_alert_summary = _read(OBJECT_ALERT_SUMMARY)
     object_alert_guidance = _read(OBJECT_ALERT_GUIDANCE)
     object_reporting_guidance = _read(OBJECT_REPORTING_GUIDANCE)
@@ -920,6 +929,26 @@ def verify() -> None:
         ),
         'operational metric card',
     )
+    for owner, source in (
+        ('Kubernetes Operational Signal KPI cards', kpi_cards),
+        ('Object Storage Operational Signal KPI cards', object_kpi_cards),
+        ('Artifact Registry Operational Signal KPI cards', artifact_signal_overview),
+    ):
+        _require(source, ("scope_label='Active Scope'",), owner)
+    for owner, source in (
+        ('Kubernetes Operational Signal KPI cards', kpi_cards),
+        ('Object Storage Operational Signal KPI cards', object_kpi_cards),
+        ('Artifact Registry Operational Signal KPI cards', artifact_signal_overview),
+    ):
+        for retired_scope in (
+            "scope_label=overview.scope_label",
+            "scope_label='Selected System'",
+            "scope_label='Fleet'",
+            'scope_label=scope_label',
+        ):
+            if retired_scope in source:
+                raise AssertionError(f'{owner}: dynamic KPI scope badge remains: {retired_scope}')
+
     if 'scope_tone' in metric_card or "tone='violet'" in metric_card:
         raise AssertionError('operational metric card still exposes unused presentation arguments')
     if 'semantic_tones' in kpi_cards or 'scope_tone' in kpi_cards:
@@ -1102,6 +1131,8 @@ def verify() -> None:
             'Operational Dashboard Hero Profile',
             'page_hero.operational_dashboard(...)',
             'Active Scope',
+            'Operational Signal KPI cards use the fixed context badge **Active Scope**',
+            'job initiation and mutation controls such as inventory synchronization do not render inside dashboard KPI or evidence cards',
             'Data Authority',
             'Committed Snapshots',
             'Dashboard family consistency',
