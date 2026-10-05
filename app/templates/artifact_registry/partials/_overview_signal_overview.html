@@ -1,3 +1,4 @@
+{% import "components/operational_section_loading.html" as section_loading %}
 {% import "components/operational_signal_overview.html" as signal_overview %}
 {% import "components/table.html" as table_ui %}
 {% set signal_updated = ('Updated ' ~ (overview.latest_committed_at|user_datetime)) if overview.latest_committed_at else 'Not Collected' %}
@@ -42,8 +43,9 @@
          hx-trigger="load"
          hx-target="this"
          hx-swap="outerHTML">
-        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-busy="true">
-            {% for _ in range(4) %}<div class="h-28 animate-pulse rounded-lg bg-surface-hover"></div>{% endfor %}
-        </div>
+        {{ section_loading.kpis(
+            item_count=4,
+            aria_label='Artifact Registry Operational Indicators Loading'
+        ) }}
     </div>
 {% endcall %}
