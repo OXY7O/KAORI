@@ -49,6 +49,9 @@ def test_security_workspace_uses_canonical_kaori_components() -> None:
     assert 'Provider Capability Matrix' in template
     assert '[5, 10, 25, 50]' in template
     assert 'Presence is not trust-policy evaluation.' in template
+    assert 'Search CVE, package, repo, or digest…' in template
+    assert 'Current critical findings from the latest committed scan evidence.' not in template
+    assert 'Current high-severity findings from the latest committed scan evidence.' not in template
 
 
 def test_security_has_two_level_three_views_above_the_hero() -> None:

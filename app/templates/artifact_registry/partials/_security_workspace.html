@@ -85,8 +85,8 @@
             exceptions_label=security.snapshot.exceptions_label,
             icon='shield-check',
             title='Security Evidence Snapshot',
-            latest_supporting='Last successful committed Security Sync.',
-            scope_supporting='Provider-neutral Registry security scope.',
+            latest_supporting='Last successful Security Sync.',
+            scope_supporting='Provider-neutral Registry scope.',
             coverage_supporting=security.snapshot.coverage_supporting,
             exceptions_supporting=security.snapshot.exceptions_supporting,
             coverage_tone=security.snapshot.coverage_tone,
@@ -99,10 +99,10 @@
         <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
                  aria-label="{{ security.title }} summary">
             {% if security.view == 'vulnerabilities' %}
-                {{ metric_card.render('Critical Findings', security.critical, 'Current critical findings from the latest committed scan evidence.', 'octagon-alert', source_label='Security Snapshot', scope_label=security.snapshot.scope_label) }}
-                {{ metric_card.render('High Findings', security.high, 'Current high-severity findings from the latest committed scan evidence.', 'triangle-alert', source_label='Security Snapshot', scope_label=security.snapshot.scope_label) }}
+                {{ metric_card.render('Critical Findings', security.critical, 'Critical findings in the latest committed scan.', 'octagon-alert', source_label='Security Snapshot', scope_label=security.snapshot.scope_label) }}
+                {{ metric_card.render('High Findings', security.high, 'High findings in the latest committed scan.', 'triangle-alert', source_label='Security Snapshot', scope_label=security.snapshot.scope_label) }}
                 {{ metric_card.render('Affected Artifacts', security.affected_artifacts, 'Distinct artifact digests with critical or high findings.', 'package-search', source_label='Committed Registry', scope_label=security.snapshot.scope_label) }}
-                {{ metric_card.render('Runtime Exposed', security.runtime_exposed, 'Committed Kubernetes bindings using critical or high-risk artifacts.', 'waypoints', source_label='Registry × Kubernetes', scope_label=security.snapshot.scope_label) }}
+                {{ metric_card.render('Runtime Exposed', security.runtime_exposed, 'Kubernetes bindings using critical/high-risk artifacts.', 'waypoints', source_label='Registry × Kubernetes', scope_label=security.snapshot.scope_label) }}
             {% else %}
                 {{ metric_card.render('Signature Observed', security.signature_observed, 'Artifacts where the provider reports signature presence.', 'badge-check', source_label='Provider Evidence', scope_label=security.snapshot.scope_label) }}
                 {{ metric_card.render('SBOM Available', security.sbom_available, 'Artifacts with provider-observed SBOM availability.', 'file-check-2', source_label='Provider Evidence', scope_label=security.snapshot.scope_label) }}
@@ -177,7 +177,7 @@
                     {{ table_ui.search_field(
                         'q',
                         security.filters.search,
-                        'Search CVE, package, repository, project, or digest…' if security.view == 'vulnerabilities' else 'Search repository, project, or digest…',
+                        'Search CVE, package, repo, or digest…' if security.view == 'vulnerabilities' else 'Search repository, project, or digest…',
                         'artifact-registry-security-search'
                     ) }}
                 </div>

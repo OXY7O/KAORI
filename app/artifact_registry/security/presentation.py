@@ -130,7 +130,7 @@ def _snapshot_status(
         description = 'Committed artifact inventory is required before security evidence can be evaluated.'
     elif evidence_count == 0 and successful_at is None:
         label, tone = 'Not Collected', 'unknown'
-        description = 'No committed security evidence has been collected for the current Registry scope.'
+        description = 'No committed security evidence for this Registry scope.'
     elif refresh_failed:
         label, tone = 'Refresh Failed', 'warning'
         description = 'The latest refresh failed; KAORI retains the last successful committed security evidence.'
@@ -352,7 +352,7 @@ def build_security(
         'source_label': source_label,
         'scope_label': active_scope_label,
         'coverage_label': f'{evidence_count} of {artifact_total} artifacts',
-        'coverage_supporting': f'{coverage_percent}% committed security evidence coverage.',
+        'coverage_supporting': f'{coverage_percent}% security evidence coverage.',
         'coverage_tone': 'normal' if artifact_total and evidence_count == artifact_total else 'warning',
     }
 
@@ -563,7 +563,7 @@ def build_security(
         'view': view,
         'title': 'Vulnerabilities' if view == 'vulnerabilities' else 'Supply Chain',
         'description': (
-            'Prioritize committed vulnerability findings with immutable digest and Kubernetes runtime context.'
+            'Prioritize vulnerabilities by digest and Kubernetes runtime context.'
             if view == 'vulnerabilities'
             else 'Review provider-observed signature and SBOM evidence without claiming trust-policy evaluation.'
         ),
