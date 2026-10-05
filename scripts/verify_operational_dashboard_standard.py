@@ -32,6 +32,9 @@ ARTIFACT_HERO = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / 
 ARTIFACT_SIGNAL_OVERVIEW = (
     ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_signal_overview.html'
 )
+ARTIFACT_KPI_CARDS = (
+    ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_kpi_cards.html'
+)
 ARTIFACT_REPORTING = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_reporting.html'
 ARTIFACT_CAPACITY = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_capacity.html'
 ARTIFACT_SIGNALS = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_signals.html'
@@ -233,6 +236,7 @@ def _verify_artifact_registry_dashboard(
     content: str,
     hero: str,
     signal_overview: str,
+    kpi_cards: str,
     reporting: str,
     capacity: str,
     signals: str,
@@ -300,13 +304,23 @@ def _verify_artifact_registry_dashboard(
         (
             'components/operational_signal_overview.html',
             'signal_overview.render(',
-            'components/operational_metric_card.html',
+            "section='kpi_cards'",
+            'hx-trigger="load"',
             'provider_id',
             'hx-push-url="true"',
             'hx-include="#artifact-registry-dashboard-active-tab"',
             'All Registry Providers',
         ),
         'Artifact Registry scope and signal overview',
+    )
+    _require(
+        kpi_cards,
+        (
+            'components/operational_metric_card.html',
+            "scope_label='Active Scope'",
+            'data-kaori-artifact-registry-operational-kpis',
+        ),
+        'Artifact Registry bounded KPI projection',
     )
     _require(
         operations,
@@ -389,22 +403,51 @@ def _verify_artifact_registry_dashboard(
     _require(
         presentation,
         (
-            "allowed_tabs = {'overview', 'capacity', 'signals', 'reporting'}",
+            'def _overview_scope_context(',
+            'def _overview_kpi_values(',
+            'def _overview_operations_projection(',
+            'def _overview_capacity_projection(',
+            'def build_overview_section(',
+            "if section == 'kpi_cards':",
+            "if section == 'provider_health':",
+            "if section == 'overview':",
+            "if section == 'capacity':",
+            "if section == 'signals':",
+            "if section == 'reporting':",
             'RegistryProject.integration_instance_id == selected_provider.id',
-            "registry_metrics_readiness(provider).get('status') == 'ready'",
+            'registry_metrics_readiness(provider)',
             "'scope_label': scope_label",
             "'capacity': capacity",
-            "'alerts': alerts",
-            "'recommended_actions': recommended_actions",
-            "'reporting': reporting",
+            "'alerts': _registry_alerts(scoped_providers)",
+            "'recommended_actions': _registry_recommended_actions(selected_provider)",
+            "'reporting': _registry_reporting(selected_provider)",
             "'label': 'Inventory Snapshot'",
             "'label': 'Metrics Snapshot'",
             "'label': 'Security Snapshot'",
             "'label': 'Analytics Snapshot'",
             "'kpis': [",
+            'func.count(RegistryArtifact.id)',
+            'func.sum(RegistryArtifact.size_bytes)',
         ),
-        'Artifact Registry committed dashboard projection',
+        'Artifact Registry committed bounded dashboard projection',
     )
+    shell_projection = presentation.split('def build_overview(', 1)[1].split(
+        'def build_overview_section(', 1
+    )[0]
+    for forbidden in (
+        'RegistryProject.query',
+        'RegistryRepository.query',
+        'RegistryArtifact.query',
+        'RegistryTag.query',
+        '_registry_capacity_views(',
+        '_registry_alerts(',
+        '_registry_recommended_actions(',
+        '_registry_reporting(',
+    ):
+        if forbidden in shell_projection:
+            raise AssertionError(
+                f'Artifact Registry Fast Shell contains unrelated projection work: {forbidden}'
+            )
     for token in (
         'HarborClient(',
         'requests.get',
@@ -441,6 +484,7 @@ def verify() -> None:
     artifact_content = _read(ARTIFACT_CONTENT)
     artifact_hero = _read(ARTIFACT_HERO)
     artifact_signal_overview = _read(ARTIFACT_SIGNAL_OVERVIEW)
+    artifact_kpi_cards = _read(ARTIFACT_KPI_CARDS)
     artifact_reporting = _read(ARTIFACT_REPORTING)
     artifact_capacity = _read(ARTIFACT_CAPACITY)
     artifact_signals = _read(ARTIFACT_SIGNALS)
@@ -498,6 +542,7 @@ def verify() -> None:
         artifact_content,
         artifact_hero,
         artifact_signal_overview,
+        artifact_kpi_cards,
         artifact_reporting,
         artifact_capacity,
         artifact_signals,
