@@ -6,6 +6,7 @@ from decimal import Decimal, InvalidOperation
 from typing import Any
 
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import joinedload
 
 from app.extensions.db import db
 from app.kubernetes.analytics.materialization.service import SnapshotResult, read_snapshot
@@ -152,10 +153,14 @@ def upsert_capacity_policy_committed(source: Mapping[str, Any]) -> TenantCapacit
         ) from exc
 
 
-def build_capacity_governance_summary(cluster_id: str) -> dict[str, Any]:
-    policy = TenantCapacityPolicy.query.filter_by(cluster_id=cluster_id).first()
-    snapshot_result = _read_capacity_snapshot(cluster_id)
-    committed, committed_count, unbounded_namespaces = _committed_tenant_allocation(cluster_id)
+def _build_capacity_governance_summary_from_inputs(
+    cluster_id: str,
+    *,
+    policy: TenantCapacityPolicy | None,
+    snapshot_result: SnapshotResult,
+    committed_state: tuple[CapacityVector, int, list[str]],
+) -> dict[str, Any]:
+    committed, committed_count, unbounded_namespaces = committed_state
 
     if policy is None:
         return {
@@ -223,6 +228,37 @@ def build_capacity_governance_summary(cluster_id: str) -> dict[str, Any]:
         },
     }
 
+
+def build_capacity_governance_summary(cluster_id: str) -> dict[str, Any]:
+    return _build_capacity_governance_summary_from_inputs(
+        cluster_id,
+        policy=TenantCapacityPolicy.query.filter_by(cluster_id=cluster_id).first(),
+        snapshot_result=_read_capacity_snapshot(cluster_id),
+        committed_state=_committed_tenant_allocation(cluster_id),
+    )
+
+
+def build_capacity_governance_summaries(cluster_ids: list[str]) -> dict[str, dict[str, Any]]:
+    """Build read-only fleet summaries while batching KAORI-owned committed evidence."""
+
+    normalized_ids = list(dict.fromkeys(str(cluster_id) for cluster_id in cluster_ids if str(cluster_id)))
+    if not normalized_ids:
+        return {}
+
+    policies = {
+        str(policy.cluster_id): policy
+        for policy in TenantCapacityPolicy.query.filter(TenantCapacityPolicy.cluster_id.in_(normalized_ids)).all()
+    }
+    committed_states = _committed_tenant_allocations(normalized_ids)
+    return {
+        cluster_id: _build_capacity_governance_summary_from_inputs(
+            cluster_id,
+            policy=policies.get(cluster_id),
+            snapshot_result=_read_capacity_snapshot(cluster_id),
+            committed_state=committed_states[cluster_id],
+        )
+        for cluster_id in normalized_ids
+    }
 
 def enforce_namespace_allocation_preflight(
     *,
@@ -739,6 +775,117 @@ def _aggregate_committed_allocation(
         pods=totals[2],
         storage_bytes=totals[3],
     ), unbounded
+
+
+def _canonical_shared_allocation_quota_by_cluster(
+    cluster_ids: list[str],
+) -> tuple[dict[str, dict[str, Mapping[str, object]]], dict[str, list[str]]]:
+    selected_by_cluster: dict[str, dict[str, Mapping[str, object]]] = {
+        cluster_id: {} for cluster_id in cluster_ids
+    }
+    ambiguous_by_cluster: dict[str, set[str]] = {cluster_id: set() for cluster_id in cluster_ids}
+    if not cluster_ids:
+        return selected_by_cluster, {}
+
+    candidates = (
+        db.session.query(TenantAdvancedCapabilityIntent, Tenant.cluster_id)
+        .join(Tenant, TenantAdvancedCapabilityIntent.tenant_id == Tenant.id)
+        .filter(
+            Tenant.cluster_id.in_(cluster_ids),
+            TenantAdvancedCapabilityIntent.resource_kind == 'global_resource_quota',
+            TenantAdvancedCapabilityIntent.status.in_(
+                (
+                    TenantAdvancedCapabilityStatus.READY.value,
+                    TenantAdvancedCapabilityStatus.DRIFTED.value,
+                )
+            ),
+        )
+        .order_by(
+            Tenant.cluster_id.asc(),
+            TenantAdvancedCapabilityIntent.tenant_id.asc(),
+            TenantAdvancedCapabilityIntent.updated_at.desc(),
+        )
+        .all()
+    )
+    for intent, cluster_id in candidates:
+        normalized_cluster_id = str(cluster_id)
+        evidence = intent.reconciliation_evidence_json or {}
+        if evidence.get('allocation_governance_scope') != 'tenant_shared':
+            continue
+        tenant_id = str(intent.tenant_id)
+        selected = selected_by_cluster[normalized_cluster_id]
+        ambiguous = ambiguous_by_cluster[normalized_cluster_id]
+        if tenant_id in selected:
+            ambiguous.add(tenant_id)
+            continue
+        desired = intent.desired_spec_json or {}
+        quota = desired.get('quota') if isinstance(desired, Mapping) else None
+        hard = quota.get('hard') if isinstance(quota, Mapping) else None
+        selected[tenant_id] = dict(hard) if isinstance(hard, Mapping) else {}
+
+    capsule_tenants = Tenant.query.filter(
+        Tenant.cluster_id.in_(cluster_ids),
+        Tenant.provider_key == 'capsule',
+    ).all()
+    for tenant in capsule_tenants:
+        normalized_cluster_id = str(tenant.cluster_id)
+        governance = (tenant.provider_evidence_json or {}).get('allocation_governance')
+        if not isinstance(governance, Mapping):
+            continue
+        if governance.get('authority') != 'capsule_tenant_resource_quotas':
+            continue
+        if governance.get('control_state') not in {'kaori_managed', 'drifted'}:
+            continue
+        if governance.get('allocation_scope') != 'tenant_shared':
+            continue
+
+        tenant_id = str(tenant.id)
+        selected = selected_by_cluster[normalized_cluster_id]
+        ambiguous = ambiguous_by_cluster[normalized_cluster_id]
+        quota = governance.get('desired_quota')
+        if tenant_id in selected or not isinstance(quota, Mapping):
+            ambiguous.add(tenant_id)
+            selected.pop(tenant_id, None)
+            continue
+        selected[tenant_id] = dict(quota)
+
+    for cluster_id, ambiguous in ambiguous_by_cluster.items():
+        selected = selected_by_cluster[cluster_id]
+        for tenant_id in ambiguous:
+            selected.pop(tenant_id, None)
+
+    return selected_by_cluster, {
+        cluster_id: sorted(ambiguous) for cluster_id, ambiguous in ambiguous_by_cluster.items()
+    }
+
+
+def _committed_tenant_allocations(
+    cluster_ids: list[str],
+) -> dict[str, tuple[CapacityVector, int, list[str]]]:
+    rows = (
+        TenantNamespace.query.options(joinedload(TenantNamespace.environment))
+        .filter(
+            TenantNamespace.cluster_id.in_(cluster_ids),
+            TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+        )
+        .order_by(TenantNamespace.cluster_id.asc(), TenantNamespace.namespace.asc())
+        .all()
+    )
+    rows_by_cluster: dict[str, list[TenantNamespace]] = {cluster_id: [] for cluster_id in cluster_ids}
+    for row in rows:
+        rows_by_cluster.setdefault(str(row.cluster_id), []).append(row)
+
+    shared_by_cluster, ambiguous_by_cluster = _canonical_shared_allocation_quota_by_cluster(cluster_ids)
+    result: dict[str, tuple[CapacityVector, int, list[str]]] = {}
+    for cluster_id in cluster_ids:
+        cluster_rows = rows_by_cluster.get(cluster_id, [])
+        committed, unbounded = _aggregate_committed_allocation(
+            cluster_rows,
+            shared_quota_by_tenant=shared_by_cluster.get(cluster_id, {}),
+            ambiguous_shared_tenants=ambiguous_by_cluster.get(cluster_id, []),
+        )
+        result[cluster_id] = (committed, len(cluster_rows), unbounded)
+    return result
 
 
 def _committed_tenant_allocation(
