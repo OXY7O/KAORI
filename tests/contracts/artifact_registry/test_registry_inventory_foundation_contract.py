@@ -159,9 +159,14 @@ def test_registry_inventory_reuses_canonical_inventory_workspace_primitives() ->
     assert 'components/snapshot_context_bar.html' in resource_template
     assert 'components/operational_section_card.html' in resource_template
     assert 'components/resource_posture_grid.html' in resource_template
-    assert 'Project Inventory Posture' in resource_template
-    assert "inventory.resource == 'projects'" in resource_template
-    assert 'inventory.project_posture_metrics' in resource_template
+    assert 'inventory.resource_posture_title' in resource_template
+    assert 'inventory.resource_posture_intro' in resource_template
+    assert 'inventory.resource_posture_description' in resource_template
+    assert 'inventory.resource_posture_metrics' in resource_template
+    assert "inventory.resource == 'projects'" not in resource_template.split(
+        'registry-resource-posture-heading',
+        1,
+    )[1].split('registry-inventory-records-heading', 1)[0]
     assert 'components/table.html' in resource_template
     assert 'components/states/_empty_state.html' in resource_template
     assert 'artifact-registry-inventory-content' in resource_template
@@ -187,8 +192,15 @@ def test_registry_inventory_reuses_canonical_inventory_workspace_primitives() ->
     assert "'fleet_readings': _inventory_fleet_readings(overview)" in presentation
     assert "'asset_catalog': list(resource_catalog.values())" in presentation
     assert "'resource_endpoint': selected_resource['endpoint']" in presentation
-    assert "'project_posture_metrics': project_posture_metrics" in presentation
+    assert 'def _inventory_resource_posture_metrics(' in presentation
+    assert "'resource_posture_metrics': resource_posture_metrics" in presentation
+    assert "'Project Inventory Posture'" in presentation
+    assert "'Repository Inventory Posture'" in presentation
+    assert "'Artifact Inventory Posture'" in presentation
     assert "'Visibility Not Observed'" in presentation
+    assert "'Pull Counts Observed'" in presentation
+    assert "'Tagged Artifacts'" in presentation
+    assert "'Untagged Artifacts'" in presentation
     assert "row['provider_name']" in presentation
 
 
