@@ -97,6 +97,7 @@ def _state_view(state: RegistryCollectionState | None) -> dict[str, Any]:
             'is_stale': False,
         }
     committed_at = _aware_datetime(state.last_committed_at)
+    refresh_failed = bool(state.last_error)
     stale = bool(
         committed_at is not None
         and committed_at < datetime.now(UTC) - timedelta(hours=FRESHNESS_HOURS)
@@ -104,10 +105,11 @@ def _state_view(state: RegistryCollectionState | None) -> dict[str, Any]:
     return {
         'status': state.status,
         'label': 'Stale Snapshot' if stale else 'Current Snapshot',
-        'tone': 'warning' if stale else 'normal',
+        'tone': 'warning' if stale or refresh_failed else 'normal',
         'observed_at': state.last_observed_at,
         'committed_at': state.last_committed_at,
         'is_stale': stale,
+        'refresh_failed': refresh_failed,
     }
 
 
@@ -447,7 +449,7 @@ def _overview_scope_context(
     )
     stale_count = sum(bool(_state_view(state)['is_stale']) for state in committed_states)
     pending_snapshot_count = max(len(scoped_providers) - len(committed_states), 0)
-    failed_refresh_count = sum(state.status == 'failed' for state in committed_states)
+    failed_refresh_count = sum(bool(state.last_error) for state in committed_states)
 
     if not providers:
         posture = {'label': 'Setup Required', 'tone': 'unknown'}
@@ -680,7 +682,7 @@ def _provider_health_projection(
                 'warning',
                 'Committed inventory snapshot is stale.',
             )
-        elif state is not None and state.status == 'failed':
+        elif state is not None and state.last_error:
             overall_status, overall_tone = 'Warning', 'warning'
             status_reason = (
                 'Latest inventory refresh failed; the previous committed snapshot is retained.'
@@ -860,7 +862,7 @@ def _overview_operations_projection(
         )
         if (
             selected_collection_state is not None
-            and selected_collection_state.status == 'failed'
+            and selected_collection_state.last_error
         ):
             inventory_description += (
                 ' Latest refresh failed; KAORI retained the previous committed snapshot.'

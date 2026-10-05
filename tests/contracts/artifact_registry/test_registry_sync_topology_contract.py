@@ -50,6 +50,15 @@ def test_registry_inventory_keeps_committed_snapshot_ready_during_refresh_failur
     assert '_mark_inventory_collection_failed(state, exc)' in inventory_sync
 
 
+def test_registry_inventory_presentation_surfaces_failed_refresh_from_last_error() -> None:
+    presentation = (ROOT / 'app/artifact_registry/presentation.py').read_text()
+
+    assert "refresh_failed = bool(state.last_error)" in presentation
+    assert "failed_refresh_count = sum(bool(state.last_error) for state in committed_states)" in presentation
+    assert "elif state is not None and state.last_error:" in presentation
+    assert "and selected_collection_state.last_error" in presentation
+
+
 def test_registry_governance_and_runtime_correlation_are_separate_jobs() -> None:
     jobs = (
         ROOT / 'app/definitions/catalogs/platform_operations/jobs/registered_jobs.yaml'
