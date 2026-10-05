@@ -350,19 +350,28 @@
                 icon='list-filter'
             ) }}
         {% endset %}
-        {% call section_card.render(
-            'Vulnerability Registry' if security.view == 'vulnerabilities' else 'Artifact Evidence Registry',
-            'Committed scanner findings from the latest available Security evidence.' if security.view == 'vulnerabilities' else 'Signature presence and SBOM availability are provider evidence; KAORI does not perform trust-policy evaluation here.',
-            'shield-alert' if security.view == 'vulnerabilities' else 'badge-check',
-            id='artifact-registry-security-registry',
-            action_href=url_for('artifact_registry.runtime') if security.view == 'vulnerabilities' else none,
-            action_label='Open Runtime Usage' if security.view == 'vulnerabilities' else none,
-            action_icon='waypoints',
-            header_badge=result_badge,
-            loading_bar_id='artifact-registry-security-loading',
-            loading_bar_label='Refreshing Security Evidence',
-            body_classes='p-0'
-        ) %}
+        {% set security_registry_header_actions %}
+            {% if security.view == 'vulnerabilities' %}
+                <a href="{{ url_for('artifact_registry.runtime') }}"
+                   class="{{ table_ui.action_classes() }}">
+                    <i data-lucide="waypoints" class="h-4 w-4" aria-hidden="true"></i>
+                    Open Runtime Usage
+                </a>
+            {% endif %}
+        {% endset %}
+        <section id="artifact-registry-security-registry"
+                 class="{{ table_ui.block_classes() }}">
+            {{ table_ui.inventory_block_header(
+                'shield-alert' if security.view == 'vulnerabilities' else 'badge-check',
+                'Vulnerability Registry' if security.view == 'vulnerabilities' else 'Artifact Evidence Registry',
+                'Committed scanner findings from the latest available Security evidence.' if security.view == 'vulnerabilities' else 'Signature presence and SBOM availability are provider evidence; KAORI does not perform trust-policy evaluation here.',
+                'artifact-registry-security-loading',
+                'Refreshing Security Evidence',
+                none,
+                none,
+                header_actions=security_registry_header_actions,
+                title_extra=result_badge
+            ) }}
             {% call registry.filter_form(
                 security.endpoint,
                 'artifact-registry-security-registry',
@@ -556,7 +565,7 @@
                 resource_label='Findings' if security.view == 'vulnerabilities' else 'Artifacts',
                 control_name='artifact-registry-security'
             ) }}
-        {% endcall %}
+        </section>
         {% endif %}
         {% if security.view == 'vulnerabilities' %}
             </section>

@@ -64,6 +64,9 @@ def test_security_workspace_uses_canonical_kaori_components() -> None:
     assert 'Supply Chain Workspace' in template
     assert 'artifact-registry-security-capability-registry' in template
     assert 'table_ui.inventory_block_header' in template
+    assert 'security_registry_header_actions' in template
+    assert 'class="{{ table_ui.action_classes() }}"' in template
+    assert "{% call section_card.render(\n            'Vulnerability Registry'" not in template
     assert "resource_label='Sources'" in template
     assert '[5, 10, 25, 50]' in template
     assert 'Presence is not trust-policy evaluation.' in template
