@@ -1,11 +1,22 @@
+{% import "components/action_button.html" as action_button %}
+{% import "components/operational_callout.html" as operational_callout %}
 {% import "components/operational_metric_card.html" as metric_card %}
 {% import "components/operational_section_card.html" as section_card %}
 {% import "components/page_hero.html" as page_hero %}
+{% import "components/section_intro.html" as section_intro %}
 {% import "components/snapshot_context_bar.html" as snapshot_context_bar %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry %}
 <div id="artifact-registry-security-workspace" class="space-y-6">
+    <span id="artifact-registry-security-background-refresh-trigger"
+          class="htmx-indicator hidden"
+          aria-hidden="true"
+          hx-get="{{ url_for(security.endpoint, q=security.filters.search, severity=security.filters.severity, provider=security.filters.provider, source_id=security.filters.source_id, page=security.pagination.page, per_page=security.pagination.per_page) }}"
+          hx-trigger="artifactRegistrySecuritySyncFinished from:body"
+          hx-target="#artifact-registry-security-workspace"
+          hx-swap="outerHTML"
+          hx-indicator="this"></span>
     <section class="{{ page_hero.shell_classes() }}">
         <div class="{{ page_hero.layout_classes() }}">
             <div class="{{ page_hero.content_classes() }}">
@@ -96,6 +107,65 @@
             exceptions_metric_label='Security Exceptions'
         ) }}
 
+        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+                 aria-labelledby="artifact-registry-security-operations-heading">
+            <header class="flex flex-col gap-4 border-b border-outline-subtle px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+                <div class="min-w-0 flex-1">
+                    {% include "artifact_registry/partials/_security_sync_live_state.html" %}
+                </div>
+                <div class="flex shrink-0 flex-wrap items-center gap-2">
+                    {% if current_user.has_permission('artifact_registry.sync') %}
+                        <form method="post"
+                              action="{{ url_for('artifact_registry.security_sync') }}"
+                              hx-post="{{ url_for('artifact_registry.security_sync') }}"
+                              hx-target="#artifact-registry-security-workspace"
+                              hx-swap="outerHTML"
+                              hx-disabled-elt="find button">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="view" value="{{ security.view }}">
+                            <input type="hidden" name="q" value="{{ security.filters.search }}">
+                            <input type="hidden" name="severity" value="{{ security.filters.severity }}">
+                            <input type="hidden" name="provider" value="{{ security.filters.provider }}">
+                            <input type="hidden" name="source_id" value="{{ security.filters.source_id or '' }}">
+                            <input type="hidden" name="page" value="{{ security.pagination.page }}">
+                            <input type="hidden" name="per_page" value="{{ security.pagination.per_page }}">
+                            <button type="submit"
+                                    {% if security.sync_state.is_active %}disabled{% endif %}
+                                    class="{{ action_button.classes('primary') }}">
+                                <i data-lucide="refresh-cw"
+                                   class="h-4 w-4 {% if security.sync_state.is_active %}animate-spin{% endif %}"
+                                   aria-hidden="true"></i>
+                                {{ 'Syncing Security' if security.sync_state.is_active else 'Sync Security Evidence' }}
+                            </button>
+                        </form>
+                    {% endif %}
+                    {% if current_user.has_permission('jobs.view') %}
+                        <a href="{{ url_for('jobs.configuration', job_key='artifact_registry.security.sync') }}"
+                           class="{{ action_button.classes('secondary') }}">
+                            <i data-lucide="calendar-clock" class="h-4 w-4" aria-hidden="true"></i>
+                            Configure Sync
+                        </a>
+                    {% endif %}
+                </div>
+            </header>
+            <div class="grid gap-px bg-outline-subtle sm:grid-cols-3">
+                <div class="bg-surface-card px-5 py-3">
+                    <p class="text-xs font-semibold text-content-muted">Automatic Sync</p>
+                    <p class="mt-1 text-sm font-semibold text-content-primary">
+                        {{ security.sync_state.automatic_label }} · {{ security.sync_state.interval_label }}
+                    </p>
+                </div>
+                <div class="bg-surface-card px-5 py-3">
+                    <p class="text-xs font-semibold text-content-muted">Last Successful</p>
+                    <p class="mt-1 text-sm font-semibold text-content-primary">{{ security.sync_state.last_success_label }}</p>
+                </div>
+                <div class="bg-surface-card px-5 py-3">
+                    <p class="text-xs font-semibold text-content-muted">Next Scheduled</p>
+                    <p class="mt-1 text-sm font-semibold text-content-primary">{{ security.sync_state.next_run_label }}</p>
+                </div>
+            </div>
+        </section>
+
         <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
                  aria-label="{{ security.title }} summary">
             {% if security.view == 'vulnerabilities' %}
@@ -145,6 +215,22 @@
             {% endcall %}
         {% endif %}
 
+        {% if security.view == 'vulnerabilities' %}
+            <section class="space-y-4" aria-labelledby="artifact-registry-vulnerability-findings-heading">
+                {{ section_intro.render(
+                    'Vulnerability Findings',
+                    'Review committed scanner findings and their current runtime exposure.',
+                    'artifact-registry-vulnerability-findings-heading'
+                ) }}
+                {{ operational_callout.render(
+                    security.finding_interpretation.title,
+                    security.finding_interpretation.description,
+                    security.finding_interpretation.icon,
+                    security.finding_interpretation.tone,
+                    variant='semantic'
+                ) }}
+        {% endif %}
+
         {% set result_badge %}
             {{ table_label.metadata_label(
                 security.pagination.total_items ~ (' Record' if security.pagination.total_items == 1 else ' Records'),
@@ -153,7 +239,7 @@
         {% endset %}
         {% call section_card.render(
             'Vulnerability Registry' if security.view == 'vulnerabilities' else 'Artifact Evidence Registry',
-            'Scanner findings remain committed evidence and are not automatically promoted into Alert Intelligence.' if security.view == 'vulnerabilities' else 'Signature presence and SBOM availability are provider evidence; KAORI does not perform trust-policy evaluation here.',
+            'Committed scanner findings from the latest available Security evidence.' if security.view == 'vulnerabilities' else 'Signature presence and SBOM availability are provider evidence; KAORI does not perform trust-policy evaluation here.',
             'shield-alert' if security.view == 'vulnerabilities' else 'badge-check',
             id='artifact-registry-security-registry',
             action_href=url_for('artifact_registry.runtime') if security.view == 'vulnerabilities' else none,
@@ -275,9 +361,9 @@
                                 <tr>
                                     <td colspan="6" class="p-0">
                                         {% set empty_state_icon = "shield-check" %}
-                                        {% set empty_state_label = "Committed Security" %}
-                                        {% set empty_state_title = "No Vulnerability Findings Found" %}
-                                        {% set empty_state_description = "No current committed findings match this scope and filter set. This does not imply every artifact has complete scanner coverage." %}
+                                        {% set empty_state_label = security.finding_empty_state.label %}
+                                        {% set empty_state_title = security.finding_empty_state.title %}
+                                        {% set empty_state_description = security.finding_empty_state.description %}
                                         {% set empty_state_min_height = "min-h-[190px]" %}
                                         {% include "components/states/_empty_state.html" %}
                                     </td>
@@ -353,5 +439,8 @@
                 control_name='artifact-registry-security'
             ) }}
         {% endcall %}
+        {% if security.view == 'vulnerabilities' %}
+            </section>
+        {% endif %}
     {% endif %}
 </div>
