@@ -134,22 +134,45 @@ def test_registry_inventory_reconciles_stable_rows_without_erasing_downstream_ev
 
 
 def test_registry_inventory_reuses_canonical_inventory_workspace_primitives() -> None:
-    template = (
+    overview_template = (
+        ROOT / 'app/templates/artifact_registry/partials/_inventory_overview.html'
+    ).read_text()
+    resource_template = (
         ROOT / 'app/templates/artifact_registry/partials/_inventory_workspace.html'
     ).read_text()
     presentation = (ROOT / 'app/artifact_registry/presentation.py').read_text()
+    routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
+    navigation = (ROOT / 'app/common/workspace_navigation_catalog.py').read_text()
+    navigation_service = (ROOT / 'app/common/workspace_navigation.py').read_text()
 
-    assert 'components/snapshot_context_bar.html' in template
-    assert 'components/inventory_asset_card.html' in template
-    assert 'components/section_intro.html' in template
-    assert 'components/operational_section_card.html' in template
-    assert 'components/table.html' in template
-    assert 'components/states/_empty_state.html' in template
-    assert 'artifact-registry-inventory-content' in template
-    assert '[5, 10, 25, 50]' in template
-    assert 'table_ui.table_classes' in template
-    assert 'min-w-full divide-y divide-outline-subtle' not in template
-    assert "'snapshot_context': snapshot_context" in presentation
+    assert 'components/snapshot_context_bar.html' in overview_template
+    assert 'components/inventory_asset_card.html' in overview_template
+    assert 'components/section_intro.html' in overview_template
+    assert 'components/operational_section_card.html' in overview_template
+    assert "url_for(asset.endpoint)" in overview_template
+    assert 'components/snapshot_context_bar.html' in resource_template
+    assert 'components/table.html' in resource_template
+    assert 'components/states/_empty_state.html' in resource_template
+    assert 'artifact-registry-inventory-content' in resource_template
+    assert '[5, 10, 25, 50]' in resource_template
+    assert 'table_ui.table_classes' in resource_template
+    assert 'min-w-full divide-y divide-outline-subtle' not in resource_template
+    assert 'inventory.resource_endpoint' in resource_template
+    assert 'name="resource"' not in resource_template
+    assert "@artifact_registry_bp.get('/inventory/projects')" in routes
+    assert "@artifact_registry_bp.get('/inventory/repositories')" in routes
+    assert "@artifact_registry_bp.get('/inventory/artifacts')" in routes
+    assert "request.args.get('resource'" not in routes
+    assert "'artifact_registry_inventory': (" in navigation
+    assert "'artifact_registry.inventory_projects'" in navigation
+    assert "'artifact_registry.inventory_repositories'" in navigation
+    assert "'artifact_registry.inventory_artifacts'" in navigation
+    assert "return 'artifact_registry_inventory'" in navigation_service
+    assert "'artifact_registry.inventory_projects': 'projects'" in navigation_service
+    assert "'artifact_registry.inventory_repositories': 'repositories'" in navigation_service
+    assert "'artifact_registry.inventory_artifacts': 'artifacts'" in navigation_service
+    assert 'def build_inventory_overview()' in presentation
     assert "'asset_catalog': list(resource_catalog.values())" in presentation
+    assert "'resource_endpoint': selected_resource['endpoint']" in presentation
     assert "row['provider_name']" in presentation
 
