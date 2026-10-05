@@ -7,6 +7,7 @@ from sqlalchemy import case, func, or_
 from sqlalchemy.orm import joinedload
 
 from app.artifact_registry.security.contracts import SUCCESSFUL_REGISTRY_SCAN_STATUSES
+from app.artifact_registry.security.job_adapter import build_registry_security_sync_state
 from app.artifact_registry.security.providers import registered_registry_security_collectors
 from app.common.pagination import paginate_query
 from app.models.integration import IntegrationInstance
@@ -295,6 +296,9 @@ def build_security(
         or 0
     )
 
+    finding_total = finding_scope.order_by(None).count()
+    coverage_count = scanned_artifacts if view == 'vulnerabilities' else evidence_count
+
     latest_job = (
         JobExecution.query.filter(JobExecution.job_type == 'artifact_registry_security')
         .order_by(JobExecution.created_at.desc())
@@ -326,7 +330,7 @@ def build_security(
     ).scalar()
     snapshot = _snapshot_status(
         artifact_total=artifact_total,
-        evidence_count=evidence_count,
+        evidence_count=coverage_count,
         latest_job=latest_job,
         latest_success=latest_success,
         latest_evidence_at=latest_evidence_at,
@@ -346,14 +350,19 @@ def build_security(
         active_scope_label = 'All Registry Sources'
         source_label = f'{len(scoped_sources)} Registered Registry Sources'
 
-    coverage_percent = round((evidence_count / artifact_total) * 100) if artifact_total else 0
+    coverage_percent = round((coverage_count / artifact_total) * 100) if artifact_total else 0
+    coverage_supporting = (
+        f'{coverage_percent}% usable vulnerability scan coverage.'
+        if view == 'vulnerabilities'
+        else f'{coverage_percent}% security evidence coverage.'
+    )
     snapshot_context = {
         **snapshot,
         'source_label': source_label,
         'scope_label': active_scope_label,
-        'coverage_label': f'{evidence_count} of {artifact_total} artifacts',
-        'coverage_supporting': f'{coverage_percent}% security evidence coverage.',
-        'coverage_tone': 'normal' if artifact_total and evidence_count == artifact_total else 'warning',
+        'coverage_label': f'{coverage_count} of {artifact_total} artifacts',
+        'coverage_supporting': coverage_supporting,
+        'coverage_tone': 'normal' if artifact_total and coverage_count == artifact_total else 'warning',
     }
 
     collectors = {
@@ -548,6 +557,81 @@ def build_security(
                 }
             )
 
+    filters_active = bool(search_value or severity_value or provider_value or source_id is not None)
+    if snapshot['status'] == 'Not Collected':
+        finding_interpretation = {
+            'title': 'Security Evidence Not Collected',
+            'description': 'Run Security Sync before interpreting an empty vulnerability result.',
+            'tone': 'unknown',
+            'icon': 'clock-alert',
+        }
+    elif snapshot['status'] == 'Refresh Failed':
+        finding_interpretation = {
+            'title': 'Previous Findings Retained',
+            'description': 'The latest refresh failed; committed findings still reflect the last successful Security Sync.',
+            'tone': 'warning',
+            'icon': 'shield-alert',
+        }
+    elif scanned_artifacts == 0:
+        finding_interpretation = {
+            'title': 'No Provider Scan Evidence',
+            'description': 'Security Sync found no usable vulnerability scan evidence. KAORI does not trigger provider scans.',
+            'tone': 'warning',
+            'icon': 'scan-search',
+        }
+    elif scanned_artifacts < artifact_total:
+        finding_interpretation = {
+            'title': 'Partial Scan Coverage',
+            'description': f'Findings cover {scanned_artifacts} of {artifact_total} artifacts with usable committed scan evidence.',
+            'tone': 'warning',
+            'icon': 'scan-search',
+        }
+    elif finding_total == 0:
+        finding_interpretation = {
+            'title': 'No Vulnerabilities Observed',
+            'description': 'No findings were observed in the current committed scan evidence for this scope.',
+            'tone': 'normal',
+            'icon': 'shield-check',
+        }
+    else:
+        finding_interpretation = {
+            'title': 'Committed Vulnerability Findings',
+            'description': 'Findings reflect the latest committed provider scan evidence and current Registry scope.',
+            'tone': 'critical' if critical_total else ('warning' if high_total else 'info'),
+            'icon': 'shield-alert',
+        }
+
+    if filters_active:
+        finding_empty_state = {
+            'label': 'Filtered Security Evidence',
+            'title': 'No Findings Match This View',
+            'description': 'Adjust the active filters to review other committed vulnerability findings.',
+        }
+    elif snapshot['status'] == 'Not Collected':
+        finding_empty_state = {
+            'label': 'Committed Security',
+            'title': 'Security Evidence Not Collected',
+            'description': 'Run Security Sync to collect provider security evidence for committed artifacts.',
+        }
+    elif scanned_artifacts == 0:
+        finding_empty_state = {
+            'label': 'Committed Security',
+            'title': 'No Vulnerability Scan Evidence',
+            'description': 'No usable provider scan evidence is committed for this scope. KAORI does not trigger scans.',
+        }
+    elif finding_total == 0:
+        finding_empty_state = {
+            'label': 'Committed Security',
+            'title': 'No Vulnerabilities Observed',
+            'description': 'No vulnerability findings were observed in the current committed scan evidence.',
+        }
+    else:
+        finding_empty_state = {
+            'label': 'Committed Security',
+            'title': 'No Findings Match This Page',
+            'description': 'No committed vulnerability finding is available on this page.',
+        }
+
     if critical_total:
         posture = {'label': 'Critical Findings', 'tone': 'critical'}
     elif high_total:
@@ -575,6 +659,10 @@ def build_security(
         'setup_blocked': not sources,
         'inventory_required': bool(sources) and RegistryArtifact.query.count() == 0,
         'snapshot': snapshot_context,
+        'sync_state': build_registry_security_sync_state(),
+        'finding_interpretation': finding_interpretation,
+        'finding_empty_state': finding_empty_state,
+        'finding_total': int(finding_total),
         'posture': posture,
         'artifact_total': artifact_total,
         'evidence_count': evidence_count,
