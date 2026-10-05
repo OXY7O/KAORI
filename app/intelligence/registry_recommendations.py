@@ -5,6 +5,7 @@ from typing import Any
 
 from sqlalchemy.orm import joinedload, selectinload
 
+from app.artifact_registry.security.contracts import registry_scan_evidence_ready
 from app.models.integration import IntegrationInstance
 from app.models.registry import (
     RegistryAnalyticsSnapshot,
@@ -127,19 +128,23 @@ def _artifact_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]
                     )
                 )
 
-        if not str(artifact.scan_status or '').strip():
+        if not registry_scan_evidence_ready(artifact.scan_status):
             rule = rules.get('registry.security.scan_evidence_missing')
             if rule is not None:
+                scan_label = str(artifact.scan_status or 'not_observed').replace('_', ' ')
                 findings.append(
                     _finding(
                         rule,
                         finding_key=f'{rule["rule_key"]}:{artifact.id}',
-                        title='Running Registry artifact has no scan evidence',
+                        title='Running Registry artifact has no usable scan evidence',
                         summary=(
                             f'{artifact.repository.project.name}/{artifact.repository.name}@{artifact.digest[:20]}… '
-                            f'is referenced at runtime but no scan status is committed.'
+                            f'is referenced at runtime but committed scan status {scan_label!r} is not usable evidence.'
                         ),
-                        condition_summary='Runtime binding count is positive while Registry scan_status is not observed.',
+                        condition_summary=(
+                            'Runtime binding count is positive while Registry scan_status is not a normalized '
+                            'successful scan state.'
+                        ),
                         evidence=evidence,
                     )
                 )
