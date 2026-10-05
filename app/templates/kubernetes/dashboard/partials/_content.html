@@ -1,4 +1,5 @@
 {% import "components/operational_dashboard_workspace.html" as dashboard_workspace %}
+{% import "components/operational_section_loading.html" as section_loading %}
 {% import "components/peer_content_grid.html" as peer_content_grid %}
 {% set dashboard_cluster_query = 'cluster_id=' ~ (dashboard.selected_cluster_id or '') ~ '&cluster_health_page=' ~ dashboard.cluster_health_pagination.page ~ '&cluster_health_per_page=' ~ dashboard.cluster_health_pagination.per_page %}
 <div class="space-y-5">
@@ -21,9 +22,12 @@
                          hx-trigger="revealed"
                          hx-target="this"
                          hx-swap="outerHTML">
-                        {% with title="Cluster Health Summary", description="Preparing per-cluster health, metric, and alert source signals.", icon="heart-pulse", loading_bar_id="dashboard-cluster-health-loading" %}
-                            {% include "kubernetes/dashboard/partials/_section_loading.html" %}
-                        {% endwith %}
+                        {{ section_loading.section(
+                            'Cluster Health Summary',
+                            'Preparing per-cluster health, metric, and alert source signals.',
+                            'heart-pulse',
+                            loading_bar_id='dashboard-cluster-health-loading'
+                        ) }}
                     </div>
                     <div class="{{ peer_content_grid.layout_classes() }}">
                         <div class="{{ peer_content_grid.column_classes('primary') }}">
@@ -33,9 +37,11 @@
                                  hx-trigger="revealed"
                                  hx-target="this"
                                  hx-swap="outerHTML">
-                                {% with title="Inventory Snapshot", description="Preparing committed Kubernetes inventory summary.", icon="package-search" %}
-                                    {% include "kubernetes/dashboard/partials/_section_loading.html" %}
-                                {% endwith %}
+                                {{ section_loading.section(
+                                    'Inventory Snapshot',
+                                    'Preparing committed Kubernetes inventory summary.',
+                                    'package-search'
+                                ) }}
                             </div>
                         </div>
                         <div class="{{ peer_content_grid.column_classes('secondary') }}">
@@ -45,9 +51,11 @@
                                  hx-trigger="revealed"
                                  hx-target="this"
                                  hx-swap="outerHTML">
-                                {% with title="Data Freshness", description="Preparing source readiness and snapshot freshness signals.", icon="refresh-cw" %}
-                                    {% include "kubernetes/dashboard/partials/_section_loading.html" %}
-                                {% endwith %}
+                                {{ section_loading.section(
+                                    'Data Freshness',
+                                    'Preparing source readiness and snapshot freshness signals.',
+                                    'refresh-cw'
+                                ) }}
                             </div>
                         </div>
                     </div>
@@ -61,9 +69,11 @@
                                  hx-trigger="revealed"
                                  hx-target="this"
                                  hx-swap="outerHTML">
-                                {% with title="Capacity Snapshot", description="Preparing worker-node capacity and headroom summary.", icon="gauge" %}
-                                    {% include "kubernetes/dashboard/partials/_section_loading.html" %}
-                                {% endwith %}
+                                {{ section_loading.section(
+                                    'Capacity Snapshot',
+                                    'Preparing worker-node capacity and headroom summary.',
+                                    'gauge'
+                                ) }}
                             </div>
                         </div>
                         <div class="{{ peer_content_grid.column_classes('secondary') }}">
@@ -73,9 +83,11 @@
                                  hx-trigger="revealed"
                                  hx-target="this"
                                  hx-swap="outerHTML">
-                                {% with title="Forecast & Growth Risk", description="Preparing capacity growth risk and projected utilization.", icon="trending-up" %}
-                                    {% include "kubernetes/dashboard/partials/_section_loading.html" %}
-                                {% endwith %}
+                                {{ section_loading.section(
+                                    'Forecast & Growth Risk',
+                                    'Preparing capacity growth risk and projected utilization.',
+                                    'trending-up'
+                                ) }}
                             </div>
                         </div>
                     </div>
@@ -84,9 +96,11 @@
                          hx-trigger="revealed"
                          hx-target="this"
                          hx-swap="outerHTML">
-                        {% with title="Top Consumers", description="Preparing top CPU and memory consumer snapshot.", icon="bar-chart-3" %}
-                            {% include "kubernetes/dashboard/partials/_section_loading.html" %}
-                        {% endwith %}
+                        {{ section_loading.section(
+                            'Top Consumers',
+                            'Preparing top CPU and memory consumer snapshot.',
+                            'bar-chart-3'
+                        ) }}
                     </div>
                 {% endcall %}
                 {% call dashboard_workspace.panel('signals', dashboard.active_tab, 'kubernetes-dashboard') %}
@@ -98,9 +112,11 @@
                                  hx-trigger="revealed"
                                  hx-target="this"
                                  hx-swap="outerHTML">
-                                {% with title="Alerts Summary", description="Preparing active Alertmanager and Metrics Source alert signals.", icon="bell-ring" %}
-                                    {% include "kubernetes/dashboard/partials/_section_loading.html" %}
-                                {% endwith %}
+                                {{ section_loading.section(
+                                    'Alerts Summary',
+                                    'Preparing committed KAORI AlertCase signals.',
+                                    'bell-ring'
+                                ) }}
                             </div>
                         </div>
                         <div class="{{ peer_content_grid.column_classes('secondary') }}">
@@ -110,9 +126,11 @@
                                  hx-trigger="revealed"
                                  hx-target="this"
                                  hx-swap="outerHTML">
-                                {% with title="Alert Interpretation & Response", description="Preparing controlled response guidance from committed AlertCase evidence.", icon="book-open-check" %}
-                                    {% include "kubernetes/dashboard/partials/_section_loading.html" %}
-                                {% endwith %}
+                                {{ section_loading.section(
+                                    'Alert Interpretation & Response',
+                                    'Preparing controlled response guidance from committed AlertCase evidence.',
+                                    'book-open-check'
+                                ) }}
                             </div>
                         </div>
                     </div>
@@ -121,9 +139,11 @@
                          hx-trigger="revealed"
                          hx-target="this"
                          hx-swap="outerHTML">
-                        {% with title="Recommended Actions", description="Preparing active catalog-backed findings from Intelligence recommendations.", icon="list-checks" %}
-                            {% include "kubernetes/dashboard/partials/_section_loading.html" %}
-                        {% endwith %}
+                        {{ section_loading.section(
+                            'Recommended Actions',
+                            'Preparing active catalog-backed findings from Intelligence recommendations.',
+                            'list-checks'
+                        ) }}
                     </div>
                 {% endcall %}
                 {% call dashboard_workspace.panel(
@@ -140,9 +160,11 @@
                                  hx-trigger="revealed"
                                  hx-target="this"
                                  hx-swap="outerHTML">
-                                {% with title="Reporting Summary", description="Preparing generated report activity and report configuration evidence.", icon="file-text" %}
-                                    {% include "kubernetes/dashboard/partials/_section_loading.html" %}
-                                {% endwith %}
+                                {{ section_loading.section(
+                                    'Reporting Summary',
+                                    'Preparing generated report activity and report configuration evidence.',
+                                    'file-text'
+                                ) }}
                             </div>
                         </div>
                         <div class="{{ peer_content_grid.column_classes('secondary', 'seven-five') }}">
