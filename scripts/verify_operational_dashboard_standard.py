@@ -1467,6 +1467,7 @@ def verify() -> None:
             'test_authorized_clusterless_section_renders_onboarding_without_data_read',
             'test_unknown_section_returns_404_before_cluster_probe',
             'test_authorized_section_reads_dashboard_only_after_cluster_readiness',
+            'test_authorized_operations_overview_uses_one_canonical_tab_projection',
             'test_dashboard_tab_selection_is_bounded_to_canonical_tabs',
             'test_cluster_health_page_size_rejects_unbounded_values',
             'test_dashboard_index_requires_permission_before_building_context',
