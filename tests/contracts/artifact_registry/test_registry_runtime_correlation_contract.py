@@ -30,7 +30,12 @@ def test_runtime_correlation_is_bounded_atomic_and_progress_aware() -> None:
     assert 'insert(RegistryWorkloadBinding)' in correlation
     assert 'pending_bindings.clear()' in correlation
     assert 'progress_callback(' in correlation
+    assert 'digest_index' in correlation
+    assert 'tag_index' in correlation
+    assert 'selectinload(RegistryArtifact.tags)' in correlation
+    assert 'by_path.get(image.repository' not in correlation
     assert 'filter_current_generation(PodInventory.query, PodInventory)' not in correlation
     assert 'progress_callback=report_correlation_progress' in task
-    assert "self.update_state(\n                state='PROGRESS'" in task
+    assert 'self.update_state(' in task
+    assert "state='PROGRESS'" in task
     assert "stage='Materializing Runtime Correlation'" in task
