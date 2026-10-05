@@ -48,6 +48,92 @@ def get_ready_native_clusters() -> list[Cluster]:
     return [cluster for cluster in clusters if tenant_workspace_connection_available(cluster.kubernetes_connection)]
 
 
+def _ready_tenant_environment_options() -> list[TenantEnvironment]:
+    return (
+        TenantEnvironment.query.join(Tenant, Tenant.id == TenantEnvironment.tenant_id)
+        .filter(Tenant.lifecycle_status == TenantLifecycleStatus.READY.value)
+        .order_by(Tenant.name.asc(), TenantEnvironment.environment.asc())
+        .all()
+    )
+
+
+def get_tenant_shell_context() -> dict[str, Any]:
+    """Return only page-shell Tenant state required by every Tenant route."""
+
+    ready_clusters = get_ready_native_clusters()
+    return {
+        'ready_clusters': ready_clusters,
+        'tenant_count': Tenant.query.filter(
+            Tenant.lifecycle_status != TenantLifecycleStatus.DECOMMISSIONED.value
+        ).count(),
+        'profile_count': TenantResourceProfile.query.count(),
+        'namespace_count': TenantNamespace.query.filter(
+            TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value
+        ).count(),
+        'ready_namespace_count': TenantNamespace.query.filter_by(
+            provisioning_status=TenantNamespaceProvisioningStatus.READY.value
+        ).count(),
+        'native_available': bool(ready_clusters),
+    }
+
+
+def get_resource_profile_workspace_context() -> dict[str, Any]:
+    """Return Resource Profiles-only capacity and profile summary context."""
+
+    registered_clusters = (
+        Cluster.query.join(KubernetesConnection, KubernetesConnection.cluster_id == Cluster.id)
+        .order_by(Cluster.name.asc(), Cluster.id.asc())
+        .all()
+    )
+    capacity_governance = [
+        {'cluster': cluster, **build_capacity_governance_summary(cluster.id)} for cluster in registered_clusters
+    ]
+    profile_count = TenantResourceProfile.query.count()
+    return {
+        'registered_clusters': registered_clusters,
+        'capacity_governance': capacity_governance,
+        'capacity_policy_state': {
+            str(item['cluster'].id): item['policy'] for item in capacity_governance if item.get('policy') is not None
+        },
+        'resource_profile_stats': {
+            'total': profile_count,
+            'enabled': TenantResourceProfile.query.filter_by(enabled=True).count(),
+            'custom': TenantResourceProfile.query.filter_by(
+                profile_class=TenantResourceProfileClass.CUSTOM.value
+            ).count(),
+            'active_allocations': TenantNamespace.query.filter(
+                TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+                TenantNamespace.resource_profile_id.isnot(None),
+            ).count(),
+        },
+        'resource_profile_advanced_controls': RESOURCE_PROFILE_ADVANCED_CONTROLS,
+    }
+
+
+def get_namespace_provisioning_support_context() -> dict[str, Any]:
+    """Return form support state required only by Namespace Provisioning."""
+
+    environment_options = _ready_tenant_environment_options()
+    return {
+        'environment_options': environment_options,
+        'resource_profile_presets': RESOURCE_PROFILE_PRESETS,
+        'resource_profile_advanced_controls': RESOURCE_PROFILE_ADVANCED_CONTROLS,
+        'tenant_environment_advanced_control_state': {
+            str(environment.id): {
+                'tenant_id': environment.tenant_id,
+                'provider_key': environment.tenant.provider_key,
+                'provider_state': environment.tenant.provider_state,
+                'controls': evaluate_resource_profile_advanced_controls(
+                    {key: True for key in RESOURCE_PROFILE_ADVANCED_CONTROLS},
+                    provider_key=environment.tenant.provider_key,
+                    capability_statuses=_tenant_capability_statuses(environment.tenant),
+                ),
+            }
+            for environment in environment_options
+        },
+    }
+
+
 def _resource_profile_rollout_targets(profile_ids: list[int]) -> dict[int, list[dict[str, Any]]]:
     if not profile_ids:
         return {}
@@ -556,12 +642,7 @@ def get_tenant_context() -> dict[str, Any]:
     tenants = Tenant.query.order_by(Tenant.created_at.desc()).limit(5).all()
     profiles = TenantResourceProfile.query.order_by(TenantResourceProfile.created_at.desc()).limit(5).all()
     namespaces = TenantNamespace.query.order_by(TenantNamespace.created_at.desc()).limit(5).all()
-    environment_options = (
-        TenantEnvironment.query.join(Tenant, Tenant.id == TenantEnvironment.tenant_id)
-        .filter(Tenant.lifecycle_status == TenantLifecycleStatus.READY.value)
-        .order_by(Tenant.name.asc(), TenantEnvironment.environment.asc())
-        .all()
-    )
+    environment_options = _ready_tenant_environment_options()
     ready_clusters = get_ready_native_clusters()
     registered_clusters = (
         Cluster.query.join(KubernetesConnection, KubernetesConnection.cluster_id == Cluster.id)
