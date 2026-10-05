@@ -1,0 +1,207 @@
+{% import "components/action_button.html" as action_button %}
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+
+{% macro shell(dialog_id, context_label, title, subtitle, icon='panel-top-open', footer_text='Committed Registry security evidence · No live provider request.') -%}
+    <dialog id="{{ dialog_id }}"
+            data-kaori-native-dialog
+            data-artifact-registry-security-detail-modal
+            aria-labelledby="{{ dialog_id }}-title"
+            aria-describedby="{{ dialog_id }}-description"
+            class="kaori-native-dialog m-auto w-[calc(100vw-1.5rem)] max-w-4xl overflow-hidden rounded-2xl border border-outline-default bg-surface-card p-0 shadow-2xl sm:w-[calc(100vw-3rem)]">
+        <section class="flex max-h-[calc(100dvh-2rem)] min-h-0 flex-col overflow-hidden"
+                 role="document">
+            <header class="shrink-0 border-b border-outline-subtle bg-surface-card px-5 py-4 sm:px-6">
+                <div class="flex min-w-0 items-start justify-between gap-4">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true">
+                            <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold text-kaori-primary">{{ context_label }}</p>
+                            <h2 id="{{ dialog_id }}-title"
+                                class="mt-1 break-words text-lg font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ title }}</h2>
+                            <p id="{{ dialog_id }}-description"
+                               class="mt-1 max-w-3xl text-xs leading-5 text-content-muted">{{ subtitle }}</p>
+                        </div>
+                    </div>
+                    <button type="button"
+                            data-kaori-dialog-close
+                            class="{{ table_ui.action_classes() }}"
+                            aria-label="Close {{ context_label }}">
+                        <i data-lucide="x" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </header>
+            <div class="min-h-0 overflow-y-auto bg-surface-page p-5 sm:p-6">
+                {{ caller() }}
+            </div>
+            <footer class="flex shrink-0 items-center justify-between gap-3 border-t border-outline-subtle bg-surface-card px-5 py-3 sm:px-6">
+                <p class="hidden text-xs leading-5 text-content-muted sm:block">{{ footer_text }}</p>
+                <button type="button"
+                        data-kaori-dialog-close
+                        class="{{ action_button.classes('secondary') }}">Close</button>
+            </footer>
+        </section>
+    </dialog>
+{%- endmacro %}
+
+{% macro capability(row, dialog_id) -%}
+    {% call shell(
+        dialog_id,
+        'Provider Capability Matrix',
+        row.source_name,
+        row.provider_label ~ ' · ' ~ row.artifact_count ~ (' artifact' if row.artifact_count == 1 else ' artifacts'),
+        icon='blocks',
+        footer_text='Committed provider capability projection · No live provider request.'
+    ) %}
+        <div class="space-y-4" data-artifact-registry-provider-capability-detail>
+            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
+                <header class="border-b border-outline-subtle bg-surface-elevated px-4 py-3">
+                    <h3 class="text-sm font-semibold text-content-primary">Evidence Scope</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Provider-neutral source identity and committed artifact scope.</p>
+                </header>
+                <dl class="grid gap-px bg-outline-subtle sm:grid-cols-3">
+                    {% for label, value in [
+                        ('Registry Source', row.source_name),
+                        ('Provider', row.provider_label),
+                        ('Artifacts', row.artifact_count)
+                    ] %}
+                        <div class="min-w-0 bg-surface-card px-4 py-3">
+                            <dt class="text-xs font-medium text-content-muted">{{ label }}</dt>
+                            <dd class="mt-1 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ value }}</dd>
+                        </div>
+                    {% endfor %}
+                </dl>
+            </section>
+
+            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
+                <header class="border-b border-outline-subtle px-4 py-3">
+                    <h3 class="text-sm font-semibold text-content-primary">Capability Evidence</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Each capability keeps provider support and collection state explicit.</p>
+                </header>
+                <div class="grid gap-px bg-outline-subtle md:grid-cols-3">
+                    {% for title, icon, state in [
+                        ('Vulnerability', 'shield-alert', row.vulnerability),
+                        ('Signature', 'badge-check', row.signature),
+                        ('SBOM', 'file-check-2', row.sbom)
+                    ] %}
+                        <article class="min-w-0 bg-surface-card p-4">
+                            <div class="flex items-start gap-3">
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                      aria-hidden="true">
+                                    <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                                </span>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-content-primary">{{ title }}</p>
+                                    <div class="mt-2">{{ table_label.status_indicator_label(state.label, state.tone) }}</div>
+                                    <p class="mt-2 text-xs leading-5 text-content-muted">
+                                        {% if state.key == 'supported_observed' %}
+                                            Supported provider evidence is present in committed KAORI state.
+                                        {% elif state.key == 'supported_unavailable' %}
+                                            The provider supports this capability, but usable evidence was unavailable after collection.
+                                        {% elif state.key == 'unsupported' %}
+                                            This provider does not declare support for this capability.
+                                        {% else %}
+                                            The provider supports this capability, but evidence has not been collected yet.
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
+                        <i data-lucide="shield-check" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h3 class="text-sm font-semibold text-content-primary">Provider Boundary</h3>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">KAORI normalizes committed provider evidence; it does not fabricate unsupported capabilities or trigger provider-side security scans.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    {% endcall %}
+{%- endmacro %}
+
+{% macro artifact(row, dialog_id) -%}
+    {% call shell(
+        dialog_id,
+        'Artifact Evidence Registry',
+        row.repository,
+        row.project ~ ' · ' ~ row.source_name,
+        icon='badge-check',
+        footer_text='Committed artifact security evidence · No live provider request.'
+    ) %}
+        <div class="space-y-4" data-artifact-registry-artifact-evidence-detail>
+            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
+                <header class="border-b border-outline-subtle bg-surface-elevated px-4 py-3">
+                    <h3 class="text-sm font-semibold text-content-primary">Artifact Identity</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Immutable digest remains the correlation identity for this evidence.</p>
+                </header>
+                <dl class="grid gap-px bg-outline-subtle sm:grid-cols-2">
+                    {% for label, value in [
+                        ('Project', row.project),
+                        ('Repository', row.repository),
+                        ('Registry Source', row.source_name),
+                        ('Provider', row.provider_label)
+                    ] %}
+                        <div class="min-w-0 bg-surface-card px-4 py-3">
+                            <dt class="text-xs font-medium text-content-muted">{{ label }}</dt>
+                            <dd class="mt-1 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ value }}</dd>
+                        </div>
+                    {% endfor %}
+                    <div class="min-w-0 bg-surface-card px-4 py-3 sm:col-span-2">
+                        <dt class="text-xs font-medium text-content-muted">Digest</dt>
+                        <dd class="mt-1 break-all font-mono text-xs font-semibold leading-5 text-content-primary">{{ row.digest }}</dd>
+                    </div>
+                </dl>
+            </section>
+
+            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
+                <header class="border-b border-outline-subtle px-4 py-3">
+                    <h3 class="text-sm font-semibold text-content-primary">Supply Chain Evidence</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Provider-observed evidence remains distinct from KAORI trust-policy evaluation.</p>
+                </header>
+                <div class="grid gap-px bg-outline-subtle md:grid-cols-3">
+                    {% for title, icon, state, supporting in [
+                        ('Signature', 'badge-check', row.signature, 'Provider-observed signature presence.'),
+                        ('Trust', 'shield-check', row.trust, 'Presence is not trust-policy evaluation.'),
+                        ('SBOM', 'file-check-2', row.sbom, 'Provider-observed SBOM availability.')
+                    ] %}
+                        <article class="min-w-0 bg-surface-card p-4">
+                            <div class="flex items-start gap-3">
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                      aria-hidden="true">
+                                    <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                                </span>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-content-primary">{{ title }}</p>
+                                    <div class="mt-2">{{ table_label.status_indicator_label(state.label, state.tone) }}</div>
+                                    <p class="mt-2 text-xs leading-5 text-content-muted">{{ supporting }}</p>
+                                </div>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
+                <header class="border-b border-outline-subtle px-4 py-3">
+                    <h3 class="text-sm font-semibold text-content-primary">Security Snapshot</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Latest committed Security evidence represented by this row.</p>
+                </header>
+                <div class="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>{{ table_label.status_indicator_label(row.snapshot_label, row.snapshot_tone) }}</div>
+                    <p class="text-xs leading-5 text-content-muted">{{ row.observed_at|user_datetime if row.observed_at else 'Not Collected' }}</p>
+                </div>
+            </section>
+        </div>
+    {% endcall %}
+{%- endmacro %}
