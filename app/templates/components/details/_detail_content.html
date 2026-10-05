@@ -373,8 +373,8 @@
 {% macro inspector_summary_strip(items) -%}
     <div data-resource-detail-summary
          data-kaori-node-inspector-summary
-         data-kaori-inventory-summary-alignment="shared-gutter"
-         class="mx-4 mt-5 grid overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card sm:mx-5 sm:grid-cols-2 lg:mx-6 lg:mt-6 xl:grid-cols-4">
+         data-kaori-inventory-summary-alignment="full-width-band"
+         class="grid min-w-0 w-full overflow-hidden bg-surface-card sm:grid-cols-2 xl:grid-cols-4">
         {% for item in items %}
             {% set tone = item.tone if item.tone is defined else 'brand' %}
             {% set icon_classes = 'bg-status-normal-soft text-status-normal-text' if tone == 'normal' else ('bg-status-warning-soft text-status-warning-text' if tone == 'warning' else ('bg-status-critical-soft text-status-critical-text' if tone == 'critical' else 'bg-kaori-soft text-kaori-primary')) %}
