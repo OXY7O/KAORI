@@ -104,7 +104,7 @@ jobs:
   domain: Artifact Registry
   description: Refresh committed vulnerability, signature, and SBOM evidence incrementally from Registry providers.
   icon: shield-check
-  queue_name: inventory
+  queue_name: registry-security
   workload_class: standard
   job_type: artifact_registry_security
   operation: sync_artifact_registry_security
