@@ -54,6 +54,6 @@ def section(section: str):
         section,
         selected_system_id=request.args.get('system_id') or None,
         system_health_page=request.args.get('system_health_page', '1'),
-        system_health_per_page=_system_health_per_page(),
+        system_health_per_page=normalize_dashboard_page_size(request.args.get('system_health_per_page')),
     )
     return render_template(template, dashboard=dashboard)
