@@ -167,7 +167,7 @@ The dashboard web request is a projection layer over committed KAORI state. It i
 - Bounded tab/section content uses the shared section placeholder, loads with `hx-trigger="revealed"`, and replaces its own container through `hx-target="this"` + `hx-swap="outerHTML"`.
 - Heavy sections load independently through HTMX.
 - Hidden tab sections load when revealed.
-- Projection granularity remains domain-owned: a canonical tab may be one bounded projection or may be split into finer bounded sub-projections when latency/failure isolation justifies it. This must not create a different loading presentation contract.
+- Projection granularity remains domain-owned. A new Operational Dashboard defaults to one bounded lazy projection per canonical tab; split a tab into finer bounded sub-projections only when measured latency, independent evidence sources, or failure isolation justifies the extra requests. This must not create a different loading presentation contract.
 - A lazy section request builds minimal scope context plus only the evidence required by that section.
 - Section requests must not call a full-dashboard builder or project unrelated tabs before returning the requested fragment.
 - Dashboard summaries prefer bounded database operations such as `COUNT`, `SUM`, `GROUP BY`, bounded `LIMIT`, canonical pagination, and latest committed/materialized snapshot reads.
