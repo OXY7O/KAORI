@@ -244,3 +244,55 @@ def test_registry_project_inventory_reuses_canonical_filters_and_detail_modal() 
     assert 'HarborClient' not in presentation
     assert 'components/details/_detail_content.html' in detail
     assert 'Committed Snapshot Boundary' in detail
+
+
+def test_registry_repository_and_artifact_inventory_reuse_full_workspace_detail_modal() -> None:
+    presentation = (ROOT / 'app/artifact_registry/presentation.py').read_text()
+    routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
+    workspace = (
+        ROOT / 'app/templates/artifact_registry/partials/_inventory_workspace.html'
+    ).read_text()
+    page = (ROOT / 'app/templates/artifact_registry/inventory_resource.html').read_text()
+    repository_detail = (
+        ROOT / 'app/templates/artifact_registry/partials/_inventory_repository_detail.html'
+    ).read_text()
+    artifact_detail = (
+        ROOT / 'app/templates/artifact_registry/partials/_inventory_artifact_detail.html'
+    ).read_text()
+
+    assert 'def build_inventory_repository_detail(repository_id: int)' in presentation
+    assert 'def build_inventory_artifact_detail(artifact_id: int)' in presentation
+    assert 'build_client' not in presentation
+    assert "RegistryRepository.query.options(" in presentation
+    assert "RegistryArtifact.query.options(" in presentation
+
+    assert "@artifact_registry_bp.get('/inventory/repositories/<int:repository_id>/details')" in routes
+    assert "@artifact_registry_bp.get('/inventory/artifacts/<int:artifact_id>/details')" in routes
+    assert 'build_inventory_repository_detail(repository_id)' in routes
+    assert 'build_inventory_artifact_detail(artifact_id)' in routes
+
+    assert "url_for('artifact_registry.inventory_repository_details'" in workspace
+    assert "url_for('artifact_registry.inventory_artifact_details'" in workspace
+    assert workspace.count("label='View More'") >= 2
+    assert "url_for('artifact_registry.inventory_repository_details', repository_id=0)" in page
+    assert "url_for('artifact_registry.inventory_artifact_details', artifact_id=0)" in page
+    assert page.count('resource_detail_modal.inventory_host(') >= 3
+
+    for detail in (repository_detail, artifact_detail):
+        assert 'components/details/_detail_content.html' in detail
+        assert 'data-kaori-detail-variant="full-workspace-modal"' in detail
+        assert 'data-kaori-detail-density="unified-resource-sheet"' in detail
+        assert 'detail.inspector_summary_strip' in detail
+        assert 'detail.resource_sheet()' in detail
+        assert 'Committed Snapshot Boundary' in detail
+        assert 'no live provider request' in detail
+
+    assert 'Artifact Coverage' in repository_detail
+    assert 'repository.artifact_preview' in repository_detail
+    assert 'Showing the first 25 artifacts.' in repository_detail
+    assert 'Artifact Identity' in artifact_detail
+    assert 'Tag References' in artifact_detail
+    assert 'artifact.tag_preview' in artifact_detail
+    assert 'Vulnerability' not in artifact_detail
+    assert 'Signature' not in artifact_detail
+    assert 'SBOM' not in artifact_detail
