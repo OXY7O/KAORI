@@ -994,6 +994,8 @@ def verify() -> None:
             "DASHBOARD_TABS = {'overview', 'capacity', 'signals', 'reporting'}",
             '_PAGE_SIZES = {5, 10, 25, 50}',
             'def _active_tab(',
+            'def _cluster_health_per_page(',
+            '_cluster_health_per_page()',
         ):
             if stale in source:
                 raise AssertionError(f'{owner}: local dashboard application contract remains: {stale}')
@@ -1008,6 +1010,7 @@ def verify() -> None:
             "@permission_required('dashboard.view')",
             'SECTION_TEMPLATES = {',
             'if has_registered_clusters() is False:',
+            "cluster_health_per_page=normalize_dashboard_page_size(request.args.get('cluster_health_per_page'))",
         ),
         'Kubernetes dashboard route boundary',
     )
