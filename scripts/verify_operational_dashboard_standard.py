@@ -65,6 +65,7 @@ TENANT_SETUP_WORKSPACE = (
 )
 KPI_CARDS = DASHBOARD_DIR / 'partials' / '_kpi_cards.html'
 TOP_CONSUMERS = DASHBOARD_DIR / 'partials' / '_top_consumers.html'
+CLUSTER_HEALTH_BUILDER = ROOT / 'app' / 'kubernetes' / 'dashboard' / 'sections' / 'cluster_health.py'
 ROUTES = ROOT / 'app' / 'kubernetes' / 'dashboard' / 'routes.py'
 SERVICE = ROOT / 'app' / 'kubernetes' / 'dashboard' / 'service.py'
 README = ROOT / 'app' / 'kubernetes' / 'dashboard' / 'README.md'
@@ -461,6 +462,7 @@ def verify() -> None:
     tenant_setup_workspace = _read(TENANT_SETUP_WORKSPACE)
     kpi_cards = _read(KPI_CARDS)
     top_consumers = _read(TOP_CONSUMERS)
+    cluster_health_builder = _read(CLUSTER_HEALTH_BUILDER)
     routes = _read(ROUTES)
     service = _read(SERVICE)
     readme = _read(README)
@@ -1044,6 +1046,20 @@ def verify() -> None:
         ),
         'dashboard service boundary',
     )
+    _require(
+        service,
+        ('from app.common.pagination import paginate_sequence',),
+        'Kubernetes canonical pagination consumer',
+    )
+    for stale in (
+        'def _normalize_page_number(',
+        'def paginate_sequence(',
+        'ClusterHealthPagination',
+    ):
+        if stale in cluster_health_builder or stale in schema:
+            raise AssertionError(
+                f'Kubernetes Cluster Health retains local pagination mechanics: {stale}'
+            )
     for token in (
         'kubernetes.client',
         'prometheus_api_client',
