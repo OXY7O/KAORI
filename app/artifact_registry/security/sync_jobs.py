@@ -2,14 +2,13 @@ from __future__ import annotations
 
 from app.artifact_registry.eligibility import registry_inventory_eligibility
 from app.artifact_registry.security.providers import registered_registry_security_collectors
+from app.artifact_registry.security.queue import get_registry_security_queue_name
 from app.common.job_execution_contract import ARTIFACT_REGISTRY_SECURITY_SYNC_OPERATION
 from app.models.integration import IntegrationInstance
 from app.models.job import JobExecution
 from app.models.registry import RegistryCollectionState
 from app.platform_operations.jobs.constants import WORKLOAD_STANDARD
 from app.platform_operations.jobs.dispatcher import JobDispatchOptions, enqueue_canonical_job
-
-INVENTORY_QUEUE = 'inventory'
 
 
 class NoEligibleRegistrySecurityTargets(RuntimeError):
@@ -65,7 +64,7 @@ def enqueue_all_registry_security_sync(
         task_kwargs={'requested_by_user_id': requested_by_user_id, 'targets': targets},
         job_type='artifact_registry_security',
         operation=ARTIFACT_REGISTRY_SECURITY_SYNC_OPERATION,
-        queue_name=INVENTORY_QUEUE,
+        queue_name=get_registry_security_queue_name(),
         workload_class=WORKLOAD_STANDARD,
         requested_by_user_id=requested_by_user_id,
         integration_type='registry',
