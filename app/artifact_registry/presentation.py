@@ -776,7 +776,7 @@ def _overview_operations_projection(
             RegistryRepository.project_id == RegistryProject.id,
         )
         .filter(
-            func.lower(RegistryScanSnapshot.status).in_(_SUCCESSFUL_SCAN_STATES)
+            func.lower(RegistryScanSnapshot.status).in_(SUCCESSFUL_REGISTRY_SCAN_STATUSES)
         )
         .with_entities(
             RegistryProject.integration_instance_id,
