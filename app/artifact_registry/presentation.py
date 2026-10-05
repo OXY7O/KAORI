@@ -2405,7 +2405,7 @@ def build_runtime_usage(
         snapshot_status, snapshot_tone = 'Refreshing', 'info'
         snapshot_description = 'Runtime correlation is rebuilding from committed Registry and Kubernetes evidence.'
     elif setup['refresh_blocked']:
-        snapshot_status, snapshot_tone = 'Refresh Blocked', 'warning'
+        snapshot_status, snapshot_tone = 'Refresh Unavailable', 'warning'
         snapshot_description = setup['refresh_description']
     elif setup['is_blocked']:
         snapshot_status, snapshot_tone = 'Prerequisites Required', 'warning'
