@@ -656,6 +656,7 @@ def _project_row(item: RegistryProject) -> dict[str, Any]:
         'public': item.public,
         'repository_count': item.repository_count if item.repository_count is not None else len(item.repositories),
         'provider': item.integration_instance_id,
+        'provider_id': item.integration_instance_id,
         'observed_at': item.observed_at,
     }
 
@@ -667,6 +668,7 @@ def _repository_row(item: RegistryRepository) -> dict[str, Any]:
         'project': item.project.name,
         'artifact_count': item.artifact_count if item.artifact_count is not None else len(item.artifacts),
         'pull_count': item.pull_count,
+        'provider_id': item.project.integration_instance_id,
         'observed_at': item.observed_at,
     }
 
@@ -682,53 +684,199 @@ def _artifact_row(item: RegistryArtifact) -> dict[str, Any]:
         'size': _fmt_bytes(item.size_bytes),
         'tags': [tag.name for tag in item.tags],
         'push_time': item.push_time,
+        'provider_id': item.repository.project.integration_instance_id,
         'observed_at': item.observed_at,
     }
+
+
+def _decorate_inventory_provider_provenance(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    provider_ids = {int(row['provider_id']) for row in rows if row.get('provider_id') is not None}
+    providers = (
+        IntegrationInstance.query.filter(IntegrationInstance.id.in_(sorted(provider_ids))).all()
+        if provider_ids
+        else []
+    )
+    provider_lookup = {int(provider.id): provider for provider in providers}
+    for row in rows:
+        provider_id = int(row['provider_id'])
+        provider = provider_lookup.get(provider_id)
+        metadata = (
+            provider.metadata_json
+            if provider is not None and isinstance(provider.metadata_json, dict)
+            else {}
+        )
+        provider_key = str(provider.provider_key or 'registry') if provider is not None else 'registry'
+        row['provider_name'] = provider.name if provider is not None else f'Registry #{provider_id}'
+        row['provider_label'] = str(
+            metadata.get('provider_label') or provider_key.replace('_', ' ').title()
+        )
+        row['provider_environment'] = (
+            str(provider.environment) if provider is not None and provider.environment else 'Not Set'
+        )
+    return rows
 
 
 def build_inventory(*, resource: str, page: int, per_page: int, search: str = '') -> dict[str, Any]:
     resource = resource if resource in {'projects', 'repositories', 'artifacts'} else 'projects'
     search_value = search.strip().lower()
+
     if resource == 'repositories':
         items = RegistryRepository.query.options(
             joinedload(RegistryRepository.project),
             joinedload(RegistryRepository.artifacts),
         ).all()
         rows = [_repository_row(item) for item in items]
-        filtered = [
-            row
-            for row in rows
-            if not search_value or search_value in f"{row['name']} {row['project']}".lower()
-        ]
     elif resource == 'artifacts':
         items = RegistryArtifact.query.options(
             joinedload(RegistryArtifact.repository).joinedload(RegistryRepository.project),
             joinedload(RegistryArtifact.tags),
         ).all()
         rows = [_artifact_row(item) for item in items]
+    else:
+        items = RegistryProject.query.options(joinedload(RegistryProject.repositories)).all()
+        rows = [_project_row(item) for item in items]
+
+    rows = _decorate_inventory_provider_provenance(rows)
+    if resource == 'repositories':
         filtered = [
             row
             for row in rows
             if not search_value
             or search_value
-            in f"{row['digest']} {row['repository']} {row['project']} {' '.join(row['tags'])}".lower()
+            in (
+                f"{row['name']} {row['project']} {row['provider_name']} "
+                f"{row['provider_label']} {row['provider_environment']}"
+            ).lower()
+        ]
+    elif resource == 'artifacts':
+        filtered = [
+            row
+            for row in rows
+            if not search_value
+            or search_value
+            in (
+                f"{row['digest']} {row['repository']} {row['project']} "
+                f"{' '.join(row['tags'])} {row['provider_name']} "
+                f"{row['provider_label']} {row['provider_environment']}"
+            ).lower()
         ]
     else:
-        items = RegistryProject.query.options(joinedload(RegistryProject.repositories)).all()
-        rows = [_project_row(item) for item in items]
-        filtered = [row for row in rows if not search_value or search_value in row['name'].lower()]
+        filtered = [
+            row
+            for row in rows
+            if not search_value
+            or search_value
+            in (
+                f"{row['name']} {row['provider_name']} "
+                f"{row['provider_label']} {row['provider_environment']}"
+            ).lower()
+        ]
+
     paged, pagination = paginate_sequence(filtered, page=page, per_page=per_page)
     overview = build_overview()
+    provider_count = int(overview['provider_count'])
+    snapshot_count = int(overview['snapshot_count'])
+    stale_count = int(overview['stale_snapshot_count'])
+    pending_count = int(overview['pending_snapshot_count'])
+    failed_count = int(overview['failed_refresh_count'])
+    exception_count = stale_count + pending_count + failed_count
+
+    exception_parts: list[str] = []
+    if stale_count:
+        exception_parts.append(f'{stale_count} stale')
+    if pending_count:
+        exception_parts.append(f'{pending_count} pending')
+    if failed_count:
+        exception_parts.append(f'{failed_count} failed')
+
+    if provider_count and snapshot_count == provider_count and not exception_count:
+        coverage_tone = 'normal'
+    elif snapshot_count:
+        coverage_tone = 'warning'
+    else:
+        coverage_tone = 'unknown'
+
+    resource_catalog = {
+        'projects': {
+            'key': 'projects',
+            'title': 'Projects',
+            'description': 'Provider-neutral Registry namespaces and visibility from committed snapshots.',
+            'icon': 'folder-kanban',
+            'count': overview['project_count'],
+            'action_label': 'Browse Projects',
+            'search_placeholder': 'Search projects or providers',
+        },
+        'repositories': {
+            'key': 'repositories',
+            'title': 'Repositories',
+            'description': 'Committed repository catalogs linked to their Registry projects.',
+            'icon': 'package-open',
+            'count': overview['repository_count'],
+            'action_label': 'Browse Repositories',
+            'search_placeholder': 'Search repositories, projects, or providers',
+        },
+        'artifacts': {
+            'key': 'artifacts',
+            'title': 'Artifacts',
+            'description': 'Digest-oriented OCI identities with mutable tags and provider provenance.',
+            'icon': 'fingerprint',
+            'count': overview['artifact_count'],
+            'action_label': 'Browse Artifacts',
+            'search_placeholder': 'Search digests, repositories, tags, or providers',
+        },
+    }
+    selected_resource = resource_catalog[resource]
+    snapshot_context = {
+        'source_label': 'Committed Registry State',
+        'status': overview['posture']['label'],
+        'tone': overview['posture']['tone'],
+        'description': (
+            'KAORI reads retained provider-neutral Registry inventory without a live provider render dependency.'
+        ),
+        'latest_collected_at': overview['latest_committed_at'],
+        'scope_label': overview['scope_label'],
+        'coverage_label': (
+            f'{snapshot_count} / {provider_count} Providers' if provider_count else 'No Providers'
+        ),
+        'coverage_tone': coverage_tone,
+        'coverage_supporting': 'Providers with retained committed inventory evidence.',
+        'exceptions_label': ' · '.join(exception_parts) if exception_parts else 'No Exceptions',
+        'exceptions_tone': 'warning' if exception_count else 'normal',
+        'exceptions_supporting': (
+            'Stale, pending, or failed committed snapshot conditions.'
+            if exception_count
+            else 'No stale, pending, or failed snapshot conditions.'
+        ),
+        'exception_count': exception_count,
+    }
+
+    if search_value:
+        empty_description = f"No committed {selected_resource['title'].lower()} match this search."
+    elif snapshot_count == 0:
+        empty_description = (
+            'Run Artifact Registry inventory sync after the Registry provider read contract is eligible.'
+        )
+    else:
+        empty_description = (
+            f"The current committed Registry snapshot contains no {selected_resource['title'].lower()}."
+        )
+
     return {
         'resource': resource,
+        'resource_label': selected_resource['title'],
+        'resource_icon': selected_resource['icon'],
+        'resource_description': selected_resource['description'],
+        'search_placeholder': selected_resource['search_placeholder'],
+        'asset_catalog': list(resource_catalog.values()),
         'rows': paged,
         'pagination': pagination,
         'search': search,
         'total': len(filtered),
         'setup': overview['setup'],
         'overview': overview,
+        'snapshot_context': snapshot_context,
+        'empty_description': empty_description,
     }
-
 
 
 def build_security(*, page: int = 1, per_page: int = 5) -> dict[str, Any]:
