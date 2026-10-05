@@ -100,9 +100,22 @@ are isolated at repository scope: KAORI retains the repository's previous commit
 continues other repositories, and completes the canonical Security Sync as partial/warning when at least one
 repository refreshed successfully. The provider fails only when no committed repository can be refreshed.
 
-The existing `inventory` Celery queue is used initially to avoid introducing a new worker topology before
-runtime evidence proves it is necessary. If incremental security refresh later causes material queue
-contention, a dedicated queue/worker may be introduced using the existing Jobs & Executions queue pattern.
+Runtime evidence from large Harbor estates established that Security Sync can occupy a worker for tens of
+minutes while inventory correctness must remain independently schedulable. Artifact Registry Security
+therefore owns the provider-neutral `registry-security` Celery queue and dedicated
+`registry-security-worker`.
+
+The fleet Job Execution fans out at **Registry instance** scope only. Each eligible Registry instance becomes
+one bounded source task on the dedicated queue; repositories and artifacts remain internal collector work
+and are never expanded into one Celery task per artifact. The initial worker concurrency is 2 with prefetch
+1, allowing the current two large Registry sources to progress independently while keeping provider pressure
+bounded. Additional Registry providers or instances reuse the same queue and can be served by horizontally
+scaled workers without introducing provider-specific worker names.
+
+The canonical fleet Job Execution remains the audit, deduplication, heartbeat, and aggregate progress
+authority. Concurrent source tasks publish monotonic aggregate progress through row-locked execution
+metadata. A slow or failed source cannot consume the inventory worker and does not invalidate committed
+inventory or another source's committed security evidence.
 
 ## Governance Contract
 
