@@ -65,6 +65,10 @@ KUBERNETES_CAPACITY = DASHBOARD_DIR / 'partials' / '_capacity_snapshot.html'
 KUBERNETES_FORECAST = DASHBOARD_DIR / 'partials' / '_forecast_risk.html'
 OBJECT_CAPACITY = OBJECT_DASHBOARD_DIR / 'partials' / '_capacity.html'
 OBJECT_FORECAST = OBJECT_DASHBOARD_DIR / 'partials' / '_forecast_risk.html'
+KUBERNETES_OVERVIEW = DASHBOARD_DIR / 'partials' / '_overview.html'
+KUBERNETES_CAPACITY_TAB = DASHBOARD_DIR / 'partials' / '_capacity.html'
+KUBERNETES_SIGNALS_TAB = DASHBOARD_DIR / 'partials' / '_signals.html'
+KUBERNETES_REPORTING_TAB = DASHBOARD_DIR / 'partials' / '_reporting.html'
 KUBERNETES_INVENTORY = DASHBOARD_DIR / 'partials' / '_inventory_summary.html'
 KUBERNETES_FRESHNESS = DASHBOARD_DIR / 'partials' / '_data_freshness.html'
 OBJECT_OVERVIEW = OBJECT_DASHBOARD_DIR / 'partials' / '_overview.html'
@@ -521,6 +525,10 @@ def verify() -> None:
     kubernetes_forecast = _read(KUBERNETES_FORECAST)
     object_capacity = _read(OBJECT_CAPACITY)
     object_forecast = _read(OBJECT_FORECAST)
+    kubernetes_overview = _read(KUBERNETES_OVERVIEW)
+    kubernetes_capacity_tab = _read(KUBERNETES_CAPACITY_TAB)
+    kubernetes_signals_tab = _read(KUBERNETES_SIGNALS_TAB)
+    kubernetes_reporting_tab = _read(KUBERNETES_REPORTING_TAB)
     kubernetes_inventory = _read(KUBERNETES_INVENTORY)
     kubernetes_freshness = _read(KUBERNETES_FRESHNESS)
     object_overview = _read(OBJECT_OVERVIEW)
@@ -607,19 +615,62 @@ def verify() -> None:
         content,
         (
             'components/operational_dashboard_workspace.html',
+            'components/operational_section_loading.html',
             'dashboard_workspace.controller(',
             'dashboard_workspace.navigation(',
             'dashboard_workspace.panel(',
-            'import "components/peer_content_grid.html" as peer_content_grid',
-            'peer_content_grid.layout_classes()',
+            'dashboard_workspace.standard_tabs',
+            "url_for('kubernetes_dashboard.section', section=tab_key)",
+            'section_loading.section(',
             'hx-trigger="revealed"',
+            'class="mt-5 space-y-5"',
         ),
         'dashboard composition',
     )
-    if content.count('dashboard_workspace.panel(') != 4:
-        raise AssertionError('dashboard composition: expected four canonical framework panels')
-    if content.count('peer_content_grid.layout_classes()') != 4:
-        raise AssertionError('dashboard composition: expected four canonical peer-content grids')
+    if content.count('dashboard_workspace.panel(') != 1:
+        raise AssertionError('dashboard composition: expected one loop-owned canonical framework panel')
+    for owner, source, requirements in (
+        (
+            'Kubernetes Operations Overview',
+            kubernetes_overview,
+            (
+                'components/peer_content_grid.html',
+                'kubernetes/dashboard/partials/_cluster_health.html',
+                'kubernetes/dashboard/partials/_inventory_summary.html',
+                'kubernetes/dashboard/partials/_data_freshness.html',
+            ),
+        ),
+        (
+            'Kubernetes Capacity & Demand',
+            kubernetes_capacity_tab,
+            (
+                'components/peer_content_grid.html',
+                'kubernetes/dashboard/partials/_capacity_snapshot.html',
+                'kubernetes/dashboard/partials/_forecast_risk.html',
+                'kubernetes/dashboard/partials/_top_consumers.html',
+            ),
+        ),
+        (
+            'Kubernetes Signals & Actions',
+            kubernetes_signals_tab,
+            (
+                'components/peer_content_grid.html',
+                'kubernetes/dashboard/partials/_alerts_summary.html',
+                'kubernetes/dashboard/partials/_alert_response_guidance.html',
+                'kubernetes/dashboard/partials/_recommended_actions.html',
+            ),
+        ),
+        (
+            'Kubernetes Reporting',
+            kubernetes_reporting_tab,
+            (
+                'components/peer_content_grid.html',
+                'kubernetes/dashboard/partials/_reporting_summary.html',
+                'kubernetes/dashboard/partials/_reporting_guidance.html',
+            ),
+        ),
+    ):
+        _require(source, requirements, owner)
 
     _require(
         object_content,
