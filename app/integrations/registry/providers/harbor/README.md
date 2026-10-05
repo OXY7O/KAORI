@@ -77,6 +77,24 @@ contract. Harbor-specific pages may supply Registry nouns, routes, permissions, 
 not create Harbor-specific blocker geometry.
 
 
+## Webhook configuration ownership
+
+Harbor webhook admission is a Registry reconciliation fast path, while connection-specific
+credential setup belongs to the Harbor connection Configuration workspace.
+
+```text
+Integrations → Registry → Harbor → Connection Detail → Configuration
+                                      └── Webhook Reconciliation
+```
+
+KAORI stores only the webhook token digest. Generating a new token rotates the previous
+credential. Disabling webhook admission does not disable scheduled Registry reconciliation,
+which remains the correctness and repair path.
+
+Artifact Registry → Governance consumes committed retention, immutability, and replication
+evidence only; it does not own webhook credential configuration or Metrics Source readiness.
+
+
 ## Registry provider-agnostic extension gate
 
 Harbor is the first production-qualified Registry provider, not the canonical Registry product identity.
