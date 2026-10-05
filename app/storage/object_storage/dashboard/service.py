@@ -569,11 +569,7 @@ def get_dashboard_section(
         dashboard['top_consumers'] = _top_consumers(selected)
     elif section == 'signals':
         dashboard['alerts'] = _alerts(selected)
-        dashboard['forecast'] = _forecast(selected)
-        dashboard['capacity'] = _capacity(selected)
-        dashboard['top_consumers'] = _top_consumers(selected)
         dashboard['recommended_actions'] = _recommended_actions(selected)
     elif section == 'reporting':
         dashboard['reporting'] = _reporting(selected)
-        dashboard['freshness'] = _freshness(selected, systems)
     return dashboard
