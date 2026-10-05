@@ -373,6 +373,9 @@ def _verify_artifact_registry_dashboard(
         signals,
         (
             'components/peer_content_grid.html',
+            '{% if not overview.selected_provider %}',
+            'components/states/_blocked_state.html',
+            'Select Registry Provider',
             'artifact_registry/partials/_overview_alerts_summary.html',
             'artifact_registry/partials/_overview_alert_response_guidance.html',
             'artifact_registry/partials/_overview_recommended_actions.html',
@@ -422,7 +425,7 @@ def _verify_artifact_registry_dashboard(
             'registry_metrics_readiness(provider)',
             "'scope_label': scope_label",
             "'capacity': capacity",
-            "'alerts': _registry_alerts(scoped_providers)",
+            "'alerts': _registry_alerts(selected_provider)",
             "'recommended_actions': _registry_recommended_actions(selected_provider)",
             "'reporting': _registry_reporting(selected_provider)",
             "'label': 'Inventory Snapshot'",
