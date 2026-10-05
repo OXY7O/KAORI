@@ -291,6 +291,10 @@ def test_operational_dashboard_inner_presentation_is_shared_across_three_consume
         assert 'signal_overview.render(' in wrapper
 
     assert 'Operational Signal Overview' in signal
+    assert '{% set signal_content = caller() %}' in signal
+    assert '{{ signal_content|safe }}' in signal
+    assert signal.count('caller()') == 1
+    assert signal.index('{% set signal_content = caller() %}') < signal.index('{% call operational_section_card.render(')
     assert 'macro snapshot(' in evidence
     assert 'macro freshness(' in evidence
     assert 'rows[:5]' in alerts
