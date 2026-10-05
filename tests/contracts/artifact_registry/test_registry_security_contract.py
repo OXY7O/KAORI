@@ -37,6 +37,8 @@ def test_security_workspace_uses_canonical_kaori_components() -> None:
 
     for shared_component in (
         'components/snapshot_context_bar.html',
+        'components/content_tabs.html',
+        'components/loading_bar.html',
         'components/section_intro.html',
         'components/operational_callout.html',
         'components/action_button.html',
@@ -58,6 +60,11 @@ def test_security_workspace_uses_canonical_kaori_components() -> None:
     assert 'finding_interpretation' in template
     assert 'finding_empty_state' in template
     assert 'Provider Capability Matrix' in template
+    assert 'Artifact Evidence Registry' in template
+    assert 'Supply Chain Workspace' in template
+    assert 'artifact-registry-security-capability-registry' in template
+    assert 'table_ui.inventory_block_header' in template
+    assert "resource_label='Sources'" in template
     assert '[5, 10, 25, 50]' in template
     assert 'Presence is not trust-policy evaluation.' in template
     assert 'Search CVE, package, repo, or digest…' in template
@@ -80,6 +87,8 @@ def test_security_has_two_level_three_views_above_the_hero() -> None:
     assert "@artifact_registry_bp.post('/security/sync')" in routes
     assert "@artifact_registry_bp.get('/security/sync/status/<string:public_id>')" in routes
     assert "job_key='artifact_registry.security.sync'" in routes
+    assert "section=request.args.get('section', '', type=str)" in routes
+    assert "section=request.form.get('section', '', type=str)" in routes
     assert "return _security_response('vulnerabilities')" in routes
 
 
@@ -115,3 +124,25 @@ def test_registry_security_finding_states_use_usable_scan_coverage() -> None:
     assert "'No Findings Match This View'" in presentation
     assert 'KAORI does not trigger provider scans.' in presentation
     assert 'security.finding_empty_state.title' in template
+
+
+def test_supply_chain_uses_governed_tabs_and_canonical_capability_registry() -> None:
+    presentation = read('app/artifact_registry/security/presentation.py')
+    template = read('app/templates/artifact_registry/partials/_security_workspace.html')
+
+    assert "supply_section = str(section or 'capabilities').strip().lower()" in presentation
+    assert "supply_section not in {'capabilities', 'evidence'}" in presentation
+    assert 'paginate_sequence(' in presentation
+    assert "'capability_rows': capability_rows" in presentation
+    assert "'capability_pagination': capability_pagination" in presentation
+    assert "'active_pagination': active_pagination" in presentation
+    assert "elif supply_section == 'evidence':" in presentation
+    assert 'Review provider signature and SBOM evidence without trust-policy claims.' in presentation
+    assert 'content_tabs.render_links(' in template
+    assert "section='capabilities'" in template
+    assert "section='evidence'" in template
+    assert "hx_target='#artifact-registry-supply-chain-workspace'" in template
+    assert 'name="section" value="capabilities"' in template
+    assert 'name="section" value="evidence"' in template
+    assert "'Search source or provider…'" in template
+    assert "registry.footer(" in template

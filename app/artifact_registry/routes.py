@@ -168,6 +168,7 @@ def inventory_artifact_details(artifact_id: int) -> ResponseReturnValue:
 def _security_response(kind: str) -> ResponseReturnValue:
     context = build_security(
         kind=kind,
+        section=request.args.get('section', '', type=str),
         search=request.args.get('q', '', type=str),
         severity=request.args.get('severity', '', type=str),
         provider=request.args.get('provider', '', type=str),
@@ -198,6 +199,7 @@ def security_supply_chain() -> ResponseReturnValue:
 def _security_sync_context(kind: str) -> dict[str, object]:
     return build_security(
         kind=kind,
+        section=request.form.get('section', '', type=str),
         search=request.form.get('q', '', type=str),
         severity=request.form.get('severity', '', type=str),
         provider=request.form.get('provider', '', type=str),

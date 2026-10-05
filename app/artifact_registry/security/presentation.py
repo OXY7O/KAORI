@@ -9,7 +9,7 @@ from sqlalchemy.orm import joinedload
 from app.artifact_registry.security.contracts import SUCCESSFUL_REGISTRY_SCAN_STATUSES
 from app.artifact_registry.security.job_adapter import build_registry_security_sync_state
 from app.artifact_registry.security.providers import registered_registry_security_collectors
-from app.common.pagination import paginate_query
+from app.common.pagination import paginate_query, paginate_sequence
 from app.models.integration import IntegrationInstance
 from app.models.job import JobExecution
 from app.models.registry import (
@@ -180,6 +180,7 @@ def _snapshot_status(
 def build_security(
     *,
     kind: str = 'vulnerabilities',
+    section: str = '',
     search: str = '',
     severity: str = '',
     provider: str = '',
@@ -188,6 +189,9 @@ def build_security(
     per_page: int = 5,
 ) -> dict[str, Any]:
     view = 'supply_chain' if kind == 'supply_chain' else 'vulnerabilities'
+    supply_section = str(section or 'capabilities').strip().lower()
+    if supply_section not in {'capabilities', 'evidence'}:
+        supply_section = 'capabilities'
     provider_value = provider.strip().lower()
     sources = _providers()
     scoped_sources = _scoped_sources(sources, provider=provider_value, source_id=source_id)
@@ -420,6 +424,17 @@ def build_security(
 
     severity_value = severity.strip().lower()
     search_value = search.strip().lower()
+    capability_filtered = [
+        row
+        for row in source_capabilities
+        if not search_value
+        or search_value in f"{row['source_name']} {row['provider_label']}".lower()
+    ]
+    capability_rows, capability_pagination = paginate_sequence(
+        capability_filtered,
+        page=page,
+        per_page=per_page,
+    )
     rows: list[dict[str, Any]] = []
 
     if view == 'vulnerabilities':
@@ -507,7 +522,7 @@ def build_security(
                     'freshness': _freshness(scan_snapshot.observed_at),
                 }
             )
-    else:
+    elif supply_section == 'evidence':
         query = artifact_scope
         if search_value:
             pattern = f'%{search_value}%'
@@ -556,6 +571,14 @@ def build_security(
                     'observed_at': snapshot['latest_collected_at'],
                 }
             )
+    else:
+        _, pagination = paginate_sequence([], page=1, per_page=per_page)
+
+    active_pagination = (
+        capability_pagination
+        if view == 'supply_chain' and supply_section == 'capabilities'
+        else pagination
+    )
 
     filters_active = bool(search_value or severity_value or provider_value or source_id is not None)
     if snapshot['status'] == 'Not Collected':
@@ -645,11 +668,12 @@ def build_security(
 
     return {
         'view': view,
+        'supply_section': supply_section,
         'title': 'Vulnerabilities' if view == 'vulnerabilities' else 'Supply Chain',
         'description': (
             'Prioritize vulnerabilities by digest and Kubernetes runtime context.'
             if view == 'vulnerabilities'
-            else 'Review provider-observed signature and SBOM evidence without claiming trust-policy evaluation.'
+            else 'Review provider signature and SBOM evidence without trust-policy claims.'
         ),
         'endpoint': (
             'artifact_registry.security'
@@ -689,6 +713,8 @@ def build_security(
             for key in sorted({item.provider_key for item in sources})
         ],
         'source_capabilities': source_capabilities,
+        'capability_rows': capability_rows,
+        'capability_pagination': capability_pagination,
         'severity_options': [
             {'value': value, 'label': value.title()}
             for value in ('critical', 'high', 'medium', 'low', 'negligible', 'unknown')
@@ -701,4 +727,5 @@ def build_security(
         },
         'rows': rows,
         'pagination': pagination,
+        'active_pagination': active_pagination,
     }

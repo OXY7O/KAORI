@@ -1,4 +1,6 @@
 {% import "components/action_button.html" as action_button %}
+{% import "components/content_tabs.html" as content_tabs %}
+{% import "components/loading_bar.html" as loading_bar %}
 {% import "components/operational_callout.html" as operational_callout %}
 {% import "components/operational_metric_card.html" as metric_card %}
 {% import "components/operational_section_card.html" as section_card %}
@@ -12,7 +14,7 @@
     <span id="artifact-registry-security-background-refresh-trigger"
           class="htmx-indicator hidden"
           aria-hidden="true"
-          hx-get="{{ url_for(security.endpoint, q=security.filters.search, severity=security.filters.severity, provider=security.filters.provider, source_id=security.filters.source_id, page=security.pagination.page, per_page=security.pagination.per_page) }}"
+          hx-get="{{ url_for(security.endpoint, section=security.supply_section, q=security.filters.search, severity=security.filters.severity, provider=security.filters.provider, source_id=security.filters.source_id, page=security.active_pagination.page, per_page=security.active_pagination.per_page) if security.view == 'supply_chain' else url_for(security.endpoint, q=security.filters.search, severity=security.filters.severity, provider=security.filters.provider, source_id=security.filters.source_id, page=security.active_pagination.page, per_page=security.active_pagination.per_page) }}"
           hx-trigger="artifactRegistrySecuritySyncFinished from:body"
           hx-target="#artifact-registry-security-workspace"
           hx-swap="outerHTML"
@@ -123,12 +125,13 @@
                               hx-disabled-elt="find button">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="view" value="{{ security.view }}">
+                            <input type="hidden" name="section" value="{{ security.supply_section if security.view == 'supply_chain' else '' }}">
                             <input type="hidden" name="q" value="{{ security.filters.search }}">
                             <input type="hidden" name="severity" value="{{ security.filters.severity }}">
                             <input type="hidden" name="provider" value="{{ security.filters.provider }}">
                             <input type="hidden" name="source_id" value="{{ security.filters.source_id or '' }}">
-                            <input type="hidden" name="page" value="{{ security.pagination.page }}">
-                            <input type="hidden" name="per_page" value="{{ security.pagination.per_page }}">
+                            <input type="hidden" name="page" value="{{ security.active_pagination.page }}">
+                            <input type="hidden" name="per_page" value="{{ security.active_pagination.per_page }}">
                             <button type="submit"
                                     {% if security.sync_state.is_active %}disabled{% endif %}
                                     class="{{ action_button.classes('primary') }}">
@@ -181,40 +184,147 @@
             {% endif %}
         </section>
 
-        {% if security.view == 'supply_chain' and security.source_capabilities %}
-            {% call section_card.render(
-                'Provider Capability Matrix',
-                'Provider differences stay explicit. Unsupported or unavailable evidence does not fabricate cross-provider equivalence.',
-                'blocks',
-                body_classes='p-0'
-            ) %}
-                <div class="overflow-x-auto">
-                    <table class="{{ table_ui.table_classes('min-w-[48rem]') }}">
-                        <thead class="{{ table_ui.head_classes() }}">
-                            <tr>
-                                <th class="{{ table_ui.header_cell_classes() }}">Registry Source</th>
-                                <th class="{{ table_ui.header_cell_classes() }}">Vulnerability</th>
-                                <th class="{{ table_ui.header_cell_classes() }}">Signature</th>
-                                <th class="{{ table_ui.header_cell_classes() }}">SBOM</th>
-                            </tr>
-                        </thead>
-                        <tbody class="{{ table_ui.body_classes() }}">
-                            {% for row in security.source_capabilities %}
-                                <tr class="{{ table_ui.row_classes() }}">
-                                    <td class="{{ table_ui.cell_classes() }}">
-                                        {{ table_ui.title_cell(row.source_name, row.provider_label ~ ' · ' ~ row.artifact_count ~ ' artifacts', 'blocks') }}
-                                    </td>
-                                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(row.vulnerability.label, row.vulnerability.tone) }}</td>
-                                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(row.signature.label, row.signature.tone) }}</td>
-                                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(row.sbom.label, row.sbom.tone) }}</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% endcall %}
-        {% endif %}
-
+        {% if security.view == 'supply_chain' %}
+            <section class="space-y-4" aria-labelledby="artifact-registry-supply-chain-heading">
+                {{ section_intro.render('Supply Chain Evidence',
+                    'Review one committed evidence surface at a time.',
+                    'artifact-registry-supply-chain-heading') }}
+                {% set supply_chain_tabs = [
+                    ('capabilities', 'Provider Capability Matrix', 'blocks', url_for('artifact_registry.security_supply_chain', section='capabilities')),
+                    ('evidence', 'Artifact Evidence Registry', 'badge-check', url_for('artifact_registry.security_supply_chain', section='evidence'))
+                ] %}
+                <section id="artifact-registry-supply-chain-workspace"
+                         class="{{ section_card.shell_classes() }}"
+                         aria-labelledby="artifact-registry-supply-chain-workspace-title">
+                    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+                        <div class="flex min-w-0 items-start gap-3">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                                <i data-lucide="shield-check" class="h-5 w-5"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <h2 id="artifact-registry-supply-chain-workspace-title" class="text-base font-semibold text-content-primary">Supply Chain Workspace</h2>
+                                <p class="mt-1 text-sm leading-6 text-content-secondary">Review provider capability and committed artifact evidence in focused views.</p>
+                            </div>
+                        </div>
+                        {{ loading_bar.render('artifact-registry-supply-chain-loading', label='Loading Supply Chain Workspace') }}
+                    </header>
+                    {{ content_tabs.render_links('artifact-registry-supply-chain',
+                        supply_chain_tabs,
+                        security.supply_section,
+                        'Supply Chain Workspace',
+                        embedded=true,
+                        data_namespace='artifact-registry-supply-chain',
+                        hx_target='#artifact-registry-supply-chain-workspace',
+                        hx_select='#artifact-registry-supply-chain-workspace',
+                        hx_swap='outerHTML show:none focus-scroll:false',
+                        hx_push_url='true',
+                        hx_indicator='#artifact-registry-supply-chain-loading',
+                        nowrap=true,
+                        hx_sync='this:replace') }}
+                    <div class="space-y-5 p-4 sm:p-5">
+                        {% if security.supply_section == 'capabilities' %}
+                            {% set capability_result_badge %}
+                                {{ table_label.metadata_label(security.capability_pagination.total_items ~ (' Source' if security.capability_pagination.total_items == 1 else ' Sources'), icon='list-filter') }}
+                            {% endset %}
+                            <section id="artifact-registry-security-capability-registry" class="{{ table_ui.block_classes() }}">
+                                {% set capability_header_actions %}
+                                    {% if security.filters.search or security.filters.provider or security.filters.source_id %}
+                                        {{ registry.clear_filters_link(security.endpoint,
+                                            'artifact-registry-security-capability-registry',
+                                            'artifact-registry-security-capability-loading',
+                                            security.capability_pagination.per_page,
+                                            table_ui.action_classes(),
+                                            query_params={'section': 'capabilities'}) }}
+                                    {% endif %}
+                                {% endset %}
+                                {{ table_ui.inventory_block_header('blocks',
+                                    'Provider Capability Matrix',
+                                    'Provider capability states from committed Registry security evidence.',
+                                    'artifact-registry-security-capability-loading',
+                                    'Refreshing Provider Capability Matrix',
+                                    none,
+                                    none,
+                                    header_actions=capability_header_actions,
+                                    title_extra=capability_result_badge) }}
+                                <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+                                    {% call registry.filter_form(security.endpoint,
+                                        'artifact-registry-security-capability-registry',
+                                        'artifact-registry-security-capability-loading',
+                                        security.capability_pagination.per_page) %}
+                                        <input type="hidden" name="section" value="capabilities">
+                                        <div class="min-w-0 flex-1">
+                                            <label for="artifact-registry-capability-search" class="{{ table_ui.filter_label_classes() }}">Search</label>
+                                            {{ table_ui.search_field('q', security.filters.search, 'Search source or provider…', 'artifact-registry-capability-search') }}
+                                        </div>
+                                        <label>
+                                            <span class="{{ table_ui.filter_label_classes() }}">Provider</span>
+                                            <select name="provider" class="{{ table_ui.filter_select_classes() }}">
+                                                <option value="">All Providers</option>
+                                                {% for option in security.providers %}
+                                                    <option value="{{ option.value }}" {% if security.filters.provider == option.value %}selected{% endif %}>{{ option.label }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </label>
+                                        <label>
+                                            <span class="{{ table_ui.filter_label_classes() }}">Source</span>
+                                            <select name="source_id" class="{{ table_ui.filter_select_classes() }}">
+                                                <option value="">All Sources</option>
+                                                {% for source in security.sources %}
+                                                    <option value="{{ source.id }}" {% if security.filters.source_id == source.id %}selected{% endif %}>{{ source.name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </label>
+                                    {% endcall %}
+                                </div>
+                                <div class="overflow-x-auto">
+                                    <table class="{{ table_ui.table_classes('min-w-[60rem]') }}">
+                                        <caption class="sr-only">Provider capability matrix from committed Registry security evidence.</caption>
+                                        <thead class="{{ table_ui.head_classes() }}">
+                                            <tr>
+                                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Registry Source</th>
+                                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Provider</th>
+                                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Artifacts</th>
+                                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Vulnerability</th>
+                                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Signature</th>
+                                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">SBOM</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="{{ table_ui.body_classes() }}">
+                                            {% for row in security.capability_rows %}
+                                                <tr class="{{ table_ui.row_classes() }}">
+                                                    <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(row.source_name, 'Registry security source', 'blocks') }}</td>
+                                                    <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-semibold text-content-primary">{{ row.provider_label }}</span></td>
+                                                    <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-semibold text-content-primary">{{ row.artifact_count }}</span></td>
+                                                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(row.vulnerability.label, row.vulnerability.tone) }}</td>
+                                                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(row.signature.label, row.signature.tone) }}</td>
+                                                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(row.sbom.label, row.sbom.tone) }}</td>
+                                                </tr>
+                                            {% else %}
+                                                <tr>
+                                                    <td colspan="6" class="p-0">
+                                                        {% set empty_state_icon = "blocks" %}
+                                                        {% set empty_state_label = "Provider Capability" %}
+                                                        {% set empty_state_title = "No Capability Sources Found" %}
+                                                        {% set empty_state_description = "No Registry security sources match the active filters." %}
+                                                        {% set empty_state_min_height = "min-h-[190px]" %}
+                                                        {% include "components/states/_empty_state.html" %}
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                {% set capability_footer_filters = {'section': 'capabilities', 'q': security.filters.search, 'provider': security.filters.provider, 'source_id': security.filters.source_id} %}
+                                {{ registry.footer(security.endpoint,
+                                    'artifact-registry-security-capability-registry',
+                                    'artifact-registry-security-capability-loading',
+                                    security.capability_pagination,
+                                    capability_footer_filters,
+                                    [5, 10, 25, 50],
+                                    resource_label='Sources',
+                                    control_name='artifact-registry-security-capabilities') }}
+                            </section>
+                        {% else %}
         {% if security.view == 'vulnerabilities' %}
             <section class="space-y-4" aria-labelledby="artifact-registry-vulnerability-findings-heading">
                 {{ section_intro.render(
@@ -257,6 +367,9 @@
                 security.pagination.per_page,
                 classes='border-b border-outline-subtle bg-surface-hover px-5 py-4'
             ) %}
+                {% if security.view == 'supply_chain' %}
+                    <input type="hidden" name="section" value="evidence">
+                {% endif %}
                 <div class="min-w-0 flex-1">
                     <label for="artifact-registry-security-search"
                            class="{{ table_ui.filter_label_classes() }}">Search</label>
@@ -306,7 +419,7 @@
                         'artifact-registry-security-loading',
                         security.pagination.per_page,
                         table_ui.action_classes(),
-                        query_params={}
+                        query_params=({'section': 'evidence'} if security.view == 'supply_chain' else {})
                     ) }}
                 {% endif %}
             {% endcall %}
@@ -427,6 +540,8 @@
             } %}
             {% if security.view == 'vulnerabilities' %}
                 {% set _ = footer_filters.update({'severity': security.filters.severity}) %}
+            {% else %}
+                {% set _ = footer_filters.update({'section': 'evidence'}) %}
             {% endif %}
             {{ registry.footer(
                 security.endpoint,
@@ -440,6 +555,12 @@
             ) }}
         {% endcall %}
         {% if security.view == 'vulnerabilities' %}
+            </section>
+        {% endif %}
+        {% if security.view == 'supply_chain' %}
+                        {% endif %}
+                    </div>
+                </section>
             </section>
         {% endif %}
     {% endif %}
