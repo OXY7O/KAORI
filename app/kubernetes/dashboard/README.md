@@ -65,6 +65,7 @@ The Kubernetes Operations Dashboard is the reference implementation for `docs/de
 - KPI cards: `components/operational_metric_card.html`.
 - Dashboard workspace: `components/operational_dashboard_workspace.html` owns the canonical four tabs, URL-backed active state, keyboard navigation, and tab-panel geometry; it renders **Tab Style 1 — Integrated Workspace Tabs** through `components/workspace_tabs.html`.
 - Repeated blocks: `components/operational_section_card.html`.
+- Fast Shell loading placeholders: `components/operational_section_loading.html`; KPI uses the shared KPI variant and bounded sections use the shared section-card variant.
 - Peer main-content layout: `components/peer_content_grid.html`; both boxes stretch to the tallest peer in the row.
 - Static action and response flows: `components/operational_flow_steps.html`.
 - Visible supporting tips and interpretation: `components/operational_callout.html`.
