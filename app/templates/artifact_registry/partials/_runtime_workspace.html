@@ -42,16 +42,30 @@
     {% if runtime.setup.is_blocked %}
         {% set blocked_state_icon = "waypoints" %}
         {% set blocked_state_label = "Correlation Prerequisites" %}
-        {% set blocked_state_title = "Committed Inventory Required" %}
-        {% set blocked_state_description = "Runtime Usage requires committed Artifact Registry artifacts and current Kubernetes Pod inventory before correlation can be materialized." %}
-        {% set blocked_state_steps = ["Sync Artifact Registry Inventory", "Sync Kubernetes Inventory", "Run Runtime Correlation", "Review Committed Bindings"] %}
-        {% set blocked_state_action_url = url_for('artifact_registry.inventory') %}
-        {% set blocked_state_action_label = "Open Registry Inventory" %}
-        {% set blocked_state_action_icon = "package-open" %}
-        {% set blocked_state_permission = "artifact_registry.view" %}
+        {% set blocked_state_title = runtime.setup.title %}
+        {% set blocked_state_description = runtime.setup.description %}
+        {% set blocked_state_steps = runtime.setup.steps %}
+        {% set blocked_state_action_url = url_for(runtime.setup.action_endpoint) if runtime.setup.action_endpoint else none %}
+        {% set blocked_state_action_label = runtime.setup.action_label %}
+        {% set blocked_state_action_icon = runtime.setup.action_icon %}
+        {% set blocked_state_permission = runtime.setup.action_permission %}
         {% set blocked_state_variant = "section" %}
         {% include "components/states/_blocked_state.html" %}
     {% else %}
+        {% if runtime.setup.refresh_blocked %}
+            {% set blocked_state_icon = "refresh-cw-off" %}
+            {% set blocked_state_label = "Refresh Blocked" %}
+            {% set blocked_state_title = runtime.setup.title %}
+            {% set blocked_state_description = runtime.setup.refresh_description %}
+            {% set blocked_state_steps = runtime.setup.steps %}
+            {% set blocked_state_action_url = url_for(runtime.setup.action_endpoint) if runtime.setup.action_endpoint else none %}
+            {% set blocked_state_action_label = runtime.setup.action_label %}
+            {% set blocked_state_action_icon = runtime.setup.action_icon %}
+            {% set blocked_state_permission = runtime.setup.action_permission %}
+            {% set blocked_state_variant = "section" %}
+            {% include "components/states/_blocked_state.html" %}
+        {% endif %}
+
         {{ snapshot_context_bar.render(
             source_label=runtime.snapshot.source_label,
             status=runtime.snapshot.status,
