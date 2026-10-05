@@ -250,8 +250,6 @@ def get_dashboard_overview(
         selected_cluster_id=selected_cluster_id,
         active_tab=active_tab,
     )
-    dashboard.inventory_snapshot = _inventory_snapshot(selected_cluster_id)
-    dashboard.reporting_snapshot = build_reporting_snapshot(selected_cluster_id=selected_cluster_id)
     latest_sync = _latest_inventory_sync(selected_cluster_id)
     dashboard.last_updated = human_time(latest_sync) if latest_sync else 'No sync yet'
     _cluster_health_rows, pagination = paginate_sequence(
@@ -303,6 +301,14 @@ def get_dashboard_section(
             alerts_by_cluster=alerts,
         )
         dashboard.cluster_health_pagination = pagination
+        return dashboard
+
+    if section == 'inventory_summary':
+        dashboard.inventory_snapshot = _inventory_snapshot(selected_cluster_id)
+        return dashboard
+
+    if section == 'reporting_summary':
+        dashboard.reporting_snapshot = build_reporting_snapshot(selected_cluster_id=selected_cluster_id)
         return dashboard
 
     if section == 'recommended_actions':
