@@ -38,3 +38,24 @@ def test_webhook_event_dedup_is_persisted() -> None:
     assert "name='uq_registry_webhook_event_dedup'" in models
     assert 'dedup_key' in service
     assert 'duplicate' in service.lower()
+
+
+def test_webhook_configuration_is_owned_by_harbor_connection_workspace() -> None:
+    governance = (ROOT / 'app/templates/artifact_registry/governance.html').read_text()
+    configuration = (
+        ROOT / 'app/templates/integrations/registry/providers/harbor/partials/_detail_configuration.html'
+    ).read_text()
+    harbor_routes = (
+        ROOT / 'app/integrations/registry/providers/harbor/application/routes.py'
+    ).read_text()
+    registry_routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
+
+    assert 'Webhook Reconciliation' in configuration
+    assert "url_for('artifact_registry.webhook_receive'" in configuration
+    assert "url_for('harbor.webhook_token'" in configuration
+    assert "url_for('harbor.webhook_disable'" in configuration
+    assert "def webhook_token(instance_id: int)" in harbor_routes
+    assert "def webhook_disable(instance_id: int)" in harbor_routes
+    assert "def webhook_receive(integration_instance_id: int)" in registry_routes
+    assert 'Generate Token' not in governance
+    assert 'Webhook Admission' not in governance
