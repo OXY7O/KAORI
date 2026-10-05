@@ -48,7 +48,7 @@ OVERVIEW_SECTION_TEMPLATES = {
 def overview() -> ResponseReturnValue:
     context = build_overview(
         provider_id=request.args.get('provider_id', type=int),
-        active_tab=normalize_operational_tab(request.args.get('tab', type=str)),
+        active_tab=normalize_operational_tab(request.args.get('tab', 'overview', type=str)),
         provider_health_page=request.args.get('provider_health_page', 1),
         provider_health_per_page=normalize_dashboard_page_size(request.args.get('provider_health_per_page')),
     )
