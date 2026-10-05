@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
+from app.common.pagination import paginate_sequence
 from app.intelligence.alert_intelligence.dashboard_cases import (
     active_recommendation_alert_cases,
     active_recommendation_alert_cases_by_asset,
@@ -38,7 +39,6 @@ from app.kubernetes.dashboard.sections import (
     build_recommendations,
     build_reporting_snapshot,
     build_top_consumers_snapshot,
-    paginate_sequence,
 )
 from app.kubernetes.dashboard.snapshots import (
     alerts_parameters,
