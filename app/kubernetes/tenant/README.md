@@ -59,6 +59,9 @@ The two snapshot concepts are intentionally separate:
 
 This boundary does not weaken mutation safety. Create/provision/reconcile/credential/provider mutations continue to use their owning readiness/capability checks and fail closed. Discovery from #736 remains the explicit live-provider read exception.
 
+
+Routine Tenant reads also keep expensive supporting evidence bounded. Operations uses the canonical Namespace/Tenant registries with workflow/decommission support disabled when those controls are not rendered. Tenant Overview batches KAORI-owned capacity policy, committed Namespace allocation, and Capsule shared-allocation evidence across the registered cluster estate before applying the existing per-cluster capacity classification and operational sort. Analytics snapshot freshness continues to use the canonical committed snapshot reader; no live provider request or new cache is introduced.
+
 Tenant Overview owns a registered **Tenant inventory correlation** job while Kubernetes remains authoritative for observed cluster resources:
 
 ```text
