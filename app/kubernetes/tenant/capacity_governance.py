@@ -261,6 +261,7 @@ def build_capacity_governance_summaries(cluster_ids: list[str]) -> dict[str, dic
         for cluster_id in normalized_ids
     }
 
+
 def enforce_namespace_allocation_preflight(
     *,
     tenant_environment: TenantEnvironment,
