@@ -741,7 +741,40 @@ def test_resource_profile_editability_allocation_change_and_capacity_decisions_f
     assert namespace_page.index('_allocation_change.html') < namespace_page.index('_allocation_cutover.html')
 
 
-def test_committed_tenant_snapshot_is_separate_from_lazy_live_provider_connectivity() -> None:
+def test_tenant_routine_routes_use_bounded_context_composition() -> None:
+    routes = tenant_routes_source()
+    route_common = read('app/kubernetes/tenant/route_common.py')
+    registry = read('app/kubernetes/tenant/registry_context.py')
+    workspace = read('app/kubernetes/tenant/workspace.py')
+
+    assert 'def get_tenant_shell_context() -> dict[str, Any]:' in registry
+    assert 'def get_resource_profile_workspace_context() -> dict[str, Any]:' in registry
+    assert 'def get_namespace_provisioning_support_context() -> dict[str, Any]:' in registry
+    assert 'def _tenant_workspace_context(*, include_sync: bool = True)' in route_common
+    bounded_context = route_common.split('def _tenant_workspace_context', 1)[1].split(
+        '_TENANT_ADMIN_SECTIONS',
+        1,
+    )[0]
+    routine_context = bounded_context.split('def _tenant_admin_support_context', 1)[0]
+    assert 'get_tenant_context()' not in routine_context
+    assert 'get_tenant_access_context()' not in routine_context
+    assert 'get_tenant_workspace_context()' not in routine_context
+
+    assert 'context = _tenant_workspace_context(include_sync=False)' in routes
+    assert 'context.update(get_resource_profile_workspace_context())' in routes
+    assert 'context.update(get_namespace_provisioning_support_context())' in routes
+    assert 'context.update(get_tenant_operations_summary_context())' in routes
+
+    overview = workspace.split('def get_tenant_overview_context', 1)[1].split(
+        'def get_tenant_operations_summary_context',
+        1,
+    )[0]
+    assert overview.count('build_tenant_sync_state()') == 1
+    assert 'get_tenant_sync_workspace_context(sync_state=sync_state)' in overview
+    assert 'sync_state=sync_state' in overview
+
+
+def test_committed_tenant_snapshot_is_separate_from_on_demand_live_provider_connectivity() -> None:
     routes = tenant_routes_source()
     live_service = read('app/kubernetes/tenant/live_connection.py')
     live_partial = read('app/templates/kubernetes/tenant/partials/_live_connection_snapshot.html')
@@ -762,9 +795,12 @@ def test_committed_tenant_snapshot_is_separate_from_lazy_live_provider_connectiv
     assert 'tenant-live-provider-connectivity' in live_partial
 
     assert 'hx-get="{{ url_for(\'tenant.live_provider_connectivity\') }}"' in live_loader
-    assert 'hx-trigger="load"' in live_loader
+    assert 'hx-trigger="load"' not in live_loader
+    assert 'Check Live Connectivity' in live_loader
+    assert 'Routine page load performs no provider request' in live_loader
     assert 'Committed KAORI Tenant state is already loaded.' in live_loader
     assert "title='Live Provider Connectivity'" in live_loader
+    assert 'Refresh Live Connectivity' in live_partial
 
     assert "title='Tenant Collection Snapshot'" in committed_partial
     assert 'Committed Tenant snapshot evidence' in committed_partial
