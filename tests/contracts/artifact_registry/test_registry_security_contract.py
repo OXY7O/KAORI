@@ -29,6 +29,8 @@ def test_registry_scan_evidence_semantics_are_shared_by_dashboard_and_intelligen
     assert "SUCCESSFUL_REGISTRY_SCAN_STATUSES = frozenset({'success', 'finished', 'completed'})" in contracts
     assert 'def registry_scan_evidence_ready(value: str | None) -> bool:' in contracts
     assert 'SUCCESSFUL_REGISTRY_SCAN_STATUSES' in presentation
+    assert 'func.lower(RegistryScanSnapshot.status).in_(SUCCESSFUL_REGISTRY_SCAN_STATUSES)' in presentation
+    assert '_SUCCESSFUL_SCAN_STATES' not in presentation
     assert 'scan_ready = registry_scan_evidence_ready(scan_status)' in presentation
     assert 'registry_scan_evidence_ready(artifact.scan_status)' in evaluator
     assert "if not registry_scan_evidence_ready(artifact.scan_status):" in evaluator
