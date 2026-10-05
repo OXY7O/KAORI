@@ -770,6 +770,8 @@ def test_tenant_routine_routes_use_bounded_context_composition() -> None:
     assert 'include_workflow_support=False' in routes
     assert 'include_decommission_preflight=False' in routes
     assert 'include_decommission_preflight: bool = True' in registry
+    assert 'def get_operations_namespace_registry_context(' not in registry
+    assert 'def get_operations_tenant_registry_context(' not in registry
 
     overview = workspace.split('def get_tenant_overview_context', 1)[1].split(
         'def get_tenant_operations_summary_context',
