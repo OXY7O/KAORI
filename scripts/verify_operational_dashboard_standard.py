@@ -996,6 +996,10 @@ def verify() -> None:
             'def _active_tab(',
             'def _cluster_health_per_page(',
             '_cluster_health_per_page()',
+            'def _system_health_per_page(',
+            '_system_health_per_page()',
+            'def _provider_health_per_page(',
+            '_provider_health_per_page()',
         ):
             if stale in source:
                 raise AssertionError(f'{owner}: local dashboard application contract remains: {stale}')
@@ -1013,6 +1017,16 @@ def verify() -> None:
             "cluster_health_per_page=normalize_dashboard_page_size(request.args.get('cluster_health_per_page'))",
         ),
         'Kubernetes dashboard route boundary',
+    )
+    _require(
+        object_routes,
+        ("system_health_per_page=normalize_dashboard_page_size(request.args.get('system_health_per_page'))",),
+        'Object Storage dashboard section pagination contract',
+    )
+    _require(
+        artifact_routes,
+        ("provider_health_per_page=normalize_dashboard_page_size(request.args.get('provider_health_per_page'))",),
+        'Artifact Registry dashboard section pagination contract',
     )
     _require(
         artifact_presentation,
