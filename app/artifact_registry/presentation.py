@@ -2737,6 +2737,13 @@ def build_governance(
         )
 
     provider_count = len(identities)
+    project_total = (
+        RegistryProject.query.filter(
+            RegistryProject.integration_instance_id.in_(identity_by_id)
+        ).count()
+        if identity_by_id
+        else 0
+    )
     governance_ready_count = sum(
         1
         for identity in identities
@@ -2771,6 +2778,7 @@ def build_governance(
     retention_not_configured = sum(
         1 for row in project_rows if row['retention_status'] == 'not_configured'
     )
+    retention_observed = retention_configured + retention_not_configured
     immutability_configured = sum(
         1 for row in project_rows if row['immutability_status'] == 'configured'
     )
@@ -2780,6 +2788,7 @@ def build_governance(
     immutability_not_configured = sum(
         1 for row in project_rows if row['immutability_status'] == 'not_configured'
     )
+    immutability_observed = immutability_configured + immutability_not_configured
 
     capability_counts: dict[str, dict[str, int]] = {}
     for capability in ('retention', 'immutability', 'replication'):
@@ -2848,38 +2857,51 @@ def build_governance(
     posture_cards = [
         {
             'label': 'Policy Coverage',
-            'value': f'{len(project_rows)} Projects',
-            'status_label': 'Committed' if project_rows else 'Not Collected',
-            'tone': 'normal' if project_rows else 'unknown',
-            'detail': 'Project-scoped retention and immutability evidence from committed provider state.',
+            'value': f'{len(project_rows)}/{project_total} Projects',
+            'status_label': (
+                'Committed'
+                if project_total and len(project_rows) == project_total
+                else ('Partial' if project_rows else 'Not Collected')
+            ),
+            'tone': (
+                'normal'
+                if project_total and len(project_rows) == project_total
+                else ('warning' if project_rows else 'unknown')
+            ),
+            'detail': 'Committed project-scoped retention and immutability evidence.',
         },
         {
             'label': 'Retention Coverage',
-            'value': f'{retention_configured}/{len(project_rows)} Configured',
-            'status_label': 'Observed',
-            'tone': 'normal' if project_rows else 'unknown',
+            'value': f'{retention_observed}/{project_total} Projects',
+            'status_label': 'Observed' if retention_observed else 'Not Collected',
+            'tone': 'normal' if project_total and retention_observed == project_total else 'warning',
             'detail': (
-                f'{retention_not_configured} not configured · {retention_unavailable} unavailable. '
-                f"{capability_counts['retention']['unsupported']} provider(s) unsupported."
+                f'{retention_configured} configured · {retention_not_configured} not configured · '
+                f'{retention_unavailable} unavailable.'
             ),
         },
         {
             'label': 'Immutability Coverage',
-            'value': f'{immutability_configured}/{len(project_rows)} Configured',
-            'status_label': 'Observed',
-            'tone': 'normal' if project_rows else 'unknown',
+            'value': f'{immutability_observed}/{project_total} Projects',
+            'status_label': 'Observed' if immutability_observed else 'Not Collected',
+            'tone': 'normal' if project_total and immutability_observed == project_total else 'warning',
             'detail': (
-                f'{immutability_not_configured} not configured · {immutability_unavailable} unavailable. '
-                f"{capability_counts['immutability']['unsupported']} provider(s) unsupported."
+                f'{immutability_configured} configured · {immutability_not_configured} not configured · '
+                f'{immutability_unavailable} unavailable.'
             ),
         },
         {
             'label': 'Replication Coverage',
-            'value': f'{len(replication_rows)} Policies',
+            'value': f"{capability_counts['replication']['observed']}/{provider_count} Providers",
             'status_label': 'Observed' if governance_ready_count else 'Not Collected',
-            'tone': 'info' if governance_ready_count else 'unknown',
+            'tone': (
+                'normal'
+                if provider_count
+                and capability_counts['replication']['observed'] == provider_count
+                else ('warning' if governance_ready_count else 'unknown')
+            ),
             'detail': (
-                f"{capability_counts['replication']['observed']} provider(s) observed · "
+                f"{len(replication_rows)} policies · "
                 f"{capability_counts['replication']['unavailable']} unavailable · "
                 f"{capability_counts['replication']['unsupported']} unsupported."
             ),
