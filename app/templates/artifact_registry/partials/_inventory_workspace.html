@@ -61,23 +61,21 @@
             metric_icon_palette='brand'
         ) }}
 
-        {% if inventory.resource == 'projects' %}
-            <section class="space-y-4" aria-labelledby="registry-projects-posture-heading">
-                {{ section_intro.render(
-                    'Operational Posture',
-                    'Review committed project coverage, Registry-source participation, and visibility evidence.',
-                    'registry-projects-posture-heading'
-                ) }}
-                {% call operational_section_card.render(
-                    'Project Inventory Posture',
-                    'Committed project catalog posture across the current Artifact Registry inventory.',
-                    'folder-kanban',
-                    body_classes='p-0'
-                ) %}
-                    {{ posture_grid.render(inventory.project_posture_metrics, columns=4) }}
-                {% endcall %}
-            </section>
-        {% endif %}
+        <section class="space-y-4" aria-labelledby="registry-resource-posture-heading">
+            {{ section_intro.render(
+                'Operational Posture',
+                inventory.resource_posture_intro,
+                'registry-resource-posture-heading'
+            ) }}
+            {% call operational_section_card.render(
+                inventory.resource_posture_title,
+                inventory.resource_posture_description,
+                inventory.resource_icon,
+                body_classes='p-0'
+            ) %}
+                {{ posture_grid.render(inventory.resource_posture_metrics, columns=4) }}
+            {% endcall %}
+        </section>
 
         <section class="space-y-4" aria-labelledby="registry-inventory-records-heading">
             {{ section_intro.render(
