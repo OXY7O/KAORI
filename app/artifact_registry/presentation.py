@@ -1442,6 +1442,116 @@ def build_inventory_overview() -> dict[str, Any]:
     return _inventory_base_context()
 
 
+def _inventory_resource_posture_metrics(
+    resource: str,
+    rows: list[dict[str, Any]],
+) -> list[tuple[str, str, Any, str, str]]:
+    provider_count = len(
+        {int(row['provider_id']) for row in rows if row.get('provider_id') is not None}
+    )
+
+    if resource == 'repositories':
+        artifact_count = sum(int(row.get('artifact_count') or 0) for row in rows)
+        pull_evidence_count = sum(row.get('pull_count') is not None for row in rows)
+        return [
+            (
+                'package-open',
+                'Repositories',
+                len(rows),
+                'Committed Registry repository identities.',
+                'brand',
+            ),
+            (
+                'database-backup',
+                'Registry Sources',
+                provider_count,
+                'Registry providers contributing committed repository evidence.',
+                'brand',
+            ),
+            (
+                'fingerprint',
+                'Artifacts',
+                artifact_count,
+                'Committed artifact identities referenced by repository inventory.',
+                'brand',
+            ),
+            (
+                'activity',
+                'Pull Counts Observed',
+                pull_evidence_count,
+                'Repositories with committed provider pull-count evidence.',
+                'info' if pull_evidence_count else 'unknown',
+            ),
+        ]
+
+    if resource == 'artifacts':
+        tagged_artifacts = sum(bool(row.get('tags')) for row in rows)
+        untagged_artifacts = max(len(rows) - tagged_artifacts, 0)
+        return [
+            (
+                'fingerprint',
+                'Artifacts',
+                len(rows),
+                'Committed digest-oriented Registry artifact identities.',
+                'brand',
+            ),
+            (
+                'database-backup',
+                'Registry Sources',
+                provider_count,
+                'Registry providers contributing committed artifact evidence.',
+                'brand',
+            ),
+            (
+                'tags',
+                'Tagged Artifacts',
+                tagged_artifacts,
+                'Artifacts with one or more committed mutable tag references.',
+                'info' if tagged_artifacts else 'unknown',
+            ),
+            (
+                'tag',
+                'Untagged Artifacts',
+                untagged_artifacts,
+                'Committed artifacts without a current tag reference.',
+                'warning' if untagged_artifacts else 'normal',
+            ),
+        ]
+
+    public_projects = sum(row.get('public') is True for row in rows)
+    visibility_missing = sum(row.get('public') is None for row in rows)
+    return [
+        (
+            'folder-kanban',
+            'Projects',
+            len(rows),
+            'Committed Registry project identities.',
+            'brand',
+        ),
+        (
+            'database-backup',
+            'Registry Sources',
+            provider_count,
+            'Registry providers contributing committed project evidence.',
+            'brand',
+        ),
+        (
+            'globe-2',
+            'Public Projects',
+            public_projects,
+            'Projects declared public in committed provider evidence.',
+            'info' if public_projects else 'normal',
+        ),
+        (
+            'circle-help',
+            'Visibility Not Observed',
+            visibility_missing,
+            'Projects without committed visibility evidence.',
+            'warning' if visibility_missing else 'normal',
+        ),
+    ]
+
+
 def build_inventory(
     *,
     resource: str,
@@ -1479,7 +1589,7 @@ def build_inventory(
 
     source_options: list[dict[str, Any]] = []
     environment_options: list[str] = []
-    project_posture_metrics: list[tuple[str, str, Any, str, str]] = []
+    resource_posture_metrics = _inventory_resource_posture_metrics(resource, rows)
     if resource == 'projects':
         source_lookup: dict[int, dict[str, Any]] = {}
         for row in rows:
@@ -1505,39 +1615,6 @@ def build_inventory(
             },
             key=str.lower,
         )
-        public_projects = sum(row['public'] is True for row in rows)
-        visibility_missing = sum(row['public'] is None for row in rows)
-        project_posture_metrics = [
-            (
-                'folder-kanban',
-                'Projects',
-                len(rows),
-                'Committed Registry project identities.',
-                'brand',
-            ),
-            (
-                'database-backup',
-                'Registry Sources',
-                len(source_options),
-                'Registry providers contributing committed project evidence.',
-                'brand',
-            ),
-            (
-                'globe-2',
-                'Public Projects',
-                public_projects,
-                'Projects declared public in committed provider evidence.',
-                'info' if public_projects else 'normal',
-            ),
-            (
-                'circle-help',
-                'Visibility Not Observed',
-                visibility_missing,
-                'Projects without committed visibility evidence.',
-                'warning' if visibility_missing else 'normal',
-            ),
-        ]
-
         if source_id is not None:
             rows = [row for row in rows if int(row['provider_id']) == int(source_id)]
         if environment_value:
@@ -1591,6 +1668,23 @@ def build_inventory(
     paged, pagination = paginate_sequence(filtered, page=page, per_page=per_page)
     context = _inventory_base_context()
     selected_resource = context['resource_catalog'][resource]
+    posture_copy = {
+        'projects': {
+            'title': 'Project Inventory Posture',
+            'intro': 'Review committed project coverage, Registry-source participation, and visibility evidence.',
+            'description': 'Committed project catalog posture across the current Artifact Registry inventory.',
+        },
+        'repositories': {
+            'title': 'Repository Inventory Posture',
+            'intro': 'Review committed repository coverage, Registry-source participation, and catalog evidence.',
+            'description': 'Committed repository catalog posture across the current Artifact Registry inventory.',
+        },
+        'artifacts': {
+            'title': 'Artifact Inventory Posture',
+            'intro': 'Review committed artifact coverage, Registry-source participation, and tag evidence.',
+            'description': 'Committed artifact catalog posture across the current Artifact Registry inventory.',
+        },
+    }[resource]
     snapshot_count = int(context['overview']['snapshot_count'])
     has_filters = bool(
         search_value
@@ -1645,7 +1739,10 @@ def build_inventory(
         'has_filters': has_filters,
         'source_options': source_options,
         'environment_options': environment_options,
-        'project_posture_metrics': project_posture_metrics,
+        'resource_posture_metrics': resource_posture_metrics,
+        'resource_posture_title': posture_copy['title'],
+        'resource_posture_intro': posture_copy['intro'],
+        'resource_posture_description': posture_copy['description'],
         'visibility_options': (
             [
                 {'value': 'public', 'label': 'Public'},
