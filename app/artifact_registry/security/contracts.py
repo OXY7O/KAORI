@@ -5,6 +5,13 @@ from datetime import datetime
 from typing import Any
 
 
+SUCCESSFUL_REGISTRY_SCAN_STATUSES = frozenset({'success', 'finished', 'completed'})
+
+
+def registry_scan_evidence_ready(value: str | None) -> bool:
+    return str(value or '').strip().lower() in SUCCESSFUL_REGISTRY_SCAN_STATUSES
+
+
 @dataclass(frozen=True, slots=True)
 class RegistrySecurityTarget:
     """Stable committed artifact identity consumed by provider security collectors."""
