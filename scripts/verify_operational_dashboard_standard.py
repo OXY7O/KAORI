@@ -950,6 +950,7 @@ def verify() -> None:
             '{% elif total_alerts == 0 %}',
             'components/states/_empty_state.html',
             'empty_state_variant = "panel"',
+            'empty_state_min_height = "min-h-[220px]"',
         ),
         'shared Alerts Summary dashed empty evidence',
     )
