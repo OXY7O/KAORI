@@ -1,5 +1,6 @@
+{% import "components/action_button.html" as action_button %}
 {% import "components/snapshot_context_bar.html" as snapshot_context %}
-<div id="tenant-live-provider-connectivity">
+<div id="tenant-live-provider-connectivity" class="space-y-2" aria-live="polite">
     {{ snapshot_context.render(source_label=tenant_live_connection.source_label,
         status=tenant_live_connection.status,
         tone=tenant_live_connection.tone,
@@ -20,4 +21,21 @@
         scope_metric_label='Provider Scope',
         coverage_metric_label='API Reachability',
         exceptions_metric_label='Connection Exceptions') }}
+    <div class="flex justify-end">
+        <button type="button"
+                hx-get="{{ url_for('tenant.live_provider_connectivity') }}"
+                hx-target="#tenant-live-provider-connectivity"
+                hx-swap="outerHTML"
+                hx-indicator="#tenant-live-provider-connectivity-refreshing"
+                hx-disabled-elt="this"
+                class="{{ action_button.classes('secondary') }}">
+            <span id="tenant-live-provider-connectivity-refreshing"
+                  class="htmx-indicator"
+                  aria-hidden="true">
+                <i data-lucide="loader-circle" class="h-4 w-4 animate-spin"></i>
+            </span>
+            <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
+            Refresh Live Connectivity
+        </button>
+    </div>
 </div>
