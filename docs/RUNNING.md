@@ -95,6 +95,11 @@ python scripts/verify_celery_topology.py
 python scripts/verify_reports_worker_runtime.py
 ```
 
+Artifact Registry Security uses the dedicated `registry-security-worker`. After worker/topology changes, confirm
+that `active_queues` shows `registry-security@...` consuming the configured
+`REGISTRY_SECURITY_CELERY_QUEUE`; the inventory worker must not consume Security Sync tasks.
+
+
 If a worker definition or Python dependency changed, rebuild the Dev Container instead of manually drifting an individual service.
 
 ## Production startup
@@ -134,7 +139,7 @@ docker compose -f compose.production.yml ps
 docker compose -f compose.production.yml logs --tail=100 web
 ```
 
-The web container health check uses `/health/ready`. Also verify queue ownership for inventory, maintenance, runtime, validation, analytics, reporting, forecasting, resolver execution/maintenance, and Beat before approving production readiness.
+The web container health check uses `/health/ready`. Also verify queue ownership for inventory, Artifact Registry security (`registry-security`), maintenance, runtime, validation, analytics, reporting, forecasting, resolver execution/maintenance, and Beat before approving production readiness.
 
 ## Release verification
 
