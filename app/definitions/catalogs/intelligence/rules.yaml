@@ -1457,7 +1457,7 @@ rules:
   - Artifact Registry Analytics
   - Alert Intelligence
 - rule_key: registry.security.scan_evidence_missing
-  title: Running Registry Artifact Has No Scan Evidence
+  title: Running Registry Artifact Has No Usable Scan Evidence
   domain: registry
   provider_keys:
   - harbor
@@ -1468,8 +1468,8 @@ rules:
   status: available
   logic_type: governance_check
   signal_source: registry_committed_evidence
-  summary: Identifies runtime-referenced artifacts without current committed vulnerability scan evidence.
-  condition_summary: An artifact has at least one runtime binding while scan status is not observed.
+  summary: Identifies runtime-referenced artifacts without a normalized successful committed vulnerability scan state.
+  condition_summary: An artifact has at least one runtime binding while scan status is not success, finished, or completed.
   recommended_action: Restore the provider scanner or artifact scan evidence path, then reconcile Registry inventory before making risk decisions.
   impact: Prevents runtime exposure from being assessed against an unknown vulnerability posture.
   evidence_boundary: This rule consumes committed Registry security and runtime-correlation evidence; it does not trigger scans itself.
