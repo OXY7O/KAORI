@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Iterable
 
-from sqlalchemy.orm import joinedload
+from sqlalchemy import insert
+from sqlalchemy.orm import Session, joinedload
 
 from app.common.inventory_generation import filter_current_generation
 from app.extensions.db import db
@@ -15,6 +16,9 @@ from app.models.registry import (
     RegistryRepository,
     RegistryWorkloadBinding,
 )
+
+CORRELATION_BATCH_SIZE = 250
+CorrelationProgressCallback = Callable[[int, int, str], None]
 
 
 @dataclass(frozen=True, slots=True)
@@ -61,8 +65,8 @@ def parse_image_reference(value: str) -> ImageReference:
     )
 
 
-def _registry_host(integration_instance_id: int) -> str | None:
-    state = db.session.get(RegistryCollectionState, int(integration_instance_id))
+def _registry_host(session: Session, integration_instance_id: int) -> str | None:
+    state = session.get(RegistryCollectionState, int(integration_instance_id))
     if state is None or not isinstance(state.metadata_json, dict):
         return None
     host = str(state.metadata_json.get('registry_host') or '').strip().lower()
@@ -106,79 +110,128 @@ def _container_rows(pod: PodInventory) -> Iterable[tuple[str, str | None, str]]:
 def refresh_registry_workload_bindings(
     *,
     integration_instance_id: int | None = None,
+    progress_callback: CorrelationProgressCallback | None = None,
+    batch_size: int = CORRELATION_BATCH_SIZE,
 ) -> dict[str, int]:
-    """Correlate committed Pod image references to committed Registry artifact identity."""
+    """Correlate committed Pod images to Registry artifacts in one atomic replacement transaction."""
 
-    query = RegistryArtifact.query.options(
-        joinedload(RegistryArtifact.repository).joinedload(RegistryRepository.project),
-        joinedload(RegistryArtifact.tags),
-    )
-    if integration_instance_id is not None:
-        query = query.join(
-            RegistryRepository,
-            RegistryArtifact.repository_id == RegistryRepository.id,
-        ).filter(
-            RegistryRepository.project.has(
-                integration_instance_id=integration_instance_id
-            )
-        )
-    artifacts = query.all()
-    artifact_ids = [artifact.id for artifact in artifacts]
-    if artifact_ids:
-        RegistryWorkloadBinding.query.filter(
-            RegistryWorkloadBinding.artifact_id.in_(artifact_ids)
-        ).delete(synchronize_session=False)
-    db.session.flush()
-
-    by_path: dict[str, list[tuple[RegistryArtifact, str | None]]] = {}
-    for artifact in artifacts:
-        integration_id = artifact.repository.project.integration_instance_id
-        registry_host = _registry_host(integration_id)
-        by_path.setdefault(_artifact_repository_path(artifact), []).append(
-            (artifact, registry_host)
-        )
-
+    normalized_batch_size = max(int(batch_size or CORRELATION_BATCH_SIZE), 1)
     binding_count = digest_matches = tag_matches = 0
     observed_at = datetime.now(UTC)
-    pods = filter_current_generation(PodInventory.query, PodInventory).order_by(PodInventory.id.asc()).all()
-    for pod in pods:
-        for raw_image, container_name, source_kind in _container_rows(pod):
-            image = parse_image_reference(raw_image)
-            for artifact, registry_host in by_path.get(image.repository, ()):
-                match = _match(image, artifact, registry_host=registry_host)
-                if match is None:
-                    continue
-                match_type, confidence = match
-                db.session.add(
-                    RegistryWorkloadBinding(
-                        artifact_id=artifact.id,
-                        pod_inventory_id=pod.id,
-                        image_reference=image.raw,
-                        match_type=match_type,
-                        confidence=confidence,
-                        cluster_id=str(pod.cluster_id),
-                        namespace=pod.namespace,
-                        workload_type=pod.workload_type,
-                        workload_name=pod.workload_name,
-                        pod_name=pod.pod_name,
-                        container_name=container_name,
-                        details={
-                            'source_kind': source_kind,
-                            'registry_observed_at': artifact.observed_at.isoformat(),
-                            'pod_collected_at': pod.collected_at.isoformat(),
-                            'registry_host': registry_host,
-                        },
-                        observed_at=observed_at,
-                    )
-                )
-                binding_count += 1
-                digest_matches += int(match_type == 'digest')
-                tag_matches += int(match_type == 'tag')
-                break
 
-    db.session.commit()
+    # JobExecution progress commits through the application scoped session.
+    # Keep correlation replacement state on an independent transaction so
+    # heartbeat checkpoints cannot partially commit the materialized binding set.
+    with Session(db.engine) as materialization_session, materialization_session.begin():
+        artifact_query = materialization_session.query(RegistryArtifact).options(
+            joinedload(RegistryArtifact.repository).joinedload(RegistryRepository.project),
+            joinedload(RegistryArtifact.tags),
+        )
+        if integration_instance_id is not None:
+            artifact_query = artifact_query.join(
+                RegistryRepository,
+                RegistryArtifact.repository_id == RegistryRepository.id,
+            ).filter(
+                RegistryRepository.project.has(
+                    integration_instance_id=integration_instance_id
+                )
+            )
+        artifacts = artifact_query.all()
+        artifact_ids = [artifact.id for artifact in artifacts]
+
+        by_path: dict[str, list[tuple[RegistryArtifact, str | None]]] = {}
+        for artifact in artifacts:
+            integration_id = artifact.repository.project.integration_instance_id
+            registry_host = _registry_host(materialization_session, integration_id)
+            by_path.setdefault(_artifact_repository_path(artifact), []).append(
+                (artifact, registry_host)
+            )
+
+        pod_query = filter_current_generation(
+            materialization_session.query(PodInventory),
+            PodInventory,
+        ).order_by(PodInventory.id.asc())
+        pod_total = pod_query.order_by(None).count()
+        if progress_callback is not None:
+            progress_callback(0, pod_total, 'Committed Pod Inventory')
+
+        if artifact_ids:
+            materialization_session.query(RegistryWorkloadBinding).filter(
+                RegistryWorkloadBinding.artifact_id.in_(artifact_ids)
+            ).delete(synchronize_session=False)
+
+        pending_bindings: list[dict[str, object]] = []
+        for pod_index, pod in enumerate(
+            pod_query.yield_per(normalized_batch_size),
+            start=1,
+        ):
+            # RegistryWorkloadBinding identity intentionally collapses duplicate
+            # references to the same artifact/image inside one Pod.
+            pod_seen: set[tuple[int, str]] = set()
+            for raw_image, container_name, source_kind in _container_rows(pod):
+                image = parse_image_reference(raw_image)
+                for artifact, registry_host in by_path.get(image.repository, ()):
+                    match = _match(image, artifact, registry_host=registry_host)
+                    if match is None:
+                        continue
+                    binding_identity = (int(artifact.id), image.raw)
+                    if binding_identity in pod_seen:
+                        break
+                    pod_seen.add(binding_identity)
+                    match_type, confidence = match
+                    pending_bindings.append(
+                        {
+                            'artifact_id': artifact.id,
+                            'pod_inventory_id': pod.id,
+                            'image_reference': image.raw,
+                            'match_type': match_type,
+                            'confidence': confidence,
+                            'cluster_id': str(pod.cluster_id),
+                            'namespace': pod.namespace,
+                            'workload_type': pod.workload_type,
+                            'workload_name': pod.workload_name,
+                            'pod_name': pod.pod_name,
+                            'container_name': container_name,
+                            'details': {
+                                'source_kind': source_kind,
+                                'registry_observed_at': artifact.observed_at.isoformat(),
+                                'pod_collected_at': pod.collected_at.isoformat(),
+                                'registry_host': registry_host,
+                            },
+                            'observed_at': observed_at,
+                        }
+                    )
+                    binding_count += 1
+                    digest_matches += int(match_type == 'digest')
+                    tag_matches += int(match_type == 'tag')
+                    break
+
+            if len(pending_bindings) >= normalized_batch_size:
+                materialization_session.execute(
+                    insert(RegistryWorkloadBinding),
+                    pending_bindings,
+                )
+                pending_bindings.clear()
+
+            if (
+                progress_callback is not None
+                and (pod_index % normalized_batch_size == 0 or pod_index == pod_total)
+            ):
+                progress_callback(
+                    pod_index,
+                    pod_total,
+                    str(pod.pod_name or f'Pod {pod_index}'),
+                )
+
+        if pending_bindings:
+            materialization_session.execute(
+                insert(RegistryWorkloadBinding),
+                pending_bindings,
+            )
+
     return {
         'bindings': binding_count,
         'digest_matches': digest_matches,
         'tag_matches': tag_matches,
+        'pods_evaluated': pod_total,
     }
