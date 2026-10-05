@@ -29,6 +29,7 @@ Artifact Registry intentionally remains inside the Registry capability instead o
 
 Canonical visual primitives live under `app/templates/components`, including:
 
+- `states/_empty_state.html` with the dashed `panel` variant for section-local missing/unavailable/no-findings evidence;
 - `operational_dashboard_workspace.html`;
 - `operational_signal_overview.html`;
 - `operational_evidence_tile.html`;
@@ -39,7 +40,7 @@ Canonical visual primitives live under `app/templates/components`, including:
 - `peer_content_grid.html`;
 - `reporting_dashboard_workspace.html`.
 
-`app/templates/dashboards/common` is not a second component library. New shared presentation primitives belong in `templates/components` when they are product-wide KAORI components.
+`app/templates/dashboards/common` is not a second component library. New shared presentation primitives belong in `templates/components` when they are product-wide KAORI components. A missing setup or required scope is a prerequisite blocker; once scope exists, missing section evidence in Capacity & Demand or Signals & Actions uses the shared dashed empty-state panel rather than a blocked-state variant.
 
 ## Domain ownership rules
 
