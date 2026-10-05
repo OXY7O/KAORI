@@ -101,9 +101,11 @@ All resource template registry entries are rooted at `inventory/kubernetes/<reso
 
 ## Detail and progressive-disclosure contract
 
-Inventory Overview plus Nodes, Namespaces, Configuration, Workloads, Pods, Services, Ingresses, and Storage use **Detail Style 2 — Full Workspace Modal** through `components/resource_detail_modal.html` and Unified Resource Sheet V10 primitives. Topology remains the deliberate exception because its adaptive explorer Inspector/Details drawers are part of the graph workspace itself.
+Inventory Overview plus Nodes, Namespaces, Configuration, Workloads, Pods, Services, Ingresses, and Storage use **Detail Style 2 — Full Workspace Modal** through `components/resource_detail_modal.html` and Unified Resource Sheet V10 primitives. Artifact Registry Projects, Repositories, and Artifacts reuse the same Full Workspace Modal progressive-disclosure contract for committed Registry Inventory detail. Topology remains the deliberate exception because its adaptive explorer Inspector/Details drawers are part of the graph workspace itself.
 
-Do not add page-local modal markup, local expandable-row JavaScript, nested scroll boxes, or a fourth disclosure pattern. Detail endpoints remain committed-snapshot reads and must not call Kubernetes live.
+Repository detail may expose a bounded artifact preview; Artifact detail may expose bounded tag references. These remain Inventory evidence only. Vulnerability, signature, SBOM, runtime-correlation, and governance interpretation stay in their owning Artifact Registry workspaces.
+
+Do not add page-local modal markup, local expandable-row JavaScript, nested scroll boxes, or a fourth disclosure pattern. Detail endpoints remain committed-snapshot reads and must not call Kubernetes or Registry providers live.
 
 ### Full Workspace Modal resource-header alignment
 
