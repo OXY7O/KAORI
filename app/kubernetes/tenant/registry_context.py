@@ -315,9 +315,9 @@ def get_tenant_registry_context(
     if include_decommission_preflight:
         from app.kubernetes.tenant.decommission_service import build_tenant_decommission_preflight
 
-    tenant_rows = []
+    tenant_rows: list[dict[str, Any]] = []
     for item in items:
-        row = {
+        row: dict[str, Any] = {
             'tenant': item,
             'cluster': cluster_map.get(str(item.cluster_id)),
             'environments': environment_map.get(item.id, []),
