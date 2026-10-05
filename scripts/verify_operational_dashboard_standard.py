@@ -1154,6 +1154,10 @@ def verify() -> None:
             'components/numbered_governance_steps.html',
             'Section-local missing/not-materialized evidence in **Capacity & Demand** and **Signals & Actions** uses',
             'Arrow Left/Right wrap; Home selects first; End selects last;',
+            'Fast Shell & Bounded Section Loading',
+            '1 HTTP request → 1 bounded presentation projection',
+            'Section requests must not call a full-dashboard builder',
+            'Do not materialize full ORM collections',
         ),
         'operational dashboard standard',
     )
