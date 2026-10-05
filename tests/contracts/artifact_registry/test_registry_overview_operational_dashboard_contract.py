@@ -303,6 +303,9 @@ def test_artifact_registry_dashboard_uses_bounded_section_projections() -> None:
 
     assert 'func.count(RegistryArtifact.id)' in presentation
     assert 'func.sum(RegistryArtifact.size_bytes)' in presentation
+    assert "RegistryArtifact.vulnerability_summary['critical'].as_integer()" in presentation
+    assert "RegistryArtifact.vulnerability_summary['high'].as_integer()" in presentation
+    assert 'for provider_id, scan_status, vulnerability_summary in security_query.all()' not in presentation
     assert 'RegistryTag.query' in presentation
     assert 'build_overview_section(' in routes
     assert "section='kpi_cards'" in signal
