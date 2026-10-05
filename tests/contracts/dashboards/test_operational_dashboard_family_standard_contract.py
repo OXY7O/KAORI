@@ -430,6 +430,7 @@ def test_capacity_and_signals_use_one_dashed_empty_state_contract() -> None:
     assert '{% elif not source_available %}' in shared_alerts
     assert '{% elif total_alerts == 0 %}' in shared_alerts
     assert 'empty_state_variant = "panel"' in shared_alerts
+    assert shared_alerts.count('empty_state_min_height = "min-h-[220px]"') == 2
     source_unavailable_branch = shared_alerts.split('{% elif not source_available %}', 1)[1].split(
         '{% elif total_alerts == 0 %}', 1
     )[0]
@@ -441,6 +442,7 @@ def test_capacity_and_signals_use_one_dashed_empty_state_contract() -> None:
     for source in (kubernetes_response, object_response, registry_response):
         assert 'No Active Signals' in source
         assert 'Alert Response Not Required' in source
+        assert 'empty_state_min_height = "min-h-[220px]"' in source
 
 def test_kubernetes_alert_response_uses_bounded_alertcase_section_projection() -> None:
     routes = read('app/kubernetes/dashboard/routes.py')
