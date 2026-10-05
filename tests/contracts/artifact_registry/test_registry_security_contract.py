@@ -183,12 +183,24 @@ def test_supply_chain_tables_use_standard_view_more_native_dialogs() -> None:
     assert 'data-kaori-native-dialog' in modals
     assert 'data-kaori-dialog-close' in modals
     assert 'data-artifact-registry-provider-capability-detail' in modals
+    assert 'data-artifact-registry-provider-capability-detail-v2' in modals
     assert 'data-artifact-registry-artifact-evidence-detail' in modals
-    assert 'Capability Evidence' in modals
-    assert 'Artifact Identity' in modals
+    assert 'data-artifact-registry-artifact-evidence-detail-v2' in modals
+    assert 'data-artifact-registry-capability-coverage' in modals
+    assert 'data-artifact-registry-artifact-snapshot' in modals
+    assert 'data-artifact-registry-supply-chain-evidence' in modals
+    assert 'data-artifact-registry-security-snapshot-summary' in modals
+    assert 'Committed Security Capability Scope' in modals
+    assert 'Capability Coverage' in modals
+    assert 'Artifact Snapshot' in modals
     assert 'Supply Chain Evidence' in modals
     assert 'Security Snapshot' in modals
+    assert 'Provider Evidence Boundary' in modals
+    assert 'Evidence Interpretation' in modals
     assert '{{ row.digest }}' in modals
     assert 'break-all' in modals
-    assert 'Presence is not trust-policy evaluation.' in modals
+    assert 'text-left' in modals
+    assert 'Presence is not trust-policy evaluation.' not in modals
+    assert 'Observed presence is not a KAORI trust-policy decision.' in modals
     assert 'No live provider request.' in modals
+    assert 'Evidence Scope' not in modals
