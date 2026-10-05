@@ -59,6 +59,9 @@ ALERT_RESPONSE_WORKSPACE = ROOT / 'app' / 'templates' / 'components' / 'operatio
 RECOMMENDATION_CARDS = ROOT / 'app' / 'templates' / 'components' / 'operational_recommendation_cards.html'
 DASHBOARD_EMPTY_STATE = ROOT / 'app' / 'templates' / 'components' / 'states' / '_empty_state.html'
 KUBERNETES_CAPACITY = DASHBOARD_DIR / 'partials' / '_capacity_snapshot.html'
+KUBERNETES_FORECAST = DASHBOARD_DIR / 'partials' / '_forecast_risk.html'
+OBJECT_CAPACITY = OBJECT_DASHBOARD_DIR / 'partials' / '_capacity.html'
+OBJECT_FORECAST = OBJECT_DASHBOARD_DIR / 'partials' / '_forecast_risk.html'
 KUBERNETES_INVENTORY = DASHBOARD_DIR / 'partials' / '_inventory_summary.html'
 KUBERNETES_FRESHNESS = DASHBOARD_DIR / 'partials' / '_data_freshness.html'
 OBJECT_OVERVIEW = OBJECT_DASHBOARD_DIR / 'partials' / '_overview.html'
@@ -508,6 +511,9 @@ def verify() -> None:
     recommendation_cards = _read(RECOMMENDATION_CARDS)
     dashboard_empty_state = _read(DASHBOARD_EMPTY_STATE)
     kubernetes_capacity = _read(KUBERNETES_CAPACITY)
+    kubernetes_forecast = _read(KUBERNETES_FORECAST)
+    object_capacity = _read(OBJECT_CAPACITY)
+    object_forecast = _read(OBJECT_FORECAST)
     kubernetes_inventory = _read(KUBERNETES_INVENTORY)
     kubernetes_freshness = _read(KUBERNETES_FRESHNESS)
     object_overview = _read(OBJECT_OVERVIEW)
@@ -916,6 +922,42 @@ def verify() -> None:
         ),
         'shared Operational Dashboard dashed panel empty state',
     )
+    for owner, source in (
+        ('Kubernetes Capacity Snapshot empty evidence', kubernetes_capacity),
+        ('Kubernetes Forecast empty evidence', kubernetes_forecast),
+        ('Object Storage Capacity Snapshot empty evidence', object_capacity),
+        ('Object Storage Forecast empty evidence', object_forecast),
+        ('Kubernetes Alert Response empty evidence', alert_guidance),
+        ('Object Storage Alert Response empty evidence', object_alert_guidance),
+        ('Artifact Registry Alert Response empty evidence', artifact_alert_guidance),
+    ):
+        _require(
+            source,
+            (
+                'components/states/_empty_state.html',
+                'empty_state_variant = "panel"',
+            ),
+            owner,
+        )
+
+    _require(
+        alert_summary_workspace,
+        (
+            '{% elif not source_available %}',
+            '{% elif total_alerts == 0 %}',
+            'components/states/_empty_state.html',
+            'empty_state_variant = "panel"',
+        ),
+        'shared Alerts Summary dashed empty evidence',
+    )
+    unavailable_alert_branch = alert_summary_workspace.split(
+        '{% elif not source_available %}', 1
+    )[1].split('{% elif total_alerts == 0 %}', 1)[0]
+    if 'components/states/_blocked_state.html' in unavailable_alert_branch:
+        raise AssertionError(
+            'shared Alerts Summary source-unavailable evidence must use dashed empty-state panel'
+        )
+
     _require(
         recommendation_cards,
         (
@@ -1208,7 +1250,7 @@ def verify() -> None:
             'components/operational_recommendation_cards.html',
             'components/reporting_dashboard_workspace.html',
             'components/numbered_governance_steps.html',
-            'Section-local missing/not-materialized evidence in **Capacity & Demand** and **Signals & Actions** uses',
+            'Section-local missing, unavailable, not-materialized, no-findings, or no-active-signal evidence in **Capacity & Demand** and **Signals & Actions** uses',
             'Arrow Left/Right wrap; Home selects first; End selects last;',
             'Fast Shell & Bounded Section Loading',
             '1 HTTP request → 1 bounded presentation projection',
