@@ -37,6 +37,7 @@ Canonical visual primitives live under `app/templates/components`, including:
 - `operational_alert_response.html`;
 - `operational_recommendation_cards.html`;
 - `operational_section_card.html`;
+- `operational_section_loading.html` for canonical KPI and bounded-section loading placeholders;
 - `peer_content_grid.html`;
 - `reporting_dashboard_workspace.html`.
 
@@ -72,6 +73,15 @@ Fast Shell
 ```
 
 The canonical invariant is **one HTTP request → one bounded presentation projection**. Initial requests render readiness/scope/active-tab/minimal context plus placeholders. KPI and tab sections load independently. A section endpoint must not rebuild the complete dashboard or project unrelated sections.
+
+Loading presentation is also shared. Current and future consumers use `components/operational_section_loading.html` instead of page-local pulse markup:
+
+- KPI placeholders use `section_loading.kpis(...)` and `hx-trigger="load"`;
+- bounded tab/section placeholders use `section_loading.section(...)` and `hx-trigger="revealed"`;
+- both replace their own container with `hx-target="this"` + `hx-swap="outerHTML"`;
+- no global dashboard loading overlay is allowed.
+
+Projection granularity stays domain-owned. A growing domain such as Kubernetes may split a canonical tab into finer bounded sub-projections when latency or failure isolation justifies it; another domain may keep one bounded projection per canonical tab. The visible loading grammar and request triggers do not fork.
 
 Domain services remain explicit. This contract does not authorize a universal route factory, generic service base class, or shared ORM repository. Future Server/VM, HCI, Source Control/GitHub, Backup, Network, and other dashboard implementations must begin with this loading boundary rather than copying a monolithic builder.
 
