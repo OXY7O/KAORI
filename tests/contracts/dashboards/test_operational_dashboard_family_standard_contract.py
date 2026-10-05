@@ -27,9 +27,9 @@ def test_operational_dashboards_share_the_same_outer_workspace_grammar() -> None
         assert 'dashboard_workspace.navigation(' in source
         assert 'hx-trigger="revealed"' in source
 
-    assert kubernetes.count('dashboard_workspace.panel(') == 4
-    assert '{% for tab_key, tab_label, tab_icon in dashboard_workspace.standard_tabs %}' in object_storage
-    assert object_storage.count('dashboard_workspace.panel(') == 1
+    for source in (kubernetes, object_storage):
+        assert '{% for tab_key, tab_label, tab_icon in dashboard_workspace.standard_tabs %}' in source
+        assert source.count('dashboard_workspace.panel(') == 1
 
     for token in (
         "('overview', 'Operations Overview', 'activity')",
@@ -355,23 +355,57 @@ def test_operational_dashboard_fast_shell_and_bounded_loading_are_locked() -> No
     assert 'Future Server/VM, HCI, Source Control/GitHub, Backup, Network' in architecture
 
 
-def test_kubernetes_fast_shell_lazy_loads_inventory_and_reporting_evidence() -> None:
+def test_kubernetes_fast_shell_uses_one_bounded_lazy_projection_per_canonical_tab() -> None:
     routes = read('app/kubernetes/dashboard/routes.py')
     service = read('app/kubernetes/dashboard/service.py')
     content = read('app/templates/kubernetes/dashboard/partials/_content.html')
+    overview_partial = read('app/templates/kubernetes/dashboard/partials/_overview.html')
 
-    assert "'inventory_summary': 'kubernetes/dashboard/partials/_inventory_summary.html'" in routes
-    assert "'reporting_summary': 'kubernetes/dashboard/partials/_reporting_summary.html'" in routes
-    assert "if section == 'inventory_summary':" in service
-    assert "if section == 'reporting_summary':" in service
+    for section, template in (
+        ('overview', '_overview.html'),
+        ('capacity', '_capacity.html'),
+        ('signals', '_signals.html'),
+        ('reporting', '_reporting.html'),
+    ):
+        assert f"'{section}': 'kubernetes/dashboard/partials/{template}'" in routes
+        assert f"if section == '{section}':" in service
 
-    overview = service.split('def get_dashboard_overview(', 1)[1].split('def get_dashboard_section(', 1)[0]
-    assert 'dashboard.inventory_snapshot = _inventory_snapshot' not in overview
-    assert 'dashboard.reporting_snapshot = build_reporting_snapshot' not in overview
+    shell = service.split('def get_dashboard_overview(', 1)[1].split('def get_dashboard_section(', 1)[0]
+    assert 'dashboard.inventory_snapshot = _inventory_snapshot' not in shell
+    assert 'dashboard.reporting_snapshot = build_reporting_snapshot' not in shell
 
-    assert "section='inventory_summary'" in content
-    assert "section='reporting_summary'" in content
+    assert '{% for tab_key, tab_label, tab_icon in dashboard_workspace.standard_tabs %}' in content
+    assert "url_for('kubernetes_dashboard.section', section=tab_key)" in content
     assert 'hx-trigger="revealed"' in content
+    for retired_initial_projection in (
+        "section='cluster_health'",
+        "section='inventory_summary'",
+        "section='data_freshness'",
+        "section='capacity_snapshot'",
+        "section='alerts_summary'",
+        "section='reporting_summary'",
+    ):
+        assert retired_initial_projection not in content
+
+    assert 'kubernetes/dashboard/partials/_cluster_health.html' in overview_partial
+    assert 'kubernetes/dashboard/partials/_inventory_summary.html' in overview_partial
+    assert 'kubernetes/dashboard/partials/_data_freshness.html' in overview_partial
+
+    overview_projection = service.split("if section == 'overview':", 1)[1].split(
+        "if section == 'capacity':", 1
+    )[0]
+    assert '_populate_cluster_health(' in overview_projection
+    assert 'dashboard.inventory_snapshot = _inventory_snapshot(selected_cluster_id)' in overview_projection
+    assert '_populate_data_freshness(' in overview_projection
+
+    freshness_projection = service.split('def _populate_data_freshness(', 1)[1].split(
+        'def _populate_capacity(', 1
+    )[0]
+    assert '_capacity_signal(' not in freshness_projection
+    assert '_alerts_signal(' not in freshness_projection
+    assert '_top_consumers_signal(' not in freshness_projection
+    assert '_forecast_signal(' not in freshness_projection
+    assert 'read_dashboard_snapshot(' in freshness_projection
 
 
 def test_object_storage_section_requests_do_not_rebuild_full_overview() -> None:
@@ -444,28 +478,28 @@ def test_capacity_and_signals_use_one_dashed_empty_state_contract() -> None:
         assert 'Alert Response Not Required' in source
         assert 'empty_state_min_height = "min-h-[220px]"' in source
 
-def test_kubernetes_alert_response_uses_bounded_alertcase_section_projection() -> None:
+def test_kubernetes_alert_response_uses_bounded_signals_tab_projection() -> None:
     routes = read('app/kubernetes/dashboard/routes.py')
     service = read('app/kubernetes/dashboard/service.py')
     content = read('app/templates/kubernetes/dashboard/partials/_content.html')
+    signals = read('app/templates/kubernetes/dashboard/partials/_signals.html')
 
-    assert (
-        "'alert_response_guidance': 'kubernetes/dashboard/partials/_alert_response_guidance.html'"
-        in routes
-    )
-    assert "if section == 'alert_response_guidance':" in service
-    response_projection = service.split("if section == 'alert_response_guidance':", 1)[1].split(
-        "if section == 'top_consumers':", 1
+    assert "'signals': 'kubernetes/dashboard/partials/_signals.html'" in routes
+    assert "if section == 'signals':" in service
+    signals_projection = service.split("if section == 'signals':", 1)[1].split(
+        "if section == 'reporting':", 1
     )[0]
-    assert 'dashboard.alerts_snapshot = _kaori_alert_snapshot(selected)' in response_projection
+    assert '_populate_signals(' in signals_projection
+    signal_helper = service.split('def _populate_signals(', 1)[1].split(
+        'def get_dashboard_overview(', 1
+    )[0]
+    assert 'dashboard.alerts_snapshot = _kaori_alert_snapshot(selected)' in signal_helper
 
-    assert "section='alert_response_guidance'" in content
-    assert 'id="dashboard-alert-response-guidance"' in content
+    assert "url_for('kubernetes_dashboard.section', section=tab_key)" in content
     assert 'hx-trigger="revealed"' in content
-    assert (
-        '{% include "kubernetes/dashboard/partials/_alert_response_guidance.html" %}'
-        not in content
-    )
+    assert 'kubernetes/dashboard/partials/_alert_response_guidance.html' in signals
+    assert 'kubernetes/dashboard/partials/_alerts_summary.html' in signals
+    assert 'kubernetes/dashboard/partials/_recommended_actions.html' in signals
 
 def test_artifact_registry_signals_follow_object_storage_selected_scope_contract() -> None:
     registry_signals = read('app/templates/artifact_registry/partials/_overview_signals.html')
