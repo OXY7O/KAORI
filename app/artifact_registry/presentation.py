@@ -1479,6 +1479,7 @@ def build_inventory(
 
     source_options: list[dict[str, Any]] = []
     environment_options: list[str] = []
+    project_posture_metrics: list[tuple[str, str, Any, str, str]] = []
     if resource == 'projects':
         source_lookup: dict[int, dict[str, Any]] = {}
         for row in rows:
@@ -1504,6 +1505,38 @@ def build_inventory(
             },
             key=str.lower,
         )
+        public_projects = sum(row['public'] is True for row in rows)
+        visibility_missing = sum(row['public'] is None for row in rows)
+        project_posture_metrics = [
+            (
+                'folder-kanban',
+                'Projects',
+                len(rows),
+                'Committed Registry project identities.',
+                'brand',
+            ),
+            (
+                'database-backup',
+                'Registry Sources',
+                len(source_options),
+                'Registry providers contributing committed project evidence.',
+                'brand',
+            ),
+            (
+                'globe-2',
+                'Public Projects',
+                public_projects,
+                'Projects declared public in committed provider evidence.',
+                'warning' if public_projects else 'normal',
+            ),
+            (
+                'circle-help',
+                'Visibility Not Observed',
+                visibility_missing,
+                'Projects without committed visibility evidence.',
+                'warning' if visibility_missing else 'normal',
+            ),
+        ]
 
         if source_id is not None:
             rows = [row for row in rows if int(row['provider_id']) == int(source_id)]
@@ -1612,6 +1645,7 @@ def build_inventory(
         'has_filters': has_filters,
         'source_options': source_options,
         'environment_options': environment_options,
+        'project_posture_metrics': project_posture_metrics,
         'visibility_options': (
             [
                 {'value': 'public', 'label': 'Public'},
