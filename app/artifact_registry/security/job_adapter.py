@@ -82,10 +82,10 @@ def build_registry_security_sync_state(*, policy: JobPolicy | None = None) -> di
 
     if active_job is not None and active_job.status == 'queued':
         label, tone, icon = 'Queued', 'pending', 'clock-3'
-        helper = active_job.progress_message or 'Waiting for the inventory worker to start Security Sync.'
+        helper = active_job.progress_message or 'Waiting for the Registry Security worker to start Security Sync.'
     elif active_job is not None:
         label, tone, icon = 'Syncing', 'pending', 'loader-circle'
-        helper = active_job.progress_message or 'Security evidence is refreshing on the inventory worker.'
+        helper = active_job.progress_message or 'Security evidence is refreshing on the dedicated Registry Security worker.'
     elif latest_job is not None and latest_job.status == 'failed':
         label, tone, icon = 'Sync Failed', 'critical', 'circle-x'
         helper = 'The latest Security Sync failed. Previous committed evidence remains readable.'
