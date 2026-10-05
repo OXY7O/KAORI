@@ -110,6 +110,24 @@ def test_object_storage_inventory_has_no_page_local_palette_or_typography_drift(
     assert 'data-kaori-inventory-detail="v10"' in source
 
 
+def test_systems_and_namespaces_use_canonical_resource_section_hierarchy() -> None:
+    systems = read('app/templates/storage/object_storage/inventory/systems/partials/_page_workspace.html')
+    buckets = read('app/templates/storage/object_storage/inventory/buckets/partials/_page_workspace.html')
+
+    for workspace in (systems, buckets):
+        assert 'components/section_intro.html' in workspace
+        assert "'Operational Posture'" in workspace
+        assert "'Inventory Records'" in workspace
+        assert workspace.index("'Operational Posture'") < workspace.index("'Inventory Records'")
+
+    assert 'System Inventory Posture' in read(
+        'app/templates/storage/object_storage/inventory/systems/partials/_summary_cards.html'
+    )
+    assert 'Object Storage Namespace Posture' in read(
+        'app/templates/storage/object_storage/inventory/buckets/partials/_summary_cards.html'
+    )
+
+
 def test_inventory_tables_keep_canonical_scope_refresh_and_pagination_ownership() -> None:
     systems = read('app/templates/storage/object_storage/inventory/systems/partials/_table_card.html')
     system_rows = read('app/templates/storage/object_storage/inventory/systems/partials/_table_content.html')
