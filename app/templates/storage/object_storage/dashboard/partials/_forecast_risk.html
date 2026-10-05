@@ -12,14 +12,14 @@
     extra_classes='h-full'
     ) %}
     {% if not dashboard.forecast.available %}
-        {% set blocked_state_icon = "chart-spline" %}
-        {% set blocked_state_label = "Forecast Required" %}
-        {% set blocked_state_title = "Forecast Snapshot Unavailable" %}
-        {% set blocked_state_description = "Run Object Storage Forecast Data Refresh after sufficient historical usage evidence is available." %}
-        {% set blocked_state_tone = "warning" %}
-        {% set blocked_state_variant = "table" %}
-        {% set blocked_state_min_height = "min-h-[180px]" %}
-        {% include 'components/states/_blocked_state.html' %}
+        {% set empty_state_icon = "chart-spline" %}
+        {% set empty_state_label = "Forecast Required" %}
+        {% set empty_state_tone = "warning" %}
+        {% set empty_state_title = "Forecast Snapshot Unavailable" %}
+        {% set empty_state_description = "Run Object Storage Forecast Data Refresh after sufficient historical usage evidence is available." %}
+        {% set empty_state_variant = "panel" %}
+        {% set empty_state_min_height = "min-h-[220px]" %}
+        {% include 'components/states/_empty_state.html' %}
     {% else %}
         <div class="grid gap-3 sm:grid-cols-3">
             <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
