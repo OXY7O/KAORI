@@ -9,8 +9,10 @@ from app.artifact_registry.presentation import (
     build_analytics,
     build_governance,
     build_inventory,
+    build_inventory_artifact_detail,
     build_inventory_overview,
     build_inventory_project_detail,
+    build_inventory_repository_detail,
     build_overview,
     build_overview_section,
     build_runtime_usage,
@@ -127,10 +129,34 @@ def inventory_repositories() -> ResponseReturnValue:
     return _inventory_resource_response('repositories')
 
 
+@artifact_registry_bp.get('/inventory/repositories/<int:repository_id>/details')
+@permission_required('artifact_registry.view')
+def inventory_repository_details(repository_id: int) -> ResponseReturnValue:
+    repository = build_inventory_repository_detail(repository_id)
+    if repository is None:
+        abort(404)
+    return render_template(
+        'artifact_registry/partials/_inventory_repository_detail.html',
+        repository=repository,
+    )
+
+
 @artifact_registry_bp.get('/inventory/artifacts')
 @permission_required('artifact_registry.view')
 def inventory_artifacts() -> ResponseReturnValue:
     return _inventory_resource_response('artifacts')
+
+
+@artifact_registry_bp.get('/inventory/artifacts/<int:artifact_id>/details')
+@permission_required('artifact_registry.view')
+def inventory_artifact_details(artifact_id: int) -> ResponseReturnValue:
+    artifact = build_inventory_artifact_detail(artifact_id)
+    if artifact is None:
+        abort(404)
+    return render_template(
+        'artifact_registry/partials/_inventory_artifact_detail.html',
+        artifact=artifact,
+    )
 
 
 def _security_response(kind: str) -> ResponseReturnValue:
