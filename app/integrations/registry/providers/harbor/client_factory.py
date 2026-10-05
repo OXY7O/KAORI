@@ -16,7 +16,12 @@ def connection_spec(source: HarborInstance) -> HarborConnectionSpec:
     )
 
 
-def build_client(source: HarborInstance) -> HarborClient:
+def build_client(
+    source: HarborInstance,
+    *,
+    transport_retries: int = 0,
+    retry_backoff_seconds: float = 0.25,
+) -> HarborClient:
     spec = connection_spec(source)
     return HarborClient(
         endpoint=spec.endpoint,
@@ -25,4 +30,6 @@ def build_client(source: HarborInstance) -> HarborClient:
         password=spec.password,
         timeout=spec.timeout,
         verify_ssl=spec.verify_ssl,
+        transport_retries=transport_retries,
+        retry_backoff_seconds=retry_backoff_seconds,
     )

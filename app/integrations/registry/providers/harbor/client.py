@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from time import perf_counter
+from time import perf_counter, sleep
 from typing import Any
 from urllib.parse import quote
 
@@ -15,6 +15,9 @@ from app.integrations.registry.providers.harbor.exceptions import (
 )
 
 
+_TRANSIENT_STATUS_CODES = frozenset({429, 502, 503, 504})
+
+
 class HarborClient:
     """Read-only Harbor API v2.0 client used by readiness and committed-evidence collectors."""
 
@@ -27,6 +30,8 @@ class HarborClient:
         password: str | None = None,
         timeout: int = 5,
         verify_ssl: bool = True,
+        transport_retries: int = 0,
+        retry_backoff_seconds: float = 0.25,
     ) -> None:
         self.endpoint = endpoint.rstrip('/')
         self.auth_type = auth_type
@@ -34,6 +39,8 @@ class HarborClient:
         self.password = password
         self.timeout = max(1, min(int(timeout or 5), 30))
         self.verify_ssl = bool(verify_ssl)
+        self.transport_retries = max(0, min(int(transport_retries or 0), 3))
+        self.retry_backoff_seconds = max(0.0, min(float(retry_backoff_seconds or 0.0), 2.0))
 
     def test_connection(self) -> dict[str, Any]:
         started = perf_counter()
@@ -282,28 +289,43 @@ class HarborClient:
             auth = HTTPBasicAuth(self.username, self.password or '')
         request_headers = {'Accept': 'application/json'}
         request_headers.update(headers or {})
-        try:
-            response = requests.get(
-                f'{self.endpoint}{path}',
-                params=params,
-                auth=auth,
-                timeout=self.timeout,
-                verify=self.verify_ssl,
-                headers=request_headers,
-            )
-        except requests.RequestException as exc:
-            raise HarborConnectionError(
-                'Harbor API request failed before a response was received.'
-            ) from exc
+        last_transport_error: requests.RequestException | None = None
+        for attempt in range(self.transport_retries + 1):
+            try:
+                response = requests.get(
+                    f'{self.endpoint}{path}',
+                    params=params,
+                    auth=auth,
+                    timeout=self.timeout,
+                    verify=self.verify_ssl,
+                    headers=request_headers,
+                )
+            except requests.RequestException as exc:
+                last_transport_error = exc
+                if attempt >= self.transport_retries:
+                    raise HarborConnectionError(
+                        'Harbor API request failed before a response was received.'
+                    ) from exc
+                if self.retry_backoff_seconds:
+                    sleep(self.retry_backoff_seconds * (2**attempt))
+                continue
 
-        if response.status_code in {401, 403}:
-            raise HarborAuthError(
-                f'Harbor authentication or authorization failed with HTTP {response.status_code}.',
-                status=response.status_code,
-            )
-        if response.status_code >= 400:
-            raise HarborResponseError(
-                f'Harbor returned HTTP {response.status_code} for {path}.',
-                status=response.status_code,
-            )
-        return response
+            if response.status_code in {401, 403}:
+                raise HarborAuthError(
+                    f'Harbor authentication or authorization failed with HTTP {response.status_code}.',
+                    status=response.status_code,
+                )
+            if response.status_code in _TRANSIENT_STATUS_CODES and attempt < self.transport_retries:
+                if self.retry_backoff_seconds:
+                    sleep(self.retry_backoff_seconds * (2**attempt))
+                continue
+            if response.status_code >= 400:
+                raise HarborResponseError(
+                    f'Harbor returned HTTP {response.status_code} for {path}.',
+                    status=response.status_code,
+                )
+            return response
+
+        raise HarborConnectionError(
+            'Harbor API request failed before a response was received.'
+        ) from last_transport_error

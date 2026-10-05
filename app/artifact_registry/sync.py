@@ -24,6 +24,25 @@ from app.models.registry import (
 logger = logging.getLogger(__name__)
 
 
+def _mark_inventory_collection_started(
+    state: RegistryCollectionState,
+    *,
+    started_at: datetime,
+) -> None:
+    """Keep the last committed snapshot readable while a refresh is in flight."""
+    state.status = 'ready' if state.last_committed_at is not None else 'collecting'
+    state.last_started_at = started_at
+
+
+def _mark_inventory_collection_failed(
+    state: RegistryCollectionState,
+    error: Exception | str,
+) -> None:
+    """Record refresh failure without invalidating an existing committed snapshot."""
+    state.status = 'ready' if state.last_committed_at is not None else 'failed'
+    state.last_error = str(error)[:2000]
+
+
 def _parse_datetime(value: Any) -> datetime | None:
     if not value:
         return None
@@ -251,9 +270,7 @@ def sync_registry_inventory(
     collector = get_registry_collector(identity.provider_key)
     observed_at = datetime.now(UTC)
     state = _lock_collection_state(int(identity.id))
-    state.status = 'collecting'
-    state.last_started_at = observed_at
-    state.last_error = None
+    _mark_inventory_collection_started(state, started_at=observed_at)
     db.session.flush()
     try:
         evidence = (
@@ -266,8 +283,7 @@ def sync_registry_inventory(
     except Exception as exc:
         db.session.rollback()
         state = _lock_collection_state(int(identity.id))
-        state.status = 'failed'
-        state.last_error = str(exc)[:2000]
+        _mark_inventory_collection_failed(state, exc)
         db.session.commit()
         logger.exception('Artifact Registry synchronization failed for Registry instance %s (%s).', identity.id, identity.provider_key)
         raise

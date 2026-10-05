@@ -64,6 +64,12 @@ Normal inventory refresh must preserve row identity for unchanged Projects, Repo
 digests so downstream Security, Governance, Runtime Correlation, and Analytics evidence is not destroyed
 and rebuilt unnecessarily. Only provider objects that genuinely disappear are deleted.
 
+Once a Registry instance has a committed snapshot, that snapshot remains **ready** while a newer inventory
+refresh is collecting and if that refresh later fails. Active execution state belongs to canonical
+Job Execution; `RegistryCollectionState.status` describes committed snapshot usability. The failed
+attempt is retained in `last_error` without making the prior committed inventory unavailable to Security or
+other committed-state consumers.
+
 ## Harbor Security Scale Contract
 
 Security refresh is intentionally independent from inventory because Harbor estates may contain hundreds or
@@ -83,6 +89,11 @@ repository artifact page
 
 KAORI never triggers provider scans from this path. A slow or failed security refresh must not invalidate
 committed inventory.
+
+Harbor security discovery keeps enriched artifact pages bounded to 50 records and applies at most two
+transient transport retries with exponential backoff for read-only provider calls. Authentication failures
+and non-transient provider responses still fail fast; the configured provider timeout remains authoritative
+for each request attempt.
 
 The existing `inventory` Celery queue is used initially to avoid introducing a new worker topology before
 runtime evidence proves it is necessary. If incremental security refresh later causes material queue

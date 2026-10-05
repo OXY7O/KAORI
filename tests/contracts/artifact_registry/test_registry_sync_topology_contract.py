@@ -35,6 +35,19 @@ def test_registry_security_is_incremental_and_independent() -> None:
     assert 'artifact_registry.security.sync' in registered_jobs
     assert 'artifact-registry-security:global' in security_jobs
     assert 'require_registered_worker=True' in security_jobs
+    assert '_SECURITY_DISCOVERY_PAGE_SIZE = 50' in harbor_security
+    assert 'page_size=_SECURITY_DISCOVERY_PAGE_SIZE' in harbor_security
+    assert '_SECURITY_TRANSPORT_RETRIES = 2' in harbor_security
+    assert 'transport_retries=_SECURITY_TRANSPORT_RETRIES' in harbor_security
+
+
+def test_registry_inventory_keeps_committed_snapshot_ready_during_refresh_failures() -> None:
+    inventory_sync = (ROOT / 'app/artifact_registry/sync.py').read_text()
+
+    assert "state.status = 'ready' if state.last_committed_at is not None else 'collecting'" in inventory_sync
+    assert "state.status = 'ready' if state.last_committed_at is not None else 'failed'" in inventory_sync
+    assert '_mark_inventory_collection_started(state, started_at=observed_at)' in inventory_sync
+    assert '_mark_inventory_collection_failed(state, exc)' in inventory_sync
 
 
 def test_registry_governance_and_runtime_correlation_are_separate_jobs() -> None:

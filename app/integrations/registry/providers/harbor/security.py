@@ -15,6 +15,8 @@ from app.integrations.registry.providers.harbor.client_factory import build_clie
 from app.models.harbor import HarborInstance
 
 _SEVERITIES = ('critical', 'high', 'medium', 'low', 'negligible', 'unknown')
+_SECURITY_DISCOVERY_PAGE_SIZE = 50
+_SECURITY_TRANSPORT_RETRIES = 2
 
 
 def _parse_datetime(value: Any) -> datetime | None:
@@ -184,7 +186,7 @@ def collect_harbor_security(
 ) -> RegistrySecurityEvidence:
     """Collect Harbor security evidence incrementally from committed artifact identities."""
 
-    client = build_client(instance)
+    client = build_client(instance, transport_retries=_SECURITY_TRANSPORT_RETRIES)
     grouped: dict[tuple[str, str], list[RegistrySecurityTarget]] = defaultdict(list)
     for target in targets:
         grouped[(target.project_name, target.repository_name)].append(target)
@@ -202,6 +204,7 @@ def collect_harbor_security(
         raw_artifacts = client.list_all_artifacts(
             project_name_or_id=project_name,
             repository_name=repository_name,
+            page_size=_SECURITY_DISCOVERY_PAGE_SIZE,
             with_scan_overview=True,
             with_sbom_overview=True,
             with_signature=True,

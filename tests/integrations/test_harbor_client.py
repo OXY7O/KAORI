@@ -71,8 +71,11 @@ def test_harbor_client_discovers_identity_and_read_capabilities(monkeypatch) -> 
 
 def test_harbor_client_rejects_auth_without_leaking_secret(monkeypatch) -> None:
     secret = 'never-retain-this-secret'
+    calls = 0
 
     def fake_get(url, **kwargs):
+        nonlocal calls
+        calls += 1
         return _Response(401, {'errors': [{'code': 'UNAUTHORIZED'}]})
 
     monkeypatch.setattr('app.integrations.registry.providers.harbor.client.requests.get', fake_get)
@@ -81,6 +84,7 @@ def test_harbor_client_rejects_auth_without_leaking_secret(monkeypatch) -> None:
         endpoint='https://harbor.example.test',
         username='robot$kaori',
         password=secret,
+        transport_retries=2,
     )
 
     with pytest.raises(HarborAuthError) as exc_info:
@@ -88,6 +92,7 @@ def test_harbor_client_rejects_auth_without_leaking_secret(monkeypatch) -> None:
 
     assert secret not in str(exc_info.value)
     assert exc_info.value.status == 401
+    assert calls == 1
 
 
 def test_harbor_client_uses_get_only_for_foundation_probes(monkeypatch) -> None:
@@ -107,6 +112,31 @@ def test_harbor_client_uses_get_only_for_foundation_probes(monkeypatch) -> None:
     client.list_repositories(project_name_or_id='library')
 
     assert methods == ['GET', 'GET', 'GET']
+
+
+def test_harbor_client_retries_transient_transport_failure_with_bounded_backoff(monkeypatch) -> None:
+    calls = 0
+    delays: list[float] = []
+
+    def fake_get(url, **kwargs):
+        nonlocal calls
+        calls += 1
+        if calls < 3:
+            raise requests.Timeout('temporary provider timeout')
+        return _Response(200, {'status': 'healthy'})
+
+    monkeypatch.setattr('app.integrations.registry.providers.harbor.client.requests.get', fake_get)
+    monkeypatch.setattr('app.integrations.registry.providers.harbor.client.sleep', delays.append)
+
+    client = HarborClient(
+        endpoint='https://harbor.example.test',
+        transport_retries=2,
+        retry_backoff_seconds=0.1,
+    )
+
+    assert client.get_health()['status'] == 'healthy'
+    assert calls == 3
+    assert delays == [0.1, 0.2]
 
 
 def test_harbor_client_normalizes_transport_failure_without_exposing_raw_exception(monkeypatch) -> None:
