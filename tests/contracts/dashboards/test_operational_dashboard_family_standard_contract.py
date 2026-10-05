@@ -488,3 +488,51 @@ def test_artifact_registry_signals_follow_object_storage_selected_scope_contract
     assert "status_available_label='KAORI Alert Cases Available'" in registry_alerts
     assert "status_available_label='KAORI Alert Cases Available'" in object_alerts
 
+def test_operational_dashboard_loading_presentation_is_shared_across_current_consumers() -> None:
+    shared = read('app/templates/components/operational_section_loading.html')
+    kubernetes = read('app/templates/kubernetes/dashboard/partials/_content.html')
+    kubernetes_signal = read('app/templates/kubernetes/dashboard/partials/_signal_overview.html')
+    object_storage = read('app/templates/storage/object_storage/dashboard/partials/_content.html')
+    object_signal = read('app/templates/storage/object_storage/dashboard/partials/_signal_overview.html')
+    registry = read('app/templates/artifact_registry/partials/_overview_content.html')
+    registry_signal = read('app/templates/artifact_registry/partials/_overview_signal_overview.html')
+    standard = read('docs/design/patterns/OPERATIONAL_DASHBOARD.md')
+    dashboard_readme = read('app/dashboards/README.md')
+
+    assert '{% macro section(' in shared
+    assert '{% macro kpis(' in shared
+    assert "table_label.status_indicator_label('Preparing', 'pending')" in shared
+    assert 'aria-busy="true"' in shared
+    assert 'h-14 animate-pulse rounded-lg bg-surface-hover' in shared
+    assert 'h-28 animate-pulse rounded-lg bg-surface-hover' in shared
+
+    for source in (kubernetes, object_storage, registry):
+        assert 'components/operational_section_loading.html' in source
+        assert 'section_loading.section(' in source
+        assert 'hx-trigger="revealed"' in source
+        assert 'hx-target="this"' in source
+        assert 'hx-swap="outerHTML"' in source
+
+    for source in (kubernetes_signal, object_signal, registry_signal):
+        assert 'components/operational_section_loading.html' in source
+        assert 'section_loading.kpis(' in source
+        assert 'hx-trigger="load"' in source
+        assert 'hx-target="this"' in source
+        assert 'hx-swap="outerHTML"' in source
+
+    assert 'item_count=8' in kubernetes_signal
+    assert 'item_count=4' in object_signal
+    assert 'item_count=4' in registry_signal
+
+    assert not Path('app/templates/kubernetes/dashboard/partials/_section_loading.html').exists()
+    for source in (object_storage, registry):
+        assert '<div class="grid gap-3 sm:grid-cols-3" aria-busy="true">' not in source
+    for source in (object_signal, registry_signal):
+        assert 'for _ in range(4)' not in source
+
+    assert 'components/operational_section_loading.html' in standard
+    assert 'hx-trigger="load"' in standard
+    assert 'hx-trigger="revealed"' in standard
+    assert 'Projection granularity remains domain-owned' in standard
+    assert 'operational_section_loading.html' in dashboard_readme
+
