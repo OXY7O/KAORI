@@ -10,6 +10,10 @@ from app.artifact_registry.correlation import refresh_registry_workload_bindings
 from app.platform_operations.jobs.execution import JobExecutionContext
 
 
+def _now_iso() -> str:
+    return datetime.now(UTC).isoformat()
+
+
 @shared_task(
     bind=True,
     name='app.artifact_registry.correlation_tasks.materialize_registry_runtime_correlation',
@@ -26,7 +30,7 @@ def materialize_registry_runtime_correlation_task(
     started = perf_counter()
     context.start(
         message='Preparing committed Registry to Kubernetes runtime correlation.',
-        total=1,
+        total=0,
         percent=5,
         stage='Preparing Runtime Correlation',
         target='Registry and Kubernetes Inventory',
@@ -34,13 +38,53 @@ def materialize_registry_runtime_correlation_task(
     try:
         context.checkpoint(
             current=0,
-            total=1,
-            percent=35,
-            stage='Materializing Runtime Correlation',
-            target='Committed Inventory',
-            message='Matching committed Kubernetes runtime image evidence to committed Registry artifacts.',
+            total=0,
+            percent=20,
+            stage='Indexing Runtime Correlation',
+            target='Committed Registry Inventory',
+            message='Indexing committed Registry artifact identity before runtime matching.',
         )
-        result = refresh_registry_workload_bindings()
+        last_reported_percent = -1
+
+        def report_correlation_progress(current: int, total: int, target: str) -> None:
+            nonlocal last_reported_percent
+            fraction = current / max(total, 1) if total else 0
+            overall_percent = 35 if current == 0 else min(35 + int(fraction * 55), 90)
+            is_boundary = current in {0, total}
+            if not is_boundary and overall_percent <= last_reported_percent:
+                return
+            last_reported_percent = overall_percent
+            message = (
+                f'Processed {current} of {total} committed Kubernetes Pods.'
+                if total
+                else 'No current committed Kubernetes Pods are available to correlate.'
+            )
+            context.checkpoint(
+                current=current,
+                total=total,
+                percent=overall_percent,
+                stage='Materializing Runtime Correlation',
+                target=target,
+                message=message,
+            )
+            self.update_state(
+                state='PROGRESS',
+                meta={
+                    'requested_by_user_id': requested_by_user_id,
+                    'job_execution_id': job_execution_id,
+                    'processed_count': current,
+                    'total_count': total,
+                    'progress_percent': overall_percent,
+                    'progress_stage': 'Materializing Runtime Correlation',
+                    'current_target': target,
+                    'message': message,
+                    'heartbeat_at': _now_iso(),
+                },
+            )
+
+        result = refresh_registry_workload_bindings(
+            progress_callback=report_correlation_progress,
+        )
     except Exception as exc:
         context.fail(
             exc,
@@ -51,15 +95,15 @@ def materialize_registry_runtime_correlation_task(
     result = {
         **result,
         'requested_by_user_id': requested_by_user_id,
-        'finished_at': datetime.now(UTC).isoformat(),
+        'finished_at': _now_iso(),
         'duration_seconds': round(perf_counter() - started, 1),
     }
     context.checkpoint(
-        current=1,
-        total=1,
+        current=int(result.get('pods_evaluated') or 0),
+        total=int(result.get('pods_evaluated') or 0),
         percent=98,
         stage='Finalizing Runtime Correlation',
-        target='Committed Inventory',
+        target='Committed Runtime Bindings',
         message='Finalizing committed Registry runtime blast-radius evidence.',
     )
     context.succeed(
