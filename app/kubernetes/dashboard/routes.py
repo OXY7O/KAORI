@@ -19,6 +19,10 @@ kubernetes_dashboard_bp = Blueprint(
 
 
 SECTION_TEMPLATES = {
+    'overview': 'kubernetes/dashboard/partials/_overview.html',
+    'capacity': 'kubernetes/dashboard/partials/_capacity.html',
+    'signals': 'kubernetes/dashboard/partials/_signals.html',
+    'reporting': 'kubernetes/dashboard/partials/_reporting.html',
     'kpi_cards': 'kubernetes/dashboard/partials/_kpi_cards.html',
     'inventory_summary': 'kubernetes/dashboard/partials/_inventory_summary.html',
     'reporting_summary': 'kubernetes/dashboard/partials/_reporting_summary.html',
