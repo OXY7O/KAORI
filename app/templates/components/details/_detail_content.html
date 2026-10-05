@@ -374,11 +374,11 @@
     <div data-resource-detail-summary
          data-kaori-node-inspector-summary
          data-kaori-inventory-summary-alignment="shared-gutter"
-         class="mx-4 mt-5 grid overflow-hidden border border-outline-subtle bg-surface-card sm:mx-5 sm:grid-cols-2 lg:mx-6 lg:mt-6 xl:grid-cols-4">
+         class="mx-4 mt-5 grid overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card sm:mx-5 sm:grid-cols-2 lg:mx-6 lg:mt-6 xl:grid-cols-4">
         {% for item in items %}
             {% set tone = item.tone if item.tone is defined else 'brand' %}
             {% set icon_classes = 'bg-status-normal-soft text-status-normal-text' if tone == 'normal' else ('bg-status-warning-soft text-status-warning-text' if tone == 'warning' else ('bg-status-critical-soft text-status-critical-text' if tone == 'critical' else 'bg-kaori-soft text-kaori-primary')) %}
-            <article class="flex min-w-0 items-start gap-3 border-b border-outline-subtle px-6 py-5 sm:border-r sm:[&:nth-child(2n)]:border-r-0 xl:border-b-0 xl:[&:nth-child(2n)]:border-r xl:last:border-r-0">
+            <article class="flex min-w-0 items-start gap-3 px-6 py-5">
                 <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {{ icon_classes }}"
                       aria-hidden="true"><i data-lucide="{{ item.icon }}" class="h-4 w-4"></i></span>
                 <div class="min-w-0">
