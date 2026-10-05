@@ -58,6 +58,9 @@ ALERT_SUMMARY_WORKSPACE = ROOT / 'app' / 'templates' / 'components' / 'operation
 ALERT_RESPONSE_WORKSPACE = ROOT / 'app' / 'templates' / 'components' / 'operational_alert_response.html'
 RECOMMENDATION_CARDS = ROOT / 'app' / 'templates' / 'components' / 'operational_recommendation_cards.html'
 DASHBOARD_EMPTY_STATE = ROOT / 'app' / 'templates' / 'components' / 'states' / '_empty_state.html'
+DASHBOARD_LOADING = ROOT / 'app' / 'templates' / 'components' / 'operational_section_loading.html'
+DASHBOARDS_README = ROOT / 'app' / 'dashboards' / 'README.md'
+LEGACY_KUBERNETES_SECTION_LOADING = DASHBOARD_DIR / 'partials' / '_section_loading.html'
 KUBERNETES_CAPACITY = DASHBOARD_DIR / 'partials' / '_capacity_snapshot.html'
 KUBERNETES_FORECAST = DASHBOARD_DIR / 'partials' / '_forecast_risk.html'
 OBJECT_CAPACITY = OBJECT_DASHBOARD_DIR / 'partials' / '_capacity.html'
@@ -107,7 +110,6 @@ SECTION_PARTIALS = (
     '_alerts_summary.html',
     '_recommended_actions.html',
     '_alert_response_guidance.html',
-    '_section_loading.html',
 )
 
 STALE_COPY = (
@@ -513,6 +515,8 @@ def verify() -> None:
     alert_response_workspace = _read(ALERT_RESPONSE_WORKSPACE)
     recommendation_cards = _read(RECOMMENDATION_CARDS)
     dashboard_empty_state = _read(DASHBOARD_EMPTY_STATE)
+    dashboard_loading = _read(DASHBOARD_LOADING)
+    dashboards_readme = _read(DASHBOARDS_README)
     kubernetes_capacity = _read(KUBERNETES_CAPACITY)
     kubernetes_forecast = _read(KUBERNETES_FORECAST)
     object_capacity = _read(OBJECT_CAPACITY)
