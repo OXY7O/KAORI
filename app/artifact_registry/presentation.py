@@ -1839,6 +1839,154 @@ def build_inventory_project_detail(project_id: int) -> dict[str, Any] | None:
     }
 
 
+def _inventory_detail_provider_context(integration_instance_id: int) -> dict[str, Any]:
+    provider = IntegrationInstance.query.filter(
+        IntegrationInstance.id == int(integration_instance_id)
+    ).first()
+    state = RegistryCollectionState.query.filter(
+        RegistryCollectionState.integration_instance_id == int(integration_instance_id)
+    ).first()
+    metadata = (
+        provider.metadata_json
+        if provider is not None and isinstance(provider.metadata_json, dict)
+        else {}
+    )
+    provider_key = str(provider.provider_key or 'registry') if provider is not None else 'registry'
+    return {
+        'provider_id': int(integration_instance_id),
+        'provider_name': (
+            provider.name if provider is not None else f'Registry #{integration_instance_id}'
+        ),
+        'provider_label': str(
+            metadata.get('provider_label') or provider_key.replace('_', ' ').title()
+        ),
+        'provider_environment': (
+            str(provider.environment) if provider is not None and provider.environment else 'Not Set'
+        ),
+        'snapshot': _state_view(state),
+    }
+
+
+def build_inventory_repository_detail(repository_id: int) -> dict[str, Any] | None:
+    repository = (
+        RegistryRepository.query.options(
+            joinedload(RegistryRepository.project),
+            joinedload(RegistryRepository.artifacts).joinedload(RegistryArtifact.tags),
+        )
+        .filter(RegistryRepository.id == int(repository_id))
+        .first()
+    )
+    if repository is None:
+        return None
+
+    source = _inventory_detail_provider_context(repository.project.integration_instance_id)
+    artifacts = [
+        {
+            'id': int(artifact.id),
+            'digest': artifact.digest,
+            'digest_short': (
+                artifact.digest
+                if len(artifact.digest) <= 32
+                else f'{artifact.digest[:20]}…{artifact.digest[-10:]}'
+            ),
+            'type': artifact.artifact_type or artifact.media_type or 'OCI Artifact',
+            'size': _fmt_bytes(artifact.size_bytes),
+            'tag_count': len(artifact.tags),
+            'tags': [tag.name for tag in artifact.tags[:3]],
+            'observed_at': artifact.observed_at,
+        }
+        for artifact in sorted(repository.artifacts, key=lambda item: item.digest)
+    ]
+    provider_metadata = (
+        dict(repository.provider_metadata)
+        if isinstance(repository.provider_metadata, dict)
+        else {}
+    )
+    return {
+        'id': int(repository.id),
+        'name': repository.name,
+        'provider_native_id': repository.provider_native_id or 'Not Collected',
+        'description': repository.description or 'No provider description collected.',
+        'project_id': int(repository.project.id),
+        'project_name': repository.project.name,
+        'artifact_count': (
+            int(repository.artifact_count)
+            if repository.artifact_count is not None
+            else len(repository.artifacts)
+        ),
+        'pull_count': repository.pull_count,
+        'provider_created_at': repository.provider_created_at,
+        'provider_updated_at': repository.provider_updated_at,
+        'observed_at': repository.observed_at,
+        'artifacts': artifacts,
+        'artifact_preview': artifacts[:25],
+        'artifact_truncated': len(artifacts) > 25,
+        'provider_metadata': provider_metadata,
+        **source,
+    }
+
+
+def build_inventory_artifact_detail(artifact_id: int) -> dict[str, Any] | None:
+    artifact = (
+        RegistryArtifact.query.options(
+            joinedload(RegistryArtifact.repository).joinedload(RegistryRepository.project),
+            joinedload(RegistryArtifact.tags),
+        )
+        .filter(RegistryArtifact.id == int(artifact_id))
+        .first()
+    )
+    if artifact is None:
+        return None
+
+    repository = artifact.repository
+    project = repository.project
+    source = _inventory_detail_provider_context(project.integration_instance_id)
+    tags = [
+        {
+            'id': int(tag.id),
+            'name': tag.name,
+            'provider_native_id': tag.provider_native_id or 'Not Collected',
+            'push_time': tag.push_time,
+            'pull_time': tag.pull_time,
+            'observed_at': tag.observed_at,
+        }
+        for tag in sorted(artifact.tags, key=lambda item: item.name.lower())
+    ]
+    provider_metadata = (
+        dict(artifact.provider_metadata)
+        if isinstance(artifact.provider_metadata, dict)
+        else {}
+    )
+    return {
+        'id': int(artifact.id),
+        'digest': artifact.digest,
+        'digest_short': (
+            artifact.digest
+            if len(artifact.digest) <= 40
+            else f'{artifact.digest[:24]}…{artifact.digest[-12:]}'
+        ),
+        'digest_algorithm': artifact.digest_algorithm or 'unknown',
+        'provider_native_id': artifact.provider_native_id or 'Not Collected',
+        'type': artifact.artifact_type or 'Not Collected',
+        'media_type': artifact.media_type or 'Not Collected',
+        'size_bytes': artifact.size_bytes,
+        'size': _fmt_bytes(artifact.size_bytes),
+        'push_time': artifact.push_time,
+        'pull_time': artifact.pull_time,
+        'observed_at': artifact.observed_at,
+        'repository_id': int(repository.id),
+        'repository_name': repository.name,
+        'project_id': int(project.id),
+        'project_name': project.name,
+        'tag_count': len(tags),
+        'tags': tags,
+        'tag_preview': tags[:25],
+        'tag_truncated': len(tags) > 25,
+        'provider_metadata': provider_metadata,
+        **source,
+    }
+
+
 def build_security(*, page: int = 1, per_page: int = 5) -> dict[str, Any]:
     """Compatibility projection for callers using the aggregate presentation module."""
     from app.artifact_registry.security.presentation import build_security as build_security_workspace
