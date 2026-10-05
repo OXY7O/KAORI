@@ -212,6 +212,31 @@ def test_authorized_section_reads_dashboard_only_after_cluster_readiness(monkeyp
     assert response['template'] == 'kubernetes/dashboard/partials/_cluster_health.html'
 
 
+def test_authorized_operations_overview_uses_one_canonical_tab_projection(monkeypatch) -> None:
+    routes, state, request, blueprint = _load_routes(monkeypatch, authorized=True, has_clusters=True)
+    request.args = {
+        'cluster_id': 'cluster-1',
+        'cluster_health_page': '1',
+        'cluster_health_per_page': '5',
+    }
+
+    response = _dispatch(blueprint, routes.section, 'overview')
+
+    assert state['permission_checks'] == ['dashboard.view']
+    assert state['cluster_checks'] == 1
+    assert state['section_calls'] == [
+        (
+            'overview',
+            {
+                'selected_cluster_id': 'cluster-1',
+                'cluster_health_page': '1',
+                'cluster_health_per_page': 5,
+            },
+        )
+    ]
+    assert response['template'] == 'kubernetes/dashboard/partials/_overview.html'
+
+
 def test_dashboard_tab_selection_is_bounded_to_canonical_tabs(monkeypatch) -> None:
     routes, _state, _request, _blueprint = _load_routes(monkeypatch)
 
