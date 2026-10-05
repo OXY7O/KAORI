@@ -50,7 +50,8 @@ def test_registry_governance_and_runtime_correlation_are_separate_jobs() -> None
     assert 'artifact_registry.governance.sync' in jobs
     assert 'artifact_registry.runtime_correlation.materialize' in jobs
     assert 'sync_registry_governance' in governance_task
-    assert 'filter_current_generation(PodInventory.query, PodInventory)' in correlation
+    assert 'filter_current_generation(' in correlation
+    assert 'materialization_session.query(PodInventory)' in correlation
     assert 'require_registered_worker=True' in correlation_jobs
 
 
