@@ -337,3 +337,19 @@ def test_operational_dashboard_standard_is_family_owned() -> None:
     assert 'Issue #758' in audit
     assert 'five-record Alerts Summary preview boundary' in audit
     assert 'four-record Recent Report Activity preview boundary' in audit
+
+
+def test_operational_dashboard_fast_shell_and_bounded_loading_are_locked() -> None:
+    standard = read('docs/design/patterns/OPERATIONAL_DASHBOARD.md')
+    architecture = read('app/dashboards/README.md')
+
+    for source in (standard, architecture):
+        assert 'Fast Shell' in source
+        assert 'one HTTP request' in source.lower() or '1 HTTP request' in source
+        assert 'bounded' in source.lower()
+
+    assert 'Section requests must not call a full-dashboard builder' in standard
+    assert 'Do not materialize full ORM collections' in standard
+    assert 'Caching is not the first correction for an unbounded query/projection boundary.' in standard
+    assert 'A section endpoint must not rebuild the complete dashboard' in architecture
+    assert 'Future Server/VM, HCI, Source Control/GitHub, Backup, Network' in architecture
