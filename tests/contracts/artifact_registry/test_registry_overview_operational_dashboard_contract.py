@@ -309,3 +309,35 @@ def test_artifact_registry_dashboard_uses_bounded_section_projections() -> None:
     assert 'RegistryTag.query' in presentation
     assert 'build_overview_section(' in routes
     assert "section='kpi_cards'" in signal
+
+def test_artifact_registry_data_freshness_uses_evidence_age_not_coverage_counts() -> None:
+    presentation = read('app/artifact_registry/presentation.py')
+    projection = presentation.split('def _overview_operations_projection(', 1)[1].split(
+        'def _overview_capacity_projection(', 1
+    )[0]
+
+    assert "_SUCCESSFUL_SCAN_STATES = ('success', 'finished', 'completed')" in presentation
+    assert 'func.lower(RegistryArtifact.scan_status).in_(' in presentation
+    assert '_scan_evidence_ready(artifact.scan_status)' in presentation
+    assert 'RegistryScanSnapshot.observed_at' in projection
+
+    for retired_value in (
+        "f'{committed_count} / {len(scoped_providers)} providers'",
+        "f'{metrics_ready_count} / {len(scoped_providers)} providers'",
+        "f'{scanned_count} / {artifact_total} artifacts scanned'",
+        "f'{analytics_ready_count} / {len(scoped_providers)} providers'",
+    ):
+        assert retired_value not in projection
+
+    for evidence_value in (
+        'No committed inventory snapshot',
+        'No validated Metrics Source',
+        'No committed security snapshot',
+        'No materialized analytics snapshot',
+    ):
+        assert evidence_value in projection
+
+    assert "_freshness_value(" in projection
+    assert "latest_security_at" in projection
+    assert "latest_analytics_at" in projection
+
