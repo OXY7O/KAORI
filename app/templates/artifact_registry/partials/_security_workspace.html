@@ -10,6 +10,7 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry %}
+{% import "artifact_registry/partials/_security_supply_chain_detail_modals.html" as supply_chain_detail %}
 <div id="artifact-registry-security-workspace" class="space-y-6">
     <span id="artifact-registry-security-background-refresh-trigger"
           class="htmx-indicator hidden"
@@ -287,10 +288,12 @@
                                                 <th scope="col" class="{{ table_ui.header_cell_classes() }}">Vulnerability</th>
                                                 <th scope="col" class="{{ table_ui.header_cell_classes() }}">Signature</th>
                                                 <th scope="col" class="{{ table_ui.header_cell_classes() }}">SBOM</th>
+                                                <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Details</th>
                                             </tr>
                                         </thead>
                                         <tbody class="{{ table_ui.body_classes() }}">
                                             {% for row in security.capability_rows %}
+                                                {% set capability_dialog_id = 'artifact-registry-capability-detail-' ~ loop.index %}
                                                 <tr class="{{ table_ui.row_classes() }}">
                                                     <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(row.source_name, 'Registry security source', 'blocks') }}</td>
                                                     <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-semibold text-content-primary">{{ row.provider_label }}</span></td>
@@ -298,10 +301,25 @@
                                                     <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(row.vulnerability.label, row.vulnerability.tone) }}</td>
                                                     <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(row.signature.label, row.signature.tone) }}</td>
                                                     <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(row.sbom.label, row.sbom.tone) }}</td>
+                                                    <td class="{{ table_ui.cell_classes(action=true) }}">
+                                                        <div class="ml-auto w-fit">
+                                                            <button type="button"
+                                                                    data-kaori-dialog-open
+                                                                    data-dialog-target="{{ capability_dialog_id }}"
+                                                                    aria-haspopup="dialog"
+                                                                    aria-controls="{{ capability_dialog_id }}"
+                                                                    aria-label="View provider capability details for {{ row.source_name }}"
+                                                                    class="{{ table_ui.action_classes() }}">
+                                                                <i data-lucide="panel-top-open" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                                View More
+                                                            </button>
+                                                            {{ supply_chain_detail.capability(row, capability_dialog_id) }}
+                                                        </div>
+                                                    </td>
                                                 </tr>
                                             {% else %}
                                                 <tr>
-                                                    <td colspan="6" class="p-0">
+                                                    <td colspan="7" class="p-0">
                                                         {% set empty_state_icon = "blocks" %}
                                                         {% set empty_state_label = "Provider Capability" %}
                                                         {% set empty_state_title = "No Capability Sources Found" %}
@@ -506,6 +524,7 @@
                                 <th class="{{ table_ui.header_cell_classes() }}">Trust</th>
                                 <th class="{{ table_ui.header_cell_classes() }}">SBOM</th>
                                 <th class="{{ table_ui.header_cell_classes() }}">Security Snapshot</th>
+                                <th class="{{ table_ui.header_cell_classes(action=true) }}">Details</th>
                             </tr>
                         </thead>
                         <tbody class="{{ table_ui.body_classes() }}">
@@ -527,10 +546,26 @@
                                         {{ table_label.status_indicator_label(row.snapshot_label, row.snapshot_tone) }}
                                         <p class="mt-1 text-xs text-content-muted">{{ row.observed_at|user_datetime if row.observed_at else 'Not Collected' }}</p>
                                     </td>
+                                    <td class="{{ table_ui.cell_classes(action=true) }}">
+                                        {% set artifact_dialog_id = 'artifact-registry-evidence-detail-' ~ row.id %}
+                                        <div class="ml-auto w-fit">
+                                            <button type="button"
+                                                    data-kaori-dialog-open
+                                                    data-dialog-target="{{ artifact_dialog_id }}"
+                                                    aria-haspopup="dialog"
+                                                    aria-controls="{{ artifact_dialog_id }}"
+                                                    aria-label="View artifact evidence details for {{ row.repository }}"
+                                                    class="{{ table_ui.action_classes() }}">
+                                                <i data-lucide="panel-top-open" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                View More
+                                            </button>
+                                            {{ supply_chain_detail.artifact(row, artifact_dialog_id) }}
+                                        </div>
+                                    </td>
                                 </tr>
                             {% else %}
                                 <tr>
-                                    <td colspan="6" class="p-0">
+                                    <td colspan="7" class="p-0">
                                         {% set empty_state_icon = "badge-check" %}
                                         {% set empty_state_label = "Committed Security" %}
                                         {% set empty_state_title = "No Supply-Chain Evidence Found" %}
