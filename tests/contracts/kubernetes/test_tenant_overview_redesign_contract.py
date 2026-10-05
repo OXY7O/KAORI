@@ -141,7 +141,9 @@ def test_tenant_overview_keeps_multicluster_posture_compact_and_canonical() -> N
     assert 'hx-get="{{ url_for(\'tenant.cluster_estate\') }}"' in cluster_estate
     assert "endpoint='tenant.cluster_estate'" in cluster_estate
     assert "href_endpoint='tenant.index'" in cluster_estate
-    assert 'def get_tenant_cluster_estate_context(*, page: int = 1, per_page: int = 5)' in workspace
+    assert 'def get_tenant_cluster_estate_context(' in workspace
+    assert 'build_capacity_governance_summaries([str(cluster.id) for cluster in clusters])' in workspace
+    assert 'build_capacity_governance_summary(cluster.id)' not in workspace
     assert 'paginate_sequence(' in workspace
     assert "@tenant_bp.get('/overview/cluster-estate')" in routes
     assert 'Committed Allocation' not in cluster_estate
