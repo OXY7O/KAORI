@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -48,17 +49,7 @@ def get_snapshot(
     ).first()
 
 
-def read_snapshot(
-    *,
-    cluster_id: str,
-    dataset_key: str,
-    parameters: dict[str, Any] | None,
-) -> SnapshotResult:
-    snapshot = get_snapshot(
-        cluster_id=cluster_id,
-        dataset_key=dataset_key,
-        parameters=parameters,
-    )
+def _read_snapshot_result(snapshot: AnalyticsSnapshot | None, *, dataset_key: str) -> SnapshotResult:
     if snapshot is None or snapshot.payload_json is None or snapshot.generated_at is None:
         return SnapshotResult(None, snapshot, snapshot.status if snapshot else 'missing', False)
 
@@ -85,6 +76,55 @@ def read_snapshot(
         )
         return SnapshotResult(None, snapshot, 'blocked', False)
     return SnapshotResult(context, snapshot, 'stale' if now > expires_at else 'fresh', now > expires_at)
+
+
+def read_snapshot(
+    *,
+    cluster_id: str,
+    dataset_key: str,
+    parameters: dict[str, Any] | None,
+) -> SnapshotResult:
+    snapshot = get_snapshot(
+        cluster_id=cluster_id,
+        dataset_key=dataset_key,
+        parameters=parameters,
+    )
+    return _read_snapshot_result(snapshot, dataset_key=dataset_key)
+
+
+def read_snapshots(
+    *,
+    dataset_key: str,
+    parameters_by_cluster: Mapping[str, dict[str, Any] | None],
+) -> dict[str, SnapshotResult]:
+    """Read multiple committed snapshot scopes with one database query."""
+
+    normalized_parameters = {
+        str(cluster_id): canonical_parameters(dataset_key, parameters)
+        for cluster_id, parameters in parameters_by_cluster.items()
+    }
+    fingerprints = {
+        cluster_id: parameter_fingerprint(parameters)
+        for cluster_id, parameters in normalized_parameters.items()
+    }
+    if not fingerprints:
+        return {}
+
+    snapshots = AnalyticsSnapshot.query.filter(
+        AnalyticsSnapshot.cluster_id.in_(fingerprints),
+        AnalyticsSnapshot.dataset_key == dataset_key,
+        AnalyticsSnapshot.parameter_fingerprint.in_(set(fingerprints.values())),
+    ).all()
+    snapshot_by_scope = {
+        (str(snapshot.cluster_id), str(snapshot.parameter_fingerprint)): snapshot for snapshot in snapshots
+    }
+    return {
+        cluster_id: _read_snapshot_result(
+            snapshot_by_scope.get((cluster_id, fingerprint)),
+            dataset_key=dataset_key,
+        )
+        for cluster_id, fingerprint in fingerprints.items()
+    }
 
 
 def read_last_known_snapshot(
