@@ -1353,6 +1353,13 @@ def _inventory_snapshot_context(overview: dict[str, Any]) -> dict[str, Any]:
 
 def _inventory_base_context() -> dict[str, Any]:
     overview = build_overview()
+    counts = _overview_kpi_values(None)
+    overview = {
+        **overview,
+        'project_count': counts['projects'],
+        'repository_count': counts['repositories'],
+        'artifact_count': counts['artifacts'],
+    }
     resource_catalog = _inventory_resource_catalog(overview)
     return {
         'setup': overview['setup'],

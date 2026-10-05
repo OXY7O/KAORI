@@ -176,3 +176,16 @@ def test_registry_inventory_reuses_canonical_inventory_workspace_primitives() ->
     assert "'resource_endpoint': selected_resource['endpoint']" in presentation
     assert "row['provider_name']" in presentation
 
+
+
+def test_registry_inventory_overview_restores_asset_counts_from_existing_kpis() -> None:
+    presentation = (ROOT / 'app/artifact_registry/presentation.py').read_text()
+
+    inventory_base = presentation.split('def _inventory_base_context()', 1)[1].split(
+        'def build_inventory_overview()',
+        1,
+    )[0]
+    assert 'counts = _overview_kpi_values(None)' in inventory_base
+    assert "'project_count': counts['projects']" in inventory_base
+    assert "'repository_count': counts['repositories']" in inventory_base
+    assert "'artifact_count': counts['artifacts']" in inventory_base
