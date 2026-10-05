@@ -1351,6 +1351,73 @@ def _inventory_snapshot_context(overview: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _inventory_fleet_readings(overview: dict[str, Any]) -> list[dict[str, str]]:
+    provider_count = int(overview['provider_count'])
+    snapshot_count = int(overview['snapshot_count'])
+    exception_count = (
+        int(overview['stale_snapshot_count'])
+        + int(overview['pending_snapshot_count'])
+        + int(overview['failed_refresh_count'])
+    )
+    project_count = int(overview['project_count'])
+    visibility_observed = RegistryProject.query.filter(
+        RegistryProject.public.is_not(None)
+    ).count()
+    public_projects = RegistryProject.query.filter(RegistryProject.public.is_(True)).count()
+
+    if provider_count == 0:
+        coverage_title, coverage_tone = 'No Registry Providers', 'unknown'
+        coverage_description = 'Register a Registry provider to establish committed inventory.'
+    elif snapshot_count == provider_count:
+        coverage_title, coverage_tone = f'{snapshot_count}/{provider_count} Providers Committed', 'normal'
+        coverage_description = 'Every Registry provider has retained committed inventory evidence.'
+    else:
+        coverage_title, coverage_tone = f'{snapshot_count}/{provider_count} Providers Committed', 'warning'
+        coverage_description = 'One or more Registry providers still require a committed inventory snapshot.'
+
+    if exception_count:
+        exception_title, exception_tone = f'{exception_count} Snapshot Attention', 'warning'
+        exception_description = 'Review stale, pending, or failed Registry inventory conditions.'
+    else:
+        exception_title, exception_tone = 'No Snapshot Attention', 'normal'
+        exception_description = 'No stale, pending, or failed committed Registry snapshot condition is active.'
+
+    if project_count == 0:
+        visibility_title, visibility_tone = 'No Visibility Evidence', 'unknown'
+        visibility_description = 'No committed Registry projects are available for visibility assessment.'
+    elif visibility_observed < project_count:
+        visibility_title, visibility_tone = f'{visibility_observed}/{project_count} Visibility Observed', 'warning'
+        visibility_description = (
+            f'{public_projects} public project(s); remaining project visibility still requires provider evidence.'
+        )
+    else:
+        visibility_title, visibility_tone = f'{visibility_observed}/{project_count} Visibility Observed', 'normal'
+        visibility_description = (
+            f'Project visibility evidence is complete; {public_projects} project(s) are declared public.'
+        )
+
+    return [
+        {
+            'title': coverage_title,
+            'description': coverage_description,
+            'icon': 'database-backup',
+            'tone': coverage_tone,
+        },
+        {
+            'title': exception_title,
+            'description': exception_description,
+            'icon': 'triangle-alert',
+            'tone': exception_tone,
+        },
+        {
+            'title': visibility_title,
+            'description': visibility_description,
+            'icon': 'globe-2',
+            'tone': visibility_tone,
+        },
+    ]
+
+
 def _inventory_base_context() -> dict[str, Any]:
     overview = build_overview()
     counts = _overview_kpi_values(None)
@@ -1365,6 +1432,7 @@ def _inventory_base_context() -> dict[str, Any]:
         'setup': overview['setup'],
         'overview': overview,
         'snapshot_context': _inventory_snapshot_context(overview),
+        'fleet_readings': _inventory_fleet_readings(overview),
         'asset_catalog': list(resource_catalog.values()),
         'resource_catalog': resource_catalog,
     }
