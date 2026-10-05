@@ -9,7 +9,10 @@ from app.common.pagination import paginate_query
 from app.common.presentation import present_user_datetime
 from app.extensions.db import db
 from app.kubernetes.tenant.allocation_cutover import allocation_control_state, build_allocation_cutover_state
-from app.kubernetes.tenant.capacity_governance import build_capacity_governance_summary
+from app.kubernetes.tenant.capacity_governance import (
+    build_capacity_governance_summaries,
+    build_capacity_governance_summary,
+)
 from app.kubernetes.tenant.native_provider import tenant_workspace_connection_available
 from app.kubernetes.tenant.resource_profile_controls import (
     _tenant_capability_statuses,
@@ -85,8 +88,11 @@ def get_resource_profile_workspace_context() -> dict[str, Any]:
         .order_by(Cluster.name.asc(), Cluster.id.asc())
         .all()
     )
+    capacity_by_cluster = build_capacity_governance_summaries(
+        [str(cluster.id) for cluster in registered_clusters]
+    )
     capacity_governance = [
-        {'cluster': cluster, **build_capacity_governance_summary(cluster.id)} for cluster in registered_clusters
+        {'cluster': cluster, **capacity_by_cluster[str(cluster.id)]} for cluster in registered_clusters
     ]
     profile_count = TenantResourceProfile.query.count()
     return {
