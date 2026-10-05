@@ -59,6 +59,7 @@ from app.kubernetes.tenant.route_common import (
     _required_int,
     _tenant_active_section_context,
     _tenant_admin_section,
+    _tenant_admin_support_context,
     _tenant_section_redirect,
     _tenant_workspace_context,
     tenant_bp,
@@ -71,8 +72,10 @@ from app.kubernetes.tenant.service import (
     cutover_adopted_namespace_allocation_committed,
     delete_resource_profile_committed,
     get_capacity_decision_registry_context,
+    get_namespace_provisioning_support_context,
     get_namespace_registry_context,
     get_resource_profile_registry_context,
+    get_resource_profile_workspace_context,
     get_tenant_registry_context,
     provision_native_namespace_committed,
     reconcile_managed_native_namespace_committed,
@@ -82,6 +85,7 @@ from app.kubernetes.tenant.service import (
 from app.kubernetes.tenant.workspace import (
     get_tenant_cluster_estate_context,
     get_tenant_operations_evidence_context,
+    get_tenant_operations_summary_context,
     get_tenant_overview_context,
     get_tenant_sync_workspace_context,
 )
@@ -92,7 +96,7 @@ from app.platform_operations.notifications.service import queue_transient_feedba
 @tenant_bp.get('/')
 @any_permission_required('tenant.view', 'tenant.manage')
 def index():
-    context = _tenant_workspace_context()
+    context = _tenant_workspace_context(include_sync=False)
     context.update(
         get_tenant_overview_context(
             cluster_page=request.args.get('cluster_page', 1, type=int) or 1,
@@ -278,6 +282,7 @@ def tenants():
     active_section = _tenant_admin_section(request.args.get('section'))
     context = _tenant_workspace_context()
     context.update(get_tenant_summary_context())
+    context.update(_tenant_admin_support_context(active_section))
     context.update(_tenant_active_section_context(active_section))
     return render_template(
         'kubernetes/tenant/tenants.html',
@@ -297,6 +302,7 @@ def resource_profiles():
         active_view = 'profiles'
 
     context = _tenant_workspace_context()
+    context.update(get_resource_profile_workspace_context())
     context.update(
         get_resource_profile_registry_context(
             page=request.args.get('page', 1, type=int) or 1,
@@ -343,6 +349,7 @@ def namespace_provisioning():
         active_view = 'provision'
 
     context = _tenant_workspace_context()
+    context.update(get_namespace_provisioning_support_context())
     context.update(get_capsule_shared_allocation_context())
     context.update(get_capsule_tenant_quota_context())
     context.update(
@@ -469,6 +476,7 @@ def _operations_drift_context() -> dict[str, Any]:
 def operations():
     active_tab = _operations_active_tab()
     context = _tenant_workspace_context()
+    context.update(get_tenant_operations_summary_context())
     if active_tab == 'provisioning':
         context.update(_operations_provisioning_context())
     elif active_tab == 'runs-evidence':
