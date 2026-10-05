@@ -129,6 +129,23 @@ def test_registry_security_finding_states_use_usable_scan_coverage() -> None:
     assert 'security.finding_empty_state.title' in template
 
 
+def test_security_scope_labels_are_explicit_and_provider_neutral() -> None:
+    presentation = read('app/artifact_registry/security/presentation.py')
+
+    scope_logic = presentation.split(
+        "provider_label = provider_value.replace('_', ' ').title() if provider_value else ''",
+        1,
+    )[1].split('coverage_percent =', 1)[0]
+
+    assert 'if source_id is not None:' in scope_logic
+    assert "active_scope_label = selected_source.name" in scope_logic
+    assert "elif provider_label:" in scope_logic
+    assert "active_scope_label = provider_label" in scope_logic
+    assert "active_scope_label = 'All Registry Sources'" in scope_logic
+    assert "source_label = f'{len(scoped_sources)} Registered Registry {source_count_label}'" in scope_logic
+    assert scope_logic.index('if source_id is not None:') < scope_logic.index('if len(scoped_sources) == 1')
+
+
 def test_supply_chain_uses_governed_tabs_and_canonical_capability_registry() -> None:
     presentation = read('app/artifact_registry/security/presentation.py')
     template = read('app/templates/artifact_registry/partials/_security_workspace.html')

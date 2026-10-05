@@ -341,18 +341,25 @@ def build_security(
     )
 
     provider_label = provider_value.replace('_', ' ').title() if provider_value else ''
-    if len(scoped_sources) == 1:
-        active_scope_label = scoped_sources[0].name
-        source_label = (
-            f'{scoped_sources[0].provider_key.replace("_", " ").title()} · '
-            f'{scoped_sources[0].name}'
-        )
+    if source_id is not None:
+        selected_source = scoped_sources[0] if len(scoped_sources) == 1 else None
+        if selected_source is not None:
+            active_scope_label = selected_source.name
+            source_label = (
+                f'{selected_source.provider_key.replace("_", " ").title()} · '
+                f'{selected_source.name}'
+            )
+        else:
+            active_scope_label = 'Selected Registry Source'
+            source_label = 'No Matching Registry Source'
     elif provider_label:
         active_scope_label = provider_label
-        source_label = f'{provider_label} · {len(scoped_sources)} Sources'
+        source_count_label = 'Source' if len(scoped_sources) == 1 else 'Sources'
+        source_label = f'{provider_label} · {len(scoped_sources)} {source_count_label}'
     else:
         active_scope_label = 'All Registry Sources'
-        source_label = f'{len(scoped_sources)} Registered Registry Sources'
+        source_count_label = 'Source' if len(scoped_sources) == 1 else 'Sources'
+        source_label = f'{len(scoped_sources)} Registered Registry {source_count_label}'
 
     coverage_percent = round((coverage_count / artifact_total) * 100) if artifact_total else 0
     coverage_supporting = (
