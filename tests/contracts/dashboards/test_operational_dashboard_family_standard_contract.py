@@ -372,3 +372,14 @@ def test_kubernetes_fast_shell_lazy_loads_inventory_and_reporting_evidence() -> 
     assert "section='inventory_summary'" in content
     assert "section='reporting_summary'" in content
     assert 'hx-trigger="revealed"' in content
+
+
+def test_object_storage_section_requests_do_not_rebuild_full_overview() -> None:
+    service = read('app/storage/object_storage/dashboard/service.py')
+
+    assert 'def _dashboard_shell_context(' in service
+    overview = service.split('def get_dashboard_overview(', 1)[1].split('def get_dashboard_section(', 1)[0]
+    section = service.split('def get_dashboard_section(', 1)[1]
+    assert '_inventory_summary(' not in overview
+    assert 'dashboard = get_dashboard_overview(' not in section
+    assert 'dashboard = _dashboard_shell_context(' in section
