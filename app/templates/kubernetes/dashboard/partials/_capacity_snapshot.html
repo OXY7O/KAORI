@@ -20,6 +20,15 @@
         {% set blocked_state_description = "Select a cluster to view committed worker-node capacity and headroom snapshots." %}
         {% set blocked_state_tone = "warning" %}
         {% include 'components/states/_blocked_state.html' %}
+    {% elif dashboard.capacity_snapshot.source_status != 'Available' %}
+        {% set empty_state_icon = "database-zap" %}
+        {% set empty_state_label = "Snapshot Required" %}
+        {% set empty_state_tone = "warning" %}
+        {% set empty_state_title = "Capacity Snapshot Unavailable" %}
+        {% set empty_state_description = dashboard.capacity_snapshot.insight %}
+        {% set empty_state_variant = "panel" %}
+        {% set empty_state_min_height = "min-h-[220px]" %}
+        {% include 'components/states/_empty_state.html' %}
     {% else %}
         <div class="space-y-4">
             <div class="flex items-start gap-3 rounded-lg border border-outline-default bg-kaori-soft p-3 text-xs leading-5 text-content-secondary">
