@@ -293,11 +293,11 @@ def _tenant_recent_activity(*, limit: int = 3) -> list[dict[str, str]]:
     return [row for _updated_at, row in rows[:limit]]
 
 
-def get_tenant_sync_workspace_context() -> dict[str, Any]:
-    sync_state = build_tenant_sync_state()
+def get_tenant_sync_workspace_context(*, sync_state: dict[str, Any] | None = None) -> dict[str, Any]:
+    resolved_sync_state = sync_state if sync_state is not None else build_tenant_sync_state()
     return {
-        'tenant_collection_snapshot': _tenant_collection_snapshot(sync_state),
-        'tenant_sync_state': sync_state,
+        'tenant_collection_snapshot': _tenant_collection_snapshot(resolved_sync_state),
+        'tenant_sync_state': resolved_sync_state,
     }
 
 
@@ -355,9 +355,14 @@ def _build_tenant_cluster_rows(sync_state: dict[str, Any]) -> list[dict[str, Any
     return cluster_rows
 
 
-def get_tenant_cluster_estate_context(*, page: int = 1, per_page: int = 5) -> dict[str, Any]:
-    sync_state = build_tenant_sync_state()
-    rows = _build_tenant_cluster_rows(sync_state)
+def get_tenant_cluster_estate_context(
+    *,
+    page: int = 1,
+    per_page: int = 5,
+    sync_state: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    resolved_sync_state = sync_state if sync_state is not None else build_tenant_sync_state()
+    rows = _build_tenant_cluster_rows(resolved_sync_state)
     visible_rows, pagination = paginate_sequence(
         rows,
         page=page,
@@ -373,10 +378,12 @@ def get_tenant_cluster_estate_context(*, page: int = 1, per_page: int = 5) -> di
 def get_tenant_overview_context(*, cluster_page: int = 1, cluster_per_page: int = 5) -> dict[str, Any]:
     """Compose Overview-only cross-cluster posture from committed KAORI evidence."""
 
-    sync_context = get_tenant_sync_workspace_context()
+    sync_state = build_tenant_sync_state()
+    sync_context = get_tenant_sync_workspace_context(sync_state=sync_state)
     cluster_context = get_tenant_cluster_estate_context(
         page=cluster_page,
         per_page=cluster_per_page,
+        sync_state=sync_state,
     )
 
     return {
@@ -390,6 +397,23 @@ def get_tenant_overview_context(*, cluster_page: int = 1, cluster_per_page: int 
             ]
         ),
         'tenant_recent_activity_rows': _tenant_recent_activity(),
+    }
+
+
+def get_tenant_operations_summary_context() -> dict[str, int]:
+    """Return bounded Operations headline counters without materializing activity feeds."""
+
+    findings = [
+        finding
+        for finding in get_active_recommendation_findings(domain='kubernetes')
+        if str(finding.get('rule_key') or '').startswith('kubernetes.tenant.')
+    ]
+    namespace_attention_count = TenantNamespace.query.filter(
+        TenantNamespace.provisioning_status.notin_(('ready', 'deprovisioned'))
+    ).count()
+    return {
+        'tenant_governance_finding_count': len(findings),
+        'namespace_attention_count': namespace_attention_count,
     }
 
 
