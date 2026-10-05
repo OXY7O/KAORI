@@ -370,7 +370,7 @@
         {% endset %}
         {% set security_registry_header_actions %}
             {% if security.view == 'vulnerabilities' %}
-                <a href="{{ url_for('artifact_registry.runtime') }}"
+                <a href="{{ url_for('artifact_registry.runtime', source_id=security.filters.source_id) if security.filters.source_id else url_for('artifact_registry.runtime') }}"
                    class="{{ table_ui.action_classes() }}">
                     <i data-lucide="waypoints" class="h-4 w-4" aria-hidden="true"></i>
                     Open Runtime Usage
@@ -488,6 +488,13 @@
                                     <td class="{{ table_ui.cell_classes() }}">
                                         {% if row.runtime_exposure_count %}
                                             {{ table_label.status_indicator_label(row.runtime_exposure_count ~ ' Bindings', 'critical' if row.severity == 'critical' else 'warning') }}
+                                            <div class="mt-2">
+                                                <a href="{{ url_for('artifact_registry.runtime', artifact_id=row.artifact_id) }}"
+                                                   class="{{ table_ui.action_classes() }}">
+                                                    <i data-lucide="waypoints" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                    Open Runtime
+                                                </a>
+                                            </div>
                                         {% else %}
                                             {{ table_label.status_indicator_label('Not Observed', 'normal') }}
                                         {% endif %}

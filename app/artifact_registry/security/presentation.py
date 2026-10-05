@@ -503,6 +503,7 @@ def build_security(
             rows.append(
                 {
                     'id': int(item.id),
+                    'artifact_id': int(artifact.id),
                     'vulnerability_id': item.vulnerability_id,
                     'severity': str(item.severity or 'unknown').lower(),
                     'severity_label': str(item.severity or 'unknown').replace('_', ' ').title(),

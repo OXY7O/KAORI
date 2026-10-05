@@ -17,6 +17,7 @@ from app.artifact_registry.presentation import (
     build_inventory_repository_detail,
     build_overview,
     build_overview_section,
+    build_runtime_binding_detail,
     build_runtime_usage,
 )
 from app.artifact_registry.security.job_adapter import (
@@ -317,12 +318,34 @@ def security_sync_status(public_id: str) -> ResponseReturnValue:
 @artifact_registry_bp.get('/runtime')
 @permission_required('artifact_registry.view')
 def runtime() -> ResponseReturnValue:
+    context = build_runtime_usage(
+        search=request.args.get('q', '', type=str),
+        source_id=request.args.get('source_id', type=int),
+        cluster_id=request.args.get('cluster_id', '', type=str),
+        namespace=request.args.get('namespace', '', type=str),
+        match_type=request.args.get('match_type', '', type=str),
+        exposure=request.args.get('exposure', '', type=str),
+        artifact_id=request.args.get('artifact_id', type=int),
+        page=request.args.get('page', 1, type=int) or 1,
+        per_page=request.args.get('per_page', 5, type=int) or 5,
+    )
+    template = (
+        'artifact_registry/partials/_runtime_workspace.html'
+        if request.headers.get('HX-Request') == 'true'
+        else 'artifact_registry/runtime.html'
+    )
+    return render_template(template, runtime=context)
+
+
+@artifact_registry_bp.get('/runtime/<int:binding_id>/details')
+@permission_required('artifact_registry.view')
+def runtime_binding_details(binding_id: int) -> ResponseReturnValue:
+    binding = build_runtime_binding_detail(binding_id)
+    if binding is None:
+        abort(404)
     return render_template(
-        'artifact_registry/runtime.html',
-        runtime=build_runtime_usage(
-            page=request.args.get('page', 1, type=int) or 1,
-            per_page=request.args.get('per_page', 5, type=int) or 5,
-        ),
+        'artifact_registry/partials/_runtime_binding_detail.html',
+        binding=binding,
     )
 
 
