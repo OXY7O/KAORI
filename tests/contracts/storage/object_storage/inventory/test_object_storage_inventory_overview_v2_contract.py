@@ -27,11 +27,15 @@ def test_object_storage_overview_is_high_level_fleet_composition() -> None:
     assert 'Manage Storage' in hero
     assert "url_for('integrations.storage')" in hero
     assert 'object_storage_snapshot.render(overview.snapshot)' in snapshot
+    assert 'components/section_intro.html' in fleet
     assert 'Fleet Inventory Posture' in fleet
     assert 'operational_callout.render' in fleet
-    assert 'Explore Object Storage Inventory' in navigation
-    assert 'Overview stops at fleet posture.' in navigation
+    assert 'operational_section_card' not in fleet
+    assert 'components/section_intro.html' in navigation
+    assert 'Object Storage Asset Catalog' in navigation
+    assert 'Open committed Object Storage inventory views' in navigation
     assert 'inventory_asset_card.render' in navigation
+    assert 'operational_section_card' not in navigation
 
 
 def test_resource_level_system_detail_is_owned_by_systems_workspace() -> None:
