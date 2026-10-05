@@ -148,9 +148,12 @@ def build_tenant_sync_state() -> dict[str, Any]:
         .order_by(JobExecution.updated_at.desc(), JobExecution.id.desc())
         .first()
     )
-    recent_jobs = jobs.order_by(JobExecution.created_at.desc(), JobExecution.id.desc()).limit(50).all()
-    latest_job = recent_jobs[0] if recent_jobs else None
-    latest_success = next((job for job in recent_jobs if job.status in _SUCCESS_STATUSES), None)
+    latest_job = jobs.order_by(JobExecution.created_at.desc(), JobExecution.id.desc()).first()
+    latest_success = (
+        jobs.filter(JobExecution.status.in_(_SUCCESS_STATUSES))
+        .order_by(JobExecution.created_at.desc(), JobExecution.id.desc())
+        .first()
+    )
 
     interval_minutes = max(int(policy.interval_minutes or 60), 1)
     last_success_at = _as_utc(latest_success.completed_at if latest_success else None)
