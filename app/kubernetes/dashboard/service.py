@@ -28,6 +28,7 @@ from app.kubernetes.dashboard.schema import (
     DashboardKpiContext,
     DashboardOverview,
     InventorySnapshot,
+    ReportingSnapshot,
 )
 from app.kubernetes.dashboard.sections import (
     build_alerts_snapshot,
@@ -61,6 +62,7 @@ from app.models import (
     NamespaceInventory,
     NodeInventory,
     PodInventory,
+    Report,
     ServiceInventory,
     StorageInventory,
     WorkloadInventory,
@@ -237,6 +239,126 @@ def _group_by_cluster(rows: list[Any]) -> dict[str, list[Any]]:
     return grouped
 
 
+def _populate_cluster_health(
+    dashboard: DashboardOverview,
+    *,
+    clusters_raw: list[Any],
+    selected_cluster_id: str | None,
+    cluster_health_page: str | int | None,
+    cluster_health_per_page: int,
+) -> None:
+    scoped_clusters = clusters_raw
+    if selected_cluster_id:
+        scoped_clusters = [
+            cluster for cluster in clusters_raw if str(cluster.id) == selected_cluster_id
+        ]
+    visible, pagination = paginate_sequence(
+        items=scoped_clusters,
+        page=cluster_health_page,
+        per_page=cluster_health_per_page,
+    )
+    visible_cluster_ids = [str(cluster.id) for cluster in visible]
+    node_rows = query_for_clusters(NodeInventory, visible_cluster_ids)
+    pod_rows = query_for_clusters(PodInventory, visible_cluster_ids)
+    alert_cases = _alert_cases_by_asset(visible_cluster_ids)
+    capacities: dict[str, Any] = {}
+    alerts: dict[str, AlertsSnapshot] = {}
+    for cluster in visible:
+        cluster_id = str(cluster.id)
+        capacity, _ = _capacity_signal(cluster)
+        capacities[cluster_id] = capacity
+        alerts[cluster_id] = _alerts_snapshot_from_cases(alert_cases.get(cluster_id, []))
+
+    dashboard.cluster_health_snapshot = build_cluster_health(
+        clusters_raw=visible,
+        selected_cluster_id=None,
+        nodes_by_cluster=_group_by_cluster(node_rows),
+        pods_by_cluster=_group_by_cluster(pod_rows),
+        capacity_by_cluster=capacities,
+        alerts_by_cluster=alerts,
+    )
+    dashboard.cluster_health_pagination = pagination
+
+
+def _populate_data_freshness(
+    dashboard: DashboardOverview,
+    *,
+    selected_cluster_id: str | None,
+    selected: Any | None,
+) -> None:
+    capacity_result = alerts_result = top_result = forecast_result = None
+    if selected is not None:
+        cluster_id = str(selected.id)
+        capacity_result = read_dashboard_snapshot(
+            cluster_id=cluster_id,
+            dataset_key=CAPACITY_DATASET_KEY,
+            parameters=capacity_parameters(cluster_id),
+        )
+        alerts_result = read_dashboard_snapshot(
+            cluster_id=cluster_id,
+            dataset_key=DASHBOARD_ALERTS_DATASET_KEY,
+            parameters=alerts_parameters(cluster_id),
+        )
+        top_result = read_dashboard_snapshot(
+            cluster_id=cluster_id,
+            dataset_key=TOP_CONSUMERS_DATASET_KEY,
+            parameters=top_consumers_parameters(cluster_id),
+        )
+        forecast_result = read_dashboard_snapshot(
+            cluster_id=cluster_id,
+            dataset_key=FORECAST_DATASET_KEY,
+            parameters=forecast_parameters(cluster_id),
+        )
+
+    latest_sync = _latest_inventory_sync(selected_cluster_id)
+    metrics_results = (capacity_result, top_result, forecast_result)
+    has_metrics_source_data = any(
+        result is not None and result.available for result in metrics_results
+    )
+    has_alertmanager_data = alerts_result is not None and alerts_result.available
+    reporting_snapshot = ReportingSnapshot(
+        generated_reports=count_records(Report, selected_cluster_id)
+    )
+    dashboard.data_freshness = build_data_freshness(
+        latest_inventory_sync=latest_sync,
+        has_metrics_source_data=has_metrics_source_data,
+        has_alertmanager_data=has_alertmanager_data,
+        reporting_snapshot=reporting_snapshot,
+        selected_cluster=selected,
+    )
+    dashboard.meta['snapshot_states'] = {
+        'capacity': getattr(capacity_result, 'state', 'not_applicable'),
+        'alerts': getattr(alerts_result, 'state', 'not_applicable'),
+        'top_consumers': getattr(top_result, 'state', 'not_applicable'),
+        'forecast': getattr(forecast_result, 'state', 'not_applicable'),
+    }
+
+
+def _populate_capacity(
+    dashboard: DashboardOverview,
+    *,
+    selected: Any | None,
+) -> None:
+    if selected is None:
+        return
+    dashboard.capacity_snapshot, _ = _capacity_signal(selected)
+    dashboard.top_consumers_snapshot, _ = _top_consumers_signal(selected)
+    dashboard.forecast_snapshot, _ = _forecast_signal(selected)
+
+
+def _populate_signals(
+    dashboard: DashboardOverview,
+    *,
+    selected_cluster_id: str | None,
+    selected: Any | None,
+) -> None:
+    if selected is not None:
+        dashboard.alerts_snapshot = _kaori_alert_snapshot(selected)
+    dashboard.recommended_actions = build_recommendations(
+        selected_cluster_id=selected_cluster_id
+    )
+
+
 def get_dashboard_overview(
     selected_cluster_id: str | None = None,
     cluster_health_page: str | int | None = 1,
@@ -268,39 +390,52 @@ def get_dashboard_section(
     cluster_health_page: str | int | None = 1,
     cluster_health_per_page: int = 5,
 ) -> DashboardOverview:
-    """Build one section from inventory tables and committed worker snapshots only."""
+    """Build one bounded dashboard projection from committed KAORI state."""
     clusters_raw, clusters, selected_cluster_id, selected = _scope(selected_cluster_id)
     dashboard = _base_dashboard(clusters=clusters, selected_cluster_id=selected_cluster_id)
 
+    if section == 'overview':
+        _populate_cluster_health(
+            dashboard,
+            clusters_raw=clusters_raw,
+            selected_cluster_id=selected_cluster_id,
+            cluster_health_page=cluster_health_page,
+            cluster_health_per_page=cluster_health_per_page,
+        )
+        dashboard.inventory_snapshot = _inventory_snapshot(selected_cluster_id)
+        _populate_data_freshness(
+            dashboard,
+            selected_cluster_id=selected_cluster_id,
+            selected=selected,
+        )
+        return dashboard
+
+    if section == 'capacity':
+        _populate_capacity(dashboard, selected=selected)
+        return dashboard
+
+    if section == 'signals':
+        _populate_signals(
+            dashboard,
+            selected_cluster_id=selected_cluster_id,
+            selected=selected,
+        )
+        return dashboard
+
+    if section == 'reporting':
+        dashboard.reporting_snapshot = build_reporting_snapshot(
+            selected_cluster_id=selected_cluster_id
+        )
+        return dashboard
+
     if section == 'cluster_health':
-        scoped_clusters = clusters_raw
-        if selected_cluster_id:
-            scoped_clusters = [cluster for cluster in clusters_raw if str(cluster.id) == selected_cluster_id]
-        visible, pagination = paginate_sequence(
-            items=scoped_clusters,
-            page=cluster_health_page,
-            per_page=cluster_health_per_page,
+        _populate_cluster_health(
+            dashboard,
+            clusters_raw=clusters_raw,
+            selected_cluster_id=selected_cluster_id,
+            cluster_health_page=cluster_health_page,
+            cluster_health_per_page=cluster_health_per_page,
         )
-        visible_cluster_ids = [str(cluster.id) for cluster in visible]
-        node_rows = query_for_clusters(NodeInventory, visible_cluster_ids)
-        pod_rows = query_for_clusters(PodInventory, visible_cluster_ids)
-        capacities = {}
-        alert_cases = _alert_cases_by_asset(visible_cluster_ids)
-        alerts = {}
-        for cluster in visible:
-            capacity, _ = _capacity_signal(cluster)
-            cluster_id = str(cluster.id)
-            capacities[cluster_id] = capacity
-            alerts[cluster_id] = _alerts_snapshot_from_cases(alert_cases.get(cluster_id, []))
-        dashboard.cluster_health_snapshot = build_cluster_health(
-            clusters_raw=visible,
-            selected_cluster_id=None,
-            nodes_by_cluster=_group_by_cluster(node_rows),
-            pods_by_cluster=_group_by_cluster(pod_rows),
-            capacity_by_cluster=capacities,
-            alerts_by_cluster=alerts,
-        )
-        dashboard.cluster_health_pagination = pagination
         return dashboard
 
     if section == 'inventory_summary':
@@ -308,11 +443,15 @@ def get_dashboard_section(
         return dashboard
 
     if section == 'reporting_summary':
-        dashboard.reporting_snapshot = build_reporting_snapshot(selected_cluster_id=selected_cluster_id)
+        dashboard.reporting_snapshot = build_reporting_snapshot(
+            selected_cluster_id=selected_cluster_id
+        )
         return dashboard
 
     if section == 'recommended_actions':
-        dashboard.recommended_actions = build_recommendations(selected_cluster_id=selected_cluster_id)
+        dashboard.recommended_actions = build_recommendations(
+            selected_cluster_id=selected_cluster_id
+        )
         return dashboard
 
     if section == 'kpi_cards':
@@ -328,7 +467,9 @@ def get_dashboard_section(
             selected_cluster_id,
         )
         active_alerts = (
-            dashboard.alerts_snapshot.critical + dashboard.alerts_snapshot.warning + dashboard.alerts_snapshot.info
+            dashboard.alerts_snapshot.critical
+            + dashboard.alerts_snapshot.warning
+            + dashboard.alerts_snapshot.info
         )
         dashboard.global_kpis = build_kpis(
             DashboardKpiContext(
@@ -347,7 +488,8 @@ def get_dashboard_section(
                 selected_cluster=selected,
                 active_alerts_label=str(active_alerts) if selected is not None else 'N/A',
                 active_alerts_description=(
-                    f'{dashboard.alerts_snapshot.critical} Critical • {dashboard.alerts_snapshot.warning} Warning'
+                    f'{dashboard.alerts_snapshot.critical} Critical • '
+                    f'{dashboard.alerts_snapshot.warning} Warning'
                     if selected is not None
                     else 'Select a cluster to view committed alert signals'
                 ),
@@ -381,35 +523,12 @@ def get_dashboard_section(
         return dashboard
 
     if section == 'data_freshness':
-        capacity_result = alerts_result = top_result = forecast_result = None
-        if selected is not None:
-            dashboard.capacity_snapshot, capacity_result = _capacity_signal(selected)
-            dashboard.alerts_snapshot, alerts_result = _alerts_signal(selected)
-            dashboard.top_consumers_snapshot, top_result = _top_consumers_signal(selected)
-            dashboard.forecast_snapshot, forecast_result = _forecast_signal(selected)
-        latest_sync = _latest_inventory_sync(selected_cluster_id)
-        dashboard.reporting_snapshot = build_reporting_snapshot(selected_cluster_id=selected_cluster_id)
-        has_metrics_source_data = any(
-            snapshot.source_status == 'Available'
-            for snapshot in (
-                dashboard.capacity_snapshot,
-                dashboard.top_consumers_snapshot,
-                dashboard.forecast_snapshot,
-            )
+        _populate_data_freshness(
+            dashboard,
+            selected_cluster_id=selected_cluster_id,
+            selected=selected,
         )
-        dashboard.data_freshness = build_data_freshness(
-            latest_inventory_sync=latest_sync,
-            has_metrics_source_data=has_metrics_source_data,
-            has_alertmanager_data=dashboard.alerts_snapshot.source_status == 'Available',
-            reporting_snapshot=dashboard.reporting_snapshot,
-            selected_cluster=selected,
-        )
-        dashboard.meta['snapshot_states'] = {
-            'capacity': getattr(capacity_result, 'state', 'not_applicable'),
-            'alerts': getattr(alerts_result, 'state', 'not_applicable'),
-            'top_consumers': getattr(top_result, 'state', 'not_applicable'),
-            'forecast': getattr(forecast_result, 'state', 'not_applicable'),
-        }
         return dashboard
 
     return dashboard
+
