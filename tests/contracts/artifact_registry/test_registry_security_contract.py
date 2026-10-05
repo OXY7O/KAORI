@@ -149,3 +149,29 @@ def test_supply_chain_uses_governed_tabs_and_canonical_capability_registry() -> 
     assert 'name="section" value="evidence"' in template
     assert "'Search source or provider…'" in template
     assert "registry.footer(" in template
+
+
+def test_supply_chain_tables_use_standard_view_more_native_dialogs() -> None:
+    workspace = read('app/templates/artifact_registry/partials/_security_workspace.html')
+    modals = read('app/templates/artifact_registry/partials/_security_supply_chain_detail_modals.html')
+
+    assert "artifact_registry/partials/_security_supply_chain_detail_modals.html" in workspace
+    assert workspace.count('View More') >= 2
+    assert workspace.count('data-kaori-dialog-open') >= 2
+    assert 'Provider Capability Matrix' in workspace
+    assert 'Artifact Evidence Registry' in workspace
+    assert 'table_ui.header_cell_classes(action=true)' in workspace
+    assert 'colspan="7"' in workspace
+
+    assert 'data-kaori-native-dialog' in modals
+    assert 'data-kaori-dialog-close' in modals
+    assert 'data-artifact-registry-provider-capability-detail' in modals
+    assert 'data-artifact-registry-artifact-evidence-detail' in modals
+    assert 'Capability Evidence' in modals
+    assert 'Artifact Identity' in modals
+    assert 'Supply Chain Evidence' in modals
+    assert 'Security Snapshot' in modals
+    assert '{{ row.digest }}' in modals
+    assert 'break-all' in modals
+    assert 'Presence is not trust-policy evaluation.' in modals
+    assert 'No live provider request.' in modals
