@@ -264,7 +264,7 @@ def _registry_capacity_views(
             {
                 'label': 'Quota Headroom',
                 'value': _fmt_bytes(round(quota_headroom)) if quota_headroom is not None else 'N/A',
-                'description': 'Remaining committed project quota headroom across the active Registry scope.',
+                'description': 'Remaining Registry quota headroom.',
                 'used_percent': quota_utilization,
             },
         ],
@@ -906,7 +906,7 @@ def _overview_operations_projection(
                 'tone': selected_analytics['tone'],
                 'value': _freshness_value(
                     selected_analytics['generated_at'],
-                    missing='No materialized analytics snapshot',
+                    missing='No analytics snapshot',
                 ),
                 'description': (
                     'Materialized Registry growth, forecast, runtime, and recommendation evidence.'
@@ -1010,7 +1010,7 @@ def _overview_operations_projection(
                 ),
                 'value': _freshness_value(
                     latest_analytics_at,
-                    missing='No materialized analytics snapshot',
+                    missing='No analytics snapshot',
                 ),
                 'description': 'Latest ready Registry analytics materialization across the active scope.',
                 'icon': 'chart-no-axes-combined',
@@ -1331,7 +1331,7 @@ def _inventory_snapshot_context(overview: dict[str, Any]) -> dict[str, Any]:
         'status': overview['posture']['label'],
         'tone': overview['posture']['tone'],
         'description': (
-            'KAORI reads retained provider-neutral Registry inventory without a live provider render dependency.'
+            'KAORI reads committed provider-neutral Registry inventory.'
         ),
         'latest_collected_at': overview['latest_committed_at'],
         'scope_label': overview['scope_label'],
@@ -1339,13 +1339,13 @@ def _inventory_snapshot_context(overview: dict[str, Any]) -> dict[str, Any]:
             f'{snapshot_count} / {provider_count} Providers' if provider_count else 'No Providers'
         ),
         'coverage_tone': coverage_tone,
-        'coverage_supporting': 'Providers with retained committed inventory evidence.',
+        'coverage_supporting': 'Providers with committed inventory evidence.',
         'exceptions_label': ' · '.join(exception_parts) if exception_parts else 'No Exceptions',
         'exceptions_tone': 'warning' if exception_count else 'normal',
         'exceptions_supporting': (
             'Stale, pending, or failed committed snapshot conditions.'
             if exception_count
-            else 'No stale, pending, or failed snapshot conditions.'
+            else 'No snapshot issues.'
         ),
         'exception_count': exception_count,
     }

@@ -55,7 +55,7 @@ def analytics_snapshot_state(snapshot: ObjectStorageAnalyticsSnapshot | None) ->
     if snapshot is None:
         return {
             'state': 'missing',
-            'label': 'Worker Data Required',
+            'label': 'Worker Data',
             'tone': 'warning',
             'usable': False,
             'stale': False,
@@ -77,7 +77,7 @@ def analytics_snapshot_state(snapshot: ObjectStorageAnalyticsSnapshot | None) ->
     elif snapshot.status == 'failed':
         label, tone = ('Stale · Failed', 'warning') if has_payload else ('Worker Failed', 'critical')
     elif not has_payload:
-        label, tone = 'Worker Data Required', 'warning'
+        label, tone = 'Worker Data', 'warning'
     elif expires_at is not None and now <= expires_at:
         label, tone = 'Current', 'normal'
     elif stale_deadline is not None and now <= stale_deadline:
@@ -316,7 +316,7 @@ def forecast_snapshot_state(snapshot: ObjectStorageForecastSnapshot | None) -> d
     if snapshot is None:
         return {
             'state': 'missing',
-            'label': 'Worker Data Required',
+            'label': 'Worker Data',
             'tone': 'warning',
             'usable': False,
             'generated_at': None,
@@ -337,7 +337,7 @@ def forecast_snapshot_state(snapshot: ObjectStorageForecastSnapshot | None) -> d
     elif snapshot.status == 'failed':
         label, tone = ('Stale · Failed', 'warning') if has_payload else ('Worker Failed', 'critical')
     elif not has_payload:
-        label, tone = 'Worker Data Required', 'warning'
+        label, tone = 'Worker Data', 'warning'
     elif expires_at is not None and now <= expires_at:
         label, tone = 'Current', 'normal'
     elif stale_deadline is not None and now <= stale_deadline:

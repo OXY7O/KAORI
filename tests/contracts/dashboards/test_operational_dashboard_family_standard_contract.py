@@ -150,18 +150,19 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
     assert 'components/reporting_dashboard_workspace.html' in kubernetes_reporting
     assert 'components/reporting_dashboard_workspace.html' in object_reporting
     assert "'Committed cluster evidence'" in kubernetes_reporting
-    assert "'Committed Object Storage evidence'" in object_reporting
+    assert "'Committed storage evidence'" in object_reporting
     assert 'Governed Reporting Flow' in reporting_workspace
     assert 'Review before reuse.' in reporting_workspace
     assert 'Committed capacity, usage, headroom, and response path.' in object_capacity
-    assert "'Worker Data Needed'" in object_service
+    assert "'Worker Data'" in object_service
     assert "'Worker Data Required'" not in object_service
+    assert "'Worker Data Needed'" not in object_service
     assert (
         'Capacity uses the committed Object Storage Analytics snapshot; no live provider query is issued.'
         in object_capacity
     )
     assert (
-        'Developing capacity, request-path, or availability risk. Investigate before escalation.'
+        'Emerging capacity or availability risk.'
         in object_alert_guidance
     )
     assert 'Low-risk operational signal. Validate relevance, recurrence, and scope.' in object_alert_guidance

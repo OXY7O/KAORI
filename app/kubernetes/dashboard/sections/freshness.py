@@ -24,7 +24,7 @@ def build_data_freshness(
             'Committed analytics available' if has_metrics_source_data else 'No committed analytics snapshot'
         )
         metrics_source_description = (
-            'Metrics Source-backed utilization, capacity, consumer, and forecast data for the selected cluster.'
+            'Metrics-backed cluster usage and forecasts.'
             if has_metrics_source_data
             else (
                 'Run or validate analytics materialization for the selected cluster before using '
@@ -34,7 +34,7 @@ def build_data_freshness(
 
         alert_status = 'Ready' if has_alertmanager_data else 'Unavailable'
         alert_tone = 'normal' if has_alertmanager_data else 'unknown'
-        alert_value = 'Committed alert snapshot available' if has_alertmanager_data else 'No committed alert snapshot'
+        alert_value = 'Committed alert available' if has_alertmanager_data else 'No committed alert snapshot'
         alert_description = (
             'Alertmanager or Metrics Source alert data is available for the selected cluster.'
             if has_alertmanager_data
@@ -43,7 +43,7 @@ def build_data_freshness(
     else:
         metrics_source_status = 'Per Cluster'
         metrics_source_tone = 'info'
-        metrics_source_value = 'Resolved from committed cluster snapshots'
+        metrics_source_value = 'From committed cluster snapshots'
         metrics_source_description = (
             'All Clusters mode summarizes committed capacity snapshots by cluster. '
             'Select one cluster for detailed analytics.'
@@ -51,7 +51,7 @@ def build_data_freshness(
 
         alert_status = 'Per Cluster'
         alert_tone = 'info'
-        alert_value = 'Resolved from committed cluster snapshots'
+        alert_value = 'From committed cluster snapshots'
         alert_description = (
             'All Clusters mode summarizes committed alert snapshots by cluster. Select one cluster for source details.'
         )
@@ -70,7 +70,7 @@ def build_data_freshness(
             ),
             icon='database-zap',
             description=(
-                'Latest synchronized Kubernetes object counts used by the dashboard and Inventory workspaces.'
+                'Latest Kubernetes object counts.'
             ),
         ),
         FreshnessItem(
