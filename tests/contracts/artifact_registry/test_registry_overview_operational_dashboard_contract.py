@@ -12,6 +12,7 @@ def test_artifact_registry_overview_consumes_operational_dashboard_family() -> N
     content = read('app/templates/artifact_registry/partials/_overview_content.html')
     hero = read('app/templates/artifact_registry/partials/_overview_hero.html')
     signal = read('app/templates/artifact_registry/partials/_overview_signal_overview.html')
+    kpis = read('app/templates/artifact_registry/partials/_overview_kpi_cards.html')
 
     assert 'artifact_registry/partials/_overview_content.html' in page
     assert 'page_hero.operational_dashboard(' in hero
@@ -30,11 +31,13 @@ def test_artifact_registry_overview_consumes_operational_dashboard_family() -> N
 
     assert 'components/operational_signal_overview.html' in signal
     assert 'signal_overview.render(' in signal
-    assert 'components/operational_metric_card.html' in signal
+    assert "section='kpi_cards'" in signal
+    assert 'hx-trigger="load"' in signal
+    assert 'components/operational_metric_card.html' in kpis
+    assert "scope_label='Active Scope'" in kpis
     assert 'hx-push-url="true"' in signal
     assert 'hx-include="#artifact-registry-dashboard-active-tab"' in signal
     assert 'All Registry Providers' in signal
-    assert "scope_label='Active Scope'" in signal
 
 
 def test_artifact_registry_overview_scope_is_committed_and_provider_neutral() -> None:
@@ -46,8 +49,10 @@ def test_artifact_registry_overview_scope_is_committed_and_provider_neutral() ->
     assert "request.args.get('tab', 'overview', type=str)" in routes
     assert "request.args.get('provider_health_page', 1)" in routes
     assert 'normalize_dashboard_page_size' in routes
+    assert "'kpi_cards': 'artifact_registry/partials/_overview_kpi_cards.html'" in routes
     for section in ('overview', 'capacity', 'signals', 'reporting'):
         assert f"'{section}': 'artifact_registry/partials/_overview_" in routes
+    assert 'build_overview_section(' in routes
     assert 'artifact_registry/partials/_overview_content.html' in routes
     assert 'normalize_operational_tab' in routes
     assert 'normalize_operational_tab(active_tab)' in presentation
@@ -55,7 +60,7 @@ def test_artifact_registry_overview_scope_is_committed_and_provider_neutral() ->
     assert "@artifact_registry_bp.post('/sync')" in routes
     assert "@permission_required('artifact_registry.sync')" in routes
     assert 'RegistryProject.integration_instance_id == selected_provider.id' in presentation
-    assert "registry_metrics_readiness(provider).get('status') == 'ready'" in presentation
+    assert 'registry_metrics_readiness(provider)' in presentation
     assert 'HarborClient(' not in presentation
     assert 'requests.' not in routes
     assert 'Registry Provider Health Summary' in operations
@@ -197,8 +202,12 @@ def test_artifact_registry_overview_keeps_reference_information_hierarchy() -> N
     assert reporting.index('reporting_workspace.summary(') < reporting.index('reporting_workspace.guidance(')
 
     assert 'committed_states = [state for state in states if state.last_committed_at is not None]' in presentation
-    build_overview = presentation.split('def build_overview(', 1)[1].split('def _project_row', 1)[0]
+    build_overview = presentation.split('def build_overview(', 1)[1].split('def build_overview_section(', 1)[0]
     assert "state.status == 'ready' and state.last_committed_at is not None" not in build_overview
+    assert '_overview_operations_projection(' not in build_overview
+    assert '_overview_capacity_projection(' not in build_overview
+    assert '_registry_alerts(' not in build_overview
+    assert '_registry_reporting(' not in build_overview
     assert "'failed_refresh_count': failed_refresh_count" in presentation
     assert "'capacity': capacity" in presentation
     assert "'alerts': alerts" in presentation
@@ -260,3 +269,40 @@ def test_artifact_registry_dashboard_state_semantics_and_jinja_mapping_safety() 
     assert 'overview.posture.tone' in signal
     assert 'signal_updated' in signal
     assert 'status_indicator_label(status_label, status_tone' in shared_signal
+
+
+def test_artifact_registry_dashboard_uses_bounded_section_projections() -> None:
+    routes = read('app/artifact_registry/routes.py')
+    presentation = read('app/artifact_registry/presentation.py')
+    signal = read('app/templates/artifact_registry/partials/_overview_signal_overview.html')
+
+    assert 'def _overview_scope_context(' in presentation
+    assert 'def _overview_kpi_values(' in presentation
+    assert 'def _overview_operations_projection(' in presentation
+    assert 'def _overview_capacity_projection(' in presentation
+    assert 'def build_overview_section(' in presentation
+    assert "if section == 'kpi_cards':" in presentation
+    assert "if section == 'provider_health':" in presentation
+    assert "if section == 'overview':" in presentation
+    assert "if section == 'capacity':" in presentation
+    assert "if section == 'signals':" in presentation
+    assert "if section == 'reporting':" in presentation
+
+    shell = presentation.split('def build_overview(', 1)[1].split('def build_overview_section(', 1)[0]
+    for forbidden in (
+        'RegistryProject.query',
+        'RegistryRepository.query',
+        'RegistryArtifact.query',
+        'RegistryTag.query',
+        '_registry_capacity_views(',
+        '_registry_alerts(',
+        '_registry_recommended_actions(',
+        '_registry_reporting(',
+    ):
+        assert forbidden not in shell
+
+    assert 'func.count(RegistryArtifact.id)' in presentation
+    assert 'func.sum(RegistryArtifact.size_bytes)' in presentation
+    assert 'RegistryTag.query' in presentation
+    assert 'build_overview_section(' in routes
+    assert "section='kpi_cards'" in signal
