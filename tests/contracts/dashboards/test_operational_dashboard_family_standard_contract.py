@@ -429,7 +429,7 @@ def test_capacity_and_signals_use_one_dashed_empty_state_contract() -> None:
 
     assert '{% elif not source_available %}' in shared_alerts
     assert '{% elif total_alerts == 0 %}' in shared_alerts
-    assert "empty_state_variant = "panel"" in shared_alerts
+    assert 'empty_state_variant = "panel"' in shared_alerts
     source_unavailable_branch = shared_alerts.split('{% elif not source_available %}', 1)[1].split(
         '{% elif total_alerts == 0 %}', 1
     )[0]
