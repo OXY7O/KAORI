@@ -148,7 +148,12 @@ def test_registry_inventory_reuses_canonical_inventory_workspace_primitives() ->
     assert 'components/snapshot_context_bar.html' in overview_template
     assert 'components/inventory_asset_card.html' in overview_template
     assert 'components/section_intro.html' in overview_template
-    assert 'components/operational_section_card.html' in overview_template
+    assert 'components/operational_callout.html' in overview_template
+    assert 'components/operational_section_card.html' not in overview_template
+    assert 'Fleet Inventory Posture' in overview_template
+    assert 'Registry Asset Catalog' in overview_template
+    assert 'Inventory Assets' not in overview_template
+    assert 'inventory.fleet_readings' in overview_template
     assert "url_for(asset.endpoint)" in overview_template
     assert 'components/snapshot_context_bar.html' in resource_template
     assert 'components/table.html' in resource_template
@@ -172,6 +177,8 @@ def test_registry_inventory_reuses_canonical_inventory_workspace_primitives() ->
     assert "'artifact_registry.inventory_repositories': 'repositories'" in navigation_service
     assert "'artifact_registry.inventory_artifacts': 'artifacts'" in navigation_service
     assert 'def build_inventory_overview()' in presentation
+    assert 'def _inventory_fleet_readings(overview: dict[str, Any])' in presentation
+    assert "'fleet_readings': _inventory_fleet_readings(overview)" in presentation
     assert "'asset_catalog': list(resource_catalog.values())" in presentation
     assert "'resource_endpoint': selected_resource['endpoint']" in presentation
     assert "row['provider_name']" in presentation
