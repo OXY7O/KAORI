@@ -252,6 +252,7 @@
                                         <th class="{{ table_ui.header_cell_classes() }}">Artifacts</th>
                                         <th class="{{ table_ui.header_cell_classes() }}">Pulls</th>
                                         <th class="{{ table_ui.header_cell_classes() }}">Last Observed</th>
+                                        <th class="{{ table_ui.header_cell_classes(true) }}">Details</th>
                                     </tr>
                                 </thead>
                                 <tbody class="{{ table_ui.body_classes() }}">
@@ -276,10 +277,19 @@
                                             <td class="{{ table_ui.cell_classes() }}">
                                                 <span class="text-xs font-medium text-content-secondary">{{ row.observed_at|user_datetime }}</span>
                                             </td>
+                                            <td class="{{ table_ui.cell_classes(true) }}">
+                                                {{ resource_detail_modal.detail_button(
+                                                    row.id,
+                                                    url_for('artifact_registry.inventory_repository_details', repository_id=row.id),
+                                                    row.name,
+                                                    'Registry Repository',
+                                                    label='View More'
+                                                ) }}
+                                            </td>
                                         </tr>
                                     {% else %}
                                         <tr>
-                                            <td colspan="5" class="p-0">
+                                            <td colspan="6" class="p-0">
                                                 {% set empty_state_icon = inventory.resource_icon %}
                                                 {% set empty_state_label = "Committed Inventory" %}
                                                 {% set empty_state_title = "No Repositories Found" %}
@@ -300,6 +310,7 @@
                                         <th class="{{ table_ui.header_cell_classes() }}">Type</th>
                                         <th class="{{ table_ui.header_cell_classes() }}">Size</th>
                                         <th class="{{ table_ui.header_cell_classes() }}">Last Observed</th>
+                                        <th class="{{ table_ui.header_cell_classes(true) }}">Details</th>
                                     </tr>
                                 </thead>
                                 <tbody class="{{ table_ui.body_classes() }}">
@@ -340,10 +351,19 @@
                                             <td class="{{ table_ui.cell_classes() }}">
                                                 <span class="text-xs font-medium text-content-secondary">{{ row.observed_at|user_datetime }}</span>
                                             </td>
+                                            <td class="{{ table_ui.cell_classes(true) }}">
+                                                {{ resource_detail_modal.detail_button(
+                                                    row.id,
+                                                    url_for('artifact_registry.inventory_artifact_details', artifact_id=row.id),
+                                                    row.digest_short,
+                                                    'Registry Artifact',
+                                                    label='View More'
+                                                ) }}
+                                            </td>
                                         </tr>
                                     {% else %}
                                         <tr>
-                                            <td colspan="7" class="p-0">
+                                            <td colspan="8" class="p-0">
                                                 {% set empty_state_icon = inventory.resource_icon %}
                                                 {% set empty_state_label = "Committed Inventory" %}
                                                 {% set empty_state_title = "No Artifacts Found" %}
