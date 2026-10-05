@@ -440,3 +440,27 @@ def test_capacity_and_signals_use_one_dashed_empty_state_contract() -> None:
     for source in (kubernetes_response, object_response, registry_response):
         assert 'No Active Signals' in source
         assert 'Alert Response Not Required' in source
+
+def test_kubernetes_alert_response_uses_bounded_alertcase_section_projection() -> None:
+    routes = read('app/kubernetes/dashboard/routes.py')
+    service = read('app/kubernetes/dashboard/service.py')
+    content = read('app/templates/kubernetes/dashboard/partials/_content.html')
+
+    assert (
+        "'alert_response_guidance': 'kubernetes/dashboard/partials/_alert_response_guidance.html'"
+        in routes
+    )
+    assert "if section == 'alert_response_guidance':" in service
+    response_projection = service.split("if section == 'alert_response_guidance':", 1)[1].split(
+        "if section == 'top_consumers':", 1
+    )[0]
+    assert 'dashboard.alerts_snapshot = _kaori_alert_snapshot(selected)' in response_projection
+
+    assert "section='alert_response_guidance'" in content
+    assert 'id="dashboard-alert-response-guidance"' in content
+    assert 'hx-trigger="revealed"' in content
+    assert (
+        '{% include "kubernetes/dashboard/partials/_alert_response_guidance.html" %}'
+        not in content
+    )
+
