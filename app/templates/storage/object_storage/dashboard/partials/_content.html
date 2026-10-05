@@ -1,5 +1,5 @@
 {% import "components/operational_dashboard_workspace.html" as dashboard_workspace %}
-{% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/operational_section_loading.html" as section_loading %}
 {% set dashboard_query = 'system_id=' ~ (dashboard.selected_system_id or '') ~ '&system_health_page=' ~ dashboard.system_health_pagination.page ~ '&system_health_per_page=' ~ dashboard.system_health_pagination.per_page %}
 <div class="space-y-5">
     {% include "storage/object_storage/dashboard/partials/_hero.html" %}
@@ -26,18 +26,11 @@
                              hx-trigger="revealed"
                              hx-target="this"
                              hx-swap="outerHTML">
-                            {% call operational_section_card.render(
+                            {{ section_loading.section(
                                 tab_label,
                                 'Preparing committed Object Storage dashboard evidence.',
-                                tab_icon,
-                                body_classes='p-5'
-                                ) %}
-                                <div class="grid gap-3 sm:grid-cols-3" aria-busy="true">
-                                    <div class="h-14 animate-pulse rounded-lg bg-surface-hover"></div>
-                                    <div class="h-14 animate-pulse rounded-lg bg-surface-hover"></div>
-                                    <div class="h-14 animate-pulse rounded-lg bg-surface-hover"></div>
-                                </div>
-                            {% endcall %}
+                                tab_icon
+                            ) }}
                         </div>
                     {% endcall %}
                 {% endfor %}
