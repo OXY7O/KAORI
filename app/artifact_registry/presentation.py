@@ -759,6 +759,9 @@ def _overview_operations_projection(
             RegistryProject,
             RegistryRepository.project_id == RegistryProject.id,
         )
+        .filter(
+            func.lower(RegistryScanSnapshot.status).in_(_SUCCESSFUL_SCAN_STATES)
+        )
         .with_entities(
             RegistryProject.integration_instance_id,
             func.max(RegistryScanSnapshot.observed_at),
@@ -1448,14 +1451,13 @@ def build_security(*, page: int = 1, per_page: int = 5) -> dict[str, Any]:
         high = int(summary.get('high') or 0)
         critical_total += critical
         high_total += high
-        has_scan = _scan_evidence_ready(artifact.scan_status)
-        scanned += int(has_scan)
+        scan_status = str(artifact.scan_status or 'not_scanned')
+        scan_ready = _scan_evidence_ready(scan_status)
+        scanned += int(scan_ready)
         signature = str(artifact.signature_status or 'not_observed')
         sbom = str(artifact.sbom_status or 'not_observed')
         signed += int(signature == 'signed')
         sbom_available += int(sbom == 'available')
-        scan_status = str(artifact.scan_status or 'not_scanned')
-        scan_ready = _scan_evidence_ready(scan_status)
         rows.append(
             {
                 'id': artifact.id,
@@ -1466,7 +1468,11 @@ def build_security(*, page: int = 1, per_page: int = 5) -> dict[str, Any]:
                 'critical': critical,
                 'high': high,
                 'scan_label': scan_status.replace('_', ' ').title(),
-                'scan_tone': 'normal' if scan_ready else ('unknown' if not has_scan else 'warning'),
+                'scan_tone': (
+                    'normal'
+                    if scan_ready
+                    else ('unknown' if scan_status == 'not_scanned' else 'warning')
+                ),
                 'signature_label': signature.replace('_', ' ').title(),
                 'signature_tone': 'normal' if signature == 'signed' else ('warning' if signature == 'unsigned' else 'unknown'),
                 'sbom_label': sbom.replace('_', ' ').title(),
