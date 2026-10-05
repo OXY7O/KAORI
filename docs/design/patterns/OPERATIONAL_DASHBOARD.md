@@ -90,7 +90,7 @@ Kubernetes maps the health table to clusters and Object Storage maps it to regis
 - Reporting uses the shared compact `components/reporting_dashboard_workspace.html` presentation so dashboard consumers cannot drift.
 - Use `components/operational_callout.html` for interpretation/supporting guidance.
 - Use `components/forecast_projection_chart.html` for historical/projected utilization.
-- Use canonical table, label, empty-state, loading, and pagination components.
+- Use canonical table, label, empty-state, loading, and pagination components. Operational Dashboard loading placeholders are owned by `components/operational_section_loading.html`; dashboard domains do not duplicate pulse/skeleton geometry.
 - Section-local missing, unavailable, not-materialized, no-findings, or no-active-signal evidence in **Capacity & Demand** and **Signals & Actions** uses `components/states/_empty_state.html` with the dashed `panel` variant. Reserve `components/states/_blocked_state.html` for domain/page prerequisites such as missing setup or required scope. A selected scope with missing section evidence is never a blocked-state presentation. Alerts Summary and Alert Interpretation & Response use the same `min-h-[220px]` empty-panel geometry so peer cards remain visually balanced across Kubernetes, Object Storage, and Artifact Registry.
 - Do not introduce page-local Hero/card/tab/label/pagination/chart geometry, arbitrary typography, or dark-mode colors.
 - The dashboard remains neutral-first in dark mode. Violet is limited to identity, active state, focus, links, progress, and primary actions.
@@ -162,9 +162,12 @@ Operational Dashboards use **Fast Shell & Bounded Section Loading**. The invaria
 The dashboard web request is a projection layer over committed KAORI state. It is not an inventory scan, analytics engine, or request-time provider client.
 
 - The first request renders only the Fast Shell: Hero/readiness, scope selector options, selected scope, active tab, minimal freshness/context, required pagination metadata, and section/KPI placeholders.
-- Operational Signal KPI content loads as a bounded section projection rather than forcing unrelated dashboard evidence into the shell.
+- All dashboard loading placeholders use `components/operational_section_loading.html`; page-local pulse/skeleton markup is prohibited for this family.
+- Operational Signal KPI content uses the shared KPI placeholder, loads with `hx-trigger="load"`, and replaces its own container through `hx-target="this"` + `hx-swap="outerHTML"`.
+- Bounded tab/section content uses the shared section placeholder, loads with `hx-trigger="revealed"`, and replaces its own container through `hx-target="this"` + `hx-swap="outerHTML"`.
 - Heavy sections load independently through HTMX.
 - Hidden tab sections load when revealed.
+- Projection granularity remains domain-owned: a canonical tab may be one bounded projection or may be split into finer bounded sub-projections when latency/failure isolation justifies it. This must not create a different loading presentation contract.
 - A lazy section request builds minimal scope context plus only the evidence required by that section.
 - Section requests must not call a full-dashboard builder or project unrelated tabs before returning the requested fragment.
 - Dashboard summaries prefer bounded database operations such as `COUNT`, `SUM`, `GROUP BY`, bounded `LIMIT`, canonical pagination, and latest committed/materialized snapshot reads.
@@ -223,9 +226,9 @@ Required sequence:
 2. render the domain Hero with `page_hero.operational_dashboard(...)`;
 3. render the domain onboarding/readiness blocker when required;
 4. enter `operational_dashboard_workspace.controller(...)`;
-5. render the domain Operational Signal Overview through `operational_signal_overview.render(...)` with bounded/lazy KPI content;
+5. render the domain Operational Signal Overview through `operational_signal_overview.render(...)` with bounded/lazy KPI content and `operational_section_loading.kpis(...)`;
 6. render `operational_dashboard_workspace.navigation(...)`;
-7. provide content for the canonical `overview`, `capacity`, `signals`, and `reporting` panels through independently bounded lazy section endpoints;
+7. provide content for the canonical `overview`, `capacity`, `signals`, and `reporting` panels through independently bounded lazy section endpoints, using `operational_section_loading.section(...)` for their placeholders;
 8. use shared section-card, peer-grid, table, label, loading, chart, and reporting components rather than page-local geometry;
 9. prove that one section request does not build unrelated sections and that dashboard aggregates do not require unbounded ORM materialization.
 
