@@ -9,6 +9,7 @@ from flask_login import current_user
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.rbac.decorators import permission_required
+from app.artifact_registry.webhooks import disable_webhook, generate_webhook_token
 from app.integrations.deletion import DeletionBlocked
 from app.integrations.registry.providers.harbor.application.forms import HarborInstanceForm
 from app.integrations.registry.providers.harbor.application.presentation import (
@@ -236,6 +237,35 @@ def test_new_instance_connection() -> ResponseReturnValue:
         separators=(',', ':'),
     )
     return response
+
+
+@harbor_bp.post('/instances/<int:instance_id>/webhook/token')
+@permission_required('integrations.manage')
+def webhook_token(instance_id: int) -> ResponseReturnValue:
+    instance = _instance_or_404(instance_id)
+    token = generate_webhook_token(int(instance.integration_instance.id))
+    if request.headers.get('HX-Request') == 'true':
+        return render_template(
+            'artifact_registry/partials/_webhook_token_created.html',
+            webhook_token=token,
+        )
+    return {'token': token, 'display_once': True}
+
+
+@harbor_bp.post('/instances/<int:instance_id>/webhook/disable')
+@permission_required('integrations.manage')
+def webhook_disable(instance_id: int) -> ResponseReturnValue:
+    instance = _instance_or_404(instance_id)
+    disable_webhook(int(instance.integration_instance.id))
+    _queue_feedback(
+        event_type='harbor_webhook_disabled',
+        status='success',
+        title='Registry Webhook Disabled',
+        message=f'Webhook admission is disabled for {instance.name}.',
+        detail='Scheduled Registry reconciliation remains the correctness authority.',
+        action_url=url_for('harbor.instance_detail', instance_id=instance.id) + '#configuration',
+    )
+    return redirect(url_for('harbor.instance_detail', instance_id=instance.id) + '#configuration')
 
 
 @harbor_bp.route('/instances/<int:instance_id>/edit', methods=['GET', 'POST'])
