@@ -324,7 +324,9 @@
                                     resource_label='Sources',
                                     control_name='artifact-registry-security-capabilities') }}
                             </section>
-                        {% else %}
+                        {% endif %}
+        {% endif %}
+
         {% if security.view == 'vulnerabilities' %}
             <section class="space-y-4" aria-labelledby="artifact-registry-vulnerability-findings-heading">
                 {{ section_intro.render(
@@ -341,6 +343,7 @@
                 ) }}
         {% endif %}
 
+        {% if security.view == 'vulnerabilities' or (security.view == 'supply_chain' and security.supply_section == 'evidence') %}
         {% set result_badge %}
             {{ table_label.metadata_label(
                 security.pagination.total_items ~ (' Record' if security.pagination.total_items == 1 else ' Records'),
@@ -554,11 +557,11 @@
                 control_name='artifact-registry-security'
             ) }}
         {% endcall %}
+        {% endif %}
         {% if security.view == 'vulnerabilities' %}
             </section>
         {% endif %}
         {% if security.view == 'supply_chain' %}
-                        {% endif %}
                     </div>
                 </section>
             </section>
