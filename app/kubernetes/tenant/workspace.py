@@ -7,7 +7,7 @@ from sqlalchemy import func, or_
 
 from app.common.pagination import paginate_query, paginate_sequence
 from app.common.presentation import present_user_datetime
-from app.intelligence.service import get_active_recommendation_findings
+from app.intelligence.service import get_active_tenant_governance_findings
 from app.kubernetes.tenant.capacity_governance import build_capacity_governance_summary
 from app.kubernetes.tenant.credential import build_namespace_access_package, credential_target_namespaces
 from app.kubernetes.tenant.job_adapter import build_tenant_sync_state
@@ -390,11 +390,7 @@ def get_tenant_overview_context(*, cluster_page: int = 1, cluster_per_page: int 
         **cluster_context,
         **sync_context,
         'tenant_attention_rows': _tenant_attention_rows(
-            [
-                finding
-                for finding in get_active_recommendation_findings(domain='kubernetes')
-                if str(finding.get('rule_key') or '').startswith('kubernetes.tenant.')
-            ]
+            get_active_tenant_governance_findings()
         ),
         'tenant_recent_activity_rows': _tenant_recent_activity(),
     }
@@ -403,11 +399,7 @@ def get_tenant_overview_context(*, cluster_page: int = 1, cluster_per_page: int 
 def get_tenant_operations_summary_context() -> dict[str, int]:
     """Return bounded Operations headline counters without materializing activity feeds."""
 
-    findings = [
-        finding
-        for finding in get_active_recommendation_findings(domain='kubernetes')
-        if str(finding.get('rule_key') or '').startswith('kubernetes.tenant.')
-    ]
+    findings = get_active_tenant_governance_findings()
     namespace_attention_count = TenantNamespace.query.filter(
         TenantNamespace.provisioning_status.notin_(('ready', 'deprovisioned'))
     ).count()
@@ -424,11 +416,7 @@ def get_tenant_workspace_context(*, limit: int = 20) -> dict[str, Any]:
     mutations and live discovery stay in their owning services/adapters.
     """
 
-    findings = [
-        finding
-        for finding in get_active_recommendation_findings(domain='kubernetes')
-        if str(finding.get('rule_key') or '').startswith('kubernetes.tenant.')
-    ]
+    findings = get_active_tenant_governance_findings()
     recent_credentials = _recent(TenantCredential, limit=limit)
     namespace_access_rows: list[dict[str, object]] = []
     for credential in recent_credentials:
