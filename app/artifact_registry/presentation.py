@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import func, or_
+from sqlalchemy import case, func, or_
 from sqlalchemy.orm import joinedload
 
 from app.artifact_registry.observability import registry_metrics_readiness
@@ -24,12 +24,14 @@ from app.models.registry import (
     RegistryProjectGovernance,
     RegistryReplicationPolicy,
     RegistryRepository,
+    RegistryScanSnapshot,
     RegistryTag,
     RegistryWebhookEndpoint,
     RegistryWorkloadBinding,
 )
 
 FRESHNESS_HOURS = 24
+_SUCCESSFUL_SCAN_STATES = ('success', 'finished', 'completed')
 
 
 def _fmt_bytes(value: int | None) -> str:
@@ -75,6 +77,14 @@ def _human_time(value: datetime | None) -> str:
     if hours < 24:
         return f'{hours}h ago'
     return f'{hours // 24}d ago'
+
+
+def _freshness_value(value: datetime | None, *, missing: str) -> str:
+    return f'Updated {_human_time(value)}' if value is not None else missing
+
+
+def _scan_evidence_ready(value: str | None) -> bool:
+    return str(value or '').strip().lower() in _SUCCESSFUL_SCAN_STATES
 
 
 def _state_view(state: RegistryCollectionState | None) -> dict[str, Any]:
@@ -545,7 +555,20 @@ def _provider_health_projection(
         .with_entities(
             RegistryProject.integration_instance_id,
             func.count(RegistryArtifact.id),
-            func.count(RegistryArtifact.scan_status),
+            func.coalesce(
+                func.sum(
+                    case(
+                        (
+                            func.lower(RegistryArtifact.scan_status).in_(
+                                _SUCCESSFUL_SCAN_STATES
+                            ),
+                            1,
+                        ),
+                        else_=0,
+                    )
+                ),
+                0,
+            ),
             func.coalesce(
                 func.sum(
                     RegistryArtifact.vulnerability_summary['critical'].as_integer()
@@ -723,6 +746,39 @@ def _overview_operations_projection(
     total_size_bytes = int(artifact_summary_query.one()[0] or 0)
     public_project_count = public_projects_query.count()
 
+    security_freshness_query = (
+        RegistryScanSnapshot.query.join(
+            RegistryArtifact,
+            RegistryScanSnapshot.artifact_id == RegistryArtifact.id,
+        )
+        .join(
+            RegistryRepository,
+            RegistryArtifact.repository_id == RegistryRepository.id,
+        )
+        .join(
+            RegistryProject,
+            RegistryRepository.project_id == RegistryProject.id,
+        )
+        .with_entities(
+            RegistryProject.integration_instance_id,
+            func.max(RegistryScanSnapshot.observed_at),
+        )
+    )
+    if selected_provider is not None:
+        security_freshness_query = security_freshness_query.filter(
+            RegistryProject.integration_instance_id == selected_provider.id
+        )
+    security_observed_by_provider = {
+        int(provider_id): observed_at
+        for provider_id, observed_at in security_freshness_query.group_by(
+            RegistryProject.integration_instance_id
+        ).all()
+    }
+    latest_security_at = max(
+        (value for value in security_observed_by_provider.values() if value is not None),
+        default=None,
+    )
+
     state_by_provider = {int(state.integration_instance_id): state for state in states}
     committed_states = [state for state in states if state.last_committed_at is not None]
     stale_count = context['stale_snapshot_count']
@@ -736,6 +792,14 @@ def _overview_operations_projection(
     )
     analytics_ready_count = sum(
         snapshot is not None for snapshot in analytics_by_provider.values()
+    )
+    latest_analytics_at = max(
+        (
+            snapshot.generated_at
+            for snapshot in analytics_by_provider.values()
+            if snapshot is not None and snapshot.generated_at is not None
+        ),
+        default=None,
     )
 
     inventory_items = [
@@ -763,11 +827,14 @@ def _overview_operations_projection(
             )
         elif scanned_count:
             security_status, security_tone = 'Available', 'normal'
-            security_value = f'{scanned_count} / {artifact_total} artifacts scanned'
+            security_value = _freshness_value(
+                latest_security_at,
+                missing='Committed scan evidence available',
+            )
         else:
             security_status = 'Required'
             security_tone = 'warning' if artifact_total else 'unknown'
-            security_value = 'No committed security evidence'
+            security_value = 'No committed security snapshot'
 
         inventory_description = (
             'Committed projects, repositories, artifacts, tags, and provider provenance.'
@@ -784,7 +851,10 @@ def _overview_operations_projection(
                 'label': 'Inventory Snapshot',
                 'status': selected_state['label'],
                 'tone': selected_state['tone'],
-                'value': _human_time(selected_state['committed_at']),
+                'value': _freshness_value(
+                    selected_state['committed_at'],
+                    missing='No committed inventory snapshot',
+                ),
                 'description': inventory_description,
                 'icon': 'database-zap',
             },
@@ -815,7 +885,10 @@ def _overview_operations_projection(
                 'label': 'Analytics Snapshot',
                 'status': selected_analytics['label'],
                 'tone': selected_analytics['tone'],
-                'value': _human_time(selected_analytics['generated_at']),
+                'value': _freshness_value(
+                    selected_analytics['generated_at'],
+                    missing='No materialized analytics snapshot',
+                ),
                 'description': (
                     'Materialized Registry growth, forecast, runtime, and recommendation evidence.'
                 ),
@@ -842,8 +915,11 @@ def _overview_operations_projection(
                 'label': 'Inventory Snapshot',
                 'status': inventory_status,
                 'tone': inventory_tone,
-                'value': f'{committed_count} / {len(scoped_providers)} providers',
-                'description': 'Registry providers with retained committed inventory evidence.',
+                'value': _freshness_value(
+                    context['latest_committed_at'],
+                    missing='No committed inventory snapshot',
+                ),
+                'description': 'Latest retained committed inventory evidence across the active Registry scope.',
                 'icon': 'database-zap',
             },
             {
@@ -858,9 +934,17 @@ def _overview_operations_projection(
                     if metrics_ready_count == len(scoped_providers) and scoped_providers
                     else ('warning' if metrics_ready_count else 'unknown')
                 ),
-                'value': f'{metrics_ready_count} / {len(scoped_providers)} providers',
+                'value': (
+                    'Validated Metrics Source available'
+                    if metrics_ready_count == len(scoped_providers) and scoped_providers
+                    else (
+                        'Validated Metrics Source partially available'
+                        if metrics_ready_count
+                        else 'No validated Metrics Source'
+                    )
+                ),
                 'description': (
-                    'Registry providers with an eligible validated Metrics Source binding.'
+                    'Validated Registry Metrics Source availability across the active scope.'
                 ),
                 'icon': 'activity',
             },
@@ -874,15 +958,22 @@ def _overview_operations_projection(
                 'tone': (
                     'info'
                     if artifact_total == 0
-                    else ('normal' if scanned_count else 'unknown')
+                    else ('normal' if scanned_count else 'warning')
                 ),
                 'value': (
                     'No committed artifacts to scan'
                     if artifact_total == 0
-                    else f'{scanned_count} / {artifact_total} artifacts scanned'
+                    else (
+                        _freshness_value(
+                            latest_security_at,
+                            missing='Committed scan evidence available',
+                        )
+                        if scanned_count
+                        else 'No committed security snapshot'
+                    )
                 ),
                 'description': (
-                    'Committed vulnerability scan coverage across the current Registry scope.'
+                    'Latest committed vulnerability scan evidence across the active Registry scope.'
                 ),
                 'icon': 'shield-check',
             },
@@ -898,8 +989,11 @@ def _overview_operations_projection(
                     if analytics_ready_count == len(scoped_providers) and scoped_providers
                     else ('warning' if analytics_ready_count else 'unknown')
                 ),
-                'value': f'{analytics_ready_count} / {len(scoped_providers)} providers',
-                'description': 'Providers with a ready Registry analytics materialization.',
+                'value': _freshness_value(
+                    latest_analytics_at,
+                    missing='No materialized analytics snapshot',
+                ),
+                'description': 'Latest ready Registry analytics materialization across the active scope.',
                 'icon': 'chart-no-axes-combined',
             },
         ]
@@ -1354,7 +1448,7 @@ def build_security(*, page: int = 1, per_page: int = 5) -> dict[str, Any]:
         high = int(summary.get('high') or 0)
         critical_total += critical
         high_total += high
-        has_scan = bool(artifact.scan_status)
+        has_scan = _scan_evidence_ready(artifact.scan_status)
         scanned += int(has_scan)
         signature = str(artifact.signature_status or 'not_observed')
         sbom = str(artifact.sbom_status or 'not_observed')
