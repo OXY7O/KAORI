@@ -716,6 +716,105 @@ def _decorate_inventory_provider_provenance(rows: list[dict[str, Any]]) -> list[
     return rows
 
 
+def _inventory_resource_catalog(overview: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    return {
+        'projects': {
+            'key': 'projects',
+            'title': 'Projects',
+            'description': 'Provider-neutral Registry namespaces and visibility from committed snapshots.',
+            'icon': 'folder-kanban',
+            'count': overview['project_count'],
+            'action_label': 'Browse Projects',
+            'search_placeholder': 'Search projects or providers',
+            'endpoint': 'artifact_registry.inventory_projects',
+        },
+        'repositories': {
+            'key': 'repositories',
+            'title': 'Repositories',
+            'description': 'Committed repository catalogs linked to their Registry projects.',
+            'icon': 'package-open',
+            'count': overview['repository_count'],
+            'action_label': 'Browse Repositories',
+            'search_placeholder': 'Search repositories, projects, or providers',
+            'endpoint': 'artifact_registry.inventory_repositories',
+        },
+        'artifacts': {
+            'key': 'artifacts',
+            'title': 'Artifacts',
+            'description': 'Digest-oriented OCI identities with mutable tags and provider provenance.',
+            'icon': 'fingerprint',
+            'count': overview['artifact_count'],
+            'action_label': 'Browse Artifacts',
+            'search_placeholder': 'Search digests, repositories, tags, or providers',
+            'endpoint': 'artifact_registry.inventory_artifacts',
+        },
+    }
+
+
+def _inventory_snapshot_context(overview: dict[str, Any]) -> dict[str, Any]:
+    provider_count = int(overview['provider_count'])
+    snapshot_count = int(overview['snapshot_count'])
+    stale_count = int(overview['stale_snapshot_count'])
+    pending_count = int(overview['pending_snapshot_count'])
+    failed_count = int(overview['failed_refresh_count'])
+    exception_count = stale_count + pending_count + failed_count
+
+    exception_parts: list[str] = []
+    if stale_count:
+        exception_parts.append(f'{stale_count} stale')
+    if pending_count:
+        exception_parts.append(f'{pending_count} pending')
+    if failed_count:
+        exception_parts.append(f'{failed_count} failed')
+
+    if provider_count and snapshot_count == provider_count and not exception_count:
+        coverage_tone = 'normal'
+    elif snapshot_count:
+        coverage_tone = 'warning'
+    else:
+        coverage_tone = 'unknown'
+
+    return {
+        'source_label': 'Committed Registry State',
+        'status': overview['posture']['label'],
+        'tone': overview['posture']['tone'],
+        'description': (
+            'KAORI reads retained provider-neutral Registry inventory without a live provider render dependency.'
+        ),
+        'latest_collected_at': overview['latest_committed_at'],
+        'scope_label': overview['scope_label'],
+        'coverage_label': (
+            f'{snapshot_count} / {provider_count} Providers' if provider_count else 'No Providers'
+        ),
+        'coverage_tone': coverage_tone,
+        'coverage_supporting': 'Providers with retained committed inventory evidence.',
+        'exceptions_label': ' · '.join(exception_parts) if exception_parts else 'No Exceptions',
+        'exceptions_tone': 'warning' if exception_count else 'normal',
+        'exceptions_supporting': (
+            'Stale, pending, or failed committed snapshot conditions.'
+            if exception_count
+            else 'No stale, pending, or failed snapshot conditions.'
+        ),
+        'exception_count': exception_count,
+    }
+
+
+def _inventory_base_context() -> dict[str, Any]:
+    overview = build_overview()
+    resource_catalog = _inventory_resource_catalog(overview)
+    return {
+        'setup': overview['setup'],
+        'overview': overview,
+        'snapshot_context': _inventory_snapshot_context(overview),
+        'asset_catalog': list(resource_catalog.values()),
+        'resource_catalog': resource_catalog,
+    }
+
+
+def build_inventory_overview() -> dict[str, Any]:
+    return _inventory_base_context()
+
+
 def build_inventory(*, resource: str, page: int, per_page: int, search: str = '') -> dict[str, Any]:
     resource = resource if resource in {'projects', 'repositories', 'artifacts'} else 'projects'
     search_value = search.strip().lower()
@@ -773,82 +872,9 @@ def build_inventory(*, resource: str, page: int, per_page: int, search: str = ''
         ]
 
     paged, pagination = paginate_sequence(filtered, page=page, per_page=per_page)
-    overview = build_overview()
-    provider_count = int(overview['provider_count'])
-    snapshot_count = int(overview['snapshot_count'])
-    stale_count = int(overview['stale_snapshot_count'])
-    pending_count = int(overview['pending_snapshot_count'])
-    failed_count = int(overview['failed_refresh_count'])
-    exception_count = stale_count + pending_count + failed_count
-
-    exception_parts: list[str] = []
-    if stale_count:
-        exception_parts.append(f'{stale_count} stale')
-    if pending_count:
-        exception_parts.append(f'{pending_count} pending')
-    if failed_count:
-        exception_parts.append(f'{failed_count} failed')
-
-    if provider_count and snapshot_count == provider_count and not exception_count:
-        coverage_tone = 'normal'
-    elif snapshot_count:
-        coverage_tone = 'warning'
-    else:
-        coverage_tone = 'unknown'
-
-    resource_catalog = {
-        'projects': {
-            'key': 'projects',
-            'title': 'Projects',
-            'description': 'Provider-neutral Registry namespaces and visibility from committed snapshots.',
-            'icon': 'folder-kanban',
-            'count': overview['project_count'],
-            'action_label': 'Browse Projects',
-            'search_placeholder': 'Search projects or providers',
-        },
-        'repositories': {
-            'key': 'repositories',
-            'title': 'Repositories',
-            'description': 'Committed repository catalogs linked to their Registry projects.',
-            'icon': 'package-open',
-            'count': overview['repository_count'],
-            'action_label': 'Browse Repositories',
-            'search_placeholder': 'Search repositories, projects, or providers',
-        },
-        'artifacts': {
-            'key': 'artifacts',
-            'title': 'Artifacts',
-            'description': 'Digest-oriented OCI identities with mutable tags and provider provenance.',
-            'icon': 'fingerprint',
-            'count': overview['artifact_count'],
-            'action_label': 'Browse Artifacts',
-            'search_placeholder': 'Search digests, repositories, tags, or providers',
-        },
-    }
-    selected_resource = resource_catalog[resource]
-    snapshot_context = {
-        'source_label': 'Committed Registry State',
-        'status': overview['posture']['label'],
-        'tone': overview['posture']['tone'],
-        'description': (
-            'KAORI reads retained provider-neutral Registry inventory without a live provider render dependency.'
-        ),
-        'latest_collected_at': overview['latest_committed_at'],
-        'scope_label': overview['scope_label'],
-        'coverage_label': (
-            f'{snapshot_count} / {provider_count} Providers' if provider_count else 'No Providers'
-        ),
-        'coverage_tone': coverage_tone,
-        'coverage_supporting': 'Providers with retained committed inventory evidence.',
-        'exceptions_label': ' · '.join(exception_parts) if exception_parts else 'No Exceptions',
-        'exceptions_tone': 'warning' if exception_count else 'normal',
-        'exceptions_supporting': (
-            'Stale, pending, or failed committed snapshot conditions.'
-            if exception_count
-            else 'No stale, pending, or failed snapshot conditions.'
-        ),
-        'exception_count': exception_count,
-    }
+    context = _inventory_base_context()
+    selected_resource = context['resource_catalog'][resource]
+    snapshot_count = int(context['overview']['snapshot_count'])
 
     if search_value:
         empty_description = f"No committed {selected_resource['title'].lower()} match this search."
@@ -862,19 +888,17 @@ def build_inventory(*, resource: str, page: int, per_page: int, search: str = ''
         )
 
     return {
+        **context,
         'resource': resource,
         'resource_label': selected_resource['title'],
         'resource_icon': selected_resource['icon'],
         'resource_description': selected_resource['description'],
+        'resource_endpoint': selected_resource['endpoint'],
         'search_placeholder': selected_resource['search_placeholder'],
-        'asset_catalog': list(resource_catalog.values()),
         'rows': paged,
         'pagination': pagination,
         'search': search,
         'total': len(filtered),
-        'setup': overview['setup'],
-        'overview': overview,
-        'snapshot_context': snapshot_context,
         'empty_description': empty_description,
     }
 
