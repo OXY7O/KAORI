@@ -1,3 +1,4 @@
+{% import "components/operational_section_loading.html" as section_loading %}
 {% import "components/operational_signal_overview.html" as signal_overview %}
 {% import "components/table.html" as table_ui %}
 {% set active_scope = namespace(name='All Clusters') %}
@@ -50,8 +51,9 @@
          hx-trigger="load"
          hx-target="this"
          hx-swap="outerHTML">
-        {% with title="Operational Indicators", description="Preparing inventory, utilization, and alert signals.", icon="scan-line", embedded=true %}
-            {% include "kubernetes/dashboard/partials/_section_loading.html" %}
-        {% endwith %}
+        {{ section_loading.kpis(
+            item_count=8,
+            aria_label='Kubernetes Operational Indicators Loading'
+        ) }}
     </div>
 {% endcall %}
