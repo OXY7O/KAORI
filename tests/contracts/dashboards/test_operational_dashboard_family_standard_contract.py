@@ -437,6 +437,7 @@ def test_capacity_and_signals_use_one_dashed_empty_state_contract() -> None:
 
     assert 'dashboard.alerts_snapshot.source_status == \'Available\'' in kubernetes_response
     assert 'dashboard.alerts.available and dashboard.alerts.total > 0' in object_response
+    assert 'overview.alerts.available and overview.alerts.total > 0' in registry_response
     for source in (kubernetes_response, object_response, registry_response):
         assert 'No Active Signals' in source
         assert 'Alert Response Not Required' in source
@@ -463,4 +464,25 @@ def test_kubernetes_alert_response_uses_bounded_alertcase_section_projection() -
         '{% include "kubernetes/dashboard/partials/_alert_response_guidance.html" %}'
         not in content
     )
+
+def test_artifact_registry_signals_follow_object_storage_selected_scope_contract() -> None:
+    registry_signals = read('app/templates/artifact_registry/partials/_overview_signals.html')
+    registry_alerts = read('app/templates/artifact_registry/partials/_overview_alerts_summary.html')
+    object_signals = read('app/templates/storage/object_storage/dashboard/partials/_signals.html')
+    object_alerts = read('app/templates/storage/object_storage/dashboard/partials/_alerts_summary.html')
+
+    assert '{% if not overview.selected_provider %}' in registry_signals
+    assert '{% if not dashboard.selected_system %}' in object_signals
+    for source in (registry_signals, object_signals):
+        assert 'components/states/_blocked_state.html' in source
+        assert 'components/peer_content_grid.html' in source
+
+    assert 'scope_required=true' in registry_alerts
+    assert 'scope_required=true' in object_alerts
+    assert 'scope_selected=overview.selected_provider_id' in registry_alerts
+    assert 'scope_selected=dashboard.selected_system_id' in object_alerts
+    assert 'source_available=overview.alerts.available' in registry_alerts
+    assert 'source_available=dashboard.alerts.available' in object_alerts
+    assert "status_available_label='KAORI Alert Cases Available'" in registry_alerts
+    assert "status_available_label='KAORI Alert Cases Available'" in object_alerts
 
