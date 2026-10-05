@@ -74,8 +74,6 @@ from app.kubernetes.tenant.service import (
     get_capacity_decision_registry_context,
     get_namespace_provisioning_support_context,
     get_namespace_registry_context,
-    get_operations_namespace_registry_context,
-    get_operations_tenant_registry_context,
     get_resource_profile_registry_context,
     get_resource_profile_workspace_context,
     get_tenant_registry_context,
@@ -388,7 +386,7 @@ def _operations_active_tab() -> str:
 
 
 def _operations_provisioning_context() -> dict[str, Any]:
-    namespace_context = get_operations_namespace_registry_context(
+    namespace_context = get_namespace_registry_context(
         page=request.args.get('ops_namespace_page', 1, type=int) or 1,
         per_page=request.args.get('ops_namespace_per_page', 5, type=int) or 5,
         search=str(request.args.get('ops_namespace_search') or ''),
@@ -408,7 +406,7 @@ def _operations_provisioning_context() -> dict[str, Any]:
 
 
 def _operations_drift_context() -> dict[str, Any]:
-    drift_context = get_operations_namespace_registry_context(
+    drift_context = get_namespace_registry_context(
         page=request.args.get('ops_drift_page', 1, type=int) or 1,
         per_page=request.args.get('ops_drift_per_page', 5, type=int) or 5,
         search=str(request.args.get('ops_drift_search') or ''),
@@ -417,13 +415,14 @@ def _operations_drift_context() -> dict[str, Any]:
         status='drifted',
         include_workflow_support=False,
     )
-    provider_context = get_operations_tenant_registry_context(
+    provider_context = get_tenant_registry_context(
         page=request.args.get('ops_provider_page', 1, type=int) or 1,
         per_page=request.args.get('ops_provider_per_page', 5, type=int) or 5,
         search=str(request.args.get('ops_provider_search') or ''),
         cluster_id=str(request.args.get('ops_provider_cluster_id') or ''),
         environment=str(request.args.get('ops_provider_environment') or ''),
         lifecycle_status=str(request.args.get('ops_provider_lifecycle') or ''),
+        include_decommission_preflight=False,
     )
     access_context = get_access_grant_registry_context(
         page=request.args.get('ops_access_page', 1, type=int) or 1,
