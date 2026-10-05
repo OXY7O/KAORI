@@ -48,12 +48,35 @@ def test_artifact_registry_has_no_direct_prometheus_transport() -> None:
         assert 'prometheus' not in content.lower() or path.name == 'observability.py'
 
 
-def test_readiness_planes_remain_independent() -> None:
+def test_governance_workspace_keeps_independent_readiness_planes_out_of_posture() -> None:
     presentation = (ROOT / 'app/artifact_registry/presentation.py').read_text()
+    start = presentation.index('def build_governance(')
+    end = presentation.index('def build_analytics()', start)
+    governance_presentation = presentation[start:end]
+    template = (ROOT / 'app/templates/artifact_registry/governance.html').read_text()
+
     for label in (
         'Provider Readiness',
         'Inventory Readiness',
         'Metrics Readiness',
         'Webhook Readiness',
     ):
-        assert label in presentation
+        assert label not in governance_presentation
+
+    assert 'Governance Data Snapshot' in template
+    assert "'policies', 'Policies'" in template
+    assert "'replication', 'Replication'" in template
+    assert 'Sync Governance' in template
+    assert 'Webhook Admission' not in template
+    assert 'Generate Token' not in template
+    assert 'Registry reconciliation' not in template
+
+
+def test_governance_sync_uses_registered_jobexecution_boundary() -> None:
+    routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
+    adapter = (ROOT / 'app/artifact_registry/governance_job_adapter.py').read_text()
+
+    assert "job_key='artifact_registry.governance.sync'" in routes
+    assert 'build_registry_governance_sync_state' in adapter
+    assert "GOVERNANCE_SYNC_JOB_TYPE = 'artifact_registry_governance'" in adapter
+    assert 'get_or_create_job_policy(GOVERNANCE_SYNC_JOB_KEY)' in adapter
