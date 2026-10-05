@@ -40,7 +40,9 @@ def sync_all_registry_security_task(
     total = len(targets)
     synced = 0
     artifact_count = refreshed_reports = reused_reports = finding_count = 0
+    partial_source_count = repository_failure_count = 0
     failures: list[dict[str, str]] = []
+    warning_evidence: list[dict[str, str]] = []
     context.start(
         message='Preparing Artifact Registry security synchronization.',
         total=total,
@@ -121,6 +123,32 @@ def sync_all_registry_security_task(
                 refreshed_reports += int(result.get('refreshed_reports') or 0)
                 reused_reports += int(result.get('reused_reports') or 0)
                 finding_count += int(result.get('findings') or 0)
+                provider_metadata = (
+                    dict(result.get('provider_metadata') or {})
+                    if isinstance(result.get('provider_metadata'), dict)
+                    else {}
+                )
+                source_repository_failures = list(provider_metadata.get('repository_failures') or [])
+                source_repository_failure_count = int(
+                    provider_metadata.get('repository_failure_count') or len(source_repository_failures)
+                )
+                if source_repository_failure_count:
+                    partial_source_count += 1
+                    repository_failure_count += source_repository_failure_count
+                    for failure in source_repository_failures:
+                        if not isinstance(failure, dict):
+                            continue
+                        warning_evidence.append(
+                            {
+                                'integration_instance_id': str(canonical_id),
+                                'instance_name': instance_name,
+                                'provider_key': str(target.get('provider_key') or ''),
+                                'project_name': str(failure.get('project_name') or ''),
+                                'repository_name': str(failure.get('repository_name') or ''),
+                                'error_type': str(failure.get('error_type') or 'RepositoryRefreshUnavailable'),
+                                'message': str(failure.get('message') or '')[:500],
+                            }
+                        )
             except Exception as exc:
                 db.session.rollback()
                 failures.append(
@@ -143,7 +171,12 @@ def sync_all_registry_security_task(
                 message=f'Finished security collection for {instance_name}.',
             )
 
-        status = 'error' if failures and not synced else ('warning' if failures else 'success')
+        has_partial_refresh = bool(partial_source_count or repository_failure_count)
+        status = (
+            'error'
+            if failures and not synced
+            else ('warning' if failures or has_partial_refresh else 'success')
+        )
         result = {
             'status': status,
             'title': (
@@ -151,13 +184,21 @@ def sync_all_registry_security_task(
                 if status != 'error'
                 else 'Artifact Registry Security Sync Failed'
             ),
-            'message': f'{synced} Registry provider(s) synchronized; {len(failures)} failed.',
+            'message': (
+                f'{synced} Registry provider(s) synchronized; {len(failures)} failed; '
+                f'{repository_failure_count} repository refresh warning(s).'
+            ),
             'detail': (
                 'Failed providers retained their previous committed security evidence.'
-                if failures
+                if failures and not synced
                 else (
-                    f'{artifact_count} artifacts evaluated; {refreshed_reports} vulnerability report(s) refreshed '
-                    f'and {reused_reports} unchanged report(s) reused.'
+                    'Security evidence was committed for available repositories; previous committed evidence '
+                    'was retained for repositories that could not be refreshed.'
+                    if has_partial_refresh
+                    else (
+                        f'{artifact_count} artifacts evaluated; {refreshed_reports} vulnerability report(s) refreshed '
+                        f'and {reused_reports} unchanged report(s) reused.'
+                    )
                 )
             ),
             'total_count': total,
@@ -167,7 +208,10 @@ def sync_all_registry_security_task(
             'refreshed_report_count': refreshed_reports,
             'reused_report_count': reused_reports,
             'finding_count': finding_count,
+            'partial_source_count': partial_source_count,
+            'repository_failure_count': repository_failure_count,
             'failure_evidence': failures,
+            'warning_evidence': warning_evidence[:50],
             'requested_by_user_id': requested_by_user_id,
             'finished_at': _now_iso(),
             'duration_seconds': round(perf_counter() - started, 1),
@@ -200,7 +244,7 @@ def sync_all_registry_security_task(
             context.succeed(
                 result_summary=result,
                 result_type='artifact_registry_security_sync',
-                partial=bool(failures),
+                partial=bool(failures or has_partial_refresh),
             )
         return result
     except Exception as exc:
