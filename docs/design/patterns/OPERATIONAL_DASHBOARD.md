@@ -91,6 +91,7 @@ Kubernetes maps the health table to clusters and Object Storage maps it to regis
 - Use `components/operational_callout.html` for interpretation/supporting guidance.
 - Use `components/forecast_projection_chart.html` for historical/projected utilization.
 - Use canonical table, label, empty-state, loading, and pagination components.
+- Section-local missing/not-materialized evidence in **Capacity & Demand** and **Signals & Actions** uses `components/states/_empty_state.html` with the panel variant. Reserve full blocked-state treatment for domain/page prerequisites rather than ordinary missing dashboard evidence.
 - Do not introduce page-local Hero/card/tab/label/pagination/chart geometry, arbitrary typography, or dark-mode colors.
 - The dashboard remains neutral-first in dark mode. Violet is limited to identity, active state, focus, links, progress, and primary actions.
 - Operational Dashboard content is a read-only committed-state projection. Navigation/handoff links are allowed, but job initiation and mutation controls such as inventory synchronization do not render inside dashboard KPI or evidence cards; those actions remain in their owning operational workflow.

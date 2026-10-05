@@ -1152,6 +1152,7 @@ def verify() -> None:
             'components/operational_recommendation_cards.html',
             'components/reporting_dashboard_workspace.html',
             'components/numbered_governance_steps.html',
+            'Section-local missing/not-materialized evidence in **Capacity & Demand** and **Signals & Actions** uses',
             'Arrow Left/Right wrap; Home selects first; End selects last;',
         ),
         'operational dashboard standard',

@@ -1,4 +1,5 @@
 {% import "components/operational_alert_response.html" as alert_response %}
+{% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/section_link_button.html" as section_link_button %}
 {% set alert_response_steps = [
     ('scan-search', 'Validate', 'Confirm Registry scope, committed snapshot freshness, and Alert Intelligence evidence before acting on the signal.'),
@@ -28,7 +29,8 @@
         </div>
     </div>
 {% endset %}
-{{ alert_response.render(
+{% if overview.alerts.total > 0 %}
+    {{ alert_response.render(
     'Meaning, triage order, and controlled response flow for active Artifact Registry alerts.',
     alert_response_steps,
     'Controlled Artifact Registry Alert Response Flow',
@@ -39,3 +41,21 @@
     source_description='KAORI Alert Intelligence owns active cases. The central Rule Catalog and Recommendations own rule semantics and recommended-action lifecycle.',
     extra_html=registry_handoffs
 ) }}
+{% else %}
+    {% call operational_section_card.render(
+        'Alert Interpretation & Response',
+        'Meaning, triage order, and controlled response flow for active Artifact Registry alerts.',
+        'book-open-check',
+        body_classes='p-5',
+        extra_classes='h-full'
+        ) %}
+        {% set empty_state_icon = "circle-check" %}
+        {% set empty_state_label = "No Active Signals" %}
+        {% set empty_state_tone = "normal" %}
+        {% set empty_state_title = "Alert Response Not Required" %}
+        {% set empty_state_description = "No active Registry AlertCase requires controlled response for the current scope." %}
+        {% set empty_state_variant = "panel" %}
+        {% set empty_state_min_height = "min-h-[180px]" %}
+        {% include 'components/states/_empty_state.html' %}
+    {% endcall %}
+{% endif %}

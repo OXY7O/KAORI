@@ -37,14 +37,14 @@
         {% set empty_state_min_height = "min-h-[170px]" %}
         {% include 'components/states/_empty_state.html' %}
     {% elif not overview.forecast.source_ready %}
-        {% set blocked_state_icon = "database-zap" %}
-        {% set blocked_state_label = "Source Unavailable" %}
-        {% set blocked_state_title = "Registry Metrics Source Required" %}
-        {% set blocked_state_description = "Validate a Registry Metrics Source binding before collecting project quota consumer evidence." %}
-        {% set blocked_state_tone = "warning" %}
-        {% set blocked_state_variant = "table" %}
-        {% set blocked_state_min_height = "min-h-[170px]" %}
-        {% include 'components/states/_blocked_state.html' %}
+        {% set empty_state_icon = "database-zap" %}
+        {% set empty_state_label = "Source Required" %}
+        {% set empty_state_tone = "warning" %}
+        {% set empty_state_title = "Registry Metrics Source Required" %}
+        {% set empty_state_description = "Validate a Registry Metrics Source binding before collecting project quota consumer evidence." %}
+        {% set empty_state_variant = "panel" %}
+        {% set empty_state_min_height = "min-h-[170px]" %}
+        {% include 'components/states/_empty_state.html' %}
     {% else %}
         {% set empty_state_icon = "database-zap" %}
         {% set empty_state_label = "Sync Required" %}

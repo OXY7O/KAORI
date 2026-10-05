@@ -212,6 +212,9 @@ def test_artifact_registry_dashboard_state_semantics_and_jinja_mapping_safety() 
     forecast = read('app/templates/artifact_registry/partials/_overview_forecast_risk.html')
     consumers = read('app/templates/artifact_registry/partials/_overview_top_consumers.html')
     alerts = read('app/templates/artifact_registry/partials/_overview_alerts_summary.html')
+    alert_guidance = read('app/templates/artifact_registry/partials/_overview_alert_response_guidance.html')
+    recommendations = read('app/templates/artifact_registry/partials/_overview_recommended_actions.html')
+    shared_recommendations = read('app/templates/components/operational_recommendation_cards.html')
     shared_alerts = read('app/templates/components/operational_alert_summary.html')
     health = read('app/templates/artifact_registry/partials/_overview_provider_health.html')
     signal = read('app/templates/artifact_registry/partials/_overview_signal_overview.html')
@@ -225,9 +228,14 @@ def test_artifact_registry_dashboard_state_semantics_and_jinja_mapping_safety() 
 
     assert 'Sync Required' in capacity_snapshot
     assert 'components/states/_empty_state.html' in capacity_snapshot
-    assert 'Source Unavailable' in forecast
+    for source in (capacity_snapshot, forecast, consumers):
+        assert 'components/states/_empty_state.html' in source
+        assert 'empty_state_variant = "panel"' in source
+    assert 'components/states/_blocked_state.html' not in forecast
+    assert 'components/states/_blocked_state.html' not in consumers
+    assert 'Source Required' in forecast
     assert 'Sync Required' in forecast
-    assert 'Source Unavailable' in consumers
+    assert 'Source Required' in consumers
     assert 'Sync Required' in consumers
 
     assert 'components/operational_alert_summary.html' in alerts
@@ -235,6 +243,13 @@ def test_artifact_registry_dashboard_state_semantics_and_jinja_mapping_safety() 
     assert 'Cases Available' in alerts
     assert 'No Findings' in alerts
     assert 'empty_state_tone = "normal"' in shared_alerts
+    assert 'overview.alerts.total > 0' in alert_guidance
+    assert 'Alert Response Not Required' in alert_guidance
+    assert 'No Active Signals' in alert_guidance
+    assert 'empty_state_variant = "panel"' in alert_guidance
+    assert 'components/states/_empty_state.html' in alert_guidance
+    assert 'components/operational_recommendation_cards.html' in recommendations
+    assert 'empty_state_variant = "panel"' in shared_recommendations
 
     assert 'row.security_not_applicable' in health
     assert 'No Artifacts' in health
