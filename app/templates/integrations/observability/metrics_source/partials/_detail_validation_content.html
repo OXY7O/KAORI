@@ -30,7 +30,7 @@
     {% set gate_label = "Core APIs Ready" %}
     {% set gate_body = "Core APIs are usable; provider compatibility remains Degraded." %}
     {% set gate_tone = "warning" %}
-    {% set next_action = "This source remains usable with degraded compatibility. Move to a current qualified release or qualify the detected release, then rerun Full Validation." %}
+    {% set next_action = "Source is usable with degraded compatibility. Upgrade or qualify the detected release, then rerun Full Validation." %}
 {% elif readiness == "ready" %}
     {% set gate_label = "Provider Ready" %}
     {% set gate_body = "Core Metrics Source APIs are usable." %}
@@ -100,7 +100,7 @@
             {% set readiness_decision_tone = "critical" %}
         {% elif readiness == "degraded" %}
             {% set readiness_decision_title = "Why Readiness Is Degraded" %}
-            {% set readiness_decision_message = "Core APIs are ready; provider compatibility remains Degraded. " ~ next_action %}
+            {% set readiness_decision_message = "Core APIs are ready, but compatibility remains Degraded. Upgrade or qualify the detected release, then rerun Full Validation." %}
             {% set readiness_decision_tone = "warning" %}
         {% else %}
             {% set readiness_decision_title = "Why Readiness Needs Attention" %}
