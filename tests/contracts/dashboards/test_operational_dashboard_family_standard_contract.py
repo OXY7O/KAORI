@@ -383,3 +383,60 @@ def test_object_storage_section_requests_do_not_rebuild_full_overview() -> None:
     assert '_inventory_summary(' not in overview
     assert 'dashboard = get_dashboard_overview(' not in section
     assert 'dashboard = _dashboard_shell_context(' in section
+
+
+def test_capacity_and_signals_use_one_dashed_empty_state_contract() -> None:
+    empty_state = read('app/templates/components/states/_empty_state.html')
+    shared_alerts = read('app/templates/components/operational_alert_summary.html')
+
+    kubernetes_capacity = read('app/templates/kubernetes/dashboard/partials/_capacity_snapshot.html')
+    kubernetes_forecast = read('app/templates/kubernetes/dashboard/partials/_forecast_risk.html')
+    kubernetes_response = read('app/templates/kubernetes/dashboard/partials/_alert_response_guidance.html')
+
+    object_capacity = read('app/templates/storage/object_storage/dashboard/partials/_capacity.html')
+    object_forecast = read('app/templates/storage/object_storage/dashboard/partials/_forecast_risk.html')
+    object_response = read('app/templates/storage/object_storage/dashboard/partials/_alert_response_guidance.html')
+
+    registry_capacity = read('app/templates/artifact_registry/partials/_overview_capacity_snapshot.html')
+    registry_forecast = read('app/templates/artifact_registry/partials/_overview_forecast_risk.html')
+    registry_consumers = read('app/templates/artifact_registry/partials/_overview_top_consumers.html')
+    registry_response = read('app/templates/artifact_registry/partials/_overview_alert_response_guidance.html')
+    recommendations = read('app/templates/components/operational_recommendation_cards.html')
+
+    assert 'border border-dashed border-outline-default' in empty_state
+    assert "state_variant == 'panel'" in empty_state
+
+    for source in (
+        kubernetes_capacity,
+        kubernetes_forecast,
+        object_capacity,
+        object_forecast,
+        registry_capacity,
+        registry_forecast,
+        registry_consumers,
+        kubernetes_response,
+        object_response,
+        registry_response,
+        recommendations,
+    ):
+        assert 'components/states/_empty_state.html' in source
+        assert 'empty_state_variant = "panel"' in source
+
+    assert "dashboard.capacity_snapshot.source_status != 'Available'" in kubernetes_capacity
+    assert "dashboard.forecast_snapshot.source_status != 'Available'" in kubernetes_forecast
+    assert 'Capacity Snapshot Unavailable' in object_capacity
+    assert 'Forecast Snapshot Unavailable' in object_forecast
+
+    assert '{% elif not source_available %}' in shared_alerts
+    assert '{% elif total_alerts == 0 %}' in shared_alerts
+    assert "empty_state_variant = "panel"" in shared_alerts
+    source_unavailable_branch = shared_alerts.split('{% elif not source_available %}', 1)[1].split(
+        '{% elif total_alerts == 0 %}', 1
+    )[0]
+    assert 'components/states/_blocked_state.html' not in source_unavailable_branch
+
+    assert 'dashboard.alerts_snapshot.source_status == \'Available\'' in kubernetes_response
+    assert 'dashboard.alerts.available and dashboard.alerts.total > 0' in object_response
+    for source in (kubernetes_response, object_response, registry_response):
+        assert 'No Active Signals' in source
+        assert 'Alert Response Not Required' in source
