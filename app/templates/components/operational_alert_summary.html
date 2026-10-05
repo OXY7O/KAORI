@@ -54,6 +54,24 @@
             {% set blocked_state_description = scope_blocked_description %}
             {% set blocked_state_tone = "warning" %}
             {% include 'components/states/_blocked_state.html' %}
+        {% elif not source_available %}
+            {% set empty_state_icon = "wifi-off" %}
+            {% set empty_state_label = "Source Unavailable" %}
+            {% set empty_state_tone = "warning" %}
+            {% set empty_state_title = unavailable_title %}
+            {% set empty_state_description = unavailable_description %}
+            {% set empty_state_variant = "panel" %}
+            {% set empty_state_min_height = "min-h-[190px]" %}
+            {% include 'components/states/_empty_state.html' %}
+        {% elif total_alerts == 0 %}
+            {% set empty_state_icon = "circle-check" %}
+            {% set empty_state_label = empty_label %}
+            {% set empty_state_tone = "normal" %}
+            {% set empty_state_title = empty_title %}
+            {% set empty_state_description = empty_description %}
+            {% set empty_state_variant = "panel" %}
+            {% set empty_state_min_height = "min-h-[190px]" %}
+            {% include 'components/states/_empty_state.html' %}
         {% else %}
             <div class="grid grid-cols-3 gap-3">
                 <article class="rounded-lg bg-status-critical-soft p-4 text-center">
@@ -69,8 +87,8 @@
                     <p class="mt-1 text-2xl font-semibold text-status-info-text">{{ info }}</p>
                 </article>
             </div>
-            <div class="mt-4 space-y-2.5">
-                {% if rows %}
+            {% if rows %}
+                <div class="mt-4 space-y-2.5">
                     {% for alert in rows[:5] %}
                         {% set row_severity = alert.severity|default('info', true)|lower %}
                         <article class="flex items-start gap-3 rounded-lg border border-outline-subtle bg-surface-elevated p-3">
@@ -92,32 +110,12 @@
                             {% endif %}
                         </article>
                     {% endfor %}
-                {% elif source_available %}
-                    {% set empty_state_icon = "circle-check" %}
-                    {% set empty_state_label = empty_label %}
-                    {% set empty_state_tone = "normal" %}
-                    {% set empty_state_title = empty_title %}
-                    {% set empty_state_description = empty_description %}
-                    {% set empty_state_variant = "panel" %}
-                    {% set empty_state_min_height = "min-h-[170px]" %}
-                    {% include 'components/states/_empty_state.html' %}
-                {% else %}
-                    {% set blocked_state_icon = "wifi-off" %}
-                    {% set blocked_state_label = "Source Unavailable" %}
-                    {% set blocked_state_title = unavailable_title %}
-                    {% set blocked_state_description = unavailable_description %}
-                    {% set blocked_state_tone = "warning" %}
-                    {% set blocked_state_badge = unavailable_badge %}
-                    {% set blocked_state_badge_icon = unavailable_badge_icon %}
-                    {% set blocked_state_variant = "table" %}
-                    {% set blocked_state_min_height = "min-h-[170px]" %}
-                    {% include 'components/states/_blocked_state.html' %}
-                {% endif %}
-            </div>
+                </div>
+            {% endif %}
             <div class="mt-4 rounded-lg border border-outline-subtle bg-surface-elevated p-4"
                  data-kaori-alert-insight="stacked">
                 <div class="flex items-start gap-3">
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {% if critical > 0 %}bg-status-critical-soft text-status-critical{% elif warning > 0 %}bg-status-warning-soft text-status-warning{% elif total_alerts > 0 %}bg-status-info-soft text-status-info{% else %}bg-status-normal-soft text-status-normal{% endif %}"
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {% if critical > 0 %}bg-status-critical-soft text-status-critical{% elif warning > 0 %}bg-status-warning-soft text-status-warning{% else %}bg-status-info-soft text-status-info{% endif %}"
                           aria-hidden="true">
                         <i data-lucide="radio-tower" class="h-4 w-4"></i>
                     </span>
@@ -128,12 +126,8 @@
                                 {{ insight_critical }}
                             {% elif warning > 0 %}
                                 {{ insight_warning }}
-                            {% elif total_alerts > 0 %}
-                                {{ insight_info }}
-                            {% elif not source_available %}
-                                {{ insight_unavailable }}
                             {% else %}
-                                {{ insight_none }}
+                                {{ insight_info }}
                             {% endif %}
                         </p>
                     </div>
@@ -146,8 +140,8 @@
                     </div>
                     <div>
                         <dt class="text-content-muted">Highest</dt>
-                        <dd class="mt-1 text-base font-semibold {% if critical > 0 %}text-status-critical-text{% elif warning > 0 %}text-status-warning-text{% elif total_alerts > 0 %}text-status-info-text{% else %}text-status-normal-text{% endif %}">
-                            {% if critical > 0 %}Critical{% elif warning > 0 %}Warning{% elif total_alerts > 0 %}Info{% else %}None{% endif %}
+                        <dd class="mt-1 text-base font-semibold {% if critical > 0 %}text-status-critical-text{% elif warning > 0 %}text-status-warning-text{% else %}text-status-info-text{% endif %}">
+                            {% if critical > 0 %}Critical{% elif warning > 0 %}Warning{% else %}Info{% endif %}
                         </dd>
                     </div>
                     <div>
@@ -156,7 +150,7 @@
                     </div>
                 </dl>
                 <div class="mt-3 flex flex-wrap gap-2">
-                    {{ table_label.status_indicator_label(status_available_label if source_available else status_unavailable_label, 'normal' if source_available else 'warning') }}
+                    {{ table_label.status_indicator_label(status_available_label, 'normal') }}
                     {{ table_label.metadata_label(source_label, icon='brain-circuit') }}
                     {{ extra_metadata_html|safe }}
                 </div>
