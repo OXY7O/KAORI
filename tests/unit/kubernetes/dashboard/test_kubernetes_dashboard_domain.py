@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+from app.common.pagination import paginate_sequence
 from app.kubernetes.dashboard.schema import DashboardClusterOption
-from app.kubernetes.dashboard.sections.cluster_health import paginate_sequence
 from app.kubernetes.dashboard.sections.top_consumers import build_top_consumers_snapshot
 from app.kubernetes.dashboard.utils import get_selected_cluster, normalize_selected_cluster
 
@@ -14,10 +14,11 @@ def test_dashboard_pagination_is_bounded_and_clamps_invalid_pages() -> None:
     visible, pagination = paginate_sequence(items=items, page='99', per_page=5)
 
     assert visible == [10, 11]
-    assert pagination.page == 3
-    assert pagination.total_pages == 3
-    assert pagination.start_item == 11
-    assert pagination.end_item == 12
+    assert pagination['page'] == 3
+    assert pagination['total_pages'] == 3
+    assert pagination['start_item'] == 11
+    assert pagination['end_item'] == 12
+    assert pagination['allowed_per_page'] == [5, 10, 25, 50]
 
 
 def test_dashboard_selected_cluster_resolution_accepts_only_catalog_ids() -> None:
