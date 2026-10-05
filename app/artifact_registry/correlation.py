@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from sqlalchemy import insert
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.common.inventory_generation import filter_current_generation
 from app.extensions.db import db
@@ -125,7 +125,7 @@ def refresh_registry_workload_bindings(
     with Session(db.engine) as materialization_session, materialization_session.begin():
         artifact_query = materialization_session.query(RegistryArtifact).options(
             joinedload(RegistryArtifact.repository).joinedload(RegistryRepository.project),
-            joinedload(RegistryArtifact.tags),
+            selectinload(RegistryArtifact.tags),
         )
         if integration_instance_id is not None:
             artifact_query = artifact_query.join(
@@ -139,13 +139,27 @@ def refresh_registry_workload_bindings(
         artifacts = artifact_query.all()
         artifact_ids = [artifact.id for artifact in artifacts]
 
-        by_path: dict[str, list[tuple[RegistryArtifact, str | None]]] = {}
+        digest_index: dict[
+            tuple[str, str],
+            list[tuple[RegistryArtifact, str | None]],
+        ] = {}
+        tag_index: dict[
+            tuple[str, str],
+            list[tuple[RegistryArtifact, str | None]],
+        ] = {}
         for artifact in artifacts:
             integration_id = artifact.repository.project.integration_instance_id
             registry_host = _registry_host(materialization_session, integration_id)
-            by_path.setdefault(_artifact_repository_path(artifact), []).append(
-                (artifact, registry_host)
-            )
+            repository_path = _artifact_repository_path(artifact)
+            digest_index.setdefault(
+                (repository_path, artifact.digest),
+                [],
+            ).append((artifact, registry_host))
+            for tag in artifact.tags:
+                tag_index.setdefault(
+                    (repository_path, tag.name),
+                    [],
+                ).append((artifact, registry_host))
 
         pod_query = filter_current_generation(
             materialization_session.query(PodInventory),
@@ -170,7 +184,16 @@ def refresh_registry_workload_bindings(
             pod_seen: set[tuple[int, str]] = set()
             for raw_image, container_name, source_kind in _container_rows(pod):
                 image = parse_image_reference(raw_image)
-                for artifact, registry_host in by_path.get(image.repository, ()):
+                candidates = (
+                    digest_index.get((image.repository, image.digest), ())
+                    if image.digest
+                    else (
+                        tag_index.get((image.repository, image.tag), ())
+                        if image.tag
+                        else ()
+                    )
+                )
+                for artifact, registry_host in candidates:
                     match = _match(image, artifact, registry_host=registry_host)
                     if match is None:
                         continue
