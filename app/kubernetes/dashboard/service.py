@@ -365,6 +365,11 @@ def get_dashboard_section(
             dashboard.alerts_snapshot = _kaori_alert_snapshot(selected)
         return dashboard
 
+    if section == 'alert_response_guidance':
+        if selected is not None:
+            dashboard.alerts_snapshot = _kaori_alert_snapshot(selected)
+        return dashboard
+
     if section == 'top_consumers':
         if selected is not None:
             dashboard.top_consumers_snapshot, _ = _top_consumers_signal(selected)
