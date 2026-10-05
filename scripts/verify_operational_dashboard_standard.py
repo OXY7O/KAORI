@@ -637,6 +637,75 @@ def verify() -> None:
     )
 
     _require(
+        dashboard_loading,
+        (
+            'components/operational_section_card.html',
+            "table_label.status_indicator_label('Preparing', 'pending')",
+            '{% macro section(',
+            '{% macro kpis(',
+            'aria-busy="true"',
+            'h-14 animate-pulse rounded-lg bg-surface-hover',
+            'h-28 animate-pulse rounded-lg bg-surface-hover',
+        ),
+        'shared Operational Dashboard loading presentation',
+    )
+    for owner, section_source, signal_source in (
+        ('Kubernetes dashboard', content, signal_overview),
+        ('Object Storage dashboard', object_content, object_signal_overview),
+        ('Artifact Registry dashboard', artifact_content, artifact_signal_overview),
+    ):
+        _require(
+            section_source,
+            (
+                'components/operational_section_loading.html',
+                'section_loading.section(',
+                'hx-trigger="revealed"',
+                'hx-target="this"',
+                'hx-swap="outerHTML"',
+            ),
+            f'{owner} bounded section loading',
+        )
+        _require(
+            signal_source,
+            (
+                'components/operational_section_loading.html',
+                'section_loading.kpis(',
+                'hx-trigger="load"',
+                'hx-target="this"',
+                'hx-swap="outerHTML"',
+            ),
+            f'{owner} KPI loading',
+        )
+        if '<div class="grid gap-3 sm:grid-cols-3" aria-busy="true">' in section_source:
+            raise AssertionError(f'{owner}: duplicates canonical section loading skeleton')
+        if 'for _ in range(4)' in signal_source:
+            raise AssertionError(f'{owner}: duplicates canonical KPI loading skeleton')
+    if 'item_count=8' not in signal_overview:
+        raise AssertionError('Kubernetes dashboard KPI loader must represent eight indicators')
+    for owner, signal_source in (
+        ('Object Storage dashboard', object_signal_overview),
+        ('Artifact Registry dashboard', artifact_signal_overview),
+    ):
+        if 'item_count=4' not in signal_source:
+            raise AssertionError(f'{owner}: KPI loader must represent four indicators')
+    if LEGACY_KUBERNETES_SECTION_LOADING.exists():
+        raise AssertionError(
+            'Kubernetes dashboard retains retired page-local _section_loading.html'
+        )
+    _require(
+        dashboards_readme,
+        (
+            'operational_section_loading.html',
+            'section_loading.kpis(...)',
+            'section_loading.section(...)',
+            'hx-trigger="load"',
+            'hx-trigger="revealed"',
+            'Projection granularity stays domain-owned',
+        ),
+        'Operational Dashboard technical loading contract',
+    )
+
+    _require(
         dashboard_workspace,
         (
             'data-kaori-dashboard-framework="operational-v1"',
@@ -1256,12 +1325,15 @@ def verify() -> None:
             'components/operational_alert_summary.html',
             'components/operational_alert_response.html',
             'components/operational_recommendation_cards.html',
+            'components/operational_section_loading.html',
             'components/reporting_dashboard_workspace.html',
             'components/numbered_governance_steps.html',
             'Section-local missing, unavailable, not-materialized, no-findings, or no-active-signal evidence in **Capacity & Demand** and **Signals & Actions** uses',
             'Arrow Left/Right wrap; Home selects first; End selects last;',
             'Fast Shell & Bounded Section Loading',
             '1 HTTP request → 1 bounded presentation projection',
+            'All dashboard loading placeholders use `components/operational_section_loading.html`',
+            'Projection granularity remains domain-owned',
             'Section requests must not call a full-dashboard builder',
             'Do not materialize full ORM collections',
         ),
