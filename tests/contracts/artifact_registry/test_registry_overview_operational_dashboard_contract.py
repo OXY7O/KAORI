@@ -88,15 +88,13 @@ def test_artifact_registry_overview_reuses_shared_sections_and_domain_handoffs()
     assert 'artifact_registry/partials/_overview_alerts_summary.html' in signals
     assert 'artifact_registry/partials/_overview_alert_response_guidance.html' in signals
     assert 'artifact_registry/partials/_overview_recommended_actions.html' in signals
-    for endpoint in (
-        "url_for('artifact_registry.security')",
-        "url_for('artifact_registry.runtime')",
-        "url_for('artifact_registry.governance')",
-        "url_for('artifact_registry.analytics')",
-        "url_for('intelligence.catalog')",
-        "url_for('intelligence.recommendations')",
-    ):
-        assert endpoint in alert_guidance
+    assert '{% if not overview.selected_provider %}' in signals
+    assert 'Select Registry Provider' in signals
+    assert 'components/operational_alert_response.html' in alert_guidance
+    assert 'components/section_link_button.html' not in alert_guidance
+    assert 'Evidence Workspaces' not in alert_guidance
+    assert 'Intelligence Workspaces' not in alert_guidance
+    assert 'Signal Authority' not in alert_guidance
     assert 'components/reporting_dashboard_workspace.html' in reporting
     assert 'reporting_workspace.summary(' in reporting
     assert 'reporting_workspace.guidance(' in reporting
@@ -249,10 +247,13 @@ def test_artifact_registry_dashboard_state_semantics_and_jinja_mapping_safety() 
 
     assert 'components/operational_alert_summary.html' in alerts
     assert 'data-kaori-alert-insight="stacked"' in shared_alerts
-    assert 'Cases Available' in alerts
-    assert 'No Findings' in alerts
+    assert 'KAORI Alert Cases Available' in alerts
+    assert "empty_label='Healthy'" in alerts
+    assert 'source_available=overview.alerts.available' in alerts
+    assert 'scope_required=true' in alerts
+    assert 'scope_selected=overview.selected_provider_id' in alerts
     assert 'empty_state_tone = "normal"' in shared_alerts
-    assert 'overview.alerts.total > 0' in alert_guidance
+    assert 'overview.alerts.available and overview.alerts.total > 0' in alert_guidance
     assert 'Alert Response Not Required' in alert_guidance
     assert 'No Active Signals' in alert_guidance
     assert 'empty_state_variant = "panel"' in alert_guidance
@@ -286,6 +287,7 @@ def test_artifact_registry_dashboard_uses_bounded_section_projections() -> None:
     assert "if section == 'overview':" in presentation
     assert "if section == 'capacity':" in presentation
     assert "if section == 'signals':" in presentation
+    assert "'alerts': _registry_alerts(selected_provider)" in presentation
     assert "if section == 'reporting':" in presentation
 
     shell = presentation.split('def build_overview(', 1)[1].split('def build_overview_section(', 1)[0]
@@ -340,4 +342,55 @@ def test_artifact_registry_data_freshness_uses_evidence_age_not_coverage_counts(
     assert "_freshness_value(" in projection
     assert "latest_security_at" in projection
     assert "latest_analytics_at" in projection
+
+def test_artifact_registry_signals_match_object_storage_scope_and_alert_logic() -> None:
+    registry_signals = read('app/templates/artifact_registry/partials/_overview_signals.html')
+    registry_alerts = read('app/templates/artifact_registry/partials/_overview_alerts_summary.html')
+    registry_response = read('app/templates/artifact_registry/partials/_overview_alert_response_guidance.html')
+    object_signals = read('app/templates/storage/object_storage/dashboard/partials/_signals.html')
+    object_alerts = read('app/templates/storage/object_storage/dashboard/partials/_alerts_summary.html')
+    object_response = read('app/templates/storage/object_storage/dashboard/partials/_alert_response_guidance.html')
+    presentation = read('app/artifact_registry/presentation.py')
+
+    assert '{% if not overview.selected_provider %}' in registry_signals
+    assert '{% if not dashboard.selected_system %}' in object_signals
+    assert 'components/states/_blocked_state.html' in registry_signals
+    assert 'components/states/_blocked_state.html' in object_signals
+    assert 'Select Registry Provider' in registry_signals
+
+    for token in (
+        'source_available=overview.alerts.available',
+        'scope_required=true',
+        'scope_selected=overview.selected_provider_id',
+        "empty_label='Healthy'",
+        "status_available_label='KAORI Alert Cases Available'",
+        "source_label='KAORI Alert Intelligence'",
+    ):
+        assert token in registry_alerts
+
+    for token in (
+        'source_available=dashboard.alerts.available',
+        'scope_required=true',
+        'scope_selected=dashboard.selected_system_id',
+        "empty_label='Healthy'",
+        "status_available_label='KAORI Alert Cases Available'",
+    ):
+        assert token in object_alerts
+
+    assert 'overview.alerts.available and overview.alerts.total > 0' in registry_response
+    assert 'dashboard.alerts.available and dashboard.alerts.total > 0' in object_response
+    for source in (registry_response, object_response):
+        assert 'No Active Signals' in source
+        assert 'Alert Response Not Required' in source
+        assert 'Source Unavailable' in source
+        assert 'Alert Response Evidence Unavailable' in source
+        assert 'empty_state_variant = "panel"' in source
+        assert 'empty_state_min_height = "min-h-[220px]"' in source
+
+    assert 'def _registry_alerts(selected_provider: IntegrationInstance | None)' in presentation
+    assert "active_recommendation_alert_cases(" in presentation
+    assert "domain='registry'" in presentation
+    assert "'available': False" in presentation
+    assert "'available': True" in presentation
+    assert "'alerts': _registry_alerts(selected_provider)" in presentation
 
