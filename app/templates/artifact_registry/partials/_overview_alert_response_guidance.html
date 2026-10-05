@@ -31,16 +31,16 @@
 {% endset %}
 {% if overview.alerts.total > 0 %}
     {{ alert_response.render(
-    'Meaning, triage order, and controlled response flow for active Artifact Registry alerts.',
-    alert_response_steps,
-    'Controlled Artifact Registry Alert Response Flow',
-    'Potential runtime, supply-chain, or capacity impact. Start incident triage and establish ownership.',
-    'Developing governance, evidence, mutable-tag, or quota risk. Investigate before escalation.',
-    'Low-risk operational signal. Validate relevance, recurrence, and scope.',
-    source_title='Signal Authority',
-    source_description='KAORI Alert Intelligence owns active cases. The central Rule Catalog and Recommendations own rule semantics and recommended-action lifecycle.',
-    extra_html=registry_handoffs
-) }}
+        'Meaning, triage order, and controlled response flow for active Artifact Registry alerts.',
+        alert_response_steps,
+        'Controlled Artifact Registry Alert Response Flow',
+        'Potential runtime, supply-chain, or capacity impact. Start incident triage and establish ownership.',
+        'Developing governance, evidence, mutable-tag, or quota risk. Investigate before escalation.',
+        'Low-risk operational signal. Validate relevance, recurrence, and scope.',
+        source_title='Signal Authority',
+        source_description='KAORI Alert Intelligence owns active cases. The central Rule Catalog and Recommendations own rule semantics and recommended-action lifecycle.',
+        extra_html=registry_handoffs
+    ) }}
 {% else %}
     {% call operational_section_card.render(
         'Alert Interpretation & Response',
