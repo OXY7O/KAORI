@@ -1455,7 +1455,7 @@ def build_security(*, page: int = 1, per_page: int = 5) -> dict[str, Any]:
         signed += int(signature == 'signed')
         sbom_available += int(sbom == 'available')
         scan_status = str(artifact.scan_status or 'not_scanned')
-        scan_ready = scan_status in {'success', 'finished', 'completed'}
+        scan_ready = _scan_evidence_ready(scan_status)
         rows.append(
             {
                 'id': artifact.id,
