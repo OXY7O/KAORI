@@ -9,6 +9,7 @@ from app.artifact_registry.presentation import (
     build_analytics,
     build_governance,
     build_inventory,
+    build_inventory_overview,
     build_overview,
     build_runtime_usage,
     build_security,
@@ -75,14 +76,43 @@ def overview_section(section: str) -> ResponseReturnValue:
 @artifact_registry_bp.get('/inventory')
 @permission_required('artifact_registry.view')
 def inventory() -> ResponseReturnValue:
+    return render_template(
+        'artifact_registry/inventory.html',
+        inventory=build_inventory_overview(),
+    )
+
+
+def _inventory_resource_response(resource: str) -> ResponseReturnValue:
     context = build_inventory(
-        resource=request.args.get('resource', 'projects', type=str),
+        resource=resource,
         search=request.args.get('q', '', type=str),
         page=request.args.get('page', 1, type=int) or 1,
         per_page=request.args.get('per_page', 5, type=int) or 5,
     )
-    template = 'artifact_registry/partials/_inventory_workspace.html' if request.headers.get('HX-Request') == 'true' else 'artifact_registry/inventory.html'
+    template = (
+        'artifact_registry/partials/_inventory_workspace.html'
+        if request.headers.get('HX-Request') == 'true'
+        else 'artifact_registry/inventory_resource.html'
+    )
     return render_template(template, inventory=context)
+
+
+@artifact_registry_bp.get('/inventory/projects')
+@permission_required('artifact_registry.view')
+def inventory_projects() -> ResponseReturnValue:
+    return _inventory_resource_response('projects')
+
+
+@artifact_registry_bp.get('/inventory/repositories')
+@permission_required('artifact_registry.view')
+def inventory_repositories() -> ResponseReturnValue:
+    return _inventory_resource_response('repositories')
+
+
+@artifact_registry_bp.get('/inventory/artifacts')
+@permission_required('artifact_registry.view')
+def inventory_artifacts() -> ResponseReturnValue:
+    return _inventory_resource_response('artifacts')
 
 
 @artifact_registry_bp.get('/security')
