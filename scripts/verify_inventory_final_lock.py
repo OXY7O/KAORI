@@ -298,6 +298,20 @@ def main() -> int:
         'Shared Inventory resource-sheet bands must align the description rail to the four-column summary header.',
         errors,
     )
+    inspector_summary = detail_primitives.split('{% macro inspector_summary_strip', 1)[-1].split(
+        '{%- endmacro %}',
+        1,
+    )[0]
+    require(
+        'data-kaori-inventory-summary-alignment="full-width-band"' in inspector_summary
+        and 'grid min-w-0 w-full overflow-hidden bg-surface-card' in inspector_summary
+        and 'mx-4' not in inspector_summary
+        and 'sm:mx-5' not in inspector_summary
+        and 'lg:mx-6' not in inspector_summary
+        and 'rounded-2xl' not in inspector_summary,
+        'Shared Inventory modal summary must remain one flush full-width band without inset card framing.',
+        errors,
+    )
     require(
         'macro inventory_copy_button(label)' in detail_primitives
         and 'data-kaori-copy-button' in detail_primitives
