@@ -572,6 +572,7 @@ def get_namespace_registry_context(
     tenant_id: str = '',
     environment: str = '',
     status: str = '',
+    include_workflow_support: bool = True,
 ) -> dict[str, Any]:
     query, filters = _namespace_registry_query(
         search=search,
@@ -584,6 +585,21 @@ def get_namespace_registry_context(
         page=page,
         per_page=per_page,
     )
+
+    base_context = {
+        'namespaces': items,
+        'namespace_pagination': pagination,
+        'namespace_registry_filters': filters,
+        'namespace_registry_tenant_options': (
+            Tenant.query.filter(Tenant.lifecycle_status != TenantLifecycleStatus.DECOMMISSIONED.value)
+            .order_by(Tenant.name.asc())
+            .all()
+        ),
+        'namespace_status_filter_options': [item.value for item in TenantNamespaceProvisioningStatus],
+        'namespace_environment_filter_options': sorted(_ALLOWED_ENVIRONMENTS),
+    }
+    if not include_workflow_support:
+        return base_context
 
     namespace_options = TenantNamespace.query.order_by(TenantNamespace.created_at.desc()).all()
     namespace_allocation_options = [
@@ -605,24 +621,14 @@ def get_namespace_registry_context(
     profile_options = (
         TenantResourceProfile.query.filter_by(enabled=True).order_by(TenantResourceProfile.name.asc()).all()
     )
-    tenant_options = (
-        Tenant.query.filter(Tenant.lifecycle_status != TenantLifecycleStatus.DECOMMISSIONED.value)
-        .order_by(Tenant.name.asc())
-        .all()
-    )
     return {
-        'namespaces': items,
+        **base_context,
         'namespace_options': namespace_options,
         'namespace_allocation_options': namespace_allocation_options,
         'namespace_cutover_options': namespace_cutover_options,
         'namespace_cutover_state': namespace_cutover_state,
         'namespace_cutover_supported': any(item['supported'] for item in namespace_cutover_state.values()),
         'profiles': profile_options,
-        'namespace_pagination': pagination,
-        'namespace_registry_filters': filters,
-        'namespace_registry_tenant_options': tenant_options,
-        'namespace_status_filter_options': [item.value for item in TenantNamespaceProvisioningStatus],
-        'namespace_environment_filter_options': sorted(_ALLOWED_ENVIRONMENTS),
         'namespace_allocation_state': _namespace_allocation_state(namespace_options),
         'namespace_allocation_profiles': {
             str(profile.id): {
