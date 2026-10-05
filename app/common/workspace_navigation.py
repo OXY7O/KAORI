@@ -32,6 +32,8 @@ def _capability_key(endpoint: str) -> str | None:
         return 'kubernetes_analytics'
     if endpoint.startswith('object_storage_inventory.'):
         return 'object_storage_inventory'
+    if endpoint.startswith('artifact_registry.inventory'):
+        return 'artifact_registry_inventory'
     return None
 
 
@@ -44,6 +46,7 @@ def _capability_label(capability_key: str) -> str:
         'kubernetes_analytics': 'Analytics',
         'object_storage_inventory': 'Inventory',
         'object_storage_analytics': 'Analytics',
+        'artifact_registry_inventory': 'Inventory',
     }[capability_key]
 
 
@@ -86,6 +89,11 @@ _CAPABILITY_ACTIVE_EXACT: dict[str, dict[str, str]] = {
         'object_storage_inventory.system_details': 'systems',
         'object_storage_inventory.buckets': 'buckets',
         'object_storage_inventory.bucket_details': 'buckets',
+    },
+    'artifact_registry_inventory': {
+        'artifact_registry.inventory_projects': 'projects',
+        'artifact_registry.inventory_repositories': 'repositories',
+        'artifact_registry.inventory_artifacts': 'artifacts',
     },
     'object_storage_analytics': {
         'analytics.object_storage_capacity': 'capacity',
