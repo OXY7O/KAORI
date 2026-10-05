@@ -9,7 +9,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload
 
 from app.extensions.db import db
-from app.kubernetes.analytics.materialization.service import SnapshotResult, read_snapshot
+from app.kubernetes.analytics.materialization.service import SnapshotResult, read_snapshot, read_snapshots
 from app.kubernetes.tenant.capacity import (
     AllocationPreflightDecision,
     CapacityVector,
@@ -250,11 +250,12 @@ def build_capacity_governance_summaries(cluster_ids: list[str]) -> dict[str, dic
         for policy in TenantCapacityPolicy.query.filter(TenantCapacityPolicy.cluster_id.in_(normalized_ids)).all()
     }
     committed_states = _committed_tenant_allocations(normalized_ids)
+    snapshots = _read_capacity_snapshots(normalized_ids)
     return {
         cluster_id: _build_capacity_governance_summary_from_inputs(
             cluster_id,
             policy=policies.get(cluster_id),
-            snapshot_result=_read_capacity_snapshot(cluster_id),
+            snapshot_result=snapshots[cluster_id],
             committed_state=committed_states[cluster_id],
         )
         for cluster_id in normalized_ids
@@ -617,6 +618,16 @@ def _read_capacity_snapshot(cluster_id: str) -> SnapshotResult:
         cluster_id=cluster_id,
         dataset_key='analytics.capacity',
         parameters={'cluster_id': str(cluster_id), 'time_range': '24h'},
+    )
+
+
+def _read_capacity_snapshots(cluster_ids: list[str]) -> dict[str, SnapshotResult]:
+    return read_snapshots(
+        dataset_key='analytics.capacity',
+        parameters_by_cluster={
+            str(cluster_id): {'cluster_id': str(cluster_id), 'time_range': '24h'}
+            for cluster_id in cluster_ids
+        },
     )
 
 
