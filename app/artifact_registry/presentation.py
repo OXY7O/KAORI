@@ -1514,7 +1514,7 @@ def _inventory_resource_posture_metrics(
                 'Untagged Artifacts',
                 untagged_artifacts,
                 'Committed artifacts without a current tag reference.',
-                'warning' if untagged_artifacts else 'normal',
+                'info' if untagged_artifacts else 'normal',
             ),
         ]
 
