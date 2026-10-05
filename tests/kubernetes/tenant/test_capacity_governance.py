@@ -591,3 +591,61 @@ def test_missing_compute_snapshot_keeps_logical_storage_budget_visible(monkeypat
     assert summary['display']['budget']['pods'] == 'N/A'
     assert summary['display']['budget']['storage'] == '2048.00 GiB'
     assert summary['display']['headroom']['storage'] == '1948.00 GiB'
+
+
+def test_fleet_capacity_summary_batches_snapshot_reads(monkeypatch) -> None:
+    class _Field:
+        @staticmethod
+        def in_(values):
+            return tuple(values)
+
+    monkeypatch.setattr(
+        capacity_governance,
+        'TenantCapacityPolicy',
+        SimpleNamespace(
+            cluster_id=_Field(),
+            query=SimpleNamespace(
+                filter=lambda *_args: SimpleNamespace(all=lambda: []),
+            ),
+        ),
+    )
+    committed_state = (
+        CapacityVector(
+            cpu=Decimal('0'),
+            memory_bytes=Decimal('0'),
+            pods=Decimal('0'),
+            storage_bytes=Decimal('0'),
+        ),
+        0,
+        [],
+    )
+    monkeypatch.setattr(
+        capacity_governance,
+        '_committed_tenant_allocations',
+        lambda cluster_ids: {cluster_id: committed_state for cluster_id in cluster_ids},
+    )
+
+    batch_calls: list[list[str]] = []
+    snapshot = SnapshotResult(context=None, snapshot=None, state='missing', stale=False)
+
+    def _snapshots(cluster_ids: list[str]) -> dict[str, SnapshotResult]:
+        batch_calls.append(cluster_ids)
+        return {cluster_id: snapshot for cluster_id in cluster_ids}
+
+    monkeypatch.setattr(capacity_governance, '_read_capacity_snapshots', _snapshots)
+    monkeypatch.setattr(
+        capacity_governance,
+        '_build_capacity_governance_summary_from_inputs',
+        lambda cluster_id, **kwargs: {
+            'cluster_id': cluster_id,
+            'snapshot_is_batched': kwargs['snapshot_result'] is snapshot,
+        },
+    )
+
+    summaries = capacity_governance.build_capacity_governance_summaries(
+        ['cluster-1', 'cluster-2', 'cluster-1']
+    )
+
+    assert batch_calls == [['cluster-1', 'cluster-2']]
+    assert list(summaries) == ['cluster-1', 'cluster-2']
+    assert all(summary['snapshot_is_batched'] for summary in summaries.values())
