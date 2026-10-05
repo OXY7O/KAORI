@@ -30,6 +30,7 @@ def test_object_storage_overview_is_high_level_fleet_composition() -> None:
     assert 'components/section_intro.html' in fleet
     assert 'Fleet Inventory Posture' in fleet
     assert 'operational_callout.render' in fleet
+    assert "variant='neutral'" in fleet
     assert 'operational_section_card' not in fleet
     assert 'components/section_intro.html' in navigation
     assert 'Object Storage Asset Catalog' in navigation
