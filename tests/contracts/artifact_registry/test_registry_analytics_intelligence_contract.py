@@ -67,3 +67,21 @@ def test_domain_intelligence_ownership_standard_is_present() -> None:
     assert 'Intelligence owns recommendation semantics' in standard
     assert 'Automation Control' in standard
     assert 'Direct Recommendation → provider mutation is not allowed.' in standard
+
+def test_registry_scan_gap_recommendation_uses_usable_scan_evidence_semantics() -> None:
+    evaluator = (ROOT / 'app/intelligence/registry_recommendations.py').read_text()
+    rules = (ROOT / 'app/definitions/catalogs/intelligence/rules.yaml').read_text()
+
+    assert 'from app.artifact_registry.security.contracts import registry_scan_evidence_ready' in evaluator
+    assert "if not registry_scan_evidence_ready(artifact.scan_status):" in evaluator
+    assert 'Running Registry artifact has no usable scan evidence' in evaluator
+    assert 'not a normalized successful scan state' in evaluator
+
+    scan_gap = rules.split(
+        '- rule_key: registry.security.scan_evidence_missing',
+        1,
+    )[1].split('- rule_key:', 1)[0]
+    assert 'Running Registry Artifact Has No Usable Scan Evidence' in scan_gap
+    assert 'success, finished, or completed' in scan_gap
+    assert 'runtime binding' in scan_gap.lower()
+
