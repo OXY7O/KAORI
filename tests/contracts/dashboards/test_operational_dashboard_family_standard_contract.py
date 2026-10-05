@@ -345,7 +345,7 @@ def test_operational_dashboard_fast_shell_and_bounded_loading_are_locked() -> No
 
     for source in (standard, architecture):
         assert 'Fast Shell' in source
-        assert 'one HTTP request' in source.lower() or '1 HTTP request' in source
+        assert 'one http request' in source.lower() or '1 http request' in source.lower()
         assert 'bounded' in source.lower()
 
     assert 'Section requests must not call a full-dashboard builder' in standard
