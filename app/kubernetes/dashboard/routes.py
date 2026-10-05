@@ -67,6 +67,6 @@ def section(section: str):
         section,
         selected_cluster_id=request.args.get('cluster_id') or None,
         cluster_health_page=request.args.get('cluster_health_page', '1'),
-        cluster_health_per_page=_cluster_health_per_page(),
+        cluster_health_per_page=normalize_dashboard_page_size(request.args.get('cluster_health_per_page')),
     )
     return render_template(template_name, dashboard=dashboard)
