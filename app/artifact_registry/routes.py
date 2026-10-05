@@ -10,6 +10,7 @@ from app.artifact_registry.presentation import (
     build_governance,
     build_inventory,
     build_inventory_overview,
+    build_inventory_project_detail,
     build_overview,
     build_overview_section,
     build_runtime_usage,
@@ -88,6 +89,9 @@ def _inventory_resource_response(resource: str) -> ResponseReturnValue:
     context = build_inventory(
         resource=resource,
         search=request.args.get('q', '', type=str),
+        source_id=request.args.get('source_id', type=int),
+        environment=request.args.get('environment', '', type=str),
+        visibility=request.args.get('visibility', '', type=str),
         page=request.args.get('page', 1, type=int) or 1,
         per_page=request.args.get('per_page', 5, type=int) or 5,
     )
@@ -103,6 +107,18 @@ def _inventory_resource_response(resource: str) -> ResponseReturnValue:
 @permission_required('artifact_registry.view')
 def inventory_projects() -> ResponseReturnValue:
     return _inventory_resource_response('projects')
+
+
+@artifact_registry_bp.get('/inventory/projects/<int:project_id>/details')
+@permission_required('artifact_registry.view')
+def inventory_project_details(project_id: int) -> ResponseReturnValue:
+    project = build_inventory_project_detail(project_id)
+    if project is None:
+        abort(404)
+    return render_template(
+        'artifact_registry/partials/_inventory_project_detail.html',
+        project=project,
+    )
 
 
 @artifact_registry_bp.get('/inventory/repositories')

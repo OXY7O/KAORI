@@ -1374,9 +1374,22 @@ def build_inventory_overview() -> dict[str, Any]:
     return _inventory_base_context()
 
 
-def build_inventory(*, resource: str, page: int, per_page: int, search: str = '') -> dict[str, Any]:
+def build_inventory(
+    *,
+    resource: str,
+    page: int,
+    per_page: int,
+    search: str = '',
+    source_id: int | None = None,
+    environment: str = '',
+    visibility: str = '',
+) -> dict[str, Any]:
     resource = resource if resource in {'projects', 'repositories', 'artifacts'} else 'projects'
     search_value = search.strip().lower()
+    environment_value = environment.strip()
+    visibility_value = visibility.strip().lower()
+    if visibility_value not in {'public', 'private', 'not_observed'}:
+        visibility_value = ''
 
     if resource == 'repositories':
         items = RegistryRepository.query.options(
@@ -1395,6 +1408,50 @@ def build_inventory(*, resource: str, page: int, per_page: int, search: str = ''
         rows = [_project_row(item) for item in items]
 
     rows = _decorate_inventory_provider_provenance(rows)
+
+    source_options: list[dict[str, Any]] = []
+    environment_options: list[str] = []
+    if resource == 'projects':
+        source_lookup: dict[int, dict[str, Any]] = {}
+        for row in rows:
+            provider_id = int(row['provider_id'])
+            source_lookup.setdefault(
+                provider_id,
+                {
+                    'id': provider_id,
+                    'name': row['provider_name'],
+                    'provider_label': row['provider_label'],
+                    'environment': row['provider_environment'],
+                },
+            )
+        source_options = sorted(
+            source_lookup.values(),
+            key=lambda item: (str(item['name']).lower(), int(item['id'])),
+        )
+        environment_options = sorted(
+            {
+                str(row['provider_environment'])
+                for row in rows
+                if str(row.get('provider_environment') or '').strip()
+            },
+            key=str.lower,
+        )
+
+        if source_id is not None:
+            rows = [row for row in rows if int(row['provider_id']) == int(source_id)]
+        if environment_value:
+            rows = [
+                row
+                for row in rows
+                if str(row['provider_environment']).lower() == environment_value.lower()
+            ]
+        if visibility_value == 'public':
+            rows = [row for row in rows if row['public'] is True]
+        elif visibility_value == 'private':
+            rows = [row for row in rows if row['public'] is False]
+        elif visibility_value == 'not_observed':
+            rows = [row for row in rows if row['public'] is None]
+
     if resource == 'repositories':
         filtered = [
             row
@@ -1434,9 +1491,18 @@ def build_inventory(*, resource: str, page: int, per_page: int, search: str = ''
     context = _inventory_base_context()
     selected_resource = context['resource_catalog'][resource]
     snapshot_count = int(context['overview']['snapshot_count'])
+    has_filters = bool(
+        search_value
+        or (
+            resource == 'projects'
+            and (source_id is not None or environment_value or visibility_value)
+        )
+    )
 
-    if search_value:
-        empty_description = f"No committed {selected_resource['title'].lower()} match this search."
+    if has_filters:
+        empty_description = (
+            f"No committed {selected_resource['title'].lower()} match the active filters."
+        )
     elif snapshot_count == 0:
         empty_description = (
             'Run Artifact Registry inventory sync after the Registry provider read contract is eligible.'
@@ -1444,6 +1510,16 @@ def build_inventory(*, resource: str, page: int, per_page: int, search: str = ''
     else:
         empty_description = (
             f"The current committed Registry snapshot contains no {selected_resource['title'].lower()}."
+        )
+
+    filter_query: dict[str, Any] = {'q': search}
+    if resource == 'projects':
+        filter_query.update(
+            {
+                'source_id': source_id,
+                'environment': environment_value,
+                'visibility': visibility_value,
+            }
         )
 
     return {
@@ -1459,6 +1535,108 @@ def build_inventory(*, resource: str, page: int, per_page: int, search: str = ''
         'search': search,
         'total': len(filtered),
         'empty_description': empty_description,
+        'filters': {
+            'source_id': source_id,
+            'environment': environment_value,
+            'visibility': visibility_value,
+        },
+        'filter_query': filter_query,
+        'has_filters': has_filters,
+        'source_options': source_options,
+        'environment_options': environment_options,
+        'visibility_options': (
+            [
+                {'value': 'public', 'label': 'Public'},
+                {'value': 'private', 'label': 'Private'},
+                {'value': 'not_observed', 'label': 'Not Observed'},
+            ]
+            if resource == 'projects'
+            else []
+        ),
+    }
+
+
+def build_inventory_project_detail(project_id: int) -> dict[str, Any] | None:
+    project = (
+        RegistryProject.query.options(
+            joinedload(RegistryProject.repositories).joinedload(RegistryRepository.artifacts)
+        )
+        .filter(RegistryProject.id == int(project_id))
+        .first()
+    )
+    if project is None:
+        return None
+
+    provider = IntegrationInstance.query.filter(
+        IntegrationInstance.id == int(project.integration_instance_id)
+    ).first()
+    state = RegistryCollectionState.query.filter(
+        RegistryCollectionState.integration_instance_id == int(project.integration_instance_id)
+    ).first()
+    snapshot = _state_view(state)
+    provider_metadata = (
+        dict(project.provider_metadata)
+        if isinstance(project.provider_metadata, dict)
+        else {}
+    )
+
+    if project.public is True:
+        visibility_state = {'label': 'Public', 'tone': 'info', 'icon': 'globe-2'}
+    elif project.public is False:
+        visibility_state = {'label': 'Private', 'tone': 'normal', 'icon': 'lock-keyhole'}
+    else:
+        visibility_state = {'label': 'Not Observed', 'tone': 'unknown', 'icon': 'circle-help'}
+
+    repositories = [
+        {
+            'id': int(repository.id),
+            'name': repository.name,
+            'artifact_count': (
+                int(repository.artifact_count)
+                if repository.artifact_count is not None
+                else len(repository.artifacts)
+            ),
+            'pull_count': repository.pull_count,
+            'observed_at': repository.observed_at,
+        }
+        for repository in sorted(project.repositories, key=lambda item: item.name.lower())
+    ]
+
+    provider_key = str(provider.provider_key or 'registry') if provider is not None else 'registry'
+    metadata = (
+        provider.metadata_json
+        if provider is not None and isinstance(provider.metadata_json, dict)
+        else {}
+    )
+
+    return {
+        'id': int(project.id),
+        'name': project.name,
+        'provider_native_id': project.provider_native_id or 'Not Collected',
+        'visibility': visibility_state,
+        'repository_count': (
+            int(project.repository_count)
+            if project.repository_count is not None
+            else len(project.repositories)
+        ),
+        'provider_id': int(project.integration_instance_id),
+        'provider_name': (
+            provider.name
+            if provider is not None
+            else f'Registry #{project.integration_instance_id}'
+        ),
+        'provider_label': str(
+            metadata.get('provider_label') or provider_key.replace('_', ' ').title()
+        ),
+        'provider_environment': (
+            str(provider.environment) if provider is not None and provider.environment else 'Not Set'
+        ),
+        'observed_at': project.observed_at,
+        'snapshot': snapshot,
+        'repositories': repositories,
+        'repository_preview': repositories[:25],
+        'repository_truncated': len(repositories) > 25,
+        'provider_metadata': provider_metadata,
     }
 
 

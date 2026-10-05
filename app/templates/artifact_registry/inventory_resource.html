@@ -1,5 +1,14 @@
 {% extends "layouts/app.html" %}
 {% block title %}Artifact Registry {{ inventory.resource_label }} Inventory{% endblock title %}
 {% block dashboard_content %}
+    {% import "components/resource_detail_modal.html" as resource_detail_modal %}
     {% include "artifact_registry/partials/_inventory_workspace.html" %}
+    {% if inventory.resource == 'projects' %}
+        {{ resource_detail_modal.inventory_host(
+            'Registry Project',
+            url_for('artifact_registry.inventory_project_details', project_id=0),
+            'Committed Artifact Registry inventory snapshot · No live provider query.',
+            'Artifact Registry Inventory'
+        ) }}
+    {% endif %}
 {% endblock dashboard_content %}

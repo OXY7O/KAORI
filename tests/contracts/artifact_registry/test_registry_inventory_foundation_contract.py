@@ -189,3 +189,31 @@ def test_registry_inventory_overview_restores_asset_counts_from_existing_kpis() 
     assert "'project_count': counts['projects']" in inventory_base
     assert "'repository_count': counts['repositories']" in inventory_base
     assert "'artifact_count': counts['artifacts']" in inventory_base
+
+
+def test_registry_project_inventory_reuses_canonical_filters_and_detail_modal() -> None:
+    presentation = (ROOT / 'app/artifact_registry/presentation.py').read_text()
+    routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
+    workspace = (
+        ROOT / 'app/templates/artifact_registry/partials/_inventory_workspace.html'
+    ).read_text()
+    page = (ROOT / 'app/templates/artifact_registry/inventory_resource.html').read_text()
+    detail = (
+        ROOT / 'app/templates/artifact_registry/partials/_inventory_project_detail.html'
+    ).read_text()
+
+    assert 'table_ui.inventory_filter_bar_classes()' in workspace
+    assert "id=\"artifact-registry-inventory-table\"" in workspace
+    assert "target='#artifact-registry-inventory-table'" in workspace
+    assert "'artifact-registry-inventory-table'," in workspace
+    assert 'name="source_id"' in workspace
+    assert 'name="environment"' in workspace
+    assert 'name="visibility"' in workspace
+    assert 'resource_detail_modal.detail_button' in workspace
+    assert 'resource_detail_modal.inventory_host' in page
+    assert "@artifact_registry_bp.get('/inventory/projects/<int:project_id>/details')" in routes
+    assert 'def build_inventory_project_detail(project_id: int)' in presentation
+    assert 'RegistryProject.query.options' in presentation
+    assert 'HarborClient' not in presentation
+    assert 'components/details/_detail_content.html' in detail
+    assert 'Committed Snapshot Boundary' in detail

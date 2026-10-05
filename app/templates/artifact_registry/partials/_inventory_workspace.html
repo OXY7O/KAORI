@@ -1,11 +1,11 @@
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/table_registry.html" as registry %}
 {% import "components/inventory_asset_card.html" as inventory_asset_card %}
-{% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/section_intro.html" as section_intro %}
 {% import "components/snapshot_context_bar.html" as snapshot_context_bar %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/resource_detail_modal.html" as resource_detail_modal %}
 <div id="artifact-registry-inventory-workspace" class="space-y-6">
     <section class="{{ page_hero.shell_classes() }}">
         <div class="{{ page_hero.layout_classes() }}">
@@ -72,45 +72,96 @@
                     icon='list-filter'
                 ) }}
             {% endset %}
-            {% call operational_section_card.render(
-                inventory.resource_label ~ ' Inventory',
-                inventory.resource_description,
-                inventory.resource_icon,
-                id='artifact-registry-inventory-table',
-                header_badge=result_badge,
-                loading_bar_id='artifact-registry-inventory-loading',
-                loading_bar_label='Refreshing Registry Inventory',
-                body_classes='p-0'
-            ) %}
+            {% set inventory_header_actions = none %}
+            {% if inventory.has_filters %}
+                {% set inventory_header_actions %}
+                    {{ registry.clear_filters_action(
+                        url_for(inventory.resource_endpoint, page=1, per_page=inventory.pagination.per_page),
+                        table_ui.action_classes(),
+                        hx_get=url_for(inventory.resource_endpoint, page=1, per_page=inventory.pagination.per_page),
+                        target='#artifact-registry-inventory-table',
+                        indicator='#artifact-registry-inventory-loading',
+                        select='#artifact-registry-inventory-table',
+                        swap='outerHTML',
+                        push_url='true',
+                        sync='closest section:replace',
+                        marker='artifact-registry-inventory-table'
+                    ) }}
+                {% endset %}
+            {% endif %}
+            <section id="artifact-registry-inventory-table" class="{{ table_ui.block_classes() }}">
+                {{ table_ui.inventory_block_header(
+                    inventory.resource_icon,
+                    inventory.resource_label ~ ' Inventory',
+                    inventory.resource_description,
+                    'artifact-registry-inventory-loading',
+                    'Refreshing Registry Inventory',
+                    none,
+                    none,
+                    header_actions=inventory_header_actions,
+                    title_extra=result_badge
+                ) }}
                 <div id="artifact-registry-inventory-content">
-                    {% call registry.filter_form(
-                        inventory.resource_endpoint,
-                        'artifact-registry-inventory-content',
-                        'artifact-registry-inventory-loading',
-                        inventory.pagination.per_page,
-                        classes='border-b border-outline-subtle bg-surface-hover px-5 py-4'
-                    ) %}
-                        <div class="min-w-0 flex-1">
-                            <label for="artifact-registry-inventory-search"
-                                   class="{{ table_ui.filter_label_classes() }}">Search {{ inventory.resource_label }}</label>
-                            {{ table_ui.search_field(
-                                'q',
-                                inventory.search,
-                                inventory.search_placeholder,
-                                'artifact-registry-inventory-search'
-                            ) }}
-                        </div>
-                        {% if inventory.search %}
-                            {{ registry.clear_filters_link(
-                                inventory.resource_endpoint,
-                                'artifact-registry-inventory-content',
-                                'artifact-registry-inventory-loading',
-                                inventory.pagination.per_page,
-                                table_ui.action_classes(),
-                                query_params={}
-                            ) }}
-                        {% endif %}
-                    {% endcall %}
+                    <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+                        {% call registry.filter_form(
+                            inventory.resource_endpoint,
+                            'artifact-registry-inventory-table',
+                            'artifact-registry-inventory-loading',
+                            inventory.pagination.per_page
+                        ) %}
+                            {% if inventory.resource == 'projects' %}
+                                <div>
+                                    <label for="artifact-registry-project-source"
+                                           class="{{ table_ui.filter_label_classes() }}">Registry Source</label>
+                                    <select id="artifact-registry-project-source"
+                                            name="source_id"
+                                            class="{{ table_ui.filter_select_classes() }}">
+                                        <option value="">All Sources</option>
+                                        {% for source in inventory.source_options %}
+                                            <option value="{{ source.id }}"
+                                                    {% if inventory.filters.source_id == source.id %}selected{% endif %}>{{ source.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="artifact-registry-project-environment"
+                                           class="{{ table_ui.filter_label_classes() }}">Environment</label>
+                                    <select id="artifact-registry-project-environment"
+                                            name="environment"
+                                            class="{{ table_ui.filter_select_classes() }}">
+                                        <option value="">All Environments</option>
+                                        {% for environment in inventory.environment_options %}
+                                            <option value="{{ environment }}"
+                                                    {% if inventory.filters.environment == environment %}selected{% endif %}>{{ environment|environment_name(empty='Not Set') }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="artifact-registry-project-visibility"
+                                           class="{{ table_ui.filter_label_classes() }}">Visibility</label>
+                                    <select id="artifact-registry-project-visibility"
+                                            name="visibility"
+                                            class="{{ table_ui.filter_select_classes() }}">
+                                        <option value="">All Visibility</option>
+                                        {% for option in inventory.visibility_options %}
+                                            <option value="{{ option.value }}"
+                                                    {% if inventory.filters.visibility == option.value %}selected{% endif %}>{{ option.label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            {% endif %}
+                            <div class="min-w-0">
+                                <label for="artifact-registry-inventory-search"
+                                       class="{{ table_ui.filter_label_classes() }}">Search {{ inventory.resource_label }}</label>
+                                {{ table_ui.search_field(
+                                    'q',
+                                    inventory.search,
+                                    inventory.search_placeholder,
+                                    'artifact-registry-inventory-search'
+                                ) }}
+                            </div>
+                        {% endcall %}
+                    </div>
 
                     <div class="overflow-x-auto">
                         <table class="{{ table_ui.table_classes('min-w-[62rem]') }}">
@@ -122,6 +173,7 @@
                                         <th class="{{ table_ui.header_cell_classes() }}">Visibility</th>
                                         <th class="{{ table_ui.header_cell_classes() }}">Repositories</th>
                                         <th class="{{ table_ui.header_cell_classes() }}">Last Observed</th>
+                                        <th class="{{ table_ui.header_cell_classes(true) }}">Details</th>
                                     </tr>
                                 </thead>
                                 <tbody class="{{ table_ui.body_classes() }}">
@@ -152,10 +204,18 @@
                                             <td class="{{ table_ui.cell_classes() }}">
                                                 <span class="text-xs font-medium text-content-secondary">{{ row.observed_at|user_datetime }}</span>
                                             </td>
+                                            <td class="{{ table_ui.cell_classes(true) }}">
+                                                {{ resource_detail_modal.detail_button(
+                                                    row.id,
+                                                    url_for('artifact_registry.inventory_project_details', project_id=row.id),
+                                                    row.name,
+                                                    'Registry Project'
+                                                ) }}
+                                            </td>
                                         </tr>
                                     {% else %}
                                         <tr>
-                                            <td colspan="5" class="p-0">
+                                            <td colspan="6" class="p-0">
                                                 {% set empty_state_icon = inventory.resource_icon %}
                                                 {% set empty_state_label = "Committed Inventory" %}
                                                 {% set empty_state_title = "No Projects Found" %}
@@ -281,16 +341,16 @@
                     </div>
                     {{ registry.footer(
                         inventory.resource_endpoint,
-                        'artifact-registry-inventory-content',
+                        'artifact-registry-inventory-table',
                         'artifact-registry-inventory-loading',
                         inventory.pagination,
-                        {'q': inventory.search},
+                        inventory.filter_query,
                         [5, 10, 25, 50],
                         resource_label=inventory.resource_label,
                         control_name='artifact-registry-inventory'
                     ) }}
                 </div>
-            {% endcall %}
+            </section>
         </section>
     {% endif %}
 </div>

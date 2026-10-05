@@ -1,0 +1,164 @@
+{% import "components/details/_detail_content.html" as detail %}
+{% import "components/operational_callout.html" as operational_callout %}
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/technical_metadata_collection.html" as metadata_collection %}
+<div data-kaori-detail-variant="full-workspace-modal"
+     data-kaori-detail-density="unified-resource-sheet"
+     data-kaori-inventory-detail="registry-project"
+     data-kaori-inventory-detail-layout="unified-resource-sheet"
+     class="{{ detail.expanded_workspace_outer_classes() }}">
+    <div class="{{ detail.expanded_workspace_shell_classes() }}">
+        {% call detail.workspace_header(
+            'Provider provenance, visibility, repository coverage, and committed collection context.',
+            'folder-kanban'
+        ) %}
+            {% call detail.header_identity_row() %}
+                {{ detail.inventory_title(project.name) }}
+                {{ table_label.metadata_label(project.provider_name, 'boxes') }}
+                {{ table_label.status_indicator_label(
+                    project.visibility.label,
+                    project.visibility.tone,
+                    project.visibility.icon,
+                    'detail'
+                ) }}
+            {% endcall %}
+        {% endcall %}
+
+        {{ detail.inspector_summary_strip([
+            {'label': 'Visibility', 'value': project.visibility.label, 'supporting': 'Provider-observed state', 'icon': project.visibility.icon, 'tone': project.visibility.tone},
+            {'label': 'Repositories', 'value': project.repository_count, 'supporting': 'Committed repositories', 'icon': 'package-open', 'tone': 'brand'},
+            {'label': 'Registry Source', 'value': project.provider_name, 'supporting': project.provider_label, 'icon': 'boxes', 'tone': 'brand'},
+            {'label': 'Snapshot', 'value': project.snapshot.label, 'supporting': 'Committed collection state', 'icon': 'database-backup', 'tone': project.snapshot.tone}
+        ]) }}
+
+        <div class="min-w-0 space-y-4 p-4 sm:p-5 lg:p-6">
+            {% call detail.resource_sheet() %}
+                {% call detail.inventory_section(
+                    'Project Identity',
+                    'badge-info',
+                    project.visibility.label,
+                    'status',
+                    project.visibility.tone,
+                    description='Provider-neutral project identity and visibility captured in committed Registry inventory.'
+                ) %}
+                    <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
+                        {{ detail.inventory_technical_row('Project Name', project.name, copyable=true, class_name='lg:col-span-2') }}
+                        {{ detail.inventory_technical_row('Provider Native ID', project.provider_native_id, copyable=true, class_name='lg:col-span-2') }}
+                        {{ detail.inventory_status_row('Visibility', project.visibility.label, project.visibility.tone) }}
+                        {{ detail.inventory_row('Repositories', project.repository_count) }}
+                    </dl>
+                {% endcall %}
+
+                {% call detail.inventory_section(
+                    'Registry Source',
+                    'boxes',
+                    project.provider_label,
+                    description='Registry integration and environment that supplied this committed project record.'
+                ) %}
+                    <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
+                        {{ detail.inventory_row('Source', project.provider_name, class_name='lg:col-span-2') }}
+                        {{ detail.inventory_row('Provider', project.provider_label) }}
+                        {{ detail.inventory_row('Environment', project.provider_environment|environment_name(empty='Not Set')) }}
+                        {{ detail.inventory_technical_row('Source ID', project.provider_id) }}
+                        {{ detail.inventory_row('Last Observed', project.observed_at|user_datetime, nowrap=true) }}
+                    </dl>
+                {% endcall %}
+
+                {% call detail.inventory_section(
+                    'Repository Coverage',
+                    'package-open',
+                    project.repository_count ~ (' Repository' if project.repository_count == 1 else ' Repositories'),
+                    description='Repositories retained under this project in the current committed Registry inventory.'
+                ) %}
+                    {% if project.repository_preview %}
+                        <div class="overflow-x-auto">
+                            <table class="{{ table_ui.table_classes('min-w-[46rem]') }}">
+                                <thead class="{{ table_ui.head_classes() }}">
+                                    <tr>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Repository</th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Artifacts</th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Pulls</th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Last Observed</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="{{ table_ui.body_classes() }}">
+                                    {% for repository in project.repository_preview %}
+                                        <tr class="{{ table_ui.row_classes() }}">
+                                            <td class="{{ table_ui.cell_classes() }}">
+                                                {{ table_ui.title_cell(repository.name, project.name, 'package-open') }}
+                                            </td>
+                                            <td class="{{ table_ui.cell_classes() }}">
+                                                <span class="text-sm font-semibold text-content-primary">{{ repository.artifact_count }}</span>
+                                            </td>
+                                            <td class="{{ table_ui.cell_classes() }}">
+                                                <span class="text-sm text-content-secondary">{{ repository.pull_count if repository.pull_count is not none else 'Not Collected' }}</span>
+                                            </td>
+                                            <td class="{{ table_ui.cell_classes() }}">
+                                                <span class="text-xs font-medium text-content-secondary">{{ repository.observed_at|user_datetime }}</span>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% if project.repository_truncated %}
+                            {{ detail.inventory_note(
+                                'Showing the first 25 repositories. Use Repository Inventory for the complete committed project catalog.',
+                                'info'
+                            ) }}
+                        {% endif %}
+                    {% else %}
+                        {{ detail.empty_evidence(
+                            'No Repositories Collected',
+                            'The committed project record does not currently contain repository inventory.',
+                            'package-open'
+                        ) }}
+                    {% endif %}
+                {% endcall %}
+
+                {{ metadata_collection.render(
+                    'Provider Metadata',
+                    project.provider_metadata,
+                    'braces',
+                    'No Provider Metadata Collected',
+                    'Provider metadata will appear when retained with the committed project record.',
+                    'Provider-specific fields remain factual evidence and do not redefine the provider-neutral project identity.',
+                    embedded=true
+                ) }}
+
+                {% call detail.inventory_section(
+                    'Snapshot Context',
+                    'database-backup',
+                    project.snapshot.label,
+                    'status',
+                    project.snapshot.tone,
+                    description='Collection freshness and committed evidence boundary for the source Registry.'
+                ) %}
+                    <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
+                        {{ detail.inventory_status_row('Snapshot State', project.snapshot.label, project.snapshot.tone) }}
+                        {{ detail.inventory_row('Committed At', project.snapshot.committed_at|user_datetime if project.snapshot.committed_at else 'Not Collected', nowrap=true) }}
+                        {{ detail.inventory_row('Observed At', project.snapshot.observed_at|user_datetime if project.snapshot.observed_at else project.observed_at|user_datetime, nowrap=true) }}
+                    </dl>
+                {% endcall %}
+            {% endcall %}
+
+            <div class="grid min-w-0 gap-4 xl:grid-cols-12">
+                {{ operational_callout.render(
+                    'Committed Snapshot Boundary',
+                    'Latest committed Artifact Registry inventory; no live provider request.',
+                    'database',
+                    'info',
+                    extra_classes='xl:col-span-5'
+                ) }}
+                {{ operational_callout.render(
+                    'Project Interpretation',
+                    'Visibility and repository counts reflect provider-observed inventory. Missing values remain explicit rather than inferred.',
+                    'scan-search',
+                    'info',
+                    extra_classes='xl:col-span-7'
+                ) }}
+            </div>
+        </div>
+    </div>
+</div>
