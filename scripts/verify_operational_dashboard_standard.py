@@ -812,10 +812,21 @@ def verify() -> None:
             'Operational Signal Overview',
             'Active Scope',
             'selector_html|safe',
-            'caller()',
+            '{% set signal_content = caller() %}',
+            'signal_content|safe',
         ),
         'shared Operational Signal Overview',
     )
+    caller_capture = signal_overview_workspace.find('{% set signal_content = caller() %}')
+    section_call = signal_overview_workspace.find('{% call operational_section_card.render(')
+    if caller_capture < 0 or section_call < 0 or caller_capture >= section_call:
+        raise AssertionError(
+            'shared Operational Signal Overview must capture the outer caller before entering the nested section-card call'
+        )
+    if signal_overview_workspace.count('caller()') != 1:
+        raise AssertionError(
+            'shared Operational Signal Overview must not invoke caller() inside the nested section-card call scope'
+        )
     for owner, source in (
         ('Kubernetes Operational Signal Overview', signal_overview),
         ('Object Storage Operational Signal Overview', object_signal_overview),
