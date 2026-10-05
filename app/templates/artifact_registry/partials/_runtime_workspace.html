@@ -53,7 +53,7 @@
         {% include "components/states/_blocked_state.html" %}
     {% else %}
         {% if runtime.setup.refresh_blocked %}
-            {% set blocked_state_icon = "refresh-cw-off" %}
+            {% set blocked_state_icon = "triangle-alert" %}
             {% set blocked_state_label = "Refresh Blocked" %}
             {% set blocked_state_title = runtime.setup.title %}
             {% set blocked_state_description = runtime.setup.refresh_description %}
