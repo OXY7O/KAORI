@@ -494,6 +494,36 @@ _CAPABILITY_VIEWS: dict[str, tuple[CapabilityViewDefinition, ...]] = {
             ('analytics.view',),
         ),
     ),
+    'artifact_registry_inventory': (
+        CapabilityViewDefinition(
+            'overview',
+            'Overview',
+            'layout-grid',
+            'artifact_registry.inventory',
+            ('artifact_registry.view',),
+        ),
+        CapabilityViewDefinition(
+            'projects',
+            'Projects',
+            'folder-kanban',
+            'artifact_registry.inventory_projects',
+            ('artifact_registry.view',),
+        ),
+        CapabilityViewDefinition(
+            'repositories',
+            'Repositories',
+            'package-open',
+            'artifact_registry.inventory_repositories',
+            ('artifact_registry.view',),
+        ),
+        CapabilityViewDefinition(
+            'artifacts',
+            'Artifacts',
+            'fingerprint',
+            'artifact_registry.inventory_artifacts',
+            ('artifact_registry.view',),
+        ),
+    ),
     'object_storage_inventory': (
         CapabilityViewDefinition(
             'overview',
