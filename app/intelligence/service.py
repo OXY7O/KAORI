@@ -273,11 +273,11 @@ def get_active_recommendation_findings(
     """
 
     catalog = [normalize_rule(rule) for rule in INTELLIGENCE_CATALOG]
-    findings = _build_recommendation_findings(catalog)
-
     selected_domain = clean(domain)
     if selected_domain:
-        findings = [finding for finding in findings if clean(str(finding.get('domain'))) == selected_domain]
+        catalog = [rule for rule in catalog if clean(str(rule.get('domain'))) == selected_domain]
+
+    findings = _build_recommendation_findings(catalog)
 
     selected_asset = clean(asset_key)
     if selected_asset:
