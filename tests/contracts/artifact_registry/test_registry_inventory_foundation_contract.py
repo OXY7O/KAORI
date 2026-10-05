@@ -132,3 +132,24 @@ def test_registry_inventory_reconciles_stable_rows_without_erasing_downstream_ev
     assert 'artifact.signature_status =' not in reconcile_artifacts
     assert 'artifact.sbom_status =' not in reconcile_artifacts
 
+
+def test_registry_inventory_reuses_canonical_inventory_workspace_primitives() -> None:
+    template = (
+        ROOT / 'app/templates/artifact_registry/partials/_inventory_workspace.html'
+    ).read_text()
+    presentation = (ROOT / 'app/artifact_registry/presentation.py').read_text()
+
+    assert 'components/snapshot_context_bar.html' in template
+    assert 'components/inventory_asset_card.html' in template
+    assert 'components/section_intro.html' in template
+    assert 'components/operational_section_card.html' in template
+    assert 'components/table.html' in template
+    assert 'components/states/_empty_state.html' in template
+    assert 'artifact-registry-inventory-content' in template
+    assert '[5, 10, 25, 50]' in template
+    assert 'table_ui.table_classes' in template
+    assert 'min-w-full divide-y divide-outline-subtle' not in template
+    assert "'snapshot_context': snapshot_context" in presentation
+    assert "'asset_catalog': list(resource_catalog.values())" in presentation
+    assert "row['provider_name']" in presentation
+
