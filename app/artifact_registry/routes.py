@@ -26,12 +26,7 @@ from app.artifact_registry.security.job_adapter import (
 )
 from app.artifact_registry.security.presentation import build_security
 from app.artifact_registry.sync_jobs import NoEligibleRegistryTargets, enqueue_all_registry_inventory_sync
-from app.artifact_registry.webhooks import (
-    RegistryWebhookAuthError,
-    disable_webhook,
-    generate_webhook_token,
-    ingest_webhook,
-)
+from app.artifact_registry.webhooks import RegistryWebhookAuthError, ingest_webhook
 from app.dashboards.common.operational import (
     is_htmx_request,
     normalize_dashboard_page_size,
@@ -358,25 +353,66 @@ def analytics() -> ResponseReturnValue:
 @artifact_registry_bp.get('/governance')
 @permission_required('artifact_registry.view')
 def governance() -> ResponseReturnValue:
-    return render_template('artifact_registry/governance.html', governance=build_governance())
+    return render_template(
+        'artifact_registry/governance.html',
+        governance=build_governance(
+            active_tab=request.args.get('tab', 'policies', type=str),
+            page=request.args.get('page', 1, type=int) or 1,
+            per_page=normalize_dashboard_page_size(request.args.get('per_page')),
+        ),
+    )
 
 
-@artifact_registry_bp.post('/webhooks/<int:integration_instance_id>/token')
-@permission_required('integrations.manage')
-def webhook_token(integration_instance_id: int) -> ResponseReturnValue:
-    token = generate_webhook_token(integration_instance_id)
-    if request.headers.get('HX-Request') == 'true':
-        return render_template(
-            'artifact_registry/partials/_webhook_token_created.html',
-            webhook_token=token,
+@artifact_registry_bp.post('/governance/sync')
+@permission_required('artifact_registry.sync')
+def governance_sync() -> ResponseReturnValue:
+    try:
+        outcome = dispatch_registered_job(
+            job_key='artifact_registry.governance.sync',
+            trigger_type='manual',
+            requested_by_user_id=int(current_user.id),
         )
-    return jsonify({'token': token, 'display_once': True})
+    except JobWorkerUnavailable as exc:
+        accepted = False
+        status = 'error'
+        title = 'Governance Sync Worker Unavailable'
+        message = str(exc)
+        detail = 'Restart the inventory worker so it advertises the Registry governance task, then retry.'
+        job = None
+        created = False
+    else:
+        accepted = outcome.accepted
+        job = outcome.job
+        created = bool(accepted and outcome.created)
+        if accepted:
+            status = 'success' if outcome.created else 'info'
+            title = 'Governance Sync Queued' if outcome.created else 'Governance Sync Already Active'
+            message = outcome.message
+            detail = 'Governance Sync reads provider policy and replication evidence without mutating Registry state.'
+        else:
+            status = 'warning'
+            title = 'Governance Sync Could Not Start'
+            message = outcome.message
+            detail = 'Committed Registry inventory and an eligible governance collector are required.'
 
-
-@artifact_registry_bp.post('/webhooks/<int:integration_instance_id>/disable')
-@permission_required('integrations.manage')
-def webhook_disable(integration_instance_id: int) -> ResponseReturnValue:
-    disable_webhook(integration_instance_id)
+    record_operational_activity(
+        user_id=int(current_user.id),
+        event_type='artifact_registry_governance_sync',
+        status=status,
+        title=title,
+        message=message,
+        detail=detail,
+        action_url=url_for('artifact_registry.governance'),
+        action_label='Open Registry Governance',
+        action_icon='scale',
+        metadata={
+            'job_key': 'artifact_registry.governance.sync',
+            'job_public_id': job.public_id if job is not None else None,
+            'created': created,
+            'accepted': accepted,
+        },
+        queue_feedback=True,
+    )
     return redirect(url_for('artifact_registry.governance'))
 
 
