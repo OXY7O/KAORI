@@ -145,9 +145,9 @@ blast radius without performing a live Registry or Kubernetes request.
 Correlation prerequisites govern **rematerialization eligibility**, not committed-evidence readability.
 Once Runtime Correlation has committed a snapshot, Runtime Usage continues to expose that committed evidence
 if a later Registry artifact snapshot or current Kubernetes Pod generation becomes unavailable. The workspace
-must surface **Refresh Blocked** with the missing prerequisite and recovery action while keeping the previous
-bindings readable. Full-page prerequisite blocking is reserved for the pre-materialization state where no
-committed Runtime Correlation snapshot exists.
+must keep the committed evidence visible and surface **Refresh Unavailable** only in the Correlation Snapshot
+status/description; it must not render a second blocking banner above readable data. Full-page prerequisite
+blocking is reserved for the pre-materialization state where no committed Runtime Correlation snapshot exists.
 
 ## Operational UI Contract
 
