@@ -219,6 +219,99 @@ def _paged_context(query: Any, *, page: int, per_page: int) -> tuple[list[Any], 
     }
 
 
+def get_operations_tenant_registry_context(
+    *,
+    page: int = 1,
+    per_page: int = 5,
+    search: str = '',
+    cluster_id: str = '',
+    environment: str = '',
+    lifecycle_status: str = '',
+) -> dict[str, Any]:
+    """Return the Operations provider-authority projection without decommission preflight work."""
+
+    normalized_search = search.strip()
+    normalized_cluster_id = cluster_id.strip()
+    normalized_environment = environment.strip().lower()
+    normalized_lifecycle = lifecycle_status.strip().lower()
+    query = Tenant.query
+
+    if normalized_search:
+        pattern = f'%{normalized_search.lower()}%'
+        query = query.filter(
+            or_(
+                func.lower(Tenant.name).like(pattern),
+                func.lower(Tenant.slug).like(pattern),
+            )
+        )
+    if normalized_cluster_id:
+        query = query.filter(Tenant.cluster_id == normalized_cluster_id)
+    if normalized_lifecycle:
+        query = query.filter(Tenant.lifecycle_status == normalized_lifecycle)
+    if normalized_environment:
+        query = (
+            query.join(TenantEnvironment, TenantEnvironment.tenant_id == Tenant.id)
+            .filter(TenantEnvironment.environment == normalized_environment)
+            .distinct()
+        )
+
+    items, pagination = paginate_query(
+        query.order_by(Tenant.created_at.desc(), Tenant.name.asc()),
+        page=page,
+        per_page=per_page,
+    )
+    tenant_ids = [item.id for item in items]
+    environment_map: dict[str, list[str]] = {tenant_id: [] for tenant_id in tenant_ids}
+    namespace_count_map: dict[str, int] = {tenant_id: 0 for tenant_id in tenant_ids}
+    if tenant_ids:
+        environment_rows = (
+            TenantEnvironment.query.filter(TenantEnvironment.tenant_id.in_(tenant_ids))
+            .order_by(TenantEnvironment.tenant_id.asc(), TenantEnvironment.environment.asc())
+            .all()
+        )
+        for row in environment_rows:
+            environment_map.setdefault(row.tenant_id, []).append(row.environment)
+        namespace_rows = (
+            db.session.query(TenantEnvironment.tenant_id, func.count(TenantNamespace.id))
+            .join(TenantNamespace, TenantNamespace.tenant_environment_id == TenantEnvironment.id)
+            .filter(
+                TenantEnvironment.tenant_id.in_(tenant_ids),
+                TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+            )
+            .group_by(TenantEnvironment.tenant_id)
+            .all()
+        )
+        namespace_count_map.update({str(tenant_id): int(count) for tenant_id, count in namespace_rows})
+
+    cluster_ids = {item.cluster_id for item in items}
+    cluster_map = (
+        {str(cluster.id): cluster for cluster in Cluster.query.filter(Cluster.id.in_(cluster_ids)).all()}
+        if cluster_ids
+        else {}
+    )
+    return {
+        'tenant_rows': [
+            {
+                'tenant': item,
+                'cluster': cluster_map.get(str(item.cluster_id)),
+                'environments': environment_map.get(item.id, []),
+                'namespace_count': namespace_count_map.get(item.id, 0),
+            }
+            for item in items
+        ],
+        'tenant_pagination': pagination,
+        'tenant_registry_filters': {
+            'search': normalized_search,
+            'cluster_id': normalized_cluster_id,
+            'environment': normalized_environment,
+            'lifecycle_status': normalized_lifecycle,
+        },
+        'tenant_cluster_options': Cluster.query.order_by(Cluster.name.asc()).all(),
+        'tenant_environment_filter_options': [item.value for item in TenantEnvironmentName],
+        'tenant_lifecycle_filter_options': [item.value for item in TenantLifecycleStatus],
+    }
+
+
 def get_tenant_registry_context(
     *,
     page: int = 1,
@@ -561,6 +654,42 @@ def _namespace_allocation_state(namespace_options: list[TenantNamespace]) -> dic
             'control_state': allocation_control_state(record),
         }
         for record in namespace_options
+    }
+
+
+def get_operations_namespace_registry_context(
+    *,
+    page: int = 1,
+    per_page: int = 5,
+    search: str = '',
+    tenant_id: str = '',
+    environment: str = '',
+    status: str = '',
+) -> dict[str, Any]:
+    """Return the Operations namespace projection without allocation/cutover support state."""
+
+    query, filters = _namespace_registry_query(
+        search=search,
+        tenant_id=tenant_id,
+        environment=environment,
+        status=status,
+    )
+    items, pagination = paginate_query(
+        query.order_by(TenantNamespace.created_at.desc(), TenantNamespace.id.desc()),
+        page=page,
+        per_page=per_page,
+    )
+    return {
+        'namespaces': items,
+        'namespace_pagination': pagination,
+        'namespace_registry_filters': filters,
+        'namespace_registry_tenant_options': (
+            Tenant.query.filter(Tenant.lifecycle_status != TenantLifecycleStatus.DECOMMISSIONED.value)
+            .order_by(Tenant.name.asc())
+            .all()
+        ),
+        'namespace_status_filter_options': [item.value for item in TenantNamespaceProvisioningStatus],
+        'namespace_environment_filter_options': sorted(_ALLOWED_ENVIRONMENTS),
     }
 
 
