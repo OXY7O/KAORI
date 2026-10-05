@@ -247,7 +247,7 @@
                     flow_icon="workflow",
                     flow_note="Saving changes does not establish readiness until Full Validation succeeds.",
                     related_icon="waypoints",
-                    authority_boundary=metrics_source_label ~ " executes metric queries; the source platform owns collection and retention. KAORI governs readiness, binding validation, and source resolution.") }}
+                    authority_boundary=metrics_source_label ~ " executes queries; the source owns collection and retention. KAORI governs readiness, bindings, and resolution.") }}
                 {% else %}
                     {% set metrics_source_flow_items = [('Define Connection Identity', 'Provide a stable KAORI name and ownership description for the reusable source.'), ('Configure Endpoint Access', 'Set the endpoint, authentication, TLS verification, timeout, and compatibility detection.'), ('Test Connection', 'Verify reachability and compatibility before KAORI enables registration.'), ('Register Connection', 'Create the reusable connection identity before Full Validation and consumer binding.')] %}
                     {% set metrics_source_related_description = "One metrics source can serve multiple managed assets through independent bindings and horizon-aware routing." %}
@@ -264,7 +264,7 @@
                     flow_icon="workflow",
                     flow_note="Registration requires a successful Test Connection and creates the reusable source identity only.",
                     related_icon="waypoints",
-                    authority_boundary=metrics_source_label ~ " executes metric queries; the source platform owns collection and retention. KAORI governs readiness, binding validation, and source resolution.") }}
+                    authority_boundary=metrics_source_label ~ " executes queries; the source owns collection and retention. KAORI governs readiness, bindings, and resolution.") }}
                 {% endif %}
             </aside>
         </form>
