@@ -67,7 +67,7 @@ def overview_section(section: str) -> ResponseReturnValue:
         provider_id=request.args.get('provider_id', type=int),
         active_tab=normalize_operational_tab(section),
         provider_health_page=request.args.get('provider_health_page', 1),
-        provider_health_per_page=_provider_health_per_page(),
+        provider_health_per_page=normalize_dashboard_page_size(request.args.get('provider_health_per_page')),
     )
     return render_template(template, overview=context)
 
