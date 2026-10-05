@@ -977,7 +977,7 @@ def verify() -> None:
     for owner, source in (
         ('Kubernetes Operational Signal KPI cards', kpi_cards),
         ('Object Storage Operational Signal KPI cards', object_kpi_cards),
-        ('Artifact Registry Operational Signal KPI cards', artifact_signal_overview),
+        ('Artifact Registry Operational Signal KPI cards', artifact_kpi_cards),
     ):
         _require(source, ("scope_label='Active Scope'",), owner)
     for owner, source in (
