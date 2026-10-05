@@ -1,11 +1,8 @@
 {% import "components/page_hero.html" as page_hero %}
-{% import "components/table_registry.html" as registry %}
 {% import "components/inventory_asset_card.html" as inventory_asset_card %}
-{% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/operational_callout.html" as operational_callout %}
 {% import "components/section_intro.html" as section_intro %}
 {% import "components/snapshot_context_bar.html" as snapshot_context_bar %}
-{% import "components/table.html" as table_ui %}
-{% import "components/table_label.html" as table_label %}
 <div id="artifact-registry-inventory-workspace" class="space-y-6">
     <section class="{{ page_hero.shell_classes() }}">
         <div class="{{ page_hero.layout_classes() }}">
@@ -59,36 +56,44 @@
             metric_icon_palette='brand'
         ) }}
 
-        <section class="space-y-4" aria-labelledby="registry-inventory-assets-heading">
+        <section class="space-y-4" aria-labelledby="registry-fleet-posture-heading">
             {{ section_intro.render(
-                'Inventory Assets',
-                'Open a Registry asset inventory from the current committed provider-neutral snapshots.',
-                'registry-inventory-assets-heading'
+                'Fleet Inventory Posture',
+                'Review committed provider coverage, snapshot exceptions, and project visibility across Registry inventory.',
+                'registry-fleet-posture-heading'
             ) }}
-            {% set asset_badge %}
-                {{ table_label.metadata_label(inventory.asset_catalog|length ~ ' Asset Types', icon='layers-3') }}
-            {% endset %}
-            {% call operational_section_card.render(
+            <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {% for reading in inventory.fleet_readings %}
+                    {{ operational_callout.render(
+                        reading.title,
+                        reading.description,
+                        icon=reading.icon,
+                        tone=reading.tone,
+                        variant='semantic',
+                        extra_classes='w-full'
+                    ) }}
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="space-y-4" aria-labelledby="registry-asset-catalog-heading">
+            {{ section_intro.render(
                 'Registry Asset Catalog',
-                'Projects define provider-neutral namespaces, repositories group content, and artifacts keep immutable digest identities.',
-                'layout-grid',
-                id='registry-inventory-asset-catalog',
-                header_badge=asset_badge,
-                body_classes='p-5'
-            ) %}
-                <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                    {% for asset in inventory.asset_catalog %}
-                        {{ inventory_asset_card.render(
-                            asset.title,
-                            asset.count,
-                            asset.description,
-                            url_for(asset.endpoint),
-                            asset.icon,
-                            action_label=asset.action_label
-                        ) }}
-                    {% endfor %}
-                </div>
-            {% endcall %}
+                'Open committed Projects, Repositories, and Artifacts from provider-neutral Registry snapshots.',
+                'registry-asset-catalog-heading'
+            ) }}
+            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {% for asset in inventory.asset_catalog %}
+                    {{ inventory_asset_card.render(
+                        asset.title,
+                        asset.count,
+                        asset.description,
+                        url_for(asset.endpoint),
+                        asset.icon,
+                        action_label=asset.action_label
+                    ) }}
+                {% endfor %}
+            </div>
         </section>
 
     {% endif %}
