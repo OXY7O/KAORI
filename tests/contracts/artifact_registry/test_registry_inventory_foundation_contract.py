@@ -293,6 +293,8 @@ def test_registry_repository_and_artifact_inventory_reuse_full_workspace_detail_
     assert 'Artifact Identity' in artifact_detail
     assert 'Tag References' in artifact_detail
     assert 'artifact.tag_preview' in artifact_detail
-    assert 'Vulnerability' not in artifact_detail
-    assert 'Signature' not in artifact_detail
-    assert 'SBOM' not in artifact_detail
+    assert 'artifact.scan_status' not in artifact_detail
+    assert 'artifact.vulnerability_summary' not in artifact_detail
+    assert 'artifact.signature_status' not in artifact_detail
+    assert 'artifact.sbom_status' not in artifact_detail
+    assert "detail.inventory_section(\n                    'Security'" not in artifact_detail
