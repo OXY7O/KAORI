@@ -157,7 +157,7 @@
                         ("boxes", "Artifact Registry Inventory", "Committed Registry snapshot", "Projects, repositories, immutable artifact digests, tags, provenance, and freshness."),
                         ("shield-check", "Artifact Registry Security", "Committed scan evidence", "Vulnerability, signature, SBOM, and scan-age posture remain digest-oriented."),
                         ("waypoints", "Runtime Usage", "Committed cross-domain correlation", "Registry digests correlate with committed Kubernetes workload and pod image usage."),
-                        ("scale", "Governance", "Committed provider policy evidence", "Retention, immutability, replication, webhook, and reconciliation posture remain provider-neutral."),
+                        ("scale", "Governance", "Committed provider policy evidence", "Retention, immutability, and replication posture remain provider-neutral; webhook setup stays in Connection Configuration."),
                         ("chart-column", "Analytics", "Committed inventory + Metrics Source", "Materialized Registry analytics consume committed evidence and qualified observability bindings.")
                     ] %}
                     {% for icon, title, boundary, description in consumers %}
