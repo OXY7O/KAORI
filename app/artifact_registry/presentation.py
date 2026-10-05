@@ -2874,7 +2874,11 @@ def build_governance(
             'label': 'Retention Coverage',
             'value': f'{retention_observed}/{project_total} Projects',
             'status_label': 'Observed' if retention_observed else 'Not Collected',
-            'tone': 'normal' if project_total and retention_observed == project_total else 'warning',
+            'tone': (
+                'normal'
+                if project_total and retention_observed == project_total
+                else ('warning' if project_total else 'unknown')
+            ),
             'detail': (
                 f'{retention_configured} configured · {retention_not_configured} not configured · '
                 f'{retention_unavailable} unavailable.'
@@ -2884,7 +2888,11 @@ def build_governance(
             'label': 'Immutability Coverage',
             'value': f'{immutability_observed}/{project_total} Projects',
             'status_label': 'Observed' if immutability_observed else 'Not Collected',
-            'tone': 'normal' if project_total and immutability_observed == project_total else 'warning',
+            'tone': (
+                'normal'
+                if project_total and immutability_observed == project_total
+                else ('warning' if project_total else 'unknown')
+            ),
             'detail': (
                 f'{immutability_configured} configured · {immutability_not_configured} not configured · '
                 f'{immutability_unavailable} unavailable.'
