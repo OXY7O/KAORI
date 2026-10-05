@@ -7,6 +7,10 @@ from sqlalchemy import case, func, or_
 from sqlalchemy.orm import joinedload
 
 from app.artifact_registry.observability import registry_metrics_readiness
+from app.artifact_registry.security.contracts import (
+    SUCCESSFUL_REGISTRY_SCAN_STATUSES,
+    registry_scan_evidence_ready,
+)
 from app.common.pagination import paginate_sequence
 from app.dashboards.common.operational import normalize_operational_tab
 from app.intelligence.alert_intelligence.dashboard_cases import active_recommendation_alert_cases
@@ -31,8 +35,6 @@ from app.models.registry import (
 )
 
 FRESHNESS_HOURS = 24
-_SUCCESSFUL_SCAN_STATES = ('success', 'finished', 'completed')
-
 
 def _fmt_bytes(value: int | None) -> str:
     if value is None:
@@ -82,9 +84,6 @@ def _human_time(value: datetime | None) -> str:
 def _freshness_value(value: datetime | None, *, missing: str) -> str:
     return f'Updated {_human_time(value)}' if value is not None else missing
 
-
-def _scan_evidence_ready(value: str | None) -> bool:
-    return str(value or '').strip().lower() in _SUCCESSFUL_SCAN_STATES
 
 
 def _state_view(state: RegistryCollectionState | None) -> dict[str, Any]:
@@ -577,7 +576,7 @@ def _provider_health_projection(
                     case(
                         (
                             func.lower(RegistryArtifact.scan_status).in_(
-                                _SUCCESSFUL_SCAN_STATES
+                                SUCCESSFUL_REGISTRY_SCAN_STATUSES
                             ),
                             1,
                         ),
@@ -1469,7 +1468,7 @@ def build_security(*, page: int = 1, per_page: int = 5) -> dict[str, Any]:
         critical_total += critical
         high_total += high
         scan_status = str(artifact.scan_status or 'not_scanned')
-        scan_ready = _scan_evidence_ready(scan_status)
+        scan_ready = registry_scan_evidence_ready(scan_status)
         scanned += int(scan_ready)
         signature = str(artifact.signature_status or 'not_observed')
         sbom = str(artifact.sbom_status or 'not_observed')
