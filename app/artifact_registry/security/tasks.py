@@ -332,7 +332,6 @@ def finalize_registry_security_sync_task(
             'repository_failure_count': repository_failure_count,
             'failure_evidence': failures,
             'warning_evidence': warning_evidence[:50],
-            'source_results': normalized_results,
             'requested_by_user_id': requested_by_user_id,
             'finished_at': _now_iso(),
             'duration_seconds': round(max(time() - float(started_at_epoch), 0.0), 1),
