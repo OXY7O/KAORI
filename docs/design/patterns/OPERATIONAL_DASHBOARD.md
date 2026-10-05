@@ -204,6 +204,7 @@ Use consistent evidence terminology such as `Cluster Signals Available`, `Select
 ## Dashboard family consistency
 
 - Kubernetes and Object Storage consume the same `components/operational_dashboard_workspace.html` framework and therefore share the four workspace tabs, active-tab state, URL synchronization, keyboard navigation, panel semantics, outer `space-y-5` rhythm, and section hierarchy.
+- Kubernetes, Object Storage, and Artifact Registry use one bounded lazy projection per canonical tab for initial tab loading. Interactive sub-resources such as Cluster Health pagination may retain narrower endpoints without changing the family loading contract.
 - Domain-specific templates own Hero values/readiness, Operational Signal semantics/KPI content, section data, and domain-specific copy/actions. Shared Signal Overview, evidence-tile, alert-summary, response-wrapper, recommendation-card, and reporting geometry remains component-owned.
 - Artifact Registry Overview is a conforming operational-domain consumer: it uses the same Hero profile, Operational Signal Overview, four workspace tabs, provider scope, committed-snapshot boundary, and shared section/peer-grid components while keeping detailed Inventory, Security, Runtime Usage, Governance, and Analytics in their owning workspaces.
 - Its Operations Overview follows the same reference composition: Registry Provider Health Summary → Inventory Snapshot / Data Freshness peer grid. Registry-specific evidence changes the nouns and source planes, not the layout grammar.
