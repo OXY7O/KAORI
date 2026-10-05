@@ -253,6 +253,9 @@ class Config:
     ANALYTICS_CELERY_QUEUE = _env_str('ANALYTICS_CELERY_QUEUE', 'analytics-batch').strip() or 'analytics-batch'
     FORECASTING_CELERY_QUEUE = _env_str('FORECASTING_CELERY_QUEUE', 'forecasting').strip() or 'forecasting'
     REPORTS_CELERY_QUEUE = _env_str('REPORTS_CELERY_QUEUE', 'reports').strip() or 'reports'
+    REGISTRY_SECURITY_CELERY_QUEUE = (
+        _env_str('REGISTRY_SECURITY_CELERY_QUEUE', 'registry-security').strip() or 'registry-security'
+    )
     REPORT_STORAGE_HEALTH_MONITOR_ENABLED = _env_bool('REPORT_STORAGE_HEALTH_MONITOR_ENABLED', True)
     REPORT_STORAGE_HEALTH_INTERVAL_MINUTES = _bounded_env_int('REPORT_STORAGE_HEALTH_INTERVAL_MINUTES', 1, 1, 60)
     REPORT_STORAGE_HEALTH_STALE_SECONDS = _bounded_env_int('REPORT_STORAGE_HEALTH_STALE_SECONDS', 120, 30, 3600)
@@ -389,7 +392,13 @@ class Config:
                 'queue': 'inventory',
             },
             'app.artifact_registry.security.tasks.sync_all_registry_security': {
-                'queue': 'inventory',
+                'queue': REGISTRY_SECURITY_CELERY_QUEUE,
+            },
+            'app.artifact_registry.security.tasks.sync_registry_security_source': {
+                'queue': REGISTRY_SECURITY_CELERY_QUEUE,
+            },
+            'app.artifact_registry.security.tasks.finalize_registry_security_sync': {
+                'queue': REGISTRY_SECURITY_CELERY_QUEUE,
             },
             'app.artifact_registry.governance_tasks.sync_all_registry_governance': {
                 'queue': 'inventory',
