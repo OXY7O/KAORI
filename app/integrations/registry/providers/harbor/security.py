@@ -12,11 +12,17 @@ from app.artifact_registry.security.contracts import (
 )
 from app.artifact_registry.security.providers import RegistrySecurityCollector
 from app.integrations.registry.providers.harbor.client_factory import build_client
+from app.integrations.registry.providers.harbor.exceptions import (
+    HarborAuthError,
+    HarborConnectionError,
+    HarborResponseError,
+)
 from app.models.harbor import HarborInstance
 
 _SEVERITIES = ('critical', 'high', 'medium', 'low', 'negligible', 'unknown')
-_SECURITY_DISCOVERY_PAGE_SIZE = 50
+_SECURITY_DISCOVERY_PAGE_SIZES = (20, 10)
 _SECURITY_TRANSPORT_RETRIES = 2
+_MAX_REPOSITORY_FAILURE_EVIDENCE = 50
 
 
 def _parse_datetime(value: Any) -> datetime | None:
@@ -179,6 +185,77 @@ def _scan_identity_changed(
     return dict(target.vulnerability_summary or {}) != dict(vulnerability_summary or {})
 
 
+def _list_repository_security_artifacts(
+    client: Any,
+    *,
+    project_name: str,
+    repository_name: str,
+    processed: int,
+    total: int,
+    progress_callback: InventoryProgressCallback | None,
+) -> list[dict[str, Any]]:
+    """Load one repository's enriched security projection with bounded page-size fallback.
+
+    Harbor can take materially longer to render scan/SBOM/signature overviews than
+    normal inventory pages. The configured per-request timeout remains authoritative;
+    KAORI reduces the enriched page size once before declaring the repository
+    unavailable for this refresh.
+    """
+
+    last_error: HarborConnectionError | HarborResponseError | None = None
+    for attempt, page_size in enumerate(_SECURITY_DISCOVERY_PAGE_SIZES):
+        if attempt and progress_callback is not None:
+            progress_callback(
+                processed,
+                total,
+                f'{project_name}/{repository_name} · retrying {page_size} enriched artifacts/page',
+            )
+        try:
+            return client.list_all_artifacts(
+                project_name_or_id=project_name,
+                repository_name=repository_name,
+                page_size=page_size,
+                with_scan_overview=True,
+                with_sbom_overview=True,
+                with_signature=True,
+                with_immutable_status=False,
+            )
+        except HarborAuthError:
+            # Authentication is source-wide authority and must remain fail-fast.
+            raise
+        except (HarborConnectionError, HarborResponseError) as exc:
+            last_error = exc
+
+    if last_error is not None:
+        raise last_error
+    return []
+
+
+def _retained_repository_target(
+    target: RegistrySecurityTarget,
+    *,
+    project_name: str,
+    repository_name: str,
+    error: Exception,
+) -> RegistryArtifactSecurityEvidence:
+    return RegistryArtifactSecurityEvidence(
+        artifact_id=target.artifact_id,
+        scan_status=target.scan_status,
+        scan_completed_at=target.scan_completed_at,
+        vulnerability_summary=dict(target.vulnerability_summary or {}),
+        signature_status=target.signature_status,
+        sbom_status=target.sbom_status,
+        reuse_existing_scan=bool(target.has_scan_snapshot),
+        provider_metadata={
+            'provider_evidence': 'repository_security_refresh_unavailable',
+            'project_name': project_name,
+            'repository_name': repository_name,
+            'refresh_error_type': type(error).__name__,
+            'refresh_error': str(error)[:500],
+        },
+    )
+
+
 def collect_harbor_security(
     instance: HarborInstance,
     targets: list[RegistrySecurityTarget],
@@ -196,20 +273,53 @@ def collect_harbor_security(
     refreshed_reports = 0
     reused_reports = 0
     records: list[RegistryArtifactSecurityEvidence] = []
+    repository_failures: list[dict[str, str]] = []
+    successful_repositories = 0
 
     if progress_callback is not None:
         progress_callback(0, total, 'Security Discovery')
 
     for (project_name, repository_name), repository_targets in grouped.items():
-        raw_artifacts = client.list_all_artifacts(
-            project_name_or_id=project_name,
-            repository_name=repository_name,
-            page_size=_SECURITY_DISCOVERY_PAGE_SIZE,
-            with_scan_overview=True,
-            with_sbom_overview=True,
-            with_signature=True,
-            with_immutable_status=False,
-        )
+        try:
+            raw_artifacts = _list_repository_security_artifacts(
+                client,
+                project_name=project_name,
+                repository_name=repository_name,
+                processed=processed,
+                total=total,
+                progress_callback=progress_callback,
+            )
+        except HarborAuthError:
+            raise
+        except (HarborConnectionError, HarborResponseError) as exc:
+            repository_failures.append(
+                {
+                    'project_name': project_name,
+                    'repository_name': repository_name,
+                    'error_type': type(exc).__name__,
+                    'message': str(exc)[:500],
+                }
+            )
+            for target in repository_targets:
+                records.append(
+                    _retained_repository_target(
+                        target,
+                        project_name=project_name,
+                        repository_name=repository_name,
+                        error=exc,
+                    )
+                )
+                reused_reports += int(target.has_scan_snapshot)
+                processed += 1
+                if progress_callback is not None:
+                    progress_callback(
+                        processed,
+                        total,
+                        f'{project_name}/{repository_name}@{target.digest[:20]} · retained',
+                    )
+            continue
+
+        successful_repositories += 1
         raw_by_digest = {
             str(item.get('digest') or '').strip(): item
             for item in raw_artifacts
@@ -227,7 +337,7 @@ def collect_harbor_security(
                         vulnerability_summary=dict(target.vulnerability_summary or {}),
                         signature_status=target.signature_status,
                         sbom_status=target.sbom_status,
-                        reuse_existing_scan=True,
+                        reuse_existing_scan=bool(target.has_scan_snapshot),
                         provider_metadata={'provider_evidence': 'artifact_not_observed_in_security_refresh'},
                     )
                 )
@@ -321,6 +431,12 @@ def collect_harbor_security(
                     f'{project_name}/{repository_name}@{target.digest[:20]}',
                 )
 
+    if repository_failures and successful_repositories == 0:
+        raise HarborConnectionError(
+            'Harbor security discovery was unavailable for every committed repository; '
+            'previous committed security evidence was retained.'
+        )
+
     return RegistrySecurityEvidence(
         artifacts=records,
         provider_metadata={
@@ -328,6 +444,14 @@ def collect_harbor_security(
             'source': 'harbor_api_v2',
             'refreshed_vulnerability_reports': refreshed_reports,
             'reused_vulnerability_reports': reused_reports,
+            'repository_count': len(grouped),
+            'successful_repository_count': successful_repositories,
+            'repository_failure_count': len(repository_failures),
+            'repository_failures': repository_failures[:_MAX_REPOSITORY_FAILURE_EVIDENCE],
+            'repository_failure_evidence_truncated': (
+                len(repository_failures) > _MAX_REPOSITORY_FAILURE_EVIDENCE
+            ),
+            'security_discovery_page_sizes': list(_SECURITY_DISCOVERY_PAGE_SIZES),
         },
     )
 
