@@ -63,16 +63,10 @@
             ) }}
 
             <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
-                     aria-labelledby="registry-governance-posture-heading">
+                     aria-labelledby="artifact-registry-governance-operations-heading">
                 <header class="flex flex-col gap-4 border-b border-outline-subtle px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
-                    <div class="min-w-0">
-                        <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Governance Posture</p>
-                        <div class="mt-1 flex flex-wrap items-center gap-2">
-                            <h2 id="registry-governance-posture-heading"
-                                class="text-base font-semibold text-content-primary">{{ governance.sync_state.label }}</h2>
-                            {{ table_label.status_indicator_label(governance.sync_state.label, governance.sync_state.tone) }}
-                        </div>
-                        <p class="mt-1 max-w-4xl text-xs leading-5 text-content-secondary">{{ governance.sync_state.helper }}</p>
+                    <div class="min-w-0 flex-1">
+                        {% include "artifact_registry/partials/_governance_sync_live_state.html" %}
                     </div>
                     <div class="flex shrink-0 flex-wrap items-center gap-2">
                         {% if current_user.has_permission('artifact_registry.sync') %}
