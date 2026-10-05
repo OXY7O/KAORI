@@ -9,7 +9,7 @@ from sqlalchemy.orm import joinedload
 from app.artifact_registry.observability import registry_metrics_readiness
 from app.common.pagination import paginate_sequence
 from app.dashboards.common.operational import normalize_operational_tab
-from app.intelligence.alert_intelligence.dashboard_cases import active_recommendation_alert_cases_by_asset
+from app.intelligence.alert_intelligence.dashboard_cases import active_recommendation_alert_cases
 from app.intelligence.catalog import INTELLIGENCE_CATALOG
 from app.intelligence.dashboard_recommendations import get_dashboard_recommendation_findings
 from app.models.integration import IntegrationInstance
@@ -307,13 +307,28 @@ def _registry_capacity_views(
     return capacity, forecast, top_consumers
 
 
-def _registry_alerts(scoped_providers: list[IntegrationInstance]) -> dict[str, Any]:
-    asset_keys = [str(provider.id) for provider in scoped_providers]
-    grouped = active_recommendation_alert_cases_by_asset(domain='registry', asset_keys=asset_keys)
-    cases = [case for key in asset_keys for case in grouped.get(key, [])]
-    cases.sort(
-        key=lambda item: _aware_datetime(item.first_seen_at) or datetime.min.replace(tzinfo=UTC),
-        reverse=True,
+def _registry_alerts(selected_provider: IntegrationInstance | None) -> dict[str, Any]:
+    catalog_rules = sum(
+        str(rule.get('domain') or '') == 'registry'
+        and str(rule.get('status') or '') == 'available'
+        for rule in INTELLIGENCE_CATALOG
+    )
+    if selected_provider is None:
+        return {
+            'available': False,
+            'critical': 0,
+            'warning': 0,
+            'info': 0,
+            'total': 0,
+            'catalog_rules': catalog_rules,
+            'source_label': 'Alert Intelligence',
+            'source_detail': 'Active AlertCase records',
+            'rows': [],
+        }
+
+    cases = active_recommendation_alert_cases(
+        domain='registry',
+        asset_key=str(selected_provider.id),
     )
     return {
         'available': True,
@@ -321,14 +336,17 @@ def _registry_alerts(scoped_providers: list[IntegrationInstance]) -> dict[str, A
         'warning': sum(str(case.severity or '').lower() == 'warning' for case in cases),
         'info': sum(str(case.severity or '').lower() not in {'critical', 'warning'} for case in cases),
         'total': len(cases),
-        'catalog_rules': sum(
-            str(rule.get('domain') or '') == 'registry' and str(rule.get('status') or '') == 'available'
-            for rule in INTELLIGENCE_CATALOG
-        ),
+        'catalog_rules': catalog_rules,
+        'source_label': 'Alert Intelligence',
+        'source_detail': 'Active AlertCase records',
         'rows': [
             {
                 'title': str(case.alert_name or 'KAORI Alert Case'),
-                'description': str(case.summary or case.target or 'KAORI Registry recommendation alert case.'),
+                'description': str(
+                    case.summary
+                    or case.target
+                    or 'KAORI Registry recommendation alert case.'
+                ),
                 'severity': str(case.severity or 'info'),
                 'state': (
                     'Source Unknown'
@@ -341,7 +359,6 @@ def _registry_alerts(scoped_providers: list[IntegrationInstance]) -> dict[str, A
             for case in cases[:5]
         ],
     }
-
 
 def _registry_recommended_actions(selected_provider: IntegrationInstance | None) -> list[dict[str, str]]:
     findings = get_dashboard_recommendation_findings(
@@ -1172,7 +1189,7 @@ def build_overview_section(
     if section == 'signals':
         return {
             **context,
-            'alerts': _registry_alerts(scoped_providers),
+            'alerts': _registry_alerts(selected_provider),
             'recommended_actions': _registry_recommended_actions(selected_provider),
         }
 
