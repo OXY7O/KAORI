@@ -308,3 +308,22 @@ def test_signals_and_reporting_match_kubernetes_dashboard_composition() -> None:
     assert 'components/operational_flow_steps.html' not in reporting_workspace
     assert 'components/reporting_dashboard_workspace.html' in kubernetes_reporting
     assert 'reporting_workspace.guidance(' in kubernetes_reporting
+
+
+def test_object_storage_dashboard_uses_fast_shell_without_rebuilding_overview_per_section() -> None:
+    service = read('app/storage/object_storage/dashboard/service.py')
+
+    assert 'def _dashboard_shell_context(' in service
+    overview = service.split('def get_dashboard_overview(', 1)[1].split('def get_dashboard_section(', 1)[0]
+    section = service.split('def get_dashboard_section(', 1)[1]
+
+    assert '_inventory_summary(' not in overview
+    assert 'return _dashboard_shell_context(' in overview
+    assert 'dashboard = get_dashboard_overview(' not in section
+    assert 'dashboard = _dashboard_shell_context(' in section
+
+    assert "if section in {'overview', 'system_health'}:" in section
+    assert "elif section == 'kpi_cards':" in section
+    assert "elif section == 'capacity':" in section
+    assert "elif section == 'signals':" in section
+    assert "elif section == 'reporting':" in section
