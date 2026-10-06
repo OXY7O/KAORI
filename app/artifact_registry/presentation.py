@@ -1432,33 +1432,6 @@ def _inventory_base_context() -> dict[str, Any]:
         'artifact_count': counts['artifacts'],
     }
     resource_catalog = _inventory_resource_catalog(overview)
-    severity_value = alert_severity if alert_severity in {'all', 'critical', 'warning', 'info', 'unknown'} else 'all'
-    state_value = alert_state if alert_state in {'all', 'firing', 'pending', 'suppressed', 'resolved'} else 'all'
-    source_value = alert_source if alert_source in {'all', 'alertmanager', 'metrics_source'} else 'all'
-    search_value = alert_search.strip().casefold()
-    filtered_alert_rows = []
-    for row in alert_rows:
-        effective_state = 'suppressed' if row.get('silenced') or row.get('inhibited') else str(row.get('state') or '')
-        if severity_value != 'all' and row.get('severity') != severity_value:
-            continue
-        if state_value != 'all' and effective_state != state_value:
-            continue
-        if source_value != 'all' and row.get('source_key') != source_value:
-            continue
-        if search_value:
-            haystack = ' '.join(
-                str(row.get(key) or '')
-                for key in ('name', 'target', 'summary', 'registry_name', 'source')
-            ).casefold()
-            if search_value not in haystack:
-                continue
-        filtered_alert_rows.append({**row, 'effective_state': effective_state})
-    alert_page_rows, alert_pagination = paginate_sequence(
-        filtered_alert_rows,
-        page=alert_page,
-        per_page=alert_per_page if alert_per_page in {5, 10, 25, 50} else 5,
-    )
-
     return {
         'setup': overview['setup'],
         'overview': overview,
@@ -3500,6 +3473,33 @@ def build_analytics(
             if isinstance(utilization, (int, float))
             else 'N/A'
         )
+
+    severity_value = alert_severity if alert_severity in {'all', 'critical', 'warning', 'info', 'unknown'} else 'all'
+    state_value = alert_state if alert_state in {'all', 'firing', 'pending', 'suppressed', 'resolved'} else 'all'
+    source_value = alert_source if alert_source in {'all', 'alertmanager', 'metrics_source'} else 'all'
+    search_value = alert_search.strip().casefold()
+    filtered_alert_rows = []
+    for row in alert_rows:
+        effective_state = 'suppressed' if row.get('silenced') or row.get('inhibited') else str(row.get('state') or '')
+        if severity_value != 'all' and row.get('severity') != severity_value:
+            continue
+        if state_value != 'all' and effective_state != state_value:
+            continue
+        if source_value != 'all' and row.get('source_key') != source_value:
+            continue
+        if search_value:
+            haystack = ' '.join(
+                str(row.get(key) or '')
+                for key in ('name', 'target', 'summary', 'registry_name', 'source')
+            ).casefold()
+            if search_value not in haystack:
+                continue
+        filtered_alert_rows.append({**row, 'effective_state': effective_state})
+    alert_page_rows, alert_pagination = paginate_sequence(
+        filtered_alert_rows,
+        page=alert_page,
+        per_page=alert_per_page if alert_per_page in {5, 10, 25, 50} else 5,
+    )
 
     return {
         'setup': overview['setup'],
