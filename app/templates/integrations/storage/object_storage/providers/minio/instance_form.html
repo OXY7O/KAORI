@@ -181,8 +181,7 @@
                     {% call form_action_bar.render("Save changes, then run Full Validation.", aria_label="MinIO Configuration Actions", embedded=true) %}
                         <a href="{{ url_for('minio.index', tab='registry') }}"
                            class="{{ action_button.classes('secondary') }}">Cancel</a>
-                        <button type="submit"
-                                class="{{ action_button.classes('primary') }}">
+                        <button type="submit" class="{{ action_button.classes('primary') }}">
                             <i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i>
                             Save Changes
                         </button>
