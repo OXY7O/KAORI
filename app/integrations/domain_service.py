@@ -20,6 +20,8 @@ from app.integrations.taxonomy import (
     get_domain_definition,
 )
 from app.models.integration import IntegrationBinding, IntegrationInstance
+
+
 @dataclass(frozen=True, slots=True)
 class ProviderRegistryFilters:
     query: str = ''
