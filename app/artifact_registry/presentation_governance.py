@@ -224,7 +224,9 @@ def _governance_posture_cards(
             'label': 'Retention Coverage',
             'value': f'{retention_observed}/{project_total} Projects',
             'status_label': 'Observed' if retention_observed else 'Not Collected',
-            'tone': 'normal' if project_total and retention_observed == project_total else ('warning' if project_total else 'unknown'),
+            'tone': 'normal'
+            if project_total and retention_observed == project_total
+            else ('warning' if project_total else 'unknown'),
             'detail': (
                 f'{summary["retention_configured"]} configured · '
                 f'{summary["retention_not_configured"]} not configured · '
@@ -235,7 +237,9 @@ def _governance_posture_cards(
             'label': 'Immutability Coverage',
             'value': f'{immutability_observed}/{project_total} Projects',
             'status_label': 'Observed' if immutability_observed else 'Not Collected',
-            'tone': 'normal' if project_total and immutability_observed == project_total else ('warning' if project_total else 'unknown'),
+            'tone': 'normal'
+            if project_total and immutability_observed == project_total
+            else ('warning' if project_total else 'unknown'),
             'detail': (
                 f'{summary["immutability_configured"]} configured · '
                 f'{summary["immutability_not_configured"]} not configured · '
