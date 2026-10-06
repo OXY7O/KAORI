@@ -305,9 +305,7 @@ def _registry_capacity_forecast(
         'source_ready': metrics_ready_count > 0,
         'analytics_count': int(growth['analytics_count']),
         'size_growth_per_day': _fmt_bytes(round(float(growth['size_per_day']))) if observed else 'N/A',
-        'artifact_growth_per_day': (
-            f'{float(growth["artifacts_per_day"]):.1f} artifacts/day' if observed else 'N/A'
-        ),
+        'artifact_growth_per_day': (f'{float(growth["artifacts_per_day"]):.1f} artifacts/day' if observed else 'N/A'),
         'nearest_quota_days': f'{nearest_days:.1f} days' if nearest_days is not None else 'N/A',
         'risk': posture['risk'],
         'detail': (
@@ -369,6 +367,7 @@ def _registry_capacity_views(
         posture=posture,
     )
     return capacity, forecast, _registry_top_consumers(project_forecasts)
+
 
 def _registry_alerts(selected_provider: IntegrationInstance | None) -> dict[str, Any]:
     catalog_rules = sum(
