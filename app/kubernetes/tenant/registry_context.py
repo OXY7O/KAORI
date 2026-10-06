@@ -88,9 +88,7 @@ def get_resource_profile_workspace_context() -> dict[str, Any]:
         .order_by(Cluster.name.asc(), Cluster.id.asc())
         .all()
     )
-    capacity_by_cluster = build_capacity_governance_summaries(
-        [str(cluster.id) for cluster in registered_clusters]
-    )
+    capacity_by_cluster = build_capacity_governance_summaries([str(cluster.id) for cluster in registered_clusters])
     capacity_governance = [
         {'cluster': cluster, **capacity_by_cluster[str(cluster.id)]} for cluster in registered_clusters
     ]

@@ -137,7 +137,9 @@ class RegistryArtifact(db.Model):
         passive_deletes=True,
         order_by='RegistryScanSnapshot.observed_at.desc()',
     )
-    repository: Mapped[RegistryRepository] = relationship('RegistryRepository', back_populates='artifacts', lazy='joined')
+    repository: Mapped[RegistryRepository] = relationship(
+        'RegistryRepository', back_populates='artifacts', lazy='joined'
+    )
     tags: Mapped[list[RegistryTag]] = relationship(
         'RegistryTag',
         back_populates='artifact',
@@ -176,9 +178,7 @@ class RegistryScanSnapshot(db.Model):
     """Normalized vulnerability scan evidence for one immutable artifact digest."""
 
     __tablename__ = 'registry_scan_snapshots'
-    __table_args__ = (
-        Index('ix_registry_scan_artifact_observed', 'artifact_id', 'observed_at'),
-    )
+    __table_args__ = (Index('ix_registry_scan_artifact_observed', 'artifact_id', 'observed_at'),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     artifact_id: Mapped[int] = mapped_column(
@@ -194,7 +194,9 @@ class RegistryScanSnapshot(db.Model):
     provider_metadata: Mapped[dict | None] = mapped_column(db.JSON, nullable=True, default=dict)
     observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
-    artifact: Mapped[RegistryArtifact] = relationship('RegistryArtifact', back_populates='scan_snapshots', lazy='joined')
+    artifact: Mapped[RegistryArtifact] = relationship(
+        'RegistryArtifact', back_populates='scan_snapshots', lazy='joined'
+    )
     vulnerabilities: Mapped[list[RegistryVulnerability]] = relationship(
         'RegistryVulnerability',
         back_populates='scan_snapshot',
@@ -240,7 +242,6 @@ class RegistryVulnerability(db.Model):
     )
 
 
-
 class RegistryWorkloadBinding(db.Model):
     """Derived correlation between committed Registry artifacts and committed Pod inventory."""
 
@@ -280,7 +281,6 @@ class RegistryWorkloadBinding(db.Model):
     observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     artifact: Mapped[RegistryArtifact] = relationship('RegistryArtifact', lazy='joined')
-
 
 
 class RegistryGovernanceState(db.Model):

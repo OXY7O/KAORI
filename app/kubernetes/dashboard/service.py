@@ -249,9 +249,7 @@ def _populate_cluster_health(
 ) -> None:
     scoped_clusters = clusters_raw
     if selected_cluster_id:
-        scoped_clusters = [
-            cluster for cluster in clusters_raw if str(cluster.id) == selected_cluster_id
-        ]
+        scoped_clusters = [cluster for cluster in clusters_raw if str(cluster.id) == selected_cluster_id]
     visible, pagination = paginate_sequence(
         items=scoped_clusters,
         page=cluster_health_page,
@@ -312,13 +310,9 @@ def _populate_data_freshness(
 
     latest_sync = _latest_inventory_sync(selected_cluster_id)
     metrics_results = (capacity_result, top_result, forecast_result)
-    has_metrics_source_data = any(
-        result is not None and result.available for result in metrics_results
-    )
+    has_metrics_source_data = any(result is not None and result.available for result in metrics_results)
     has_alertmanager_data = alerts_result is not None and alerts_result.available
-    reporting_snapshot = ReportingSnapshot(
-        generated_reports=count_records(Report, selected_cluster_id)
-    )
+    reporting_snapshot = ReportingSnapshot(generated_reports=count_records(Report, selected_cluster_id))
     dashboard.data_freshness = build_data_freshness(
         latest_inventory_sync=latest_sync,
         has_metrics_source_data=has_metrics_source_data,
@@ -354,9 +348,7 @@ def _populate_signals(
 ) -> None:
     if selected is not None:
         dashboard.alerts_snapshot = _kaori_alert_snapshot(selected)
-    dashboard.recommended_actions = build_recommendations(
-        selected_cluster_id=selected_cluster_id
-    )
+    dashboard.recommended_actions = build_recommendations(selected_cluster_id=selected_cluster_id)
 
 
 def get_dashboard_overview(
@@ -423,9 +415,7 @@ def get_dashboard_section(
         return dashboard
 
     if section == 'reporting':
-        dashboard.reporting_snapshot = build_reporting_snapshot(
-            selected_cluster_id=selected_cluster_id
-        )
+        dashboard.reporting_snapshot = build_reporting_snapshot(selected_cluster_id=selected_cluster_id)
         return dashboard
 
     if section == 'cluster_health':
@@ -443,15 +433,11 @@ def get_dashboard_section(
         return dashboard
 
     if section == 'reporting_summary':
-        dashboard.reporting_snapshot = build_reporting_snapshot(
-            selected_cluster_id=selected_cluster_id
-        )
+        dashboard.reporting_snapshot = build_reporting_snapshot(selected_cluster_id=selected_cluster_id)
         return dashboard
 
     if section == 'recommended_actions':
-        dashboard.recommended_actions = build_recommendations(
-            selected_cluster_id=selected_cluster_id
-        )
+        dashboard.recommended_actions = build_recommendations(selected_cluster_id=selected_cluster_id)
         return dashboard
 
     if section == 'kpi_cards':
@@ -467,9 +453,7 @@ def get_dashboard_section(
             selected_cluster_id,
         )
         active_alerts = (
-            dashboard.alerts_snapshot.critical
-            + dashboard.alerts_snapshot.warning
-            + dashboard.alerts_snapshot.info
+            dashboard.alerts_snapshot.critical + dashboard.alerts_snapshot.warning + dashboard.alerts_snapshot.info
         )
         dashboard.global_kpis = build_kpis(
             DashboardKpiContext(
@@ -488,8 +472,7 @@ def get_dashboard_section(
                 selected_cluster=selected,
                 active_alerts_label=str(active_alerts) if selected is not None else 'N/A',
                 active_alerts_description=(
-                    f'{dashboard.alerts_snapshot.critical} Critical • '
-                    f'{dashboard.alerts_snapshot.warning} Warning'
+                    f'{dashboard.alerts_snapshot.critical} Critical • {dashboard.alerts_snapshot.warning} Warning'
                     if selected is not None
                     else 'Select a cluster to view committed alert signals'
                 ),
@@ -531,4 +514,3 @@ def get_dashboard_section(
         return dashboard
 
     return dashboard
-

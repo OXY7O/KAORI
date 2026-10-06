@@ -69,9 +69,7 @@ def build_data_freshness(
                 else 'No committed inventory snapshot'
             ),
             icon='database-zap',
-            description=(
-                'Latest Kubernetes object counts.'
-            ),
+            description=('Latest Kubernetes object counts.'),
         ),
         FreshnessItem(
             label='Metrics Snapshot',

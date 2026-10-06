@@ -104,8 +104,7 @@ def read_snapshots(
         for cluster_id, parameters in parameters_by_cluster.items()
     }
     fingerprints = {
-        cluster_id: parameter_fingerprint(parameters)
-        for cluster_id, parameters in normalized_parameters.items()
+        cluster_id: parameter_fingerprint(parameters) for cluster_id, parameters in normalized_parameters.items()
     }
     if not fingerprints:
         return {}

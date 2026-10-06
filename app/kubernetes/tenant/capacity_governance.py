@@ -626,8 +626,7 @@ def _read_capacity_snapshots(cluster_ids: list[str]) -> dict[str, SnapshotResult
     return read_snapshots(
         dataset_key='analytics.capacity',
         parameters_by_cluster={
-            str(cluster_id): {'cluster_id': str(cluster_id), 'time_range': '24h'}
-            for cluster_id in cluster_ids
+            str(cluster_id): {'cluster_id': str(cluster_id), 'time_range': '24h'} for cluster_id in cluster_ids
         },
     )
 
@@ -792,9 +791,7 @@ def _aggregate_committed_allocation(
 def _canonical_shared_allocation_quota_by_cluster(
     cluster_ids: list[str],
 ) -> tuple[dict[str, dict[str, Mapping[str, object]]], dict[str, list[str]]]:
-    selected_by_cluster: dict[str, dict[str, Mapping[str, object]]] = {
-        cluster_id: {} for cluster_id in cluster_ids
-    }
+    selected_by_cluster: dict[str, dict[str, Mapping[str, object]]] = {cluster_id: {} for cluster_id in cluster_ids}
     ambiguous_by_cluster: dict[str, set[str]] = {cluster_id: set() for cluster_id in cluster_ids}
     if not cluster_ids:
         return selected_by_cluster, {}

@@ -67,7 +67,9 @@ def get_report_artifact_registry_analysis_payload(report: Report) -> dict[str, A
     overview = build_overview(provider_id=instance_id)
     state = db.session.get(RegistryCollectionState, instance_id)
     artifacts = _query_artifacts(instance_id)
-    signed_count = sum(str(item.signature_status or '').lower() in {'signed', 'verified', 'valid'} for item in artifacts)
+    signed_count = sum(
+        str(item.signature_status or '').lower() in {'signed', 'verified', 'valid'} for item in artifacts
+    )
     sbom_count = sum(str(item.sbom_status or '').lower() in {'available', 'ready', 'present'} for item in artifacts)
     runtime_count = (
         RegistryWorkloadBinding.query.join(RegistryArtifact)
