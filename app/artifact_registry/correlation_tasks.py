@@ -5,6 +5,7 @@ from time import perf_counter
 from typing import Any
 
 from celery import shared_task
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.artifact_registry.correlation import refresh_registry_workload_bindings
 from app.platform_operations.jobs.execution import JobExecutionContext
@@ -85,7 +86,7 @@ def materialize_registry_runtime_correlation_task(
         result = refresh_registry_workload_bindings(
             progress_callback=report_correlation_progress,
         )
-    except Exception as exc:
+    except (RuntimeError, ValueError, SQLAlchemyError) as exc:
         context.fail(
             exc,
             error_code='artifact_registry_runtime_correlation_failed',
