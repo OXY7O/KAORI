@@ -196,8 +196,10 @@ def collect_harbor_governance(
 ) -> RegistryGovernanceEvidence:
     client = build_client(instance)
     states = {
-        key: _state(supported=True, observed=True)
-        for key in ('retention', 'immutability', 'replication', 'webhook')
+        'retention': _state(supported=True, observed=True),
+        'immutability': _state(supported=True, observed=True),
+        'replication': _state(supported=True, observed=True),
+        'webhook': _state(supported=True, observed=True),
     }
     if progress_callback is not None:
         progress_callback(0, 0, 'Project Discovery')
