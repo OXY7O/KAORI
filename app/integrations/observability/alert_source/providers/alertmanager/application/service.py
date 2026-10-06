@@ -10,6 +10,7 @@ from app.common.integration_errors import describe_integration_failure
 from app.extensions.db import db
 from app.integrations.consumer_assets import get_consumer_asset_definition, resolve_consumer_asset
 from app.integrations.deletion import DeletionBlocked, provider_deletion_guard
+from app.integrations.kernel.registry import get_integration
 from app.integrations.lifecycle import ensure_canonical_instance, invalidate_bindings
 from app.integrations.observability.alert_source.providers.alertmanager.application.bindings import (
     create_or_update_binding,
@@ -17,8 +18,8 @@ from app.integrations.observability.alert_source.providers.alertmanager.applicat
     resolve_sources,
 )
 from app.integrations.observability.alert_source.providers.alertmanager.application.consumer import (
-    KUBERNETES_CLUSTER_SCOPE,
     get_scope_status,
+    KUBERNETES_CLUSTER_SCOPE,
     list_alerts_for_scope,
     list_silences_for_scope,
 )
@@ -38,13 +39,10 @@ from app.integrations.observability.alert_source.providers.alertmanager.applicat
     resolve_alertmanager_sources,
 )
 from app.integrations.observability.alert_source.providers.alertmanager.exceptions import AlertmanagerError
-from app.integrations.kernel.registry import get_integration
 from app.models.alertmanager import AlertmanagerInstance
 from app.models.cluster import Cluster
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.platform_operations.jobs.service import acquire_resource_admission_locks
-
-
 def get_cluster_by_id(cluster_id: str) -> Cluster | None:
     return db.session.get(Cluster, cluster_id)
 
