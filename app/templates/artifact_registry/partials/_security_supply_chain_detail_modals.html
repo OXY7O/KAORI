@@ -2,7 +2,6 @@
 {% import "components/operational_callout.html" as operational_callout %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
-
 {% macro shell(dialog_id, context_label, title, subtitle, icon='panel-top-open', footer_text='Committed Registry security evidence · No live provider request.') -%}
     <dialog id="{{ dialog_id }}"
             data-kaori-native-dialog
@@ -53,7 +52,6 @@
         </section>
     </dialog>
 {%- endmacro %}
-
 {% macro capability(row, dialog_id) -%}
     {% call shell(
         dialog_id,
@@ -62,7 +60,7 @@
         row.provider_label ~ ' · ' ~ row.artifact_count ~ (' artifact in scope' if row.artifact_count == 1 else ' artifacts in scope'),
         icon='blocks',
         footer_text='Committed provider capability projection · No live provider request.'
-    ) %}
+        ) %}
         <div class="space-y-4 text-left"
              data-artifact-registry-provider-capability-detail
              data-artifact-registry-provider-capability-detail-v2>
@@ -83,7 +81,7 @@
                     </div>
                     <div class="flex shrink-0 flex-wrap gap-2 sm:justify-end">
                         {{ table_label.metadata_label(row.provider_label, icon='blocks') }}
-                        {{ table_label.metadata_label(row.artifact_count ~ (' Artifact' if row.artifact_count == 1 else ' Artifacts'), icon='package') }}
+                        {{ table_label.metadata_label(row.artifact_count ~ (' Artifact' if row.artifact_count == 1 else ' Artifacts') , icon='package') }}
                     </div>
                 </div>
                 <dl class="grid gap-px border-t border-outline-subtle bg-outline-subtle sm:grid-cols-3">
@@ -91,15 +89,16 @@
                         ('Registry Source', row.source_name),
                         ('Provider', row.provider_label),
                         ('Evidence Model', 'Committed KAORI State')
-                    ] %}
+                        ] %}
                         <div class="min-w-0 bg-surface-card px-4 py-3.5">
                             <dt class="text-xs font-medium text-content-muted">{{ label }}</dt>
-                            <dd class="mt-1 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ value }}</dd>
+                            <dd class="mt-1 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">
+                                {{ value }}
+                            </dd>
                         </div>
                     {% endfor %}
                 </dl>
             </section>
-
             <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
                      data-artifact-registry-capability-coverage>
                 <header class="border-b border-outline-subtle px-5 py-4">
@@ -119,7 +118,7 @@
                         ('Vulnerability', 'shield-alert', row.vulnerability),
                         ('Signature', 'badge-check', row.signature),
                         ('SBOM', 'file-check-2', row.sbom)
-                    ] %}
+                        ] %}
                         <article class="min-w-0 bg-surface-card p-4 sm:p-5">
                             <div class="flex items-start justify-between gap-3">
                                 <div class="flex min-w-0 items-center gap-3">
@@ -146,18 +145,14 @@
                     {% endfor %}
                 </div>
             </section>
-
-            {{ operational_callout.render(
-                'Provider Evidence Boundary',
-                'KAORI normalizes committed provider evidence. It does not fabricate unsupported capability state, trigger provider-side security scans, or replace the provider as authority.',
-                'shield-check',
-                tone='info',
-                variant='neutral'
-            ) }}
+            {{ operational_callout.render('Provider Evidence Boundary',
+                        'KAORI normalizes committed provider evidence. It does not fabricate unsupported capability state, trigger provider-side security scans, or replace the provider as authority.',
+                        'shield-check',
+                        tone='info',
+                        variant='neutral') }}
         </div>
     {% endcall %}
 {%- endmacro %}
-
 {% macro artifact(row, dialog_id) -%}
     {% call shell(
         dialog_id,
@@ -166,7 +161,7 @@
         row.provider_label ~ ' · ' ~ row.source_name,
         icon='package-search',
         footer_text='Committed artifact security evidence · No live provider request.'
-    ) %}
+        ) %}
         <div class="space-y-4 text-left"
              data-artifact-registry-artifact-evidence-detail
              data-artifact-registry-artifact-evidence-detail-v2>
@@ -191,21 +186,21 @@
                         {{ table_label.status_indicator_label(row.snapshot_label, row.snapshot_tone) }}
                     </div>
                 </div>
-
                 <dl class="grid gap-px border-t border-outline-subtle bg-outline-subtle sm:grid-cols-2 lg:grid-cols-4">
                     {% for label, value in [
                         ('Project', row.project),
                         ('Repository', row.repository),
                         ('Registry Source', row.source_name),
                         ('Provider', row.provider_label)
-                    ] %}
+                        ] %}
                         <div class="min-w-0 bg-surface-card px-4 py-3.5">
                             <dt class="text-xs font-medium text-content-muted">{{ label }}</dt>
-                            <dd class="mt-1 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ value }}</dd>
+                            <dd class="mt-1 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">
+                                {{ value }}
+                            </dd>
                         </div>
                     {% endfor %}
                 </dl>
-
                 <div class="border-t border-outline-subtle bg-surface-subtle px-4 py-3.5 sm:px-5">
                     <div class="flex min-w-0 items-start gap-3">
                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-content-muted"
@@ -219,7 +214,6 @@
                     </div>
                 </div>
             </section>
-
             <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
                      data-artifact-registry-supply-chain-evidence>
                 <header class="border-b border-outline-subtle px-5 py-4">
@@ -239,7 +233,7 @@
                         ('Signature', 'badge-check', row.signature, 'Signature presence as observed by the Registry provider.'),
                         ('Trust', 'shield-check', row.trust, 'Observed presence is not a KAORI trust-policy decision.'),
                         ('SBOM', 'file-check-2', row.sbom, 'SBOM availability as observed by the Registry provider.')
-                    ] %}
+                        ] %}
                         <article class="min-w-0 bg-surface-card p-4 sm:p-5">
                             <div class="flex items-start justify-between gap-3">
                                 <div class="flex min-w-0 items-center gap-3">
@@ -256,7 +250,6 @@
                     {% endfor %}
                 </div>
             </section>
-
             <section class="rounded-xl border border-outline-default bg-surface-card px-4 py-4 sm:px-5"
                      data-artifact-registry-security-snapshot-summary>
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -276,14 +269,11 @@
                     </div>
                 </div>
             </section>
-
-            {{ operational_callout.render(
-                'Evidence Interpretation',
-                'Signature and SBOM values are provider-observed evidence. KAORI does not claim trust verification here, and opening this modal never performs a live provider request.',
-                'shield-check',
-                tone='info',
-                variant='neutral'
-            ) }}
+            {{ operational_callout.render('Evidence Interpretation',
+                        'Signature and SBOM values are provider-observed evidence. KAORI does not claim trust verification here, and opening this modal never performs a live provider request.',
+                        'shield-check',
+                        tone='info',
+                        variant='neutral') }}
         </div>
     {% endcall %}
 {%- endmacro %}
