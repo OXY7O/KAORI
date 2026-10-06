@@ -1,0 +1,90 @@
+{% import "components/loading_bar.html" as loading_bar %}
+{% macro section_shell_classes() -%}
+    overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm
+{%- endmacro %}
+{% macro palette_icon_classes(tone='brand', size='md', rounded='lg') -%}
+    {% if tone == 'brand' %}
+        {% set tone_classes = "border-brand-outline bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent" %}
+    {% elif tone in ['normal', 'success'] %}
+        {% set tone_classes = "border-status-normal-border bg-status-normal-soft text-status-normal-text" %}
+    {% elif tone == 'info' %}
+        {% set tone_classes = "border-status-info-border bg-status-info-soft text-status-info-text" %}
+    {% elif tone == 'warning' %}
+        {% set tone_classes = "border-status-warning-border bg-status-warning-soft text-status-warning-text" %}
+    {% elif tone == 'critical' %}
+        {% set tone_classes = "border-status-critical-border bg-status-critical-soft text-status-critical-text" %}
+    {% elif tone == 'unknown' %}
+        {% set tone_classes = "border-status-unknown-border bg-status-unknown-soft text-status-unknown-text" %}
+    {% else %}
+        {% set tone_classes = "border-outline-subtle bg-surface-subtle text-content-secondary" %}
+    {% endif %}
+    {% set size_classes = 'h-12 w-12' if size == 'xl' else ('h-10 w-10' if size == 'lg' else ('h-8 w-8' if size == 'sm' else ('h-7 w-7' if size == 'xs' else 'h-9 w-9'))) %}
+    {% set rounded_classes = 'rounded-xl' if rounded == 'xl' else ('rounded-md' if rounded == 'md' else 'rounded-lg') %}
+    flex {{ size_classes }} shrink-0 items-center justify-center {{ rounded_classes }} border {{ tone_classes }}
+{%- endmacro %}
+{% macro palette_icon(icon, tone='brand', size='md', icon_class=None, rounded='lg') -%}
+    <span class="{{ palette_icon_classes(tone, size, rounded) }}"
+          aria-hidden="true"
+          data-kaori-palette-icon="{{ tone }}">
+        <i data-lucide="{{ icon }}"
+           class="{{ icon_class or ('h-5 w-5' if size in ['lg', 'xl'] else ('h-3.5 w-3.5' if size in ['sm', 'xs'] else 'h-4 w-4')) }}"></i>
+    </span>
+{%- endmacro %}
+{% macro section_header(icon, title, description, eyebrow=None, action_html=None, tone='brand') -%}
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                {{ palette_icon(icon, tone, size='lg') }}
+                <div class="min-w-0">
+                    {% if eyebrow %}
+                        <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary dark:text-kaori-accent">{{ eyebrow }}</p>
+                    {% endif %}
+                    <h2 class="{{ 'mt-0.5 ' if eyebrow else '' }}text-base font-semibold text-content-primary">{{ title }}</h2>
+                    {% if description %}<p class="mt-1 text-sm leading-6 text-content-secondary">{{ description }}</p>{% endif %}
+                </div>
+            </div>
+            {% if action_html %}<div class="shrink-0">{{ action_html|safe }}</div>{% endif %}
+        </div>
+    </header>
+{%- endmacro %}
+{% macro metric_grid_classes(columns=4) -%}
+    grid gap-px bg-outline-subtle {{ 'sm:grid-cols-2 xl:grid-cols-5' if columns == 5 else ('sm:grid-cols-2 xl:grid-cols-4' if columns == 4 else ('sm:grid-cols-2 xl:grid-cols-3' if columns == 3 else 'sm:grid-cols-2')) }}
+{%- endmacro %}
+{% macro metric_card(label, value, helper=None, icon='activity', tone='brand') -%}
+    <article class="bg-surface-card p-4">
+        <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p>
+                <p class="mt-2 text-2xl font-semibold text-content-primary">{{ value }}</p>
+            </div>
+            {{ palette_icon(icon, tone) }}
+        </div>
+        {% if helper %}<p class="mt-2 text-xs leading-5 text-content-secondary">{{ helper }}</p>{% endif %}
+    </article>
+{%- endmacro %}
+{% macro filter_region_classes() -%}
+    border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6
+{%- endmacro %}
+{% macro control_label_classes() -%}
+    mb-1.5 block text-xs font-semibold text-content-secondary
+{%- endmacro %}
+{% macro control_classes() -%}
+    h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20
+{%- endmacro %}
+{% macro search_classes() -%}
+    h-10 w-full rounded-lg border border-outline-default bg-surface-card pl-10 pr-3 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20
+{%- endmacro %}
+{% macro interpretation_panel(title, body, icon='info') -%}
+    <section class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
+        <div class="flex items-start gap-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-card text-kaori-primary dark:text-kaori-accent"
+                  aria-hidden="true">
+                <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+            </span>
+            <div class="min-w-0">
+                <p class="text-sm font-semibold text-content-primary">{{ title }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ body }}</p>
+            </div>
+        </div>
+    </section>
+{%- endmacro %}

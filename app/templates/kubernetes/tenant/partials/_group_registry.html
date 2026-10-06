@@ -1,0 +1,323 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/table_registry.html" as registry_ui %}
+{% import "components/form_field.html" as form_field %}
+{% import "components/destructive_confirmation_modal.html" as destructive_modal %}
+{% import "components/info_tip.html" as info_tip %}
+{% set registry_id = "tenant-group-registry" %}
+{% set loading_id = "tenant-group-registry-loading" %}
+{% set query_params = {
+    'section': 'memberships',
+    'group_tenant_id': group_filters.tenant_id,
+    'group_enabled': group_filters.enabled,
+    'group_search': group_filters.search
+} %}
+<section id="{{ registry_id }}"
+         class="{{ table_ui.block_classes(allow_overflow=true) }}">
+    {% set header_actions %}
+        {% if group_filters.tenant_id or group_filters.enabled or group_filters.search %}
+            {{ registry_ui.clear_filters_link('tenant.tenants',
+                        registry_id,
+                        loading_id,
+                        group_pagination.per_page,
+                        table_ui.action_classes() ,
+            query_params={'section': 'memberships'},
+            page_param='group_page',
+            per_page_param='group_per_page'
+            ) }}
+        {% endif %}
+    {% endset %}
+    {% set title_info %}
+        {{ info_tip.render('tenant-group-lifecycle-tip',
+                'Tenant Group lifecycle',
+                'KAORI stores a Tenant binding to an externally asserted Kubernetes Group subject.',
+                [
+                'Edit corrects the display name or Kubernetes Group Subject; IdP membership is unchanged.',
+                'Retire removes the binding from future Membership use after dependent access cleanup.',
+                'Reactivate restores a retired binding for future use.',
+                'Routine hard delete is intentionally absent so Membership, Access Grant, and audit lineage remain queryable.'
+                ],
+                placement='right') }}
+    {% endset %}
+    {{ table_ui.inventory_block_header('users',
+        'Tenant Group Registry',
+        'Registered Kubernetes Group subjects. Use Edit for mistakes; Retire removes future use while preserving history.',
+        loading_id,
+        'Refreshing Tenant Group Registry',
+        '#create-tenant-group-form',
+        'Create Group',
+        header_actions=header_actions,
+        title_extra=title_info) }}
+    <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+        {% call registry_ui.filter_form(
+            'tenant.tenants',
+            registry_id,
+            loading_id,
+            group_pagination.per_page,
+            page_param='group_page',
+            per_page_param='group_per_page'
+            ) %}
+            <input type="hidden" name="section" value="memberships">
+            <div>
+                <label for="group-tenant-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Tenant</label>
+                <select id="group-tenant-filter"
+                        name="group_tenant_id"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Tenants</option>
+                    {% for tenant in group_tenant_options %}
+                        <option value="{{ tenant.id }}"
+                                {% if group_filters.tenant_id == tenant.id|string %}selected{% endif %}>{{ tenant.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="group-enabled-filter"
+                       class="{{ table_ui.filter_label_classes() }}">State</label>
+                <select id="group-enabled-filter"
+                        name="group_enabled"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All States</option>
+                    {% for state in group_enabled_options %}
+                        <option value="{{ state }}"
+                                {% if group_filters.enabled == state %}selected{% endif %}>{{ state|title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="lg:col-span-2">
+                <label for="group-search-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Search</label>
+                {{ table_ui.search_field('group_search', group_filters.search, 'Group, subject, or Tenant', id='group-search-filter') }}
+            </div>
+        {% endcall %}
+    </div>
+    <div class="overflow-x-auto">
+        <table class="{{ table_ui.table_classes('min-w-[980px]') }}">
+            <caption class="sr-only">Tenant group registry.</caption>
+            <thead class="{{ table_ui.head_classes() }}">
+                <tr>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Group</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Tenant</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Kubernetes Subject</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">State</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Updated</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="{{ table_ui.body_classes() }}">
+                {% for group in group_rows %}
+                    <tr class="{{ table_ui.row_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(group.name, group.slug, 'users') }}</td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <p class="text-sm font-semibold text-content-primary">{{ group.tenant.name }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <code class="text-xs text-content-secondary">{{ group.subject_name }}</code>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ table_label.status_label('Enabled' if group.enabled else 'Disabled', 'normal' if group.enabled else 'warning') }}
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <p class="text-xs font-medium text-content-secondary">{{ group.updated_at|user_datetime }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes(action=true) }}">
+                            <div class="flex min-w-[15rem] flex-wrap justify-end gap-2">
+                                <button type="button"
+                                        data-tenant-group-edit-open
+                                        data-tenant-group-edit-url="{{ url_for('tenant.edit_tenant_group_route', group_id=group.id) }}"
+                                        data-tenant-group-name="{{ group.name }}"
+                                        data-tenant-group-subject="{{ group.subject_name }}"
+                                        data-tenant-group-slug="{{ group.slug }}"
+                                        data-tenant-group-tenant="{{ group.tenant.name }}"
+                                        {% if not can_manage %}disabled aria-disabled="true"{% endif %}
+                                        class="{{ table_ui.action_classes() }}">
+                                    <i data-lucide="pencil" class="h-4 w-4" aria-hidden="true"></i>
+                                    Edit
+                                </button>
+                                {% if group.enabled %}
+                                    <form method="post"
+                                          action="{{ url_for('tenant.retire_tenant_group_route', group_id=group.id) }}"
+                                          hx-post="{{ url_for('tenant.retire_tenant_group_route', group_id=group.id) }}"
+                                          hx-target="#tenant-admin-workspace"
+                                          hx-select="#tenant-admin-workspace"
+                                          hx-swap="outerHTML show:none focus-scroll:false"
+                                          hx-indicator="#tenant-admin-loading"
+                                          hx-disabled-elt="find button"
+                                          class="inline-flex">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button id="tenant-group-retire-submit-{{ group.id }}"
+                                                type="submit"
+                                                class="hidden"
+                                                aria-hidden="true"
+                                                tabindex="-1">Retire Tenant Group</button>
+                                        <button type="button"
+                                                data-destructive-modal-open
+                                                data-destructive-modal-id="tenant-group-retire-modal"
+                                                data-destructive-submit-button-id="tenant-group-retire-submit-{{ group.id }}"
+                                                data-destructive-target="{{ group.name }}"
+                                                data-destructive-scope="{{ group.tenant.name }} · {{ group.slug }}"
+                                                {% if not can_manage %}disabled aria-disabled="true"{% endif %}
+                                                class="{{ table_ui.action_classes(true) }}">
+                                            <i data-lucide="archive-x" class="h-4 w-4" aria-hidden="true"></i>
+                                            Retire
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <form method="post"
+                                          action="{{ url_for('tenant.reactivate_tenant_group_route', group_id=group.id) }}"
+                                          hx-post="{{ url_for('tenant.reactivate_tenant_group_route', group_id=group.id) }}"
+                                          hx-target="#tenant-admin-workspace"
+                                          hx-select="#tenant-admin-workspace"
+                                          hx-swap="outerHTML show:none focus-scroll:false"
+                                          hx-indicator="#tenant-admin-loading"
+                                          hx-disabled-elt="find button"
+                                          class="inline-flex">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit"
+                                                {% if not can_manage %}disabled aria-disabled="true"{% endif %}
+                                                class="{{ table_ui.action_classes() }}">
+                                            <i data-lucide="rotate-ccw" class="h-4 w-4" aria-hidden="true"></i>
+                                            Reactivate
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="p-0">
+                            {% set empty_state_icon = "users" %}
+                            {% set empty_state_title = "No Tenant Groups Found" %}
+                            {% set empty_state_description = "Adjust filters or create a governed group above." %}
+                            {% include 'components/states/_empty_state.html' %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if group_pagination.total_items > 0 %}
+        {{ registry_ui.footer('tenant.tenants',
+                registry_id,
+                loading_id,
+                group_pagination,
+                query_params,
+                group_pagination.allowed_per_page,
+                resource_label='Groups',
+                rows_aria_label='Tenant group rows per page',
+                control_name='tenant-groups',
+                page_param='group_page',
+                per_page_param='group_per_page') }}
+    {% endif %}
+</section>
+<div id="tenant-group-edit-modal"
+     data-tenant-group-edit-modal
+     class="fixed inset-0 z-[90] hidden items-center justify-center p-4"
+     aria-hidden="true">
+    <button type="button"
+            data-tenant-group-edit-close
+            class="absolute inset-0 bg-surface-overlay/70 backdrop-blur-sm"
+            aria-label="Close Tenant Group editor"></button>
+    <section role="dialog"
+             aria-modal="true"
+             aria-labelledby="tenant-group-edit-title"
+             tabindex="-1"
+             class="relative w-full max-w-2xl overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-2xl">
+        <form method="post"
+              action=""
+              data-tenant-group-edit-form
+              hx-target="#tenant-admin-workspace"
+              hx-select="#tenant-admin-workspace"
+              hx-swap="outerHTML show:none focus-scroll:false"
+              hx-indicator="#tenant-admin-loading"
+              hx-disabled-elt="find button">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <header class="flex items-start gap-3 border-b border-outline-subtle px-5 py-4">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="pencil-line" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <h2 id="tenant-group-edit-title"
+                        class="text-lg font-semibold leading-6 text-content-primary">Edit Tenant Group</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">
+                        Correct KAORI's Tenant binding. This does not edit the external IdP group.
+                    </p>
+                </div>
+            </header>
+            <div class="space-y-5 p-5">
+                <dl class="grid gap-3 sm:grid-cols-2">
+                    <div class="rounded-lg border border-outline-subtle bg-surface-elevated px-4 py-3">
+                        <dt class="text-xs font-medium text-content-muted">Tenant</dt>
+                        <dd data-tenant-group-edit-tenant
+                            class="mt-1 text-sm font-semibold text-content-primary">
+                            —
+                        </dd>
+                    </div>
+                    <div class="rounded-lg border border-outline-subtle bg-surface-elevated px-4 py-3">
+                        <dt class="text-xs font-medium text-content-muted">Stable Group Slug</dt>
+                        <dd data-tenant-group-edit-slug
+                            class="mt-1 font-mono text-xs font-medium text-content-secondary">
+                            —
+                        </dd>
+                    </div>
+                </dl>
+                <label class="block">
+                    {{ form_field.label_row("Group Name") }}
+                    <input name="name"
+                           data-tenant-group-edit-name
+                           required
+                           maxlength="120"
+                           autocomplete="off"
+                           class="{{ form_field.input_classes() }}">
+                </label>
+                <label class="block">
+                    {{ form_field.label_row("Kubernetes Group Subject") }}
+                    <input name="subject_name"
+                           data-tenant-group-edit-subject
+                           required
+                           maxlength="253"
+                           autocomplete="off"
+                           class="{{ form_field.input_classes() }}">
+                </label>
+                <div class="flex items-start gap-3 rounded-lg border border-outline-subtle bg-status-warning-soft px-4 py-3 text-status-warning-text">
+                    <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-card/70"
+                          aria-hidden="true">
+                        <i data-lucide="shield-alert" class="h-4 w-4"></i>
+                    </span>
+                    <p class="text-xs leading-5">
+                        Changing the Kubernetes Group Subject updates the bound Group Membership identity and reconciles active Access Grants. The exact subject must still be asserted by Kubernetes authentication/IdP.
+                    </p>
+                </div>
+            </div>
+            <footer class="flex flex-col-reverse gap-2 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:justify-end">
+                <button type="button"
+                        data-tenant-group-edit-close
+                        class="inline-flex h-10 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:bg-kaori-soft">
+                    Cancel
+                </button>
+                <button type="submit"
+                        class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                    <i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i>
+                    Save Changes
+                </button>
+            </footer>
+        </form>
+    </section>
+</div>
+{{ destructive_modal.render('tenant-group-retire-modal',
+'Retire Tenant Group',
+'Selected Tenant Group',
+'The group remains in KAORI as historical evidence and can be reactivated later. No external IdP group is deleted.',
+'tenant-group-retire-submit',
+action_label='Retire Group',
+notice='Retire removes this group from future Membership selection without hard-deleting its history.',
+scope_value='Tenant Group binding',
+impact_items=[
+('user-round-x', 'Stop New Membership', 'The retired group is no longer selectable for a new Tenant Membership.') ,
+('history', 'Retain History', 'Existing revoked Membership, Access Grant, correlation, and audit evidence remains queryable.'),
+('external-link', 'Leave IdP Untouched', 'KAORI does not delete or modify the authoritative external Identity Group.')
+],
+warning='Active Membership or incomplete Access Grant cleanup blocks Retire. Revoke and reconcile access first.'
+) }}

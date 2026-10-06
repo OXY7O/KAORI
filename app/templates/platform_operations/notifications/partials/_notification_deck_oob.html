@@ -1,0 +1,27 @@
+{% set center = activity_center|default({}) %}
+{% set active_count = center.get('active_count', 0) %}
+{% set unread_count = center.get('unread_count', 0) %}
+{% set inbox_unread_count = center.get('inbox_unread_count', 0) %}
+<span id="work-inbox-badge"
+      hx-swap-oob="outerHTML"
+      class="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-md bg-kaori-primary px-1 text-xs font-semibold text-white ring-2 ring-surface-card {% if inbox_unread_count == 0 %}hidden{% endif %}">
+    {{ '9+' if inbox_unread_count > 9 else inbox_unread_count }}
+</span>
+<span id="notification-bell-badge"
+      hx-swap-oob="outerHTML"
+      class="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-md bg-status-critical px-1 text-xs font-semibold text-white ring-2 ring-surface-card {% if unread_count == 0 %}hidden{% endif %}">
+    {{ '9+' if unread_count > 9 else unread_count }}
+</span>
+<span id="notification-running-indicator"
+      hx-swap-oob="outerHTML"
+      class="absolute -bottom-0.5 -left-0.5 h-2.5 w-2.5 rounded-full border-2 border-surface-card bg-kaori-primary {% if active_count == 0 %}hidden{% endif %}"
+      aria-hidden="true"></span>
+<span id="notification-deck-active-count"
+      hx-swap-oob="outerHTML"
+      class="inline-flex min-h-5 min-w-5 items-center justify-center rounded-md bg-kaori-soft px-1.5 text-xs text-kaori-primary">{{ active_count }}</span>
+<span id="notification-deck-inbox-count"
+      hx-swap-oob="outerHTML"
+      class="inline-flex min-h-5 min-w-5 items-center justify-center rounded-md bg-surface-card px-1.5 text-xs text-kaori-primary">{{ inbox_unread_count }}</span>
+<span id="notification-deck-unread-count"
+      hx-swap-oob="outerHTML"
+      class="inline-flex min-h-5 min-w-5 items-center justify-center rounded-md bg-surface-card px-1.5 text-xs">{{ unread_count }}</span>

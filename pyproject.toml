@@ -1,0 +1,33 @@
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "I",
+    "UP",
+]
+ignore = [
+    "E501",
+]
+
+[tool.djlint]
+profile = "jinja"
+extension = "html"
+indent = 4
+max_line_length = 120
+format_css = false
+format_js = false
+ignore = "H006,H029,H030,H031"
+[tool.ruff.lint.per-file-ignores]
+# Historical Alembic revisions are immutable operational history. Keep
+# correctness checks enabled, but do not force import or annotation
+# modernization across old migrations.
+"migrations/versions/*.py" = ["I001", "UP007", "UP035"]
+

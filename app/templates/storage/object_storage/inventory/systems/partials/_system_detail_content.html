@@ -1,0 +1,64 @@
+{% import "components/table_label.html" as table_label %}
+{% import "components/details/_detail_content.html" as detail %}
+{% import "components/operational_callout.html" as operational_callout %}
+<div data-kaori-detail-variant="full-workspace-modal"
+     data-kaori-detail-domain="object-storage"
+     data-kaori-detail-density="unified-resource-sheet"
+     data-kaori-inventory-detail="v10"
+     data-kaori-inventory-detail-layout="unified-resource-sheet"
+     class="{{ detail.expanded_workspace_outer_classes() }}">
+    <div class="{{ detail.expanded_workspace_shell_classes() }}">
+        {% set detail_description = "Provider identity, connection, readiness, and committed inventory evidence." %}
+        {% call detail.workspace_header(detail_description, 'server') %}
+            {% call detail.header_identity_row() %}
+                {{ detail.inventory_title(system.name) }}
+                {{ table_label.metadata_label(system.provider_label, 'database') }}
+                {{ table_label.metadata_label(system.environment|environment_name(empty='Not Specified') , 'building-2') }}
+                {{ table_label.status_indicator_label(system.status_label, system.status_tone, size='detail') }}
+            {% endcall %}
+        {% endcall %}
+        {{ detail.inspector_summary_strip([
+                {'label': 'Provider', 'value': system.provider_label, 'supporting': 'Managed provider', 'icon': 'database-zap', 'tone': 'brand'},
+                {'label': 'Release', 'value': system.release_label, 'supporting': 'Detected or declared release', 'icon': 'package', 'tone': 'brand'},
+                {'label': 'Inventory Assets', 'value': system.bucket_count, 'supporting': 'Buckets & Containers', 'icon': 'boxes', 'tone': 'brand'},
+                {'label': 'Snapshot', 'value': system.sync_status_label, 'supporting': 'Committed inventory state', 'icon': 'database-backup', 'tone': system.sync_status_tone}
+                ]) }}
+        <div class="min-w-0 space-y-4 p-4 sm:p-5 lg:p-6">
+            {% call detail.resource_sheet() %}
+                {% call detail.inventory_section('System Identity', 'badge-info', system.status_label, 'status', system.status_tone, description='Registered storage system identity, environment, provider release, and compatibility profile.') %}
+                    <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
+                        {{ detail.inventory_technical_row('System ID', system.id, nowrap=true, class_name='lg:col-span-2', copyable=true) }}
+                        {{ detail.inventory_row('Registered System', system.name, nowrap=true, class_name='lg:col-span-2') }}
+                        {{ detail.inventory_row('Environment', system.environment|environment_name(empty='Not Specified') ) }}
+                        {{ detail.inventory_row('Provider', system.provider_label) }}
+                        {{ detail.inventory_row('Release', system.release_label, nowrap=true) }}
+                        {{ detail.inventory_row('Compatibility Profile', system.compatibility_profile_label, nowrap=true) }}
+                    </dl>
+                {% endcall %}
+                {% call detail.inventory_section('Provider Connection', 'plug-zap', description='Endpoint, region, addressing model, and validation timestamps for the registered provider connection.') %}
+                    <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
+                        {{ detail.inventory_technical_row('Endpoint', system.endpoint, nowrap=true, class_name='lg:col-span-2') }}
+                        {{ detail.inventory_row('Region', system.region) }}
+                        {{ detail.inventory_row('Addressing Style', system.addressing_style) }}
+                        {{ detail.inventory_row('Last Validated', system.last_validated_at|user_datetime if system.last_validated_at else 'Not Observed', nowrap=true) }}
+                        {{ detail.inventory_row('Last Checked', system.last_checked_at|user_datetime if system.last_checked_at else 'Not Observed', nowrap=true) }}
+                    </dl>
+                {% endcall %}
+                {% call detail.inventory_section('Inventory Snapshot', 'database-backup', system.sync_status_label, 'status', system.sync_status_tone, description='Committed Object Storage inventory source, freshness window, collection time, and asset coverage.') %}
+                    <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
+                        {{ detail.inventory_row('Snapshot Source', system.snapshot_source) }}
+                        {{ detail.inventory_row('Freshness Window', system.freshness_window_hours ~ ' Hours') }}
+                        {{ detail.inventory_row('Last Collected', system.last_inventory_at|user_datetime if system.last_inventory_at else 'Not Collected', nowrap=true, class_name='lg:col-span-2') }}
+                        {{ detail.inventory_status_row('Snapshot State', system.sync_status_label, system.sync_status_tone) }}
+                        {{ detail.inventory_row('Committed Assets', system.bucket_count ~ ' Buckets & Containers') }}
+                    </dl>
+                    {{ detail.inventory_note('Inventory values come from the latest committed Object Storage Inventory Sync snapshot.', 'database') }}
+                {% endcall %}
+            {% endcall %}
+            <div class="grid min-w-0 gap-4 xl:grid-cols-12">
+                {{ operational_callout.render('Authority Boundary', 'Committed Object Storage Inventory; provider configuration and live health remain integration-owned.', icon='database', tone='info', extra_classes='xl:col-span-5', action_href=url_for('integrations.storage') , action_label='Open Storage Integrations', action_icon='arrow-up-right') }}
+                {{ operational_callout.render(system.guidance.title, system.guidance.description, icon=system.guidance.icon, tone=system.guidance.tone, variant='semantic', extra_classes='xl:col-span-7', action_href=url_for('jobs.configuration', job_key='object_storage.inventory.sync') , action_label='Open Inventory Job', action_icon='arrow-up-right') }}
+            </div>
+        </div>
+    </div>
+</div>

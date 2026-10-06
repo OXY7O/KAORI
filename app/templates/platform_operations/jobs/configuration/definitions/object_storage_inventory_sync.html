@@ -1,0 +1,123 @@
+{% import "components/action_button.html" as action_button %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/operational_section_card.html" as operational_section %}
+{% set definition = selected_job.definition %}
+{% set policy = selected_job.policy %}
+{% set can_configure = current_user.has_permission(definition.configure_permission) %}
+{% set overview_metrics = [
+    ('calendar-clock', 'Automatic Policy', selected_job.interval_label, 'Saved scheduler cadence'),
+    ('database-zap', 'Inventory Readiness', selected_job.eligible_system_count ~ ' of ' ~ selected_job.registered_system_count, 'Ready managed systems'),
+    ('clock-3', 'Next Automatic Run', policy.next_run_at|user_datetime if policy.next_run_at else 'Not Scheduled', 'Next policy dispatch'),
+    ('history', 'Latest Execution', selected_job.latest_job.status_label if selected_job.latest_job else 'No History', selected_job.latest_job.queued_at if selected_job.latest_job else 'No execution recorded')
+] %}
+{% set overview_notice = (selected_job.blocked_system_count ~ ' storage system(s) will be skipped until the provider is enabled and Full Validation is Ready.') if selected_job.blocked_system_count else 'Successful runs atomically commit one bucket snapshot per eligible managed system.' %}
+<div class="space-y-5">
+    {% include "platform_operations/jobs/configuration/_job_overview.html" %}
+    <section class="{{ operational_section.shell_classes() }}">
+        <header class="border-b border-kaori-primary/15 bg-kaori-soft px-5 py-4 sm:px-6">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
+                        <i data-lucide="settings-2" class="h-4 w-4"></i>
+                    </span>
+                    <div>
+                        <p class="text-xs font-semibold text-kaori-primary">Policy &amp; Configuration</p>
+                        <h3 class="mt-1 text-base font-semibold text-content-primary">Object Storage Inventory Sync Policy</h3>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Control automatic object-storage inventory refresh and its scheduler cadence.</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-semibold text-content-muted">Schedule Status</span>
+                    {{ table_label.status_indicator_label('Enabled' if policy.enabled else 'Disabled', 'normal' if policy.enabled else 'unknown') }}
+                </div>
+            </div>
+        </header>
+        <form method="post"
+              action="{{ url_for('jobs.update_policy', job_key=definition.key) }}"
+              hx-post="{{ url_for('jobs.update_policy', job_key=definition.key) }}"
+              hx-target="#job-configuration-workspace"
+              hx-swap="outerHTML">
+            {{ policy_form.hidden_tag() }}
+            <div class="space-y-5 p-5 sm:p-6">
+                <div class="grid gap-5 lg:grid-cols-12 lg:items-stretch">
+                    <label class="flex cursor-pointer items-center justify-between gap-5 rounded-xl border border-kaori-primary/20 bg-kaori-soft px-4 py-4 lg:col-span-7">
+                        <span class="flex min-w-0 items-start gap-3">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
+                                <i data-lucide="calendar-check" class="h-4 w-4"></i>
+                            </span>
+                            <span class="min-w-0">
+                                <span class="block text-sm font-semibold text-content-primary">Automatic Object Storage Inventory Sync</span>
+                                <span class="mt-1 block text-xs leading-5 text-content-muted">Dispatch the job automatically when the saved interval becomes due.</span>
+                            </span>
+                        </span>
+                        <span class="relative inline-flex h-6 w-11 shrink-0 items-center">
+                            {{ policy_form.enabled(class_="peer sr-only", disabled=not can_configure) }}
+                            <span class="absolute inset-0 rounded-full bg-surface-disabled transition peer-checked:bg-kaori-primary"></span>
+                            <span class="absolute left-1 h-4 w-4 rounded-full bg-white shadow-sm transition peer-checked:translate-x-5"></span>
+                        </span>
+                    </label>
+                    <label class="rounded-xl border border-outline-default bg-surface-hover px-4 py-4 lg:col-span-5">
+                        <span class="flex items-center gap-2 text-sm font-semibold text-content-primary">
+                            <i data-lucide="timer" class="h-4 w-4 text-kaori-primary"></i>
+                            Execution Interval
+                        </span>
+                        <span class="mt-1 block text-xs leading-5 text-content-muted">Allowed range: {{ definition.minimum_interval_minutes }}–{{ definition.maximum_interval_minutes }} minutes.</span>
+                        <div class="relative mt-3">
+                            {{ policy_form.interval_minutes(class_="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 pr-20 text-sm font-semibold text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20 disabled:cursor-not-allowed disabled:bg-surface-disabled",
+                                                        min=definition.minimum_interval_minutes,
+                                                        max=definition.maximum_interval_minutes,
+                                                        disabled=not can_configure) }}
+                            <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs font-medium text-content-muted">Minutes</span>
+                        </div>
+                        {% for error in policy_form.interval_minutes.errors %}
+                            <p class="mt-2 text-xs font-medium text-status-critical-text">{{ error }}</p>
+                        {% endfor %}
+                        {% if policy_error %}<p class="mt-2 text-xs font-medium text-status-critical-text">{{ policy_error }}</p>{% endif %}
+                    </label>
+                </div>
+                <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                    <div class="flex items-center justify-between border-b border-outline-subtle px-4 py-3">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="calendar-range" class="h-4 w-4 text-kaori-primary"></i>
+                            <h4 class="text-sm font-semibold text-content-primary">Policy Timeline</h4>
+                        </div>
+                        <span class="text-xs text-content-muted">Scheduler metadata</span>
+                    </div>
+                    <dl class="grid divide-y divide-outline-subtle text-xs sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+                        <div class="px-4 py-3">
+                            <dt class="font-semibold text-content-muted">Last Dispatch</dt>
+                            <dd class="mt-1 font-semibold text-content-primary">
+                                {{ policy.last_dispatched_at|user_datetime if policy.last_dispatched_at else 'Never Dispatched' }}
+                            </dd>
+                        </div>
+                        <div class="px-4 py-3">
+                            <dt class="font-semibold text-content-muted">Next Scheduled</dt>
+                            <dd class="mt-1 font-semibold text-content-primary">
+                                {{ policy.next_run_at|user_datetime if policy.next_run_at else 'Not Scheduled' }}
+                            </dd>
+                        </div>
+                        <div class="px-4 py-3">
+                            <dt class="font-semibold text-content-muted">Policy Updated</dt>
+                            <dd class="mt-1 font-semibold text-content-primary">
+                                {{ policy.updated_at|user_datetime }}
+                            </dd>
+                        </div>
+                    </dl>
+                </div>
+            </div>
+            <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                <div class="flex items-start gap-2 text-xs leading-5 text-content-muted">
+                    <i data-lucide="info"
+                       class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"></i>
+                    <p>Saved changes are picked up by the scheduler without restarting Celery Beat.</p>
+                </div>
+                {% if can_configure %}
+                    <button type="submit" class="{{ action_button.classes('primary') }}"><i data-lucide="save" class="h-4 w-4"></i>Save Policy</button>
+                {% else %}
+                    {{ table_label.status_indicator_label('View Only', 'unknown') }}
+                {% endif %}
+            </footer>
+        </form>
+    </section>
+    {% include "platform_operations/jobs/configuration/_execution_activity.html" %}
+</div>

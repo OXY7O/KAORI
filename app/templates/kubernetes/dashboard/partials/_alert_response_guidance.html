@@ -1,0 +1,52 @@
+{% import "components/operational_alert_response.html" as alert_response %}
+{% import "components/operational_section_card.html" as operational_section_card %}
+{% set alert_response_steps = [('scan-search', 'Validate', 'Confirm the selected cluster, committed snapshot freshness, and alert-source evidence before acting on the signal.'), ('list-filter', 'Triage', 'Rank severity and blast radius, identify the affected namespace or workload, and establish an accountable owner.'), ('chart-no-axes-combined', 'Investigate', 'Correlate labels with committed metrics, recent changes, dependencies, and related signals to test the suspected cause.'), ('shield-check', 'Respond', 'Run the approved response for the confirmed scope within safety guardrails.'), ('circle-check-big', 'Verify', 'Confirm alert recovery, workload health, and relevant SLI or capacity signals remain stable after the response.'), ('clipboard-check', 'Record', 'Capture the decision, action, verification result, and follow-up evidence so the operational outcome remains auditable.')] %}
+{% set alert_total = dashboard.alerts_snapshot.critical + dashboard.alerts_snapshot.warning + dashboard.alerts_snapshot.info %}
+{% if not dashboard.selected_cluster_id %}
+    {% call operational_section_card.render(
+        'Alert Interpretation & Response',
+        'Meaning, triage order, and controlled response flow for active Kubernetes alerts.',
+        'book-open-check',
+        body_classes='p-5',
+        extra_classes='h-full'
+        ) %}
+        {% set blocked_state_icon = "server-off" %}
+        {% set blocked_state_label = "Cluster Required" %}
+        {% set blocked_state_title = "Select Cluster" %}
+        {% set blocked_state_description = "Select a cluster to review controlled alert interpretation and response guidance." %}
+        {% set blocked_state_tone = "warning" %}
+        {% include 'components/states/_blocked_state.html' %}
+    {% endcall %}
+{% elif dashboard.alerts_snapshot.source_status == 'Available' and alert_total > 0 %}
+    {{ alert_response.render('Meaning, triage order, and controlled response flow for active Kubernetes alerts.',
+        alert_response_steps,
+        'Controlled Alert Response Flow',
+        'Potential active impact. Start incident triage and establish ownership.',
+        'Degradation or risk is developing. Investigate before escalation.',
+        'Operational context or low-risk signal. Validate relevance and recurrence.') }}
+{% else %}
+    {% call operational_section_card.render(
+        'Alert Interpretation & Response',
+        'Meaning, triage order, and controlled response flow for active Kubernetes alerts.',
+        'book-open-check',
+        body_classes='p-5',
+        extra_classes='h-full'
+        ) %}
+        {% if dashboard.alerts_snapshot.source_status == 'Available' %}
+            {% set empty_state_icon = "circle-check" %}
+            {% set empty_state_label = "No Active Signals" %}
+            {% set empty_state_tone = "normal" %}
+            {% set empty_state_title = "Alert Response Not Required" %}
+            {% set empty_state_description = "No active Kubernetes AlertCase requires controlled response for the selected cluster." %}
+        {% else %}
+            {% set empty_state_icon = "wifi-off" %}
+            {% set empty_state_label = "Source Unavailable" %}
+            {% set empty_state_tone = "warning" %}
+            {% set empty_state_title = "Alert Response Evidence Unavailable" %}
+            {% set empty_state_description = dashboard.alerts_snapshot.message %}
+        {% endif %}
+        {% set empty_state_variant = "panel" %}
+        {% set empty_state_min_height = "min-h-[220px]" %}
+        {% include 'components/states/_empty_state.html' %}
+    {% endcall %}
+{% endif %}

@@ -1,0 +1,52 @@
+{% import "components/loading_bar.html" as loading_bar %}
+{% set auth_source = session.get('auth_source') or current_user.auth_source|default('database', true) %}
+{% set user_role = current_user.role_display_name %}
+{% set last_auth_source = current_user.last_auth_source|default(auth_source, true) %}
+{% set last_auth_label = last_auth_source|replace('_', ' ')|title %}
+<div id="account-authentication-page" class="space-y-6">
+    {% include "settings/account/partials/_hero.html" %}
+    <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+        {% include "settings/account/partials/_tabs.html" %}
+        <div class="px-5 sm:px-6">
+            {{ loading_bar.render('account-settings-loading', label='Updating Account & Authentication') }}
+        </div>
+        {% if active_tab == 'profile' %}
+            <div class="p-5 xl:p-6" data-account-profile-full-width="true">
+                {% include "settings/account/partials/_profile_cards.html" %}
+            </div>
+        {% elif active_tab == 'activity' %}
+            <div class="p-5 xl:p-6" data-account-activity-full-width="true">
+                {% include "settings/account/partials/_recent_login_activity.html" %}
+            </div>
+        {% else %}
+            <div class="grid gap-6 p-5 xl:grid-cols-12 xl:items-start xl:p-6"
+                 data-credential-workspace-layout="natural-columns">
+                <main class="min-w-0 xl:col-span-7">
+                    {% include "settings/account/partials/_change_password.html" %}
+                </main>
+                <aside class="min-w-0 xl:col-span-5">
+                    {% include "settings/account/partials/_credential_information.html" %}
+                </aside>
+            </div>
+        {% endif %}
+    </section>
+</div>
+{% if password_toast %}
+    {% with
+        status=password_toast.status,
+        title=password_toast.title,
+        message=password_toast.message,
+        detail=password_toast.detail,
+        view_url=password_toast.view_url,
+        action_label=password_toast.action_label,
+        action_icon=password_toast.action_icon,
+        completed_label=password_toast.completed_label,
+        activity_audit_saved=password_toast.activity_audit_saved,
+        activity_audit_expected=password_toast.activity_audit_expected|default(password_toast.activity_audit_saved),
+        notification_deck_visible=password_toast.notification_deck_visible|default(false),
+        delivery=password_toast.delivery|default('toast'),
+        toast_oob=true
+        %}
+        {% include "components/operational_toast.html" %}
+    {% endwith %}
+{% endif %}

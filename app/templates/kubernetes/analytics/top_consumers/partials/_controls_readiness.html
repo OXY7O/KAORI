@@ -1,0 +1,63 @@
+{% set payload = consumer_payload|default({}, true) %}
+{% set pagination = payload.pagination|default({}, true) %}
+{% import "kubernetes/analytics/components/_analysis_workspace.html" as analytics_workspace %}
+<form id="top-consumers-filter-form"
+      method="get"
+      hx-get="{{ url_for('analytics.top_consumers') }}"
+      hx-trigger="change delay:120ms"
+      hx-target="#top-consumers-page"
+      hx-select="#top-consumers-page"
+      hx-swap="outerHTML"
+      hx-push-url="true"
+      hx-indicator="#top-consumers-refresh-indicator"
+      hx-sync="#top-consumers-page:replace">
+    {% call analytics_workspace.controls_readiness(
+        'Consumer Controls & Data Readiness',
+        'Cluster scope uses the committed cluster snapshot. Namespace scope uses a namespace-specific committed snapshot and may require a worker refresh before evidence is available.',
+        'sliders-horizontal',
+        'top-consumers-refresh-indicator',
+        metrics_source_status,
+        analytics_materialization,
+        eyebrow='Top Consumers'
+        ) %}
+        <div class="grid gap-4 sm:grid-cols-2">
+            <label for="top-consumers-cluster-filter" class="block min-w-0">
+                <span class="{{ analytics_workspace.control_label_classes() }}">Cluster</span>
+                <select id="top-consumers-cluster-filter"
+                        name="cluster_id"
+                        data-kaori-reset-fields="namespace=,page=1"
+                        class="{{ analytics_workspace.control_select_classes() }}">
+                    {% for item in clusters %}
+                        <option value="{{ item.id }}"
+                                {% if cluster and cluster.id == item.id %}selected{% endif %}>{{ item.name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label for="top-consumers-namespace-filter" class="block min-w-0">
+                <span class="{{ analytics_workspace.control_label_classes() }}">Namespace Snapshot</span>
+                <select id="top-consumers-namespace-filter"
+                        name="namespace"
+                        data-kaori-reset-fields="page=1"
+                        class="{{ analytics_workspace.control_select_classes() }}">
+                    <option value="">Cluster Snapshot</option>
+                    {% for namespace in namespace_options %}
+                        <option value="{{ namespace }}"
+                                {% if selected_namespace == namespace %}selected{% endif %}>{{ namespace }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+        </div>
+        <input type="hidden"
+               name="tab"
+               value="{{ initial_tab|default('rankings') }}">
+        <input type="hidden" name="resource" value="{{ selected_resource }}">
+        <input type="hidden" name="search" value="{{ selected_search }}">
+        <input type="hidden" name="priority" value="{{ selected_priority }}">
+        <input type="hidden" name="sort" value="{{ selected_sort }}">
+        <input type="hidden" name="focus" value="{{ selected_focus }}">
+        <input type="hidden" name="page" value="1">
+        <input type="hidden"
+               name="per_page"
+               value="{{ pagination.per_page|default(5) }}">
+    {% endcall %}
+</form>

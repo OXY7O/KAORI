@@ -1,0 +1,7 @@
+{% extends "layouts/app.html" %}
+{% block title %}Pod Inventory{% endblock title %}
+{% block dashboard_content %}
+    {% import "components/resource_detail_modal.html" as resource_detail_modal %}
+    {% include "kubernetes/inventory/pods/partials/_page_workspace.html" %}
+    {{ resource_detail_modal.inventory_host('Pod', url_for('inventory.pod_details', pod_id=0) ) }}
+{% endblock dashboard_content %}

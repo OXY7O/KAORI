@@ -1,0 +1,71 @@
+{% import "components/pagination.html" as pagination_ui %}
+{% macro render(payload, endpoint_name, query_params={}, target='', indicator='', resource_label='', per_page_options=none) -%}
+    {% set pagination = payload.pagination %}
+    {% if pagination %}
+        {% set available_sizes = per_page_options if per_page_options else (payload.filter_options.per_page if payload.filter_options is defined and payload.filter_options.per_page is defined else (payload.per_page_options if payload.per_page_options is defined else (pagination.allowed_per_page if pagination.allowed_per_page is defined else [5, 10, 25, 50]))) %}
+        {% set item_label = resource_label if resource_label else (payload.resource_label if payload.resource_label is defined else ('Recommendation' if pagination.total_items == 1 else 'Recommendations')) %}
+        <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-3.5 text-xs text-content-muted sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex flex-wrap items-center gap-3">
+                <p>
+                    Showing <span class="font-semibold text-content-primary">{{ pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ pagination.end_item }}</span>
+                    of <span class="font-semibold text-content-primary">{{ pagination.total_items }}</span>
+                    {{ item_label }}
+                </p>
+                <form method="get"
+                      action="{{ url_for(endpoint_name) }}"
+                      {% if target %}hx-get="{{ url_for(endpoint_name) }}" hx-target="{{ target }}" hx-swap="innerHTML show:none focus-scroll:false" hx-sync="{{ target }}:replace" hx-push-url="true"{% if indicator %} hx-indicator="{{ indicator }}"{% endif %}
+                      {% endif %}
+                      class="flex items-center gap-2">
+                    {% for key, value in query_params.items() %}
+                        {% if key not in ['per_page', 'page'] and value not in [None, ''] %}
+                            <input type="hidden" name="{{ key }}" value="{{ value }}">
+                        {% endif %}
+                    {% endfor %}
+                    <input type="hidden" name="page" value="1">
+                    <label class="text-xs font-semibold text-content-secondary"
+                           for="{{ endpoint_name|replace('.', '-') }}-rows">Rows</label>
+                    <select id="{{ endpoint_name|replace('.', '-') }}-rows"
+                            name="per_page"
+                            aria-label="Rows per page"
+                            data-kaori-auto-submit
+                            class="{{ pagination_ui.page_size_classes() }}">
+                        {% for size in available_sizes %}
+                            <option value="{{ size }}"
+                                    {% if size == pagination.per_page %}selected{% endif %}>{{ size }}</option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
+            <div class="flex items-center justify-end gap-2"
+                 hx-push-url="true"
+                 {% if target %}hx-sync="{{ target }}:replace"{% endif %}>
+                {% set previous_params = query_params.copy() %}{% set _ = previous_params.update({'page': pagination.prev_page, 'per_page': pagination.per_page}) %}
+                {% if pagination.has_prev %}
+                    <a href="{{ url_for(endpoint_name, **previous_params) }}"
+                       {% if target %} hx-get="{{ url_for(endpoint_name, **previous_params) }}" hx-target="{{ target }}" hx-swap="innerHTML show:none focus-scroll:false"{% if indicator %} hx-indicator="{{ indicator }}"{% endif %}
+                       {% endif %}
+                       class="{{ pagination_ui.navigation_classes(false) }}"><i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>Previous</a>
+                {% else %}
+                    <span class="{{ pagination_ui.navigation_classes(true) }}"><i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>Previous</span>
+                {% endif %}
+                {{ pagination_ui.numeric_pages(pagination.page,
+                                pagination.total_pages,
+                                endpoint=endpoint_name,
+                                href_endpoint=endpoint_name,
+                                query_params=query_params,
+                                hx_target=target if target else none,
+                                hx_indicator=indicator if indicator else none,
+                                hx_swap='innerHTML show:none focus-scroll:false') }}
+                {% set next_params = query_params.copy() %}{% set _ = next_params.update({'page': pagination.next_page, 'per_page': pagination.per_page}) %}
+                {% if pagination.has_next %}
+                    <a href="{{ url_for(endpoint_name, **next_params) }}"
+                       {% if target %} hx-get="{{ url_for(endpoint_name, **next_params) }}" hx-target="{{ target }}" hx-swap="innerHTML show:none focus-scroll:false"{% if indicator %} hx-indicator="{{ indicator }}"{% endif %}
+                       {% endif %}
+                       class="{{ pagination_ui.navigation_classes(false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i></a>
+                {% else %}
+                    <span class="{{ pagination_ui.navigation_classes(true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i></span>
+                {% endif %}
+            </div>
+        </footer>
+    {% endif %}
+{%- endmacro %}

@@ -1,0 +1,11 @@
+{% if selected_job.active_job %}
+    <div id="job-configuration-live-poller"
+         class="hidden"
+         aria-hidden="true"
+         hx-get="{{ url_for('jobs.configuration_status', job_key=selected_job.definition.key) }}"
+         hx-trigger="every 10s"
+         hx-target="this"
+         hx-on::before-request="if (document.hidden) event.preventDefault()"
+         hx-swap="outerHTML swap:0ms settle:0ms"
+         hx-sync="this:replace"></div>
+{% endif %}

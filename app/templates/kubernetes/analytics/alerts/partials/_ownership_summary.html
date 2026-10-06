@@ -1,0 +1,108 @@
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% import "components/progress_bar.html" as progress_bar %}
+{% import "components/table_label.html" as table_label %}
+{% set ownership_tone = table_label.semantic_tone(ownership_summary.level|default('unknown'))|trim %}
+<section class="{{ analysis_surface.snapshot_shell_classes() }}">
+    <header class="{{ analysis_surface.snapshot_header_classes() }}">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="book-open-check" class="h-4 w-4"></i></span>
+            <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                    <h3 class="text-lg font-semibold text-content-primary">Ownership &amp; Runbook Coverage</h3>
+                    {{ table_label.status_label(ownership_summary.label, ownership_tone, size='compact') }}
+                </div>
+                <p class="mt-1 text-sm leading-6 text-content-muted">{{ ownership_summary.description }}</p>
+            </div>
+        </div>
+        <div class="min-w-[10rem] rounded-lg border border-outline-subtle bg-surface-card px-3 py-2">
+            <div class="flex items-center justify-between gap-3 text-xs"><span class="font-semibold text-content-secondary">Coverage Score</span><span class="font-semibold text-content-primary">{{ ownership_summary.score }}/100</span></div>
+            {{ progress_bar.semantic_bar(ownership_summary.score, ownership_tone, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', label='Ownership and runbook coverage status') }}
+        </div>
+    </header>
+    {% set coverage_metrics = [
+            ('Owners', ownership_summary.owner_count, ownership_summary.missing_owner_count ~ ' Missing'),
+            ('Runbooks', ownership_summary.runbook_count, ownership_summary.missing_runbook_count ~ ' Missing'),
+            ('Contacts', ownership_summary.contact_count, ownership_summary.missing_contact_count ~ ' Missing'),
+            ('Alert Coverage', ownership_summary.alert_count, ownership_summary.source|title ~ ' Source')
+        ] %}
+    <div class="grid gap-px border-b border-outline-subtle bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+        {% for label, value, helper in coverage_metrics %}
+            <article class="bg-surface-card px-4 py-4">
+                <p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p>
+                <p class="mt-1 text-xl font-semibold text-content-primary">{{ value }}</p>
+                <p class="mt-1 text-xs text-content-muted">{{ helper }}</p>
+            </article>
+        {% endfor %}
+    </div>
+    <div class="grid lg:grid-cols-3">
+        <section class="p-5 sm:p-6">
+            <div class="flex items-center justify-between gap-3">
+                <h4 class="text-sm font-semibold text-content-primary">Owner Distribution</h4>
+                {{ table_label.metadata_label(ownership_summary.owner_groups|length ~ ' Groups', size='compact') }}
+            </div>
+            <div class="mt-4 space-y-3">
+                {% for owner in ownership_summary.owner_groups %}
+                    <div>
+                        <div class="flex items-center justify-between gap-3 text-xs"><span class="min-w-0 break-words font-medium text-content-secondary">{{ owner.label }}</span><span class="font-semibold text-content-primary">{{ owner.count }}</span></div>
+                        {{ progress_bar.bar(owner.percent, track_classes='mt-2 h-1.5 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label=owner.label ~ ' alert coverage') }}
+                    </div>
+                {% else %}
+                    <p class="text-sm text-content-muted">No owner metadata detected.</p>
+                {% endfor %}
+            </div>
+        </section>
+        <section class="border-t border-outline-subtle p-5 sm:p-6 lg:border-l lg:border-t-0">
+            <div class="flex items-center justify-between gap-3">
+                <h4 class="text-sm font-semibold text-content-primary">Runbook Links</h4>
+                {{ table_label.metadata_label(ownership_summary.runbook_items|length ~ ' Available', size='compact') }}
+            </div>
+            <div class="mt-3 divide-y divide-outline-subtle">
+                {% for item in ownership_summary.runbook_items %}
+                    <a href="{{ item.url }}"
+                       target="_blank"
+                       rel="noopener noreferrer"
+                       class="flex items-center justify-between gap-3 py-3 text-sm"><span class="min-w-0"><span class="block break-words font-semibold text-content-primary">{{ item.name }}</span><span class="mt-1 block break-words text-xs text-content-muted">{{ item.namespace }} · {{ item.owner }}</span></span><i data-lucide="external-link"
+   class="h-4 w-4 shrink-0 text-kaori-primary"></i></a>
+                {% else %}
+                    <p class="text-sm text-content-muted">No runbook URL detected in active alert annotations.</p>
+                {% endfor %}
+            </div>
+        </section>
+        <section class="border-t border-outline-subtle p-5 sm:p-6 lg:border-l lg:border-t-0">
+            <div class="flex items-center justify-between gap-3">
+                <h4 class="text-sm font-semibold text-content-primary">Metadata Gaps</h4>
+                {{ table_label.metadata_label(ownership_summary.missing_metadata_items|length ~ ' Records', size='compact') }}
+            </div>
+            <div class="mt-3 divide-y divide-outline-subtle">
+                {% for item in ownership_summary.missing_metadata_items %}
+                    <div class="flex items-start justify-between gap-3 py-3">
+                        <div class="min-w-0">
+                            <p class="break-words text-sm font-semibold text-content-primary">{{ item.name }}</p>
+                            <p class="mt-1 break-words text-xs text-content-muted">{{ item.namespace }} · {{ item.severity|title }}</p>
+                        </div>
+                        {{ table_label.status_label(item.missing|join(', ') , 'warning', size='compact') }}
+                    </div>
+                {% else %}
+                    <p class="text-sm text-content-muted">All active alerts include owner, runbook, and contact metadata.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+    {% call analysis_surface.boundary_card(
+        'Triage Ownership Boundary',
+        'Owner, contact, and runbook metadata determine whether an active signal can be assigned and resolved without manual discovery.',
+        icon='users-round',
+        label='Triage Boundary'
+        ) %}
+        <div class="flex flex-wrap gap-2 lg:justify-end">
+            {{ table_label.metadata_label(ownership_summary.owner_count ~ ' Owners', size='compact') }}
+            {{ table_label.metadata_label(ownership_summary.contact_count ~ ' Contacts', size='compact') }}
+            {{ table_label.metadata_label(ownership_summary.runbook_count ~ ' Runbooks', size='compact') }}
+            {% if ownership_summary.missing_metadata_items %}
+                {{ table_label.status_label(ownership_summary.missing_metadata_items|length ~ ' Metadata Gaps', 'warning', size='compact') }}
+            {% else %}
+                {{ table_label.status_label('Metadata Complete', 'normal', size='compact') }}
+            {% endif %}
+        </div>
+    {% endcall %}
+</section>

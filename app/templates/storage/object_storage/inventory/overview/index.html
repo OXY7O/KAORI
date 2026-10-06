@@ -1,0 +1,14 @@
+{% extends "layouts/app.html" %}
+{% block title %}Object Storage Overview{% endblock title %}
+{% block dashboard_content %}
+    <div class="space-y-6">
+        {% include "storage/object_storage/inventory/overview/partials/_hero.html" %}
+        {% if overview.setup.is_blocked %}
+            {% include "storage/object_storage/inventory/components/_onboarding_banner.html" %}
+        {% else %}
+            {% include "storage/object_storage/inventory/overview/partials/_snapshot_boundary.html" %}
+            {% include "storage/object_storage/inventory/overview/partials/_fleet_posture.html" %}
+            {% include "storage/object_storage/inventory/overview/partials/_summary_cards.html" %}
+        {% endif %}
+    </div>
+{% endblock dashboard_content %}

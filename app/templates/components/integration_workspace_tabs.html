@@ -1,0 +1,36 @@
+{#
+  KAORI Integration Provider Workspace Tabs.
+
+  Semantic adapter for provider landing pages. It owns the two provider views,
+  URL-backed state, and panel composition. Tab Style 2 geometry, ARIA tab
+  semantics, badges, focus treatment, and keyboard bindings are delegated to
+  components/framed_workspace_tabs.html.
+#}
+{% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
+{% import "components/operational_section_card.html" as operational_section_card %}
+{% macro render(provider_key, active_tab='coverage', coverage_count=0, registry_count=0) -%}
+    {% set workspace_prefix = provider_key ~ '-overview' %}
+    {% set workspace_label = provider_key|title ~ ' integration views' %}
+    {% set workspace_tabs = [
+            ('coverage', 'Integration Coverage', 'route', coverage_count),
+            ('registry', 'Connection Registry', 'database-zap', registry_count)
+        ] %}
+    <section x-data="integrationWorkspaceTabs(['coverage', 'registry'], '{{ active_tab }}')"
+             x-on:popstate.window="syncTab()"
+             class="{{ operational_section_card.shell_classes() }}"
+             aria-label="{{ provider_key|title }} integration workspace"
+             data-kaori-integration-workspace-tabs>
+        {{ framed_workspace_tabs.render(workspace_tabs, workspace_prefix, workspace_label) }}
+        <div class="p-4 sm:p-5 lg:p-6">
+            <div id="{{ workspace_prefix }}-panel-coverage"
+                 x-show="activeTab === 'coverage'"
+                 role="tabpanel"
+                 aria-labelledby="{{ workspace_prefix }}-tab-coverage">{{ caller("coverage") }}</div>
+            <div id="{{ workspace_prefix }}-panel-registry"
+                 x-show="activeTab === 'registry'"
+                 x-cloak
+                 role="tabpanel"
+                 aria-labelledby="{{ workspace_prefix }}-tab-registry">{{ caller("registry") }}</div>
+        </div>
+    </section>
+{%- endmacro %}

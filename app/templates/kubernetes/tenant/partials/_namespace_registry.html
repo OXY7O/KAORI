@@ -1,0 +1,172 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/table_registry.html" as registry_ui %}
+{% set registry_id = "tenant-namespace-registry" %}
+{% set loading_id = "tenant-namespace-registry-loading" %}
+{% set query_params = {
+    'view': 'provision',
+    'namespace_search': namespace_registry_filters.search,
+    'namespace_tenant_id': namespace_registry_filters.tenant_id,
+    'namespace_environment': namespace_registry_filters.environment,
+    'namespace_status': namespace_registry_filters.status
+} %}
+<section id="{{ registry_id }}"
+         class="{{ table_ui.block_classes() }}"
+         aria-label="Namespace Registry">
+    {% set header_actions %}
+        {% if namespace_registry_filters.search or namespace_registry_filters.tenant_id or namespace_registry_filters.environment or namespace_registry_filters.status %}
+            {{ registry_ui.clear_filters_link('tenant.namespace_provisioning',
+                        registry_id,
+                        loading_id,
+                        namespace_pagination.per_page,
+                        table_ui.action_classes() ,
+            query_params={'view': 'provision'}
+            ) }}
+        {% endif %}
+    {% endset %}
+    {{ table_ui.inventory_block_header('folder-tree',
+        'Namespace Registry',
+        'Committed Namespace ownership, effective Resource Profile snapshot, provider authority, and reconciliation state.',
+        loading_id,
+        'Refreshing Namespace Registry',
+        none,
+        none,
+        header_actions=header_actions) }}
+    <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+        {% call registry_ui.filter_form(
+            'tenant.namespace_provisioning',
+            registry_id,
+            loading_id,
+            namespace_pagination.per_page
+            ) %}
+            <input type="hidden" name="view" value="provision">
+            <div>
+                <label for="namespace-tenant-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Tenant</label>
+                <select id="namespace-tenant-filter"
+                        name="namespace_tenant_id"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Tenants</option>
+                    {% for tenant in namespace_registry_tenant_options %}
+                        <option value="{{ tenant.id }}"
+                                {% if namespace_registry_filters.tenant_id == tenant.id|string %}selected{% endif %}>{{ tenant.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="namespace-environment-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Environment</label>
+                <select id="namespace-environment-filter"
+                        name="namespace_environment"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Environments</option>
+                    {% for environment in namespace_environment_filter_options %}
+                        <option value="{{ environment }}"
+                                {% if namespace_registry_filters.environment == environment %}selected{% endif %}>{{ environment|title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="namespace-status-filter"
+                       class="{{ table_ui.filter_label_classes() }}">State</label>
+                <select id="namespace-status-filter"
+                        name="namespace_status"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All States</option>
+                    {% for status in namespace_status_filter_options %}
+                        <option value="{{ status }}"
+                                {% if namespace_registry_filters.status == status %}selected{% endif %}>{{ status|replace('_', ' ') |title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="namespace-search-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Search</label>
+                {{ table_ui.search_field('namespace_search', namespace_registry_filters.search, 'Namespace or Tenant', id='namespace-search-filter') }}
+            </div>
+        {% endcall %}
+    </div>
+    <div class="overflow-x-auto">
+        <table class="{{ table_ui.table_classes('min-w-[980px]') }}">
+            <caption class="sr-only">Committed Tenant Namespace registry.</caption>
+            <thead class="{{ table_ui.head_classes() }}">
+                <tr>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Namespace</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Tenant / Environment</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Resource Profile</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Provider</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">State</th>
+                </tr>
+            </thead>
+            <tbody class="{{ table_ui.body_classes() }}">
+                {% for item in namespaces %}
+                    {% set state_tone = 'normal' if item.provisioning_status == 'ready' else ('critical' if item.provisioning_status == 'failed' else 'warning') %}
+                    <tr class="{{ table_ui.row_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ table_ui.title_cell(item.namespace, item.ownership_status|replace('_', ' ') |title ~ ' ownership', 'folder-tree') }}
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <p class="text-sm font-semibold text-content-primary">{{ item.environment.tenant.name }}</p>
+                            <p class="mt-1 text-xs text-content-muted">{{ item.environment.environment|title }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {% set allocation_evidence = (item.provisioning_evidence_json or {}).get('allocation') or {} %}
+                            {% set allocation_control = (item.provisioning_evidence_json or {}).get('allocation_control_state') or allocation_evidence.get('control_state') %}
+                            {% set provider_mirrored = allocation_control == 'provider_mirrored_policy' %}
+                            {% set adopted_observed = item.ownership_status == 'adopted' and allocation_evidence.get('provenance') == 'adopted_observed' and not provider_mirrored %}
+                            {% if provider_mirrored %}
+                                <p class="text-sm font-semibold text-content-primary">{{ item.resource_profile.name if item.resource_profile else 'Imported Provider Policy' }}</p>
+                                <p class="mt-1 text-xs text-content-muted">Snapshot v{{ item.resource_profile_version or '—' }} · Capsule generated policy</p>
+                                <div class="mt-2">{{ table_label.special_label('Provider Mirrored', 'info', 'refresh-cw') }}</div>
+                            {% elif adopted_observed %}
+                                <p class="text-sm font-semibold text-content-primary">Imported Provider Baseline</p>
+                                <p class="mt-1 text-xs text-content-muted">
+                                    {{ (allocation_evidence.get("profile_lineage") or {}).get('label') or 'Observed provider allocation' }}
+                                </p>
+                                {% if allocation_control == 'control_unavailable' %}
+                                    <div class="mt-2">{{ table_label.special_label('Control Unavailable', 'warning', 'shield-alert') }}</div>
+                                {% else %}
+                                    <div class="mt-2">{{ table_label.special_label('Awaiting Managed Takeover', 'info', 'clock-3') }}</div>
+                                {% endif %}
+                            {% else %}
+                                <p class="text-sm font-semibold text-content-primary">{{ item.resource_profile.name if item.resource_profile else 'No profile' }}</p>
+                                <p class="mt-1 text-xs text-content-muted">Snapshot v{{ item.resource_profile_version or '—' }}</p>
+                                {% if allocation_control == 'kaori_managed' %}
+                                    <div class="mt-2">{{ table_label.special_label('KAORI Managed', 'normal', 'shield-check') }}</div>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <p class="text-sm font-semibold text-content-primary">{{ item.environment.tenant.provider_key|replace('_', ' ') |title }}</p>
+                            <p class="mt-1 text-xs text-content-muted">{{ item.environment.tenant.reconciliation_authority|replace('_', ' ') |title }} authority</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ table_label.status_label(item.provisioning_status|replace('_', ' ') |title, state_tone) }}
+                            <p class="mt-1 max-w-[280px] text-xs leading-5 text-content-muted">{{ item.provisioning_message or 'Awaiting reconciliation evidence.' }}</p>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="p-0">
+                            {% set empty_state_icon = "folder-tree" %}
+                            {% set empty_state_title = "No Namespaces Found" %}
+                            {% set empty_state_description = "Adjust filters or provision a governed Namespace." %}
+                            {% include 'components/states/_empty_state.html' %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if namespace_pagination.total_items > 0 %}
+        {{ registry_ui.footer('tenant.namespace_provisioning',
+                registry_id,
+                loading_id,
+                namespace_pagination,
+                query_params,
+                namespace_pagination.allowed_per_page,
+                resource_label='Namespaces',
+                rows_aria_label='Namespace rows per page',
+                control_name='tenant-namespace') }}
+    {% endif %}
+</section>

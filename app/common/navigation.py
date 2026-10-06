@@ -1,0 +1,322 @@
+"""Canonical navigation context for the KAORI topbar breadcrumb.
+
+The first breadcrumb item after KAORI must match the visible main-menu label in
+KAORI's sidebar. Child labels describe the selected submenu or workflow page.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Iterable, Mapping
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class BreadcrumbItem:
+    label: str
+    icon: str | None = None
+
+    def as_dict(self) -> dict[str, str | None]:
+        return {'label': self.label, 'icon': self.icon}
+
+
+_ENDPOINT_LABELS: dict[str, str] = {
+    # Inventory
+    'inventory.overview': 'Overview',
+    'inventory.topology': 'Topology',
+    'inventory.nodes': 'Nodes',
+    'inventory.namespaces': 'Namespaces',
+    'inventory.workloads': 'Workloads',
+    'inventory.pods': 'Pods',
+    'inventory.services': 'Services',
+    'inventory.ingresses': 'Ingresses',
+    'inventory.storage': 'Storage',
+    'inventory.configuration': 'Configuration',
+    # Object Storage Inventory
+    'object_storage_inventory.overview': 'Overview',
+    'object_storage_inventory.systems': 'Systems',
+    'object_storage_inventory.system_details': 'System Details',
+    'object_storage_inventory.buckets': 'Buckets',
+    'object_storage_inventory.bucket_details': 'Bucket Details',
+    # Artifact Registry
+    'artifact_registry.overview': 'Overview',
+    'artifact_registry.inventory': 'Inventory',
+    'artifact_registry.security': 'Security',
+    'artifact_registry.runtime': 'Runtime Usage',
+    'artifact_registry.governance': 'Governance',
+    'artifact_registry.analytics': 'Analytics',
+    # Analytics
+    'analytics.overview': 'Overview',
+    'analytics.utilization': 'Utilization',
+    'analytics.capacity': 'Capacity',
+    'analytics.storage': 'Storage',
+    'analytics.workload': 'Workloads',
+    'analytics.forecast': 'Forecast',
+    'analytics.top_consumers': 'Top Consumers',
+    'analytics.alerts': 'Alerts & Anomalies',
+    # Object Storage Analytics
+    'analytics.object_storage_overview': 'Overview',
+    'analytics.object_storage_capacity': 'Capacity & Usage',
+    'analytics.object_storage_performance': 'Performance',
+    'analytics.object_storage_forecast': 'Forecast',
+    'analytics.object_storage_top_consumers': 'Top Consumers',
+    'analytics.object_storage_alerts': 'Alerts & Anomalies',
+    # Intelligence
+    'intelligence.index': 'Overview',
+    'intelligence.recommendations': 'Recommendations',
+    'alert_intelligence.index': 'Alert Intelligence',
+    'intelligence.catalog': 'Catalog',
+    'automation_control.index': 'Automation Control',
+    # Reports
+    'reports.overview': 'Overview',
+    'reports.generate_report': 'Generate',
+    'reports.generated_reports': 'Generated',
+    'reports.report_templates': 'Templates',
+    'reports.schedules': 'Schedules',
+    'reports.storage': 'Storage',
+    # Kubernetes operations and governance
+    'kubernetes_operations.configmap_management': 'ConfigMaps',
+    'kubernetes_operations.secret_management': 'Secrets',
+    'governance.overview': 'Overview',
+    'governance.tls_certificates': 'TLS Certificates',
+    'tenant.index': 'Overview',
+    'tenant.tenants': 'Tenants',
+    'tenant.resource_profiles': 'Resource Profiles',
+    'tenant.namespace_provisioning': 'Namespace Provisioning',
+    'tenant.operations': 'Operations',
+    # Platform operations
+    'jobs.executions': 'Jobs',
+    'jobs.configuration': 'Job Configuration',
+    'platform_operations.overview.index': 'Overview',
+    'platform_operations.data_lifecycle.index': 'Data Lifecycle',
+    'platform_operations.kubernetes.index': 'Kubernetes Admin',
+    'platform_operations.kubernetes.secret_reveal.index': 'Secret Reveal',
+    # Settings
+    'settings.general': 'General',
+    'settings.account': 'Account',
+    # Access
+    'access.overview.index': 'Overview',
+    'users.index': 'Users',
+    'identity_providers.index': 'Identity Providers',
+    'identity_providers.directory_provisioning': 'Directory Provisioning',
+    'access.roles.index': 'Roles',
+    'access.permissions.index': 'Permissions',
+    'notifications.center': 'Notification Center',
+    'access.activity_audit.index': 'Activity Audit',
+}
+
+_WORKFLOW_LABELS: tuple[tuple[str, str], ...] = (
+    ('cluster.add_cluster', 'Add Cluster'),
+    ('cluster.edit_cluster', 'Edit Cluster'),
+    ('integrations.select_metrics_source_provider', 'Register Metrics Source'),
+    ('metrics.instance_detail', 'Connection Details'),
+    ('alertmanager.new_instance', 'Register Connection'),
+    ('alertmanager.instance_detail', 'Connection Details'),
+    ('minio.new_instance', 'Register Connection'),
+    ('minio.instance_detail', 'Connection Details'),
+    ('harbor.new_instance', 'Register Connection'),
+    ('harbor.instance_detail', 'Connection Details'),
+    ('users.create', 'Add User'),
+    ('users.edit', 'Edit User'),
+    ('users.reset_password', 'Reset Password'),
+    ('identity_providers.index', 'Identity Providers'),
+    ('identity_providers.create', 'Add Provider'),
+    ('identity_providers.edit', 'Edit Provider'),
+    ('identity_providers.directory_provisioning', 'External Identities'),
+    ('access.roles.create', 'Add Role'),
+    ('access.roles.clone', 'Clone Role'),
+    ('access.roles.detail', 'Role Details'),
+    ('access.roles.edit', 'Edit Role'),
+)
+
+
+def _items(*items: BreadcrumbItem) -> list[dict[str, str | None]]:
+    return [item.as_dict() for item in items]
+
+
+def _leaf(endpoint: str, fallback: str) -> str:
+    return _ENDPOINT_LABELS.get(endpoint, fallback)
+
+
+def _append_workflow(items: list[BreadcrumbItem], endpoint: str) -> list[BreadcrumbItem]:
+    workflow = next((label for candidate, label in _WORKFLOW_LABELS if candidate == endpoint), None)
+    if workflow and workflow != items[-1].label:
+        items.append(BreadcrumbItem(workflow))
+    return items
+
+
+def _deduplicate(items: Iterable[BreadcrumbItem]) -> list[BreadcrumbItem]:
+    result: list[BreadcrumbItem] = []
+    for item in items:
+        if not result or result[-1].label != item.label:
+            result.append(item)
+    return result
+
+
+def _analytics_items(endpoint: str) -> list[BreadcrumbItem]:
+    if endpoint.startswith('analytics.object_storage_'):
+        return [
+            BreadcrumbItem('Object Storage', 'database'),
+            BreadcrumbItem('Analytics', 'chart-no-axes-combined'),
+            BreadcrumbItem(_leaf(endpoint, 'Overview')),
+        ]
+    return [
+        BreadcrumbItem('Kubernetes', 'boxes'),
+        BreadcrumbItem('Analytics', 'chart-no-axes-combined'),
+        BreadcrumbItem(_leaf(endpoint, 'Overview')),
+    ]
+
+
+def _platform_kubernetes_items(endpoint: str) -> list[BreadcrumbItem]:
+    items = [
+        BreadcrumbItem('Operations Center', 'workflow'),
+        BreadcrumbItem('Kubernetes Admin'),
+    ]
+    if endpoint != 'platform_operations.kubernetes.index':
+        items.append(BreadcrumbItem(_leaf(endpoint, 'Secret Reveal')))
+    return items
+
+
+def _access_navigation_items(endpoint: str) -> list[BreadcrumbItem] | None:
+    if endpoint.startswith('access.overview.'):
+        return [BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('Overview')]
+    if endpoint in {
+        'identity_providers.index',
+        'identity_providers.create',
+        'identity_providers.edit',
+        'identity_providers.validate',
+    }:
+        return _append_workflow(
+            [BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('Identity Providers')],
+            endpoint,
+        )
+    if endpoint in {'identity_providers.directory_provisioning', 'identity_providers.provision_identity'}:
+        return [
+            BreadcrumbItem('Access', 'users-round'),
+            BreadcrumbItem('Identity Providers'),
+            BreadcrumbItem('Directory Provisioning'),
+        ]
+    if endpoint.startswith('users.'):
+        return _append_workflow([BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('Users')], endpoint)
+    if endpoint == 'notifications.center' or endpoint.startswith('notifications.'):
+        return [BreadcrumbItem('Notification Center', 'bell')]
+    if endpoint.startswith('access.activity_audit.'):
+        return [BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('Activity Audit')]
+    if endpoint.startswith('access.roles.'):
+        return _append_workflow([BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('Roles')], endpoint)
+    if endpoint.startswith('access.permissions.'):
+        return [BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('Permissions')]
+    if endpoint.startswith('settings.'):
+        return [BreadcrumbItem('Settings', 'settings-2'), BreadcrumbItem(_leaf(endpoint, 'General'))]
+    return None
+
+
+def build_navigation_breadcrumb(
+    endpoint: str | None,
+    path: str = '',
+    *,
+    integration_owner: Mapping[str, str] | None = None,
+) -> list[dict[str, str | None]]:
+    """Return breadcrumb items whose root matches the KAORI sidebar main menu."""
+
+    endpoint = endpoint or ''
+    access_items = _access_navigation_items(endpoint)
+
+    if endpoint == 'welcome.index':
+        items = [BreadcrumbItem('Welcome', 'sparkles')]
+    elif endpoint.startswith('kubernetes_dashboard.'):
+        items = [
+            BreadcrumbItem('Kubernetes', 'boxes'),
+            BreadcrumbItem('Overview'),
+        ]
+    elif endpoint.startswith('object_storage_dashboard.'):
+        items = [
+            BreadcrumbItem('Object Storage', 'database'),
+            BreadcrumbItem('Overview'),
+        ]
+    elif integration_owner is not None:
+        items = [
+            BreadcrumbItem('Integrations', 'plug'),
+            BreadcrumbItem(integration_owner['domain_label']),
+            BreadcrumbItem(integration_owner['provider_label']),
+        ]
+        items = _append_workflow(items, endpoint)
+    elif endpoint.startswith('artifact_registry.'):
+        items = [
+            BreadcrumbItem('Artifact Registry', 'package'),
+            BreadcrumbItem(_leaf(endpoint, 'Overview')),
+        ]
+    elif endpoint.startswith('object_storage_inventory.'):
+        items = [
+            BreadcrumbItem('Object Storage', 'database'),
+            BreadcrumbItem('Inventory'),
+            BreadcrumbItem(_leaf(endpoint, 'Overview')),
+        ]
+    elif endpoint.startswith('inventory.'):
+        items = [
+            BreadcrumbItem('Kubernetes', 'boxes'),
+            BreadcrumbItem('Inventory'),
+            BreadcrumbItem(_leaf(endpoint, 'Overview')),
+        ]
+    elif endpoint.startswith('kubernetes_operations.'):
+        fallback = 'Secrets' if 'secret' in endpoint or '/secrets' in path else 'ConfigMaps'
+        items = [
+            BreadcrumbItem('Kubernetes', 'boxes'),
+            BreadcrumbItem('Operations'),
+            BreadcrumbItem(_leaf(endpoint, fallback)),
+        ]
+    elif endpoint.startswith(('governance.', 'tenant.')):
+        domain_key = endpoint.split('.', 1)[0]
+        domain_label, domain_fallback = {
+            'governance': ('Governance', 'TLS Certificates'),
+            'tenant': ('Tenant', 'Overview'),
+        }[domain_key]
+        items = [
+            BreadcrumbItem('Kubernetes', 'boxes'),
+            BreadcrumbItem(domain_label),
+            BreadcrumbItem(_leaf(endpoint, domain_fallback)),
+        ]
+    elif endpoint.startswith('analytics.'):
+        items = _analytics_items(endpoint)
+    elif endpoint.startswith(('intelligence.', 'alert_intelligence.', 'automation_control.')):
+        items = [
+            BreadcrumbItem('Intelligence', 'brain-circuit'),
+            BreadcrumbItem(_leaf(endpoint, 'Overview')),
+        ]
+    elif endpoint.startswith('reports.'):
+        items = [BreadcrumbItem('Reports', 'file-text'), BreadcrumbItem(_leaf(endpoint, 'Overview'))]
+    elif endpoint.startswith('jobs.'):
+        items = [
+            BreadcrumbItem('Operations Center', 'workflow'),
+            BreadcrumbItem(_leaf(endpoint, 'Jobs')),
+        ]
+    elif endpoint.startswith('platform_operations.overview.'):
+        items = [
+            BreadcrumbItem('Operations Center', 'workflow'),
+            BreadcrumbItem('Overview'),
+        ]
+    elif endpoint.startswith('platform_operations.data_lifecycle.'):
+        items = [
+            BreadcrumbItem('Operations Center', 'workflow'),
+            BreadcrumbItem('Data Lifecycle'),
+        ]
+    elif endpoint.startswith('platform_operations.kubernetes.'):
+        items = _platform_kubernetes_items(endpoint)
+    elif endpoint.startswith(('integrations.', 'notification_channels.')):
+        leaf = {
+            'integrations.overview': 'Overview',
+            'integrations.orchestration': 'Orchestration',
+            'integrations.observability': 'Observability',
+            'integrations.storage': 'Storage',
+            'integrations.registry': 'Registry',
+            'notification_channels.index': 'Notification Channels',
+        }.get(endpoint, 'Overview')
+        items = [
+            BreadcrumbItem('Integrations', 'plug'),
+            BreadcrumbItem(leaf),
+        ]
+    elif access_items is not None:
+        items = access_items
+    else:
+        items = [BreadcrumbItem('KAORI', 'compass')]
+
+    return _items(*_deduplicate(items))

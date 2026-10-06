@@ -1,0 +1,71 @@
+{% import "kubernetes/analytics/components/_analysis_workspace.html" as analytics_workspace %}
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% set presentation = utilization_presentation|default({}) %}
+<form id="utilization-filter"
+      method="get"
+      hx-get="{{ url_for('analytics.utilization') }}"
+      hx-trigger="change delay:120ms"
+      hx-target="#utilization-page"
+      hx-select="#utilization-page"
+      hx-swap="outerHTML"
+      hx-push-url="true"
+      hx-sync="#utilization-page:replace"
+      hx-indicator="#utilization-refresh-indicator">
+    <input type="hidden" name="trend_node" value="{{ selected_trend_node }}" />
+    <input type="hidden" name="node" value="{{ selected_node }}" />
+    {% call analytics_workspace.controls_readiness(
+        'Utilization Controls & Data Readiness',
+        'Set the cluster and trend window, then confirm the Metrics Source source, worker scope, and committed utilization snapshot.',
+        'sliders-horizontal',
+        'utilization-refresh-indicator',
+        metrics_source_status,
+        analytics_materialization,
+        eyebrow='Resource Utilization'
+        ) %}
+        <div class="grid gap-4 sm:grid-cols-2">
+            <label for="utilization-cluster-filter" class="block">
+                <span class="{{ analytics_workspace.control_label_classes() }}">Cluster</span>
+                <select id="utilization-cluster-filter"
+                        name="cluster_id"
+                        data-kaori-reset-fields="trend_node=,node="
+                        class="{{ analytics_workspace.control_select_classes() }}">
+                    {% for item in clusters %}
+                        <option value="{{ item.id }}"
+                                {% if cluster and item.id == cluster.id %}selected{% endif %}>{{ item.name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label for="utilization-trend-window-filter" class="block">
+                <span class="{{ analytics_workspace.control_label_classes() }}">Trend Window</span>
+                <select id="utilization-trend-window-filter"
+                        name="trend_hours"
+                        data-kaori-reset-fields="trend_node="
+                        class="{{ analytics_workspace.control_select_classes() }}">
+                    {% for option in trend_options %}
+                        <option value="{{ option.value }}"
+                                {% if option.selected %}selected{% endif %}>{{ option.label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+        </div>
+        <div class="{{ analysis_surface.evidence_shell_classes() }}">
+            <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+                {% for label, value, helper, icon in [
+                    ('Active Cluster', cluster.name if cluster else 'No Cluster', cluster_info.kubernetes_version, 'server-cog'),
+                    ('Node Readiness', presentation.ready_ratio_display|default('N/A'), cluster_info.ready_nodes ~ ' ready · ' ~ cluster_info.not_ready_nodes ~ ' NotReady', 'badge-check'),
+                    ('Worker Nodes', cluster_info.worker_nodes, cluster_info.master_nodes ~ ' control-plane nodes', 'server'),
+                    ('Pod Allocatable', cluster_info.pod_capacity, 'Worker pod slots', 'boxes')
+                    ] %}
+                    <article class="flex min-w-0 items-start gap-3 bg-surface-card px-4 py-4">
+                        <span class="{{ analysis_surface.metric_icon_classes() }}"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+                        <div class="min-w-0">
+                            <p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p>
+                            <p class="mt-1 break-words text-sm font-semibold text-content-primary">{{ value }}</p>
+                            <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ helper }}</p>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        </div>
+    {% endcall %}
+</form>

@@ -1,0 +1,111 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def read(path: str) -> str:
+    return (ROOT / path).read_text(encoding='utf-8')
+
+
+def main() -> int:
+    registration = read('app/integrations/observability/alert_source/providers/alertmanager/__init__.py')
+    capabilities = read('app/integrations/observability/alert_source/providers/alertmanager/capabilities.py')
+    capability_catalog = read(
+        'app/definitions/catalogs/integrations/observability/alert_source/providers/alertmanager.yaml'
+    )
+    requirements = read('app/integrations/observability/alert_source/providers/alertmanager/requirements.py')
+    validation = read('app/integrations/observability/alert_source/providers/alertmanager/validation.py')
+    profiles = read('app/integrations/observability/alert_source/providers/alertmanager/binding_profiles.py')
+    binding_validation = read(
+        'app/integrations/observability/alert_source/providers/alertmanager/binding_validation.py'
+    )
+    resolver = read('app/integrations/observability/alert_source/providers/alertmanager/application/resolver.py')
+    object_storage_profile_migration = read('migrations/versions/20260814_object_storage_alert_profile.py')
+    forms = read('app/integrations/observability/alert_source/providers/alertmanager/application/forms.py')
+    minio_service = read('app/integrations/storage/object_storage/providers/minio/application/service.py')
+    consumer_assets = read('app/integrations/consumer_assets.py')
+    taxonomy_catalog = read('app/definitions/catalogs/integrations/taxonomy.yaml')
+    validation_template = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_validation_content.html'
+    )
+    scope_template = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_scope.html'
+    )
+    binding_template = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_binding_registry.html'
+    )
+    binding_modal = read('app/templates/integrations/components/_observability_binding_modal.html')
+    readiness_template = read('app/templates/integrations/components/_readiness_explanation.html')
+    minio_index = read('app/templates/integrations/storage/object_storage/providers/minio/index.html')
+    provider_frontpage = read('app/templates/integrations/components/_provider_frontpage.html')
+    provider_tabs = read('app/templates/components/integration_workspace_tabs.html')
+    minio_detail = read('app/templates/integrations/storage/object_storage/providers/minio/instance_detail.html')
+    alertmanager_readme = read('app/integrations/observability/alert_source/providers/alertmanager/README.md')
+    compatibility_doc = read('docs/INTEGRATION_COMPATIBILITY.md')
+    module_map = read('docs/architecture/integration-module-map.md')
+    workspace_standard = read('docs/design/components/INTEGRATIONS_WORKSPACE_STANDARD.md')
+
+    assert 'CORE_CAPABILITY_KEYS' in registration
+    assert "integration_provider_document('alertmanager')" in capabilities
+    assert 'core_capability_keys:' in capability_catalog
+    for key in ('status_v2', 'alerts_v2', 'silences_v2'):
+        assert f'- {key}' in capability_catalog
+    assert 'Kubernetes' not in requirements
+    assert 'MinIO' not in requirements
+    assert 'discover_payload_capabilities' not in validation
+
+    assert "integration_provider_document('alertmanager')" in profiles
+    assert 'profile_key: kubernetes-alerts-v1' in capability_catalog
+    assert 'profile_key: object-storage-alerts-v1' in capability_catalog
+    assert 'asset_type: object_storage_system' in capability_catalog
+    assert 'discover_payload_capabilities' in binding_validation
+    assert 'binding.validation_evidence' in binding_validation
+    assert 'binding.validation_profile' in binding_validation
+    assert 'get_alert_consumer_profile' in resolver
+    assert 'profile_eligible' in resolver
+    assert 'Consumer validation profile' in resolver
+
+    evaluator = resolver.split('def _evaluate_binding', 1)[1].split('def _operational_rank', 1)[0]
+    assert 'binding.validation_evidence or {}' in evaluator
+    assert 'instance.capabilities or {}' not in evaluator
+
+    assert 'registered_consumer_asset_definitions' in forms
+    assert 'integration_taxonomy_document()' in consumer_assets
+    assert 'asset_type: object_storage_system' in taxonomy_catalog
+    assert 'create_source_binding' not in minio_service
+
+    assert 'Alertmanager Full Validation' in validation_template
+    assert 'integrations/components/_readiness_explanation.html' in validation_template
+    assert 'data-kaori-consumer-readiness-boundary' in readiness_template
+    assert 'Consumer Binding Registry' in binding_template
+    assert 'Consumer Profile' in binding_template
+    assert 'observability_binding_modal.render(' in scope_template
+    assert 'data-kaori-observability-binding-modal' in binding_modal
+
+    assert 'MinIO Integrations' in minio_index
+    assert 'provider_front.hero(' in minio_index
+    assert 'Register Connection' in provider_frontpage
+    assert 'Integration Coverage' in provider_tabs
+    assert 'Connection Registry' in provider_tabs
+    assert 'Validation & Capabilities' in minio_detail
+    assert 'Inventory & Lifecycle' in minio_detail
+
+    assert 'kubernetes-alerts-v1' in alertmanager_readme
+    assert 'object-storage-alerts-v1' in alertmanager_readme
+    assert "validation_profile = 'object-storage-alerts-v1'" in object_storage_profile_migration
+    assert "validation_profile = 'minio-alerts-v1'" in object_storage_profile_migration
+    assert "down_revision = '20260814_obj_forecast'" in object_storage_profile_migration
+    assert 'Consumer alert contracts are binding-scoped.' in compatibility_doc
+    assert 'Alertmanager consumer-profile boundary' in module_map
+    assert 'Alertmanager provider validation is consumer-neutral' in workspace_standard
+    assert 'MinIO mirrors Kubernetes as an asset-owner provider' in workspace_standard
+
+    print('PASS — Alertmanager provider readiness is consumer-neutral and alert consumers are binding-scoped.')
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

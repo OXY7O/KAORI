@@ -1,0 +1,65 @@
+<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div>
+        <label class="{{ table_ui.filter_label_classes() }}">SMTP Host</label>
+        <input name="smtp_host"
+               value="{{ form_channel.smtp_host if form_channel else '' }}"
+               class="{{ table_ui.filter_input_classes() }}"
+               placeholder="smtp.example.com">
+    </div>
+    <div>
+        <label class="{{ table_ui.filter_label_classes() }}">SMTP Port</label>
+        <input name="smtp_port"
+               type="number"
+               min="1"
+               max="65535"
+               value="{{ form_channel.smtp_port if form_channel else 587 }}"
+               class="{{ table_ui.filter_input_classes() }}">
+    </div>
+    <div>
+        <label class="{{ table_ui.filter_label_classes() }}">Transport Security</label>
+        <select name="smtp_security" class="{{ table_ui.filter_select_classes() }}">
+            {% for option in payload.smtp_security_options %}
+                <option value="{{ option.value }}"
+                        {% if (form_channel.smtp_security if form_channel else 'starttls') == option.value %}selected{% endif %}>{{ option.label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        <label class="{{ table_ui.filter_label_classes() }}">SMTP Username</label>
+        <input name="smtp_username"
+               value="{{ form_channel.smtp_username if form_channel else '' }}"
+               class="{{ table_ui.filter_input_classes() }}"
+               placeholder="Optional for trusted relay">
+    </div>
+    <div>
+        <label class="{{ table_ui.filter_label_classes() }}">SMTP Password</label>
+        <input name="smtp_password"
+               type="password"
+               autocomplete="new-password"
+               class="{{ table_ui.filter_input_classes() }}"
+               placeholder="{{ 'Leave blank to keep current password' if form_channel and form_channel.credential_configured else 'Required when username is set' }}">
+    </div>
+    <div>
+        <label class="{{ table_ui.filter_label_classes() }}">Sender Name</label>
+        <input name="sender_name"
+               value="{{ form_channel.sender_name if form_channel else 'KAORI' }}"
+               class="{{ table_ui.filter_input_classes() }}"
+               placeholder="KAORI">
+    </div>
+    <div>
+        <label class="{{ table_ui.filter_label_classes() }}">Sender Email</label>
+        <input name="sender_email"
+               type="email"
+               value="{{ form_channel.sender_email if form_channel else '' }}"
+               class="{{ table_ui.filter_input_classes() }}"
+               placeholder="kaori@example.com">
+    </div>
+    <div class="sm:col-span-2">
+        <label class="{{ table_ui.filter_label_classes() }}">Recipients</label>
+        <input name="email_recipients"
+               value="{{ form_channel.email_recipients if form_channel else '' }}"
+               class="{{ table_ui.filter_input_classes() }}"
+               placeholder="noc@example.com, platform@example.com">
+        <p class="mt-1 text-xs leading-5 text-content-muted">Separate multiple recipients with commas.</p>
+    </div>
+</div>

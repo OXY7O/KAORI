@@ -1,0 +1,87 @@
+<div class="space-y-4 p-5 sm:p-6" x-data="{ openCoverageDomain: null }">
+    <div class="grid gap-px overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle sm:grid-cols-3">
+        <div class="bg-surface-card px-4 py-3">
+            <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Available Types</p>
+            <p class="mt-1.5 text-xl font-semibold text-content-primary">{{ payload.report_type_coverage.available_count }}</p>
+        </div>
+        <div class="bg-surface-card px-4 py-3">
+            <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Total Contracts</p>
+            <p class="mt-1.5 text-xl font-semibold text-content-primary">{{ payload.report_type_coverage.total_count }}</p>
+        </div>
+        <div class="bg-surface-card px-4 py-3">
+            <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Selection Model</p>
+            <p class="mt-1.5 text-sm font-semibold leading-6 text-content-primary">Connected Sources</p>
+        </div>
+    </div>
+    <div class="space-y-2" aria-label="Report coverage domains">
+        {% for domain in payload.report_type_coverage.domains %}
+            <article class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                <button type="button"
+                        class="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-surface-hover"
+                        @click="openCoverageDomain = openCoverageDomain === {{ loop.index0 }} ? null : {{ loop.index0 }}"
+                        :aria-expanded="openCoverageDomain === {{ loop.index0 }}"
+                        aria-controls="report-coverage-domain-{{ loop.index0 }}">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
+                        <i data-lucide="{{ domain.icon }}" class="h-4 w-4"></i>
+                    </span>
+                    <span class="min-w-0 flex-1">
+                        <span class="block text-sm font-semibold text-content-primary">{{ domain.label }}</span>
+                        <span class="mt-0.5 block line-clamp-1 text-xs leading-5 text-content-secondary">{{ domain.description }}</span>
+                    </span>
+                    <span class="hidden shrink-0 items-center gap-2 sm:flex">
+                        {{ table_label.status_label(domain.status, domain.tone, none, 'detail') }}
+                        {{ table_label.metadata_label(domain.available_count ~ '/' ~ domain.total_count, none, false, 'detail') }}
+                    </span>
+                    <i data-lucide="chevron-down"
+                       class="h-4 w-4 shrink-0 text-content-muted transition-transform"
+                       :class="{ 'rotate-180': openCoverageDomain === {{ loop.index0 }} }"
+                       aria-hidden="true"></i>
+                </button>
+                <div id="report-coverage-domain-{{ loop.index0 }}"
+                     x-show="openCoverageDomain === {{ loop.index0 }}"
+                     x-collapse
+                     x-cloak
+                     class="border-t border-outline-subtle bg-surface-hover">
+                    <div class="flex flex-wrap items-center gap-2 px-4 pt-4 sm:hidden">
+                        {{ table_label.status_label(domain.status, domain.tone, none, 'detail') }}
+                        {{ table_label.metadata_label(domain.available_count ~ '/' ~ domain.total_count ~ ' Available', none, false, 'detail') }}
+                    </div>
+                    <div class="grid gap-2 p-4 md:grid-cols-2 2xl:grid-cols-3">
+                        {% for item in domain['items'] %}
+                            <div class="flex min-h-20 items-start gap-3 rounded-lg border border-outline-subtle bg-surface-card px-3 py-3">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                      aria-hidden="true">
+                                    <i data-lucide="{{ item.icon }}" class="h-4 w-4"></i>
+                                </span>
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-start justify-between gap-2">
+                                        <h3 class="min-w-0 text-sm font-semibold leading-5 text-content-primary">{{ item.name }}</h3>
+                                        {{ table_label.status_label(item.status, item.tone, none, 'detail') }}
+                                    </div>
+                                    <p class="mt-1 line-clamp-2 text-xs leading-5 text-content-secondary">{{ item.description }}</p>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="md:col-span-2 2xl:col-span-3">
+                                {% set empty_state_icon = "files" %}
+                                {% set empty_state_label = "No Data" %}
+                                {% set empty_state_title = "No Report Contracts Yet" %}
+                                {% set empty_state_description = "No report type is available for this data domain yet." %}
+                                {% set empty_state_variant = "panel" %}
+                                {% set empty_state_min_height = "min-h-[150px]" %}
+                                {% include 'components/states/_empty_state.html' %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+    <div class="flex items-start gap-2 rounded-lg border border-outline-subtle bg-surface-hover px-3 py-2.5 text-xs leading-5 text-content-secondary">
+        <i data-lucide="info"
+           class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
+           aria-hidden="true"></i>
+        <p>Use Types to choose an output supported by the currently connected and validated data sources.</p>
+    </div>
+</div>

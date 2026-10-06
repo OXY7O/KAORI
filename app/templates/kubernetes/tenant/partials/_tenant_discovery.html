@@ -1,0 +1,215 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/table_registry.html" as registry_ui %}
+{% import "components/info_tip.html" as info_tip %}
+{% set registry_id = "tenant-discovery-card" %}
+{% set loading_id = "tenant-discovery-loading" %}
+{% set pagination = tenant_discovery_pagination %}
+{% set query_params = {
+    'section': 'discovery',
+    'discovery_cluster_id': tenant_discovery_filters.cluster_id,
+    'discovery_provider': tenant_discovery_filters.provider,
+    'discovery_management': tenant_discovery_filters.management,
+    'discovery_search': tenant_discovery_filters.search
+} %}
+<section id="{{ registry_id }}"
+         class="{{ table_ui.block_classes(allow_overflow=true) }}">
+    {% set header_actions %}
+        {% if tenant_discovery_filters.cluster_id or tenant_discovery_filters.provider or tenant_discovery_filters.management or tenant_discovery_filters.search %}
+            {{ registry_ui.clear_filters_link('tenant.tenants',
+                        registry_id,
+                        loading_id,
+                        pagination.per_page,
+                        table_ui.action_classes() ,
+            query_params={'section': 'discovery'},
+            page_param='discovery_page',
+            per_page_param='discovery_per_page'
+            ) }}
+        {% endif %}
+    {% endset %}
+    {% set title_info %}
+        {{ info_tip.render('tenant-discovery-status-tip',
+                'Discovery status',
+                'Discovery is live and read-only; status labels do not mutate or adopt provider objects.',
+                [
+                'Live Status — current provider observation.',
+                'Managed — already correlated to committed KAORI ownership.',
+                'Discovered — candidate for explicit governed Adoption.',
+                'Blocked — adoption fails closed until eligibility is resolved.',
+                'Provider Missing — KAORI ownership exists but the provider object is absent.'
+                ],
+                placement='right') }}
+    {% endset %}
+    {{ table_ui.inventory_block_header('radar',
+        'Tenant Discovery',
+        'Live, read-only provider discovery. Review a candidate before explicitly adopting it into KAORI governance.',
+        loading_id,
+        'Reading live Tenant provider state',
+        none,
+        none,
+        header_actions=header_actions,
+        title_extra=title_info) }}
+    <div class="border-b border-outline-subtle bg-surface-hover px-5 py-3">
+        <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-content-muted">
+            <span>Live check: {{ tenant_discovery_checked_at }}</span>
+            <span>{{ tenant_discovery_total }} provider object{{ '' if tenant_discovery_total == 1 else 's' }} in current filter scope</span>
+        </div>
+    </div>
+    <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+        {% call registry_ui.filter_form(
+            'tenant.tenants',
+            registry_id,
+            loading_id,
+            pagination.per_page,
+            page_param='discovery_page',
+            per_page_param='discovery_per_page'
+            ) %}
+            <input type="hidden" name="section" value="discovery">
+            <div>
+                <label for="tenant-discovery-cluster"
+                       class="{{ table_ui.filter_label_classes() }}">Cluster</label>
+                <select id="tenant-discovery-cluster"
+                        name="discovery_cluster_id"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Clusters</option>
+                    {% for cluster in tenant_discovery_cluster_options %}
+                        <option value="{{ cluster.id }}"
+                                {% if tenant_discovery_filters.cluster_id == cluster.id|string %}selected{% endif %}>{{ cluster.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="tenant-discovery-provider"
+                       class="{{ table_ui.filter_label_classes() }}">Provider</label>
+                <select id="tenant-discovery-provider"
+                        name="discovery_provider"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Providers</option>
+                    <option value="native_kubernetes"
+                            {% if tenant_discovery_filters.provider == 'native_kubernetes' %}selected{% endif %}>Native Kubernetes</option>
+                    <option value="capsule"
+                            {% if tenant_discovery_filters.provider == 'capsule' %}selected{% endif %}>Capsule</option>
+                </select>
+            </div>
+            <div>
+                <label for="tenant-discovery-management"
+                       class="{{ table_ui.filter_label_classes() }}">Classification</label>
+                <select id="tenant-discovery-management"
+                        name="discovery_management"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All States</option>
+                    {% for state in ('Managed', 'Discovered', 'Blocked') %}
+                        <option value="{{ state|lower }}"
+                                {% if tenant_discovery_filters.management == state|lower %}selected{% endif %}>{{ state }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="tenant-discovery-search"
+                       class="{{ table_ui.filter_label_classes() }}">Search</label>
+                {{ table_ui.search_field('discovery_search', tenant_discovery_filters.search, 'Namespace, Tenant CR, or Tenant', id='tenant-discovery-search') }}
+            </div>
+        {% endcall %}
+    </div>
+    {% if tenant_discovery_errors %}
+        <div class="border-b border-outline-subtle bg-status-warning-soft px-5 py-3 text-xs text-status-warning-text">
+            <span class="font-semibold">{{ tenant_discovery_errors|length }} provider read exception{{ '' if tenant_discovery_errors|length == 1 else 's' }}.</span>
+            Unreachable clusters are not inferred from stale data; review Tenant Collection Snapshot above.
+        </div>
+    {% endif %}
+    <div class="overflow-x-auto">
+        <table class="{{ table_ui.table_classes('min-w-[980px]') }}">
+            <caption class="sr-only">Live read-only Tenant provider discovery.</caption>
+            <thead class="{{ table_ui.head_classes() }}">
+                <tr>
+                    <th class="{{ table_ui.header_cell_classes() }}">Provider Object</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Cluster</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Provider</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Live Status</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">KAORI Classification</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Governed Tenant</th>
+                    <th class="{{ table_ui.header_cell_classes(action=true) }}">Adoption</th>
+                </tr>
+            </thead>
+            <tbody class="{{ table_ui.body_classes() }}">
+                {% for row in tenant_discovery_rows %}
+                    <tr class="{{ table_ui.row_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }} align-middle">
+                            {{ table_ui.title_cell(row.resource_name, row.resource_kind, 'boxes') }}
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }} align-middle">
+                            {{ table_ui.cluster_identity(row.cluster.name, row.cluster.environment) }}
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }} align-middle">
+                            <p class="text-sm font-semibold text-content-primary">{{ row.provider_label }}</p>
+                            <p class="mt-1 text-xs text-content-muted">{{ 'Provider authority' if row.provider_key == 'capsule' else 'Kubernetes namespace' }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }} align-middle">
+                            {{ table_label.status_label(row.provider_status, row.provider_tone) }}
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }} align-middle">
+                            {{ table_label.status_label(row.management_status, row.management_tone) }}
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }} align-middle">
+                            {% if row.tenant_name %}
+                                <p class="text-sm font-semibold text-content-primary">{{ row.tenant_name }}</p>
+                                <p class="mt-1 text-xs text-content-muted">Committed KAORI Tenant</p>
+                            {% else %}
+                                <span class="text-xs text-content-muted">Not governed</span>
+                            {% endif %}
+                        </td>
+                        <td class="{{ table_ui.cell_classes(action=true) }} align-middle">
+                            <div class="ml-auto flex w-fit items-center justify-end">
+                                {% if row.management_status == 'Managed' and row.provider_status == 'Missing' %}
+                                    {{ table_label.special_label('Provider Missing', 'critical', 'triangle-alert') }}
+                                {% elif row.management_status == 'Managed' %}
+                                    {{ table_label.special_label('Already Managed', 'normal', 'shield-check') }}
+                                {% elif row.management_status == 'Discovered' and can_manage %}
+                                    <button type="button"
+                                            data-tenant-adoption-load
+                                            hx-get="{{ url_for('tenant.tenant_adoption_preflight_route', cluster_id=row.cluster_id, provider_key=row.provider_key, resource_name=row.resource_name) }}"
+                                            hx-target="#tenant-adoption-preflight-slot"
+                                            hx-swap="innerHTML"
+                                            hx-indicator="#tenant-discovery-loading"
+                                            hx-disabled-elt="this"
+                                            class="{{ table_ui.action_classes() }}"
+                                            title="Load live provider authority and allocation evidence for adoption review.">
+                                        <i data-lucide="clipboard-check" class="h-4 w-4" aria-hidden="true"></i>
+                                        Review Adoption
+                                    </button>
+                                {% elif row.management_status == 'Discovered' %}
+                                    {{ table_label.special_label('Candidate', 'info', 'radar') }}
+                                {% else %}
+                                    {{ table_label.special_label('Blocked', 'critical', 'shield-alert') }}
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="p-0">
+                            {% set empty_state_icon = "radar" %}
+                            {% set empty_state_title = "No Provider Tenant Candidates" %}
+                            {% set empty_state_description = "No live Native namespace or Capsule Tenant object matched the current discovery filters." %}
+                            {% include 'components/states/_empty_state.html' %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if pagination.total_items > 0 %}
+        {{ registry_ui.footer('tenant.tenants',
+                registry_id,
+                loading_id,
+                pagination,
+                query_params,
+                pagination.allowed_per_page,
+                resource_label='Provider Objects',
+                rows_aria_label='Tenant discovery rows per page',
+                control_name='tenant-discovery',
+                page_param='discovery_page',
+                per_page_param='discovery_per_page') }}
+    {% endif %}
+    <div id="tenant-adoption-preflight-slot" aria-live="polite"></div>
+</section>

@@ -1,0 +1,12 @@
+{% import "components/workspace_tabs.html" as workspace_tabs %}
+{% set account_tabs = [
+    ('profile', 'Account Profile & Access', 'id-card', url_for('settings.account', tab='profile')),
+    ('activity', 'Recent Authentication Activity', 'activity', url_for('settings.account', tab='activity')),
+    ('credentials', 'Credential Management', 'key-round', url_for('settings.account', tab='credentials'))
+] %}
+{{ workspace_tabs.render_query_tabs(account_tabs,
+active_tab,
+aria_label='Account and authentication sections',
+hx_target='#account-authentication-page',
+hx_indicator='#account-settings-loading',
+hx_sync='#account-authentication-page:replace') }}

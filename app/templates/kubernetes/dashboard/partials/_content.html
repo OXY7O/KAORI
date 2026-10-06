@@ -1,0 +1,38 @@
+{% import "components/operational_dashboard_workspace.html" as dashboard_workspace %}
+{% import "components/operational_section_loading.html" as section_loading %}
+{% set dashboard_cluster_query = 'cluster_id=' ~ (dashboard.selected_cluster_id or '') ~ '&cluster_health_page=' ~ dashboard.cluster_health_pagination.page ~ '&cluster_health_per_page=' ~ dashboard.cluster_health_pagination.per_page %}
+<div class="space-y-5">
+    {% include "kubernetes/dashboard/partials/_hero.html" %}
+    {% if cluster_onboarding.is_blocked %}
+        {% include "components/cluster/_onboarding_banner.html" %}
+    {% else %}
+        {% call dashboard_workspace.controller(
+            dashboard.active_tab,
+            'kubernetes-dashboard',
+            input_id='dashboard-active-tab'
+            ) %}
+            {% include "kubernetes/dashboard/partials/_signal_overview.html" %}
+            <div class="mt-5 space-y-5">
+                {{ dashboard_workspace.navigation('kubernetes-dashboard',
+                                'Kubernetes Dashboard Sections') }}
+                {% for tab_key, tab_label, tab_icon in dashboard_workspace.standard_tabs %}
+                    {% call dashboard_workspace.panel(
+                        tab_key,
+                        dashboard.active_tab,
+                        'kubernetes-dashboard'
+                        ) %}
+                        <div id="kubernetes-dashboard-section-{{ tab_key }}"
+                             hx-get="{{ url_for('kubernetes_dashboard.section', section=tab_key) }}?{{ dashboard_cluster_query }}"
+                             hx-trigger="revealed"
+                             hx-target="this"
+                             hx-swap="outerHTML">
+                            {{ section_loading.section(tab_label,
+                                                        'Preparing committed Kubernetes dashboard evidence.',
+                                                        tab_icon) }}
+                        </div>
+                    {% endcall %}
+                {% endfor %}
+            </div>
+        {% endcall %}
+    {% endif %}
+</div>

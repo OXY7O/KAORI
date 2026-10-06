@@ -1,0 +1,119 @@
+{% import "components/pagination.html" as pagination_ui %}
+{% import "components/resource_detail_modal.html" as resource_detail_modal %}
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+<div class="overflow-x-auto">
+    <table class="{{ table_ui.table_classes('min-w-[76rem]') }}">
+        <caption class="sr-only">Managed object-storage system inventory.</caption>
+        <thead class="{{ table_ui.head_classes() }}">
+            <tr>
+                <th class="{{ table_ui.header_cell_classes() }} min-w-[16rem]">System</th>
+                <th class="{{ table_ui.header_cell_classes() }}">Provider</th>
+                <th class="{{ table_ui.header_cell_classes() }}">Environment</th>
+                <th class="{{ table_ui.header_cell_classes() }} min-w-[9rem]">Release</th>
+                <th class="{{ table_ui.header_cell_classes() }} min-w-[14rem]">Endpoint</th>
+                <th class="{{ table_ui.header_cell_classes() }}">Inventory Assets</th>
+                <th class="{{ table_ui.header_cell_classes() }} min-w-[11rem]">Snapshot</th>
+                <th class="{{ table_ui.header_cell_classes() }}">Status</th>
+                <th class="{{ table_ui.header_cell_classes(true) }}">Details</th>
+            </tr>
+        </thead>
+        <tbody class="{{ table_ui.body_classes() }}">
+            {% for system in inventory.systems %}
+                <tr class="{{ table_ui.row_classes() }}">
+                    <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(system.name, system.description or 'Managed object-storage system', 'server') }}</td>
+                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(system.provider_label) }}</td>
+                    <td class="{{ table_ui.cell_classes() }}">{{ system.environment|environment_name(empty='Not Specified') }}</td>
+                    <td class="{{ table_ui.cell_classes() }}"><span class="text-xs font-medium text-content-secondary">{{ system.release_label }}</span></td>
+                    <td class="{{ table_ui.cell_classes() }}">
+                        <span class="block max-w-[16rem] truncate text-xs font-medium text-content-secondary"
+                              title="{{ system.endpoint }}">{{ system.endpoint_display }}</span>
+                    </td>
+                    <td class="{{ table_ui.cell_classes() }}"><span class="font-semibold text-content-primary">{{ system.bucket_count }}</span></td>
+                    <td class="{{ table_ui.cell_classes() }}">
+                        <div class="flex flex-col items-start gap-1">
+                            {{ table_label.status_label(system.sync_status_label, system.sync_status_tone) }}
+                            {% if system.last_inventory_at %}
+                                <span class="text-xs text-content-muted">{{ system.last_inventory_at|user_datetime(date_format='day_month_numeric') }}</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(system.status_label, system.status_tone) }}</td>
+                    <td class="{{ table_ui.cell_classes(true) }}">
+                        {{ resource_detail_modal.detail_button(system.id,
+                                                url_for('object_storage_inventory.system_details', system_id=system.id) ,
+                        system.name,
+                        'Object Storage System'
+                        ) }}
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="9" class="p-0">
+                        {% set empty_state_icon = "search-x" %}
+                        {% set empty_state_label = "No Matches" %}
+                        {% set empty_state_title = "No Object Storage Systems Match These Filters" %}
+                        {% set empty_state_description = "Adjust the active search or filters to review registered Object Storage systems." %}
+                        {% set empty_state_min_height = "min-h-[190px]" %}
+                        {% include "components/states/_empty_state.html" %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<footer class="{{ pagination_ui.footer_classes() }}">
+    <div class="{{ pagination_ui.summary_group_classes() }}">
+        <p>Showing <span class="font-semibold text-content-primary">{{ inventory.pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ inventory.pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ inventory.pagination.total_items }}</span> {{ pagination_ui.resource_name('Systems', inventory.pagination.total_items) |trim }}</p>
+        <form hx-get="{{ url_for('object_storage_inventory.systems') }}"
+              hx-target="#object-storage-systems-table-content"
+              hx-swap="innerHTML"
+              hx-indicator="#object-storage-systems-loading"
+              class="flex items-center gap-2">
+            <input type="hidden" name="page" value="1">
+            <input type="hidden" name="partial_mode" value="table_content">
+            <input type="hidden" name="provider" value="{{ selected_provider }}">
+            <input type="hidden" name="environment" value="{{ selected_environment }}">
+            <input type="hidden" name="status" value="{{ selected_status }}">
+            <input type="hidden" name="search" value="{{ search }}">
+            <label for="object-storage-systems-per-page"
+                   class="font-semibold text-content-secondary">Rows</label>
+            <select id="object-storage-systems-per-page"
+                    name="per_page"
+                    data-kaori-auto-submit
+                    aria-label="Rows Per Page"
+                    class="{{ pagination_ui.page_size_classes() }}">
+                {% for option in inventory.pagination.allowed_per_page %}
+                    <option value="{{ option }}"
+                            {% if inventory.pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+    <div class="{{ pagination_ui.navigation_group_classes() }}">
+        {% set query_params = {'provider': selected_provider, 'environment': selected_environment, 'status': selected_status, 'search': search, 'per_page': inventory.pagination.per_page, 'partial_mode': 'table_content'} %}
+        {% if inventory.pagination.has_prev %}
+            {% set prev_url = url_for('object_storage_inventory.systems', provider=selected_provider, environment=selected_environment, status=selected_status, search=search, page=inventory.pagination.prev_page, per_page=inventory.pagination.per_page, partial_mode='table_content') %}
+            <a href="{{ prev_url }}"
+               hx-get="{{ prev_url }}"
+               hx-target="#object-storage-systems-table-content"
+               hx-swap="innerHTML"
+               hx-indicator="#object-storage-systems-loading"
+               class="{{ pagination_ui.navigation_classes(false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
+        {% else %}
+            <span class="{{ pagination_ui.navigation_classes(true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
+        {% endif %}
+        {{ pagination_ui.numeric_pages(inventory.pagination.page, inventory.pagination.total_pages, hx_target='#object-storage-systems-table-content', hx_indicator='#object-storage-systems-loading', query_params=query_params) }}
+        {% if inventory.pagination.has_next %}
+            {% set next_url = url_for('object_storage_inventory.systems', provider=selected_provider, environment=selected_environment, status=selected_status, search=search, page=inventory.pagination.next_page, per_page=inventory.pagination.per_page, partial_mode='table_content') %}
+            <a href="{{ next_url }}"
+               hx-get="{{ next_url }}"
+               hx-target="#object-storage-systems-table-content"
+               hx-swap="innerHTML"
+               hx-indicator="#object-storage-systems-loading"
+               class="{{ pagination_ui.navigation_classes(false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
+        {% else %}
+            <span class="{{ pagination_ui.navigation_classes(true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
+        {% endif %}
+    </div>
+</footer>

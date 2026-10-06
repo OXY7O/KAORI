@@ -1,0 +1,21 @@
+/* Availability publication specialization. Shared geometry and typography are owned by analytics_publication.css. */
+.availability-status { margin-top: 4mm; padding: 5mm; border-left: 1.1mm solid #D97706; background: #FFF7ED; }
+.availability-status span { display: block; color: #92400E; font-size: 6.2pt; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.availability-status strong { display: block; margin-top: 1.6mm; font-size: 13pt; color: #9A3412; }
+.availability-status p { margin: 2mm 0 0; color: #7C2D12; }
+.unavailable-statement { min-height: 40mm; }
+.compact-decision-register th:nth-child(1) { width: 12%; }
+.compact-decision-register th:nth-child(2) { width: 68%; }
+.compact-decision-register th:nth-child(3) { width: 20%; }
+.single-column-references { display: block; }
+.recovery-split { }
+.recovery-steps { margin: 0; padding: 0; list-style: none; }
+.recovery-steps li { display: grid; grid-template-columns: 8mm minmax(0, 1fr); gap: 3mm; align-items: start; padding: 3mm 0; border-bottom: .22mm solid #E2E8F0; }
+.recovery-steps li:last-child { border-bottom: none; }
+.recovery-steps span { display: flex; width: 7mm; height: 7mm; align-items: center; justify-content: center; border-radius: 1.4mm; background: #F3E8FF; color: #6D28D9; font-weight: 700; }
+.recovery-steps p { margin: .6mm 0 0; }
+.control-register { margin: 0; }
+.control-register > div { display: grid; grid-template-columns: 34mm minmax(0, 1fr); gap: 4mm; padding: 2.8mm 0; border-bottom: .22mm solid #E2E8F0; }
+.control-register > div:last-child { border-bottom: none; }
+.control-register dt { color: #64748B; font-weight: 600; }
+.control-register dd { margin: 0; font-weight: 600; overflow-wrap: break-word; }

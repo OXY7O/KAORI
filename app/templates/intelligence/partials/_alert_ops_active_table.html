@@ -1,0 +1,86 @@
+{% import "components/table_primitives.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "analytics/components/_record_pagination.html" as record_pagination %}
+{% set pagination_query = {
+    'tab': 'active',
+    'domain': payload.domain,
+    'asset': payload.selected_asset_key,
+    'severity': payload.filters.severity,
+    'workflow': payload.filters.workflow,
+    'source': payload.filters.source,
+    'q': payload.filters.q
+} %}
+<div id="alert-operations-active-records"
+     class="overflow-hidden bg-surface-card">
+    <div class="overflow-x-auto">
+        <table class="{{ table_ui.table_classes('min-w-[1080px]') }}">
+            <thead class="{{ table_ui.head_classes() }}">
+                <tr>
+                    <th class="{{ table_ui.header_cell_classes() }}">Alert</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Severity</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Source</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Workflow</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Owner</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Age</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Delivery</th>
+                    <th class="{{ table_ui.header_cell_classes(true) }}">Action</th>
+                </tr>
+            </thead>
+            <tbody class="{{ table_ui.body_classes() }}">
+                {% for case in payload.active_cases %}
+                    {% set review_url = url_for('alert_intelligence.case_details', public_id=case.public_id, tab='active', domain=payload.domain, asset=payload.selected_asset_key, severity=payload.filters.severity, workflow=payload.filters.workflow, source=payload.filters.source, q=payload.filters.q, page=payload.active_pagination.page, per_page=payload.active_pagination.per_page) %}
+                    <tr id="alert-case-row-{{ case.public_id }}"
+                        class="{{ table_ui.row_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <div class="min-w-0">
+                                <p class="max-w-lg break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ case.alert_name }}</p>
+                                <p class="mt-1 max-w-lg truncate text-xs leading-5 text-content-muted">
+                                    {{ case.asset_name }}
+                                    {% if case.namespace != '-' %}· {{ case.namespace }}{% endif %}
+                                    · {{ case.source_type_label }}
+                                </p>
+                                <p class="mt-1 font-mono text-xs leading-5 text-content-muted">{{ case.public_id }}</p>
+                            </div>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(case.severity_label, case.severity_tone, size='compact') }}</td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ table_label.status_indicator_label(case.source_state_label, case.source_state_tone, size='compact') }}
+                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ case.source_type_label }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(case.workflow_label, case.workflow_tone, size='compact') }}</td>
+                        <td class="{{ table_ui.cell_classes() }}">{{ case.owner }}</td>
+                        <td class="{{ table_ui.cell_classes() }}">{{ case.duration }}</td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ table_label.status_label(case.delivery_label, case.delivery_tone, size='compact') }}
+                        </td>
+                        <td class="{{ table_ui.cell_classes(true) }}">
+                            <a href="{{ review_url }}"
+                               data-resource-detail-toggle
+                               data-detail-id="{{ case.public_id }}"
+                               data-detail-url="{{ review_url }}"
+                               data-detail-name="{{ case.alert_name }}"
+                               data-detail-type="Alert Case"
+                               aria-haspopup="dialog"
+                               aria-controls="resource-detail-modal"
+                               class="{{ table_ui.action_classes() }}">
+                                <i data-lucide="panel-top-open" class="h-3.5 w-3.5"></i>Review
+                            </a>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="8" class="p-0">
+                            {% set empty_state_icon = "badge-check" %}{% set empty_state_label = "No Active Alerts" %}{% set empty_state_title = "No Open Alert Cases Match This Scope" %}{% set empty_state_description = "KAORI creates durable cases from governed recommendation promotions and preserves open cases when source evidence becomes unavailable." %}{% set empty_state_min_height = "min-h-[180px]" %}
+                            {% include 'components/states/_empty_state.html' %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {{ record_pagination.render(payload.active_pagination, 'page', 'per_page', 'alert-operations-active-registry', 'alert-operations-filter-form', 'alert-operations-active-loading', 'alert_intelligence.index', 'alert_intelligence.index', pagination_query, 'Alert Cases', embedded=true) }}
+</div>
+{% if request.headers.get('HX-Request') == 'true' %}
+    {% set operation_feedback = load_operational_feedback() %}
+    {% include 'components/operation_feedback_oob.html' %}
+{% endif %}

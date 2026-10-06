@@ -1,0 +1,282 @@
+{% import "components/table_label.html" as table_label %}
+{% import "components/details/_detail_content.html" as detail %}
+{% import "components/technical_value.html" as technical_value %}
+{% import "components/operational_callout.html" as operational_callout %}
+{% import "components/table.html" as table_ui %}
+{% import "components/action_button.html" as action_button %}
+{% set presentation = record.presentation or {} %}
+{% set can_rotate = current_user.has_permission('kubernetes_secrets.rotate_tls') %}
+<div data-kaori-detail-variant="full-workspace-modal"
+     data-kaori-detail-density="adaptive-stacks"
+     data-kaori-tls-detail-layout="evidence-workspace-v2"
+     class="{{ detail.expanded_workspace_outer_classes() }}">
+    <div class="{{ detail.expanded_workspace_shell_classes() }}">
+        <header data-resource-detail-header
+                class="{{ detail.expanded_workspace_header_classes() }}">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ detail.expanded_workspace_icon_classes() }}"
+                      aria-hidden="true">
+                    <i data-lucide="shield-check" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    {% call detail.header_identity_row() %}
+                        <h3 class="break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ record.secret_name }}</h3>
+                        {{ table_label.metadata_label(record.cluster.name if record.cluster else record.cluster_id, 'building-2') }}
+                        {{ table_label.metadata_label(record.namespace, 'folder-tree') }}
+                        {{ table_label.status_indicator_label(presentation.status_label or 'Unknown', presentation.status_tone or 'unknown', size='detail') }}
+                        {{ table_label.status_indicator_label(presentation.coverage_label or 'Not Reported', presentation.coverage_tone or 'unknown', size='detail') }}
+                    {% endcall %}
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Certificate identity, validity, host coverage, consumer mapping, and collection evidence from the committed Governance snapshot.</p>
+                </div>
+            </div>
+        </header>
+        {{ detail.summary_strip([
+                ('Certificate Type', record.secret_type or 'kubernetes.io/tls', record.common_name or 'Common Name not reported') ,
+        ('Expires At', record.not_after|user_datetime('Not Reported'), (record.days_remaining ~ ' Days Remaining') if record.days_remaining is not none else 'Validity unavailable'),
+        ('Host Coverage', presentation.coverage_label or 'Not Reported', ((record.covered_host_count or 0) ~ '/' ~ (record.declared_host_count or 0) ~ ' Declared Hosts') if presentation.coverage_reported else 'Mapping evidence unavailable'),
+        ('Ingress Consumers', presentation.ingress_consumer_count if presentation.ingress_mapping_reported else 'Not Reported', 'Committed relationship evidence' if presentation.ingress_mapping_reported else 'Ingress mapping unavailable')
+        ], compact=true) }}
+        <div class="space-y-4 p-5">
+            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                <header class="flex flex-wrap items-start justify-between gap-3 border-b border-outline-subtle px-4 py-3.5">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true">
+                            <i data-lucide="badge-check" class="h-4 w-4"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h4 class="text-sm font-semibold text-content-primary">Certificate Identity &amp; Validity</h4>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Locked Kubernetes Secret identity and parsed certificate lifecycle evidence.</p>
+                        </div>
+                    </div>
+                    {{ table_label.status_indicator_label(presentation.status_label or 'Unknown', presentation.status_tone or 'unknown') }}
+                </header>
+                <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+                    <article class="min-w-0 bg-surface-card px-4 py-3.5">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Cluster</p>
+                        <div class="mt-2 min-w-0">{{ table_ui.cluster_identity(record.cluster.name if record.cluster else record.cluster_id, record.cluster.environment if record.cluster else '') }}</div>
+                    </article>
+                    <article class="min-w-0 bg-surface-card px-4 py-3.5">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Namespace</p>
+                        <div class="mt-2 min-w-0">{{ table_ui.namespace_identity(record.namespace, 'max-w-full') }}</div>
+                    </article>
+                    <article class="min-w-0 bg-surface-card px-4 py-3.5">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Secret Type</p>
+                        <p class="mt-2 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ record.secret_type or 'kubernetes.io/tls' }}</p>
+                    </article>
+                    <article class="min-w-0 bg-surface-card px-4 py-3.5">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Common Name</p>
+                        <div class="mt-2">{{ technical_value.render(record.common_name or 'Not Reported', break_all=false, size='body') }}</div>
+                    </article>
+                </div>
+                <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle sm:grid-cols-3">
+                    <article class="bg-surface-hover px-4 py-3.5">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Valid From</p>
+                        <p class="mt-1 text-sm font-semibold leading-5 text-content-primary">{{ record.not_before|user_datetime("Not Reported") }}</p>
+                    </article>
+                    <article class="bg-surface-hover px-4 py-3.5">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Expires At</p>
+                        <p class="mt-1 text-sm font-semibold leading-5 text-content-primary">{{ record.not_after|user_datetime("Not Reported") }}</p>
+                    </article>
+                    <article class="bg-surface-hover px-4 py-3.5">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Days Remaining</p>
+                        <p class="mt-1 text-sm font-semibold leading-5 text-content-primary">{{ record.days_remaining if record.days_remaining is not none else 'N/A' }}</p>
+                    </article>
+                </div>
+                <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle lg:grid-cols-[minmax(0,1.35fr)_minmax(0,0.65fr)]">
+                    <article class="min-w-0 bg-surface-card px-4 py-3.5">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Issuer</p>
+                        <p class="mt-1 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ record.issuer or 'Not Reported' }}</p>
+                        <p class="mt-2 text-xs leading-5 text-content-muted">Serial Number</p>
+                        <div class="mt-1">{{ technical_value.render(record.serial_number or 'Not Reported', break_all=false, size='compact') }}</div>
+                    </article>
+                    <article class="min-w-0 bg-surface-card px-4 py-3.5">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">SHA-256 Fingerprint</p>
+                        <div class="mt-1">{{ technical_value.render(record.fingerprint_sha256 or 'Not Reported', break_all=true, size='compact') }}</div>
+                    </article>
+                </div>
+                {% if record.parse_error %}
+                    <div class="border-t border-outline-subtle p-4">{{ operational_callout.render('Certificate Parse Error', record.parse_error, 'triangle-alert', 'critical') }}</div>
+                {% endif %}
+            </section>
+            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                <header class="flex flex-wrap items-start justify-between gap-3 border-b border-outline-subtle px-4 py-3.5">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true">
+                            <i data-lucide="route" class="h-4 w-4"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h4 class="text-sm font-semibold text-content-primary">Coverage &amp; Consumer Evidence</h4>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Declared Ingress hosts, matching certificate identities, and committed consumer relationships.</p>
+                        </div>
+                    </div>
+                    {{ table_label.status_indicator_label(presentation.coverage_label or 'Not Reported', presentation.coverage_tone or 'unknown') }}
+                </header>
+                <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 lg:grid-cols-5">
+                    <article class="bg-surface-hover px-4 py-3">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Declared Hosts</p>
+                        <p class="mt-1 text-base font-semibold text-content-primary">{{ record.declared_host_count if presentation.coverage_reported else 'Not Reported' }}</p>
+                    </article>
+                    <article class="bg-surface-hover px-4 py-3">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Covered Hosts</p>
+                        <p class="mt-1 text-base font-semibold text-content-primary">{{ record.covered_host_count if presentation.coverage_reported else 'Not Reported' }}</p>
+                    </article>
+                    <article class="bg-surface-hover px-4 py-3">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Uncovered Hosts</p>
+                        <p class="mt-1 text-base font-semibold text-content-primary">{{ (record.uncovered_hosts or [])|length if presentation.coverage_reported else 'Not Reported' }}</p>
+                    </article>
+                    <article class="bg-surface-hover px-4 py-3">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Certificate Identities</p>
+                        <p class="mt-1 text-base font-semibold text-content-primary">{{ (record.dns_names or []) |length if record.dns_names else (1 if record.common_name else 0) }}</p>
+                    </article>
+                    <article class="bg-surface-hover px-4 py-3 sm:col-span-2 lg:col-span-1">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Ingress Consumers</p>
+                        <p class="mt-1 text-base font-semibold text-content-primary">{{ presentation.ingress_consumer_count if presentation.ingress_mapping_reported else 'Not Reported' }}</p>
+                    </article>
+                </div>
+                <div class="border-t border-outline-subtle">
+                    <div class="flex flex-wrap items-start justify-between gap-3 px-4 py-3">
+                        <div>
+                            <h5 class="text-sm font-semibold text-content-primary">Host Coverage Matrix</h5>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Coverage is declaration evidence; it does not prove live endpoint reachability.</p>
+                        </div>
+                        {{ table_label.metadata_label((presentation.host_coverage_rows or []) |length ~ ' ' ~ ('Host' if (presentation.host_coverage_rows or []) |length == 1 else 'Hosts')) }}
+                    </div>
+                    {% if presentation.host_coverage_rows %}
+                        <div class="overflow-x-auto overscroll-x-contain border-t border-outline-subtle">
+                            <table class="{{ table_ui.table_classes('min-w-[56rem]') }}">
+                                <thead class="{{ table_ui.head_classes() }}">
+                                    <tr>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Declared Host</th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Coverage State</th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Matching Identity</th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Ingress</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="{{ table_ui.body_classes() }}">
+                                    {% for row in presentation.host_coverage_rows %}
+                                        <tr class="{{ table_ui.row_classes() }}">
+                                            <td class="{{ table_ui.cell_classes() }}">{{ technical_value.render(row.host, break_all=false, size='body') }}</td>
+                                            <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(row.state, row.tone) }}</td>
+                                            <td class="{{ table_ui.cell_classes() }}"><span class="break-words text-sm text-content-primary [overflow-wrap:anywhere]">{{ row.matched_identity }}</span></td>
+                                            <td class="{{ table_ui.cell_classes() }}"><span class="break-words text-sm text-content-secondary [overflow-wrap:anywhere]">{{ row.ingresses|join(", ") if row.ingresses else 'Not Reported' }}</span></td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% elif presentation.ingress_mapping_reported %}
+                        <div class="border-t border-outline-subtle p-4">{{ detail.empty_evidence('No Declared Hosts', 'No Ingress host relationship is represented for this TLS Secret in the committed mapping snapshot.', 'route-off') }}</div>
+                    {% else %}
+                        <div class="border-t border-outline-subtle p-4">{{ detail.empty_evidence('Host Mapping Not Reported', 'Ingress relationship evidence was not collected for this cluster. Run TLS synchronization after restoring API access.', 'database-zap') }}</div>
+                    {% endif %}
+                </div>
+                <div class="grid border-t border-outline-subtle lg:grid-cols-2">
+                    <div class="min-w-0 px-4 py-3.5 lg:border-r lg:border-outline-subtle">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <h5 class="text-sm font-semibold text-content-primary">Certificate Identities</h5>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">SAN DNS names, falling back to the Common Name when SANs are absent.</p>
+                            </div>
+                            {{ table_label.metadata_label(((record.dns_names or []) |length if record.dns_names else (1 if record.common_name else 0)) ~ ' ' ~ ('Identity' if ((record.dns_names or []) |length if record.dns_names else (1 if record.common_name else 0)) == 1 else 'Identities')) }}
+                        </div>
+                        {% if record.dns_names %}
+                            <div class="mt-3 flex flex-wrap gap-2">
+                                {% for name in record.dns_names %}
+                                    <span class="max-w-full rounded-md border border-outline-subtle bg-surface-hover px-2.5 py-1.5">{{ technical_value.render(name, break_all=false, size='compact') }}</span>
+                                {% endfor %}
+                            </div>
+                        {% elif record.common_name %}
+                            <div class="mt-3">{{ technical_value.render(record.common_name, break_all=false, size='body') }}</div>
+                        {% else %}
+                            <div class="mt-3">{{ detail.empty_evidence('No Certificate Identity Reported', 'The certificate does not expose a SAN DNS name or Common Name.', 'badge-x') }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="min-w-0 border-t border-outline-subtle px-4 py-3.5 lg:border-t-0">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <h5 class="text-sm font-semibold text-content-primary">Ingress Consumers</h5>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Ingress resources that declare this TLS Secret in the committed mapping snapshot.</p>
+                            </div>
+                            {{ table_label.metadata_label((presentation.ingress_consumer_count or 0) ~ ' ' ~ ('Ingress' if (presentation.ingress_consumer_count or 0) == 1 else 'Ingresses')) }}
+                        </div>
+                        {% if presentation.ingress_mapping_reported and presentation.ingress_resources %}
+                            <div class="mt-3 divide-y divide-outline-subtle rounded-lg border border-outline-subtle bg-surface-hover">
+                                {% for resource in presentation.ingress_resources %}
+                                    <article class="flex min-w-0 items-start justify-between gap-3 px-3 py-2.5">
+                                        <div class="min-w-0">
+                                            <p class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ resource.name }}</p>
+                                            <p class="mt-0.5 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ resource.supporting_primary }} · {{ resource.supporting_secondary }}</p>
+                                        </div>
+                                    </article>
+                                {% endfor %}
+                            </div>
+                        {% elif presentation.ingress_mapping_reported %}
+                            <div class="mt-3">{{ detail.empty_evidence('No Ingress Consumers', 'No Ingress consumer declares this TLS Secret in the committed mapping snapshot.', 'route-off') }}</div>
+                        {% else %}
+                            <div class="mt-3">{{ operational_callout.render('Ingress Consumer Evidence Not Reported', 'KAORI cannot determine whether an Ingress declares this TLS Secret because Ingress mapping evidence is unavailable.', 'database-zap', 'warning') }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                <header class="flex flex-wrap items-start justify-between gap-3 border-b border-outline-subtle px-4 py-3.5">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true">
+                            <i data-lucide="database-backup" class="h-4 w-4"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h4 class="text-sm font-semibold text-content-primary">Collection &amp; Governance</h4>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Collection completeness, snapshot timestamps, and the handoff to controlled TLS rotation.</p>
+                        </div>
+                    </div>
+                    {{ table_label.status_indicator_label(presentation.ingress_mapping_label or 'Not Reported', presentation.ingress_mapping_tone or 'unknown') }}
+                </header>
+                <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+                    <article class="bg-surface-hover px-4 py-3.5">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Secret Collection</p>
+                        <div class="mt-2">{{ table_label.status_label(presentation.secret_collection_label or 'Not Reported', presentation.secret_collection_tone or 'unknown', size='compact') }}</div>
+                    </article>
+                    <article class="bg-surface-hover px-4 py-3.5">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Ingress Mapping</p>
+                        <div class="mt-2">{{ table_label.status_label(presentation.ingress_mapping_label or 'Not Reported', presentation.ingress_mapping_tone or 'unknown', size='compact') }}</div>
+                    </article>
+                    <article class="bg-surface-hover px-4 py-3.5">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Collected</p>
+                        <p class="mt-2 text-sm font-semibold leading-5 text-content-primary">{{ record.collected_at|user_datetime("Not Reported") }}</p>
+                    </article>
+                    <article class="bg-surface-hover px-4 py-3.5">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Inventory Updated</p>
+                        <p class="mt-2 text-sm font-semibold leading-5 text-content-primary">{{ record.updated_at|user_datetime("Not Updated") }}</p>
+                    </article>
+                </div>
+                {% if presentation.secret_collection_detail or presentation.ingress_mapping_detail %}
+                    <div class="border-t border-outline-subtle p-4">{{ operational_callout.render('Collection Exception', presentation.secret_collection_detail or presentation.ingress_mapping_detail, 'database-zap', 'warning') }}</div>
+                {% endif %}
+                <div class="flex flex-col gap-4 border-t border-outline-subtle bg-surface-hover px-4 py-3.5 lg:flex-row lg:items-center lg:justify-between">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true">
+                            <i data-lucide="database-backup" class="h-4 w-4"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h5 class="text-sm font-semibold text-content-primary">Governance Snapshot Boundary</h5>
+                            <p class="mt-1 max-w-4xl text-xs leading-5 text-content-muted">This detail reports worker-generated certificate metadata and declared Ingress relationships. It does not validate live traffic or endpoint reachability.</p>
+                        </div>
+                    </div>
+                    {% if can_rotate %}
+                        <a href="{{ url_for('kubernetes_operations.tls_secret_rotate', certificate_id=record.id) }}"
+                           class="{{ action_button.classes('primary', false) }}">
+                            <i data-lucide="rotate-cw" class="h-4 w-4"></i>
+                            Open TLS Rotation
+                        </a>
+                    {% else %}
+                        <div class="shrink-0">{{ table_label.status_label('Rotation Access Not Granted', 'unknown', size='compact') }}</div>
+                    {% endif %}
+                </div>
+            </section>
+        </div>
+    </div>
+</div>

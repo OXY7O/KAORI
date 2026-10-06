@@ -1,0 +1,137 @@
+{% import "intelligence/components/_workspace.html" as intelligence_ui %}
+{% import "components/operational_callout.html" as operational_callout %}
+{% import "components/table_primitives.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
+<div data-alert-intelligence-panel="alerts">
+    <div class="border-b border-outline-subtle px-4 py-4 sm:px-5">
+        {{ intelligence_ui.subsection('Alert Records',
+                'Review normalized provider alert evidence for the selected asset while keeping source resolution and lifecycle authority visible.',
+                'triangle-alert') }}
+    </div>
+    <div class="border-b border-outline-subtle bg-surface-card px-4 py-4 sm:px-5">
+        {{ intelligence_ui.subsection('Alert Source Context',
+                'Alertmanager is preferred in Automatic mode; Metrics Source ALERTS remains the fallback evidence path.',
+                'radio-tower') }}
+        <dl class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {{ intelligence_ui.field('Policy', payload.source|title, supporting='Configured source selection') }}
+            {{ intelligence_ui.field('Resolved Source', payload.source_status.resolved_label, supporting='Provider captured by the background worker') }}
+            {{ intelligence_ui.field('Snapshot State', payload.snapshot.label, supporting='Page requests never wait for provider connectivity') }}
+            {{ intelligence_ui.field('Last Successful', payload.snapshot.generated_at|user_datetime if payload.snapshot.generated_at else 'Not Available', supporting='Committed evidence timestamp') }}
+        </dl>
+        <p class="mt-3 text-xs leading-5 text-content-muted">
+            <span class="font-semibold text-content-secondary">Lifecycle Authority:</span> Alertmanager continues to own grouping, silences, inhibition, routing, and receivers. KAORI serves committed worker evidence here.
+        </p>
+        {% if payload.snapshot.serving_last_good %}
+            <div class="mt-4">
+                {{ operational_callout.render('Last Good Snapshot Active',
+                                'The latest background refresh is stale, still running, or failed. KAORI is preserving the last committed alert evidence so this workspace remains fast and usable while the analytics worker retries provider collection.',
+                                'database-backup',
+                                'warning') }}
+            </div>
+        {% elif not payload.snapshot.available %}
+            <div class="mt-4">
+                {{ operational_callout.render('Worker Data Required',
+                                'No committed alert snapshot is available yet. Enable or run the registered Analytics Data Refresh job for this asset; the page will remain provider-independent.',
+                                'database-zap',
+                                'warning') }}
+            </div>
+        {% endif %}
+        {% if payload.source_status.fallback_used %}
+            <div class="mt-4">{{ operational_callout.render('Fallback Evidence Active', payload.source_status.fallback_reason, 'git-branch', 'warning') }}</div>
+        {% endif %}
+        {% if payload.source_status.error and payload.snapshot.available %}
+            <div class="mt-4">
+                {{ operational_callout.render('Snapshot Source Limitation',
+                                'The committed snapshot recorded limited provider evidence. Background materialization owns connectivity checks and retries; this page does not contact the provider directly.',
+                                'triangle-alert',
+                                'warning') }}
+            </div>
+        {% endif %}
+    </div>
+    <form id="alert-intelligence-filter-form"
+          action="{{ url_for('alert_intelligence.index') }}"
+          method="get"
+          hx-get="{{ url_for('alert_intelligence.index') }}"
+          hx-target="#alert-intelligence-page-content"
+          hx-swap="outerHTML show:none focus-scroll:false"
+          hx-push-url="true"
+          hx-indicator="#alert-intelligence-loading"
+          hx-sync="#alert-intelligence-page-content:replace"
+          hx-trigger="input changed delay:350ms from:input[name='q'], change from:select"
+          autocomplete="off"
+          class="border-b border-outline-subtle bg-surface-hover px-4 py-4 sm:px-5">
+        <input type="hidden" name="tab" value="alerts">
+        <input type="hidden" name="domain" value="{{ payload.domain }}">
+        <input type="hidden" name="asset" value="{{ payload.selected_asset_key }}">
+        <input type="hidden" name="source" value="{{ payload.source }}">
+        <input type="hidden" name="page" value="1">
+        <input type="hidden"
+               name="per_page"
+               value="{{ payload.pagination.per_page }}">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+                <p class="text-sm font-semibold leading-5 text-content-primary">Alert Record Filters</p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">
+                    Search, severity, and lifecycle-state filters apply only to Alert Records and refresh automatically.
+                </p>
+            </div>
+            {% if payload.filters.q or payload.filters.severity != 'all' or payload.filters.state != 'all' %}
+                {{ registry_ui.clear_filters_action(url_for('alert_intelligence.index', tab='alerts', domain=payload.domain, asset=payload.selected_asset_key, source=payload.source, per_page=payload.pagination.per_page) ,
+                table_ui.action_classes(),
+                hx_get=url_for('alert_intelligence.index', tab='alerts', domain=payload.domain, asset=payload.selected_asset_key, source=payload.source, per_page=payload.pagination.per_page),
+                target='#alert-intelligence-page-content',
+                indicator='#alert-intelligence-loading',
+                swap='outerHTML show:none focus-scroll:false',
+                push_url='true',
+                sync='#alert-intelligence-page-content:replace',
+                lead=false
+                ) }}
+            {% endif %}
+        </div>
+        <div class="mt-3 {{ table_ui.filter_layout_classes() }}">
+            <label class="block">
+                <span class="{{ table_ui.filter_label_classes() }}">Search</span>
+                {{ table_ui.search_field('q',
+                                payload.filters.q,
+                                'Search alert name, target, receiver, or summary',
+                                id='alert-intelligence-search') }}
+            </label>
+            <label class="block">
+                <span class="{{ table_ui.filter_label_classes() }}">Severity</span>
+                <select name="severity"
+                        autocomplete="off"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    {% for value, label in [
+                        ('all', 'All Severities'),
+                        ('critical', 'Critical'),
+                        ('warning', 'Warning'),
+                        ('info', 'Info'),
+                        ('unknown', 'Unknown'),
+                        ('none', 'No Severity')
+                        ] %}
+                        <option value="{{ value }}"
+                                {% if payload.filters.severity == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label class="block">
+                <span class="{{ table_ui.filter_label_classes() }}">State</span>
+                <select name="state"
+                        autocomplete="off"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    {% for value, label in [
+                        ('all', 'All States'),
+                        ('firing', 'Firing'),
+                        ('pending', 'Pending'),
+                        ('active', 'Active'),
+                        ('resolved', 'Resolved')
+                        ] %}
+                        <option value="{{ value }}"
+                                {% if payload.filters.state == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+        </div>
+    </form>
+    {% include "intelligence/partials/_alert_intelligence_records.html" %}
+</div>

@@ -1,0 +1,25 @@
+{% import "components/view_more_content.html" as view_more_content %}
+{% macro render(title, description, items, icon='book-open', open_by_default=false, aria_label=None, compact_action=false) -%}
+    {% call view_more_content.render(
+        title,
+        description,
+        icon=icon,
+        open_by_default=open_by_default,
+        aria_label=aria_label,
+        compact_action=compact_action
+        ) %}
+        <div class="divide-y divide-outline-subtle">
+            {% for item in items %}
+                <div class="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-hover text-kaori-primary dark:text-kaori-accent">
+                        <i data-lucide="{{ item[0] }}" class="h-4 w-4" aria-hidden="true"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h3 class="text-xs font-semibold leading-5 text-content-secondary">{{ item[1] }}</h3>
+                        <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ item[2] }}</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endcall %}
+{%- endmacro %}

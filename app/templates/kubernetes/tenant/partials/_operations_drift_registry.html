@@ -1,0 +1,228 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/table_registry.html" as registry_ui %}
+{% set registry_id = "operations-drift-registry" %}
+{% set loading_id = "operations-drift-loading" %}
+{% set query_params = {
+    'tab': 'drift-reconcile',
+    'ops_drift_search': operations_drift_filters.search,
+    'ops_drift_tenant_id': operations_drift_filters.tenant_id,
+    'ops_drift_environment': operations_drift_filters.environment
+} %}
+<section id="{{ registry_id }}"
+         class="{{ table_ui.block_classes() }}"
+         aria-label="Namespace Drift Registry">
+    {% set header_actions %}
+        {% if operations_drift_filters.search or operations_drift_filters.tenant_id or operations_drift_filters.environment %}
+            {{ registry_ui.clear_filters_link('tenant.operations',
+                        registry_id,
+                        loading_id,
+                        operations_drift_pagination.per_page,
+                        table_ui.action_classes() ,
+            query_params={'tab': 'drift-reconcile'},
+            page_param='ops_drift_page',
+            per_page_param='ops_drift_per_page'
+            ) }}
+        {% endif %}
+    {% endset %}
+    {{ table_ui.inventory_block_header('refresh-cw',
+        'Namespace & Allocation Drift',
+        'Sync observes provider state only. Recovery requires an explicit human reconciliation decision.',
+        loading_id,
+        'Refreshing Namespace Provider Drift',
+        none,
+        none,
+        header_actions=header_actions) }}
+    <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+        {% call registry_ui.filter_form(
+            'tenant.operations',
+            registry_id,
+            loading_id,
+            operations_drift_pagination.per_page,
+            page_param='ops_drift_page',
+            per_page_param='ops_drift_per_page'
+            ) %}
+            <input type="hidden" name="tab" value="drift-reconcile">
+            <div>
+                <label for="ops-drift-tenant" class="{{ table_ui.filter_label_classes() }}">Tenant</label>
+                <select id="ops-drift-tenant"
+                        name="ops_drift_tenant_id"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Tenants</option>
+                    {% for tenant in operations_drift_tenant_options %}
+                        <option value="{{ tenant.id }}"
+                                {% if operations_drift_filters.tenant_id == tenant.id|string %}selected{% endif %}>{{ tenant.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="ops-drift-environment"
+                       class="{{ table_ui.filter_label_classes() }}">Environment</label>
+                <select id="ops-drift-environment"
+                        name="ops_drift_environment"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Environments</option>
+                    {% for environment in operations_drift_environment_options %}
+                        <option value="{{ environment }}"
+                                {% if operations_drift_filters.environment == environment %}selected{% endif %}>{{ environment|title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="ops-drift-search" class="{{ table_ui.filter_label_classes() }}">Search</label>
+                {{ table_ui.search_field('ops_drift_search', operations_drift_filters.search, 'Namespace or Tenant', id='ops-drift-search') }}
+            </div>
+        {% endcall %}
+    </div>
+    <div class="overflow-x-auto">
+        <table class="{{ table_ui.table_classes('min-w-[1100px]') }}">
+            <caption class="sr-only">Tenant Namespace and allocation provider drift.</caption>
+            <thead class="{{ table_ui.head_classes() }}">
+                <tr>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Namespace</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Tenant / Environment</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Ownership / Authority</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Evidence</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Action</th>
+                </tr>
+            </thead>
+            <tbody class="{{ table_ui.body_classes() }}">
+                {% for item in operations_drift_rows %}
+                    {% set allocation_state = operations_allocation_drift_state.get(item.id|string) or {} %}
+                    {% set allocation_drift = allocation_state.get('drift') or {} %}
+                    <tr class="{{ table_ui.row_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ table_ui.title_cell(item.namespace,
+                                                        'Allocation contract divergent' if allocation_state.get('is_allocation_drift') else 'Provider object missing or divergent',
+                            'triangle-alert'
+                            ) }}
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <p class="text-sm font-semibold text-content-primary">{{ item.environment.tenant.name }}</p>
+                            <p class="mt-1 text-xs text-content-muted">{{ item.environment.environment|title }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ table_label.metadata_label(item.ownership_status|title) }}
+                            <p class="mt-1 text-xs text-content-muted">{{ item.environment.tenant.reconciliation_authority|replace('_', ' ') |title }} authority</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ table_label.special_label('Drifted', 'warning', 'triangle-alert') }}
+                            <p class="mt-1 max-w-[420px] text-xs leading-5 text-content-muted">{{ item.provisioning_message }}</p>
+                            {% if allocation_state.get('is_allocation_drift') %}
+                                {% if allocation_drift.get('differences') %}
+                                    <div class="mt-3 space-y-1.5">
+                                        {% for difference in allocation_drift.get('differences', [])[:4] %}
+                                            <p class="text-xs leading-5 text-content-secondary">
+                                                <span class="font-semibold text-content-primary">{{ difference.dimension }}</span>
+                                                · KAORI {{ difference.kaori_value }}
+                                                → Provider {{ difference.provider_value }}
+                                            </p>
+                                        {% endfor %}
+                                        {% if allocation_drift.get('differences', [])|length > 4 %}
+                                            <p class="text-xs text-content-muted">
+                                                +{{ allocation_drift.get('differences', []) |length - 4 }} more changed dimensions
+                                            </p>
+                                        {% endif %}
+                                    </div>
+                                {% elif allocation_drift.get('observed_matches_desired') %}
+                                    <p class="mt-2 text-xs leading-5 text-status-success-text">
+                                        Provider values now match KAORI intent; explicit confirmation is still required.
+                                    </p>
+                                {% endif %}
+                                {% set observed = allocation_drift.get('observed') or {} %}
+                                <p class="mt-2 max-w-[420px] text-xs leading-5 text-content-muted">
+                                    Authority {{ allocation_drift.get("authority") |default('Unknown', true)|replace('_', ' ')|title }}
+                                    · observed {{ allocation_drift.get("observed_at") |default('Unknown', true) }}
+                                </p>
+                                {% if observed.get('source_resources') %}
+                                    <div class="mt-2 space-y-1">
+                                        {% for source in observed.get('source_resources', [])[:3] %}
+                                            <p class="max-w-[420px] break-all text-xs leading-5 text-content-muted">
+                                                {{ source.get("kind") |default('Resource', true) }}/{{ source.get("name") |default('unknown', true) }}
+                                                · UID {{ source.get("uid") |default('Unknown', true) }}
+                                                · resourceVersion {{ source.get("resource_version") |default('Unknown', true) }}
+                                            </p>
+                                        {% endfor %}
+                                        {% if observed.get('source_resources', [])|length > 3 %}
+                                            <p class="text-xs text-content-muted">
+                                                +{{ observed.get('source_resources', []) |length - 3 }} more provider source(s)
+                                            </p>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                        <td class="{{ table_ui.cell_classes(action=true) }}">
+                            {% if allocation_state.get('is_allocation_drift') %}
+                                {% if can_manage
+                                    and allocation_state.get('reapply_supported')
+                                    and allocation_state.get('accept_supported') %}
+                                    <div class="flex flex-col items-end gap-2">
+                                        <form method="post"
+                                              action="{{ url_for('tenant.reapply_namespace_allocation_route', namespace_id=item.id) }}">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="{{ table_ui.action_classes() }}">
+                                                <i data-lucide="rotate-ccw" class="h-4 w-4" aria-hidden="true"></i>
+                                                Reapply KAORI Intent
+                                            </button>
+                                        </form>
+                                        <form method="post"
+                                              action="{{ url_for('tenant.accept_namespace_provider_allocation_route', namespace_id=item.id) }}">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="{{ table_ui.action_classes() }}">
+                                                <i data-lucide="check-check" class="h-4 w-4" aria-hidden="true"></i>
+                                                Accept Provider State
+                                            </button>
+                                        </form>
+                                    </div>
+                                {% else %}
+                                    {{ table_label.special_label('Control Unavailable', 'warning', 'shield-alert') }}
+                                    <p class="mt-2 max-w-[280px] text-right text-xs leading-5 text-content-muted">
+                                        {{ allocation_state.get("blocked_reason") or 'Provider reconciliation is unavailable.' }}
+                                    </p>
+                                {% endif %}
+                            {% elif can_manage
+                                and item.ownership_status == 'managed'
+                                and item.environment.tenant.provider_key == 'native_kubernetes'
+                                and item.environment.tenant.reconciliation_authority == 'native_kubernetes' %}
+                                <form method="post"
+                                      action="{{ url_for('tenant.reconcile_namespace_route', namespace_id=item.id) }}"
+                                      class="flex justify-end">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="{{ table_ui.action_classes() }}">
+                                        <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
+                                        Reconcile Missing Namespace
+                                    </button>
+                                </form>
+                            {% else %}
+                                {{ table_label.special_label('Observe Only', 'unknown', 'eye') }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="p-0">
+                            {% set empty_state_icon = "circle-check" %}
+                            {% set empty_state_title = "No Namespace or Allocation Drift" %}
+                            {% set empty_state_description = "No committed Namespace currently requires provider or allocation drift recovery." %}
+                            {% include 'components/states/_empty_state.html' %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if operations_drift_pagination.total_items > 0 %}
+        {{ registry_ui.footer('tenant.operations',
+                registry_id,
+                loading_id,
+                operations_drift_pagination,
+                query_params,
+                operations_drift_pagination.allowed_per_page,
+                resource_label='Drifted Records',
+                rows_aria_label='Drift rows per page',
+                control_name='operations-drift',
+                page_param='ops_drift_page',
+                per_page_param='ops_drift_per_page') }}
+    {% endif %}
+</section>

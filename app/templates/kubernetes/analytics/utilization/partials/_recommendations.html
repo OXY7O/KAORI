@@ -1,0 +1,46 @@
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% import "components/recommendation_pager.html" as recommendation_pager %}
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+<div class="space-y-4">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div class="flex items-start gap-3">
+            <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="list-checks" class="h-4 w-4"></i></span>
+            <div>
+                <h3 class="text-lg font-semibold text-content-primary">Utilization Recommendations</h3>
+                <p class="mt-1 text-sm leading-6 text-content-muted">Prioritized actions derived from resource pressure, node signals, and top-consumer evidence.</p>
+            </div>
+        </div>
+        {{ table_label.metadata_label(recommendation_count|default(0) ~ ' Actionable') }}
+    </div>
+    {% if recommendation_cards %}
+        <div class="{{ analysis_surface.evidence_shell_classes() }}"
+             data-kaori-recommendation-pager
+             data-page-size="3">
+            <div class="divide-y divide-outline-subtle">
+                {% for item in recommendation_cards %}
+                    {% set recommendation_url = url_for('analytics.storage', cluster_id=cluster.id if cluster else '', time_range='24h') if item.resource == 'storage' or item.source == 'storage' or item.action_type == 'storage_review' else url_for('analytics.utilization', cluster_id=cluster.id if cluster else '', trend_hours=trend_hours, trend_node=selected_trend_node, node=selected_node, tab='trend') %}
+                    {% set priority_tone = 'critical' if item.priority in ['P1', 'Critical'] else ('warning' if item.priority in ['P2', 'Warning'] else ('info' if item.priority in ['P3', 'Info'] else 'unknown')) %}
+                    <div class="flex flex-col gap-4 bg-surface-card px-4 py-4 lg:flex-row lg:items-center lg:justify-between"
+                         data-kaori-recommendation-item
+                         {% if loop.index > 3 %}hidden{% endif %}>
+                        <div class="flex min-w-0 items-start gap-3">
+                            <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="{{ item.icon }}" class="h-5 w-5"></i></span>
+                            <div class="min-w-0">
+                                <div class="flex flex-wrap items-center gap-2">{{ table_label.status_label('Priority: ' ~ item.priority, tone=priority_tone, size='compact') }}{{ table_label.metadata_label('Derived From: ' ~ item.source_label, 'database-zap') }}</div>
+                                <h4 class="mt-2 font-semibold text-content-primary">{{ item.title }}</h4>
+                                <p class="mt-1 text-sm leading-6 text-content-muted">{{ item.description }}</p>
+                            </div>
+                        </div>
+                        <a href="{{ recommendation_url }}"
+                           class="{{ table_ui.action_classes() }} shrink-0"><i data-lucide="arrow-right" class="h-4 w-4"></i>Review</a>
+                    </div>
+                {% endfor %}
+            </div>
+            {{ recommendation_pager.controls(recommendation_cards|length, 'Recommendations', 3) }}
+        </div>
+    {% else %}
+        {% set empty_state_icon = "check-circle-2" %}{% set empty_state_title = "No Actionable Utilization Recommendation" %}{% set empty_state_description = "Current utilization and pressure signals do not require immediate action." %}
+        {% include "components/states/_empty_state.html" %}
+    {% endif %}
+</div>

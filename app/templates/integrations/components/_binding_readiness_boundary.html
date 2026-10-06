@@ -1,0 +1,76 @@
+{% import "components/operational_callout.html" as operational_callout %}
+{% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/table_label.html" as table_label %}
+{% macro render(
+    provider_label,
+    source_readiness,
+    total_bindings,
+    validated_bindings,
+    operational_bindings,
+    title='Binding Decision',
+    description='Source readiness, binding validation, and effective resolution remain independent evidence dimensions.',
+    marker='',
+    identity_title='Consumer Identity Boundary',
+    identity_copy='Shared-source bindings use stable asset selectors so consumer evidence remains isolated.'
+    ) -%}
+    {% set normalized_readiness = (source_readiness or 'validation_required')|lower %}
+    {% set source_tone = 'normal' if normalized_readiness == 'ready' else ('critical' if normalized_readiness in ['blocked', 'unavailable', 'incompatible'] else 'warning') %}
+    {% set source_title = 'Source Ready' if normalized_readiness == 'ready' else ('Source Blocked' if source_tone == 'critical' else 'Source Attention') %}
+    {% if normalized_readiness == 'ready' %}
+        {% set source_description = provider_label ~ ' Full Validation is ready. Consumer eligibility still depends on each binding validation and resolver gate.' %}
+    {% elif source_tone == 'critical' %}
+        {% set source_description = provider_label ~ ' provider readiness currently blocks consumer resolution. Restore provider readiness before validating bindings.' %}
+    {% else %}
+        {% set source_description = provider_label ~ ' provider readiness needs attention. Run Full Validation before relying on consumer resolution.' %}
+    {% endif %}
+    {% if total_bindings == 0 %}
+        {% set binding_tone = "info" %}
+        {% set binding_title = "Binding Required" %}
+        {% set binding_description = "Create the first asset binding. New and edited bindings start in Validation Required until Binding Validation succeeds." %}
+    {% elif validated_bindings == total_bindings %}
+        {% set binding_tone = "normal" %}
+        {% set binding_title = "Bindings Validated" %}
+        {% set binding_description = validated_bindings ~ ' of ' ~ total_bindings ~ ' bindings have current asset-scoped validation evidence.' %}
+    {% else %}
+        {% set binding_tone = "warning" %}
+        {% set binding_title = (total_bindings - validated_bindings) ~ ' Binding' ~ ('' if total_bindings - validated_bindings == 1 else 's') ~ ' Need Validation' %}
+        {% set binding_description = validated_bindings ~ ' of ' ~ total_bindings ~ ' bindings are validated. Validate remaining bindings before consumer eligibility is granted.' %}
+    {% endif %}
+    {% if total_bindings == 0 %}
+        {% set resolution_tone = "info" %}
+        {% set resolution_title = "No Resolver Path" %}
+        {% set resolution_description = "No consumer binding is registered yet, so this source cannot be selected by a managed consumer." %}
+    {% elif operational_bindings == total_bindings %}
+        {% set resolution_tone = "normal" %}
+        {% set resolution_title = "Resolver Paths Ready" %}
+        {% set resolution_description = 'All ' ~ total_bindings ~ ' registered bindings currently satisfy source, binding, selector, and resolver gates.' %}
+    {% else %}
+        {% set resolution_tone = "warning" %}
+        {% set resolution_title = operational_bindings ~ ' / ' ~ total_bindings ~ ' Operational' %}
+        {% set resolution_description = "Review readiness, binding validation, selector identity, capability coverage, and resolver preference for non-operational bindings." %}
+    {% endif %}
+    {% set header_badge %}
+        {{ table_label.metadata_label(total_bindings ~ ' Binding' ~ ('' if total_bindings == 1 else 's') , 'link-2') }}
+    {% endset %}
+    {% call operational_section_card.render(
+        title,
+        description,
+        'waypoints',
+        header_badge=header_badge,
+        body_classes='p-4',
+        aria_label=title
+        ) %}
+        <div data-kaori-binding-readiness-boundary {{ marker }}>
+            <div class="grid gap-3 lg:grid-cols-3">
+                {{ operational_callout.render(source_title, source_description, 'server-cog', tone=source_tone, variant='semantic') }}
+                {{ operational_callout.render(binding_title, binding_description, 'scan-search', tone=binding_tone, variant='semantic') }}
+                {{ operational_callout.render(resolution_title, resolution_description, 'route', tone=resolution_tone, variant='semantic') }}
+            </div>
+            <div class="mt-3 grid gap-3 lg:grid-cols-3">
+                {{ operational_callout.render('Resolver Preference', 'Primary resolves before Secondary, then Fallback. Lower priority wins within the same role.', 'git-branch', tone='info') }}
+                {{ operational_callout.render(identity_title, identity_copy ~ ' Selector changes return the binding to Validation Required.', 'scan-line', tone='info') }}
+                {{ operational_callout.render('Source-Owned Mutation', 'Create, update, validate, and remove bindings from this Observability source workspace. Consumer asset pages remain read-only.', 'shield-check', tone='info') }}
+            </div>
+        </div>
+    {% endcall %}
+{%- endmacro %}

@@ -1,0 +1,24 @@
+{% import "components/table.html" as table_ui %}
+{% macro table_classes() -%}
+    {{ table_ui.table_classes("min-w-[72rem]") }} table-fixed
+{%- endmacro %}
+{% macro columns() -%}
+    <colgroup data-kaori-binding-registry-columns>
+        <col class="w-[30%]">
+        <col class="w-[18%]">
+        <col class="w-[18%]">
+        <col class="w-[34%]">
+    </colgroup>
+{%- endmacro %}
+{% macro state_cell_classes() -%}
+    min-w-0 overflow-hidden
+{%- endmacro %}
+{% macro action_group_classes() -%}
+    flex min-w-0 flex-nowrap items-center justify-end gap-2 whitespace-nowrap
+{%- endmacro %}
+{% macro detail_grid_classes() -%}
+    grid gap-5 lg:grid-cols-3
+{%- endmacro %}
+{% macro detail_item_classes() -%}
+    min-w-0 border-l-2 border-outline-subtle pl-4
+{%- endmacro %}

@@ -1,0 +1,161 @@
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% import "kubernetes/analytics/components/_evidence_record_list.html" as evidence_list %}
+{% import "kubernetes/analytics/components/_record_filter_bar.html" as record_filter %}
+{% import "analytics/components/_record_pagination.html" as record_pagination %}
+{% import "components/loading_bar.html" as loading_bar %}
+{% import "components/progress_bar.html" as progress_bar %}
+{% import "components/table_label.html" as table_label %}
+{% set filesystem = storage_summary.node_filesystem %}
+{% set summary = filesystem.summary %}
+{% set panel_indicator = "storage-filesystem-loading-indicator" %}
+<div id="storage-filesystem-panel" class="space-y-5">
+    <header class="border-b border-outline-subtle pb-5">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex items-start gap-3">
+                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="server" class="h-5 w-5"></i></span>
+                <div>
+                    <h3 class="text-lg font-semibold text-content-primary">Node Filesystem Usage</h3>
+                    <p class="mt-1 text-sm leading-6 text-content-muted">Review node and mount-level filesystem capacity, utilization, remaining space, and semantic pressure.</p>
+                </div>
+            </div>
+            {{ table_label.metadata_label('Scope: ' ~ filesystem.scope_label, 'scan-search') }}
+        </div>
+    </header>
+    <section class="{{ analysis_surface.evidence_shell_classes() }}">
+        <div class="{{ analysis_surface.metric_grid_classes(4) }}">
+            {% set metrics = [
+                            ('Filesystem Capacity', summary.capacity, 'Scope: ' ~ filesystem.scope_label, 'hard-drive'),
+                            ('Filesystem Used', summary.used, ('%.1f%% of capacity'|format(summary.usage_percent|float)) if summary.evidence_available else 'Evidence unavailable', 'hard-drive-download'),
+                            ('Filesystem Free', summary.free, ('%.1f%% remaining'|format(summary.free_percent|float)) if summary.evidence_available else 'Evidence unavailable', 'hard-drive'),
+                            ('Highest Pressure', ('%.1f%%'|format(summary.highest_usage|float)) if summary.highest_usage is not none else 'N/A', (summary.highest_node ~ ' · ' ~ summary.highest_mountpoint) if summary.highest_usage is not none else 'No complete node evidence', 'gauge')
+                        ] %}
+            {% for label, value, helper, icon in metrics %}
+                <article class="{{ analysis_surface.metric_cell_classes() }}">
+                    <div class="flex items-center gap-2.5">
+                        <span class="{{ analysis_surface.resource_icon_classes(label) }}"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+                        <p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p>
+                    </div>
+                    <p class="mt-3 break-words text-xl font-semibold tabular-nums {{ 'text-content-primary' if value != 'N/A' else analysis_surface.unavailable_value_classes() }}">{{ value }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
+                </article>
+            {% endfor %}
+        </div>
+    </section>
+    {% if summary.incomplete_node_count|default(0) > 0 %}
+        <section class="{{ analysis_surface.record_guidance_classes() }}">
+            {{ analysis_surface.interpretation_callout('Evidence Notice',
+                        'Some Node Filesystem Evidence Is Incomplete',
+                        summary.incomplete_node_count ~ ' node record(s) are missing a complete size and available-byte pair. Those records remain Unknown and are excluded from aggregate utilization.',
+                        icon='circle-help',
+                        role='evidence',
+                        tone='unknown',
+                        compact=true) }}
+        </section>
+    {% endif %}
+    <section class="{{ analysis_surface.snapshot_shell_classes() }}"
+             data-kaori-storage-record-card="filesystem">
+        <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="list-filter" class="h-4 w-4"></i></span>
+                    <div class="min-w-0">
+                        <h3 class="text-base font-semibold text-content-primary">Node Filesystem Records</h3>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Filter and compare committed node and mount-point filesystem evidence in one Inventory-aligned record card.</p>
+                    </div>
+                </div>
+            </div>
+            {{ loading_bar.render(panel_indicator, label='Refreshing Node Filesystem Evidence') }}
+        </header>
+        {% call record_filter.form(
+            'storage-filesystem-filter-form',
+            url_for('analytics.storage'),
+            url_for('analytics.storage_filesystem_summary'),
+            '#storage-filesystem-panel',
+            '#' ~ panel_indicator,
+            "change[event.target.matches('select')] delay:120ms",
+            columns=2
+            ) %}
+            <input type="hidden"
+                   name="cluster_id"
+                   value="{{ cluster.id if cluster else '' }}">
+            <input type="hidden" name="namespace" value="{{ selected_namespace }}">
+            <input type="hidden" name="tab" value="filesystem">
+            <input type="hidden" name="filesystem_page" value="1">
+            <input type="hidden"
+                   name="filesystem_per_page"
+                   value="{{ filesystem.pagination.per_page|default(5) }}">
+            {{ record_filter.select('storage_node', selected_storage_node, filesystem.available_nodes, 'All Nodes', 'Node') }}
+            {% if selected_storage_node %}
+                {{ record_filter.reset_link(url_for('analytics.storage', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, tab='filesystem') ,
+                url_for('analytics.storage_filesystem_summary', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, tab='filesystem', filesystem_page=1, filesystem_per_page=filesystem.pagination.per_page|default(5)),
+                '#storage-filesystem-panel',
+                '#' ~ panel_indicator
+                ) }}
+            {% endif %}
+        {% endcall %}
+        {% call evidence_list.shell('Node Filesystem Records', embedded=true) %}
+            {% call evidence_list.header() %}
+                {{ evidence_list.header_cell('Node & Mount Point', 3) }}
+                {{ evidence_list.header_cell('Capacity', 3) }}
+                {{ evidence_list.header_cell('Utilization', 4) }}
+                {{ evidence_list.header_cell('Risk', 2, 'right') }}
+            {% endcall %}
+            <div class="divide-y divide-outline-subtle">
+                {% for row in filesystem.rows %}
+                    {% call evidence_list.row() %}
+                        {% call evidence_list.cell(3) %}
+                            {{ evidence_list.identity('server', row.node, 'Mount: ' ~ row.mountpoint) }}
+                        {% endcall %}
+                        {% call evidence_list.cell(3) %}
+                            {{ evidence_list.mobile_label("Capacity") }}
+                            <div class="grid grid-cols-3 gap-3">
+                                {% for label, value in [('Total', row.capacity), ('Used', row.used), ('Free', row.free)] %}
+                                    <div>
+                                        <p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p>
+                                        <p class="mt-1 text-sm font-semibold {{ 'text-content-primary' if row.evidence_available else analysis_surface.unavailable_value_classes() }}">{{ value }}</p>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endcall %}
+                        {% call evidence_list.cell(4) %}
+                            {{ evidence_list.mobile_label("Utilization") }}
+                            <div class="flex items-center justify-between gap-3 text-xs">
+                                <span class="text-content-muted">Usage</span>
+                                <span class="font-semibold tabular-nums {{ 'text-content-primary' if row.evidence_available else analysis_surface.unavailable_value_classes() }}">{{ ('%.1f%%'|format(row.usage_percent|float) ) if row.evidence_available else 'N/A' }}</span>
+                            </div>
+                            {% if row.evidence_available %}
+                                {{ progress_bar.semantic_bar(row.usage_percent, row.risk.tone|default('unknown') , track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', label=row.node ~ ' filesystem utilization status') }}
+                            {% else %}
+                                <div class="mt-2 rounded-md border border-dashed border-outline-strong bg-surface-hover px-3 py-2 text-xs text-content-muted">Capacity evidence unavailable</div>
+                            {% endif %}
+                        {% endcall %}
+                        {% call evidence_list.cell(2, 'right') %}
+                            {{ evidence_list.mobile_label("Risk") }}
+                            {{ table_label.status_label(row.risk.label|default('Unknown') , row.risk.tone|default('unknown'), size='compact') }}
+                        {% endcall %}
+                    {% endcall %}
+                {% else %}
+                    {{ evidence_list.empty('No Filesystem Metrics Available', 'Filesystem metrics will appear after Metrics Source returns node filesystem data for the selected scope.', 'hard-drive', 'Sync Required', 'warning') }}
+                {% endfor %}
+            </div>
+        {% endcall %}
+        {% set filesystem_pagination_query = {
+                    'cluster_id': cluster.id if cluster else '',
+                    'namespace': selected_namespace,
+                    'tab': 'filesystem',
+                    'storage_node': selected_storage_node,
+                    'filesystem_per_page': filesystem.pagination.per_page|default(5)
+                } %}
+        {{ record_pagination.render(filesystem.pagination,
+                'filesystem_page',
+                'filesystem_per_page',
+                'storage-filesystem-panel',
+                'storage-filesystem-filter-form',
+                'storage-filesystem-loading-indicator',
+                'analytics.storage_filesystem_summary',
+                'analytics.storage',
+                filesystem_pagination_query,
+                'Filesystem Records',
+                embedded=true) }}
+    </section>
+</div>

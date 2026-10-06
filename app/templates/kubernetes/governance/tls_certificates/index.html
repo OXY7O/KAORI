@@ -1,0 +1,10 @@
+{% extends "layouts/app.html" %}
+{% import "components/resource_detail_modal.html" as resource_detail_modal %}
+{% block title %}TLS Certificate Governance{% endblock title %}
+{% block dashboard_content %}
+    {% include "kubernetes/governance/tls_certificates/partials/_page_content.html" %}
+    {{ resource_detail_modal.host('TLS Certificate',
+        url_for('governance.tls_certificates_detail', certificate_id=0) ,
+    'Details come from the latest worker-generated TLS governance snapshot.'
+    ) }}
+{% endblock dashboard_content %}

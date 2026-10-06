@@ -1,0 +1,197 @@
+{% import "components/table_label.html" as table_label %}
+{% import "components/details/_detail_content.html" as detail_ui %}
+{% import "components/view_more_content.html" as view_more %}
+<div data-kaori-detail-variant="full-workspace-modal"
+     data-kaori-detail-density="adaptive-stacks"
+     class="{{ detail_ui.expanded_workspace_outer_classes() }}">
+    <div class="{{ detail_ui.expanded_workspace_shell_classes() }}">
+        <header data-resource-detail-header
+                class="{{ detail_ui.expanded_workspace_header_classes() }}">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ detail_ui.expanded_workspace_icon_classes() }}"
+                      aria-hidden="true"><i data-lucide="{{ item.event_icon }}" class="h-5 w-5"></i></span>
+                <div class="min-w-0">
+                    {% call detail_ui.header_identity_row() %}
+                        <h3 class="break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ item.title }}</h3>
+                        {{ table_label.metadata_label(item.category_label, item.category_icon) }}
+                        {{ table_label.status_label(item.status_label, item.status, none, 'detail') }}
+                    {% endcall %}
+                    <p class="mt-1 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ item.message }}</p>
+                </div>
+            </div>
+        </header>
+        {{ detail_ui.summary_strip([
+                ('Category', item.category_label, 'Administrative evidence domain') ,
+        ('Actor', item.user_label, item.user_role),
+        ('Target', item.target_name, item.target_type),
+        ('Recorded', item.created_at|user_datetime, item.created_label)
+        ], compact=true) }}
+        <div class="space-y-4 p-5">
+            {% if item.detail and item.detail != item.message and item.detail != item.failure_summary %}
+                <section class="rounded-xl border border-outline-subtle bg-surface-card px-4 py-3.5">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true"><i data-lucide="message-square-text" class="h-4 w-4"></i></span>
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold text-content-secondary">Activity Detail</p>
+                            <p class="mt-1 break-words text-sm leading-6 text-content-primary [overflow-wrap:anywhere]">{{ item.detail }}</p>
+                        </div>
+                    </div>
+                </section>
+            {% endif %}
+            {% if item.failure_summary %}
+                {% set failure_icon_classes = 'bg-status-critical-soft text-status-critical-text' if item.status == 'error' else 'bg-status-warning-soft text-status-warning-text' %}
+                <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                    <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="flex min-w-0 items-start gap-3">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {{ failure_icon_classes }}"
+                                  aria-hidden="true"><i data-lucide="triangle-alert" class="h-4 w-4"></i></span>
+                            <div class="min-w-0">
+                                <h4 class="text-sm font-semibold text-content-primary">Failure Summary</h4>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Operator-facing interpretation of the failed or warning outcome.</p>
+                            </div>
+                        </div>
+                        {{ table_label.metadata_label(item.failure_type, 'triangle-alert') }}
+                    </header>
+                    <div class="grid gap-4 p-4 lg:grid-cols-2">
+                        <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+                            <p class="text-xs font-semibold text-content-secondary">{{ item.failure_type }}</p>
+                            <p class="mt-2 break-words text-sm leading-6 text-content-primary [overflow-wrap:anywhere]">{{ item.failure_summary }}</p>
+                        </div>
+                        {% if item.failure_context %}
+                            <div>{{ detail_ui.evidence_grid(item.failure_context, columns=2, compact=true) }}</div>
+                        {% else %}
+                            <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+                                <p class="text-xs font-semibold text-content-secondary">Operator Action</p>
+                                <p class="mt-2 text-sm leading-6 text-content-muted">Review the related configuration, target availability, and trace references before retrying.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </section>
+            {% endif %}
+            {% if item.execution_evidence %}
+                <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                    <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="flex min-w-0 items-start gap-3">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true"><i data-lucide="gauge" class="h-4 w-4"></i></span>
+                            <div class="min-w-0">
+                                <h4 class="text-sm font-semibold text-content-primary">Execution Evidence</h4>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Outcome metrics captured with the operation.</p>
+                            </div>
+                        </div>
+                        {{ table_label.metadata_label(item.execution_evidence|length ~ ' ' ~ ('Metric' if item.execution_evidence|length == 1 else 'Metrics') , 'gauge') }}
+                    </header>
+                    <div class="p-4">{{ detail_ui.evidence_grid(item.execution_evidence, columns=4, compact=true) }}</div>
+                </section>
+            {% endif %}
+            <div class="grid items-stretch gap-4 lg:grid-cols-2">
+                {% call detail_ui.detail_card('Actor & Access', 'user-round', item.user_auth_source, badge_size='detail', stretch=true, density='compact') %}
+                    {{ detail_ui.detail_row('Email', item.user_email or 'Not recorded') }}
+                    {{ detail_ui.detail_row('Role', item.user_role) }}
+                    {{ detail_ui.detail_row('Authentication', item.user_auth_source) }}
+                {% endcall %}
+                {% call detail_ui.detail_card('Target Context', 'crosshair', item.target_type, badge_size='detail', stretch=true, density='compact') %}
+                    {{ detail_ui.detail_row('Target Type', item.target_type) }}
+                    {{ detail_ui.detail_row('Module', item.module_label) }}
+                {% endcall %}
+            </div>
+            {% if item.changed_fields %}
+                <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                    <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="flex min-w-0 items-start gap-3">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true"><i data-lucide="diff" class="h-4 w-4"></i></span>
+                            <div class="min-w-0">
+                                <h4 class="text-sm font-semibold text-content-primary">Recorded Changes</h4>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Before and after values captured with this activity.</p>
+                            </div>
+                        </div>
+                        {{ table_label.metadata_label(item.changed_fields|length ~ ' ' ~ ('Change' if item.changed_fields|length == 1 else 'Changes') , 'diff') }}
+                    </header>
+                    <div class="grid gap-3 p-4 lg:grid-cols-2">
+                        {% for field in item.changed_fields %}
+                            <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                                <p class="text-xs font-semibold text-content-secondary">{{ field.label }}</p>
+                                <div class="mt-2 flex items-stretch gap-2">
+                                    <div class="min-w-0 flex-1 rounded-lg border border-outline-subtle bg-surface-card px-3 py-2">
+                                        <p class="text-xs text-content-muted">Before</p>
+                                        <p class="mt-1 break-words text-sm font-medium text-content-secondary [overflow-wrap:anywhere]">{{ field.before }}</p>
+                                    </div>
+                                    <span class="flex shrink-0 items-center text-content-muted"
+                                          aria-hidden="true"><i data-lucide="arrow-right" class="h-4 w-4"></i></span>
+                                    <div class="min-w-0 flex-1 rounded-lg border border-outline-subtle bg-surface-card px-3 py-2">
+                                        <p class="text-xs text-content-muted">After</p>
+                                        <p class="mt-1 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ field.after }}</p>
+                                    </div>
+                                </div>
+                            </article>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endif %}
+            {% if item.trace_references %}
+                <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                    <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="flex min-w-0 items-start gap-3">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-subtle text-content-secondary"
+                                  aria-hidden="true"><i data-lucide="route" class="h-4 w-4"></i></span>
+                            <div class="min-w-0">
+                                <h4 class="text-sm font-semibold text-content-primary">Trace References</h4>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Identifiers for correlating this activity with jobs, workers, and logs.</p>
+                            </div>
+                        </div>
+                        {{ table_label.metadata_label(item.trace_references|length ~ ' ' ~ ('Reference' if item.trace_references|length == 1 else 'References') , 'route') }}
+                    </header>
+                    <dl class="grid gap-px bg-outline-subtle sm:grid-cols-2">
+                        {% for reference in item.trace_references %}
+                            <div class="min-w-0 bg-surface-card px-4 py-3">
+                                <dt class="text-xs font-medium text-content-muted">{{ reference.label }}</dt>
+                                <dd class="mt-1 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]"
+                                    title="{{ reference.value }}">
+                                    {{ reference.value }}
+                                </dd>
+                            </div>
+                        {% endfor %}
+                    </dl>
+                </section>
+            {% endif %}
+            {% if item.additional_evidence %}
+                <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                    <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="flex min-w-0 items-start gap-3">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-subtle text-content-secondary"
+                                  aria-hidden="true"><i data-lucide="list-tree" class="h-4 w-4"></i></span>
+                            <div class="min-w-0">
+                                <h4 class="text-sm font-semibold text-content-primary">Additional Evidence</h4>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Curated metadata not already represented by the primary evidence sections.</p>
+                            </div>
+                        </div>
+                        {{ table_label.metadata_label(item.additional_evidence|length ~ ' ' ~ ('Field' if item.additional_evidence|length == 1 else 'Fields') , 'list-tree') }}
+                    </header>
+                    <div class="p-4">{{ detail_ui.evidence_grid(item.additional_evidence, columns=3, compact=true) }}</div>
+                </section>
+            {% endif %}
+            {% if item.technical_evidence %}
+                {% call view_more.render(
+                    'Technical Evidence',
+                    'Low-level diagnostics for troubleshooting; hidden by default to keep the audit narrative readable.',
+                    icon='terminal-square',
+                    open_by_default=false,
+                    aria_label='Technical Evidence',
+                    closed_label='View Technical Evidence',
+                    open_label='Hide Technical Evidence'
+                    ) %}
+                    <div class="space-y-3">
+                        {% for evidence in item.technical_evidence %}
+                            <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                                <p class="text-xs font-semibold text-content-secondary">{{ evidence.label }}</p>
+                                <p class="mt-1 break-words text-xs leading-5 text-content-primary [overflow-wrap:anywhere]">{{ evidence.value }}</p>
+                            </article>
+                        {% endfor %}
+                    </div>
+                {% endcall %}
+            {% endif %}
+        </div>
+    </div>
+</div>

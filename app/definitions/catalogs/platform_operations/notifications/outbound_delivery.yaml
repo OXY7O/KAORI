@@ -1,0 +1,43 @@
+schema_version: 1
+kind: notification_delivery_contract
+
+domains:
+  kubernetes:
+    label: Kubernetes
+  object_storage:
+    label: Object Storage
+
+events:
+  alert_intelligence.active_alert:
+    label: Alert Intelligence · Active Alert
+    severity_scoped: true
+  alert_ops.firing:
+    label: Alert Operations · Firing
+    severity_scoped: true
+  alert_ops.resolved:
+    label: Alert Operations · Resolved
+    severity_scoped: true
+  report.generated:
+    label: Scheduled Reports · Report Ready
+    severity_scoped: false
+  automation.approval_required:
+    label: Automation Control · Approval Required
+    severity_scoped: false
+  automation.decision_approved:
+    label: Automation Control · Decision Approved
+    severity_scoped: false
+  automation.decision_rejected:
+    label: Automation Control · Decision Rejected
+    severity_scoped: false
+  automation.execution_started:
+    label: Automation Control · Execution Started
+    severity_scoped: false
+  automation.execution_completed:
+    label: Automation Control · Execution Completed
+    severity_scoped: false
+  automation.execution_failed:
+    label: Automation Control · Execution Failed
+    severity_scoped: false
+  automation.verification_failed:
+    label: Automation Control · Verification Failed
+    severity_scoped: false

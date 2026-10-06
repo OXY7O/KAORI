@@ -1,0 +1,85 @@
+/* KAORI Alerts & Anomalies PDF specialization v3.0. */
+.kaori-alerts-anomalies-report .paired-sections > .content-section { align-self: start; margin-top: 0; }
+.kaori-alerts-anomalies-report .executive-split { }
+.kaori-alerts-anomalies-report .severity-split,
+.kaori-alerts-anomalies-report .anomaly-split,
+.kaori-alerts-anomalies-report .ownership-split,
+.kaori-alerts-anomalies-report .correlation-split { }
+
+.distribution-list { display: grid; gap: 3mm; }
+.distribution-row { display: grid; grid-template-columns: 28mm minmax(0, 1fr) 12mm; gap: 3mm; align-items: center; }
+.distribution-row strong { font-size: 6.7pt; }
+.distribution-track { height: 5.5mm; background: #E5E7EB; overflow: hidden; }
+.distribution-track i { display: block; height: 100%; }
+.distribution-fill.primary { background: #7C3AED; }
+.distribution-fill.info { background: #2563EB; }
+.distribution-fill.warning { background: #D97706; }
+.distribution-fill.critical { background: #DC2626; }
+.distribution-row span { text-align: right; font-weight: 700; white-space: nowrap; }
+.large-distribution { gap: 4mm; }
+.compact-callout { margin-top: 4mm; border-left: 1mm solid #7C3AED; background: #F8FAFC; padding: 4mm; }
+.compact-callout.warning { border-left-color: #D97706; }
+.compact-callout strong { display: block; font-size: 7.25pt; line-height: 1.35; }
+.compact-callout p { margin-top: 1.5mm; color: #475569; font-size: 6.6pt; line-height: 1.45; }
+
+.severity-register th:nth-child(1) { width: 10%; }
+.severity-register th:nth-child(2) { width: 27%; }
+.severity-register th:nth-child(3) { width: 12%; }
+.severity-register th:nth-child(4) { width: 32%; }
+.severity-register th:nth-child(5) { width: 19%; }
+.active-alert-summary th:nth-child(1) { width: 11%; }
+.active-alert-summary th:nth-child(2) { width: 24%; }
+.active-alert-summary th:nth-child(3) { width: 42%; }
+.active-alert-summary th:nth-child(4) { width: 23%; }
+.anomaly-summary-register th:nth-child(1) { width: 12%; }
+.anomaly-summary-register th:nth-child(2) { width: 38%; }
+.anomaly-summary-register th:nth-child(3) { width: 28%; }
+.anomaly-summary-register th:nth-child(4) { width: 22%; }
+.requirement-register th:nth-child(1) { width: 8%; }
+.requirement-register th:nth-child(2) { width: 23%; }
+.requirement-register th:nth-child(3) { width: 42%; }
+.requirement-register th:nth-child(4) { width: 14%; }
+.requirement-register th:nth-child(5) { width: 13%; }
+.ownership-summary-register th:nth-child(1) { width: 12%; }
+.ownership-summary-register th:nth-child(2) { width: 44%; }
+.ownership-summary-register th:nth-child(3) { width: 22%; }
+.ownership-summary-register th:nth-child(4) { width: 22%; }
+.correlation-summary-register th:nth-child(1) { width: 14%; }
+.correlation-summary-register th:nth-child(2) { width: 58%; }
+.correlation-summary-register th:nth-child(3) { width: 28%; }
+.recommendation-register th:nth-child(1) { width: 8%; }
+.recommendation-register th:nth-child(2) { width: 9%; }
+.recommendation-register th:nth-child(3) { width: 34%; }
+.recommendation-register th:nth-child(4) { width: 22%; }
+.recommendation-register th:nth-child(5) { width: 17%; }
+.recommendation-register th:nth-child(6) { width: 10%; }
+.governance-register th { width: 27%; }
+.page-active-alerts .identity-item,
+.page-anomaly-evidence .identity-item,
+.page-alert-ownership .identity-item,
+.page-alert-correlation .identity-item { padding-top: 1.4mm; padding-bottom: 1.4mm; }
+.anomaly-identities { margin-top: 3mm; }
+
+.status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm 4mm; }
+.status-grid > div { display: grid; grid-template-columns: 9mm 1fr; gap: 1.5mm 2mm; align-items: start; }
+.status-grid b { grid-row: 1 / span 2; display: flex; align-items: center; justify-content: center; min-height: 8mm; border-radius: 1.4mm; background: #F3E8FF; color: #7C3AED; }
+.status-grid strong { font-size: 6.4pt; }
+.status-grid span { color: #64748B; font-size: 5.9pt; line-height: 1.35; }
+.empty-state { color: #64748B; font-style: italic; }
+
+/* R6 dense-page budget: keep the Active Alerts decision above the footer. */
+.page-active-alerts .report-table th,
+.page-active-alerts .report-table td {
+  padding: 1.15mm 2mm;
+}
+.page-active-alerts .identity-item {
+  padding-top: .75mm;
+  padding-bottom: .75mm;
+}
+.page-active-alerts .alert-references .reference-item {
+  padding-top: .75mm;
+  padding-bottom: .75mm;
+}
+.page-active-alerts .identity-register {
+  margin-top: 2.4mm;
+}

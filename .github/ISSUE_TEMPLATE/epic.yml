@@ -1,0 +1,60 @@
+name: Epic
+description: Define a multi-story KAORI product or platform outcome.
+title: ""
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use a concise sentence-case title that describes the outcome. Native GitHub Issue Type is the type authority; do not add `[EPIC]` to the title.
+        Use this form for a governed outcome that requires multiple child work items.
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Outcome
+      description: Describe the measurable outcome this Epic must produce.
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+    validations:
+      required: true
+  - type: textarea
+    id: value
+    attributes:
+      label: Business / Operational Value
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+    validations:
+      required: true
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: Out of Scope
+    validations:
+      required: true
+  - type: textarea
+    id: success
+    attributes:
+      label: Success Metrics
+    validations:
+      required: true
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+  - type: textarea
+    id: exit
+    attributes:
+      label: Exit Criteria
+    validations:
+      required: true

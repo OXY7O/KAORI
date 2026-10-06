@@ -1,0 +1,254 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/pagination.html" as pagination_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/loading_bar.html" as loading_bar %}
+{% import "components/table_registry.html" as registry_ui %}
+{% set filters = lifecycle.history_filters %}
+{% set pager = lifecycle.history_pagination %}
+{% set history_refresh_url = url_for('platform_operations.data_lifecycle.index', tab='history', archive_domain=filters.domain, archive_status=filters.status, archive_trigger=filters.trigger_type, archive_mode=filters.operation_mode, archive_storage=filters.storage_backend, archive_search=filters.search, archive_page=pager.page, archive_per_page=pager.per_page) %}
+<section id="data-lifecycle-history"
+         class="{{ table_ui.block_classes() }}"
+         hx-get="{{ history_refresh_url }}"
+         hx-trigger="every 20s"
+         hx-on::before-request="if (event.detail.elt === this && (document.hidden || this.contains(document.activeElement) && document.activeElement.matches('input, select'))) event.preventDefault()"
+         hx-target="this"
+         hx-swap="outerHTML swap:0ms settle:0ms"
+         hx-sync="this:replace">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-start gap-3">
+                <span class="{{ table_ui.block_icon_classes() }}"><i data-lucide="history" class="h-5 w-5"></i></span>
+                <div>
+                    <h2 class="{{ table_ui.block_title_classes() }}">Archive History</h2>
+                    <p class="{{ table_ui.block_description_classes() }}">Review verified archive artifacts and cleanup evidence across managed KAORI data domains.</p>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                {% if current_user.has_permission('jobs.view') %}
+                    <a href="{{ url_for('jobs.executions') }}"
+                       class="{{ table_ui.action_classes() }}"><i data-lucide="list-checks" class="h-4 w-4"></i>Jobs &amp; Executions</a>
+                {% endif %}
+                {% if filters.domain != 'all' or filters.status != 'all' or filters.trigger_type != 'all' or filters.operation_mode != 'all' or filters.storage_backend != 'all' or filters.search %}
+                    {% set history_clear_url = url_for('platform_operations.data_lifecycle.index', tab='history', archive_page=1, archive_per_page=pager.per_page) %}
+                    {{ registry_ui.clear_filters_action(history_clear_url,
+                                        table_ui.action_classes() ,
+                    hx_get=history_clear_url,
+                    target='#data-lifecycle-history',
+                    indicator='#data-lifecycle-history-loading',
+                    push_url='true',
+                    swap='outerHTML',
+                    marker='data-lifecycle-history'
+                    ) }}
+                {% endif %}
+                <a href="{{ history_refresh_url }}"
+                   hx-get="{{ history_refresh_url }}"
+                   hx-target="#data-lifecycle-history"
+                   hx-swap="outerHTML"
+                   hx-indicator="#data-lifecycle-history-loading"
+                   class="{{ table_ui.action_classes() }}"><i data-lucide="refresh-cw" class="h-4 w-4"></i>Refresh</a>
+            </div>
+        </div>
+        {{ loading_bar.render('data-lifecycle-history-loading', label='Refreshing Archive History') }}
+    </header>
+    <form method="get"
+          action="{{ url_for('platform_operations.data_lifecycle.index') }}"
+          hx-get="{{ url_for('platform_operations.data_lifecycle.index') }}"
+          hx-target="#data-lifecycle-history"
+          hx-swap="outerHTML"
+          hx-push-url="true"
+          hx-indicator="#data-lifecycle-history-loading"
+          hx-trigger="change, keyup changed delay:400ms from:input[name='archive_search']"
+          class="{{ table_ui.filter_bar_classes() }}">
+        <input type="hidden" name="tab" value="history">
+        <div class="min-w-[160px]">
+            <label class="{{ table_ui.filter_label_classes() }}">Domain</label>
+            <select name="archive_domain" class="{{ table_ui.filter_select_classes() }}">
+                <option value="all">All Domains</option>
+                {% for domain in lifecycle.history_filter_options.domains %}
+                    <option value="{{ domain.value }}"
+                            {% if filters.domain == domain.value %}selected{% endif %}>{{ domain.label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="min-w-[145px]">
+            <label class="{{ table_ui.filter_label_classes() }}">Status</label>
+            <select name="archive_status" class="{{ table_ui.filter_select_classes() }}">
+                <option value="all">All Statuses</option>
+                {% for status in lifecycle.history_filter_options.statuses %}
+                    <option value="{{ status }}"
+                            {% if filters.status == status %}selected{% endif %}>{{ status|replace('_', ' ') |title }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="min-w-[140px]">
+            <label class="{{ table_ui.filter_label_classes() }}">Trigger</label>
+            <select name="archive_trigger" class="{{ table_ui.filter_select_classes() }}">
+                <option value="all">All Triggers</option>
+                {% for trigger in lifecycle.history_filter_options.triggers %}
+                    <option value="{{ trigger }}"
+                            {% if filters.trigger_type == trigger %}selected{% endif %}>{{ trigger|title }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="min-w-[170px]">
+            <label class="{{ table_ui.filter_label_classes() }}">Mode</label>
+            <select name="archive_mode" class="{{ table_ui.filter_select_classes() }}">
+                <option value="all">All Modes</option>
+                {% for mode in lifecycle.history_filter_options.modes %}
+                    <option value="{{ mode }}"
+                            {% if filters.operation_mode == mode %}selected{% endif %}>{{ mode|replace('_', ' ') |title }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="min-w-[135px]">
+            <label class="{{ table_ui.filter_label_classes() }}">Storage</label>
+            <select name="archive_storage" class="{{ table_ui.filter_select_classes() }}">
+                <option value="all">All Storage</option>
+                {% for backend in lifecycle.history_filter_options.storage_backends %}
+                    <option value="{{ backend }}"
+                            {% if filters.storage_backend == backend %}selected{% endif %}>{{ backend|upper }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="min-w-[220px] flex-1">
+            <label class="{{ table_ui.filter_label_classes() }}">Search</label>
+            <input name="archive_search"
+                   value="{{ filters.search }}"
+                   class="{{ table_ui.filter_input_classes() }}"
+                   placeholder="Search archives...">
+        </div>
+    </form>
+    <div class="w-full">
+        <table class="{{ table_ui.table_classes('table-fixed') }}">
+            <thead class="{{ table_ui.head_classes() }}">
+                <tr>
+                    <th class="{{ table_ui.header_cell_classes() }} w-[24%]">Archive</th>
+                    <th class="{{ table_ui.header_cell_classes() }} w-[18%]">Execution</th>
+                    <th class="{{ table_ui.header_cell_classes() }} w-[18%]">Storage</th>
+                    <th class="{{ table_ui.header_cell_classes() }} w-[20%]">Outcome</th>
+                    <th class="{{ table_ui.header_cell_classes(true) }} w-[20%]">Action</th>
+                </tr>
+            </thead>
+            <tbody class="{{ table_ui.body_classes() }}">
+                {% for archive in lifecycle.history_archives %}
+                    <tr class="{{ table_ui.row_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ table_ui.title_cell(archive.short_id, archive.checksum_short or 'Checksum pending', 'file-archive') }}
+                            <div class="mt-2 flex min-w-0 items-center gap-1.5 text-xs text-content-muted">
+                                <i data-lucide="{{ archive.domain_icon }}"
+                                   class="h-3.5 w-3.5 shrink-0 text-kaori-primary"></i>
+                                <span class="min-w-0 break-words">{{ archive.domain_label }}</span>
+                            </div>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <p class="text-xs font-semibold text-content-primary">{{ archive.operation_mode|replace('_', ' ') |title }}</p>
+                            <p class="mt-1 text-xs text-content-muted">{{ archive.record_count }} records · {{ archive.cleanup_deleted_count }} cleaned</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <p class="text-xs font-medium text-content-primary">{{ archive.storage_label }}</p>
+                            <p class="mt-1 text-xs text-content-muted">{{ archive.size_label }}</p>
+                            {% if archive.supplemental_count %}
+                                <p class="mt-1 text-xs text-content-muted">{{ archive.supplemental_count }} retained evidence {{ 'file' if archive.supplemental_count == 1 else 'files' }}</p>
+                            {% endif %}
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ table_label.status_label(archive.status|replace('_',' ') |title, 'normal' if archive.status == 'ready' else ('critical' if archive.status in ['failed', 'purge_failed'] else ('disabled' if archive.status == 'expired' else 'warning'))) }}
+                            <p class="mt-2 break-words text-xs text-content-muted">{{ archive.completed_at|user_datetime }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes(true) }}">
+                            <div class="flex flex-wrap justify-end gap-2">
+                                {% if archive.is_downloadable and current_user.has_permission('platform_operations.export_data_lifecycle') %}
+                                    <a href="{{ url_for('platform_operations.data_lifecycle.download', archive_id=archive.id) }}"
+                                       class="{{ table_ui.action_classes() }}"><i data-lucide="download" class="h-4 w-4"></i>Data</a>
+                                    <a href="{{ url_for('platform_operations.data_lifecycle.download', archive_id=archive.id, kind='manifest') }}"
+                                       class="{{ table_ui.action_classes() }}"><i data-lucide="file-json-2" class="h-4 w-4"></i>Manifest</a>
+                                {% endif %}
+                                {% if archive.is_verifiable and current_user.has_permission('platform_operations.manage_data_lifecycle') %}
+                                    <form method="post"
+                                          action="{{ url_for('platform_operations.data_lifecycle.verify', archive_id=archive.id) }}"
+                                          hx-post="{{ url_for('platform_operations.data_lifecycle.verify', archive_id=archive.id) }}"
+                                          hx-target="#data-lifecycle-history"
+                                          hx-swap="outerHTML"
+                                          hx-indicator="#data-lifecycle-history-loading">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="tab" value="history">
+                                        <input type="hidden" name="archive_domain" value="{{ filters.domain }}">
+                                        <input type="hidden" name="archive_status" value="{{ filters.status }}">
+                                        <input type="hidden"
+                                               name="archive_trigger"
+                                               value="{{ filters.trigger_type }}">
+                                        <input type="hidden"
+                                               name="archive_mode"
+                                               value="{{ filters.operation_mode }}">
+                                        <input type="hidden"
+                                               name="archive_storage"
+                                               value="{{ filters.storage_backend }}">
+                                        <input type="hidden" name="archive_search" value="{{ filters.search }}">
+                                        <input type="hidden" name="archive_page" value="{{ pager.page }}">
+                                        <input type="hidden" name="archive_per_page" value="{{ pager.per_page }}">
+                                        <button class="{{ table_ui.action_classes() }}"><i data-lucide="shield-check" class="h-4 w-4"></i>Verify</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="p-0">
+                            {% set empty_state_icon = "archive" %}{% set empty_state_label = "No Data" %}{% set empty_state_title = "No Archive History Found" %}{% set empty_state_description = "Run a preview or archive operation from Retention Policies." %}{% set empty_state_min_height = "min-h-[190px]" %}
+                            {% include 'components/states/_empty_state.html' %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="{{ pagination_ui.footer_classes() }}">
+        <div class="{{ pagination_ui.summary_group_classes() }}">
+            <p>Showing {{ pager.start_item }}–{{ pager.end_item }} of {{ pager.total }} {{ 'Archive' if pager.total == 1 else 'Archives' }}</p>
+            <div class="{{ pagination_ui.rows_group_classes() }}">
+                <span class="text-xs font-semibold text-content-secondary">Rows</span>
+                <select aria-label="Rows Per Page"
+                        class="{{ pagination_ui.page_size_classes() }}"
+                        hx-get="{{ url_for('platform_operations.data_lifecycle.index', tab='history', archive_domain=filters.domain, archive_status=filters.status, archive_trigger=filters.trigger_type, archive_mode=filters.operation_mode, archive_storage=filters.storage_backend, archive_search=filters.search, archive_page=1) }}"
+                        hx-target="#data-lifecycle-history"
+                        hx-swap="outerHTML"
+                        hx-push-url="true"
+                        hx-indicator="#data-lifecycle-history-loading"
+                        name="archive_per_page">
+                    {% for size in pager.allowed_per_page %}
+                        <option value="{{ size }}" {% if size == pager.per_page %}selected{% endif %}>{{ size }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="{{ pagination_ui.navigation_group_classes() }}">
+            {% if pager.has_prev %}
+                <a class="{{ pagination_ui.navigation_classes() }}"
+                   hx-get="{{ url_for('platform_operations.data_lifecycle.index', tab='history', archive_domain=filters.domain, archive_status=filters.status, archive_trigger=filters.trigger_type, archive_mode=filters.operation_mode, archive_storage=filters.storage_backend, archive_search=filters.search, archive_page=pager.prev_num, archive_per_page=pager.per_page) }}"
+                   hx-target="#data-lifecycle-history"
+                   hx-swap="outerHTML"
+                   hx-push-url="true"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
+            {% else %}
+                <span class="{{ pagination_ui.navigation_classes(true) }}"
+                      aria-disabled="true"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
+            {% endif %}
+            {{ pagination_ui.numeric_pages(pager.page,pager.pages) }}
+            {% if pager.has_next %}
+                <a class="{{ pagination_ui.navigation_classes() }}"
+                   hx-get="{{ url_for('platform_operations.data_lifecycle.index', tab='history', archive_domain=filters.domain, archive_status=filters.status, archive_trigger=filters.trigger_type, archive_mode=filters.operation_mode, archive_storage=filters.storage_backend, archive_search=filters.search, archive_page=pager.next_num, archive_per_page=pager.per_page) }}"
+                   hx-target="#data-lifecycle-history"
+                   hx-swap="outerHTML"
+                   hx-push-url="true">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
+            {% else %}
+                <span class="{{ pagination_ui.navigation_classes(true) }}"
+                      aria-disabled="true">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% if lifecycle.feedback %}
+    {% with operation_feedback=lifecycle.feedback %}
+        {% include 'components/operation_feedback_oob.html' %}
+    {% endwith %}
+{% endif %}

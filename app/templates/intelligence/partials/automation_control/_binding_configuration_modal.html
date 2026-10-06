@@ -1,0 +1,157 @@
+{% import "components/table_label.html" as table_label %}
+{% import "components/table_primitives.html" as table_ui %}
+<div data-kaori-detail-variant="modal" class="min-w-0">
+    <section data-kaori-detail-shell class="min-w-0 bg-surface-card">
+        <header data-resource-detail-header>
+            <div class="flex min-w-0 items-start gap-3.5">
+                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-brand-outline bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="link" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2 text-xs font-semibold leading-5">
+                        <span class="text-kaori-primary">Runbook Binding</span>
+                        <span class="text-content-disabled">•</span>
+                        <span class="text-content-muted">Governed Configuration</span>
+                    </div>
+                    <h3 class="mt-0.5 text-lg font-semibold leading-7 text-content-primary">Create Alert &amp; Rule Binding</h3>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">Connect alert evidence to one published System Runbook revision without changing the immutable runbook contract.</p>
+                </div>
+            </div>
+        </header>
+        <div data-resource-detail-summary
+             class="mx-4 my-3 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card sm:mx-5">
+            <dl class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+                {% for icon, label, value, helper in [
+                    ('library', 'Published Revisions', payload.published_revisions|length, 'Available for binding'),
+                    ('shield-check', 'Execution Boundary', 'Independent', 'Binding never executes directly'),
+                    ('user-check', 'Approval', 'Governed', 'Runbook policy remains authoritative'),
+                    ('fingerprint', 'Evidence', 'Deterministic', 'Selector and mapping are persisted')
+                    ] %}
+                    <div class="min-w-0 px-4 py-3">
+                        <dt class="flex items-center gap-2 text-xs font-medium text-content-muted"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5 text-kaori-primary"></i>{{ label }}</dt>
+                        <dd class="mt-1 text-sm font-semibold leading-5 text-content-primary">
+                            {{ value }}
+                        </dd>
+                        <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ helper }}</p>
+                    </div>
+                {% endfor %}
+            </dl>
+        </div>
+        <div class="p-4 sm:p-5">
+            <form method="post"
+                  action="{{ url_for('automation_control.create_automation_binding') }}"
+                  class="space-y-5">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-elevated">
+                    <div class="border-b border-outline-subtle px-4 py-3">
+                        <div class="flex items-start gap-3">
+                            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="book-key" class="h-4 w-4"></i></span>
+                            <div>
+                                <h4 class="text-sm font-semibold leading-5 text-content-primary">Binding Identity</h4>
+                                <p class="mt-0.5 text-xs leading-5 text-content-muted">Choose the immutable System Runbook revision and assign a stable binding key for operator use.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid gap-4 p-4 lg:grid-cols-2">
+                        <label>
+                            <span class="{{ table_ui.filter_label_classes() }}">System Runbook Revision</span>
+                            <select name="revision_id"
+                                    required
+                                    class="{{ table_ui.filter_select_classes() }}">
+                                <option value="">Select revision</option>
+                                {% for item in payload.published_revisions %}
+                                    <option value="{{ item.id }}">{{ item.runbook.title }} · {{ item.version }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label>
+                            <span class="{{ table_ui.filter_label_classes() }}">Binding Key</span>
+                            <input name="binding_key"
+                                   required
+                                   placeholder="deployment-restart-stg"
+                                   class="{{ table_ui.filter_input_classes() }}">
+                        </label>
+                    </div>
+                </section>
+                <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-elevated">
+                    <div class="border-b border-outline-subtle px-4 py-3">
+                        <div class="flex items-start gap-3">
+                            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="scan-search" class="h-4 w-4"></i></span>
+                            <div>
+                                <h4 class="text-sm font-semibold leading-5 text-content-primary">Evidence Selector</h4>
+                                <p class="mt-0.5 text-xs leading-5 text-content-muted">Prefer a Rule Key for internal KAORI coverage. Alertname remains available for exact upstream matching.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid gap-4 p-4 lg:grid-cols-2">
+                        <label>
+                            <span class="{{ table_ui.filter_label_classes() }}">Rule Key</span>
+                            <input name="rule_key"
+                                   placeholder="kubernetes.pod.high_restart_count"
+                                   class="{{ table_ui.filter_input_classes() }}">
+                        </label>
+                        <label>
+                            <span class="{{ table_ui.filter_label_classes() }}">Alertname</span>
+                            <input name="alertname"
+                                   placeholder="Optional alertname"
+                                   class="{{ table_ui.filter_input_classes() }}">
+                        </label>
+                        <label>
+                            <span class="{{ table_ui.filter_label_classes() }}">Cluster Scope</span>
+                            <select name="cluster_id" class="{{ table_ui.filter_select_classes() }}">
+                                <option value="">All clusters</option>
+                                {% for cluster in payload.clusters %}<option value="{{ cluster.id }}">{{ cluster.name }}</option>{% endfor %}
+                            </select>
+                        </label>
+                        <label>
+                            <span class="{{ table_ui.filter_label_classes() }}">Namespace</span>
+                            <input name="namespace"
+                                   placeholder="Optional namespace"
+                                   class="{{ table_ui.filter_input_classes() }}">
+                        </label>
+                    </div>
+                </section>
+                <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-elevated">
+                    <div class="border-b border-outline-subtle px-4 py-3">
+                        <div class="flex items-start gap-3">
+                            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="braces" class="h-4 w-4"></i></span>
+                            <div>
+                                <h4 class="text-sm font-semibold leading-5 text-content-primary">Evidence Mapping</h4>
+                                <p class="mt-0.5 text-xs leading-5 text-content-muted">Persist exact label selectors and evidence mapping without changing the source-controlled runbook contract.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid gap-4 p-4 lg:grid-cols-2">
+                        <label>
+                            <span class="{{ table_ui.filter_label_classes() }}">Required Labels JSON</span><textarea name="required_labels_json"
+          rows="5"
+          class="w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 font-mono text-xs text-content-primary">{}</textarea>
+                        </label>
+                        <label>
+                            <span class="{{ table_ui.filter_label_classes() }}">Evidence Mapping JSON</span><textarea name="evidence_mapping_json" rows="5" class="w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 font-mono text-xs text-content-primary">{% if payload.system_runbook_catalog %}{{ payload.system_runbook_catalog[0].default_evidence_mapping | tojson }}{% else %}{}{% endif %}</textarea>
+                        </label>
+                    </div>
+                    <div class="flex flex-wrap items-start justify-between gap-3 border-t border-outline-subtle bg-surface-card px-4 py-3">
+                        <div class="max-w-xl rounded-lg border border-kaori-primary/15 bg-kaori-soft px-3 py-2 text-xs leading-5 text-content-secondary">
+                            Use binding selectors only for environment-specific evidence matching. Contract logic, recovery steps, and execution policy stay owned by the published System Runbook.
+                        </div>
+                        <label class="w-40">
+                            <span class="{{ table_ui.filter_label_classes() }}">Priority</span>
+                            <input type="number"
+                                   min="1"
+                                   name="priority"
+                                   value="100"
+                                   class="{{ table_ui.filter_input_classes() }}">
+                        </label>
+                    </div>
+                </section>
+                <div class="flex justify-end border-t border-outline-subtle pt-4">
+                    <button type="submit"
+                            {% if not payload.published_revisions %}disabled aria-disabled="true"{% endif %}
+                            class="inline-flex min-h-10 items-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white hover:bg-kaori-primary-hover disabled:cursor-not-allowed disabled:opacity-50"><i data-lucide="link" class="h-4 w-4"></i>Create Binding</button>
+                </div>
+            </form>
+        </div>
+    </section>
+</div>

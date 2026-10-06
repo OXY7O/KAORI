@@ -1,0 +1,5 @@
+{% if selected_storage_tab == 'pv' %}
+    {% include "kubernetes/analytics/storage/partials/_persistent_volumes_panel.html" %}
+{% else %}
+    {% include "kubernetes/analytics/storage/partials/_persistent_volume_claims_panel.html" %}
+{% endif %}

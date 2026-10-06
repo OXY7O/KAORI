@@ -1,0 +1,376 @@
+from __future__ import annotations
+
+from typing import Any, Literal
+
+from app.integrations.observability.alert_source.providers.alertmanager.application.service import (
+    get_alertmanager_status,
+)
+from app.integrations.observability.metrics_source.application.repository import resolve_instance_for_cluster
+from app.kubernetes.analytics.alerts.contracts import (
+    AlertIntegrationStatus,
+    AlertIntegrationStatusMap,
+    AlertSourceHealthCheck,
+    AlertSourceHealthSummary,
+    AlertSourceStatus,
+    NormalizedAlert,
+)
+from app.models import Cluster
+
+
+def is_alert_evidence_complete(
+    *,
+    source_status: AlertSourceStatus,
+    anomaly_source_status: dict[str, Any] | None,
+) -> bool:
+    anomaly_status = anomaly_source_status or {}
+    return (
+        bool(source_status.get('connected', False))
+        and bool(anomaly_status.get('connected', False))
+        and not bool(anomaly_status.get('partial', False))
+    )
+
+
+def build_summary(
+    *,
+    alerts: list[NormalizedAlert],
+    anomalies: list[dict[str, Any]],
+    source_status: AlertSourceStatus,
+) -> dict[str, Any]:
+    critical_alerts = sum(
+        1
+        for alert in alerts
+        if alert.get(
+            'severity',
+        )
+        == 'critical'
+    )
+
+    warning_alerts = sum(
+        1
+        for alert in alerts
+        if alert.get(
+            'severity',
+        )
+        == 'warning'
+    )
+
+    active_alerts = sum(
+        1
+        for alert in alerts
+        if alert.get(
+            'status',
+        )
+        in {
+            'active',
+            'firing',
+            'pending',
+        }
+    )
+
+    return {
+        'active_alerts': active_alerts,
+        'critical_alerts': critical_alerts,
+        'warning_alerts': warning_alerts,
+        'detected_anomalies': len(
+            anomalies,
+        ),
+        'source_connected': bool(
+            source_status.get(
+                'connected',
+            )
+        ),
+    }
+
+
+def build_metrics_source_status(
+    *,
+    cluster: Cluster | None,
+    source_status: AlertSourceStatus,
+    anomaly_source_status: dict[str, Any] | None = None,
+) -> AlertIntegrationStatus:
+    if cluster is None:
+        return {
+            'configured': False,
+            'connected': False,
+            'label': 'Metrics Source Not Set',
+            'status': 'not_set',
+            'response_time_ms': None,
+        }
+
+    config = resolve_instance_for_cluster(cluster.id)
+
+    if config is None or not getattr(
+        config,
+        'endpoint',
+        None,
+    ):
+        return {
+            'configured': False,
+            'connected': False,
+            'label': 'Metrics Source Not Set',
+            'status': 'not_set',
+            'response_time_ms': None,
+        }
+
+    anomaly_status = anomaly_source_status or {}
+    resolved_alert_source = source_status.get('resolved_source') == 'metrics_source' and bool(
+        source_status.get('connected')
+    )
+    anomaly_connected = bool(anomaly_status.get('connected'))
+    connected = resolved_alert_source or anomaly_connected
+    response_time_ms = (
+        source_status.get('response_time_ms') if resolved_alert_source else anomaly_status.get('response_time_ms')
+    )
+
+    return {
+        'configured': True,
+        'connected': connected,
+        'label': 'Metrics Source Connected' if connected else 'Metrics Source Configured',
+        'status': 'connected' if connected else 'configured',
+        'response_time_ms': response_time_ms if connected else None,
+    }
+
+
+def build_alertmanager_integration_status(
+    *,
+    cluster: Cluster | None,
+    source_status: AlertSourceStatus,
+) -> AlertIntegrationStatus:
+    if cluster is None:
+        return {
+            'configured': False,
+            'connected': False,
+            'label': 'Alertmanager Not Set',
+            'status': 'not_set',
+            'response_time_ms': None,
+        }
+
+    resolved_from_alertmanager = (
+        source_status.get(
+            'resolved_source',
+        )
+        == 'alertmanager'
+    )
+
+    if resolved_from_alertmanager and source_status.get(
+        'connected',
+    ):
+        return {
+            'configured': True,
+            'connected': True,
+            'label': 'Alertmanager Connected',
+            'status': 'connected',
+            'response_time_ms': source_status.get(
+                'response_time_ms',
+            ),
+        }
+
+    status = get_alertmanager_status(
+        cluster_id=cluster.id,
+    )
+
+    if not status.get(
+        'configured',
+    ):
+        return {
+            'configured': False,
+            'connected': False,
+            'label': 'Alertmanager Not Set',
+            'status': 'not_set',
+            'response_time_ms': None,
+        }
+
+    connected = bool(
+        status.get(
+            'connected',
+        )
+    )
+
+    return {
+        'configured': True,
+        'connected': connected,
+        'label': 'Alertmanager Connected' if connected else 'Alertmanager Configured',
+        'status': 'connected' if connected else 'configured',
+        'response_time_ms': status.get(
+            'response_time_ms',
+        ),
+    }
+
+
+def build_integration_status(
+    *,
+    cluster: Cluster | None,
+    source_status: AlertSourceStatus,
+    anomaly_source_status: dict[str, Any] | None = None,
+) -> AlertIntegrationStatusMap:
+    return {
+        'metrics_source': build_metrics_source_status(
+            cluster=cluster,
+            source_status=source_status,
+            anomaly_source_status=anomaly_source_status,
+        ),
+        'alertmanager': build_alertmanager_integration_status(
+            cluster=cluster,
+            source_status=source_status,
+        ),
+    }
+
+
+def _source_health_posture(
+    *,
+    connected: bool,
+    resolved_source: str,
+    fallback_used: bool,
+    alertmanager_configured: bool,
+    metrics_source_configured: bool,
+) -> tuple[int, Literal['healthy', 'fallback', 'degraded', 'unavailable'], str, str, str]:
+    if connected and resolved_source == 'alertmanager' and not fallback_used:
+        return (
+            100,
+            'healthy',
+            'Alertmanager Healthy',
+            'Alertmanager is connected and used as the primary alert source.',
+            'shield-check',
+        )
+    if connected and resolved_source == 'metrics_source' and fallback_used:
+        score = 60 if alertmanager_configured else 80
+        return (
+            score,
+            'fallback',
+            'Metrics Source Fallback Active',
+            'Alertmanager is unavailable, but Metrics Source ALERTS fallback is connected.',
+            'route',
+        )
+    if connected and resolved_source == 'metrics_source':
+        return (
+            75,
+            'degraded',
+            'Metrics Source Alerts Only',
+            'Metrics Source ALERTS is connected, but Alertmanager routing, grouping, silence, and inhibition context is not the active source.',
+            'activity',
+        )
+    if alertmanager_configured or metrics_source_configured:
+        return (
+            40,
+            'unavailable',
+            'Alert Source Unavailable',
+            'At least one alert source is configured, but no alert source is currently connected.',
+            'circle-alert',
+        )
+    return (
+        20,
+        'unavailable',
+        'Alert Sources Not Configured',
+        'Configure Alertmanager as the primary source and Metrics Source as fallback before relying on alert analysis.',
+        'plug-zap',
+    )
+
+
+def _source_health_checks(
+    *,
+    cluster: Cluster,
+    source_status: AlertSourceStatus,
+    alertmanager_configured: bool,
+    alertmanager_connected: bool,
+    metrics_source_configured: bool,
+    metrics_source_connected: bool,
+    fallback_used: bool,
+) -> list[AlertSourceHealthCheck]:
+    fallback_reason = str(
+        source_status.get('fallback_reason', 'Primary source is active; fallback is not being used.')
+        or 'Primary source is active; fallback is not being used.'
+    )
+    return [
+        {
+            'label': 'Cluster selected',
+            'status': 'pass',
+            'description': f'Cluster {cluster.name} is selected.',
+        },
+        {
+            'label': 'Alertmanager configured',
+            'status': 'pass' if alertmanager_configured else 'warning',
+            'description': 'Alertmanager endpoint is configured.'
+            if alertmanager_configured
+            else 'Alertmanager endpoint is not configured.',
+        },
+        {
+            'label': 'Alertmanager connected',
+            'status': 'pass' if alertmanager_connected else 'fail',
+            'description': 'Alertmanager is connected and can provide alert lifecycle context.'
+            if alertmanager_connected
+            else 'Alertmanager is not connected for the selected cluster.',
+        },
+        {
+            'label': 'Metrics Source evidence connected',
+            'status': 'pass' if metrics_source_connected else ('warning' if metrics_source_configured else 'fail'),
+            'description': 'Metrics Source alert or anomaly evidence is connected.'
+            if metrics_source_connected
+            else 'Metrics Source alert and anomaly evidence is not currently connected.',
+        },
+        {
+            'label': 'Fallback mode active',
+            'status': 'warning' if fallback_used else 'pass',
+            'description': fallback_reason,
+        },
+    ]
+
+
+def build_source_health(
+    *,
+    cluster: Cluster | None,
+    source_status: AlertSourceStatus,
+    integration_status: AlertIntegrationStatusMap,
+) -> AlertSourceHealthSummary:
+    if cluster is None:
+        return {
+            'score': 0,
+            'level': 'unavailable',
+            'label': 'No Cluster Selected',
+            'description': 'Select a cluster before evaluating alert source health.',
+            'icon': 'circle-off',
+            'checks': [
+                {
+                    'label': 'Cluster selected',
+                    'status': 'fail',
+                    'description': 'No cluster is selected for alert analysis.',
+                }
+            ],
+        }
+
+    alertmanager_status = integration_status['alertmanager']
+    metrics_source_status = integration_status['metrics_source']
+    selected_source = str(source_status.get('selected_source', 'auto') or 'auto')
+    resolved_source = str(source_status.get('resolved_source', 'none') or 'none')
+    connected = bool(source_status.get('connected', False))
+    fallback_used = bool(source_status.get('fallback_used', False))
+    alertmanager_configured = bool(alertmanager_status.get('configured', False))
+    alertmanager_connected = bool(alertmanager_status.get('connected', False))
+    metrics_source_configured = bool(metrics_source_status.get('configured', False))
+    metrics_source_connected = bool(metrics_source_status.get('connected', False))
+    score, level, label, description, icon = _source_health_posture(
+        connected=connected,
+        resolved_source=resolved_source,
+        fallback_used=fallback_used,
+        alertmanager_configured=alertmanager_configured,
+        metrics_source_configured=metrics_source_configured,
+    )
+    checks = _source_health_checks(
+        cluster=cluster,
+        source_status=source_status,
+        alertmanager_configured=alertmanager_configured,
+        alertmanager_connected=alertmanager_connected,
+        metrics_source_configured=metrics_source_configured,
+        metrics_source_connected=metrics_source_connected,
+        fallback_used=fallback_used,
+    )
+    return {
+        'score': score,
+        'level': level,
+        'label': label,
+        'description': description,
+        'icon': icon,
+        'checks': checks,
+        'selected_source': selected_source,
+        'resolved_source': resolved_source,
+        'fallback_used': fallback_used,
+    }

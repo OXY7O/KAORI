@@ -1,0 +1,166 @@
+/*
+ * KAORI Storage Analysis PDF specialization v3.0.
+ * Shared typography, publication geometry, tables, references, header, footer,
+ * and cover treatment are owned by analytics_publication.css.
+ */
+
+.storage-executive-split { }
+.aggregate-capacity-split { }
+.filesystem-split { }
+.persistent-split { }
+.expansion-risk-split { }
+.trend-storage-split { }
+
+.capacity-bars { padding-top: 1mm; }
+.capacity-row {
+  display: grid;
+  grid-template-columns: 28mm minmax(0, 1fr) 18mm;
+  gap: 3mm;
+  align-items: center;
+  margin: 3mm 0;
+}
+.capacity-row strong { font-size: 7pt; line-height: 1.25; }
+.capacity-row > span { text-align: right; font-size: 6.8pt; font-weight: 700; white-space: nowrap; }
+.capacity-track { position: relative; height: 5mm; overflow: hidden; background: #E5E7EB; }
+.capacity-track > i { display: block; height: 100%; background: #7C3AED; }
+.headroom-fill { background: #15803D !important; }
+
+.executive-capacity-values { margin-top: 4mm; }
+
+.aggregate-capacity-card { min-height: 51mm; border: .3mm solid #E2E8F0; padding: 5mm; }
+.stacked-capacity { display: flex; width: 100%; height: 7mm; margin-top: 6mm; overflow: hidden; background: #E5E7EB; }
+.stacked-capacity i { display: block; height: 100%; background: #7C3AED; }
+.stacked-capacity .headroom-segment { display: block; height: 100%; background: #DCFCE7; }
+.stacked-labels { display: flex; justify-content: space-between; margin-top: 2mm; font-size: 6.35pt; }
+.stacked-labels span { color: #7C3AED; font-weight: 650; }
+.stacked-labels strong { color: #15803D; font-weight: 650; }
+.storage-value-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3mm; margin-top: 5mm; }
+.storage-value-grid div { padding: 3mm; background: #F8FAFC; display: flex; flex-direction: column; gap: 1.2mm; }
+.storage-value-grid span { color: #64748B; font-size: 6pt; }
+.storage-value-grid strong { font-size: 7.2pt; line-height: 1.25; }
+.aggregate-assessment { min-height: 51mm; }
+
+.unavailable-card {
+  min-height: 49mm;
+  display: grid;
+  grid-template-columns: 18mm minmax(0, 1fr);
+  gap: 5mm;
+  align-items: center;
+  border: .3mm solid #E2E8F0;
+  background: #F8FAFC;
+  padding: 6mm;
+}
+.unavailable-icon { width: 16mm; height: 16mm; display: flex; align-items: center; justify-content: center; border-radius: 3mm; background: #FEF3C7; color: #B45309; font-size: 8pt; font-weight: 700; }
+.unavailable-card strong { display: block; font-size: 8pt; line-height: 1.35; }
+.unavailable-card p { margin: 2mm 0 0; color: #475569; font-size: 6.5pt; line-height: 1.45; }
+.warning-card { border-left-color: #D97706; }
+
+.findings-register th:nth-child(1) { width: 9%; }
+.findings-register th:nth-child(2) { width: 12%; }
+.findings-register th:nth-child(3) { width: 39%; }
+.findings-register th:nth-child(4) { width: 25%; }
+.findings-register th:nth-child(5) { width: 15%; }
+.aggregate-register th:nth-child(1) { width: 8%; }
+.aggregate-register th:nth-child(2) { width: 20%; }
+.aggregate-register th:nth-child(3) { width: 15%; }
+.aggregate-register th:nth-child(4) { width: 17%; }
+.aggregate-register th:nth-child(5) { width: 17%; }
+.aggregate-register th:nth-child(6) { width: 13%; }
+.aggregate-register th:nth-child(7) { width: 10%; }
+
+.filesystem-summary-table th:nth-child(1) { width: 12%; }
+.filesystem-summary-table th:nth-child(2) { width: 22%; }
+.filesystem-summary-table th:nth-child(3) { width: 24%; }
+.filesystem-summary-table th:nth-child(4) { width: 20%; }
+.filesystem-summary-table th:nth-child(5) { width: 22%; }
+.filesystem-identities .identity-item { padding-top: 1.35mm; padding-bottom: 1.35mm; }
+.filesystem-unavailable,
+.filesystem-boundary { min-height: 53mm; }
+.evidence-register th:nth-child(1) { width: 8%; }
+.evidence-register th:nth-child(2) { width: 23%; }
+.evidence-register th:nth-child(3) { width: 40%; }
+.evidence-register th:nth-child(4) { width: 14%; }
+.evidence-register th:nth-child(5) { width: 15%; }
+
+.persistent-volume-card { display: grid; grid-template-columns: 38mm minmax(0, 1fr); align-items: center; gap: 3.2mm; border: .3mm solid #E2E8F0; padding: 4mm 3.5mm; }
+.pv-donut svg { display: block; width: 36mm; height: 36mm; margin: 0 auto; }
+.persistent-volume-card dl { margin: 0; display: grid; grid-template-columns: 1fr; row-gap: 2mm; }
+.persistent-volume-card dt { color: #64748B; font-size: 6pt; }
+.persistent-volume-card dd { margin: .55mm 0 0; font-size: 6.85pt; line-height: 1.28; font-weight: 650; }
+.persistent-assessment { }
+.persistent-register th:nth-child(1) { width: 8%; }
+.persistent-register th:nth-child(2) { width: 30%; }
+.persistent-register th:nth-child(3) { width: 22%; }
+.persistent-register th:nth-child(4) { width: 25%; }
+.persistent-register th:nth-child(5) { width: 15%; }
+.persistent-record-split { gap: 6mm; }
+.pv-summary-register th:nth-child(1) { width: 22%; }
+.pv-summary-register th:nth-child(2) { width: 43%; }
+.pv-summary-register th:nth-child(3) { width: 35%; }
+.pvc-summary-register th:nth-child(1) { width: 28%; }
+.pvc-summary-register th:nth-child(2) { width: 72%; }
+.page-persistent .persistent-identities { margin-top: 3mm; }
+
+.local-risk-card { min-height: 47mm; }
+.expansion-checklist { min-height: 47mm; padding: 4mm; background: #F8FAFC; }
+.expansion-checklist > strong { display: block; margin-bottom: 3mm; font-size: 7.5pt; }
+.expansion-checklist > div { display: grid; grid-template-columns: 6mm minmax(0, 1fr); gap: 2mm; align-items: start; margin-top: 2.2mm; }
+.expansion-checklist > div > span { width: 5mm; height: 5mm; display: flex; align-items: center; justify-content: center; border-radius: 1mm; background: #F3E8FF; color: #7C3AED; font-size: 7pt; font-weight: 700; }
+.expansion-checklist p { margin: 0; font-size: 6.35pt; line-height: 1.4; }
+.risk-register th:nth-child(1) { width: 8%; }
+.risk-register th:nth-child(2) { width: 35%; }
+.risk-register th:nth-child(3) { width: 10%; }
+.risk-register th:nth-child(4) { width: 11%; }
+.risk-register th:nth-child(5) { width: 24%; }
+.risk-register th:nth-child(6) { width: 12%; }
+
+.storage-trend-frame { border: .3mm solid #D7DEE8; background: #FCFDFE; padding: 3mm 4mm 2mm; overflow: hidden; }
+.storage-trend-frame svg { display: block; width: 100%; }
+.trend-unavailable { height: 59mm; display: flex; flex-direction: column; align-items: center; justify-content: center; border: .3mm solid #E2E8F0; background: #F8FAFC; text-align: center; }
+.trend-unavailable strong { font-size: 8pt; }
+.trend-unavailable p { width: 120mm; margin-top: 2mm; color: #64748B; font-size: 6.5pt; line-height: 1.45; }
+.trend-boundary { min-height: 41mm; }
+.trend-register th:nth-child(1) { width: 12%; }
+.trend-register th:nth-child(2) { width: 30%; }
+.trend-register th:nth-child(3) { width: 22%; }
+.trend-register th:nth-child(4) { width: 22%; }
+.trend-register th:nth-child(5) { width: 14%; }
+
+.recommendation-register th:nth-child(1) { width: 8%; }
+.recommendation-register th:nth-child(2) { width: 9%; }
+.recommendation-register th:nth-child(3) { width: 34%; }
+.recommendation-register th:nth-child(4) { width: 22%; }
+.recommendation-register th:nth-child(5) { width: 17%; }
+.recommendation-register th:nth-child(6) { width: 10%; }
+.governance-table th { width: 27%; }
+
+.methodology-tables { grid-template-columns: minmax(0, 1.42fr) minmax(0, .88fr); gap: 6mm; }
+.data-source-table .compact-register th:nth-child(1) { width: 49%; }
+.data-source-table .compact-register th:nth-child(2) { width: 20%; }
+.data-source-table .compact-register th:nth-child(3) { width: 31%; }
+.methodology-tables .compact-register { font-size: var(--analytics-type-table-dense); }
+.methodology-tables .compact-register td { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: break-word; }
+
+/* R5 layout cleanup: keep the persistent-volume card visually locked. */
+.page-persistent .persistent-split > .content-section {
+  min-width: 0;
+}
+.page-persistent .persistent-volume-card,
+.page-persistent .persistent-assessment {
+}
+
+/* R6 dense-page budget: reduce internal chrome, never typography. */
+.page-persistent .report-table th,
+.page-persistent .report-table td {
+  padding: 1.15mm 2mm;
+}
+.page-persistent .persistent-identities .identity-item {
+  padding-top: .75mm;
+  padding-bottom: .75mm;
+}
+.page-persistent .persistent-identities {
+  margin-top: 2.4mm;
+}
+.page-persistent .persistent-record-split {
+  gap: 4.5mm;
+}

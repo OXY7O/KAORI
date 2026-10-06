@@ -1,0 +1,176 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
+{% import "integrations/components/_provider_registry.html" as provider_registry %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+<section id="harbor-connection-registry"
+         class="{{ integration_ui.section_shell_classes() }}"
+         aria-labelledby="harbor-registry-title"
+         data-kaori-harbor-connection-registry>
+    {% set registry_filters_active = selected_query or selected_environment or selected_readiness or selected_compatibility %}
+    {% set registry_clear_url = url_for('harbor.index',
+            tab='registry',
+            page=1,
+            per_page=pagination.per_page,
+            coverage_page=1,
+            coverage_per_page=coverage_pagination.per_page,
+            coverage_q=selected_coverage_query,
+            coverage_environment=selected_coverage_environment,
+        coverage_status=selected_coverage_status) %}
+    {% set registry_clear_action = registry_ui.clear_filters_action(
+            registry_clear_url,
+            table_ui.action_classes(),
+            hx_get=registry_clear_url,
+            target='#harbor-connection-registry',
+            indicator='#harbor-registry-loading',
+            push_url='true',
+            swap='outerHTML',
+            marker='harbor-registry'
+        ) if registry_filters_active else '' %}
+    {{ provider_registry.registry_header("Harbor Connection Registry",
+        "Manage reusable Harbor API connections and review their Registry evidence coverage.",
+        "package-search",
+        "harbor-registry-loading",
+        title_id="harbor-registry-title",
+        action_html=registry_clear_action) }}
+    <div class="{{ integration_ui.filter_region_classes() }}">
+        <form id="harbor-registry-filter-form"
+              method="get"
+              action="{{ url_for('harbor.index') }}"
+              hx-get="{{ url_for('harbor.index') }}"
+              hx-target="#harbor-connection-registry"
+              hx-select="#harbor-connection-registry"
+              hx-swap="outerHTML"
+              hx-push-url="true"
+              hx-trigger="change from:select, keyup changed delay:500ms from:input[name='q'], search from:input[name='q']"
+              hx-indicator="#harbor-registry-loading"
+              class="{{ table_ui.filter_layout_classes() }}">
+            <input type="hidden" name="tab" value="registry">
+            <input type="hidden" name="page" value="1">
+            <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
+            <input type="hidden" name="coverage_page" value="1">
+            <input type="hidden"
+                   name="coverage_per_page"
+                   value="{{ coverage_pagination.per_page }}">
+            <input type="hidden" name="coverage_q" value="{{ selected_coverage_query }}">
+            <input type="hidden"
+                   name="coverage_environment"
+                   value="{{ selected_coverage_environment }}">
+            <input type="hidden"
+                   name="coverage_status"
+                   value="{{ selected_coverage_status }}">
+            <div class="min-w-0">
+                {{ provider_registry.search_field("harbor-registry-search",
+                                "q",
+                                selected_query,
+                                "Connection, endpoint, environment, or version") }}
+            </div>
+            <div class="min-w-0">
+                {{ provider_registry.select_field("harbor-registry-environment",
+                                "environment",
+                                selected_environment,
+                                "Environment",
+                                environment_options,
+                                "All Environments") }}
+            </div>
+            <div class="min-w-0">
+                {{ provider_registry.select_field("harbor-registry-readiness",
+                                "readiness",
+                                selected_readiness,
+                                "Core Readiness",
+                                readiness_options,
+                                "All Readiness") }}
+            </div>
+            <div class="min-w-0">
+                {{ provider_registry.select_field("harbor-registry-compatibility",
+                                "compatibility",
+                                selected_compatibility,
+                                "Compatibility",
+                                compatibility_options,
+                                "All Profiles") }}
+            </div>
+        </form>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="{{ provider_registry.connection_registry_table_classes() }}">
+            {{ provider_registry.connection_registry_colgroup() }}
+            {{ provider_registry.connection_registry_head() }}
+            <tbody class="{{ table_ui.body_classes() }}">
+                {% for row in rows %}
+                    <tr class="{{ table_ui.row_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <div class="flex min-w-0 items-start gap-3">
+                                {{ integration_ui.palette_icon('package', 'brand') }}
+                                <div class="min-w-0">
+                                    <p class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ row.name }}</p>
+                                    <p class="mt-1 text-xs text-content-muted">{{ row.environment|default("Unspecified") |replace('_', ' ')|title }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <p class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ row.endpoint }}</p>
+                            <p class="mt-1 text-xs text-content-muted">Harbor API v2.0</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ integration_status(row.readiness_status or 'validation_required',
+                                                        'Ready' if row.readiness_status == 'ready' else (
+                                                        'Blocked' if row.readiness_status == 'blocked' else 'Validation Required') ,
+                            display='indicator'
+                            ) }}
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <p class="break-words text-sm font-medium text-content-primary [overflow-wrap:anywhere]">{{ row.compatibility_profile or "Not Validated" }}</p>
+                            <p class="mt-1 text-xs text-content-muted">{{ row.detected_version or "Version Not Observed" }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <p class="font-semibold tabular-nums text-content-primary">{{ row.binding_count }}</p>
+                            <p class="mt-1 text-xs text-content-muted">Metrics Source binding{{ "" if row.binding_count == 1 else "s" }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes(action=true) }}">
+                            <a href="{{ url_for('harbor.instance_detail', instance_id=row.id) }}"
+                               class="{{ table_ui.action_classes() }}">
+                                <i data-lucide="activity" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                Manage
+                            </a>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="p-0">
+                            {% set empty_state_icon = "package-search" %}
+                            {% set empty_state_label = "No Results" if registry_has_active_filters else "Setup Required" %}
+                            {% set empty_state_title = "No Harbor Connections Match the Active Filters" if registry_has_active_filters else "No Harbor Connections Found" %}
+                            {% set empty_state_description = "Adjust the registry filters to review another Harbor connection." if registry_has_active_filters else "Register a Harbor API connection to establish Full Validation and downstream Registry evidence coverage." %}
+                            {% set empty_state_action_url = url_for('harbor.new_instance') %}
+                            {% set empty_state_action_label = "Register Connection" %}
+                            {% set empty_state_action_icon = "plus" %}
+                            {% set empty_state_permission = "integrations.manage" %}
+                            {% set empty_state_show_admin_required = true %}
+                            {% set empty_state_min_height = "min-h-[210px]" %}
+                            {% include "components/states/_empty_state.html" %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% set registry_query_params = {
+            "tab": "registry",
+            "q": selected_query,
+            "environment": selected_environment,
+            "readiness": selected_readiness,
+            "compatibility": selected_compatibility,
+            "coverage_page": 1,
+            "coverage_per_page": coverage_pagination.per_page,
+            "coverage_q": selected_coverage_query,
+            "coverage_environment": selected_coverage_environment,
+            "coverage_status": selected_coverage_status
+        } %}
+    {{ provider_registry.pagination_footer(pagination,
+        "harbor.index",
+        "#harbor-connection-registry",
+        "#harbor-registry-loading",
+        registry_query_params,
+        item_label="Connections",
+        swap="outerHTML") }}
+</section>

@@ -1,0 +1,74 @@
+<section class="{{ analysis_surface.snapshot_shell_classes() }}">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="{{ analysis_surface.snapshot_header_icon_classes() }}">
+                <i data-lucide="waypoints" class="h-5 w-5"></i>
+            </span>
+            <div class="min-w-0">
+                <h2 class="text-base font-semibold text-content-primary">How Evidence Is Assembled</h2>
+                <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">
+                    Read values by source role. This page uses one committed worker snapshot; missing time-series evidence falls back only where Inventory is explicitly supported.
+                </p>
+            </div>
+        </div>
+    </header>
+    <div class="grid gap-px bg-outline-subtle lg:grid-cols-3">
+        <article class="bg-surface-card p-5">
+            <div class="flex items-start gap-3">
+                <span class="{{ analysis_surface.resource_icon_classes('inventory') }}"><i data-lucide="database" class="h-4 w-4"></i></span>
+                <div class="min-w-0">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary-dark dark:text-kaori-accent">Committed Inventory</p>
+                    <p class="mt-1 text-sm font-semibold text-content-primary">Configuration & Point-in-Time State</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Owns bucket identity, configuration, quota evidence, protection posture, and explicit point-in-time usage fallback.</p>
+                </div>
+            </div>
+        </article>
+        <article class="bg-surface-card p-5">
+            <div class="flex items-start gap-3">
+                <span class="{{ analysis_surface.resource_icon_classes('metrics') }}"><i data-lucide="chart-no-axes-combined" class="h-4 w-4"></i></span>
+                <div class="min-w-0">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-status-info-text">{{ metrics_source.provider_label }}</p>
+                    <p class="mt-1 text-sm font-semibold text-content-primary">Operational Time-Series</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Owns live and historical capacity, request, error, traffic, bucket activity, and forecast history used by Analytics.</p>
+                </div>
+            </div>
+        </article>
+        <article class="bg-surface-card p-5">
+            <div class="flex items-start gap-3">
+                <span class="{{ analysis_surface.resource_icon_classes('alerts') }}"><i data-lucide="bell-ring" class="h-4 w-4"></i></span>
+                <div class="min-w-0">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Alertmanager</p>
+                    <p class="mt-1 text-sm font-semibold text-content-primary">Alert Lifecycle & Routing</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Worker collects alert lifecycle and routing evidence when an eligible binding is resolved.</p>
+                </div>
+            </div>
+        </article>
+    </div>
+    <div class="border-t border-outline-subtle bg-surface-card p-5 sm:p-6">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="circle-help" class="h-4 w-4"></i></span>
+            <div class="min-w-0 flex-1">
+                <h3 class="text-sm font-semibold text-content-primary">How To Read Missing Or Non-Applicable Values</h3>
+                <p class="mt-1 text-xs leading-5 text-content-muted">A blank operational signal must keep its reason visible. These states are intentionally different.</p>
+                <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <div class="rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-3">
+                        {{ table_label.status_label('Not Configured', 'info', size='compact') }}
+                        <p class="mt-2 text-xs leading-5 text-content-muted">The provider confirms the feature is absent, for example a bucket without a quota. This is actual state, not a collection failure.</p>
+                    </div>
+                    <div class="rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-3">
+                        {{ table_label.status_label('No Current Samples', 'unknown', size='compact') }}
+                        <p class="mt-2 text-xs leading-5 text-content-muted">The worker query was valid but returned no samples in the selected scope or time window.</p>
+                    </div>
+                    <div class="rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-3">
+                        {{ table_label.status_label('Metric Not Scraped', 'warning', size='compact') }}
+                        <p class="mt-2 text-xs leading-5 text-content-muted">The optional metric family is not present in the bound Metrics Source. Bucket request metrics require MinIO /minio/v2/metrics/bucket collection.</p>
+                    </div>
+                    <div class="rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-3">
+                        {{ table_label.status_label('Runtime Query Failed', 'critical', size='compact') }}
+                        <p class="mt-2 text-xs leading-5 text-content-muted">The metric contract exists, but the worker collection query failed. KAORI preserves the failure state instead of converting it into zero or healthy evidence.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

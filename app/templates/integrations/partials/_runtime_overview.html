@@ -1,0 +1,240 @@
+{% import "components/loading_bar.html" as loading_bar %}
+{% import "components/table.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
+{% import "integrations/components/_record_actions.html" as record_actions %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% import "integrations/components/_provider_registry.html" as provider_registry %}
+{% import "components/table_label.html" as table_label %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+<section id="integration-runtime-overview"
+         class="{{ integration_ui.section_shell_classes() }}"
+         data-kaori-runtime-overview-violet-icons>
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                {{ integration_ui.palette_icon('activity', 'brand', size='lg') }}
+                <div class="min-w-0">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary dark:text-kaori-accent">Runtime Overview</p>
+                    <h2 class="mt-0.5 text-base font-semibold text-content-primary">Integration Health and Capability Posture</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">Review persisted runtime observations independently from connection and validation readiness.</p>
+                    <div class="mt-2 flex flex-wrap gap-2">
+                        {{ table_label.metadata_label(runtime_scope_label, 'filter', size='compact') }}
+                        {{ table_label.metadata_label(runtime_stats.total ~ ' of ' ~ runtime_global_stats.total ~ ' Targets', size='compact') }}
+                    </div>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                {% if selected_integration_type or selected_health or selected_readiness %}
+                    {{ registry_ui.clear_filters_action(url_for('integrations.overview', tab='runtime', per_page=runtime_pagination.per_page) ,
+                    table_ui.action_classes(),
+                    hx_get=url_for('integrations.overview', tab='runtime', per_page=runtime_pagination.per_page),
+                    target='#integration-runtime-overview',
+                    indicator='#integration-runtime-loading',
+                    push_url='true'
+                    ) }}
+                {% endif %}
+                <button type="button"
+                        hx-get="{{ url_for('integrations.overview', tab='runtime', integration_type=selected_integration_type, health=selected_health, readiness=selected_readiness, page=runtime_pagination.page, per_page=runtime_pagination.per_page) }}"
+                        hx-target="#integration-runtime-overview"
+                        hx-swap="outerHTML"
+                        hx-indicator="#integration-runtime-loading"
+                        hx-push-url="true"
+                        class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary dark:hover:text-kaori-accent">
+                    <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
+                    Reload Evidence
+                </button>
+            </div>
+        </div>
+        {{ loading_bar.render('integration-runtime-loading', label='Refreshing integration runtime overview') }}
+    </header>
+    {% if not runtime_has_targets %}
+        {% set empty_state_icon = "plug-zap" %}
+        {% set empty_state_label = "Setup Required" %}
+        {% set empty_state_title = "No Integration Targets Registered" %}
+        {% set empty_state_description = "Register a Kubernetes, Metrics Source, Alertmanager, or Object Storage provider target before runtime posture can be reviewed." %}
+        {% set empty_state_action_url = url_for('integrations.overview', tab='catalog') %}
+        {% set empty_state_action_label = "Browse Providers" %}
+        {% set empty_state_action_icon = "package-search" %}
+        {% set empty_state_min_height = "min-h-[220px]" %}
+        {% include 'components/states/_empty_state.html' %}
+    {% else %}
+        <div class="{{ integration_ui.metric_grid_classes(5) }} border-b border-outline-subtle">
+            {% for label, value, helper, icon, tone in [
+                ('Healthy', runtime_stats.healthy, 'Latest observation is healthy', 'circle-check', 'brand'),
+                ('Degraded', runtime_stats.degraded, 'Runtime review is recommended', 'triangle-alert', 'brand'),
+                ('Unhealthy', runtime_stats.unhealthy, 'Runtime intervention is required', 'circle-x', 'brand'),
+                ('Not Observed', runtime_stats.not_observed, 'No persisted runtime observation', 'circle-help', 'brand'),
+                ('Capability Attention', runtime_stats.capability_attention, 'Targets requiring capability review', 'puzzle', 'brand')
+                ] %}
+                {{ integration_ui.metric_card(label, value, helper, icon, tone) }}
+            {% endfor %}
+        </div>
+        <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+            <form hx-get="{{ url_for('integrations.overview', tab='runtime') }}"
+                  hx-target="#integration-runtime-overview"
+                  hx-swap="outerHTML"
+                  hx-indicator="#integration-runtime-loading"
+                  hx-push-url="true"
+                  hx-trigger="change delay:100ms"
+                  aria-label="Integration runtime filters"
+                  class="{{ table_ui.filter_layout_classes() }}">
+                <input type="hidden" name="tab" value="runtime" />
+                <input type="hidden" name="page" value="1" />
+                <input type="hidden"
+                       name="per_page"
+                       value="{{ runtime_pagination.per_page }}" />
+                <div>
+                    <label for="runtime-provider-filter"
+                           class="{{ table_ui.filter_label_classes() }}">Integration Type</label>
+                    <select id="runtime-provider-filter"
+                            name="integration_type"
+                            class="{{ table_ui.filter_select_classes() }}">
+                        <option value="">All Integration Types</option>
+                        {% for item in integration_type_options %}
+                            <option value="{{ item.value }}"
+                                    {% if selected_integration_type == item.value %}selected{% endif %}>{{ item.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="runtime-health-filter"
+                           class="{{ table_ui.filter_label_classes() }}">Runtime Health</label>
+                    <select id="runtime-health-filter"
+                            name="health"
+                            class="{{ table_ui.filter_select_classes() }}">
+                        <option value="">All Health States</option>
+                        {% for item in health_options %}
+                            <option value="{{ item.value }}"
+                                    {% if selected_health == item.value %}selected{% endif %}>{{ item.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="runtime-readiness-filter"
+                           class="{{ table_ui.filter_label_classes() }}">Validation Readiness</label>
+                    <select id="runtime-readiness-filter"
+                            name="readiness"
+                            class="{{ table_ui.filter_select_classes() }}">
+                        <option value="">All Readiness States</option>
+                        {% for item in runtime_readiness_options %}
+                            <option value="{{ item.value }}"
+                                    {% if selected_readiness == item.value %}selected{% endif %}>{{ item.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </form>
+        </div>
+        <div class="overflow-hidden">
+            <table class="{{ table_ui.table_classes() }} table-fixed">
+                <colgroup>
+                    <col class="w-[27%]">
+                    <col class="w-[14%]">
+                    <col class="w-[14%]">
+                    <col class="w-[18%]">
+                    <col class="w-[17%]">
+                    <col class="w-[10%]">
+                </colgroup>
+                <caption class="sr-only">Integration runtime records for {{ runtime_scope_label }}.</caption>
+                <thead class="{{ table_ui.head_classes() }}">
+                    <tr>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Provider / Instance</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Runtime Health</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Readiness</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Capability</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Last Observation</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes(true) }}">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="{{ table_ui.body_classes() }}">
+                    {% for row in runtime_rows %}
+                        {% set detail_token = row.integration_type ~ '-' ~ row.instance_id %}
+                        {% set detail_target_id = 'integration-runtime-detail-' ~ detail_token %}
+                        <tr class="{{ table_ui.row_classes() }}">
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <div class="flex min-w-0 items-center gap-2.5">
+                                    {{ integration_ui.palette_icon(row.provider_icon, 'brand', size='lg', rounded='md') }}
+                                    <div class="min-w-0">
+                                        <p class="truncate text-sm font-semibold text-content-primary"
+                                           title="{{ row.instance_name }}">{{ row.instance_name }}</p>
+                                        <p class="mt-0.5 truncate text-xs text-content-muted"
+                                           title="{{ row.provider_label }} · {{ row.endpoint_product }} · {{ row.scope_label }}">{{ row.provider_label }} · {{ row.endpoint_product }} · {{ row.scope_label }}</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                {{ integration_status(row.health_status, display='indicator') }}
+                                {% if row.health_score is not none %}
+                                    <p class="mt-1 text-xs font-semibold text-content-muted">Health score · {{ row.health_score }}/100</p>
+                                {% else %}
+                                    <p class="mt-1 text-xs text-content-muted">Runtime evidence not persisted</p>
+                                {% endif %}
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                {{ integration_status(row.readiness, display='indicator') }}
+                                <p class="mt-1 text-xs text-content-muted">Connection · {{ row.connection_status|replace('_', ' ') |title }}</p>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <p class="text-sm font-semibold text-content-primary">{{ row.capability_profile or 'Not Observed' }}</p>
+                                <p class="mt-1 text-xs {% if row.capability_attention %}text-status-warning-text{% else %}text-content-muted{% endif %}">{{ row.capability_attention_display }}</p>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <p class="text-sm font-semibold text-content-primary">{{ row.observed_at_display }}</p>
+                                <p class="mt-1 text-xs text-content-muted">{{ row.latency_display or 'Latency unavailable' }}</p>
+                            </td>
+                            <td class="{{ table_ui.cell_classes(true) }} whitespace-nowrap">
+                                {{ record_actions.view_more(detail_target_id,
+                                                                role='runtime-overview',
+                                                                hx_get=url_for('integrations.runtime_overview_details', detail_key=row.detail_key) ,
+                                hx_target='#integration-runtime-modal-host'
+                                ) }}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="p-0">
+                                {% set empty_state_icon = "search-x" %}
+                                {% set empty_state_label = "No Results" %}
+                                {% set empty_state_title = "No Runtime Targets Match These Filters" %}
+                                {% set empty_state_description = "Clear or adjust the integration-type, health, or readiness filters to expand the result set." %}
+                                {% set empty_state_min_height = "min-h-[190px]" %}
+                                {% include 'components/states/_empty_state.html' %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% set runtime_query_params = {
+                    'tab': 'runtime',
+                    'provider': selected_integration_type,
+                    'health': selected_health,
+                    'readiness': selected_readiness
+                } %}
+        {{ provider_registry.pagination_footer(runtime_pagination,
+                'integrations.overview',
+                '#integration-runtime-overview',
+                '#integration-runtime-loading',
+                runtime_query_params,
+                item_label='Integration',
+                swap='outerHTML') }}
+    {% endif %}
+    <div class="border-t border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                {{ integration_ui.palette_icon('archive', 'brand', size='sm') }}
+                <div class="min-w-0">
+                    <p class="text-xs font-semibold text-content-primary">Runtime Evidence Lifecycle</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Persisted runtime observations are provider-neutral evidence. Data Lifecycle governs retention, verified archive, and cleanup across current and future providers.</p>
+                </div>
+            </div>
+            {% if current_user.has_permission('platform_operations.view_data_lifecycle') %}
+                <a href="{{ url_for('platform_operations.data_lifecycle.index', domain='runtime_observation') }}"
+                   class="{{ table_ui.action_classes() }}">
+                    <i data-lucide="archive" class="h-4 w-4" aria-hidden="true"></i>
+                    Open Data Lifecycle
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    <div id="integration-runtime-modal-host"></div>
+</section>

@@ -1,0 +1,170 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
+{% import "integrations/components/_provider_registry.html" as provider_registry %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+<section id="harbor-integration-coverage"
+         class="{{ integration_ui.section_shell_classes() }}"
+         aria-labelledby="harbor-coverage-title">
+    {% set coverage_filters_active = selected_coverage_query or selected_coverage_environment or selected_coverage_status %}
+    {% set coverage_clear_url = url_for('harbor.index',
+            tab='coverage',
+            q=selected_query,
+            environment=selected_environment,
+            readiness=selected_readiness,
+            compatibility=selected_compatibility,
+            page=1,
+            per_page=pagination.per_page,
+            coverage_page=1,
+        coverage_per_page=coverage_pagination.per_page) %}
+    {% set coverage_clear_action = registry_ui.clear_filters_action(
+            coverage_clear_url,
+            table_ui.action_classes(),
+            hx_get=coverage_clear_url,
+            target='#harbor-integration-coverage',
+            indicator='#harbor-coverage-loading',
+            push_url='true',
+            swap='outerHTML',
+            marker='harbor-coverage'
+        ) if coverage_filters_active else '' %}
+    {{ provider_registry.registry_header("Harbor Integration Coverage",
+        "Review provider readiness and committed Registry evidence for each Harbor-backed Registry instance.",
+        "route",
+        "harbor-coverage-loading",
+        title_id="harbor-coverage-title",
+        action_html=coverage_clear_action) }}
+    <div class="{{ integration_ui.filter_region_classes() }}">
+        <form id="harbor-coverage-filter-form"
+              method="get"
+              action="{{ url_for('harbor.index') }}"
+              hx-get="{{ url_for('harbor.index') }}"
+              hx-target="#harbor-integration-coverage"
+              hx-select="#harbor-integration-coverage"
+              hx-swap="outerHTML"
+              hx-push-url="true"
+              hx-trigger="change from:select, keyup changed delay:500ms from:input[name='coverage_q'], search from:input[name='coverage_q']"
+              hx-indicator="#harbor-coverage-loading"
+              class="{{ table_ui.filter_layout_classes() }}">
+            <input type="hidden" name="tab" value="coverage">
+            <input type="hidden" name="coverage_page" value="1">
+            <input type="hidden"
+                   name="coverage_per_page"
+                   value="{{ coverage_pagination.per_page }}">
+            <input type="hidden" name="q" value="{{ selected_query }}">
+            <input type="hidden" name="environment" value="{{ selected_environment }}">
+            <input type="hidden" name="readiness" value="{{ selected_readiness }}">
+            <input type="hidden"
+                   name="compatibility"
+                   value="{{ selected_compatibility }}">
+            <input type="hidden" name="page" value="1">
+            <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
+            <div class="min-w-0">
+                {{ provider_registry.search_field("harbor-coverage-search",
+                                "coverage_q",
+                                selected_coverage_query,
+                                "Registry instance, endpoint, evidence, or source",
+                                label="Search Registry") }}
+            </div>
+            <div class="min-w-0">
+                {{ provider_registry.select_field("harbor-coverage-environment",
+                                "coverage_environment",
+                                selected_coverage_environment,
+                                "Environment",
+                                coverage_environment_options,
+                                "All Environments") }}
+            </div>
+            <div class="min-w-0">
+                {{ provider_registry.select_field("harbor-coverage-status",
+                                "coverage_status",
+                                selected_coverage_status,
+                                "Coverage",
+                                coverage_status_options,
+                                "All Coverage States") }}
+            </div>
+        </form>
+    </div>
+    <div class="min-w-0">
+        <table class="{{ table_ui.table_classes() }}">
+            {{ provider_registry.registry_evidence_coverage_colgroup() }}
+            {{ provider_registry.registry_evidence_coverage_head("Harbor API") }}
+            <tbody class="{{ table_ui.body_classes() }}">
+                {% for row in coverage_rows %}
+                    <tr class="{{ table_ui.row_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <div class="flex min-w-0 items-start gap-3">
+                                {{ integration_ui.palette_icon('package', 'brand') }}
+                                <div class="min-w-0">
+                                    <p class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ row.name }}</p>
+                                    <p class="mt-1 text-xs text-content-muted">{{ row.environment|default("Unspecified") |replace('_', ' ')|title }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ integration_status(row.api_status.status, row.api_status.label, display="indicator") }}
+                            <p class="mt-1 text-xs text-content-muted">{{ row.api_status.detail }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ integration_status(row.inventory_status.status, row.inventory_status.label, display="indicator") }}
+                            <p class="mt-1 text-xs text-content-muted">{{ row.inventory_status.detail }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ integration_status(row.metrics_status.status, row.metrics_status.label, display="indicator") }}
+                            <p class="mt-1 break-words text-xs text-content-muted [overflow-wrap:anywhere]">{{ row.metrics_status.detail }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ integration_status(row.webhook_status.status, row.webhook_status.label, display="indicator") }}
+                            <p class="mt-1 text-xs text-content-muted">{{ row.webhook_status.detail }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ integration_status(row.coverage_status, row.coverage_label, display="indicator") }}
+                        </td>
+                        <td class="{{ table_ui.cell_classes(action=true) }}">
+                            <a href="{{ url_for('harbor.instance_detail', instance_id=row.instance.id) }}"
+                               class="{{ table_ui.action_classes() }}">
+                                <i data-lucide="activity" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                Manage
+                            </a>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="p-0">
+                            {% set empty_state_icon = "route" %}
+                            {% set empty_state_label = "No Results" if coverage_has_active_filters else "Setup Required" %}
+                            {% set empty_state_title = "No Harbor Coverage Matches the Active Filters" if coverage_has_active_filters else "No Registry Coverage Found" %}
+                            {% set empty_state_description = "Adjust the coverage filters to review another Registry instance." if coverage_has_active_filters else "Register a Harbor connection, complete Full Validation, then collect Registry evidence and add Metrics Source or webhook coverage as required." %}
+                            {% set empty_state_action_url = url_for('harbor.new_instance') %}
+                            {% set empty_state_action_label = "Register Connection" %}
+                            {% set empty_state_action_icon = "plus" %}
+                            {% set empty_state_permission = "integrations.manage" %}
+                            {% set empty_state_show_admin_required = true %}
+                            {% set empty_state_min_height = "min-h-[210px]" %}
+                            {% include "components/states/_empty_state.html" %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% set coverage_query_params = {
+            "tab": "coverage",
+            "q": selected_query,
+            "environment": selected_environment,
+            "readiness": selected_readiness,
+            "compatibility": selected_compatibility,
+            "page": 1,
+            "per_page": pagination.per_page,
+            "coverage_q": selected_coverage_query,
+            "coverage_environment": selected_coverage_environment,
+            "coverage_status": selected_coverage_status
+        } %}
+    {{ provider_registry.pagination_footer(coverage_pagination,
+        "harbor.index",
+        "#harbor-integration-coverage",
+        "#harbor-coverage-loading",
+        coverage_query_params,
+        item_label="Registry Instances",
+        swap="outerHTML",
+        page_param="coverage_page",
+        per_page_param="coverage_per_page") }}
+</section>

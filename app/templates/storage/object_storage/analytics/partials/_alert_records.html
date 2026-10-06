@@ -1,0 +1,167 @@
+{% import "components/loading_bar.html" as loading_bar %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/table_primitives.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
+{% import "analytics/components/_record_pagination.html" as record_pagination %}
+{% set alert_filters_active = alert_table and (alert_table.search or alert_table.severity != 'all' or alert_table.state != 'all') %}
+<section id="object-storage-alert-records"
+         class="{{ analysis_surface.evidence_shell_classes() if analysis_surface is defined else table_ui.block_classes() }}">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div class="min-w-0">
+                <h2 class="text-base font-semibold text-content-primary">Provider Alert Records</h2>
+                <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">
+                    Automatic prefers Alertmanager for receiver, silence, and inhibition lifecycle data; Metrics Source ALERTS provides narrower rule-state evidence.
+                </p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                {{ table_label.status_label(alert_source.label, alert_source.tone) }}
+                {{ table_label.metadata_label(alert_source.resolved_label ~ ' Source', 'radio-tower', size='compact') }}
+                {% if alert_table %}{{ table_label.metadata_label(alert_table.pagination.total_items ~ ' Alerts', 'bell-ring', size='compact') }}{% endif %}
+                {% if alert_filters_active %}
+                    {{ registry_ui.clear_filters_action(url_for('analytics.object_storage_alerts', system_id=system.id, source=selected_alert_source, alert_per_page=alert_table.pagination.per_page, tab='records') ,
+                    table_ui.action_classes() ~ ' h-9 px-3',
+                    hx_get=url_for('analytics.object_storage_alert_table', system_id=system.id, source=selected_alert_source, alert_per_page=alert_table.pagination.per_page, tab='records'),
+                    target='#object-storage-alert-records',
+                    indicator='#object-storage-alert-records-loading',
+                    sync='#object-storage-alert-records:replace'
+                    ) }}
+                {% endif %}
+            </div>
+        </div>
+        {{ loading_bar.render('object-storage-alert-records-loading', label='Refreshing Provider Alerts') }}
+    </header>
+    {% if dependency_blocker %}
+        <div class="p-5 sm:p-6">{% include "storage/object_storage/analytics/partials/_dependency_notice.html" %}</div>
+    {% elif not alert_source.connected %}
+        <div class="p-5 sm:p-6">
+            {% set blocked_state_icon = "triangle-alert" %}
+            {% set blocked_state_label = "Source Unavailable" %}
+            {% set blocked_state_title = "Provider Alerts Unavailable" %}
+            {% set blocked_state_description = alert_source.detail %}
+            {% set blocked_state_tone = "warning" %}
+            {% set blocked_state_variant = "table" %}
+            {% set blocked_state_min_height = "min-h-[160px]" %}
+            {% include 'components/states/_blocked_state.html' %}
+        </div>
+    {% elif alert_table %}
+        <form id="object-storage-alert-record-filter"
+              method="get"
+              action="{{ url_for('analytics.object_storage_alerts') }}"
+              hx-get="{{ url_for('analytics.object_storage_alert_table') }}"
+              hx-trigger="change[event.target.matches('select')] delay:120ms, keyup[event.target.name === 'alert_q'] changed delay:450ms, search[event.target.name === 'alert_q']"
+              hx-target="#object-storage-alert-records"
+              hx-swap="outerHTML settle:120ms"
+              hx-push-url="false"
+              hx-sync="#object-storage-alert-records:replace"
+              hx-indicator="#object-storage-alert-records-loading"
+              class="{{ table_ui.filter_bar_classes() }}">
+            <input type="hidden" name="system_id" value="{{ system.id }}">
+            <input type="hidden" name="source" value="{{ selected_alert_source }}">
+            <input type="hidden" name="tab" value="records">
+            <input type="hidden" name="alert_page" value="1">
+            <input type="hidden"
+                   name="alert_per_page"
+                   value="{{ alert_table.pagination.per_page }}">
+            <label class="block" for="object-storage-alert-search">
+                <span class="{{ table_ui.filter_label_classes() }}">Search Alerts</span>
+                {{ table_ui.search_field('alert_q', alert_table.search, 'Search alert, target, receiver, or summary', id='object-storage-alert-search') }}
+            </label>
+            <label class="block" for="object-storage-alert-severity">
+                <span class="{{ table_ui.filter_label_classes() }}">Severity</span>
+                <select id="object-storage-alert-severity"
+                        name="alert_severity"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    {% for value, label in [('all','All Severities'),('critical','Critical'),('warning','Warning'),('info','Info'),('unknown','Unknown')] %}
+                        <option value="{{ value }}"
+                                {% if alert_table.severity == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label class="block" for="object-storage-alert-state">
+                <span class="{{ table_ui.filter_label_classes() }}">State</span>
+                <select id="object-storage-alert-state"
+                        name="alert_state"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    {% for value, label in [('all','All States'),('firing','Firing'),('pending','Pending'),('suppressed','Suppressed')] %}
+                        <option value="{{ value }}"
+                                {% if alert_table.state == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+        </form>
+        <div data-kaori-object-storage-alert-record-list>
+            <div class="hidden grid-cols-12 gap-4 border-b border-outline-subtle bg-surface-hover px-5 py-2.5 text-xs font-semibold uppercase tracking-wide text-content-muted lg:grid lg:px-6">
+                <div class="col-span-4">Alert</div>
+                <div class="col-span-2">Severity &amp; State</div>
+                <div class="col-span-3">Target &amp; Receiver</div>
+                <div class="col-span-3">Started &amp; Lifecycle</div>
+            </div>
+            <div class="divide-y divide-outline-subtle">
+                {% for row in alert_table.rows %}
+                    {% set severity_tone = row.severity if row.severity in ['critical','warning','info'] else 'unknown' %}
+                    {% set state_tone = 'critical' if row.state == 'firing' else ('warning' if row.state == 'pending' else ('info' if row.state == 'suppressed' else 'unknown')) %}
+                    <article class="grid min-w-0 gap-4 px-5 py-4 transition-colors hover:bg-kaori-mist lg:grid-cols-12 lg:items-start lg:px-6">
+                        <div class="min-w-0 lg:col-span-4">
+                            <div class="flex min-w-0 items-start gap-3">
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary-dark dark:text-kaori-accent">
+                                    <i data-lucide="bell-ring" class="h-4 w-4" aria-hidden="true"></i>
+                                </span>
+                                <div class="min-w-0">
+                                    <p class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ row.name }}</p>
+                                    <p class="mt-1 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ row.summary or 'No summary supplied by the active alert source.' }}</p>
+                                    <div class="mt-2">{{ table_label.metadata_label(row.source, 'radio-tower', size='compact') }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="min-w-0 lg:col-span-2">
+                            <p class="{{ analysis_surface.metric_label_classes() }} lg:hidden">Severity &amp; State</p>
+                            <div class="mt-1 flex flex-wrap gap-1.5 lg:mt-0">
+                                {{ table_label.status_label(row.severity|title, severity_tone, size='compact') }}
+                                {{ table_label.status_label(row.state|title, state_tone, size='compact') }}
+                            </div>
+                        </div>
+                        <div class="min-w-0 lg:col-span-3">
+                            <p class="{{ analysis_surface.metric_label_classes() }} lg:hidden">Target &amp; Receiver</p>
+                            <p class="mt-1 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere] lg:mt-0">{{ row.target or 'Target Not Provided' }}</p>
+                            <p class="mt-1 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">Receiver: {{ row.receiver or 'Not Provided' }}</p>
+                        </div>
+                        <div class="min-w-0 lg:col-span-3">
+                            <p class="{{ analysis_surface.metric_label_classes() }} lg:hidden">Started &amp; Lifecycle</p>
+                            <p class="mt-1 text-sm font-semibold text-content-primary lg:mt-0">{{ row.starts_at|user_datetime("N/A") }}</p>
+                            <div class="mt-2 flex flex-wrap gap-1.5">
+                                {% if row.source_key == 'metrics_source' %}
+                                    {{ table_label.status_label('Metrics Only', 'info', size='compact') }}
+                                {% else %}
+                                    {% if row.silenced %}{{ table_label.status_label('Silenced', 'warning', size='compact') }}{% endif %}
+                                    {% if row.inhibited %}{{ table_label.status_label('Inhibited', 'info', size='compact') }}{% endif %}
+                                    {% if not row.silenced and not row.inhibited %}{{ table_label.status_label('Unsuppressed', 'normal', size='compact') }}{% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </article>
+                {% else %}
+                    <div class="p-0">
+                        {% set empty_state_icon = "bell-off" %}
+                        {% set empty_state_label = "No Results" %}
+                        {% set empty_state_title = "No Provider Alerts Match the Current Filters" %}
+                        {% set empty_state_description = "Adjust the alert source or local filters to review another set of Object Storage alert evidence." %}
+                        {% set empty_state_min_height = "min-h-[160px]" %}
+                        {% include 'components/states/_empty_state.html' %}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        {{ record_pagination.render(alert_table.pagination,
+                'alert_page',
+                'alert_per_page',
+                'object-storage-alert-records',
+                'object-storage-alert-record-filter',
+                'object-storage-alert-records-loading',
+                'analytics.object_storage_alert_table',
+                'analytics.object_storage_alerts',
+                alert_table.query_params,
+                'Alerts',
+                embedded=true) }}
+    {% endif %}
+</section>

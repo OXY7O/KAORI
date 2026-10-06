@@ -1,0 +1,1 @@
+"""ConfigMap Management operational domain."""

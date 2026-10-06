@@ -1,0 +1,128 @@
+{% import "components/table_label.html" as table_label %}
+<section class="border-b border-outline-subtle px-4 py-4 sm:px-5">
+    <div class="flex items-start gap-3">
+        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+              aria-hidden="true">
+            <i data-lucide="list-tree" class="h-4 w-4"></i>
+        </span>
+        <div class="min-w-0">
+            <h4 class="text-sm font-semibold leading-5 text-content-primary">Activity & Delivery Evidence</h4>
+            <p class="mt-0.5 text-xs leading-5 text-content-muted">Recent lifecycle and channel activity stays compact here; older evidence remains expandable with bounded internal scrolling.</p>
+        </div>
+    </div>
+    <div class="mt-4 grid gap-4 xl:grid-cols-2">
+        <article class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+            <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3.5">
+                <div class="flex min-w-0 items-center gap-2.5">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
+                        <i data-lucide="history" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h5 class="text-sm font-semibold leading-5 text-content-primary">Incident Timeline</h5>
+                        <p class="mt-0.5 text-xs leading-5 text-content-muted">Source, operator, and workflow events.</p>
+                    </div>
+                </div>
+                {{ table_label.metadata_label(case.timeline|length ~ ' Events', 'history') }}
+            </header>
+            <div class="divide-y divide-outline-subtle px-4">
+                {% for event in case.timeline_recent %}
+                    {% set event_icon_classes = 'bg-status-critical-soft text-status-critical-text' if event.tone == 'critical' else ('bg-status-warning-soft text-status-warning-text' if event.tone == 'warning' else ('bg-status-normal-soft text-status-normal-text' if event.tone == 'normal' else 'bg-kaori-soft text-kaori-primary')) %}
+                    <article class="grid gap-3 py-3 sm:grid-cols-[2rem_minmax(0,1fr)_9rem] sm:items-start">
+                        <span class="flex h-7 w-7 items-center justify-center rounded-lg {{ event_icon_classes }}"
+                              aria-hidden="true">
+                            <i data-lucide="{{ event.icon }}" class="h-3.5 w-3.5"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <p class="text-xs font-semibold leading-5 text-content-primary">{{ event.label }}</p>
+                                <span class="text-xs leading-5 text-content-muted">{{ event.actor }}</span>
+                            </div>
+                            <p class="mt-0.5 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ event.summary }}</p>
+                        </div>
+                        <time class="text-xs leading-5 text-content-muted sm:text-right">{{ event.created_at|user_datetime }}</time>
+                    </article>
+                {% else %}
+                    <p class="py-5 text-sm text-content-muted">No timeline evidence recorded yet.</p>
+                {% endfor %}
+            </div>
+            {% if case.timeline_older %}
+                <details class="group border-t border-outline-subtle">
+                    <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-xs font-semibold text-kaori-primary hover:bg-surface-hover">
+                        <span class="inline-flex items-center gap-2"><i data-lucide="chevron-down"
+   class="h-3.5 w-3.5 transition group-open:rotate-180"></i>Earlier Timeline Events</span>
+                        <span class="text-content-muted">{{ case.timeline_older|length }} more</span>
+                    </summary>
+                    <div class="max-h-72 divide-y divide-outline-subtle overflow-y-auto border-t border-outline-subtle px-4">
+                        {% for event in case.timeline_older %}
+                            <article class="grid gap-2 py-2.5 sm:grid-cols-[minmax(0,1fr)_9rem]">
+                                <div class="min-w-0">
+                                    <p class="text-xs font-semibold text-content-primary">{{ event.label }}</p>
+                                    <p class="mt-0.5 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ event.summary }}</p>
+                                </div>
+                                <time class="text-xs leading-5 text-content-muted sm:text-right">{{ event.created_at|user_datetime }}</time>
+                            </article>
+                        {% endfor %}
+                    </div>
+                </details>
+            {% endif %}
+        </article>
+        <article class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+            <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3.5">
+                <div class="flex min-w-0 items-center gap-2.5">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
+                        <i data-lucide="send-horizontal" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h5 class="text-sm font-semibold leading-5 text-content-primary">Notification Delivery Ledger</h5>
+                        <p class="mt-0.5 text-xs leading-5 text-content-muted">Channel attempts and delivery outcomes.</p>
+                    </div>
+                </div>
+                {{ table_label.metadata_label(case.deliveries|length ~ ' Attempts', 'send') }}
+            </header>
+            <div class="divide-y divide-outline-subtle px-4">
+                {% for delivery in case.deliveries_recent %}
+                    {% set delivery_tone = 'normal' if delivery.status == 'sent' else ('critical' if delivery.status == 'failed' else ('warning' if delivery.status == 'suppressed' else 'info')) %}
+                    {% set delivery_icon_classes = 'bg-status-critical-soft text-status-critical-text' if delivery_tone == 'critical' else ('bg-status-warning-soft text-status-warning-text' if delivery_tone == 'warning' else ('bg-status-normal-soft text-status-normal-text' if delivery_tone == 'normal' else 'bg-kaori-soft text-kaori-primary')) %}
+                    <article class="grid gap-3 py-3 sm:grid-cols-[2rem_minmax(0,1fr)_9rem] sm:items-start">
+                        <span class="flex h-7 w-7 items-center justify-center rounded-lg {{ delivery_icon_classes }}"
+                              aria-hidden="true">
+                            <i data-lucide="send-horizontal" class="h-3.5 w-3.5"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <p class="truncate text-xs font-semibold leading-5 text-content-primary">{{ delivery.channel }}</p>
+                                {{ table_label.status_label(delivery.status|title, delivery_tone, size='compact') }}
+                            </div>
+                            <p class="mt-0.5 truncate text-xs leading-5 text-content-muted">{{ delivery.event_label }} · {{ delivery.provider }} · {{ delivery.attempt_count }} attempt{{ '' if delivery.attempt_count == 1 else 's' }}</p>
+                        </div>
+                        <time class="text-xs leading-5 text-content-muted sm:text-right">{{ (delivery.sent_at or delivery.created_at)|user_datetime }}</time>
+                    </article>
+                {% else %}
+                    <p class="py-5 text-sm text-content-muted">No notification delivery evidence recorded yet.</p>
+                {% endfor %}
+            </div>
+            {% if case.deliveries_older %}
+                <details class="group border-t border-outline-subtle">
+                    <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-xs font-semibold text-kaori-primary hover:bg-surface-hover">
+                        <span class="inline-flex items-center gap-2"><i data-lucide="chevron-down"
+   class="h-3.5 w-3.5 transition group-open:rotate-180"></i>Earlier Delivery Attempts</span>
+                        <span class="text-content-muted">{{ case.deliveries_older|length }} more</span>
+                    </summary>
+                    <div class="max-h-72 divide-y divide-outline-subtle overflow-y-auto border-t border-outline-subtle px-4">
+                        {% for delivery in case.deliveries_older %}
+                            <article class="grid gap-2 py-2.5 sm:grid-cols-[minmax(0,1fr)_9rem]">
+                                <div class="min-w-0">
+                                    <p class="truncate text-xs font-semibold text-content-primary">{{ delivery.channel }} · {{ delivery.provider }}</p>
+                                    <p class="mt-0.5 truncate text-xs leading-5 text-content-muted">{{ delivery.event_label }} · {{ delivery.status|title }} · {{ delivery.attempt_count }} attempt{{ '' if delivery.attempt_count == 1 else 's' }}</p>
+                                </div>
+                                <time class="text-xs leading-5 text-content-muted sm:text-right">{{ (delivery.sent_at or delivery.created_at)|user_datetime }}</time>
+                            </article>
+                        {% endfor %}
+                    </div>
+                </details>
+            {% endif %}
+        </article>
+    </div>
+</section>

@@ -1,0 +1,36 @@
+{% import "intelligence/components/_workspace.html" as intelligence_ui %}
+<div data-alert-intelligence-panel="evidence">
+    <div class="border-b border-outline-subtle px-4 py-4 sm:px-5">
+        {{ intelligence_ui.subsection('Evidence & Ownership Boundaries',
+                'Keep provider detection and lifecycle authority separate from KAORI interpretation, delivery enrichment, and governed automation.',
+                'shield-check') }}
+    </div>
+    <div class="border-b border-outline-subtle bg-surface-card p-4 sm:p-5">
+        <dl class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {{ intelligence_ui.field('Detection', 'Metrics Source', supporting='Evaluates alert rules and exposes ALERTS state') }}
+            {{ intelligence_ui.field('Lifecycle', 'Alertmanager', supporting='Grouping, inhibition, silences, routing, receivers') }}
+            {{ intelligence_ui.field('Interpretation', 'KAORI Intelligence', supporting='Committed snapshot context, recommendations, enrichment') }}
+            {{ intelligence_ui.field('Execution', 'Automation Control', supporting='Separate governed remediation boundary') }}
+        </dl>
+    </div>
+    <div class="grid gap-px bg-outline-subtle lg:grid-cols-2">
+        <section class="bg-surface-card p-4 sm:p-5">
+            {{ intelligence_ui.subsection('KAORI Owns',
+                        'Interpretation and enriched notification responsibilities.',
+                        'brain-circuit') }}
+            <ul class="mt-4 space-y-3 text-sm leading-6 text-content-secondary">
+                <li>{{ payload.ownership.intelligence }}</li>
+                <li>{{ payload.ownership.automation }}</li>
+            </ul>
+        </section>
+        <section class="bg-surface-card p-4 sm:p-5">
+            {{ intelligence_ui.subsection('External Alert Authority',
+                        'Detection and raw lifecycle remain owned by observability providers.',
+                        'shield-check') }}
+            <ul class="mt-4 space-y-3 text-sm leading-6 text-content-secondary">
+                <li>{{ payload.ownership.detection }}</li>
+                <li>{{ payload.ownership.lifecycle }}</li>
+            </ul>
+        </section>
+    </div>
+</div>

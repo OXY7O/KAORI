@@ -1,0 +1,159 @@
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% import "kubernetes/analytics/components/_record_detail_modal.html" as record_detail_modal %}
+{% import "components/table.html" as table_ui %}
+{% import "components/action_button.html" as action_button %}
+{% import "components/table_label.html" as table_label %}
+{% set severity_tone = 'critical' if anomaly.severity == 'critical' else ('warning' if anomaly.severity == 'warning' else ('info' if anomaly.severity == 'info' else 'unknown')) %}
+{% set modal_id = row_key ~ '-modal' %}
+<div x-data="{ detailOpen: false }"
+     @kaori:alerts-collapse.window="detailOpen = false">
+    <div class="grid gap-4 px-4 py-4 lg:grid-cols-12 lg:items-center">
+        <div class="min-w-0 lg:col-span-4">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}">
+                    <i data-lucide="radar" class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <p class="break-words text-sm font-semibold leading-5 text-content-primary">{{ anomaly.name }}</p>
+                    <p class="mt-1 break-words text-sm leading-5 text-content-muted">{{ anomaly.summary }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="min-w-0 lg:col-span-1">
+            <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-content-muted lg:hidden">Severity</p>
+            {{ table_label.status_label(anomaly.severity|title, tone=severity_tone, size='compact') }}
+        </div>
+        <div class="min-w-0 space-y-1 lg:col-span-3">
+            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted lg:hidden">Namespace &amp; Pod</p>
+            <p class="break-words text-sm font-semibold text-content-primary">{{ anomaly.namespace }}</p>
+            <p class="break-words [overflow-wrap:anywhere] text-xs leading-5 text-content-muted">{{ anomaly.target }}</p>
+        </div>
+        <div class="min-w-0 lg:col-span-2">
+            <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-content-muted lg:hidden">Signal</p>
+            <p class="break-words text-sm text-content-secondary">{{ anomaly.signal }}</p>
+        </div>
+        <div class="flex lg:col-span-2 lg:justify-end">
+            <button type="button"
+                    @click="detailOpen = true"
+                    aria-haspopup="dialog"
+                    :aria-expanded="detailOpen ? 'true' : 'false'"
+                    aria-controls="{{ modal_id }}"
+                    class="{{ table_ui.action_classes() }} w-full shrink-0 sm:w-auto">
+                <i data-lucide="panel-top-open" class="h-4 w-4"></i>
+                <span>View Details</span>
+            </button>
+        </div>
+    </div>
+    {% call record_detail_modal.render(
+        modal_id,
+        'Anomaly Evidence',
+        anomaly.name,
+        anomaly.description,
+        icon='radar',
+        footer_text='Anomaly evidence and review guidance come from the latest committed Alerts & Anomalies snapshot.'
+        ) %}
+        <div class="space-y-4" data-kaori-anomaly-evidence-modal>
+            <section class="{{ analysis_surface.nested_evidence_card_classes('overflow-hidden') }}"
+                     aria-label="Anomaly signal summary">
+                <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 lg:grid-cols-4">
+                    <div class="bg-surface-card px-4 py-3">
+                        <p class="{{ analysis_surface.metric_label_classes() }}">Priority</p>
+                        <div class="mt-2">{{ table_label.status_label(anomaly.severity|title, tone=severity_tone, size='compact') }}</div>
+                    </div>
+                    <div class="bg-surface-card px-4 py-3">
+                        <p class="{{ analysis_surface.metric_label_classes() }}">Namespace</p>
+                        <p class="mt-1.5 break-words text-sm font-semibold text-content-primary">{{ anomaly.namespace }}</p>
+                    </div>
+                    <div class="bg-surface-card px-4 py-3">
+                        <p class="{{ analysis_surface.metric_label_classes() }}">Signal</p>
+                        <p class="mt-1.5 break-words text-sm font-semibold text-content-primary">{{ anomaly.signal }}</p>
+                    </div>
+                    <div class="bg-surface-card px-4 py-3">
+                        <p class="{{ analysis_surface.metric_label_classes() }}">Evidence Source</p>
+                        <p class="mt-1.5 break-words text-sm font-semibold text-content-primary">{{ anomaly.source if anomaly.source else 'Metrics Source' }}</p>
+                    </div>
+                </div>
+            </section>
+            <div class="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]">
+                <div class="space-y-4">
+                    <section class="{{ analysis_surface.nested_evidence_card_classes('overflow-hidden') }}">
+                        <header class="border-b border-outline-subtle px-4 py-3">
+                            <div class="flex items-start gap-3">
+                                <span class="{{ analysis_surface.role_icon_classes('evidence', size='compact') }}"
+                                      aria-hidden="true"><i data-lucide="activity" class="h-3.5 w-3.5"></i></span>
+                                <div class="min-w-0">
+                                    <h3 class="text-sm font-semibold text-content-primary">Observed Deviation</h3>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">The concrete workload target and signal that produced this candidate.</p>
+                                </div>
+                            </div>
+                        </header>
+                        <dl class="divide-y divide-outline-subtle">
+                            <div class="px-4 py-3">
+                                <dt class="{{ analysis_surface.metric_label_classes() }}">Target</dt>
+                                <dd class="mt-1.5 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">
+                                    {{ anomaly.target }}
+                                </dd>
+                            </div>
+                            <div class="grid gap-px bg-outline-subtle sm:grid-cols-2">
+                                <div class="bg-surface-card px-4 py-3">
+                                    <dt class="{{ analysis_surface.metric_label_classes() }}">Signal</dt>
+                                    <dd class="mt-1.5 break-words text-sm font-semibold text-content-primary">
+                                        {{ anomaly.signal }}
+                                    </dd>
+                                </div>
+                                <div class="bg-surface-card px-4 py-3">
+                                    <dt class="{{ analysis_surface.metric_label_classes() }}">Scope</dt>
+                                    <dd class="mt-1.5 break-words text-sm font-semibold text-content-primary">
+                                        {{ anomaly.namespace }}
+                                    </dd>
+                                </div>
+                            </div>
+                        </dl>
+                    </section>
+                    {{ analysis_surface.interpretation_callout('Review Decision',
+                                        'Validate The Deviation Before Creating An Incident',
+                                        'Determine whether this deviation is workload-driven, capacity-driven, or caused by source gaps. Compare recent deployments, namespace density, and node pressure before escalating.',
+                                        icon='search',
+                                        role='brand',
+                                        tone=severity_tone,
+                                        compact=true,
+                                        card=true) }}
+                </div>
+                <aside class="{{ analysis_surface.nested_evidence_card_classes('overflow-hidden') }}">
+                    <header class="border-b border-outline-subtle px-4 py-3">
+                        <div class="flex items-start gap-3">
+                            <span class="{{ analysis_surface.role_icon_classes('brand', size='compact') }}"
+                                  aria-hidden="true"><i data-lucide="route" class="h-3.5 w-3.5"></i></span>
+                            <div class="min-w-0">
+                                <h3 class="text-sm font-semibold text-content-primary">Investigation Sequence</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Use the candidate as evidence, not as an incident verdict.</p>
+                            </div>
+                        </div>
+                    </header>
+                    <ol class="divide-y divide-outline-subtle">
+                        {% for title, description in [
+                            ('Confirm Workload Context', 'Verify the affected namespace, workload, and placement pattern.'),
+                            ('Correlate Active Signals', 'Compare the anomaly with active alerts and recent utilization trends.'),
+                            ('Validate Source Readiness', 'Confirm source readiness so missing samples are not interpreted as workload behavior.')
+                            ] %}
+                            <li class="flex gap-3 px-4 py-3">
+                                <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-kaori-border bg-kaori-soft text-xs font-semibold text-kaori-primary-dark dark:text-kaori-accent">{{ loop.index }}</span>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-content-primary">{{ title }}</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ol>
+                    <div class="border-t border-outline-subtle bg-surface-hover p-4">
+                        <a href="{{ url_for('analytics.workload', cluster_id=selected_cluster_id, namespace=anomaly.namespace if anomaly.namespace != '-' else '') }}"
+                           class="{{ action_button.classes('primary') }} w-full justify-center">
+                            <i data-lucide="boxes" class="h-4 w-4"></i>
+                            Review Workload
+                        </a>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    {% endcall %}
+</div>

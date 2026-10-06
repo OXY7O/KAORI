@@ -1,0 +1,136 @@
+{% import 'components/table_label.html' as table_label %}
+{% set resolved_status = status|default('info') %}
+{% set is_success = resolved_status == 'success' %}
+{% set is_warning = resolved_status == 'warning' %}
+{% set is_error = resolved_status == 'error' %}
+{% set resolved_tone = 'normal' if is_success else 'warning' if is_warning else 'critical' if is_error else 'info' %}
+{% set resolved_icon = 'check' if is_success else 'triangle-alert' if is_warning else 'x' if is_error else 'info' %}
+{% set resolved_activity_audit_saved = activity_audit_saved|default(false) %}
+{% set resolved_activity_audit_expected = activity_audit_expected|default(resolved_activity_audit_saved) %}
+{% set resolved_notification_deck_visible = notification_deck_visible|default(false) %}
+{% set suppress_toast = delivery|default('toast') == 'activity_center' %}
+{% set resolved_toast_id = feedback_id|default(notification_id|default(task_id|default('toast-' ~ range(100000, 999999)|random))) %}
+{% set resolved_auto_dismiss = auto_dismiss_ms|default(0 if is_error else 12000 if is_warning else 8000 if is_success else 10000) %}
+{% if not suppress_toast %}
+    {% if toast_oob|default(false) %}<div hx-swap-oob="beforeend:#operational-toast-stack">{% endif %}
+        <div data-operational-toast
+             data-toast-id="{{ resolved_toast_id }}"
+             data-auto-dismiss-ms="{{ resolved_auto_dismiss }}"
+             {% if resolved_notification_deck_visible %}data-operational-notification-refresh="true"{% endif %}
+             role="{{ 'alert' if is_error or is_warning else 'status' }}"
+             aria-live="{{ 'assertive' if is_error else 'polite' }}"
+             aria-atomic="true"
+             class="pointer-events-auto w-full opacity-0 transition duration-200 ease-out">
+            <article class="relative overflow-hidden rounded-xl border border-outline-default bg-surface-elevated shadow-lg shadow-black/10">
+                <div class="p-4">
+                    <div class="flex items-start gap-3">
+                        <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {{ table_label.tone_surface_classes(resolved_tone) }}"
+                              aria-hidden="true">
+                            <i data-lucide="{{ resolved_icon }}"
+                               class="h-4 w-4 {{ table_label.tone_icon_classes(resolved_tone) }}"></i>
+                        </span>
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <p class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ title }}</p>
+                                        {{ table_label.status_label(resolved_status|title, resolved_tone) }}
+                                    </div>
+                                    <p class="mt-1 break-words text-xs leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ message }}</p>
+                                </div>
+                                {% if task_id is defined and task_id and dismiss_url|default(None) %}
+                                    <form method="post"
+                                          action="{{ dismiss_url }}"
+                                          hx-post="{{ dismiss_url }}"
+                                          hx-target="closest [data-operational-toast]"
+                                          hx-swap="outerHTML">
+                                        {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                        <button type="submit"
+                                                class="inline-flex h-8 w-8 items-center justify-center rounded-md text-content-muted transition hover:bg-surface-hover hover:text-content-primary"
+                                                aria-label="Dismiss notification">
+                                            <i data-lucide="x" class="h-4 w-4"></i>
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <button type="button"
+                                            data-operational-toast-close
+                                            class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-content-muted transition hover:bg-surface-hover hover:text-content-primary"
+                                            aria-label="Dismiss notification">
+                                        <i data-lucide="x" class="h-4 w-4"></i>
+                                    </button>
+                                {% endif %}
+                            </div>
+                            {% if detail %}
+                                <p class="mt-2 break-words rounded-lg bg-surface-hover px-3 py-2 text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ detail }}</p>
+                            {% endif %}
+                            {% if total_count is defined and total_count is not none %}
+                                <div class="mt-3 grid grid-cols-3 gap-2">
+                                    <div class="rounded-lg border border-outline-subtle bg-surface-card px-2.5 py-2">
+                                        <p class="text-xs font-semibold text-content-muted">Target</p>
+                                        <p class="mt-0.5 text-sm font-semibold text-content-primary">{{ total_count }}</p>
+                                    </div>
+                                    <div class="rounded-lg border {{ table_label.tone_border_classes('normal') }} bg-status-normal-soft px-2.5 py-2">
+                                        <p class="text-xs font-semibold text-status-normal-text">Completed</p>
+                                        <p class="mt-0.5 text-sm font-semibold text-status-normal-text">{{ synced_count|default(0) }}</p>
+                                    </div>
+                                    <div class="rounded-lg border {{ table_label.tone_border_classes('critical') }} bg-status-critical-soft px-2.5 py-2">
+                                        <p class="text-xs font-semibold text-status-critical-text">Failed</p>
+                                        <p class="mt-0.5 text-sm font-semibold text-status-critical-text">{{ failed_count|default(0) }}</p>
+                                    </div>
+                                </div>
+                            {% endif %}
+                            <div class="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-outline-subtle pt-3">
+                                <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium text-content-muted">
+                                    <span class="inline-flex items-center gap-1.5">
+                                        <i data-lucide="clock-3" class="h-3.5 w-3.5"></i>
+                                        {{ completed_label|default("Just now") }}
+                                    </span>
+                                    {% if duration_seconds is defined and duration_seconds is not none %}
+                                        <span class="inline-flex items-center gap-1.5">
+                                            <i data-lucide="timer" class="h-3.5 w-3.5"></i>{{ duration_seconds }}s
+                                        </span>
+                                    {% endif %}
+                                    {% if resolved_activity_audit_saved %}
+                                        <span class="inline-flex items-center gap-1.5">
+                                            <i data-lucide="scroll-text" class="h-3.5 w-3.5"></i>Activity Audit
+                                        </span>
+                                    {% elif resolved_activity_audit_expected %}
+                                        <span class="inline-flex items-center gap-1.5 text-status-warning-text">
+                                            <i data-lucide="triangle-alert" class="h-3.5 w-3.5"></i>Activity Audit not confirmed
+                                        </span>
+                                    {% endif %}
+                                    {% if resolved_notification_deck_visible %}
+                                        <span class="inline-flex items-center gap-1.5">
+                                            <i data-lucide="bell-ring" class="h-3.5 w-3.5"></i>Notification Deck
+                                        </span>
+                                    {% endif %}
+                                </div>
+                                {% if view_url|default(None) %}
+                                    <a href="{{ view_url }}"
+                                       class="inline-flex min-h-8 items-center justify-center gap-1.5 rounded-md border border-outline-default bg-surface-card px-2.5 text-xs font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary dark:hover:text-kaori-accent">
+                                        {{ action_label|default("View Details") }}
+                                        <i data-lucide="{{ action_icon|default('arrow-up-right') }}"
+                                           class="h-3.5 w-3.5"></i>
+                                    </a>
+                                {% endif %}
+                            </div>
+                            {% if resolved_auto_dismiss|int > 0 %}
+                                <div class="mt-3 h-1.5 w-24 overflow-hidden rounded-full bg-surface-hover"
+                                     aria-hidden="true">
+                                    <div data-operational-toast-timer
+                                         class="h-full w-full origin-left rounded-full bg-kaori-primary dark:bg-kaori-primary">
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </article>
+        </div>
+        {% if toast_oob|default(false) %}
+        </div>
+    {% endif %}
+{% endif %}
+{% if delivery|default('toast') == 'activity_center' and resolved_notification_deck_visible %}
+    <span hidden data-operational-notification-refresh="true"></span>
+{% endif %}

@@ -1,0 +1,121 @@
+{% import "intelligence/components/_workspace.html" as intelligence_ui %}
+{% import "components/content_tabs.html" as content_tabs %}
+{% import "components/table_primitives.html" as table_ui %}
+{% import "components/loading_bar.html" as loading_bar %}
+{% set tab_query = {'domain': payload.domain, 'asset': payload.selected_asset_key} %}
+{% set workspace_tabs = [
+    ('overview', 'Overview', 'layout-dashboard', url_for('alert_intelligence.index', tab='overview', **tab_query)),
+    ('active', 'Active Alerts', 'siren', url_for('alert_intelligence.index', tab='active', **tab_query)),
+    ('routing', 'Routing & Channels', 'route', url_for('alert_intelligence.index', tab='routing', **tab_query)),
+    ('templates', 'Templates', 'file-code-2', url_for('alert_intelligence.index', tab='templates', **tab_query)),
+    ('silences', 'Silences', 'bell-off', url_for('alert_intelligence.index', tab='silences', **tab_query)),
+    ('resolved', 'Resolved', 'badge-check', url_for('alert_intelligence.index', tab='resolved', **tab_query))
+] %}
+{% call intelligence_ui.section(
+    'Alert Operations Workspace',
+    'Manage alert ownership, delivery, suppression, recovery, and resolution without duplicating channel credentials.',
+    'shield-alert',
+    payload.summary.active ~ ' Active',
+    'warning' if payload.summary.active else 'normal'
+    ) %}
+    {{ content_tabs.render_links('alert-operations-sections',
+        workspace_tabs,
+        payload.tab,
+        'Alert Operations Sections',
+        embedded=true,
+        data_namespace='alert-operations',
+        hx_target='#alert-intelligence-page-content',
+        hx_swap='outerHTML show:none focus-scroll:false',
+        hx_push_url='true',
+        nowrap=true,
+        hx_sync='#alert-intelligence-page-content:replace') }}
+    <div class="border-b border-outline-subtle bg-surface-card px-4 py-4 sm:px-5">
+        <div class="space-y-3">
+            <div class="min-w-0">
+                <h3 class="{{ table_ui.block_title_classes() }}">Operational Context</h3>
+                <p class="{{ table_ui.block_description_classes() }}">Choose the managed domain and asset scope used by this Alert Operations workspace.</p>
+            </div>
+            <form id="alert-intelligence-context-form"
+                  action="{{ url_for('alert_intelligence.index') }}"
+                  method="get"
+                  hx-get="{{ url_for('alert_intelligence.index') }}"
+                  hx-trigger="change"
+                  hx-target="#alert-intelligence-page-content"
+                  hx-select="#alert-intelligence-page-content"
+                  hx-swap="outerHTML show:none focus-scroll:false"
+                  hx-push-url="true"
+                  hx-indicator="#alert-intelligence-context-loading"
+                  hx-sync="this:replace"
+                  hx-disinherit="hx-indicator"
+                  class="{{ table_ui.filter_layout_classes() }}">
+                <input class="alert-intelligence-context-persistent"
+                       type="hidden"
+                       name="tab"
+                       value="{{ payload.tab }}">
+                <input class="alert-intelligence-context-persistent"
+                       type="hidden"
+                       name="severity"
+                       value="{{ payload.filters.severity }}">
+                <input class="alert-intelligence-context-persistent"
+                       type="hidden"
+                       name="workflow"
+                       value="{{ payload.filters.workflow }}">
+                <input class="alert-intelligence-context-persistent"
+                       type="hidden"
+                       name="source"
+                       value="{{ payload.filters.source }}">
+                <input class="alert-intelligence-context-persistent"
+                       type="hidden"
+                       name="q"
+                       value="{{ payload.filters.q }}">
+                <label class="min-w-0">
+                    <span class="{{ table_ui.filter_label_classes() }}">Domain</span>
+                    <select id="alert-intelligence-domain-select"
+                            name="domain"
+                            class="{{ table_ui.filter_select_classes() }}">
+                        {% for option in payload.domain_options %}
+                            <option value="{{ option.value }}"
+                                    {% if payload.domain == option.value %}selected{% endif %}>
+                                {{ option.label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label class="min-w-0">
+                    <span class="{{ table_ui.filter_label_classes() }}">Asset Scope</span>
+                    <select id="alert-intelligence-asset-select"
+                            name="asset"
+                            class="{{ table_ui.filter_select_classes() }}">
+                        {% for option in payload.assets %}
+                            <option value="{{ option.value }}"
+                                    {% if payload.selected_asset_key == option.value %}selected{% endif %}>
+                                {{ option.label }}
+                                {% if option.environment != 'Fleet scope' and option.environment != '-' %}· {{ option.environment }}{% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <noscript>
+                    <button type="submit" class="{{ table_ui.action_classes() }}">Apply Context</button>
+                </noscript>
+            </form>
+            {{ loading_bar.render('alert-intelligence-context-loading', label='Refreshing Operational Context') }}
+        </div>
+    </div>
+    <div data-alert-intelligence-active-section="{{ payload.tab }}"
+         class="bg-surface-card">
+        {% if payload.tab == 'active' %}
+            {% include 'intelligence/partials/_alert_ops_active.html' %}
+        {% elif payload.tab == 'routing' %}
+            {% include 'intelligence/partials/_alert_ops_routing.html' %}
+        {% elif payload.tab == 'templates' %}
+            {% include 'intelligence/partials/_alert_ops_templates.html' %}
+        {% elif payload.tab == 'silences' %}
+            {% include 'intelligence/partials/_alert_ops_silences.html' %}
+        {% elif payload.tab == 'resolved' %}
+            {% include 'intelligence/partials/_alert_ops_history.html' %}
+        {% else %}
+            {% include 'intelligence/partials/_alert_ops_overview.html' %}
+        {% endif %}
+    </div>
+{% endcall %}

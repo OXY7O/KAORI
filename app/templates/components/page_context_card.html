@@ -1,0 +1,33 @@
+{% macro render(
+    title,
+    description,
+    icon='panel-right',
+    eyebrow='Page Context',
+    boundary=None,
+    boundary_icon='layout-panel-top',
+    aria_label=None
+    ) -%}
+    <section class="rounded-xl border border-brand-outline bg-kaori-soft p-4 shadow-sm"
+             aria-label="{{ aria_label or title }}">
+        <div class="flex items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-brand-outline bg-surface-card text-kaori-primary">
+                <i data-lucide="{{ icon }}" class="h-4 w-4" aria-hidden="true"></i>
+            </span>
+            <div class="min-w-0">
+                {% if eyebrow %}
+                    <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">{{ eyebrow }}</p>
+                {% endif %}
+                <h2 class="{% if eyebrow %}mt-1{% endif %} text-base font-semibold leading-6 text-content-primary">{{ title }}</h2>
+                <p class="mt-1.5 text-sm leading-6 text-content-secondary">{{ description }}</p>
+            </div>
+        </div>
+        {% if boundary %}
+            <div class="mt-4 flex items-start gap-2.5 border-t border-brand-outline pt-3 text-xs leading-5 text-content-secondary">
+                <i data-lucide="{{ boundary_icon }}"
+                   class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
+                   aria-hidden="true"></i>
+                <p>{{ boundary }}</p>
+            </div>
+        {% endif %}
+    </section>
+{%- endmacro %}

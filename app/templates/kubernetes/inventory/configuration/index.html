@@ -1,0 +1,7 @@
+{% extends "layouts/app.html" %}
+{% block title %}Configuration Inventory{% endblock title %}
+{% block dashboard_content %}
+    {% import "components/resource_detail_modal.html" as resource_detail_modal %}
+    {% include "kubernetes/inventory/configuration/partials/_page_workspace.html" %}
+    {{ resource_detail_modal.inventory_host('Configuration', url_for('inventory.configuration_details', configuration_id=0) ) }}
+{% endblock dashboard_content %}

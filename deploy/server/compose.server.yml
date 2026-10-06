@@ -1,0 +1,135 @@
+services:
+  postgres:
+    image: ${KAORI_POSTGRES_IMAGE:?Set KAORI_POSTGRES_IMAGE in /etc/kaori/deploy.env}
+    restart: unless-stopped
+    env_file:
+      - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in /etc/kaori/deploy.env}
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in /etc/kaori/deploy.env}
+    volumes:
+      - kaori_vps_postgres_data:/var/lib/postgresql/data
+    networks:
+      - kaori_production
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+
+  redis:
+    image: ${KAORI_REDIS_IMAGE:?Set KAORI_REDIS_IMAGE in /etc/kaori/deploy.env}
+    restart: unless-stopped
+    env_file:
+      - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
+    command:
+      - sh
+      - -ec
+      - exec redis-server --appendonly yes --appendfsync everysec --requirepass "$$REDIS_PASSWORD"
+    volumes:
+      - kaori_vps_redis_data:/data
+    networks:
+      - kaori_production
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - REDISCLI_AUTH="$$REDIS_PASSWORD" redis-cli ping | grep -q PONG
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+    security_opt:
+      - no-new-privileges:true
+
+  validate:
+    env_file: !override
+      - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
+      - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
+      - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+
+  migrate:
+    env_file: !override
+      - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
+      - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
+      - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+
+  web:
+    env_file: !override
+      - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
+      - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
+      - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+    ports: !reset []
+    expose:
+      - "5000"
+
+  worker:
+    env_file: !override
+      - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
+      - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
+      - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+
+  maintenance-worker:
+    env_file: !override
+      - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
+      - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
+      - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+
+  runtime-worker:
+    env_file: !override
+      - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
+      - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
+      - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+
+  validation-worker:
+    env_file: !override
+      - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
+      - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
+      - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+
+  analytics-worker:
+    env_file: !override
+      - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
+      - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
+      - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+
+  reports-worker:
+    env_file: !override
+      - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
+      - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
+      - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+
+  forecasting-worker:
+    env_file: !override
+      - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
+      - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
+      - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+
+  resolver-execution-worker:
+    env_file: !override
+      - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
+      - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
+      - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+
+  resolver-maintenance-worker:
+    env_file: !override
+      - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
+      - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
+      - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+
+  beat:
+    env_file: !override
+      - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
+      - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
+      - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+
+
+volumes:
+  kaori_vps_postgres_data:
+    name: kaori-vps-postgres-data
+  kaori_vps_redis_data:
+    name: kaori-vps-redis-data

@@ -1,0 +1,115 @@
+{% import "components/pagination.html" as pagination_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/table.html" as table_ui %}
+{% import "components/resource_detail_modal.html" as resource_detail_modal %}
+<div class="overflow-x-auto">
+    <table class="{{ table_ui.table_classes('min-w-[76rem]') }}">
+        <caption class="sr-only">Namespace inventory records for {{ inventory.scope_label }}.</caption>
+        <thead class="{{ table_ui.head_classes() }}">
+            <tr>
+                <th scope="col"
+                    class="{{ table_ui.header_cell_classes() }} min-w-[15rem]">Namespace</th>
+                <th scope="col"
+                    class="{{ table_ui.header_cell_classes() }} min-w-[12rem]">Cluster</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[9rem]">Lifecycle</th>
+                <th scope="col"
+                    class="{{ table_ui.header_cell_classes() }} min-w-[15rem]">Resource Controls</th>
+                <th scope="col"
+                    class="{{ table_ui.header_cell_classes() }} min-w-[15rem]">Security Context</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes(true) }}">Details</th>
+            </tr>
+        </thead>
+        <tbody class="{{ table_ui.body_classes() }}">
+            {% for namespace in inventory.namespaces %}
+                <tr class="{{ table_ui.row_classes() }}">
+                    <td class="{{ table_ui.cell_classes() }}">{{ table_ui.namespace_identity(namespace.namespace, 'max-w-[280px]') }}</td>
+                    <td class="{{ table_ui.cell_classes() }}">{{ table_ui.cluster_identity(namespace.cluster_name, namespace.cluster_environment) }}</td>
+                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(namespace.lifecycle_label, namespace.lifecycle_tone) }}</td>
+                    <td class="{{ table_ui.cell_classes() }}">
+                        <div class="space-y-1.5 text-xs leading-5">
+                            <div class="grid grid-cols-[5rem_minmax(0,1fr)] gap-2"><span class="text-content-muted">Quota</span><span class="font-medium text-content-primary">{{ namespace.quota_display }}</span></div>
+                            <div class="grid grid-cols-[5rem_minmax(0,1fr)] gap-2"><span class="text-content-muted">LimitRange</span><span class="font-medium text-content-primary">{{ namespace.limit_range_display }}</span></div>
+                        </div>
+                    </td>
+                    <td class="{{ table_ui.cell_classes() }}">
+                        <div class="space-y-1.5 text-xs leading-5">
+                            <div class="grid grid-cols-[7rem_minmax(0,1fr)] gap-2"><span class="text-content-muted">NetworkPolicy</span><span class="font-medium text-content-primary">{{ namespace.network_policy_display }}</span></div>
+                            <div class="grid grid-cols-[7rem_minmax(0,1fr)] gap-2"><span class="text-content-muted">PSA Enforce</span><span class="font-medium text-content-primary">{{ namespace.pod_security_enforce_display }}</span></div>
+                        </div>
+                    </td>
+                    <td class="{{ table_ui.cell_classes(true) }}">
+                        {{ resource_detail_modal.detail_button(namespace.id, url_for('inventory.namespace_details', namespace_id=namespace.id) , namespace.namespace, 'Namespace') }}
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="6" class="p-0">
+                        {% set empty_state_icon = "folder-x" %}
+                        {% set empty_state_title = "No Namespace Inventory Found" %}
+                        {% set empty_state_description = "Adjust the active filters or sync cluster inventory to collect Kubernetes namespace data." %}
+                        {% set empty_state_min_height = "min-h-[190px]" %}
+                        {% include 'components/states/_empty_state.html' %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<footer class="{{ pagination_ui.footer_classes() }}">
+    <div class="{{ pagination_ui.summary_group_classes() }}">
+        <p>Showing <span class="font-semibold text-content-primary">{{ pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ pagination.total_items }}</span> {{ pagination_ui.resource_name('Namespaces', pagination.total_items) |trim }}</p>
+        <form hx-get="{{ url_for('inventory.namespaces') }}"
+              hx-target="#namespaces-table-content"
+              hx-swap="innerHTML"
+              hx-indicator="#namespaces-table-loading"
+              class="flex items-center gap-2">
+            <input type="hidden" name="page" value="1">
+            <input type="hidden" name="cluster_id" value="{{ selected_cluster_id }}">
+            <input type="hidden" name="status" value="{{ selected_status }}">
+            <input type="hidden" name="search" value="{{ search }}">
+            <input type="hidden" name="partial_mode" value="table_content">
+            <label for="namespaces-per-page"
+                   class="font-semibold text-content-secondary">Rows</label>
+            <select id="namespaces-per-page"
+                    name="per_page"
+                    aria-label="Rows Per Page"
+                    data-kaori-auto-submit
+                    class="{{ pagination_ui.page_size_classes() }}">
+                {% for option in pagination.allowed_per_page %}
+                    <option value="{{ option }}"
+                            {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+    <div class="{{ pagination_ui.navigation_group_classes() }}">
+        {% if pagination.has_prev %}
+            {% set prev_url = url_for('inventory.namespaces', cluster_id=selected_cluster_id, status=selected_status, search=search, page=pagination.prev_page, per_page=pagination.per_page) %}
+            <a href="{{ prev_url }}"
+               hx-get="{{ prev_url }}"
+               hx-target="#namespaces-table-content"
+               hx-swap="innerHTML"
+               hx-indicator="#namespaces-table-loading"
+               class="{{ pagination_ui.navigation_classes(false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
+        {% else %}
+            <span class="{{ pagination_ui.navigation_classes(true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
+        {% endif %}
+        {{ pagination_ui.numeric_pages(pagination.page,
+                pagination.total_pages,
+                endpoint='inventory.namespaces',
+                query_params={'cluster_id': selected_cluster_id, 'status': selected_status, 'search': search, 'per_page': pagination.per_page},
+                hx_target='#namespaces-table-content',
+                hx_indicator='#namespaces-table-loading') }}
+        {% if pagination.has_next %}
+            {% set next_url = url_for('inventory.namespaces', cluster_id=selected_cluster_id, status=selected_status, search=search, page=pagination.next_page, per_page=pagination.per_page) %}
+            <a href="{{ next_url }}"
+               hx-get="{{ next_url }}"
+               hx-target="#namespaces-table-content"
+               hx-swap="innerHTML"
+               hx-indicator="#namespaces-table-loading"
+               class="{{ pagination_ui.navigation_classes(false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
+        {% else %}
+            <span class="{{ pagination_ui.navigation_classes(true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
+        {% endif %}
+    </div>
+</footer>

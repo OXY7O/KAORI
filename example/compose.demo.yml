@@ -1,0 +1,88 @@
+services:
+  minio:
+    image: ${MINIO_IMAGE:-minio/minio:RELEASE.2025-10-15T17-29-55Z}
+    command: server /data --console-address :9001
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-kaori-demo}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-kaori-demo-secret}
+      MINIO_PROMETHEUS_AUTH_TYPE: public
+    ports:
+      - ${MINIO_API_PORT:-9000}:9000
+      - ${MINIO_CONSOLE_PORT:-9001}:9001
+    volumes:
+      - minio-data:/data
+
+  minio-init:
+    image: ${MINIO_MC_IMAGE:-minio/mc:RELEASE.2025-08-13T08-35-41Z}
+    depends_on:
+      - minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-kaori-demo}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-kaori-demo-secret}
+      MINIO_THANO_BUCKET: ${MINIO_THANO_BUCKET:-thanos}
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - |
+        until mc alias set demo http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"; do sleep 2; done
+        mc mb --ignore-existing "demo/$${MINIO_THANO_BUCKET}"
+
+  alertmanager:
+    image: ${ALERTMANAGER_IMAGE:-prom/alertmanager:v0.33.1}
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+    ports:
+      - ${ALERTMANAGER_PORT:-9093}:9093
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
+
+  prometheus:
+    image: ${PROMETHEUS_IMAGE:-prom/prometheus:v3.14.0}
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=24h
+      - --web.enable-lifecycle
+    ports:
+      - ${PROMETHEUS_PORT:-9090}:9090
+    volumes:
+      - ./prometheus/prometheus.demo.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/rules.yml:/etc/prometheus/rules.yml:ro
+      - prometheus-data:/prometheus
+    depends_on:
+      - alertmanager
+      - minio
+
+  thanos-sidecar:
+    image: ${THANOS_IMAGE:-quay.io/thanos/thanos:v0.42.4}
+    command:
+      - sidecar
+      - --prometheus.url=http://prometheus:9090
+      - --grpc-address=0.0.0.0:10901
+      - --http-address=0.0.0.0:10902
+      - --objstore.config-file=/etc/thanos/bucket.yml
+    volumes:
+      - ./thanos/bucket.yml:/etc/thanos/bucket.yml:ro
+      - prometheus-data:/prometheus:ro
+    depends_on:
+      - prometheus
+      - minio-init
+
+  thanos-query:
+    image: ${THANOS_IMAGE:-quay.io/thanos/thanos:v0.42.4}
+    command:
+      - query
+      - --http-address=0.0.0.0:10902
+      - --grpc-address=0.0.0.0:10901
+      - --endpoint=thanos-sidecar:10901
+    ports:
+      - ${THANOS_QUERY_PORT:-10902}:10902
+    depends_on:
+      - thanos-sidecar
+
+volumes:
+  minio-data:
+  alertmanager-data:
+  prometheus-data:

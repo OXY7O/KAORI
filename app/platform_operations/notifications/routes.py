@@ -1,0 +1,203 @@
+from __future__ import annotations
+
+from flask import (
+    Blueprint,
+    jsonify,
+    make_response,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
+from flask.typing import ResponseReturnValue
+from flask_login import current_user, login_required
+
+from app.platform_operations.notifications.constants import ACTIVITY_CENTER_PAGE_LIMIT
+from app.platform_operations.notifications.service import (
+    get_navigation_notification_context,
+    get_notification_center_page_context,
+    mark_all_notifications_read,
+    mark_notification_read,
+)
+
+notifications_bp = Blueprint(
+    'notifications',
+    __name__,
+    url_prefix='/notifications',
+)
+
+_ALLOWED_CENTER_VIEWS = frozenset({'activity', 'notifications'})
+_ALLOWED_PANEL_VIEWS = frozenset({'inbox', 'notifications'})
+
+
+def _count_value(value: object) -> int:
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            return 0
+    return 0
+
+
+def _request_int(
+    name: str,
+    default: int,
+) -> int:
+    try:
+        return int(request.args.get(name, str(default)))
+    except (TypeError, ValueError):
+        return default
+
+
+def _center_view() -> str:
+    requested_view = request.args.get('view', 'notifications').strip().lower()
+    return requested_view if requested_view in _ALLOWED_CENTER_VIEWS else 'notifications'
+
+
+def _navigation_context() -> dict[str, object]:
+    return get_navigation_notification_context(
+        user_id=current_user.id,
+        include_all_jobs=current_user.has_permission('jobs.view'),
+    )
+
+
+def _fragment_response(template_name: str, **context: object) -> ResponseReturnValue:
+    response = make_response(render_template(template_name, **context))
+    response.headers['Cache-Control'] = 'no-store, max-age=0'
+    return response
+
+
+def _render_notifications_panel(*, emit_oob: bool = True) -> ResponseReturnValue:
+    return _fragment_response(
+        'platform_operations/notifications/partials/_notification_deck_notifications.html',
+        activity_center=_navigation_context(),
+        emit_oob=emit_oob,
+    )
+
+
+def _render_inbox_panel(*, emit_oob: bool = True) -> ResponseReturnValue:
+    return _fragment_response(
+        'platform_operations/notifications/partials/_notification_deck_inbox.html',
+        activity_center=_navigation_context(),
+        emit_oob=emit_oob,
+    )
+
+
+def _render_status_snapshot() -> ResponseReturnValue:
+    """Return one database snapshot; never wait for queued workers to finish."""
+    context = _navigation_context()
+    response = jsonify(
+        {
+            'active_count': _count_value(context.get('active_count', 0)),
+            'unread_count': _count_value(context.get('unread_count', 0)),
+            'inbox_unread_count': _count_value(context.get('inbox_unread_count', 0)),
+            'activity_html': render_template(
+                'platform_operations/notifications/partials/_notification_deck_activity_jobs.html',
+                activity_center=context,
+            ),
+            'inbox_html': render_template(
+                'platform_operations/notifications/partials/_notification_deck_inbox.html',
+                activity_center=context,
+                emit_oob=False,
+            ),
+            'notifications_html': render_template(
+                'platform_operations/notifications/partials/_notification_deck_notifications.html',
+                activity_center=context,
+                emit_oob=False,
+            ),
+        }
+    )
+    response.headers['Cache-Control'] = 'no-store, max-age=0'
+    return response
+
+
+def _center_page_context() -> dict[str, object]:
+    return get_notification_center_page_context(
+        user_id=current_user.id,
+        page=_request_int('page', 1),
+        per_page=_request_int('per_page', 5),
+        job_limit=ACTIVITY_CENTER_PAGE_LIMIT,
+        include_all_jobs=current_user.has_permission('jobs.view'),
+        status=request.args.get('status', 'all'),
+        read_state=request.args.get('read_state', 'all'),
+        category=request.args.get('category', 'all'),
+        search=request.args.get('search', ''),
+    )
+
+
+def _render_center_page_content() -> str:
+    context = _center_page_context()
+    return render_template(
+        'platform_operations/notifications/partials/_center_page_content.html',
+        activity_center=context,
+        selected_view=_center_view(),
+    )
+
+
+def _render_mutation_response() -> ResponseReturnValue:
+    surface = request.args.get('surface', 'panel').strip().lower()
+    if request.headers.get('HX-Request') == 'true':
+        if surface == 'page':
+            response = make_response(_render_center_page_content())
+            response.headers['HX-Trigger-After-Swap'] = 'kaori:notifications-changed'
+            response.headers['Cache-Control'] = 'no-store, max-age=0'
+            return response
+        panel_view = request.args.get('view', 'notifications').strip().lower()
+        if panel_view not in _ALLOWED_PANEL_VIEWS:
+            panel_view = 'notifications'
+        if panel_view == 'inbox':
+            return _render_inbox_panel()
+        return _render_notifications_panel()
+
+    next_url = (request.form.get('next') or request.referrer or '').strip()
+    if not next_url.startswith('/') or next_url.startswith('//'):
+        next_url = url_for('notifications.center')
+    return redirect(next_url)
+
+
+@notifications_bp.get('/')
+@login_required
+def center() -> ResponseReturnValue:
+    context = _center_page_context()
+    if request.headers.get('HX-Request') == 'true':
+        return render_template(
+            'platform_operations/notifications/partials/_center_page_content.html',
+            activity_center=context,
+            selected_view=_center_view(),
+        )
+    return render_template(
+        'platform_operations/notifications/index.html',
+        activity_center=context,
+        selected_view=_center_view(),
+    )
+
+
+@notifications_bp.get('/panel/snapshot')
+@login_required
+def panel_snapshot() -> ResponseReturnValue:
+    return _render_status_snapshot()
+
+
+@notifications_bp.post('/<int:notification_id>/read')
+@login_required
+def mark_read(notification_id: int) -> ResponseReturnValue:
+    mark_notification_read(
+        notification_id=notification_id,
+        user_id=current_user.id,
+    )
+    return _render_mutation_response()
+
+
+@notifications_bp.post('/read-all')
+@login_required
+def mark_all_read() -> ResponseReturnValue:
+    scope = request.args.get('scope', request.form.get('scope', 'all')).strip().lower()
+    mark_all_notifications_read(
+        user_id=current_user.id,
+        scope=scope,
+    )
+    return _render_mutation_response()

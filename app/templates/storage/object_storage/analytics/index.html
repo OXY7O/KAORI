@@ -1,0 +1,40 @@
+{% extends "layouts/app.html" %}
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% import "components/table_primitives.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{% block title %}{{ page.title }} · Object Storage Analytics{% endblock title %}
+{% block dashboard_content %}
+    <div id="object-storage-analytics-page"
+         class="kaori-analytics-page space-y-6"
+         data-analytics-page-request-tracking="false">
+        {% include "storage/object_storage/analytics/partials/_hero.html" %}
+        {% if dependency_blocker %}
+            {% include "storage/object_storage/analytics/partials/_dependency_blocker.html" %}
+        {% else %}
+            {% if system %}
+                {% include "storage/object_storage/analytics/partials/_controls.html" %}
+            {% endif %}
+            {% if page_key == 'overview' %}
+                {% include "storage/object_storage/analytics/partials/_overview_analysis.html" %}
+                {% include "storage/object_storage/analytics/partials/_overview_workspace.html" %}
+            {% elif page_key == 'capacity' %}
+                {% include "storage/object_storage/analytics/partials/_capacity_workspace.html" %}
+            {% elif page_key == 'performance' %}
+                {% include "storage/object_storage/analytics/partials/_performance_workspace.html" %}
+            {% elif page_key == 'forecast' %}
+                {% include "storage/object_storage/analytics/partials/_forecast_workspace.html" %}
+            {% elif page_key == 'top_consumers' %}
+                {% include "storage/object_storage/analytics/partials/_top_consumers_workspace.html" %}
+            {% elif page_key == 'alerts' %}
+                {% include "storage/object_storage/analytics/partials/_alerts_workspace.html" %}
+            {% endif %}
+        {% endif %}
+    </div>
+{% endblock dashboard_content %}
+{% block scripts %}
+    {{ super() }}
+    {% if not dependency_blocker and page_key in ['overview', 'capacity', 'performance', 'forecast'] %}
+        <script src="{{ url_for('static', filename='vendor/chartjs/chart.umd.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/storage/object_storage/analytics.js') }}"></script>
+    {% endif %}
+{% endblock scripts %}

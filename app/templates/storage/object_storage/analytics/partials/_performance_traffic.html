@@ -1,0 +1,93 @@
+<section class="{{ analysis_surface.snapshot_shell_classes() }}">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}">
+                    <i data-lucide="arrow-left-right" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Data Flow &amp; Activity Direction</p>
+                    <h2 class="mt-1 text-base font-semibold text-content-primary">Throughput &amp; Request Direction</h2>
+                    <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">
+                        Compare ingress and egress with request and error direction; throughput alone does not indicate health or saturation.
+                    </p>
+                </div>
+            </div>
+            {{ table_label.status_label(metrics.performance.request_trend_status, metrics.performance.request_trend_tone) }}
+        </div>
+    </header>
+    <div class="{{ analysis_surface.metric_grid_classes(4) }}">
+        {% set cards = [
+                    ('Traffic In', metrics.performance.received_bps_display, metrics.performance.received_share_display ~ ' of observed traffic', 'arrow-down-to-line'),
+                    ('Traffic Out', metrics.performance.sent_bps_display, metrics.performance.sent_share_display ~ ' of observed traffic', 'arrow-up-from-line'),
+                    ('Total Traffic', metrics.performance.total_traffic_display, 'Ingress + egress when both signals are available', 'network'),
+                    ('Bucket Request Coverage', metrics.performance.bucket_request_coverage_display, metrics.performance.bucket_request_evidence_count ~ ' of ' ~ metrics.performance.bucket_count ~ ' buckets', 'container')
+                ] %}
+        {% for label, value, helper, icon in cards %}
+            <article class="{{ analysis_surface.metric_cell_classes() }}">
+                <div class="flex items-center gap-2">
+                    <span class="{{ analysis_surface.metric_icon_classes('compact') }}">
+                        <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
+                    </span>
+                    <p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p>
+                </div>
+                <p class="mt-3 break-words text-xl font-semibold tabular-nums {{ 'text-content-primary' if value != 'N/A' else analysis_surface.unavailable_value_classes() }}">{{ value }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
+            </article>
+        {% endfor %}
+    </div>
+    <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle lg:grid-cols-2">
+        <article class="bg-surface-card p-5 sm:p-6">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <p class="{{ analysis_surface.metric_label_classes() }}">Request Activity Direction</p>
+                    <p class="mt-2 text-lg font-semibold text-content-primary">{{ metrics.performance.request_trend_status }}</p>
+                </div>
+                {{ table_label.status_label(metrics.performance.request_trend_status, metrics.performance.request_trend_tone) }}
+            </div>
+            <dl class="mt-4 grid grid-cols-2 gap-4 border-t border-outline-subtle pt-4 text-xs">
+                <div>
+                    <dt class="text-content-muted">Window Change</dt>
+                    <dd class="mt-1 font-semibold tabular-nums text-content-primary">
+                        {{ metrics.performance.request_window_delta_display }} · {{ metrics.performance.request_window_delta_percent_display }}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-content-muted">Samples</dt>
+                    <dd class="mt-1 font-semibold tabular-nums text-content-primary">
+                        {{ metrics.performance.request_trend_samples }}
+                    </dd>
+                </div>
+            </dl>
+            <p class="mt-4 text-xs leading-5 text-content-secondary">Increasing demand is descriptive, not automatically unhealthy. Reliability and queue evidence determine whether higher activity represents pressure.</p>
+        </article>
+        <article class="bg-surface-card p-5 sm:p-6">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <p class="{{ analysis_surface.metric_label_classes() }}">Error Activity Direction</p>
+                    <p class="mt-2 text-lg font-semibold text-content-primary">{{ metrics.performance.error_trend_status }}</p>
+                </div>
+                {{ table_label.status_label(metrics.performance.error_trend_status, metrics.performance.error_trend_tone) }}
+            </div>
+            <dl class="mt-4 grid grid-cols-2 gap-4 border-t border-outline-subtle pt-4 text-xs">
+                <div>
+                    <dt class="text-content-muted">Window Change</dt>
+                    <dd class="mt-1 font-semibold tabular-nums text-content-primary">
+                        {{ metrics.performance.error_window_delta_display }} · {{ metrics.performance.error_window_delta_percent_display }}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-content-muted">Samples</dt>
+                    <dd class="mt-1 font-semibold tabular-nums text-content-primary">
+                        {{ metrics.performance.error_trend_samples }}
+                    </dd>
+                </div>
+            </dl>
+            <p class="mt-4 text-xs leading-5 text-content-secondary">Error-rate direction adds historical context. Current error ratio remains the primary reliability boundary because request volume can change independently.</p>
+        </article>
+    </div>
+    <div class="{{ analysis_surface.interpretation_grid_classes() }}">
+        {{ analysis_surface.interpretation_callout('Highest Request Demand', metrics.performance.top_request_bucket_name, metrics.performance.top_request_bucket_value ~ ' is the highest observed bucket request rate. Bucket request evidence covers ' ~ metrics.performance.bucket_request_coverage_display ~ ' of known bucket records.', icon='container', role='insight') }}
+        {{ analysis_surface.interpretation_callout('Highest Error Ratio', metrics.performance.top_error_bucket_name, metrics.performance.top_error_bucket_value ~ ' is the highest observed bucket error ratio. Bucket error-ratio evidence covers ' ~ metrics.performance.bucket_error_coverage_display ~ ' of known bucket records.', icon='triangle-alert', role='evidence') }}
+    </div>
+</section>

@@ -1,0 +1,51 @@
+name: Bug
+description: Report a reproducible KAORI defect or regression.
+title: ""
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use a concise sentence-case title that describes the defect. Native GitHub Issue Type is the type authority; do not add `[BUG]` to the title.
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed Behavior
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+    validations:
+      required: true
+  - type: textarea
+    id: root_cause
+    attributes:
+      label: Root Cause Evidence
+      description: Permanent fixes require root-cause evidence; emergency containment must be identified explicitly.
+  - type: textarea
+    id: regression
+    attributes:
+      label: Regression Test
+    validations:
+      required: true
+  - type: textarea
+    id: risk
+    attributes:
+      label: Security / Data / Migration Impact
+  - type: textarea
+    id: uat
+    attributes:
+      label: UAT Evidence

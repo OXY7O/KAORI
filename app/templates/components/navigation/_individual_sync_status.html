@@ -1,0 +1,15 @@
+{% import "components/operational_progress_toast.html" as progress_toast %}
+{% call progress_toast.render(
+    'individual-sync-task-' ~ sync.task_id,
+    'individual-inventory-sync-' ~ sync.task_id,
+    url_for('cluster.individual_sync_status', task_id=sync.task_id),
+    'load delay:2s',
+    'Cluster Inventory Sync',
+    sync.message or ('Synchronizing Kubernetes inventory for ' ~ sync.cluster_name ~ '.'),
+    sync.state_label,
+    progress_percent=sync.progress_percent,
+    progress_text=(sync.progress_stage ~ ' · ' if sync.progress_stage else '') ~ 'Running for ' ~ sync.elapsed_seconds ~ 's · Celery continues after navigation',
+    view_url=url_for('jobs.executions', queue='inventory', search=sync.task_id),
+    action_label='View Job'
+    ) %}
+{% endcall %}

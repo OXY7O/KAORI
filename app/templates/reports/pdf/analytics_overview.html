@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>{{ document.report_name }}</title>
+    </head>
+    <body class="kaori-analytics-publication kaori-reporting-v3">
+        {% set p = document.presentation %}
+        {% import 'reports/pdf/components/analytics_publication.html' as ui %}
+        {% macro status(label, tone='muted') -%}
+            <span class="status {{ 'normal' if tone in ['good','normal'] else tone }}">{{ label }}</span>
+        {%- endmacro %}
+        {% macro report_header() -%}
+            {{ ui.report_header("Analytics Overview") }}{%- endmacro %}
+            {% macro page_title(number, title, subtitle) -%}
+                {{ ui.page_title(number, title, subtitle, p.data_cutoff) }}{%- endmacro %}
+                {% macro footer(page_number) -%}
+                    {{ ui.footer(p.report_id, p.classification, page_number, p.page_count) }}{%- endmacro %}
+                    {% macro metric_strip(items, limit=4) -%}
+                        {{ ui.metric_strip(items, limit) }}{%- endmacro %}
+                        {% macro section(title, subtitle='', extra_class='') -%}
+                            {% call ui.section(title, subtitle, extra_class) %}
+                                {{ caller() }}
+                            {% endcall %}
+                        {%- endmacro %}
+                        {% macro reference_item(code, title, description, label='Decision') -%}
+                            <div class="reference-item">
+                                <span class="reference-code">{{ code }}</span>
+                                <div class="reference-copy">
+                                    <strong>{{ title }}</strong>
+                                    <p><b>{{ label }}.</b> {{ description }}</p>
+                                </div>
+                            </div>
+                        {%- endmacro %}
+                        <article class="page cover">
+                            <div class="cover-band">
+                                {{ ui.cover_brand(p.report_id, p.classification, 'MANAGEMENT REPORT') }}
+                                {{ ui.cover_title('Analytics Overview', 'A concise management view of cluster posture, capacity pressure, operational risk, data reliability, and recommended action.') }}
+                            </div>
+                            <div class="cover-main">
+                                <div class="cover-grid">
+                                    <div>
+                                        <h2>Reporting Boundary</h2>
+                                        <dl class="context-list">
+                                            <dt>Cluster</dt>
+                                            <dd>
+                                                {{ p.cluster_scope }}
+                                            </dd>
+                                            <dt>Namespace</dt>
+                                            <dd>
+                                                {{ p.namespace_scope }}
+                                            </dd>
+                                            <dt>Reporting Period</dt>
+                                            <dd>
+                                                {{ p.period_label }}
+                                            </dd>
+                                            <dt>Data Cut-off</dt>
+                                            <dd>
+                                                {{ p.data_cutoff }}
+                                            </dd>
+                                        </dl>
+                                    </div>
+                                    <div>
+                                        <h2>Executive Posture</h2>
+                                        <div class="posture-line"><strong class="status {{ p.cover.overall_tone }}">{{ p.cover.overall_posture }}</strong><span>Operational review status</span></div>
+                                        <p>{{ p.cover.assessment }} Primary concern: {{ p.cover.primary_concern }}.</p>
+                                    </div>
+                                </div>
+                                <div class="cover-message">
+                                    <strong>How to Use This Report</strong>
+                                    <p>Start with the Executive Brief, then review the evidence pages in sequence. Use the Recommendation Plan to assign ownership and confirm validation gates before remediation.</p>
+                                </div>
+                                {{ ui.cover_contents([
+                                    "01 Executive Brief",
+                                    "02 Resource Posture",
+                                    "03 Trend & Forecast",
+                                    "04 Top Consumers",
+                                    "05 Capacity Pressure",
+                                    "06 Alerts & Anomalies",
+                                    "07 Reporting Summary",
+                                    "08 Inventory Snapshot",
+                                    "09 Data Freshness",
+                                    "10 Recommendation Plan",
+                                    "11 Methodology"
+                                ]) }}
+                            </div>
+                            {{ footer(1) }}
+                        </article>
+                        <article class="page page-executive">
+                            {{ report_header() }}
+                            <div class="page-content">
+                                {{ page_title(1, 'Executive Brief', 'Management position at the report cut-off.') }}
+                                {{ metric_strip(p.executive.metrics) }}
+                                {% call ui.section('What Management Should Know','Primary management signals and review focus at the cut-off.') %}
+                                    <p class="lead-paragraph">{{ p.executive.management_summary or p.executive.summary }}</p>
+                                {% endcall %}
+                                {% call ui.section('Priority Findings and Decisions','Concise decisions stay in-table; full context remains by reference.') %}
+                                    <table class="report-table priority-table priority-register">
+                                        <thead>
+                                            <tr>
+                                                <th>Ref.</th>
+                                                <th>Priority</th>
+                                                <th>Finding</th>
+                                                <th>Owner</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in p.executive.findings[:3] %}
+                                                <tr>
+                                                    <td><strong>F{{ loop.index }}</strong></td>
+                                                    <td>{{ item.priority|default("Review") }}</td>
+                                                    <td>{{ item.title }}</td>
+                                                    <td>{{ (p.recommendations['items'][loop.index0].owner if p.recommendations['items']|length > loop.index0 else 'Platform Operations') }}</td>
+                                                    <td>{{ status('Review', item.tone|default('warning') ) }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                    <div class="reference-notes">
+                                        <h3>Finding References</h3>
+                                        <p class="reference-helper">Detailed management references explain the findings summarized above.</p>
+                                        {% for item in p.executive.findings[:3] %}
+                                            {% set dec = p.executive.decisions[loop.index0] if p.executive.decisions|length > loop.index0 else {} %}{{ reference_item('F' ~ loop.index, item.title, dec.description|default(item.description) , 'Management Decision') }}
+                                        {% endfor %}
+                                    </div>
+                                {% endcall %}
+                                {% call ui.section('Evidence Boundary','Committed evidence ends at the report cut-off; live state is excluded.') %}
+                                    <table class="report-table compact-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Source</th>
+                                                <th>Committed Boundary</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in p.executive.evidence %}
+                                                <tr>
+                                                    <td>{{ item.label }}</td>
+                                                    <td>{{ item.source }}</td>
+                                                    <td>{{ status(item.status,item.tone) }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                {% endcall %}
+                            </div>
+                            {{ footer(2) }}
+                        </article>
+                        <article class="page page-resource">
+                            {{ report_header() }}
+                            <div class="page-content">
+                                {{ page_title(2, 'Resource Posture', 'Current utilization and committed capacity headroom.') }}
+                                {% call ui.section('Shared Resource Utilization','Current use against KAORI warning and critical bands.') %}
+                                    <div class="utilization-chart">
+                                        {% for item in p.resource_posture.shared_rows %}
+                                            <div class="util-row">
+                                                <strong>{{ item.label }}</strong>
+                                                <div class="util-track">
+                                                    {{ ui.percent_fill(item.chart_percent) }}<b class="warn-line"></b><b class="crit-line"></b>
+                                                </div>
+                                                <span>{{ item.current }} used</span><em>{{ item.headroom }} headroom</em>
+                                            </div>
+                                        {% endfor %}
+                                        <div class="util-axis"><span class="axis-start">0%</span><span class="axis-warning">70%</span><span class="axis-critical">85%</span><span class="axis-end">100%</span></div>
+                                    </div>
+                                {% endcall %}
+                                {% call ui.section('PVC, Pod, and Node Capacity','Interpretation stays outside the table to preserve compact rows.') %}
+                                    <table class="report-table capacity-table capacity-register">
+                                        <thead>
+                                            <tr>
+                                                <th>Ref.</th>
+                                                <th>Resource</th>
+                                                <th>Used / State</th>
+                                                <th>Capacity</th>
+                                                <th>Headroom</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for row in p.resource_posture.capacity_rows %}
+                                                <tr>
+                                                    <td><strong>C{{ loop.index }}</strong></td>
+                                                    <td><strong>{{ row.resource }}</strong></td>
+                                                    <td>{{ row.used }}</td>
+                                                    <td>{{ row.capacity }}</td>
+                                                    <td>{{ row.headroom }}</td>
+                                                    <td>{{ status(row.status,row.tone) }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                    <div class="reference-notes">
+                                        <h3>Capacity References</h3>
+                                        <p class="reference-helper">Reference notes explain the comparison outcome for each shared resource.</p>
+                                        {% for row in p.resource_posture.capacity_rows %}{{ reference_item('C' ~ loop.index, row.resource, row.interpretation, 'Interpretation') }}{% endfor %}
+                                    </div>
+                                {% endcall %}
+                                {% call ui.section('Management Interpretation','Conclusion for shared-resource pressure and capacity headroom.') %}
+                                    <p class="narrative-copy">{{ p.resource_posture.interpretation }}</p>
+                                {% endcall %}
+                            </div>
+                            {{ footer(3) }}
+                        </article>
+                        <article class="page page-trend">
+                            {{ report_header() }}
+                            <div class="page-content">
+                                {{ page_title(3, 'Trend & Forecast', 'Historical direction and projected threshold pressure.') }}
+                                {% call ui.section('Forecast Signal','Leading projection and threshold exposure for the planning horizon.') %}
+                                    <p class="lead-paragraph">{{ p.trend_forecast.headline }} {{ p.trend_forecast.summary }}</p>
+                                {% endcall %}
+                                {% call ui.section('Figure 1 - Memory Demand Forecast','Historical memory P95 and projected demand across the horizon.') %}
+                                    <div class="chart-frame publication-visual is-wide">{{ p.trend_forecast.chart_svg|safe }}</div>
+                                    <p class="source-note">Source: committed analytics forecast evidence. Missing observations are shown as gaps, not zero values.</p>
+                                {% endcall %}
+                                {% call ui.section('Projected Capacity Pressure','Projection fields stay comparable; interpretation remains by reference.') %}
+                                    <table class="report-table forecast-register">
+                                        <thead>
+                                            <tr>
+                                                <th>Ref.</th>
+                                                <th>Resource</th>
+                                                <th>Current</th>
+                                                <th>Projection</th>
+                                                <th>Threshold ETA</th>
+                                                <th>Confidence</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for row in p.trend_forecast.resource_rows %}
+                                                <tr>
+                                                    <td><strong>P{{ loop.index }}</strong></td>
+                                                    <td><strong>{{ row.resource }}</strong></td>
+                                                    <td class="nowrap">{{ row.current }}</td>
+                                                    <td class="nowrap">{{ row.projected }}</td>
+                                                    <td class="nowrap">{{ row.eta|default('Not projected', true) }}</td>
+                                                    <td class="nowrap">{{ row.confidence }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                    <div class="reference-notes forecast-references">
+                                        <h3>Forecast References</h3>
+                                        <p class="reference-helper">Reference notes explain each projected signal and its operating interpretation.</p>
+                                        {% for row in p.trend_forecast.resource_rows %}{{ reference_item('P' ~ loop.index, row.resource, row.assessment, 'Assessment') }}{% endfor %}
+                                    </div>
+                                {% endcall %}
+                                {% call ui.section('Forecast Interpretation','Planning conclusion and evidence limits for the committed forecast.') %}
+                                    <p class="narrative-copy">{{ p.trend_forecast.interpretation }} {{ p.trend_forecast.limitation }}</p>
+                                {% endcall %}
+                            </div>
+                            {{ footer(4) }}
+                        </article>
+                        <article class="page page-consumers">
+                            {{ report_header() }}
+                            <div class="page-content">
+                                {{ page_title(4, 'Top Consumers', 'Leading resource contributors in the committed observation window.') }}
+                                {% call ui.section('Figure 2 - Leading Consumer Signals','Stable references keep long identities out of the visual.') %}
+                                    <div class="consumer-chart">
+                                        <div class="consumer-group">
+                                            <h3>{{ p.top_consumers.primary_label }}</h3>
+                                            {% for item in p.top_consumers.primary[:3] %}
+                                                <div class="consumer-row">
+                                                    <b>M{{ loop.index }}</b>
+                                                    <div class="consumer-track">{{ ui.percent_fill(item.bar_percent) }}</div>
+                                                    <strong>{{ item.value }}</strong>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                        <div class="consumer-group">
+                                            <h3>{{ p.top_consumers.secondary_label }}</h3>
+                                            {% for item in p.top_consumers.secondary[:3] %}
+                                                <div class="consumer-row">
+                                                    <b>C{{ loop.index }}</b>
+                                                    <div class="consumer-track">{{ ui.percent_fill(item.bar_percent) }}</div>
+                                                    <strong>{{ item.value }}</strong>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                {% endcall %}
+                                {% call ui.section('Consumer Reference Register','Concise comparison fields map to full identities by reference.') %}
+                                    <table class="report-table resource-key resource-key-compact">
+                                        <thead>
+                                            <tr>
+                                                <th>Ref.</th>
+                                                <th>Namespace</th>
+                                                <th>Signal</th>
+                                                <th>Value</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in p.top_consumers.primary[:3] %}
+                                                <tr>
+                                                    <td class="ref">M{{ loop.index }}</td>
+                                                    <td>{{ item.namespace }}</td>
+                                                    <td>{{ item.resource }}</td>
+                                                    <td class="nowrap">{{ item.value }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                            {% for item in p.top_consumers.secondary[:3] %}
+                                                <tr>
+                                                    <td class="ref">C{{ loop.index }}</td>
+                                                    <td>{{ item.namespace }}</td>
+                                                    <td>{{ item.resource }}</td>
+                                                    <td class="nowrap">{{ item.value }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                    <div class="identity-register">
+                                        <h3>Complete Consumer Identities</h3>
+                                        <p class="identity-register-subtitle">Stable reference codes map to the full technical identities shown below.</p>
+                                        <div class="identity-grid single-column consumer-identities">
+                                            {% for item in p.top_consumers.primary[:3] %}
+                                                <div class="identity-item">
+                                                    <span class="reference-code">M{{ loop.index }}</span>
+                                                    <div class="identity-copy">
+                                                        <strong class="identity-title">{{ item.name }}</strong>
+                                                        <p class="identity-meta"><b>Namespace.</b> {{ item.namespace }} &nbsp; <b>Signal.</b> {{ item.resource }} &nbsp; <b>Value.</b> {{ item.value }}</p>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                            {% for item in p.top_consumers.secondary[:3] %}
+                                                <div class="identity-item">
+                                                    <span class="reference-code">C{{ loop.index }}</span>
+                                                    <div class="identity-copy">
+                                                        <strong class="identity-title">{{ item.name }}</strong>
+                                                        <p class="identity-meta"><b>Namespace.</b> {{ item.namespace }} &nbsp; <b>Signal.</b> {{ item.resource }} &nbsp; <b>Value.</b> {{ item.value }}</p>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                {% endcall %}
+                                {% call ui.section('Management Interpretation','Conclusion for displayed resource concentration and ownership.') %}
+                                    <p class="narrative-copy">{{ p.top_consumers.insight }}</p>
+                                {% endcall %}
+                            </div>
+                            {{ footer(5) }}
+                        </article>
+                        <article class="page page-capacity-pressure">
+                            {{ report_header() }}
+                            <div class="page-content">
+                                {{ page_title(5, 'Capacity Pressure', 'Headroom, saturation risk, and operational response.') }}
+                                {{ metric_strip(p.capacity_pressure.metrics) }}
+                                {% call ui.section('Capacity by Resource','Current use, capacity baseline, and remaining headroom.') %}
+                                    <table class="report-table capacity-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Resource</th>
+                                                <th>Current / State</th>
+                                                <th>Capacity</th>
+                                                <th>Headroom</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for row in p.capacity_pressure.rows %}
+                                                <tr>
+                                                    <td><strong>{{ row.resource }}</strong></td>
+                                                    <td>{{ row.used }}</td>
+                                                    <td>{{ row.capacity }}</td>
+                                                    <td>{{ row.headroom }}</td>
+                                                    <td>{{ status(row.status,row.tone) }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                {% endcall %}
+                                {% call ui.section('Risk Highlights','Risk fields stay fixed; operational context remains by reference.') %}
+                                    <table class="report-table risk-table risk-register">
+                                        <thead>
+                                            <tr>
+                                                <th>Ref.</th>
+                                                <th>Review Item</th>
+                                                <th>Priority</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in p.capacity_pressure.risk_highlights[:3] %}
+                                                <tr>
+                                                    <td><strong>R{{ loop.index }}</strong></td>
+                                                    <td>{{ item.title }}</td>
+                                                    <td>{{ item.priority|default("Review") }}</td>
+                                                    <td>{{ status('Open', item.tone|default('warning') ) }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                    <div class="reference-notes">
+                                        <h3>Risk References</h3>
+                                        <p class="reference-helper">Reference notes describe the operational focus behind each highlighted risk item.</p>
+                                        {% for item in p.capacity_pressure.risk_highlights[:3] %}{{ reference_item('R' ~ loop.index, item.title, item.summary|default(item.description) , 'Operational Focus') }}{% endfor %}
+                                    </div>
+                                {% endcall %}
+                                {% call ui.section('Operational Interpretation and Actions','Capacity pressure translated into accountable review actions.') %}
+                                    <p>{{ p.capacity_pressure.interpretation }}</p>
+                                    <ul class="action-list">
+                                        {% for item in p.capacity_pressure.actions[:3] %}
+                                            <li>{{ item.title }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                {% endcall %}
+                            </div>
+                            {{ footer(6) }}
+                        </article>
+                        <article class="page page-alerts">
+                            {{ report_header() }}
+                            <div class="page-content">
+                                {{ page_title(6, 'Alerts & Anomalies', 'Active conditions and unusual patterns requiring review.') }}
+                                {{ metric_strip(p.alerts.metrics) }}
+                                {% call ui.section('Figure 3 - Alert Profile','Severity and category distribution at the report cut-off.') %}
+                                    <div class="two-chart-grid">
+                                        <div class="severity-chart">{{ p.alerts.severity_svg|safe }}</div>
+                                        <div>
+                                            <h3>Alerts by Category</h3>
+                                            <div class="category-list">
+                                                {% for item in p.alerts.category_mix %}
+                                                    <div><span>{{ item.label }}</span><strong>{{ item.value }}</strong></div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endcall %}
+                                {% call ui.section('Top Active Alerts', 'Comparable alert fields stay in-table; identities remain by reference.') %}
+                                    <table class="report-table alert-summary-register">
+                                        <thead>
+                                            <tr>
+                                                <th>Ref.</th>
+                                                <th>Severity</th>
+                                                <th>Since</th>
+                                                <th>State</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in p.alerts.alerts[:3] %}
+                                                <tr>
+                                                    <td class="ref">A{{ loop.index }}</td>
+                                                    <td>{{ status(item.severity,item.tone) }}</td>
+                                                    <td class="nowrap">{{ item.since }}</td>
+                                                    <td>{{ item.status }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                    <div class="identity-register">
+                                        <h3>Active Alert Identity References</h3>
+                                        <p class="identity-register-subtitle">Stable reference codes preserve complete alert identities without overloading the comparison table.</p>
+                                        <div class="identity-grid">
+                                            {% for item in p.alerts.alerts[:3] %}
+                                                <div class="identity-item">
+                                                    <span class="reference-code">A{{ loop.index }}</span>
+                                                    <div class="identity-copy">
+                                                        <strong class="identity-title technical-identity">{{ item.name }}</strong>
+                                                        <p class="identity-meta"><b>Namespace.</b> {{ item.namespace }} &nbsp; <b>State.</b> {{ item.status }}</p>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                {% endcall %}
+                                {% call ui.section('Recent Anomalies', 'Comparable anomaly labels with namespace scope by reference.') %}
+                                    <table class="report-table anomaly-summary-register">
+                                        <thead>
+                                            <tr>
+                                                <th>Ref.</th>
+                                                <th>Anomaly</th>
+                                                <th>Evidence</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in p.alerts.anomalies[:2] %}
+                                                <tr>
+                                                    <td class="ref">N{{ loop.index }}</td>
+                                                    <td>{{ item.name }}</td>
+                                                    <td>{{ item.detected_at }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                    <div class="identity-register compact-identities">
+                                        <h3>Anomaly Scope References</h3>
+                                        <p class="reference-helper">Stable reference codes preserve anomaly scope without overloading the comparison table.</p>
+                                        <div class="identity-grid">
+                                            {% for item in p.alerts.anomalies[:2] %}
+                                                <div class="identity-item">
+                                                    <span class="reference-code">N{{ loop.index }}</span>
+                                                    <div class="identity-copy">
+                                                        <strong class="identity-title">{{ item.name }}</strong>
+                                                        <p class="identity-meta"><b>Namespace.</b> {{ item.namespace }}</p>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                {% endcall %}
+                                {% call ui.section('Alert Intelligence Summary','Ownership summary for active alert severity at the cut-off.') %}
+                                    <p class="narrative-copy">{{ p.alerts.summary }}</p>
+                                {% endcall %}
+                            </div>
+                            {{ footer(7) }}
+                        </article>
+                        <article class="page page-reporting">
+                            {{ report_header() }}
+                            <div class="page-content">
+                                {{ page_title(7, 'Reporting Summary', 'Generation activity, schedules, and storage readiness.') }}
+                                {{ metric_strip(p.reporting.metrics) }}
+                                <div class="two-chart-grid report-overview">
+                                    {% call ui.section('Figure 4 - Report Status Distribution','Status distribution for the latest generated-report records.') %}
+                                        <div class="activity-bars">
+                                            {% for item in p.reporting.activity %}
+                                                <div class="activity-row">
+                                                    <span>{{ item.label }}</span>
+                                                    <div class="activity-track">{{ ui.percent_fill(item.percent, item.tone) }}</div>
+                                                    <strong>{{ item.value }}</strong>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endcall %}
+                                    {% call ui.section('Storage Readiness','Artifact storage connectivity and publication readiness.') %}
+                                        <div class="readiness-line"><strong>{{ p.reporting.storage.backend|upper }}</strong>{{ status(p.reporting.storage.status,p.reporting.storage.tone) }}</div>
+                                        <p>{{ p.reporting.storage.description }}</p>
+                                    {% endcall %}
+                                </div>
+                                {% call ui.section('Scheduled Reports','Active schedules for the selected reporting boundary are listed below.') %}
+                                    {% if p.reporting.schedules %}
+                                        <table class="report-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Schedule</th>
+                                                    <th>Frequency</th>
+                                                    <th>Next Run</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for row in p.reporting.schedules[:4] %}
+                                                    <tr>
+                                                        <td>{{ row.name }}</td>
+                                                        <td>{{ row.frequency }}</td>
+                                                        <td>{{ row.next_run }}</td>
+                                                        <td>{{ status(row.status,row.tone) }}</td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    {% else %}
+                                        <p class="empty-state">No active schedule record is included in this overview output.</p>
+                                    {% endif %}
+                                {% endcall %}
+                                {% call ui.section('Recent Generated Reports','Latest generated outputs and their current status.') %}
+                                    <table class="report-table reports-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Report</th>
+                                                <th>Generated At</th>
+                                                <th>Size</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for row in p.reporting.recent_reports[:4] %}
+                                                <tr>
+                                                    <td>{{ row.name }}</td>
+                                                    <td>{{ row.generated_at }}</td>
+                                                    <td>{{ row.size }}</td>
+                                                    <td>{{ status(row.status,row.tone) }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                {% endcall %}
+                                {% call ui.section('Reporting Assessment','Reporting posture and artifact-storage readiness.') %}
+                                    <p><strong>Operational Notes.</strong> {{ p.reporting.notes|join(" ") }}</p>
+                                    <p class="spaced"><strong>Key Takeaway.</strong> {{ p.reporting.takeaway }}</p>
+                                {% endcall %}
+                            </div>
+                            {{ footer(8) }}
+                        </article>
+                        <article class="page">
+                            {{ report_header() }}
+                            <div class="page-content">
+                                {{ page_title(8, 'Inventory Snapshot', 'Clusters, nodes, workloads, and core Kubernetes resources.') }}
+                                {{ metric_strip(p.inventory.metrics,6) }}
+                                {% call ui.section('Resources by Cluster','Cluster inventory counts for the selected reporting boundary.') %}
+                                    <table class="report-table cluster-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Cluster / Environment</th>
+                                                <th>Nodes</th>
+                                                <th>Namespaces</th>
+                                                <th>Workloads</th>
+                                                <th>Pods</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for row in p.inventory.clusters[:5] %}
+                                                <tr>
+                                                    <td>
+                                                        <strong>{{ row.name }}</strong>
+                                                        {% if row.environment %}- {{ row.environment }}{% endif %}
+                                                    </td>
+                                                    <td>{{ row.nodes }}</td>
+                                                    <td>{{ row.namespaces }}</td>
+                                                    <td>{{ row.workloads }}</td>
+                                                    <td>{{ row.pods }}</td>
+                                                    <td>{{ status(row.status,row.tone) }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                {% endcall %}
+                                {% call ui.section('Node Overview','Node readiness comes from the committed inventory snapshot.') %}
+                                    <div class="readiness-grid">
+                                        <div><strong>{{ p.inventory.total_nodes }}</strong><span>Total Nodes</span></div>
+                                        <div><strong>{{ p.inventory.total_nodes - p.inventory.not_ready_nodes }}</strong><span>Ready</span></div>
+                                        <div><strong>{{ p.inventory.not_ready_nodes }}</strong><span>Not Ready</span></div>
+                                        <div><strong>{{ ((p.inventory.total_nodes - p.inventory.not_ready_nodes) / p.inventory.total_nodes * 100)|round|int if p.inventory.total_nodes else 0 }}%</strong><span>Readiness</span></div>
+                                    </div>
+                                {% endcall %}
+                                {% call ui.section('Top Resource Counts','Additional Kubernetes resource counts from the snapshot.') %}
+                                    <div class="count-strip">
+                                        {% for item in p.inventory.top_counts %}
+                                            <div><span>{{ item.label }}</span><strong>{{ item.value }}</strong></div>
+                                        {% endfor %}
+                                    </div>
+                                {% endcall %}
+                                {% call ui.section('Inventory Health Summary','Coverage, freshness, and inventory usability at the committed snapshot.') %}
+                                    <p>{{ p.inventory.health_summary }}</p>
+                                    <p class="spaced">{{ p.inventory.notes|join(" ") }}</p>
+                                {% endcall %}
+                            </div>
+                            {{ footer(9) }}
+                        </article>
+                        <article class="page page-freshness">
+                            {{ report_header() }}
+                            <div class="page-content">
+                                {{ page_title(9, 'Data Freshness & Reliability', 'Observation recency, completeness, and data-quality posture.') }}
+                                {{ metric_strip(p.freshness.metrics[:4]) }}
+                                {% call ui.section('Figure 5 - Freshness Over Time','Committed source freshness trend for the selected reporting boundary.') %}
+                                    <div class="freshness-chart freshness-chart-wide">{{ p.freshness.freshness_svg|safe }}</div>
+                                {% endcall %}
+                                {% call ui.section('Data Freshness by Source','Source freshness, lag, and availability by dataset.') %}
+                                    <table class="report-table fresh-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Source</th>
+                                                <th>Type</th>
+                                                <th>Last Collected</th>
+                                                <th>Freshness / Lag</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for row in p.freshness.sources[:4] %}
+                                                <tr>
+                                                    <td>{{ row.source_short|default(row.source, true) }}</td>
+                                                    <td>{{ row.type }}</td>
+                                                    <td>{{ row.last_successful }}</td>
+                                                    <td>{{ row.freshness_short|default(row.freshness, true) }}</td>
+                                                    <td>{{ status(row.status_short|default(row.status, true) ,row.tone) }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                {% endcall %}
+                                {% call ui.section('Data Quality Issues','Open data-quality issues affecting completeness or interpretation.') %}
+                                    <table class="report-table quality-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Issue</th>
+                                                <th>Count</th>
+                                                <th>Impact</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for row in p.freshness.issues[:2] %}
+                                                <tr>
+                                                    <td>{{ row.issue_type }}</td>
+                                                    <td>{{ row.count }}</td>
+                                                    <td>{{ row.impact }}</td>
+                                                    <td>{{ row.status }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                {% endcall %}
+                                {% call ui.section('Data Reliability Guidance','Use source status and data quality together before conclusions.', 'reliability-guidance-section') %}
+                                    <p class="narrative-copy">{{ p.freshness.meaning|join(" ") }} {{ p.freshness.actions|join(" ") }}</p>
+                                {% endcall %}
+                            </div>
+                            {{ footer(10) }}
+                        </article>
+                        <article class="page page-recommendations">
+                            {{ report_header() }}
+                            <div class="page-content">
+                                {{ page_title(10, 'Recommendation Plan', 'Prioritized actions, owners, and validation gates.') }}
+                                {{ metric_strip(p.recommendations.metrics) }}
+                                {% call ui.section('Priority Recommendations','Fixed decision fields stay in-table; full context remains by reference.') %}
+                                    <table class="report-table recommendation-table recommendation-register">
+                                        <thead>
+                                            <tr>
+                                                <th>Ref.</th>
+                                                <th>Priority</th>
+                                                <th>Recommendation</th>
+                                                <th>Owner</th>
+                                                <th>Target</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for row in p.recommendations['items'][:5] %}
+                                                <tr>
+                                                    <td><strong class="register-ref">R{{ loop.index }}</strong></td>
+                                                    <td><strong class="priority-code">{{ row.priority }}</strong></td>
+                                                    <td><strong class="register-title">{{ row.register_title|default(row.title) }}</strong></td>
+                                                    <td>{{ row.owner }}</td>
+                                                    <td>{{ row.target }}</td>
+                                                    <td>{{ status(row.status,row.tone) }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                {% endcall %}
+                                {% call ui.section('Recommendation References','Descriptions stay below the register to preserve compact rows.') %}
+                                    <div class="reference-notes reference-grid recommendation-references">
+                                        {% for row in p.recommendations['items'][:5] %}{{ reference_item('R' ~ loop.index, row.title, row.summary|default(row.description, true) , 'Why It Matters') }}{% endfor %}
+                                    </div>
+                                {% endcall %}
+                                {% call ui.section('Execution Governance','Ownership, validation, and execution controls for the current actions.') %}
+                                    <div class="detail-flow">
+                                        <div>
+                                            <strong>Primary Action</strong>
+                                            <p>{{ p.recommendations.primary.recommended_action }}</p>
+                                        </div>
+                                        <div>
+                                            <strong>Validation Criteria</strong>
+                                            <p>{{ p.recommendations.primary.validation }}</p>
+                                        </div>
+                                        <div>
+                                            <strong>Assigned Owners</strong>
+                                            <p>
+                                                {% for owner in p.recommendations.owners %}
+                                                    {{ owner.owner }}: {{ owner.count }} action(s)
+                                                    {% if not loop.last %};{% endif %}
+                                                {% endfor %}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <strong>Execution Guidance</strong>
+                                            <p>{{ p.recommendations.guidance }}</p>
+                                        </div>
+                                    </div>
+                                {% endcall %}
+                            </div>
+                            {{ footer(11) }}
+                        </article>
+                        <article class="page page-methodology">
+                            {{ report_header() }}
+                            <div class="page-content">
+                                {{ page_title(11, 'Methodology & Evidence Boundary', 'Data sources, reporting rules, and evidence limits.') }}
+                                {{ metric_strip(p.methodology.metrics) }}
+                                {% call ui.section('Data Sources and Methodology','Source boundaries and interpretation rules for this report.') %}
+                                    <div class="methodology-register-layout">
+                                        <div class="methodology-source-block">
+                                            <h3>Data Sources and Coverage</h3>
+                                            <table class="report-table sources-compact">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Source</th>
+                                                        <th>Freshness</th>
+                                                        <th>Last Collected</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for row in p.methodology.sources[:4] %}
+                                                        <tr>
+                                                            <td>{{ row.source_short|default(row.source, true) }}</td>
+                                                            <td class="freshness-value">{{ row.freshness_short|default(row.freshness, true) }}</td>
+                                                            <td class="collected-value">{{ row.last_successful }}</td>
+                                                        </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div class="methodology-table-block">
+                                            <h3>Methodology Register</h3>
+                                            <table class="report-table method-summary method-register">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Ref.</th>
+                                                        <th>Rule</th>
+                                                        <th>Setting</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for row in p.methodology.methodology[:5] %}
+                                                        <tr class="method-row">
+                                                            <td><strong class="register-ref">M{{ loop.index }}</strong></td>
+                                                            <td class="method-rule">{{ row.label }}</td>
+                                                            <td class="method-setting">
+                                                                {% if loop.index <= 2 %}
+                                                                    {{ row.value }}
+                                                                {% elif loop.index == 3 %}
+                                                                    Holt-Winters
+                                                                {% else %}
+                                                                    See Reference
+                                                                {% endif %}
+                                                            </td>
+                                                        </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <div class="reference-notes methodology-references">
+                                        <h3>Methodology References</h3>
+                                        <p class="reference-helper">Reference notes define forecast, severity, and priority interpretation rules.</p>
+                                        <div class="methodology-reference-grid">
+                                            {% for row in p.methodology.methodology[2:5] %}{{ reference_item('M' ~ (loop.index + 2) , row.label, row.value, 'Definition') }}{% endfor %}
+                                        </div>
+                                    </div>
+                                {% endcall %}
+                                {% call ui.section('Evidence Boundary','Included and excluded evidence at the committed cut-off.') %}
+                                    <p>This report is built strictly within the committed observation boundary defined by the data cut-off.</p>
+                                    <div class="evidence-columns">
+                                        <div>
+                                            <h3>Included in This Report</h3>
+                                            <ul>
+                                                {% for item in p.methodology.included[:2] %}
+                                                    <li>{{ item }}</li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                        <div>
+                                            <h3>Not Included in This Report</h3>
+                                            <ul>
+                                                {% for item in p.methodology.excluded[:2] %}
+                                                    <li>{{ item }}</li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                {% endcall %}
+                                {% call ui.section('Limitations and Status Language','Operational limits and standardized status definitions.') %}
+                                    <div class="limitations-status-layout">
+                                        <div class="limitations-copy">
+                                            <h3>Known Limitations and Operational Use</h3>
+                                            <ul>
+                                                {% for item in p.methodology.limitations[:2] %}
+                                                    <li>{{ item }}</li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                        <div class="status-language-block">
+                                            <h3>Status Language</h3>
+                                            {{ ui.status_language(p.methodology.status_language) }}
+                                        </div>
+                                    </div>
+                                    <div class="report-use-advisory">
+                                        <strong>Operational Use</strong>
+                                        <p>{{ p.methodology.guidance }}</p>
+                                    </div>
+                                {% endcall %}
+                            </div>
+                            {{ footer(12) }}
+                        </article>
+                    </body>
+                </html>

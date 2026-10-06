@@ -1,0 +1,23 @@
+{% import "components/operational_evidence_tile.html" as evidence_tile %}
+{% import "components/operational_section_card.html" as operational_section_card %}
+{% call operational_section_card.render(
+    'Inventory Snapshot',
+    'Latest synchronized object counts grouped by operational resource role.',
+    'package-search',
+    action_href=url_for('inventory.overview'),
+    action_label='View Inventory',
+    body_classes='grid grid-cols-2 gap-3 p-5 sm:grid-cols-3',
+    extra_classes='h-full'
+    ) %}
+    {% set inventory_items = [
+            ('Namespaces', dashboard.inventory_snapshot.namespaces, 'layout-grid', 'Scope'),
+            ('Workloads', dashboard.inventory_snapshot.workloads, 'boxes', 'Orchestration'),
+            ('Pods', dashboard.inventory_snapshot.pods, 'container', 'Runtime'),
+            ('Services', dashboard.inventory_snapshot.services, 'route', 'Discovery'),
+            ('Ingresses', dashboard.inventory_snapshot.ingresses, 'git-branch', 'Exposure'),
+            ('Storage', dashboard.inventory_snapshot.storage, 'hard-drive', 'Persistence')
+        ] %}
+    {% for label, value, icon, role in inventory_items %}
+        {{ evidence_tile.snapshot(label, value, icon, role) }}
+    {% endfor %}
+{% endcall %}

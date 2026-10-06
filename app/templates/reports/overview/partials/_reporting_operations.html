@@ -1,0 +1,125 @@
+{% import "components/table_label.html" as table_label %}
+{% import "components/operational_callout.html" as operational_callout %}
+<section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+         aria-labelledby="reporting-operations-title">
+    <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-6">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                  aria-hidden="true">
+                <i data-lucide="activity" class="h-5 w-5"></i>
+            </span>
+            <div class="min-w-0">
+                <h2 id="reporting-operations-title"
+                    class="text-base font-semibold leading-6 text-content-primary">Reporting Operations</h2>
+                <p class="mt-1 text-sm leading-6 text-content-secondary">Worker readiness, recurring automation, and artifact storage at a glance.</p>
+            </div>
+        </div>
+        {% if payload.storage_context.degraded %}
+            <a href="{{ url_for('reports.storage') }}"
+               class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border {{ operational_callout.semantic_border_classes('warning') }} bg-status-warning-soft px-3 text-xs font-semibold text-status-warning-text transition hover:bg-surface-card">
+                <i data-lucide="hard-drive" class="h-4 w-4" aria-hidden="true"></i>
+                Review Storage
+            </a>
+        {% else %}
+            <a href="{{ url_for('reports.generate_report') }}"
+               class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-kaori-primary/30 bg-surface-card px-3 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-soft">
+                <i data-lucide="plus-circle" class="h-4 w-4" aria-hidden="true"></i>
+                Generate Report
+            </a>
+        {% endif %}
+    </header>
+    <div class="grid divide-y divide-outline-subtle lg:grid-cols-3 lg:divide-x lg:divide-y-0">
+        {% for item in payload.reporting_operations %}
+            <article class="px-5 py-4 sm:px-6">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true">
+                            <i data-lucide="{{ item.icon }}" class="h-4 w-4"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold text-content-muted">{{ item.label }}</p>
+                            <p class="mt-1 break-words text-lg font-semibold tracking-tight text-content-primary">{{ item.value }}</p>
+                        </div>
+                    </div>
+                    {{ table_label.status_indicator_label(item.status, item.tone, none, 'detail') }}
+                </div>
+                <p class="mt-3 min-h-10 text-xs leading-5 text-content-secondary">{{ item.caption }}</p>
+                <a href="{{ item.href }}"
+                   class="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-kaori-primary transition hover:text-kaori-primary-dark">
+                    {{ item.action_label }}
+                    <i data-lucide="arrow-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                </a>
+            </article>
+        {% endfor %}
+    </div>
+    {% if payload.storage_context.backend == 's3' and payload.storage_context.degraded %}
+        <div class="border-t {{ operational_callout.semantic_border_classes('warning') }} bg-status-warning-soft/45 px-5 py-4 sm:px-6"
+             data-report-storage-incident="overview">
+            <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-card text-status-warning-text shadow-sm ring-1 ring-status-warning-border/50"
+                          aria-hidden="true">
+                        <i data-lucide="cloud-off" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <div class="flex flex-wrap items-center gap-2">
+                            {% if payload.storage_context.state == 'degraded' %}
+                                <h3 class="text-sm font-semibold leading-5 text-content-primary">S3 Artifact Storage Degraded</h3>
+                                {{ table_label.status_indicator_label('Verification Required', 'warning', none, 'detail') }}
+                            {% elif payload.storage_context.state == 'misconfigured' %}
+                                <h3 class="text-sm font-semibold leading-5 text-content-primary">S3 Storage Configuration Needs Review</h3>
+                                {{ table_label.status_indicator_label('Needs Review', 'warning', none, 'detail') }}
+                            {% else %}
+                                <h3 class="text-sm font-semibold leading-5 text-content-primary">S3 Artifact Storage Disconnected</h3>
+                                {{ table_label.status_indicator_label('Disconnected', 'warning', none, 'detail') }}
+                            {% endif %}
+                        </div>
+                        <p class="mt-1 max-w-4xl text-xs leading-5 text-content-secondary">
+                            {% if payload.storage_context.state == 'degraded' %}
+                                The S3 endpoint is reachable, but write readiness still requires strong verification. Report history remains available while new generation stays paused.
+                            {% elif payload.storage_context.state == 'misconfigured' %}
+                                Report history remains available, but artifact actions stay paused until the configured bucket and S3 dependency are complete.
+                            {% else %}
+                                Report metadata, templates, schedules, and history remain available. New artifact generation and S3-backed downloads stay paused until storage recovers.
+                            {% endif %}
+                        </p>
+                        <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-medium text-content-muted">
+                            <span class="inline-flex items-center gap-1.5">
+                                <i data-lucide="clock-3"
+                                   class="h-3.5 w-3.5 text-kaori-primary"
+                                   aria-hidden="true"></i>
+                                {{ payload.storage_context.checked_label }} · {{ payload.storage_context.source_label }}
+                            </span>
+                            <span class="inline-flex items-center gap-1.5">
+                                <i data-lucide="refresh-cw"
+                                   class="h-3.5 w-3.5 text-kaori-primary"
+                                   aria-hidden="true"></i>
+                                Automatic check every {{ payload.storage_context.monitor_interval_minutes }} minute
+                                {% if payload.storage_context.monitor_interval_minutes != 1 %}s{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2.5 xl:shrink-0">
+                    <a href="{{ url_for('reports.storage') }}"
+                       class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-3.5 text-xs font-semibold text-white shadow-sm transition hover:bg-kaori-primary-dark">
+                        <i data-lucide="hard-drive" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                        Open Storage
+                    </a>
+                    {% if current_user.has_permission('reports.manage_storage') %}
+                        <form method="post" action="{{ url_for('reports.verify_storage') }}">
+                            {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                            <input type="hidden" name="workspace" value="overview">
+                            <button type="submit"
+                                    class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border {{ operational_callout.semantic_border_classes('warning') }} bg-surface-card px-3.5 text-xs font-semibold text-content-primary transition hover:border-brand-outline hover:text-kaori-primary">
+                                <i data-lucide="shield-check" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                Verify Now
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</section>

@@ -1,0 +1,590 @@
+{% import "components/action_button.html" as action_button %}
+{% import "components/destructive_confirmation_modal.html" as destructive_modal %}
+{% import "components/form_field.html" as form_field %}
+{% import "components/table_label.html" as table_label %}
+{% import "kubernetes/tenant/partials/_resource_profile_advanced_controls.html" as advanced_profile_controls %}
+{% set profile_class_labels = {"small": "Small", "standard": "Medium", "large": "Large", "extra_large": "Extra Large", "custom": "Custom"} %}
+{% for profile in profiles %}
+    {% set usage = profile_dependencies.get(profile.id) %}
+    {% set editable = profile.profile_class == 'custom' %}
+    {% set defaults = profile.limit_defaults_json.get('default', {}) if profile.limit_defaults_json else {} %}
+    {% set default_requests = profile.limit_defaults_json.get('default_request', {}) if profile.limit_defaults_json else {} %}
+    <dialog id="resource-profile-manage-{{ profile.id }}"
+            data-kaori-native-dialog
+            aria-labelledby="resource-profile-manage-{{ profile.id }}-title"
+            class="kaori-native-dialog m-auto w-[calc(100vw-1.5rem)] max-w-7xl overflow-hidden rounded-2xl border border-outline-default bg-surface-card p-0 shadow-2xl sm:w-[calc(100vw-3rem)]">
+        <section class="flex max-h-[calc(100dvh-2rem)] min-h-0 flex-col overflow-hidden"
+                 role="document">
+            <header class="shrink-0 border-b border-outline-subtle bg-surface-card px-5 py-4 sm:px-6">
+                <div class="flex min-w-0 items-start justify-between gap-4">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true">
+                            <i data-lucide="{{ 'settings-2' if editable else 'lock-keyhole' }}"
+                               class="h-5 w-5"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <p class="text-xs font-semibold text-kaori-primary">{{ 'Custom Resource Profile' if editable else 'KAORI Built-in Preset' }}</p>
+                                {{ table_label.status_label('Enabled' if profile.enabled else 'Disabled', 'normal' if profile.enabled else 'unknown') }}
+                            </div>
+                            <h2 id="resource-profile-manage-{{ profile.id }}-title"
+                                class="mt-1 break-words text-lg font-semibold leading-7 text-content-primary">{{ profile.name }}</h2>
+                            <p class="mt-1 max-w-3xl text-xs leading-5 text-content-muted">
+                                {% if editable %}
+                                    Edit the reusable Custom contract. Allocation changes create the next version for future use; existing Namespace snapshots remain frozen.
+                                {% else %}
+                                    Preset sizing stays fixed. Control changes create a new version; Namespace snapshots stay pinned until rollout.
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    <button type="button"
+                            data-kaori-dialog-close
+                            class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted transition-colors hover:bg-kaori-soft hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
+                            aria-label="Close Resource Profile">
+                        <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </header>
+            <div class="min-h-0 flex-1 space-y-5 overflow-y-auto bg-surface-page p-5 sm:p-6">
+                <dl class="grid gap-px overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle sm:grid-cols-2 lg:grid-cols-4">
+                    <div class="bg-surface-card p-3.5">
+                        <dt class="text-xs uppercase tracking-wide text-content-muted">Contract</dt>
+                        <dd class="mt-1 text-sm font-semibold text-content-primary">
+                            {{ profile_class_labels.get(profile.profile_class, profile.profile_class|replace('_', ' ') |title) }} · v{{ profile.version }}
+                        </dd>
+                        <dd class="mt-1 text-xs text-content-muted">
+                            {{ 'Operator managed' if editable else 'Fixed values · Versioned controls' }}
+                        </dd>
+                    </div>
+                    <div class="bg-surface-card p-3.5">
+                        <dt class="text-xs uppercase tracking-wide text-content-muted">Lineage</dt>
+                        <dd class="mt-1 text-sm font-semibold text-content-primary">
+                            {% if editable and profile.base_preset_class %}
+                                Based on {{ profile_class_labels.get(profile.base_preset_class, profile.base_preset_class|replace('_', ' ') |title) }}
+                            {% elif editable %}
+                                Independent Custom
+                            {% else %}
+                                Canonical preset
+                            {% endif %}
+                        </dd>
+                        <dd class="mt-1 text-xs text-content-muted">
+                            {% if editable and profile.base_preset_class %}
+                                Base preset v{{ profile.base_preset_version or '—' }}
+                            {% else %}
+                                Stable contract identity
+                            {% endif %}
+                        </dd>
+                    </div>
+                    <div class="bg-surface-card p-3.5">
+                        <dt class="text-xs uppercase tracking-wide text-content-muted">Namespace References</dt>
+                        <dd class="mt-1 text-sm font-semibold text-content-primary">
+                            {{ usage.namespaces }}
+                        </dd>
+                        <dd class="mt-1 text-xs text-content-muted">
+                            Committed allocation snapshot references
+                        </dd>
+                    </div>
+                    <div class="bg-surface-card p-3.5">
+                        <dt class="text-xs uppercase tracking-wide text-content-muted">Capacity Decisions</dt>
+                        <dd class="mt-1 text-sm font-semibold text-content-primary">
+                            {{ usage.capacity_decisions }}
+                        </dd>
+                        <dd class="mt-1 text-xs text-content-muted">
+                            Retained admission evidence
+                        </dd>
+                    </div>
+                </dl>
+                {% if editable %}
+                    <form id="resource-profile-update-form-{{ profile.id }}"
+                          method="post"
+                          action="{{ url_for('tenant.update_resource_profile_route', profile_id=profile.id) }}"
+                          class="space-y-5">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="control_contract_present" value="1">
+                        <input type="hidden" name="advanced_control_contract_present" value="1">
+                        <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                            <h3 class="text-sm font-semibold text-content-primary">Identity &amp; State</h3>
+                            <div class="mt-4 grid gap-4 lg:grid-cols-3">
+                                <label class="block">
+                                    {{ form_field.label_row("Profile Name") }}
+                                    <input name="profile_name"
+                                           required
+                                           maxlength="120"
+                                           value="{{ profile.name }}"
+                                           class="{{ form_field.input_classes() }}">
+                                </label>
+                                <label class="block">
+                                    {{ form_field.label_row("State") }}
+                                    <select name="profile_enabled"
+                                            required
+                                            class="{{ form_field.select_classes() }}">
+                                        <option value="enabled" {% if profile.enabled %}selected{% endif %}>Enabled</option>
+                                        <option value="disabled" {% if not profile.enabled %}selected{% endif %}>Disabled</option>
+                                    </select>
+                                </label>
+                                <label class="block">
+                                    {{ form_field.label_row("Description") }}
+                                    <input name="profile_description"
+                                           value="{{ profile.description or '' }}"
+                                           placeholder="Optional allocation intent"
+                                           class="{{ form_field.input_classes() }}">
+                                </label>
+                            </div>
+                        </section>
+                        <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                            <h3 class="text-sm font-semibold text-content-primary">Basic Resources</h3>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">CPU, memory, and pod ResourceQuota controls.</p>
+                            <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                                {% for name, label, value, placeholder, managed in [
+                                    ('requests_cpu', 'CPU Requests', profile.quota_hard_json.get('requests.cpu') or '', '2', 'requests.cpu' in (profile.quota_hard_json or {})),
+                                    ('limits_cpu', 'CPU Limits', profile.quota_hard_json.get('limits.cpu') or '', '4', 'limits.cpu' in (profile.quota_hard_json or {})),
+                                    ('requests_memory', 'Memory Requests', profile.quota_hard_json.get('requests.memory') or '', '4Gi', 'requests.memory' in (profile.quota_hard_json or {})),
+                                    ('limits_memory', 'Memory Limits', profile.quota_hard_json.get('limits.memory') or '', '8Gi', 'limits.memory' in (profile.quota_hard_json or {})),
+                                    ('pods', 'Pods', profile.quota_hard_json.get('pods') or '', '20', 'pods' in (profile.quota_hard_json or {}))
+                                    ] %}
+                                    <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                                        <span class="flex min-h-6 items-center justify-between gap-2">
+                                            <label class="text-xs font-semibold text-content-primary">{{ label }}</label>
+                                            <label class="inline-flex items-center gap-1.5 text-xs font-medium text-content-muted">
+                                                <input type="checkbox"
+                                                       name="control_{{ name }}"
+                                                       value="1"
+                                                       {% if managed %}checked{% endif %}
+                                                       class="h-3.5 w-3.5 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
+                                                Managed
+                                            </label>
+                                        </span>
+                                        <input name="{{ name }}"
+                                               value="{{ value }}"
+                                               placeholder="{{ placeholder }}"
+                                               class="{{ form_field.input_classes() }}">
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </section>
+                        <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                            <h3 class="text-sm font-semibold text-content-primary">Storage Guardrails</h3>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Namespace quota and per-PVC request bounds are managed independently.</p>
+                            {% set storage_policy = profile.storage_policy_json or {} %}
+                            <div class="mt-4 grid gap-4 lg:grid-cols-2">
+                                <div class="rounded-xl border border-outline-subtle bg-surface-elevated p-3.5">
+                                    <p class="text-xs font-semibold text-content-primary">Namespace Quota</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Claim count and cumulative requested storage.</p>
+                                    <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                                        {% for name, label, value, placeholder, managed in [
+                                            ('persistentvolumeclaims', 'PVCs', profile.quota_hard_json.get('persistentvolumeclaims') or '', '10', 'persistentvolumeclaims' in (profile.quota_hard_json or {})),
+                                            ('requests_storage', 'Total Storage', profile.quota_hard_json.get('requests.storage') or '', '100Gi', 'requests.storage' in (profile.quota_hard_json or {}))
+                                            ] %}
+                                            <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
+                                                <span class="flex min-h-6 items-center justify-between gap-2">
+                                                    <label class="text-xs font-semibold text-content-primary">{{ label }}</label>
+                                                    <label class="inline-flex items-center gap-1.5 text-xs font-medium text-content-muted">
+                                                        <input type="checkbox"
+                                                               name="control_{{ name }}"
+                                                               value="1"
+                                                               {% if managed %}checked{% endif %}
+                                                               class="h-3.5 w-3.5 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
+                                                        Managed
+                                                    </label>
+                                                </span>
+                                                <input name="{{ name }}"
+                                                       value="{{ value }}"
+                                                       placeholder="{{ placeholder }}"
+                                                       class="{{ form_field.input_classes() }}">
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <div class="rounded-xl border border-outline-subtle bg-surface-elevated p-3.5">
+                                    <p class="text-xs font-semibold text-content-primary">Per-PVC Policy</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Minimum and maximum storage request accepted per PVC.</p>
+                                    <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                                        {% for name, label, value, placeholder, managed in [
+                                            ('pvc_min_storage', 'Min PVC Size', storage_policy.get('min') or '', '1Gi', 'min' in storage_policy),
+                                            ('pvc_max_storage', 'Max PVC Size', storage_policy.get('max') or '', '10Gi', 'max' in storage_policy)
+                                            ] %}
+                                            <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
+                                                <span class="flex min-h-6 items-center justify-between gap-2">
+                                                    <label class="text-xs font-semibold text-content-primary">{{ label }}</label>
+                                                    <label class="inline-flex items-center gap-1.5 text-xs font-medium text-content-muted">
+                                                        <input type="checkbox"
+                                                               name="control_{{ name }}"
+                                                               value="1"
+                                                               {% if managed %}checked{% endif %}
+                                                               class="h-3.5 w-3.5 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
+                                                        Managed
+                                                    </label>
+                                                </span>
+                                                <input name="{{ name }}"
+                                                       value="{{ value }}"
+                                                       placeholder="{{ placeholder }}"
+                                                       class="{{ form_field.input_classes() }}">
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                        <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                            <h3 class="text-sm font-semibold text-content-primary">Object Limits</h3>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Namespace object ResourceQuota controls.</p>
+                            <div class="mt-4 grid gap-4 sm:grid-cols-3">
+                                {% for name, label, value, placeholder, managed in [
+                                    ('services', 'Services', profile.quota_hard_json.get('services') or '', '10', 'services' in (profile.quota_hard_json or {})),
+                                    ('configmaps', 'ConfigMaps', profile.quota_hard_json.get('configmaps') or '', '50', 'configmaps' in (profile.quota_hard_json or {})),
+                                    ('secrets', 'Secrets', profile.quota_hard_json.get('secrets') or '', '50', 'secrets' in (profile.quota_hard_json or {}))
+                                    ] %}
+                                    <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                                        <span class="flex min-h-6 items-center justify-between gap-2">
+                                            <label class="text-xs font-semibold text-content-primary">{{ label }}</label>
+                                            <label class="inline-flex items-center gap-1.5 text-xs font-medium text-content-muted">
+                                                <input type="checkbox"
+                                                       name="control_{{ name }}"
+                                                       value="1"
+                                                       {% if managed %}checked{% endif %}
+                                                       class="h-3.5 w-3.5 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
+                                                Managed
+                                            </label>
+                                        </span>
+                                        <input name="{{ name }}"
+                                               value="{{ value }}"
+                                               placeholder="{{ placeholder }}"
+                                               class="{{ form_field.input_classes() }}">
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </section>
+                        <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                            <h3 class="text-sm font-semibold text-content-primary">Container Defaults</h3>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">LimitRange defaults applied when a container omits its own request/limit values.</p>
+                            <div class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                                {% for name, label, value, placeholder, managed in [
+                                    ('default_request_cpu', 'Default CPU Request', default_requests.get('cpu') or '', '100m', 'cpu' in default_requests),
+                                    ('default_cpu', 'Default CPU Limit', defaults.get('cpu') or '', '500m', 'cpu' in defaults),
+                                    ('default_request_memory', 'Default Memory Request', default_requests.get('memory') or '', '128Mi', 'memory' in default_requests),
+                                    ('default_memory', 'Default Memory Limit', defaults.get('memory') or '', '512Mi', 'memory' in defaults)
+                                    ] %}
+                                    <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                                        <span class="flex min-h-6 items-center justify-between gap-2">
+                                            <label class="text-xs font-semibold text-content-primary">{{ label }}</label>
+                                            <label class="inline-flex items-center gap-1.5 text-xs font-medium text-content-muted">
+                                                <input type="checkbox"
+                                                       name="control_{{ name }}"
+                                                       value="1"
+                                                       {% if managed %}checked{% endif %}
+                                                       class="h-3.5 w-3.5 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
+                                                Managed
+                                            </label>
+                                        </span>
+                                        <input name="{{ name }}"
+                                               value="{{ value }}"
+                                               placeholder="{{ placeholder }}"
+                                               class="{{ form_field.input_classes() }}">
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </section>
+                        {{ advanced_profile_controls.render(profile.advanced_controls_json or {}, true, 'resource-profile-edit-' ~ profile.id, false) }}
+                    </form>
+                    <div class="rounded-xl border border-kaori-primary/20 bg-kaori-soft px-4 py-3 text-xs leading-5 text-content-secondary">
+                        Existing Namespace allocations keep their committed source version and effective snapshot. This edit changes only the reusable Custom contract used by future allocation or explicit allocation-change workflows.
+                    </div>
+                {% else %}
+                    {% set preset = resource_profile_presets.get(profile.profile_class, {}) %}
+                    {% set preset_quota = preset.get('quota', {}) %}
+                    {% set preset_limits = preset.get('limits', {}) %}
+                    {% set preset_defaults = preset_limits.get('default', {}) %}
+                    {% set preset_default_requests = preset_limits.get('default_request', {}) %}
+                    {% set preset_storage = preset.get('storage_policy', {}) %}
+                    <form id="resource-profile-update-form-{{ profile.id }}"
+                          method="post"
+                          action="{{ url_for('tenant.update_resource_profile_route', profile_id=profile.id) }}"
+                          class="space-y-5">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="profile_name" value="{{ profile.name }}">
+                        <input type="hidden"
+                               name="profile_enabled"
+                               value="{{ 'enabled' if profile.enabled else 'disabled' }}">
+                        <input type="hidden"
+                               name="profile_description"
+                               value="{{ profile.description or '' }}">
+                        <input type="hidden" name="control_contract_present" value="1">
+                        <input type="hidden" name="advanced_control_contract_present" value="1">
+                        <div class="rounded-xl border border-kaori-primary/20 bg-kaori-soft px-4 py-3">
+                            <div class="flex items-start gap-3">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"
+                                      aria-hidden="true">
+                                    <i data-lucide="lock-keyhole" class="h-4 w-4"></i>
+                                </span>
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-sm font-semibold text-content-primary">Fixed values · Versioned controls</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                        {{ profile_class_labels.get(profile.profile_class, profile.profile_class|title) }} sizing stays canonical.
+                                        Control changes create v{{ (profile.version or 1) + 1 }}; Namespace snapshots stay pinned until rollout.
+                                    </p>
+                                </div>
+                                {{ table_label.special_label('Versioned', 'maintenance', 'history') }}
+                            </div>
+                        </div>
+                        <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                            <div class="flex items-center justify-between gap-3">
+                                <div>
+                                    <h3 class="text-sm font-semibold text-content-primary">Basic Resources</h3>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Fixed sizing values; Managed toggles define KAORI ownership.</p>
+                                </div>
+                                {{ table_label.metadata_label('Fixed Values', 'lock-keyhole') }}
+                            </div>
+                            <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                                {% for field, label, quota_key in [
+                                    ('requests_cpu', 'CPU Requests', 'requests.cpu'),
+                                    ('limits_cpu', 'CPU Limits', 'limits.cpu'),
+                                    ('requests_memory', 'Memory Requests', 'requests.memory'),
+                                    ('limits_memory', 'Memory Limits', 'limits.memory'),
+                                    ('pods', 'Pods', 'pods')
+                                    ] %}
+                                    <label class="flex min-w-0 items-center justify-between gap-3 rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-3">
+                                        <span class="min-w-0">
+                                            <span class="block text-xs font-semibold text-content-primary">{{ label }}</span>
+                                            <span class="mt-1 block text-sm font-semibold text-content-primary">{{ preset_quota.get(quota_key) or '—' }}</span>
+                                        </span>
+                                        <span class="inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-content-muted">
+                                            <input type="checkbox"
+                                                   name="control_{{ field }}"
+                                                   value="1"
+                                                   {% if quota_key in (profile.quota_hard_json or {}) %}checked{% endif %}
+                                                   class="h-3.5 w-3.5 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
+                                            Managed
+                                        </span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </section>
+                        <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                            <div class="flex items-center justify-between gap-3">
+                                <div>
+                                    <h3 class="text-sm font-semibold text-content-primary">Storage Guardrails</h3>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Namespace quota and per-PVC bounds stay one managed storage contract.</p>
+                                </div>
+                                {{ table_label.metadata_label('Fixed Values', 'lock-keyhole') }}
+                            </div>
+                            <div class="mt-4 grid gap-4 lg:grid-cols-2">
+                                <div class="rounded-xl border border-outline-subtle bg-surface-elevated p-3.5">
+                                    <p class="text-xs font-semibold text-content-primary">Namespace Quota</p>
+                                    <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                                        {% for field, label, quota_key in [
+                                            ('persistentvolumeclaims', 'PVCs', 'persistentvolumeclaims'),
+                                            ('requests_storage', 'Total Storage', 'requests.storage')
+                                            ] %}
+                                            <label class="flex items-center justify-between gap-3 rounded-lg border border-outline-subtle bg-surface-card px-3 py-3">
+                                                <span>
+                                                    <span class="block text-xs font-semibold text-content-primary">{{ label }}</span>
+                                                    <span class="mt-1 block text-sm font-semibold text-content-primary">{{ preset_quota.get(quota_key) or '—' }}</span>
+                                                </span>
+                                                <span class="inline-flex items-center gap-1.5 text-xs font-medium text-content-muted">
+                                                    <input type="checkbox"
+                                                           name="control_{{ field }}"
+                                                           value="1"
+                                                           {% if quota_key in (profile.quota_hard_json or {}) %}checked{% endif %}
+                                                           class="h-3.5 w-3.5 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
+                                                    Managed
+                                                </span>
+                                            </label>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <div class="rounded-xl border border-outline-subtle bg-surface-elevated p-3.5">
+                                    <p class="text-xs font-semibold text-content-primary">Per-PVC Policy</p>
+                                    <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                                        {% for field, label, policy_key in [
+                                            ('pvc_min_storage', 'Min PVC Size', 'min'),
+                                            ('pvc_max_storage', 'Max PVC Size', 'max')
+                                            ] %}
+                                            <label class="flex items-center justify-between gap-3 rounded-lg border border-outline-subtle bg-surface-card px-3 py-3">
+                                                <span>
+                                                    <span class="block text-xs font-semibold text-content-primary">{{ label }}</span>
+                                                    <span class="mt-1 block text-sm font-semibold text-content-primary">{{ preset_storage.get(policy_key) or '—' }}</span>
+                                                </span>
+                                                <span class="inline-flex items-center gap-1.5 text-xs font-medium text-content-muted">
+                                                    <input type="checkbox"
+                                                           name="control_{{ field }}"
+                                                           value="1"
+                                                           {% if policy_key in (profile.storage_policy_json or {}) %}checked{% endif %}
+                                                           class="h-3.5 w-3.5 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
+                                                    Managed
+                                                </span>
+                                            </label>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                        <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                            <div class="flex items-center justify-between gap-3">
+                                <div>
+                                    <h3 class="text-sm font-semibold text-content-primary">Object Limits</h3>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Namespace object-count ownership.</p>
+                                </div>
+                                {{ table_label.metadata_label('Fixed Values', 'lock-keyhole') }}
+                            </div>
+                            <div class="mt-4 grid gap-3 sm:grid-cols-3">
+                                {% for field, label, quota_key in [
+                                    ('services', 'Services', 'services'),
+                                    ('configmaps', 'ConfigMaps', 'configmaps'),
+                                    ('secrets', 'Secrets', 'secrets')
+                                    ] %}
+                                    <label class="flex items-center justify-between gap-3 rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-3">
+                                        <span>
+                                            <span class="block text-xs font-semibold text-content-primary">{{ label }}</span>
+                                            <span class="mt-1 block text-sm font-semibold text-content-primary">{{ preset_quota.get(quota_key) or '—' }}</span>
+                                        </span>
+                                        <span class="inline-flex items-center gap-1.5 text-xs font-medium text-content-muted">
+                                            <input type="checkbox"
+                                                   name="control_{{ field }}"
+                                                   value="1"
+                                                   {% if quota_key in (profile.quota_hard_json or {}) %}checked{% endif %}
+                                                   class="h-3.5 w-3.5 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
+                                            Managed
+                                        </span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </section>
+                        <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                            <div class="flex items-center justify-between gap-3">
+                                <div>
+                                    <h3 class="text-sm font-semibold text-content-primary">Container Defaults</h3>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Fixed Container LimitRange defaults with versioned ownership.</p>
+                                </div>
+                                {{ table_label.metadata_label('Fixed Values', 'lock-keyhole') }}
+                            </div>
+                            <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                                {% for field, label, group, resource in [
+                                    ('default_request_cpu', 'CPU Request', 'default_request', 'cpu'),
+                                    ('default_cpu', 'CPU Limit', 'default', 'cpu'),
+                                    ('default_request_memory', 'Memory Request', 'default_request', 'memory'),
+                                    ('default_memory', 'Memory Limit', 'default', 'memory')
+                                    ] %}
+                                    {% set preset_group = preset_limits.get(group, {}) %}
+                                    {% set managed_group = (profile.limit_defaults_json or {}).get(group, {}) %}
+                                    <label class="flex items-center justify-between gap-3 rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-3">
+                                        <span>
+                                            <span class="block text-xs font-semibold text-content-primary">{{ label }}</span>
+                                            <span class="mt-1 block text-sm font-semibold text-content-primary">{{ preset_group.get(resource) or '—' }}</span>
+                                        </span>
+                                        <span class="inline-flex items-center gap-1.5 text-xs font-medium text-content-muted">
+                                            <input type="checkbox"
+                                                   name="control_{{ field }}"
+                                                   value="1"
+                                                   {% if resource in managed_group %}checked{% endif %}
+                                                   class="h-3.5 w-3.5 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
+                                            Managed
+                                        </span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </section>
+                        {{ advanced_profile_controls.render(profile.advanced_controls_json or {}, true, 'resource-profile-edit-' ~ profile.id, false) }}
+                    </form>
+                {% endif %}
+                {% set rollout_targets = profile_rollout_targets.get(profile.id, []) %}
+                {% if rollout_targets %}
+                    <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                        <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                          aria-hidden="true">
+                                        <i data-lucide="refresh-cw" class="h-4 w-4"></i>
+                                    </span>
+                                    <div>
+                                        <h3 class="text-sm font-semibold text-content-primary">Attached Namespace Rollout</h3>
+                                        <p class="mt-0.5 text-xs leading-5 text-content-muted">Apply v{{ profile.version }} to every active Namespace using this profile within one Tenant.</p>
+                                    </div>
+                                </div>
+                                <p class="mt-3 text-xs leading-5 text-content-muted">
+                                    Each Namespace runs its own capacity admission, provider mutation, and read-back. A blocked Namespace stays on its previous committed version.
+                                </p>
+                            </div>
+                            <form method="post"
+                                  action="{{ url_for('tenant.rollout_resource_profile_route', profile_id=profile.id) }}"
+                                  class="grid min-w-0 gap-2 sm:grid-cols-[minmax(15rem,1fr)_auto] lg:min-w-[30rem]">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <select name="tenant_id" required class="{{ form_field.select_classes() }}">
+                                    <option value="">Select Tenant</option>
+                                    {% for target in rollout_targets %}
+                                        <option value="{{ target.tenant_id }}"
+                                                {% if target.provider_key != 'native_kubernetes' %}disabled{% endif %}>
+                                            {{ target.tenant_name }} · {{ target.namespaces }} NS · {{ target.outdated }} pending{{ ' · Capsule workflow' if target.provider_key != 'native_kubernetes' else '' }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <button type="submit"
+                                        {% if not can_manage %}disabled aria-disabled="true"{% endif %}
+                                        class="{{ action_button.classes('secondary') }}">
+                                    <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
+                                    Rollout
+                                </button>
+                            </form>
+                        </div>
+                    </section>
+                {% endif %}
+            </div>
+            <footer class="flex shrink-0 flex-col-reverse gap-2 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-6">
+                {% if editable %}
+                    <form method="post"
+                          action="{{ url_for('tenant.delete_resource_profile_route', profile_id=profile.id) }}"
+                          class="sm:mr-auto">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button id="resource-profile-delete-submit-{{ profile.id }}"
+                                type="submit"
+                                class="hidden"
+                                aria-hidden="true"
+                                tabindex="-1">Delete Resource Profile</button>
+                        <button type="button"
+                                data-destructive-modal-open
+                                data-destructive-modal-id="resource-profile-delete-modal"
+                                data-destructive-submit-button-id="resource-profile-delete-submit-{{ profile.id }}"
+                                data-destructive-target="{{ profile.name }}"
+                                data-destructive-scope="Custom · v{{ profile.version }}"
+                                {% if not can_manage or usage.total %}disabled aria-disabled="true"{% endif %}
+                                title="{{ 'Release all Namespace and Capacity Decision references before Delete.' if usage.total else 'Delete unused Custom Resource Profile' }}"
+                                class="{{ action_button.classes('secondary') }} text-status-critical-text">
+                            <i data-lucide="trash-2" class="h-4 w-4" aria-hidden="true"></i>
+                            Delete
+                        </button>
+                    </form>
+                {% endif %}
+                <button type="button"
+                        data-kaori-dialog-close
+                        class="{{ action_button.classes('secondary') }}">Close</button>
+                <button type="submit"
+                        form="resource-profile-update-form-{{ profile.id }}"
+                        {% if not can_manage %}disabled aria-disabled="true"{% endif %}
+                        class="{{ action_button.classes('primary') }}">
+                    <i data-lucide="{{ 'save' if editable else 'history' }}"
+                       class="h-4 w-4"
+                       aria-hidden="true"></i>
+                    {{ 'Save Changes' if editable else 'Save New Version' }}
+                </button>
+            </footer>
+        </section>
+    </dialog>
+{% endfor %}
+{{ destructive_modal.render('resource-profile-delete-modal',
+'Delete Custom Resource Profile',
+'Selected Custom Resource Profile',
+'The profile record is permanently deleted only after KAORI confirms zero Namespace and zero Capacity Decision references remain.',
+'resource-profile-delete-submit',
+action_label='Delete Profile',
+notice='Hard Delete is reserved for unused Custom profiles.',
+scope_value='Custom Resource Profile',
+impact_items=[
+('trash-2', 'Delete Contract', 'Remove the unused Custom Resource Profile from the registry.') ,
+('shield-check', 'Verify Dependencies', 'Namespace and Capacity Decision references must both be zero before deletion.'),
+('lock-keyhole', 'Protect Presets', 'Small, Standard, and Large remain KAORI-owned and cannot be deleted.'),
+('history', 'Protect Evidence', 'Any historical dependency blocks deletion so committed allocation lineage remains auditable.')
+],
+warning='If Delete is disabled, release the displayed dependencies first. KAORI does not detach historical evidence automatically.'
+) }}

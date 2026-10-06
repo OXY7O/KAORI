@@ -1,0 +1,85 @@
+/* KAORI Forecast Analysis PDF specialization v3.0. */
+.forecast-executive-split { }
+.resource-forecast-split { }
+.pod-storage-split,
+.exposure-split { }
+.forecast-executive-split > .content-section,
+.resource-forecast-split > .content-section,
+.pod-storage-split > .content-section,
+.exposure-split > .content-section { align-self: start; margin-top: 0; }
+.executive-callout { min-height: 48mm; }
+.empty-row { color: #64748B; text-align: center; }
+
+.decision-register th:nth-child(1) { width: 8%; }
+.decision-register th:nth-child(2) { width: 10%; }
+.decision-register th:nth-child(3) { width: 39%; }
+.decision-register th:nth-child(4) { width: 27%; }
+.decision-register th:nth-child(5) { width: 16%; }
+.portfolio-register th:nth-child(1) { width: 7%; }
+.portfolio-register th:nth-child(2) { width: 13%; }
+.portfolio-register th:nth-child(3) { width: 12%; }
+.portfolio-register th:nth-child(4) { width: 13%; }
+.portfolio-register th:nth-child(5) { width: 19%; }
+.portfolio-register th:nth-child(6) { width: 17%; }
+.portfolio-register th:nth-child(7) { width: 19%; }
+.resource-register th:nth-child(1) { width: 8%; }
+.resource-register th:nth-child(2) { width: 32%; }
+.resource-register th:nth-child(3) { width: 18%; }
+.resource-register th:nth-child(4) { width: 24%; }
+.resource-register th:nth-child(5) { width: 18%; }
+.pod-storage-register th:nth-child(1) { width: 8%; }
+.pod-storage-register th:nth-child(2) { width: 29%; }
+.pod-storage-register th:nth-child(3) { width: 15%; }
+.pod-storage-register th:nth-child(4) { width: 16%; }
+.pod-storage-register th:nth-child(5) { width: 17%; }
+.pod-storage-register th:nth-child(6) { width: 15%; }
+.exposure-register th:nth-child(1) { width: 7%; }
+.exposure-register th:nth-child(2) { width: 13%; }
+.exposure-register th:nth-child(3) { width: 14%; }
+.exposure-register th:nth-child(4) { width: 12%; }
+.exposure-register th:nth-child(5) { width: 12%; }
+.exposure-register th:nth-child(6) { width: 22%; }
+.exposure-register th:nth-child(7) { width: 20%; }
+.recommendation-register th:nth-child(1) { width: 7%; }
+.recommendation-register th:nth-child(2) { width: 9%; }
+.recommendation-register th:nth-child(3) { width: 35%; }
+.recommendation-register th:nth-child(4) { width: 22%; }
+.recommendation-register th:nth-child(5) { width: 17%; }
+.recommendation-register th:nth-child(6) { width: 10%; }
+.governance-register th { width: 26%; }
+
+.decision-references { margin-top: 3.4mm; grid-template-columns: repeat(2, 1fr); }
+.recommendation-references { grid-template-columns: 1fr 1fr; }
+.methodology-references { grid-template-columns: repeat(3, 1fr); gap: 4mm; }
+.methodology-references .reference-item { grid-template-columns: 9mm minmax(0, 1fr); }
+
+.forecast-bars { padding-top: 1mm; }
+.forecast-bar-row { display: grid; grid-template-columns: 26mm minmax(0, 1fr) 28mm; gap: 3mm; align-items: center; margin: 3.3mm 0; }
+.forecast-bar-row strong { font-size: 6.9pt; }
+.forecast-bar-row > span { text-align: right; font-size: 6.4pt; font-weight: 700; white-space: nowrap; }
+.forecast-track { position: relative; height: 5mm; overflow: hidden; background: #E5E7EB; }
+.forecast-track > i { display: block; height: 100%; }
+.forecast-track.unavailable { background: repeating-linear-gradient(135deg, #F1F5F9, #F1F5F9 2mm, #CBD5E1 2mm, #CBD5E1 2.5mm); }
+.warning-marker,
+.critical-marker { position: absolute; top: 0; bottom: 0; width: .35mm; }
+.warning-marker { left: 70%; background: #D97706; }
+.critical-marker { left: 85%; background: #DC2626; }
+
+.chart-frame { border: .3mm solid #D7DEE8; background: #FCFDFE; padding: 2.5mm; overflow: hidden; }
+.chart-frame svg { display: block; width: 100%; }
+.portfolio-chart { }
+.portfolio-chart svg { }
+.resource-chart { }
+.resource-chart svg { }
+
+.methodology-tables { display: grid; grid-template-columns: minmax(0, 1.42fr) minmax(0, .88fr); gap: 6mm; align-items: start; }
+.methodology-tables h3 { margin-bottom: 2.4mm; }
+.source-table,
+.methodology-register { font-size: var(--analytics-type-table-dense); }
+.source-table th,
+.source-table td,
+.methodology-register th,
+.methodology-register td { padding: 1.7mm 1.8mm; white-space: normal; overflow-wrap: break-word; }
+.source-table th:nth-child(1) { width: 50%; }
+.source-table th:nth-child(2) { width: 20%; }
+.source-table th:nth-child(3) { width: 30%; }
