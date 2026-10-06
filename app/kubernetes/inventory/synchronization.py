@@ -1,19 +1,19 @@
-import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
+import logging
 
 from kubernetes.client import BatchV1Api, DiscoveryV1Api
 from sqlalchemy import select
 
 from app.extensions.db import db
+from app.integrations.kernel.registry import get_integration
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.compatibility import (
     KubernetesDiscovery,
     list_cluster_resource,
 )
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls import weak_tls_context
-from app.integrations.kernel.registry import get_integration
 from app.kubernetes.inventory.persistence import (
     save_cluster_info,
     save_configuration_inventory,
@@ -28,7 +28,6 @@ from app.kubernetes.inventory.persistence import (
 )
 from app.models import Cluster
 from app.models.kubernetes import KubernetesConnection
-
 logger = logging.getLogger(__name__)
 
 ProgressCallback = Callable[[int, str, str], None]
