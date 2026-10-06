@@ -132,8 +132,8 @@
             {% endfor %}
         </div>
         <div class="mt-5 flex flex-wrap gap-2">
-            <a href="{{ url_for('artifact_registry.security') }}" class="{{ table_ui.secondary_action_classes() }}">Open Security</a>
-            <a href="{{ url_for('artifact_registry.runtime') }}" class="{{ table_ui.secondary_action_classes() }}">Open Runtime</a>
+            <a href="{{ url_for('artifact_registry.security') }}" class="{{ table_ui.action_classes() }}">Open Security</a>
+            <a href="{{ url_for('artifact_registry.runtime') }}" class="{{ table_ui.action_classes() }}">Open Runtime</a>
         </div>
 
     {% elif analytics.active_tab == 'governance' %}
@@ -150,7 +150,7 @@
                 <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4"><p class="text-xs font-semibold text-content-muted">{{ label }}</p><p class="mt-2 text-xl font-semibold text-content-primary">{{ value }}</p><p class="mt-1 text-xs text-content-muted">{{ detail }}</p></div>
             {% endfor %}
         </div>
-        <a href="{{ url_for('artifact_registry.governance') }}" class="mt-5 {{ table_ui.secondary_action_classes() }}">Review Governance</a>
+        <a href="{{ url_for('artifact_registry.governance') }}" class="mt-5 {{ table_ui.action_classes() }}">Review Governance</a>
 
     {% elif analytics.active_tab == 'alerts' %}
         <div id="artifact-registry-alert-records">
@@ -201,10 +201,10 @@
                   class="mt-5 {{ table_ui.filter_layout_classes() }}">
                 <input type="hidden" name="alert_page" value="1">
                 <input type="hidden" name="alert_per_page" value="{{ analytics.alert_pagination.per_page }}">
-                <label class="{{ table_ui.filter_field_classes() }}"><span class="{{ table_ui.filter_label_classes() }}">Search</span><input type="search" name="alert_q" value="{{ analytics.alert_filters.search }}" placeholder="Alert, target, Registry" class="{{ table_ui.filter_input_classes() }}"></label>
-                <label class="{{ table_ui.filter_field_classes() }}"><span class="{{ table_ui.filter_label_classes() }}">Severity</span><select name="alert_severity" class="{{ table_ui.filter_select_classes() }}">{% for value, label in [('all','All'),('critical','Critical'),('warning','Warning'),('info','Info'),('unknown','Unknown')] %}<option value="{{ value }}" {% if analytics.alert_filters.severity == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
-                <label class="{{ table_ui.filter_field_classes() }}"><span class="{{ table_ui.filter_label_classes() }}">State</span><select name="alert_state" class="{{ table_ui.filter_select_classes() }}">{% for value, label in [('all','All'),('firing','Firing'),('pending','Pending'),('suppressed','Suppressed'),('resolved','Resolved')] %}<option value="{{ value }}" {% if analytics.alert_filters.state == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
-                <label class="{{ table_ui.filter_field_classes() }}"><span class="{{ table_ui.filter_label_classes() }}">Source</span><select name="alert_source" class="{{ table_ui.filter_select_classes() }}">{% for value, label in [('all','All'),('alertmanager','Alertmanager'),('metrics_source','Metrics Source')] %}<option value="{{ value }}" {% if analytics.alert_filters.source == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+                <label class="min-w-0 flex-1 basis-full sm:basis-56"><span class="{{ table_ui.filter_label_classes() }}">Search</span><input type="search" name="alert_q" value="{{ analytics.alert_filters.search }}" placeholder="Alert, target, Registry" class="{{ table_ui.filter_input_classes() }}"></label>
+                <label class="min-w-0 flex-1 basis-full sm:basis-56"><span class="{{ table_ui.filter_label_classes() }}">Severity</span><select name="alert_severity" class="{{ table_ui.filter_select_classes() }}">{% for value, label in [('all','All'),('critical','Critical'),('warning','Warning'),('info','Info'),('unknown','Unknown')] %}<option value="{{ value }}" {% if analytics.alert_filters.severity == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+                <label class="min-w-0 flex-1 basis-full sm:basis-56"><span class="{{ table_ui.filter_label_classes() }}">State</span><select name="alert_state" class="{{ table_ui.filter_select_classes() }}">{% for value, label in [('all','All'),('firing','Firing'),('pending','Pending'),('suppressed','Suppressed'),('resolved','Resolved')] %}<option value="{{ value }}" {% if analytics.alert_filters.state == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+                <label class="min-w-0 flex-1 basis-full sm:basis-56"><span class="{{ table_ui.filter_label_classes() }}">Source</span><select name="alert_source" class="{{ table_ui.filter_select_classes() }}">{% for value, label in [('all','All'),('alertmanager','Alertmanager'),('metrics_source','Metrics Source')] %}<option value="{{ value }}" {% if analytics.alert_filters.source == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
             </form>
 
             <div id="artifact-registry-alerts-loading" class="htmx-indicator mt-3 text-xs text-content-muted">Loading committed alert records…</div>
@@ -269,7 +269,7 @@
                         <p class="text-xs text-content-muted">No active Registry recommendation is currently projected.</p>
                     {% endfor %}
                 </div>
-                <a href="{{ url_for('intelligence.recommendations', domain='registry') }}" class="mt-4 {{ table_ui.secondary_action_classes() }}">Open Intelligence</a>
+                <a href="{{ url_for('intelligence.recommendations', domain='registry') }}" class="mt-4 {{ table_ui.action_classes() }}">Open Intelligence</a>
             </aside>
         </div>
     {% endif %}
