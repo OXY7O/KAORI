@@ -16,7 +16,7 @@
             coverage_per_page=coverage_pagination.per_page,
             coverage_q=selected_coverage_query,
             coverage_environment=selected_coverage_environment,
-            coverage_status=selected_coverage_status) %}
+        coverage_status=selected_coverage_status) %}
     {% set registry_clear_action = registry_ui.clear_filters_action(
             registry_clear_url,
             table_ui.action_classes(),
@@ -27,14 +27,12 @@
             swap='outerHTML',
             marker='harbor-registry'
         ) if registry_filters_active else '' %}
-    {{ provider_registry.registry_header(
-        "Harbor Connection Registry",
+    {{ provider_registry.registry_header("Harbor Connection Registry",
         "Manage reusable Harbor API connections and review their Registry evidence coverage.",
         "package-search",
         "harbor-registry-loading",
         title_id="harbor-registry-title",
-        action_html=registry_clear_action
-    ) }}
+        action_html=registry_clear_action) }}
     <div class="{{ integration_ui.filter_region_classes() }}">
         <form id="harbor-registry-filter-form"
               method="get"
@@ -62,42 +60,34 @@
                    name="coverage_status"
                    value="{{ selected_coverage_status }}">
             <div class="min-w-0">
-                {{ provider_registry.search_field(
-                    "harbor-registry-search",
-                    "q",
-                    selected_query,
-                    "Connection, endpoint, environment, or version"
-                ) }}
+                {{ provider_registry.search_field("harbor-registry-search",
+                                "q",
+                                selected_query,
+                                "Connection, endpoint, environment, or version") }}
             </div>
             <div class="min-w-0">
-                {{ provider_registry.select_field(
-                    "harbor-registry-environment",
-                    "environment",
-                    selected_environment,
-                    "Environment",
-                    environment_options,
-                    "All Environments"
-                ) }}
+                {{ provider_registry.select_field("harbor-registry-environment",
+                                "environment",
+                                selected_environment,
+                                "Environment",
+                                environment_options,
+                                "All Environments") }}
             </div>
             <div class="min-w-0">
-                {{ provider_registry.select_field(
-                    "harbor-registry-readiness",
-                    "readiness",
-                    selected_readiness,
-                    "Core Readiness",
-                    readiness_options,
-                    "All Readiness"
-                ) }}
+                {{ provider_registry.select_field("harbor-registry-readiness",
+                                "readiness",
+                                selected_readiness,
+                                "Core Readiness",
+                                readiness_options,
+                                "All Readiness") }}
             </div>
             <div class="min-w-0">
-                {{ provider_registry.select_field(
-                    "harbor-registry-compatibility",
-                    "compatibility",
-                    selected_compatibility,
-                    "Compatibility",
-                    compatibility_options,
-                    "All Profiles"
-                ) }}
+                {{ provider_registry.select_field("harbor-registry-compatibility",
+                                "compatibility",
+                                selected_compatibility,
+                                "Compatibility",
+                                compatibility_options,
+                                "All Profiles") }}
             </div>
         </form>
     </div>
@@ -113,7 +103,7 @@
                                 {{ integration_ui.palette_icon('package', 'brand') }}
                                 <div class="min-w-0">
                                     <p class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ row.name }}</p>
-                                    <p class="mt-1 text-xs text-content-muted">{{ row.environment|default('Unspecified')|replace('_', ' ')|title }}</p>
+                                    <p class="mt-1 text-xs text-content-muted">{{ row.environment|default("Unspecified") |replace('_', ' ')|title }}</p>
                                 </div>
                             </div>
                         </td>
@@ -122,12 +112,10 @@
                             <p class="mt-1 text-xs text-content-muted">Harbor API v2.0</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
-                            {{ integration_status(
-                                row.readiness_status or 'validation_required',
-                                'Ready' if row.readiness_status == 'ready' else (
-                                    'Blocked' if row.readiness_status == 'blocked' else 'Validation Required'
-                                ),
-                                display='indicator'
+                            {{ integration_status(row.readiness_status or 'validation_required',
+                                                        'Ready' if row.readiness_status == 'ready' else (
+                                                        'Blocked' if row.readiness_status == 'blocked' else 'Validation Required') ,
+                            display='indicator'
                             ) }}
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
@@ -167,24 +155,22 @@
         </table>
     </div>
     {% set registry_query_params = {
-        "tab": "registry",
-        "q": selected_query,
-        "environment": selected_environment,
-        "readiness": selected_readiness,
-        "compatibility": selected_compatibility,
-        "coverage_page": 1,
-        "coverage_per_page": coverage_pagination.per_page,
-        "coverage_q": selected_coverage_query,
-        "coverage_environment": selected_coverage_environment,
-        "coverage_status": selected_coverage_status
-    } %}
-    {{ provider_registry.pagination_footer(
-        pagination,
+            "tab": "registry",
+            "q": selected_query,
+            "environment": selected_environment,
+            "readiness": selected_readiness,
+            "compatibility": selected_compatibility,
+            "coverage_page": 1,
+            "coverage_per_page": coverage_pagination.per_page,
+            "coverage_q": selected_coverage_query,
+            "coverage_environment": selected_coverage_environment,
+            "coverage_status": selected_coverage_status
+        } %}
+    {{ provider_registry.pagination_footer(pagination,
         "harbor.index",
         "#harbor-connection-registry",
         "#harbor-registry-loading",
         registry_query_params,
         item_label="Connections",
-        swap="outerHTML"
-    ) }}
+        swap="outerHTML") }}
 </section>
