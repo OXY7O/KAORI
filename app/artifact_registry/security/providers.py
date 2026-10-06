@@ -7,6 +7,7 @@ from typing import Any
 
 from app.artifact_registry.collectors import InventoryProgressCallback
 from app.artifact_registry.security.contracts import RegistrySecurityEvidence, RegistrySecurityTarget
+
 SecurityTargetCurrentPredicate = Callable[[RegistrySecurityTarget], bool]
 
 SecurityCollectorCallable = Callable[
