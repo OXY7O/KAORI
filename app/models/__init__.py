@@ -48,19 +48,19 @@ from app.models.object_storage import ObjectStorageBucket, ObjectStorageSystem
 from app.models.object_storage_analytics import ObjectStorageAnalyticsSnapshot, ObjectStorageForecastSnapshot
 from app.models.rbac import Permission, Role, RolePermission
 from app.models.registry import (
+    RegistryAnalyticsSnapshot,
     RegistryArtifact,
     RegistryCollectionState,
-    RegistryProject,
-    RegistryRepository,
     RegistryGovernanceState,
+    RegistryProject,
     RegistryProjectGovernance,
     RegistryReplicationPolicy,
-    RegistryWebhookEndpoint,
-    RegistryWebhookEvent,
-    RegistryAnalyticsSnapshot,
+    RegistryRepository,
     RegistryScanSnapshot,
     RegistryTag,
     RegistryVulnerability,
+    RegistryWebhookEndpoint,
+    RegistryWebhookEvent,
     RegistryWorkloadBinding,
 )
 from app.models.report import Report, ReportSchedule, ReportScheduleRun, ReportTemplate
@@ -125,7 +125,6 @@ from app.models.tenant_policy import (
     TenantExposurePolicyStatus,
 )
 from app.models.user import User
-
 __all__ = [
     'AlertSignalSnapshot',
     'AnalyticsSnapshot',
