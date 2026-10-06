@@ -180,7 +180,7 @@
             {% else %}
                 {{ metric_card.render('Signature Observed', security.signature_observed, 'Artifacts where the provider reports signature presence.', 'badge-check', source_label='Provider Evidence', scope_label=security.snapshot.scope_label) }}
                 {{ metric_card.render('SBOM Available', security.sbom_available, 'Artifacts with provider-observed SBOM availability.', 'file-check-2', source_label='Provider Evidence', scope_label=security.snapshot.scope_label) }}
-                {{ metric_card.render('Coverage Gaps', security.coverage_gaps, 'Artifacts missing signature presence or available SBOM evidence.', 'scan-search', source_label='Committed Registry', scope_label=security.snapshot.scope_label) }}
+                {{ metric_card.render('Coverage Gaps', security.coverage_gaps, 'Artifacts missing signature or SBOM evidence.', 'scan-search', source_label='Committed Registry', scope_label=security.snapshot.scope_label) }}
                 {{ metric_card.render('Security Sources', security.source_count, 'Registry sources represented in the active security scope.', 'blocks', source_label='Registry Integration', scope_label=security.snapshot.scope_label) }}
             {% endif %}
         </section>
