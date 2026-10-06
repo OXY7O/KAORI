@@ -3,13 +3,11 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 from app.artifact_registry.eligibility import RegistryInventoryEligibility
-from app.integrations.registry.providers.harbor import runtime, validation
-from app.integrations.registry.providers.harbor.application import presentation
 from app.integrations.registry.providers.harbor import _record_failure
+from app.integrations.registry.providers.harbor import runtime, validation
 from app.integrations.registry.providers.harbor.adapter import HarborRuntimeAdapter
+from app.integrations.registry.providers.harbor.application import presentation
 from app.integrations.registry.providers.harbor.exceptions import HarborAuthError
-
-
 class _ReadyClient:
     def test_connection(self):
         return {
