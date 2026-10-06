@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import re
 from typing import Any
+import re
 
 from app.common.pagination import paginate_sequence
 from app.common.presentation import present_user_datetime
@@ -10,6 +10,7 @@ from app.integrations.binding_selectors import selector_form_values, selector_is
 from app.integrations.consumer_assets import build_consumer_asset_groups
 from app.integrations.coverage import build_provider_coverage
 from app.integrations.deletion import provider_deletion_guard
+from app.integrations.kernel.registry import get_integration
 from app.integrations.observability.alert_source.providers.alertmanager.application.repository import (
     count_bindings_by_scope_type,
     list_bindings_for_instance,
@@ -29,15 +30,12 @@ from app.integrations.observability.alert_source.providers.alertmanager.capabili
 )
 from app.integrations.observability.alert_source.providers.alertmanager.requirements import evaluate_module_readiness
 from app.integrations.readiness import resolve_binding_operational_status
-from app.integrations.kernel.registry import get_integration
 from app.integrations.runtime.presentation import runtime_history_view, runtime_state_view
 from app.integrations.runtime.repository import paginate_runtime_history
 from app.models.alertmanager import AlertmanagerInstance
 from app.models.cluster import Cluster
 from app.models.integration import IntegrationBinding
 from app.models.object_storage import ObjectStorageSystem
-
-
 def build_inventory_context(
     *,
     query: str = '',
