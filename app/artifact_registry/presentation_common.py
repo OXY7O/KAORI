@@ -122,36 +122,33 @@ def _analytics_payload(snapshot: RegistryAnalyticsSnapshot | None) -> dict[str, 
     return dict(snapshot.payload_json) if snapshot is not None and isinstance(snapshot.payload_json, dict) else {}
 
 
-def _registry_capacity_views(
+def _collect_registry_capacity_analytics(
     *,
     scoped_providers: list[IntegrationInstance],
     analytics_by_provider: dict[int, RegistryAnalyticsSnapshot | None],
-    total_size_bytes: int,
-    artifact_total: int,
-    committed_snapshot_count: int,
-    metrics_ready_count: int,
-) -> tuple[dict[str, Any], dict[str, Any], list[dict[str, Any]]]:
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     provider_names = {int(provider.id): provider.name for provider in scoped_providers}
     project_forecasts: list[dict[str, Any]] = []
-    size_growth_per_day = 0.0
-    artifact_growth_per_day = 0.0
-    growth_observed = False
-    analytics_count = 0
-
+    growth = {
+        'size_per_day': 0.0,
+        'artifacts_per_day': 0.0,
+        'observed': False,
+        'analytics_count': 0,
+    }
     for provider_id, snapshot in analytics_by_provider.items():
         if snapshot is None:
             continue
-        analytics_count += 1
+        growth['analytics_count'] += 1
         payload = _analytics_payload(snapshot)
-        growth = payload.get('growth') if isinstance(payload.get('growth'), dict) else {}
-        size_growth = growth.get('size_growth_bytes_per_day')
-        artifact_growth = growth.get('artifact_growth_per_day')
+        growth_payload = payload.get('growth') if isinstance(payload.get('growth'), dict) else {}
+        size_growth = growth_payload.get('size_growth_bytes_per_day')
+        artifact_growth = growth_payload.get('artifact_growth_per_day')
         if isinstance(size_growth, (int, float)):
-            size_growth_per_day += float(size_growth)
-            growth_observed = True
+            growth['size_per_day'] += float(size_growth)
+            growth['observed'] = True
         if isinstance(artifact_growth, (int, float)):
-            artifact_growth_per_day += float(artifact_growth)
-            growth_observed = True
+            growth['artifacts_per_day'] += float(artifact_growth)
+            growth['observed'] = True
 
         capacity = payload.get('capacity') if isinstance(payload.get('capacity'), dict) else {}
         rows = capacity.get('project_forecasts')
@@ -171,7 +168,7 @@ def _registry_capacity_views(
                     'project_name': str(raw.get('project_name') or 'Registry Project'),
                     'usage_bytes': float(usage) if isinstance(usage, (int, float)) else None,
                     'quota_bytes': float(quota) if isinstance(quota, (int, float)) else None,
-                    'utilization_percent': (float(utilization) if isinstance(utilization, (int, float)) else None),
+                    'utilization_percent': float(utilization) if isinstance(utilization, (int, float)) else None,
                     'growth_bytes_per_day': (
                         float(raw.get('growth_bytes_per_day'))
                         if isinstance(raw.get('growth_bytes_per_day'), (int, float))
@@ -180,7 +177,10 @@ def _registry_capacity_views(
                     'days_to_quota': float(days) if isinstance(days, (int, float)) else None,
                 }
             )
+    return project_forecasts, growth
 
+
+def _registry_capacity_posture(project_forecasts: list[dict[str, Any]]) -> dict[str, Any]:
     quota_rows = [
         item
         for item in project_forecasts
@@ -210,28 +210,55 @@ def _registry_capacity_views(
     else:
         risk = 'Unknown'
 
-    if risk == 'Critical':
-        insight = 'Committed project quota evidence shows immediate Registry capacity pressure.'
-        risk_detail = (
-            'At least one project is inside the 30-day quota horizon or aggregate utilization is at least 90%.'
-        )
-        recommended_action = (
-            'Validate growth and ownership, then prepare an approved quota, retention, or cleanup change.'
-        )
-    elif risk == 'Medium':
-        insight = 'Committed Registry analytics shows developing project capacity pressure.'
-        risk_detail = 'Quota utilization or projected exhaustion is inside the planning threshold.'
-        recommended_action = 'Review top project consumers, stale artifacts, retention policy, and quota ownership.'
-    elif risk == 'Low':
-        insight = 'Committed quota evidence currently shows usable project headroom.'
-        risk_detail = 'No current project quota forecast is inside the warning threshold.'
-        recommended_action = 'Continue worker materialization and review growth after major publication changes.'
-    else:
-        insight = 'Project quota risk cannot be calculated from the currently committed analytics evidence.'
-        risk_detail = 'Inventory footprint remains available, but project quota or growth evidence is incomplete.'
-        recommended_action = 'Refresh Registry Analytics after validating the Registry Metrics Source binding.'
+    copy = {
+        'Critical': (
+            'Committed project quota evidence shows immediate Registry capacity pressure.',
+            'At least one project is inside the 30-day quota horizon or aggregate utilization is at least 90%.',
+            'Validate growth and ownership, then prepare an approved quota, retention, or cleanup change.',
+        ),
+        'Medium': (
+            'Committed Registry analytics shows developing project capacity pressure.',
+            'Quota utilization or projected exhaustion is inside the planning threshold.',
+            'Review top project consumers, stale artifacts, retention policy, and quota ownership.',
+        ),
+        'Low': (
+            'Committed quota evidence currently shows usable project headroom.',
+            'No current project quota forecast is inside the warning threshold.',
+            'Continue worker materialization and review growth after major publication changes.',
+        ),
+        'Unknown': (
+            'Project quota risk cannot be calculated from the currently committed analytics evidence.',
+            'Inventory footprint remains available, but project quota or growth evidence is incomplete.',
+            'Refresh Registry Analytics after validating the Registry Metrics Source binding.',
+        ),
+    }
+    insight, risk_detail, recommended_action = copy[risk]
+    return {
+        'total_usage': total_usage,
+        'total_quota': total_quota,
+        'quota_utilization': quota_utilization,
+        'quota_headroom': quota_headroom,
+        'nearest_days': nearest_days,
+        'risk': risk,
+        'insight': insight,
+        'risk_detail': risk_detail,
+        'recommended_action': recommended_action,
+    }
 
-    capacity = {
+
+def _registry_capacity_summary(
+    *,
+    scoped_providers: list[IntegrationInstance],
+    committed_snapshot_count: int,
+    total_size_bytes: int,
+    artifact_total: int,
+    analytics_count: int,
+    posture: dict[str, Any],
+) -> dict[str, Any]:
+    total_quota = float(posture['total_quota'])
+    quota_utilization = posture['quota_utilization']
+    quota_headroom = posture['quota_headroom']
+    return {
         'available': bool(scoped_providers) and bool(committed_snapshot_count or analytics_count),
         'metrics': [
             {
@@ -244,7 +271,8 @@ def _registry_capacity_views(
                 'label': 'Quota Utilization',
                 'value': f'{quota_utilization:.1f}%' if quota_utilization is not None else 'N/A',
                 'description': (
-                    f'{_fmt_bytes(round(total_usage))} used of {_fmt_bytes(round(total_quota))} committed project quota.'
+                    f'{_fmt_bytes(round(float(posture["total_usage"])))} used of '
+                    f'{_fmt_bytes(round(total_quota))} committed project quota.'
                     if total_quota > 0
                     else 'No committed project quota denominator is available.'
                 ),
@@ -257,24 +285,38 @@ def _registry_capacity_views(
                 'used_percent': quota_utilization,
             },
         ],
-        'risk': risk,
-        'insight': insight,
-        'risk_detail': risk_detail,
-        'recommended_action': recommended_action,
+        'risk': posture['risk'],
+        'insight': posture['insight'],
+        'risk_detail': posture['risk_detail'],
+        'recommended_action': posture['recommended_action'],
     }
-    forecast = {
-        'available': analytics_count > 0,
+
+
+def _registry_capacity_forecast(
+    *,
+    growth: dict[str, Any],
+    metrics_ready_count: int,
+    posture: dict[str, Any],
+) -> dict[str, Any]:
+    observed = bool(growth['observed'])
+    nearest_days = posture['nearest_days']
+    return {
+        'available': int(growth['analytics_count']) > 0,
         'source_ready': metrics_ready_count > 0,
-        'analytics_count': analytics_count,
-        'size_growth_per_day': _fmt_bytes(round(size_growth_per_day)) if growth_observed else 'N/A',
-        'artifact_growth_per_day': f'{artifact_growth_per_day:.1f} artifacts/day' if growth_observed else 'N/A',
+        'analytics_count': int(growth['analytics_count']),
+        'size_growth_per_day': _fmt_bytes(round(float(growth['size_per_day']))) if observed else 'N/A',
+        'artifact_growth_per_day': (
+            f'{float(growth["artifacts_per_day"]):.1f} artifacts/day' if observed else 'N/A'
+        ),
         'nearest_quota_days': f'{nearest_days:.1f} days' if nearest_days is not None else 'N/A',
-        'risk': risk,
+        'risk': posture['risk'],
         'detail': (
             'Worker-materialized Registry analytics combines committed inventory deltas with bound Metrics Source quota evidence.'
         ),
     }
 
+
+def _registry_top_consumers(project_forecasts: list[dict[str, Any]]) -> list[dict[str, Any]]:
     top_consumers = sorted(
         project_forecasts,
         key=lambda item: (
@@ -296,8 +338,37 @@ def _registry_capacity_views(
         item['days_to_quota_display'] = (
             f'{float(item["days_to_quota"]):.1f} days' if item['days_to_quota'] is not None else 'N/A'
         )
-    return capacity, forecast, top_consumers
+    return top_consumers
 
+
+def _registry_capacity_views(
+    *,
+    scoped_providers: list[IntegrationInstance],
+    analytics_by_provider: dict[int, RegistryAnalyticsSnapshot | None],
+    total_size_bytes: int,
+    artifact_total: int,
+    committed_snapshot_count: int,
+    metrics_ready_count: int,
+) -> tuple[dict[str, Any], dict[str, Any], list[dict[str, Any]]]:
+    project_forecasts, growth = _collect_registry_capacity_analytics(
+        scoped_providers=scoped_providers,
+        analytics_by_provider=analytics_by_provider,
+    )
+    posture = _registry_capacity_posture(project_forecasts)
+    capacity = _registry_capacity_summary(
+        scoped_providers=scoped_providers,
+        committed_snapshot_count=committed_snapshot_count,
+        total_size_bytes=total_size_bytes,
+        artifact_total=artifact_total,
+        analytics_count=int(growth['analytics_count']),
+        posture=posture,
+    )
+    forecast = _registry_capacity_forecast(
+        growth=growth,
+        metrics_ready_count=metrics_ready_count,
+        posture=posture,
+    )
+    return capacity, forecast, _registry_top_consumers(project_forecasts)
 
 def _registry_alerts(selected_provider: IntegrationInstance | None) -> dict[str, Any]:
     catalog_rules = sum(
