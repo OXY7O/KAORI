@@ -1,17 +1,16 @@
 {% import "components/inventory_asset_card.html" as inventory_asset_card %}
 {% import "components/section_intro.html" as section_intro %}
-<section class="space-y-4" aria-labelledby="object-storage-asset-catalog-heading">
-    {{ section_intro.render(
-        'Object Storage Asset Catalog',
+<section class="space-y-4"
+         aria-labelledby="object-storage-asset-catalog-heading">
+    {{ section_intro.render('Object Storage Asset Catalog',
         'Open committed Object Storage inventory views for resource-level identity, filters, evidence, and details.',
-        'object-storage-asset-catalog-heading'
-    ) }}
+        'object-storage-asset-catalog-heading') }}
     <div class="grid gap-4 sm:grid-cols-2">
         {% for asset in overview.asset_catalog %}
             {{ inventory_asset_card.render(asset.title,
                         asset.count,
                         asset.description,
-                        url_for(asset.endpoint),
+                        url_for(asset.endpoint) ,
             asset.icon
             ) }}
         {% endfor %}
