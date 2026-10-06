@@ -38,5 +38,12 @@ def test_dashboard_alert_summary_preview_is_bounded_to_five_recent_cases() -> No
 
     for token in ('alert.title', 'alert.description', 'alert.severity', 'alert.state', 'alert.age'):
         assert token in shared
-    for retired in ('row_title_key', 'row_description_key', 'row_severity_key', 'row_state_key', 'row_age_key', 'row_age_datetime'):
+    for retired in (
+        'row_title_key',
+        'row_description_key',
+        'row_severity_key',
+        'row_state_key',
+        'row_age_key',
+        'row_age_datetime',
+    ):
         assert retired not in shared

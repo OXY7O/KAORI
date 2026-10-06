@@ -6,9 +6,7 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 def _rbac() -> dict:
-    return yaml.safe_load(
-        (ROOT / 'app/definitions/catalogs/access/rbac/access.yaml').read_text(encoding='utf-8')
-    )
+    return yaml.safe_load((ROOT / 'app/definitions/catalogs/access/rbac/access.yaml').read_text(encoding='utf-8'))
 
 
 def test_artifact_registry_permissions_and_dependencies_are_canonical() -> None:
@@ -26,10 +24,7 @@ def test_artifact_registry_permissions_and_dependencies_are_canonical() -> None:
 
 
 def test_artifact_registry_default_role_assignments_follow_read_write_boundary() -> None:
-    roles = {
-        item['key']: set(item.get('permissions') or ())
-        for item in _rbac()['system_roles']
-    }
+    roles = {item['key']: set(item.get('permissions') or ()) for item in _rbac()['system_roles']}
 
     for role in ('viewer', 'operator', 'editor', 'admin', 'auditor'):
         assert 'artifact_registry.view' in roles[role]

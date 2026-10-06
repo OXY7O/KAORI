@@ -31,7 +31,9 @@ def test_dashboard_family_explains_kaori_alert_intelligence_as_primary_alert_sou
     kubernetes = read('app/templates/kubernetes/dashboard/partials/_alerts_summary.html')
     kubernetes_guidance = read('app/templates/kubernetes/dashboard/partials/_alert_response_guidance.html')
     object_storage = read('app/templates/storage/object_storage/dashboard/partials/_alerts_summary.html')
-    object_storage_guidance = read('app/templates/storage/object_storage/dashboard/partials/_alert_response_guidance.html')
+    object_storage_guidance = read(
+        'app/templates/storage/object_storage/dashboard/partials/_alert_response_guidance.html'
+    )
     shared_response = read('app/templates/components/operational_alert_response.html')
 
     for content in (kubernetes, object_storage):

@@ -38,17 +38,13 @@ def test_generic_registry_paths_do_not_import_harbor_models_or_clients() -> None
         assert 'HarborInstance' not in content
         assert 'providers.harbor' not in content
 
-    harbor_collector = (
-        ROOT / 'app/integrations/registry/providers/harbor/inventory.py'
-    ).read_text()
+    harbor_collector = (ROOT / 'app/integrations/registry/providers/harbor/inventory.py').read_text()
     assert 'collect_harbor_inventory' in harbor_collector
     assert 'RegistryInventoryEvidence' in harbor_collector
 
 
 def test_provider_matrix_declares_future_registry_extension_slots() -> None:
-    matrix = (
-        ROOT / 'app/definitions/catalogs/integrations/provider_matrix.yaml'
-    ).read_text()
+    matrix = (ROOT / 'app/definitions/catalogs/integrations/provider_matrix.yaml').read_text()
     for provider in (
         'aws_ecr',
         'google_artifact_registry',

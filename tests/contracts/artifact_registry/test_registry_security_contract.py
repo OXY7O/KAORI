@@ -111,7 +111,7 @@ def test_registry_scan_evidence_semantics_are_shared_by_dashboard_and_intelligen
     assert 'SUCCESSFUL_REGISTRY_SCAN_STATUSES' in presentation
     assert 'func.lower(RegistryArtifact.scan_status).in_(SUCCESSFUL_REGISTRY_SCAN_STATUSES)' in presentation
     assert 'registry_scan_evidence_ready(artifact.scan_status)' in evaluator
-    assert "if not registry_scan_evidence_ready(artifact.scan_status):" in evaluator
+    assert 'if not registry_scan_evidence_ready(artifact.scan_status):' in evaluator
 
 
 def test_registry_security_finding_states_use_usable_scan_coverage() -> None:
@@ -137,9 +137,9 @@ def test_security_scope_labels_are_explicit_and_provider_neutral() -> None:
     )[1].split('coverage_percent =', 1)[0]
 
     assert 'if source_id is not None:' in scope_logic
-    assert "active_scope_label = selected_source.name" in scope_logic
-    assert "elif provider_label:" in scope_logic
-    assert "active_scope_label = provider_label" in scope_logic
+    assert 'active_scope_label = selected_source.name' in scope_logic
+    assert 'elif provider_label:' in scope_logic
+    assert 'active_scope_label = provider_label' in scope_logic
     assert "active_scope_label = 'All Registry Sources'" in scope_logic
     assert "source_label = f'{len(scoped_sources)} Registered Registry {source_count_label}'" in scope_logic
     assert scope_logic.index('if source_id is not None:') < scope_logic.index('if len(scoped_sources) == 1')
@@ -164,14 +164,14 @@ def test_supply_chain_uses_governed_tabs_and_canonical_capability_registry() -> 
     assert 'name="section" value="capabilities"' in template
     assert 'name="section" value="evidence"' in template
     assert "'Search source or provider…'" in template
-    assert "registry.footer(" in template
+    assert 'registry.footer(' in template
 
 
 def test_supply_chain_tables_use_standard_view_more_native_dialogs() -> None:
     workspace = read('app/templates/artifact_registry/partials/_security_workspace.html')
     modals = read('app/templates/artifact_registry/partials/_security_supply_chain_detail_modals.html')
 
-    assert "artifact_registry/partials/_security_supply_chain_detail_modals.html" in workspace
+    assert 'artifact_registry/partials/_security_supply_chain_detail_modals.html' in workspace
     assert workspace.count('View More') >= 2
     assert workspace.count('data-kaori-dialog-open') >= 2
     assert 'Provider Capability Matrix' in workspace
@@ -209,18 +209,17 @@ def test_harbor_security_refresh_is_repository_resilient_without_overriding_prov
     collector = read('app/integrations/registry/providers/harbor/security.py')
     tasks = read('app/artifact_registry/security/tasks.py')
 
-    assert "_SECURITY_DISCOVERY_PAGE_SIZES = (20, 10)" in collector
-    assert "build_client(instance, transport_retries=_SECURITY_TRANSPORT_RETRIES)" in collector
-    assert "repository_security_refresh_unavailable" in collector
+    assert '_SECURITY_DISCOVERY_PAGE_SIZES = (20, 10)' in collector
+    assert 'build_client(instance, transport_retries=_SECURITY_TRANSPORT_RETRIES)' in collector
+    assert 'repository_security_refresh_unavailable' in collector
     assert "'repository_failure_count': len(repository_failures)" in collector
     assert "'repository_failures': repository_failures[:_MAX_REPOSITORY_FAILURE_EVIDENCE]" in collector
-    assert "except HarborAuthError:" in collector
-    assert "Harbor security discovery was unavailable for every committed repository" in collector
-    assert "partial_source_count" in tasks
-    assert "repository_failure_count" in tasks
+    assert 'except HarborAuthError:' in collector
+    assert 'Harbor security discovery was unavailable for every committed repository' in collector
+    assert 'partial_source_count' in tasks
+    assert 'repository_failure_count' in tasks
     assert "'warning_evidence': warning_evidence[:50]" in tasks
-    assert "partial=bool(failures or has_partial_refresh)" in tasks
-
+    assert 'partial=bool(failures or has_partial_refresh)' in tasks
 
 
 def test_vulnerability_runtime_drilldown_preserves_artifact_context() -> None:
@@ -231,7 +230,6 @@ def test_vulnerability_runtime_drilldown_preserves_artifact_context() -> None:
     assert "url_for('artifact_registry.runtime', artifact_id=row.artifact_id)" in template
     assert 'Open Runtime' in template
     assert 'source_id=security.filters.source_id' in template
-
 
 
 def test_security_sync_revalidates_stale_targets_and_heartbeats_repository_discovery() -> None:

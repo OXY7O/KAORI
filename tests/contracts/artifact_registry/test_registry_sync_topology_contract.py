@@ -4,9 +4,7 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 def test_registry_inventory_remains_bounded_to_inventory_evidence() -> None:
-    harbor_inventory = (
-        ROOT / 'app/integrations/registry/providers/harbor/inventory.py'
-    ).read_text()
+    harbor_inventory = (ROOT / 'app/integrations/registry/providers/harbor/inventory.py').read_text()
     inventory_task = (ROOT / 'app/artifact_registry/tasks.py').read_text()
     inventory_sync = (ROOT / 'app/artifact_registry/sync.py').read_text()
 
@@ -16,15 +14,9 @@ def test_registry_inventory_remains_bounded_to_inventory_evidence() -> None:
 
 
 def test_registry_security_is_incremental_and_independent() -> None:
-    harbor_security = (
-        ROOT / 'app/integrations/registry/providers/harbor/security.py'
-    ).read_text()
-    security_jobs = (
-        ROOT / 'app/artifact_registry/security/sync_jobs.py'
-    ).read_text()
-    registered_jobs = (
-        ROOT / 'app/definitions/catalogs/platform_operations/jobs/registered_jobs.yaml'
-    ).read_text()
+    harbor_security = (ROOT / 'app/integrations/registry/providers/harbor/security.py').read_text()
+    security_jobs = (ROOT / 'app/artifact_registry/security/sync_jobs.py').read_text()
+    registered_jobs = (ROOT / 'app/definitions/catalogs/platform_operations/jobs/registered_jobs.yaml').read_text()
 
     assert 'list_all_artifacts(' in harbor_security
     assert 'with_scan_overview=True' in harbor_security
@@ -52,21 +44,17 @@ def test_registry_inventory_keeps_committed_snapshot_ready_during_refresh_failur
 def test_registry_inventory_presentation_surfaces_failed_refresh_from_last_error() -> None:
     presentation = (ROOT / 'app/artifact_registry/presentation.py').read_text()
 
-    assert "refresh_failed = bool(state.last_error)" in presentation
-    assert "failed_refresh_count = sum(bool(state.last_error) for state in committed_states)" in presentation
-    assert "elif state is not None and state.last_error:" in presentation
-    assert "and selected_collection_state.last_error" in presentation
+    assert 'refresh_failed = bool(state.last_error)' in presentation
+    assert 'failed_refresh_count = sum(bool(state.last_error) for state in committed_states)' in presentation
+    assert 'elif state is not None and state.last_error:' in presentation
+    assert 'and selected_collection_state.last_error' in presentation
 
 
 def test_registry_governance_and_runtime_correlation_are_separate_jobs() -> None:
-    jobs = (
-        ROOT / 'app/definitions/catalogs/platform_operations/jobs/registered_jobs.yaml'
-    ).read_text()
+    jobs = (ROOT / 'app/definitions/catalogs/platform_operations/jobs/registered_jobs.yaml').read_text()
     governance_task = (ROOT / 'app/artifact_registry/governance_tasks.py').read_text()
     correlation = (ROOT / 'app/artifact_registry/correlation.py').read_text()
-    correlation_jobs = (
-        ROOT / 'app/artifact_registry/correlation_sync_jobs.py'
-    ).read_text()
+    correlation_jobs = (ROOT / 'app/artifact_registry/correlation_sync_jobs.py').read_text()
 
     assert 'artifact_registry.governance.sync' in jobs
     assert 'artifact_registry.runtime_correlation.materialize' in jobs
@@ -96,10 +84,9 @@ def test_registry_worker_task_registration_matches_separated_jobs() -> None:
     ):
         assert task in config
 
+
 def test_harbor_security_uses_scan_completion_as_primary_incremental_marker() -> None:
-    harbor_security = (
-        ROOT / 'app/integrations/registry/providers/harbor/security.py'
-    ).read_text()
+    harbor_security = (ROOT / 'app/integrations/registry/providers/harbor/security.py').read_text()
 
     identity = harbor_security.split('def _scan_identity_changed', 1)[1].split(
         'def collect_harbor_security',
@@ -117,7 +104,6 @@ def test_registry_evidence_jobs_fail_terminally_when_every_provider_fails() -> N
     assert 'All eligible Registry providers failed inventory synchronization.' in inventory_task
     assert 'All eligible Registry providers failed security synchronization.' in security_task
     assert 'All eligible Registry providers failed governance synchronization.' in governance_task
-    assert "context.fail(" in inventory_task
-    assert "context.fail(" in security_task
-    assert "context.fail(" in governance_task
-
+    assert 'context.fail(' in inventory_task
+    assert 'context.fail(' in security_task
+    assert 'context.fail(' in governance_task
