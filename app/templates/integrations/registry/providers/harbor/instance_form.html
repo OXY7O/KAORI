@@ -23,10 +23,10 @@
                         "Harbor API v2.0",
                         "Connection",
                         instance.name,
-                        instance.environment|default("")|title,
-                        instance.readiness_status or "validation_required",
-                        url_for("harbor.index"),
-                        "Harbor configuration posture") }}
+                        instance.environment|default("") |title,
+            instance.readiness_status or "validation_required",
+            url_for("harbor.index"),
+            "Harbor configuration posture") }}
         {% else %}
             {{ provider_registration_hero.render("package",
                         "Registry Integration",
@@ -35,16 +35,14 @@
                         "Create a reusable Harbor API connection before governed Full Validation.",
                         "braces",
                         "Harbor API v2.0",
-                        url_for("harbor.index"),
-                        "Harbor connection workflow",
-                        binding_label="Read-Oriented Provider Contract",
-                        after_save_description="Then validate compatibility and capabilities") }}
+                        url_for("harbor.index") ,
+            "Harbor connection workflow",
+            binding_label="Read-Oriented Provider Contract",
+            after_save_description="Then validate compatibility and capabilities") }}
         {% endif %}
-        <form id="harbor-instance-form"
-              method="post"
-              class="grid gap-6 xl:grid-cols-12 xl:items-start"
-              x-data="{ authType: {{ (form.auth_type.data or 'basic')|tojson|forceescape }}{% if not (instance is defined and instance) %}, connectionVerified: {{ 'true' if registration_proof else 'false' }}, invalidateConnectionTest(event) { const fieldName = event.target?.name || ''; if (['csrf_token', 'connection_test_proof', 'action'].includes(fieldName)) return; this.connectionVerified = false; this.$refs.connectionProof.value = ''; }, applyConnectionTest(event) { this.connectionVerified = event.detail?.connected === true; this.$refs.connectionProof.value = event.detail?.proof || ''; }{% endif %} }"
-              {% if not (instance is defined and instance) %}x-on:input.capture="invalidateConnectionTest($event)" x-on:change.capture="invalidateConnectionTest($event)" x-on:harbor-connection-tested.window="applyConnectionTest($event)"{% endif %}>
+        <form id="harbor-instance-form" method="post" class="grid gap-6 xl:grid-cols-12 xl:items-start" x-data="{ authType: {{ (form.auth_type.data or 'basic')|tojson|forceescape }}
+            {% if not (instance is defined and instance) %}, connectionVerified: {{ 'true' if registration_proof else 'false' }}, invalidateConnectionTest(event) { const fieldName = event.target?.name || ''; if (['csrf_token', 'connection_test_proof', 'action'].includes(fieldName)) return; this.connectionVerified = false; this.$refs.connectionProof.value = ''; }, applyConnectionTest(event) { this.connectionVerified = event.detail?.connected === true; this.$refs.connectionProof.value = event.detail?.proof || ''; }{% endif %}
+            }" {% if not (instance is defined and instance) %}x-on:input.capture="invalidateConnectionTest($event)" x-on:change.capture="invalidateConnectionTest($event)" x-on:harbor-connection-tested.window="applyConnectionTest($event)"{% endif %}>
             {{ form.hidden_tag() }}
             {% if not (instance is defined and instance) %}
                 <input x-ref="connectionProof"
@@ -78,7 +76,9 @@
                             <label class="block">
                                 <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.name.label.text }}</span>
                                 {{ form.name(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20") }}
-                                {% for error in form.name.errors %}<p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>{% endfor %}
+                                {% for error in form.name.errors %}
+                                    <p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>
+                                {% endfor %}
                             </label>
                             <label class="block">
                                 <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.environment.label.text }}</span>
@@ -117,7 +117,9 @@
                             <label class="block">
                                 <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.endpoint.label.text }}</span>
                                 {{ form.endpoint(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20") }}
-                                {% for error in form.endpoint.errors %}<p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>{% endfor %}
+                                {% for error in form.endpoint.errors %}
+                                    <p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>
+                                {% endfor %}
                             </label>
                             <div class="grid gap-4 md:grid-cols-2">
                                 <label class="block">
@@ -135,12 +137,16 @@
                                 <label class="block">
                                     <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.username.label.text }}</span>
                                     {{ form.username(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autocomplete="off", **{':required':"authType === 'basic'"}) }}
-                                    {% for error in form.username.errors %}<p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>{% endfor %}
+                                    {% for error in form.username.errors %}
+                                        <p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>
+                                    {% endfor %}
                                 </label>
                                 <label class="block">
                                     <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.password.label.text }}</span>
-                                    {{ form.password(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autocomplete="new-password", **{':required':"authType === 'basic' && " + ('false' if instance is defined and instance else 'true')}) }}
-                                    {% for error in form.password.errors %}<p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>{% endfor %}
+                                    {{ form.password(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autocomplete="new-password", **{':required':"authType === 'basic' && " + ('false' if instance is defined and instance else 'true') }) }}
+                                    {% for error in form.password.errors %}
+                                        <p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>
+                                    {% endfor %}
                                 </label>
                             </div>
                         </div>
@@ -168,14 +174,13 @@
                     {% call form_action_bar.render("Save changes, then run Full Validation before interpreting Registry provider readiness.", aria_label="Harbor Configuration Actions", embedded=true) %}
                         <a href="{{ url_for('harbor.instance_detail', instance_id=instance.id) }}"
                            class="{{ action_button.classes('secondary') }}">Cancel</a>
-                        <button type="submit"
-                                class="{{ action_button.classes('primary') }}">
+                        <button type="submit" class="{{ action_button.classes('primary') }}">
                             <i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i>
                             Save Changes
                         </button>
                     {% endcall %}
                 {% else %}
-                    {{ provider_registration_actions.render(url_for('harbor.index'),
+                    {{ provider_registration_actions.render(url_for('harbor.index') ,
                     aria_label='Harbor Connection Actions',
                     register_label='Register Connection',
                     loading_label='Registering Connection...',
@@ -185,22 +190,12 @@
             </section>
             <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">
                 {% if instance is defined and instance %}
-                    {% set harbor_flow_items = [
-                        ('Review Identity & Environment', 'Keep the canonical Registry provider identity stable while updating connection metadata.'),
-                        ('Adjust Endpoint Access', 'Rotate credentials or transport settings only when operationally required.'),
-                        ('Test Configuration', 'Verify Harbor identity and reachability using the effective submitted configuration.'),
-                        ('Run Full Validation', 'Rebuild compatibility and capability evidence after saving.')
-                    ] %}
+                    {% set harbor_flow_items = [('Review Identity & Environment', 'Keep the canonical Registry provider identity stable while updating connection metadata.'), ('Adjust Endpoint Access', 'Rotate credentials or transport settings only when operationally required.'), ('Test Configuration', 'Verify Harbor identity and reachability using the effective submitted configuration.'), ('Run Full Validation', 'Rebuild compatibility and capability evidence after saving.')] %}
                     {% set flow_title = "Harbor Configuration Flow" %}
                     {% set flow_description = "How changes restore Registry provider readiness." %}
                     {% set flow_note = "Connection-sensitive changes reset readiness; Test Configuration never substitutes for Full Validation." %}
                 {% else %}
-                    {% set harbor_flow_items = [
-                        ('Define Connection Identity', 'Create the reusable KAORI identity for this Harbor endpoint.'),
-                        ('Configure Endpoint Access', 'Set Harbor API endpoint, authentication, TLS behavior, and timeout.'),
-                        ('Test Connection', 'Verify Harbor identity and reachability before registration is enabled.'),
-                        ('Register Connection', 'Persist the provider identity before Full Validation.')
-                    ] %}
+                    {% set harbor_flow_items = [('Define Connection Identity', 'Create the reusable KAORI identity for this Harbor endpoint.'), ('Configure Endpoint Access', 'Set Harbor API endpoint, authentication, TLS behavior, and timeout.'), ('Test Connection', 'Verify Harbor identity and reachability before registration is enabled.'), ('Register Connection', 'Persist the provider identity before Full Validation.')] %}
                     {% set flow_title = "Harbor Registration Flow" %}
                     {% set flow_description = "How KAORI registers a reusable Registry connection." %}
                     {% set flow_note = "Registration proves only endpoint identity and reachability. Full Validation owns compatibility and capability readiness." %}
@@ -210,12 +205,12 @@
                                 harbor_flow_items,
                                 "Registry Integrations",
                                 "Harbor executes Registry APIs; KAORI owns normalized identity, evidence, readiness, runtime, and audit.",
-                                url_for("integrations.registry"),
-                                "Open Registry Integrations",
-                                flow_icon="workflow",
-                                flow_note=flow_note,
-                                related_icon="package-search",
-                                authority_boundary="Harbor remains authoritative for native projects, repositories, artifacts, policies, and runtime state.") }}
+                                url_for("integrations.registry") ,
+                "Open Registry Integrations",
+                flow_icon="workflow",
+                flow_note=flow_note,
+                related_icon="package-search",
+                authority_boundary="Harbor remains authoritative for native projects, repositories, artifacts, policies, and runtime state.") }}
             </aside>
         </form>
     </div>
