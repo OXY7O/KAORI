@@ -6,6 +6,7 @@ from time import perf_counter
 from typing import Any
 
 from celery import shared_task
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.artifact_registry.sync import sync_registry_inventory
 from app.extensions.db import db
@@ -153,7 +154,7 @@ def sync_all_registry_task(
                 )
                 synced += 1
                 artifact_count += int(result.get('artifacts') or 0)
-            except Exception as exc:
+            except (LookupError, RuntimeError, ValueError, SQLAlchemyError) as exc:
                 db.session.rollback()
                 failures.append(
                     {
@@ -206,7 +207,7 @@ def sync_all_registry_task(
                 partial=bool(failures),
             )
         return result
-    except Exception as exc:
+    except (LookupError, RuntimeError, ValueError, SQLAlchemyError) as exc:
         db.session.rollback()
         context.fail(exc, error_code='artifact_registry_inventory_sync_failed')
         logger.exception('Unexpected Artifact Registry inventory synchronization failure.')
