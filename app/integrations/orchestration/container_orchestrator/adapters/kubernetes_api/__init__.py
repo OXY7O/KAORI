@@ -1,18 +1,16 @@
+from app.integrations.kernel.registry import (
+    canonical_model_loader,
+    IntegrationImplementation,
+    IntegrationModule,
+    model_loader,
+    registry,
+)
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.capabilities import (
     CAPABILITY_KEYS,
     COMPATIBILITY_PROFILES,
 )
-from app.integrations.kernel.registry import (
-    IntegrationImplementation,
-    IntegrationModule,
-    canonical_model_loader,
-    model_loader,
-    registry,
-)
 from app.models.kubernetes import KubernetesConnection
-
-
 def _detail_url(instance: KubernetesConnection, section: str) -> str:
     return f'/integrations/kubernetes/{instance.cluster_id}#{section}'
 
