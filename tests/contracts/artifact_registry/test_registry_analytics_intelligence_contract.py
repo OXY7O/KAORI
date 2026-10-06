@@ -86,3 +86,52 @@ def test_registry_scan_gap_recommendation_uses_usable_scan_evidence_semantics() 
     assert 'success, finished, or completed' in scan_gap
     assert 'runtime binding' in scan_gap.lower()
 
+def test_registry_analytics_materializes_operational_harbor_metric_profile() -> None:
+    analytics = (ROOT / 'app/artifact_registry/analytics.py').read_text()
+    profile = (
+        ROOT
+        / 'app/integrations/observability/metrics_source/query_profiles/registry_harbor_v1.py'
+    ).read_text()
+
+    for query_key in (
+        'registry.health',
+        'registry.component.up',
+        'registry.projects.total',
+        'registry.project.artifacts',
+        'registry.project.quota.usage_bytes',
+        'registry.project.quota.bytes',
+        'registry.project.pull_count',
+        'registry.core.request_rate',
+        'registry.core.inflight',
+        'registry.backend.request_rate',
+        'registry.task.queue_size',
+    ):
+        assert query_key in profile
+        assert query_key in analytics
+
+    assert "'capability_gaps': gaps" in analytics
+    assert "'metrics_source': consumer.config.name" in analytics
+    assert "scope_type='registry_instance'" in analytics
+
+
+def test_registry_analytics_workspace_is_operational_and_intelligence_bounded() -> None:
+    template = (
+        ROOT / 'app/templates/artifact_registry/analytics.html'
+    ).read_text()
+
+    for section in (
+        'Registry Health & Throughput',
+        'Growth & Capacity Outlook',
+        'Most Pulled Projects',
+        'Security Evidence Coverage',
+        'Policy Coverage',
+        'Analytics Materialization Coverage',
+        'Central Intelligence Projection',
+    ):
+        assert section in template
+
+    assert 'page rendering never queries Harbor or Prometheus directly' in template
+    assert 'Review candidates only; no automatic cleanup' in template
+    assert 'recommendation lifecycle, Accepted Risk, escalation, and automation control remain centrally governed' in template
+    assert "url_for('intelligence.recommendations', domain='registry')" in template
+
