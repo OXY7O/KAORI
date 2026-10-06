@@ -48,6 +48,7 @@ from app.reports.schedules.presentation import title_case_period_options as _tit
 from app.reports.schedules.registry import filter_schedule_rows as _filter_schedule_rows
 from app.reports.schedules.registry import get_selected_filters as _get_selected_filters
 from app.reports.schedules.support import build_schedule_asset_filter_options as _build_schedule_asset_filter_options
+from app.reports.schedules.support import build_run_filter_options as _build_run_filter_options
 from app.reports.schedules.support import build_schedule_evidence_snapshot as _build_schedule_evidence_snapshot
 from app.reports.schedules.support import ensure_utc as _ensure_utc
 from app.reports.schedules.support import get_cluster_map as _get_cluster_map
@@ -179,7 +180,7 @@ def get_report_schedules_payload(
         'run_rows': run_rows,
         'run_pagination': run_pagination,
         'run_selected_filters': run_selected_filters,
-        'run_filter_options': _get_run_filter_options(all_schedules),
+        'run_filter_options': _build_run_filter_options(all_schedules, RUN_PERIOD_OPTIONS),
         'run_registry_query_params': {
             'workspace': 'runs',
             **{key: value for key, value in run_selected_filters.items() if value},
@@ -818,33 +819,6 @@ def _get_run_selected_filters(query_args: Mapping[str, str]) -> dict[str, str]:
         'run_trigger': str(query_args.get('run_trigger', '') or '').strip().lower(),
         'run_status': str(query_args.get('run_status', '') or '').strip().lower(),
         'run_period': period,
-    }
-
-
-def _get_run_filter_options(
-    schedules: list[dict[str, Any]],
-) -> dict[str, list[dict[str, str]]]:
-    return {
-        'schedules': [
-            {'value': '', 'label': 'All Schedules'},
-            *[
-                {'value': str(item['id']), 'label': str(item['name'])}
-                for item in sorted(schedules, key=lambda row: str(row['name']).casefold())
-            ],
-        ],
-        'triggers': [
-            {'value': '', 'label': 'All Triggers'},
-            {'value': 'scheduler', 'label': 'Scheduler'},
-            {'value': 'manual', 'label': 'Manual'},
-        ],
-        'statuses': [
-            {'value': '', 'label': 'All Results'},
-            {'value': 'queued', 'label': 'Queued'},
-            {'value': 'started', 'label': 'Started'},
-            {'value': 'success', 'label': 'Success'},
-            {'value': 'failed', 'label': 'Failed'},
-        ],
-        'periods': list(RUN_PERIOD_OPTIONS),
     }
 
 
