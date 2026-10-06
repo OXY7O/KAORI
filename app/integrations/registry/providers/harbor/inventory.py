@@ -42,15 +42,78 @@ def _repository_name(project_name: str, value: Any) -> str:
     return name[len(prefix) :] if name.startswith(prefix) else name
 
 
+def _artifact_record(raw_artifact: dict[str, Any]) -> ArtifactRecord | None:
+    digest = str(raw_artifact.get('digest') or '').strip()
+    if not digest:
+        return None
+    return ArtifactRecord(
+        digest=digest,
+        provider_native_id=str(raw_artifact.get('id') or '') or None,
+        artifact_type=str(raw_artifact.get('type') or '').strip() or None,
+        media_type=str(raw_artifact.get('media_type') or '').strip() or None,
+        size_bytes=_as_int(raw_artifact.get('size')),
+        push_time=_parse_datetime(raw_artifact.get('push_time')),
+        pull_time=_parse_datetime(raw_artifact.get('pull_time')),
+        tags=[tag for tag in (raw_artifact.get('tags') or []) if isinstance(tag, dict)],
+        provider_metadata={
+            key: raw_artifact.get(key)
+            for key in ('manifest_media_type', 'project_id', 'repository_id', 'extra_attrs')
+            if raw_artifact.get(key) is not None
+        },
+    )
+
+
+def _repository_record(client: Any, project_name: str, raw_repo: dict[str, Any]) -> RepositoryRecord | None:
+    repo_name = _repository_name(project_name, raw_repo.get('name'))
+    if not repo_name:
+        return None
+    repository = RepositoryRecord(
+        name=repo_name,
+        provider_native_id=str(raw_repo.get('id') or '') or None,
+        artifact_count=_as_int(raw_repo.get('artifact_count')),
+        pull_count=_as_int(raw_repo.get('pull_count')),
+        description=str(raw_repo.get('description') or '').strip() or None,
+        provider_created_at=_parse_datetime(raw_repo.get('creation_time')),
+        provider_updated_at=_parse_datetime(raw_repo.get('update_time')),
+        provider_metadata={key: raw_repo.get(key) for key in ('project_id',) if raw_repo.get(key) is not None},
+    )
+    for raw_artifact in client.list_all_artifacts(
+        project_name_or_id=project_name,
+        repository_name=repo_name,
+    ):
+        artifact = _artifact_record(raw_artifact)
+        if artifact is not None:
+            repository.artifacts.append(artifact)
+    return repository
+
+
+def _project_record(client: Any, raw_project: dict[str, Any]) -> ProjectRecord | None:
+    project_name = str(raw_project.get('name') or '').strip()
+    if not project_name:
+        return None
+    project = ProjectRecord(
+        name=project_name,
+        provider_native_id=str(raw_project.get('project_id') or '') or None,
+        public=bool(raw_project.get('public')) if raw_project.get('public') is not None else None,
+        repository_count=_as_int(raw_project.get('repo_count')),
+        provider_metadata={
+            key: raw_project.get(key)
+            for key in ('creation_time', 'update_time', 'metadata', 'owner_id', 'owner_name')
+            if raw_project.get(key) is not None
+        },
+    )
+    for raw_repo in client.list_all_repositories(project_name_or_id=project_name):
+        repository = _repository_record(client, project_name, raw_repo)
+        if repository is not None:
+            project.repositories.append(repository)
+    return project
+
+
 def collect_harbor_inventory(
     instance: HarborInstance,
     progress_callback: InventoryProgressCallback | None = None,
 ) -> RegistryInventoryEvidence:
-    """Collect only the canonical inventory facts owned by #895.
-
-    Security detail, governance, and runtime correlation have independent
-    workstream authorities and must not extend the inventory critical path.
-    """
+    """Collect only the canonical inventory facts owned by #895."""
 
     client = build_client(instance)
     if progress_callback is not None:
@@ -63,67 +126,18 @@ def collect_harbor_inventory(
 
     projects: list[ProjectRecord] = []
     for raw_project in raw_projects:
-        project_name = str(raw_project.get('name') or '').strip()
-        if not project_name:
+        project = _project_record(client, raw_project)
+        if project is None:
             continue
-        project = ProjectRecord(
-            name=project_name,
-            provider_native_id=str(raw_project.get('project_id') or '') or None,
-            public=bool(raw_project.get('public')) if raw_project.get('public') is not None else None,
-            repository_count=_as_int(raw_project.get('repo_count')),
-            provider_metadata={
-                key: raw_project.get(key)
-                for key in ('creation_time', 'update_time', 'metadata', 'owner_id', 'owner_name')
-                if raw_project.get(key) is not None
-            },
-        )
-        for raw_repo in client.list_all_repositories(project_name_or_id=project_name):
-            repo_name = _repository_name(project_name, raw_repo.get('name'))
-            if not repo_name:
-                continue
-            repository = RepositoryRecord(
-                name=repo_name,
-                provider_native_id=str(raw_repo.get('id') or '') or None,
-                artifact_count=_as_int(raw_repo.get('artifact_count')),
-                pull_count=_as_int(raw_repo.get('pull_count')),
-                description=str(raw_repo.get('description') or '').strip() or None,
-                provider_created_at=_parse_datetime(raw_repo.get('creation_time')),
-                provider_updated_at=_parse_datetime(raw_repo.get('update_time')),
-                provider_metadata={key: raw_repo.get(key) for key in ('project_id',) if raw_repo.get(key) is not None},
-            )
-            for raw_artifact in client.list_all_artifacts(
-                project_name_or_id=project_name,
-                repository_name=repo_name,
-            ):
-                digest = str(raw_artifact.get('digest') or '').strip()
-                if not digest:
-                    continue
-                repository.artifacts.append(
-                    ArtifactRecord(
-                        digest=digest,
-                        provider_native_id=str(raw_artifact.get('id') or '') or None,
-                        artifact_type=str(raw_artifact.get('type') or '').strip() or None,
-                        media_type=str(raw_artifact.get('media_type') or '').strip() or None,
-                        size_bytes=_as_int(raw_artifact.get('size')),
-                        push_time=_parse_datetime(raw_artifact.get('push_time')),
-                        pull_time=_parse_datetime(raw_artifact.get('pull_time')),
-                        tags=[tag for tag in (raw_artifact.get('tags') or []) if isinstance(tag, dict)],
-                        provider_metadata={
-                            key: raw_artifact.get(key)
-                            for key in ('manifest_media_type', 'project_id', 'repository_id', 'extra_attrs')
-                            if raw_artifact.get(key) is not None
-                        },
-                    )
-                )
-            project.repositories.append(repository)
+        projects.append(project)
+        for repository in project.repositories:
             repository_processed += 1
             if progress_callback is not None:
                 progress_callback(
                     repository_processed,
                     max(repository_hint, repository_processed),
-                    f'{project_name}/{repo_name}',
+                    f'{project.name}/{repository.name}',
                 )
-        projects.append(project)
 
     if progress_callback is not None:
         progress_callback(repository_processed, repository_processed, '')
