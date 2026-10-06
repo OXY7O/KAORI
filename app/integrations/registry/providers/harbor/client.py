@@ -9,6 +9,7 @@ import requests
 from requests import Response
 from requests.auth import HTTPBasicAuth
 
+from app.integrations.registry.providers.harbor.contracts import HarborRetryPolicy
 from app.integrations.registry.providers.harbor.exceptions import (
     HarborAuthError,
     HarborConnectionError,
@@ -30,8 +31,7 @@ class HarborClient:
         password: str | None = None,
         timeout: int = 5,
         verify_ssl: bool = True,
-        transport_retries: int = 0,
-        retry_backoff_seconds: float = 0.25,
+        retry_policy: HarborRetryPolicy | None = None,
     ) -> None:
         self.endpoint = endpoint.rstrip('/')
         self.auth_type = auth_type
@@ -39,8 +39,9 @@ class HarborClient:
         self.password = password
         self.timeout = max(1, min(int(timeout or 5), 30))
         self.verify_ssl = bool(verify_ssl)
-        self.transport_retries = max(0, min(int(transport_retries or 0), 3))
-        self.retry_backoff_seconds = max(0.0, min(float(retry_backoff_seconds or 0.0), 2.0))
+        retry_policy = retry_policy or HarborRetryPolicy()
+        self.transport_retries = max(0, min(int(retry_policy.transport_retries or 0), 3))
+        self.retry_backoff_seconds = max(0.0, min(float(retry_policy.backoff_seconds or 0.0), 2.0))
 
     def test_connection(self) -> dict[str, Any]:
         started = perf_counter()
@@ -118,7 +119,6 @@ class HarborClient:
         with_scan_overview: bool = False,
         with_sbom_overview: bool = False,
         with_signature: bool = False,
-        with_immutable_status: bool = False,
     ) -> list[dict[str, Any]]:
         project_scope = str(project_name_or_id).strip()
         repository_scope = str(repository_name).strip().strip('/')
@@ -136,7 +136,7 @@ class HarborClient:
                 'with_scan_overview': str(bool(with_scan_overview)).lower(),
                 'with_sbom_overview': str(bool(with_sbom_overview)).lower(),
                 'with_signature': str(bool(with_signature)).lower(),
-                'with_immutable_status': str(bool(with_immutable_status)).lower(),
+                'with_immutable_status': 'false',
             },
         )
         return self._object_list(payload, 'artifacts')
@@ -150,7 +150,6 @@ class HarborClient:
         with_scan_overview: bool = False,
         with_sbom_overview: bool = False,
         with_signature: bool = False,
-        with_immutable_status: bool = False,
         page_callback: Callable[[int], None] | None = None,
     ) -> list[dict[str, Any]]:
         return self._paged(
@@ -162,7 +161,6 @@ class HarborClient:
                 with_scan_overview=with_scan_overview,
                 with_sbom_overview=with_sbom_overview,
                 with_signature=with_signature,
-                with_immutable_status=with_immutable_status,
             ),
             page_size=page_size,
             page_callback=page_callback,
