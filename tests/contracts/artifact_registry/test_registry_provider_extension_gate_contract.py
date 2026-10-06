@@ -1,13 +1,11 @@
 from pathlib import Path
 
 from app.artifact_registry.collectors import (
-    RegistryInventoryCollector,
     get_registry_collector,
     register_registry_collector,
+    RegistryInventoryCollector,
 )
 from app.artifact_registry.contracts import RegistryInventoryEvidence
-
-
 ROOT = Path(__file__).resolve().parents[3]
 
 
