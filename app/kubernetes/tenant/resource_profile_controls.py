@@ -29,7 +29,6 @@ def _control_enabled(source: Mapping[str, Any], field: str) -> bool:
     return _text(source, f'control_{field}').lower() in _CONTROL_TRUE_VALUES
 
 
-
 def _storage_policy_values(source: Mapping[str, Any]) -> dict[str, str]:
     policy = {
         target: value
