@@ -71,7 +71,7 @@
                     ('governance', 'Governance', 'scale', url_for('artifact_registry.analytics', tab='governance')),
                     ('alerts', 'Alerts', 'siren', url_for('artifact_registry.analytics', tab='alerts')),
                     ('insights', 'Insights', 'sparkles', url_for('artifact_registry.analytics', tab='insights'))
-                ], analytics.active_tab, prefix='registry-analytics', aria_label='Registry Analytics Sections') }}
+                ], analytics.active_tab, prefix='registry-analytics', aria_label='Registry Analytics Sections', hx_target='#artifact-registry-analytics-workspace', hx_select='#artifact-registry-analytics-workspace') }}
 
                 <div id="artifact-registry-analytics-active-section"
                      hx-get="{{ url_for('artifact_registry.analytics_section', section=analytics.active_tab) }}"
