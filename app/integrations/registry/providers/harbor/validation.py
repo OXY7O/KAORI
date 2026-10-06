@@ -151,9 +151,9 @@ def validate_source(source: HarborInstance, *, source_label: str) -> ValidationR
         ValidationStep(
             'compatibility',
             'Compatibility Profile',
-            'success' if compatibility.readiness == 'ready' else (
-                'failed' if compatibility.readiness == 'blocked' else 'warning'
-            ),
+            'success'
+            if compatibility.readiness == 'ready'
+            else ('failed' if compatibility.readiness == 'blocked' else 'warning'),
             f'{compatibility.profile_key or "No profile"}: {message}',
         )
     )
@@ -225,7 +225,5 @@ def _failure(source: HarborInstance, exc: Exception, *, source_label: str, unexp
         endpoint_host=failure['endpoint_host'],
         endpoint_port=int(failure['endpoint_port']) if failure.get('endpoint_port') else None,
         request_path=failure['request_path'],
-        validation_steps=(
-            ValidationStep('system_identity', 'System Identity', 'failed', failure['detail']),
-        ),
+        validation_steps=(ValidationStep('system_identity', 'System Identity', 'failed', failure['detail']),),
     )

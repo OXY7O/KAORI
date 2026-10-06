@@ -79,10 +79,7 @@ def _artifact_evidence(
         'runtime_binding_count': len(bindings),
         'runtime_namespaces': sorted({binding.namespace for binding in bindings}),
         'runtime_workloads': sorted(
-            {
-                f'{binding.namespace}/{binding.workload_name or binding.pod_name}'
-                for binding in bindings
-            }
+            {f'{binding.namespace}/{binding.workload_name or binding.pod_name}' for binding in bindings}
         ),
         'inventory_observed_at': artifact.observed_at.isoformat(),
     }
@@ -152,9 +149,13 @@ def _artifact_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]
     tag_rule = rules.get('registry.runtime.tag_only_correlation')
     if tag_rule is not None:
         for binding in RegistryWorkloadBinding.query.filter_by(match_type='tag').all():
-            artifact = RegistryArtifact.query.options(
-                joinedload(RegistryArtifact.repository).joinedload(RegistryRepository.project),
-            ).filter_by(id=binding.artifact_id).first()
+            artifact = (
+                RegistryArtifact.query.options(
+                    joinedload(RegistryArtifact.repository).joinedload(RegistryRepository.project),
+                )
+                .filter_by(id=binding.artifact_id)
+                .first()
+            )
             if artifact is None:
                 continue
             identity, provider_key, provider_label = _identity(artifact.repository.project)
@@ -196,11 +197,11 @@ def _governance_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any
     rule = rules.get('registry.governance.public_project_without_immutability')
     if rule is None:
         return []
-    rows = RegistryProjectGovernance.query.options(
-        joinedload(RegistryProjectGovernance.project)
-    ).filter(
-        RegistryProjectGovernance.immutability_status == 'not_configured'
-    ).all()
+    rows = (
+        RegistryProjectGovernance.query.options(joinedload(RegistryProjectGovernance.project))
+        .filter(RegistryProjectGovernance.immutability_status == 'not_configured')
+        .all()
+    )
     findings: list[dict[str, Any]] = []
     for row in rows:
         project = row.project

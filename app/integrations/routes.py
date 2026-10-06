@@ -117,11 +117,11 @@ def observability() -> ResponseReturnValue:
 def storage() -> ResponseReturnValue:
     return _render_domain_page('storage')
 
+
 @integrations_bp.get('/registry')
 @permission_required('integrations.manage')
 def registry() -> ResponseReturnValue:
     return _render_domain_page('registry')
-
 
 
 @integrations_bp.get('/runtime/<string:detail_key>/details')

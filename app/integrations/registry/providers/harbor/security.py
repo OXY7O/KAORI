@@ -415,8 +415,7 @@ def collect_harbor_security(
                     changed = False
                 else:
                     scan_status = (
-                        str((scan or {}).get('scan_status') or (scan or {}).get('status') or '').strip().lower()
-                        or None
+                        str((scan or {}).get('scan_status') or (scan or {}).get('status') or '').strip().lower() or None
                     )
                     scan_completed_at = _parse_datetime((scan or {}).get('end_time'))
                     scan_summary = _summary_from_scan(scan)
@@ -449,9 +448,7 @@ def collect_harbor_security(
                     scanner_name, scanner_version = _scanner_identity(scan, report_meta)
                     if report_summary:
                         scan_summary = report_summary
-                    scan_completed_at = _parse_datetime(
-                        (scan or {}).get('end_time') or report_meta.get('generated_at')
-                    )
+                    scan_completed_at = _parse_datetime((scan or {}).get('end_time') or report_meta.get('generated_at'))
                     scan_snapshot = {
                         'scanner': scanner_name,
                         'scanner_version': scanner_version,
@@ -513,9 +510,7 @@ def collect_harbor_security(
             'repository_failure_count': len(repository_failures),
             'stale_target_skip_count': stale_target_skip_count,
             'repository_failures': repository_failures[:_MAX_REPOSITORY_FAILURE_EVIDENCE],
-            'repository_failure_evidence_truncated': (
-                len(repository_failures) > _MAX_REPOSITORY_FAILURE_EVIDENCE
-            ),
+            'repository_failure_evidence_truncated': (len(repository_failures) > _MAX_REPOSITORY_FAILURE_EVIDENCE),
             'security_discovery_page_sizes': list(_SECURITY_DISCOVERY_PAGE_SIZES),
         },
     )

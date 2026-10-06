@@ -39,7 +39,7 @@ def _as_int(value: Any) -> int | None:
 def _repository_name(project_name: str, value: Any) -> str:
     name = str(value or '').strip().strip('/')
     prefix = f'{project_name}/'
-    return name[len(prefix):] if name.startswith(prefix) else name
+    return name[len(prefix) :] if name.startswith(prefix) else name
 
 
 def collect_harbor_inventory(
@@ -89,11 +89,7 @@ def collect_harbor_inventory(
                 description=str(raw_repo.get('description') or '').strip() or None,
                 provider_created_at=_parse_datetime(raw_repo.get('creation_time')),
                 provider_updated_at=_parse_datetime(raw_repo.get('update_time')),
-                provider_metadata={
-                    key: raw_repo.get(key)
-                    for key in ('project_id',)
-                    if raw_repo.get(key) is not None
-                },
+                provider_metadata={key: raw_repo.get(key) for key in ('project_id',) if raw_repo.get(key) is not None},
             )
             for raw_artifact in client.list_all_artifacts(
                 project_name_or_id=project_name,
@@ -111,11 +107,7 @@ def collect_harbor_inventory(
                         size_bytes=_as_int(raw_artifact.get('size')),
                         push_time=_parse_datetime(raw_artifact.get('push_time')),
                         pull_time=_parse_datetime(raw_artifact.get('pull_time')),
-                        tags=[
-                            tag
-                            for tag in (raw_artifact.get('tags') or [])
-                            if isinstance(tag, dict)
-                        ],
+                        tags=[tag for tag in (raw_artifact.get('tags') or []) if isinstance(tag, dict)],
                         provider_metadata={
                             key: raw_artifact.get(key)
                             for key in ('manifest_media_type', 'project_id', 'repository_id', 'extra_attrs')

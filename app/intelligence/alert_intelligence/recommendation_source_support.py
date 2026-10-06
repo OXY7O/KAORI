@@ -66,11 +66,7 @@ def _case_asset_type(
 
 def _asset_name(finding: dict[str, Any], *, domain: str, asset_key: str) -> str:
     evidence = _finding_evidence(finding)
-    explicit = (
-        evidence.get('system_name')
-        or evidence.get('cluster_name')
-        or evidence.get('registry_instance_name')
-    )
+    explicit = evidence.get('system_name') or evidence.get('cluster_name') or evidence.get('registry_instance_name')
     if explicit:
         return str(explicit)
     if domain == 'kubernetes' and asset_key != 'unknown':

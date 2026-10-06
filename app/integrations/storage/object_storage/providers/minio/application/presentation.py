@@ -320,9 +320,7 @@ def build_detail_context(
         'checked_at_display': present_user_datetime(instance.last_checked_at, empty='Not observed'),
         'bucket_count': len(instance.object_storage_system.buckets or ()),
         'inventory_status': 'ready' if inventory_observed_at else 'unknown',
-        'inventory_status_label': (
-            'Committed Snapshot' if inventory_observed_at else 'No Committed Inventory'
-        ),
+        'inventory_status_label': ('Committed Snapshot' if inventory_observed_at else 'No Committed Inventory'),
         'inventory_observed_at_display': present_user_datetime(
             inventory_observed_at,
             empty='Not Collected',

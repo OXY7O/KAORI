@@ -309,7 +309,13 @@ def _finding_asset_key(finding: dict[str, Any]) -> str:
     if not isinstance(evidence, dict):
         return ''
     return clean(
-        str(evidence.get('asset_key') or evidence.get('cluster_id') or evidence.get('object_storage_system_id') or evidence.get('registry_instance_id') or '')
+        str(
+            evidence.get('asset_key')
+            or evidence.get('cluster_id')
+            or evidence.get('object_storage_system_id')
+            or evidence.get('registry_instance_id')
+            or ''
+        )
     )
 
 
