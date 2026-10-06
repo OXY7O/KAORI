@@ -9,8 +9,15 @@ from app.artifact_registry.collectors import InventoryProgressCallback
 from app.artifact_registry.security.contracts import RegistrySecurityEvidence, RegistrySecurityTarget
 
 
+SecurityTargetCurrentPredicate = Callable[[RegistrySecurityTarget], bool]
+
 SecurityCollectorCallable = Callable[
-    [Any, list[RegistrySecurityTarget], InventoryProgressCallback | None],
+    [
+        Any,
+        list[RegistrySecurityTarget],
+        InventoryProgressCallback | None,
+        SecurityTargetCurrentPredicate | None,
+    ],
     RegistrySecurityEvidence,
 ]
 

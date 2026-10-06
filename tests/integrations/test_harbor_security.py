@@ -145,3 +145,77 @@ def test_harbor_security_keeps_authentication_failure_fail_fast(monkeypatch) -> 
         )
 
     assert page_sizes == [20]
+
+
+
+def test_harbor_security_skips_stale_targets_without_vulnerability_detail(monkeypatch) -> None:
+    vulnerability_calls: list[str] = []
+    progress: list[tuple[int, int, str]] = []
+
+    class _Client:
+        def list_all_artifacts(self, **_kwargs):
+            return [
+                {
+                    'digest': 'sha256:current',
+                    'scan_overview': {
+                        'application/vnd.security.vulnerability.report; version=1.1': {
+                            'scan_status': 'success',
+                            'summary': {'High': 1},
+                        }
+                    },
+                }
+            ]
+
+        def get_vulnerability_report(self, **kwargs):
+            vulnerability_calls.append(str(kwargs['reference']))
+            return {'vulnerabilities': []}
+
+    monkeypatch.setattr(
+        harbor_security,
+        'build_client',
+        lambda _instance, **_kwargs: _Client(),
+    )
+
+    evidence = harbor_security.collect_harbor_security(
+        _Instance(),
+        [
+            _target(1, repository='charts', digest='sha256:stale'),
+            _target(2, repository='charts', digest='sha256:current'),
+        ],
+        progress_callback=lambda current, total, item: progress.append((current, total, item)),
+        target_is_current=lambda target: target.artifact_id == 2,
+    )
+
+    assert vulnerability_calls == ['sha256:current']
+    assert [item.artifact_id for item in evidence.artifacts] == [2]
+    assert evidence.provider_metadata['stale_target_skip_count'] == 1
+    assert any('sha256:stale' in item and 'skipped stale' in item for _, _, item in progress)
+    assert progress[-1][0] == 2
+    assert progress[-1][1] == 2
+
+
+def test_harbor_security_refreshes_progress_during_repository_discovery(monkeypatch) -> None:
+    progress: list[tuple[int, int, str]] = []
+
+    class _Client:
+        def list_all_artifacts(self, **kwargs):
+            page_callback = kwargs.get('page_callback')
+            assert page_callback is not None
+            page_callback(1)
+            page_callback(2)
+            return [{'digest': 'sha256:a'}]
+
+    monkeypatch.setattr(
+        harbor_security,
+        'build_client',
+        lambda _instance, **_kwargs: _Client(),
+    )
+
+    harbor_security.collect_harbor_security(
+        _Instance(),
+        [_target(1, repository='filebeat', digest='sha256:a')],
+        progress_callback=lambda current, total, item: progress.append((current, total, item)),
+    )
+
+    assert (0, 1, 'base/filebeat · discovering security page 1') in progress
+    assert (0, 1, 'base/filebeat · discovering security page 2') in progress

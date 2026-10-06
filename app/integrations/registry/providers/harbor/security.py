@@ -10,7 +10,10 @@ from app.artifact_registry.security.contracts import (
     RegistrySecurityEvidence,
     RegistrySecurityTarget,
 )
-from app.artifact_registry.security.providers import RegistrySecurityCollector
+from app.artifact_registry.security.providers import (
+    RegistrySecurityCollector,
+    SecurityTargetCurrentPredicate,
+)
 from app.integrations.registry.providers.harbor.client_factory import build_client
 from app.integrations.registry.providers.harbor.exceptions import (
     HarborAuthError,
@@ -219,6 +222,17 @@ def _list_repository_security_artifacts(
                 with_sbom_overview=True,
                 with_signature=True,
                 with_immutable_status=False,
+                page_callback=(
+                    (
+                        lambda page: progress_callback(
+                            processed,
+                            total,
+                            f'{project_name}/{repository_name} · discovering security page {page}',
+                        )
+                    )
+                    if progress_callback is not None
+                    else None
+                ),
             )
         except HarborAuthError:
             # Authentication is source-wide authority and must remain fail-fast.
@@ -260,26 +274,54 @@ def collect_harbor_security(
     instance: HarborInstance,
     targets: list[RegistrySecurityTarget],
     progress_callback: InventoryProgressCallback | None = None,
+    target_is_current: SecurityTargetCurrentPredicate | None = None,
 ) -> RegistrySecurityEvidence:
     """Collect Harbor security evidence incrementally from committed artifact identities."""
 
     client = build_client(instance, transport_retries=_SECURITY_TRANSPORT_RETRIES)
-    grouped: dict[tuple[str, str], list[RegistrySecurityTarget]] = defaultdict(list)
-    for target in targets:
-        grouped[(target.project_name, target.repository_name)].append(target)
-
     total = len(targets)
     processed = 0
     refreshed_reports = 0
     reused_reports = 0
+    stale_target_skip_count = 0
     records: list[RegistryArtifactSecurityEvidence] = []
     repository_failures: list[dict[str, str]] = []
     successful_repositories = 0
+    grouped: dict[tuple[str, str], list[RegistrySecurityTarget]] = defaultdict(list)
 
     if progress_callback is not None:
         progress_callback(0, total, 'Security Discovery')
 
+    for target in targets:
+        if target_is_current is not None and not target_is_current(target):
+            stale_target_skip_count += 1
+            processed += 1
+            if progress_callback is not None:
+                progress_callback(
+                    processed,
+                    total,
+                    f'{target.project_name}/{target.repository_name}@{target.digest[:20]} · skipped stale',
+                )
+            continue
+        grouped[(target.project_name, target.repository_name)].append(target)
+
     for (project_name, repository_name), repository_targets in grouped.items():
+        current_repository_targets: list[RegistrySecurityTarget] = []
+        for target in repository_targets:
+            if target_is_current is not None and not target_is_current(target):
+                stale_target_skip_count += 1
+                processed += 1
+                if progress_callback is not None:
+                    progress_callback(
+                        processed,
+                        total,
+                        f'{project_name}/{repository_name}@{target.digest[:20]} · skipped stale',
+                    )
+                continue
+            current_repository_targets.append(target)
+        if not current_repository_targets:
+            continue
+        repository_targets = current_repository_targets
         try:
             raw_artifacts = _list_repository_security_artifacts(
                 client,
@@ -301,6 +343,16 @@ def collect_harbor_security(
                 }
             )
             for target in repository_targets:
+                if target_is_current is not None and not target_is_current(target):
+                    stale_target_skip_count += 1
+                    processed += 1
+                    if progress_callback is not None:
+                        progress_callback(
+                            processed,
+                            total,
+                            f'{project_name}/{repository_name}@{target.digest[:20]} · skipped stale',
+                        )
+                    continue
                 records.append(
                     _retained_repository_target(
                         target,
@@ -327,6 +379,17 @@ def collect_harbor_security(
         }
 
         for target in repository_targets:
+            if target_is_current is not None and not target_is_current(target):
+                stale_target_skip_count += 1
+                processed += 1
+                if progress_callback is not None:
+                    progress_callback(
+                        processed,
+                        total,
+                        f'{project_name}/{repository_name}@{target.digest[:20]} · skipped stale',
+                    )
+                continue
+
             raw = raw_by_digest.get(target.digest)
             if raw is None:
                 records.append(
@@ -447,6 +510,7 @@ def collect_harbor_security(
             'repository_count': len(grouped),
             'successful_repository_count': successful_repositories,
             'repository_failure_count': len(repository_failures),
+            'stale_target_skip_count': stale_target_skip_count,
             'repository_failures': repository_failures[:_MAX_REPOSITORY_FAILURE_EVIDENCE],
             'repository_failure_evidence_truncated': (
                 len(repository_failures) > _MAX_REPOSITORY_FAILURE_EVIDENCE

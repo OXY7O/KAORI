@@ -9,7 +9,10 @@ from sqlalchemy.orm import joinedload
 from app.artifact_registry.collectors import InventoryProgressCallback
 from app.artifact_registry.eligibility import registry_inventory_eligibility
 from app.artifact_registry.security.contracts import RegistrySecurityEvidence, RegistrySecurityTarget
-from app.artifact_registry.security.providers import get_registry_security_collector
+from app.artifact_registry.security.providers import (
+    SecurityTargetCurrentPredicate,
+    get_registry_security_collector,
+)
 from app.extensions.db import db
 from app.integrations.kernel.registry import get_integration
 from app.models.integration import IntegrationInstance
@@ -22,6 +25,34 @@ from app.models.registry import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _build_registry_security_target_current_predicate(
+    identity: IntegrationInstance,
+) -> SecurityTargetCurrentPredicate:
+    integration_instance_id = int(identity.id)
+
+    def is_current(target: RegistrySecurityTarget) -> bool:
+        return (
+            db.session.query(RegistryArtifact.id)
+            .join(
+                RegistryRepository,
+                RegistryArtifact.repository_id == RegistryRepository.id,
+            )
+            .filter(
+                RegistryArtifact.id == target.artifact_id,
+                RegistryArtifact.digest == target.digest,
+                RegistryRepository.name == target.repository_name,
+                RegistryRepository.project.has(
+                    integration_instance_id=integration_instance_id,
+                    name=target.project_name,
+                ),
+            )
+            .first()
+            is not None
+        )
+
+    return is_current
 
 
 def build_registry_security_targets(identity: IntegrationInstance) -> list[RegistrySecurityTarget]:
@@ -162,6 +193,7 @@ def sync_registry_security(
         raise RuntimeError(eligibility.reason)
 
     targets = build_registry_security_targets(identity)
+    target_is_current = _build_registry_security_target_current_predicate(identity)
     collector = get_registry_security_collector(identity.provider_key)
     observed_at = datetime.now(UTC)
     try:
@@ -169,6 +201,7 @@ def sync_registry_security(
             provider_record,
             targets,
             progress_callback,
+            target_is_current,
         )
         counts = _commit_security_evidence(
             evidence,

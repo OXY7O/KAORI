@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from time import perf_counter, sleep
 from typing import Any
 from urllib.parse import quote
@@ -151,6 +152,7 @@ class HarborClient:
         with_sbom_overview: bool = False,
         with_signature: bool = False,
         with_immutable_status: bool = False,
+        page_callback: Callable[[int], None] | None = None,
     ) -> list[dict[str, Any]]:
         return self._paged(
             lambda page, size: self.list_artifacts(
@@ -164,8 +166,8 @@ class HarborClient:
                 with_immutable_status=with_immutable_status,
             ),
             page_size=page_size,
+            page_callback=page_callback,
         )
-
 
 
     def get_project(self, *, project_name_or_id: str | int) -> dict[str, Any]:
@@ -235,12 +237,19 @@ class HarborClient:
         return payload
 
     @staticmethod
-    def _paged(fetch_page, *, page_size: int) -> list[dict[str, Any]]:
+    def _paged(
+        fetch_page,
+        *,
+        page_size: int,
+        page_callback: Callable[[int], None] | None = None,
+    ) -> list[dict[str, Any]]:
         size = max(1, min(int(page_size or 100), 100))
         page = 1
         records: list[dict[str, Any]] = []
         previous_batch: list[dict[str, Any]] | None = None
         while True:
+            if page_callback is not None:
+                page_callback(page)
             batch = list(fetch_page(page, size))
             if previous_batch is not None and batch and batch == previous_batch:
                 raise HarborResponseError(

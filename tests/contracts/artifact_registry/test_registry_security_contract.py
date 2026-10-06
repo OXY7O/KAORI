@@ -232,3 +232,19 @@ def test_vulnerability_runtime_drilldown_preserves_artifact_context() -> None:
     assert "url_for('artifact_registry.runtime', artifact_id=row.artifact_id)" in template
     assert 'Open Runtime' in template
     assert 'source_id=security.filters.source_id' in template
+
+
+
+def test_security_sync_revalidates_stale_targets_and_heartbeats_repository_discovery() -> None:
+    providers = read('app/artifact_registry/security/providers.py')
+    sync = read('app/artifact_registry/security/sync.py')
+    harbor = read('app/integrations/registry/providers/harbor/security.py')
+    client = read('app/integrations/registry/providers/harbor/client.py')
+
+    assert 'SecurityTargetCurrentPredicate' in providers
+    assert '_build_registry_security_target_current_predicate' in sync
+    assert 'target_is_current,' in sync
+    assert 'skipped stale' in harbor
+    assert "'stale_target_skip_count': stale_target_skip_count" in harbor
+    assert 'discovering security page {page}' in harbor
+    assert 'page_callback: Callable[[int], None] | None = None' in client
