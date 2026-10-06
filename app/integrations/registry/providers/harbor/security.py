@@ -20,6 +20,7 @@ from app.integrations.registry.providers.harbor.client_factory import build_clie
 from app.integrations.registry.providers.harbor.exceptions import (
     HarborAuthError,
     HarborConnectionError,
+    HarborError,
     HarborResponseError,
 )
 from app.models.harbor import HarborInstance
