@@ -20,7 +20,9 @@ def _eligible_ids() -> list[int]:
             IntegrationInstance.enabled.is_(True),
             IntegrationInstance.lifecycle_status == 'active',
             IntegrationInstance.readiness_status == 'ready',
-        ).order_by(IntegrationInstance.id.asc()).all()
+        )
+        .order_by(IntegrationInstance.id.asc())
+        .all()
     ]
 
 

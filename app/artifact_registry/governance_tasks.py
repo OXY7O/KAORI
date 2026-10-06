@@ -109,9 +109,7 @@ def sync_all_registry_governance_task(
             try:
                 identity = db.session.get(IntegrationInstance, canonical_id)
                 if identity is None:
-                    raise LookupError(
-                        'The Registry integration was deleted after the governance job was admitted.'
-                    )
+                    raise LookupError('The Registry integration was deleted after the governance job was admitted.')
                 result = sync_registry_governance(
                     identity,
                     progress_callback=report_governance_progress,

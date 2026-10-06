@@ -195,9 +195,7 @@ def _alertmanager_rows(items: list[Any]) -> list[dict[str, Any]]:
         if not isinstance(item, dict):
             continue
         labels = dict(item.get('labels') or {}) if isinstance(item.get('labels'), dict) else {}
-        annotations = (
-            dict(item.get('annotations') or {}) if isinstance(item.get('annotations'), dict) else {}
-        )
+        annotations = dict(item.get('annotations') or {}) if isinstance(item.get('annotations'), dict) else {}
         status_payload = item.get('status') if isinstance(item.get('status'), dict) else {}
         raw_state = item.get('state')
         if raw_state is None and isinstance(item.get('status'), str):
@@ -217,10 +215,7 @@ def _alertmanager_rows(items: list[Any]) -> list[dict[str, Any]]:
                 'state': _alert_state(raw_state),
                 'target': _alert_target(labels),
                 'summary': str(
-                    item.get('summary')
-                    or annotations.get('summary')
-                    or annotations.get('description')
-                    or '-'
+                    item.get('summary') or annotations.get('summary') or annotations.get('description') or '-'
                 ),
                 'starts_at': item.get('starts_at') or item.get('startsAt'),
                 'receiver': str(item.get('receiver') or '-'),
@@ -372,26 +367,24 @@ def materialize_registry_analytics(
     projects = RegistryProject.query.filter_by(integration_instance_id=identity.id).all()
     project_ids = [project.id for project in projects]
     repositories = (
-        RegistryRepository.query.filter(RegistryRepository.project_id.in_(project_ids)).all()
-        if project_ids else []
+        RegistryRepository.query.filter(RegistryRepository.project_id.in_(project_ids)).all() if project_ids else []
     )
     repository_ids = [repo.id for repo in repositories]
     artifacts = (
         RegistryArtifact.query.filter(RegistryArtifact.repository_id.in_(repository_ids)).all()
-        if repository_ids else []
+        if repository_ids
+        else []
     )
     artifact_ids = [artifact.id for artifact in artifacts]
     bindings = (
-        RegistryWorkloadBinding.query.filter(
-            RegistryWorkloadBinding.artifact_id.in_(artifact_ids)
-        ).all()
-        if artifact_ids else []
+        RegistryWorkloadBinding.query.filter(RegistryWorkloadBinding.artifact_id.in_(artifact_ids)).all()
+        if artifact_ids
+        else []
     )
     governance_rows = (
-        RegistryProjectGovernance.query.filter(
-            RegistryProjectGovernance.project_id.in_(project_ids)
-        ).all()
-        if project_ids else []
+        RegistryProjectGovernance.query.filter(RegistryProjectGovernance.project_id.in_(project_ids)).all()
+        if project_ids
+        else []
     )
 
     total_size = sum(int(artifact.size_bytes or 0) for artifact in artifacts)
@@ -410,8 +403,7 @@ def materialize_registry_analytics(
     sbom = sum(str(artifact.sbom_status or '') == 'available' for artifact in artifacts)
     runtime_artifact_ids = {binding.artifact_id for binding in bindings}
     critical_runtime = sum(
-        artifact.id in runtime_artifact_ids
-        and int((artifact.vulnerability_summary or {}).get('critical') or 0) > 0
+        artifact.id in runtime_artifact_ids and int((artifact.vulnerability_summary or {}).get('critical') or 0) > 0
         for artifact in artifacts
         if isinstance(artifact.vulnerability_summary, dict)
     )
@@ -437,7 +429,9 @@ def materialize_registry_analytics(
             reference_time = reference_time.replace(tzinfo=UTC)
         stale_candidates += int(reference_time < inactive_cutoff)
 
-    previous_inventory = previous.payload_json.get('inventory') if previous and isinstance(previous.payload_json, dict) else {}
+    previous_inventory = (
+        previous.payload_json.get('inventory') if previous and isinstance(previous.payload_json, dict) else {}
+    )
     elapsed_days = _days_between(previous, generated_at)
     artifact_delta = len(artifacts) - int((previous_inventory or {}).get('artifacts') or len(artifacts))
     size_delta = total_size - int((previous_inventory or {}).get('total_size_bytes') or total_size)
@@ -465,11 +459,7 @@ def materialize_registry_analytics(
             if quota <= 0:
                 continue
             prior = previous_usage.get(project_name)
-            growth_per_day = (
-                (usage - prior) / elapsed_days
-                if prior is not None and elapsed_days
-                else None
-            )
+            growth_per_day = (usage - prior) / elapsed_days if prior is not None and elapsed_days else None
             days_to_quota = (
                 max((quota - usage) / growth_per_day, 0.0)
                 if growth_per_day is not None and growth_per_day > 0 and quota > usage

@@ -56,10 +56,13 @@ class RegistryGovernanceEvidence:
 class RegistryGovernanceCollector:
     provider_key: str
     collect: Callable[[Any], RegistryGovernanceEvidence]
-    collect_with_progress: Callable[
-        [Any, InventoryProgressCallback | None],
-        RegistryGovernanceEvidence,
-    ] | None = None
+    collect_with_progress: (
+        Callable[
+            [Any, InventoryProgressCallback | None],
+            RegistryGovernanceEvidence,
+        ]
+        | None
+    ) = None
 
 
 _COLLECTORS: dict[str, RegistryGovernanceCollector] = {}
@@ -126,18 +129,15 @@ def sync_registry_governance(
         db.session.add(state)
 
     project_by_name = {
-        item.name: item
-        for item in RegistryProject.query.filter_by(integration_instance_id=identity.id).all()
+        item.name: item for item in RegistryProject.query.filter_by(integration_instance_id=identity.id).all()
     }
     project_ids = [project.id for project in project_by_name.values()]
     if project_ids:
-        RegistryProjectGovernance.query.filter(
-            RegistryProjectGovernance.project_id.in_(project_ids)
-        ).delete(synchronize_session=False)
+        RegistryProjectGovernance.query.filter(RegistryProjectGovernance.project_id.in_(project_ids)).delete(
+            synchronize_session=False
+        )
 
-    RegistryReplicationPolicy.query.filter_by(
-        integration_instance_id=identity.id
-    ).delete(synchronize_session=False)
+    RegistryReplicationPolicy.query.filter_by(integration_instance_id=identity.id).delete(synchronize_session=False)
     db.session.flush()
 
     committed_projects = 0

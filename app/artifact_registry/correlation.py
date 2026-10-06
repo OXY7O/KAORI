@@ -35,7 +35,7 @@ def parse_image_reference(value: str) -> ImageReference:
     text = raw
     for prefix in ('docker-pullable://', 'docker://', 'containerd://'):
         if text.startswith(prefix):
-            text = text[len(prefix):]
+            text = text[len(prefix) :]
             break
 
     digest = None
@@ -131,11 +131,7 @@ def refresh_registry_workload_bindings(
             artifact_query = artifact_query.join(
                 RegistryRepository,
                 RegistryArtifact.repository_id == RegistryRepository.id,
-            ).filter(
-                RegistryRepository.project.has(
-                    integration_instance_id=integration_instance_id
-                )
-            )
+            ).filter(RegistryRepository.project.has(integration_instance_id=integration_instance_id))
         artifacts = artifact_query.all()
         artifact_ids = [artifact.id for artifact in artifacts]
 
@@ -187,11 +183,7 @@ def refresh_registry_workload_bindings(
                 candidates = (
                     digest_index.get((image.repository, image.digest), ())
                     if image.digest
-                    else (
-                        tag_index.get((image.repository, image.tag), ())
-                        if image.tag
-                        else ()
-                    )
+                    else (tag_index.get((image.repository, image.tag), ()) if image.tag else ())
                 )
                 for artifact, registry_host in candidates:
                     match = _match(image, artifact, registry_host=registry_host)
@@ -236,10 +228,7 @@ def refresh_registry_workload_bindings(
                 )
                 pending_bindings.clear()
 
-            if (
-                progress_callback is not None
-                and (pod_index % normalized_batch_size == 0 or pod_index == pod_total)
-            ):
+            if progress_callback is not None and (pod_index % normalized_batch_size == 0 or pod_index == pod_total):
                 progress_callback(
                     pod_index,
                     pod_total,

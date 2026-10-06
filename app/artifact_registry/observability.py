@@ -7,15 +7,19 @@ from app.models.integration import IntegrationBinding, IntegrationInstance
 def registry_metrics_readiness(identity: IntegrationInstance) -> dict[str, object]:
     """Return DB-backed Metrics Source readiness without executing a provider query."""
 
-    bindings = IntegrationBinding.query.join(
-        IntegrationInstance,
-        IntegrationBinding.integration_instance_id == IntegrationInstance.id,
-    ).filter(
-        IntegrationInstance.integration_type == 'metrics_source',
-        IntegrationBinding.asset_type == 'registry_instance',
-        IntegrationBinding.asset_key == str(identity.id),
-        IntegrationBinding.enabled.is_(True),
-    ).all()
+    bindings = (
+        IntegrationBinding.query.join(
+            IntegrationInstance,
+            IntegrationBinding.integration_instance_id == IntegrationInstance.id,
+        )
+        .filter(
+            IntegrationInstance.integration_type == 'metrics_source',
+            IntegrationBinding.asset_type == 'registry_instance',
+            IntegrationBinding.asset_key == str(identity.id),
+            IntegrationBinding.enabled.is_(True),
+        )
+        .all()
+    )
     validated = [binding for binding in bindings if binding.validation_status == 'ready']
     try:
         resolution = resolve_metrics_sources(

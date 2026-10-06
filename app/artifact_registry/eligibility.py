@@ -20,10 +20,7 @@ def inventory_read_contract_eligible(readiness: str | None, compatibility_status
     normalized_compatibility = str(compatibility_status or '').strip().lower()
     if normalized_readiness == 'ready':
         return True
-    return (
-        normalized_readiness == 'degraded'
-        and normalized_compatibility == 'compatible_with_warnings'
-    )
+    return normalized_readiness == 'degraded' and normalized_compatibility == 'compatible_with_warnings'
 
 
 def registry_inventory_eligibility(
@@ -57,9 +54,9 @@ def registry_inventory_eligibility(
     module = get_integration('registry')
     record = provider_record or module.require_record_for_canonical(int(identity.id))
     runtime_state = module.runtime_state(record)
-    compatibility_status = str(
-        (runtime_state.snapshot.metadata or {}).get('compatibility_status') or ''
-    ).strip().lower()
+    compatibility_status = (
+        str((runtime_state.snapshot.metadata or {}).get('compatibility_status') or '').strip().lower()
+    )
     runtime_readiness = str(runtime_state.readiness or readiness).strip().lower()
 
     if inventory_read_contract_eligible(runtime_readiness, compatibility_status):
