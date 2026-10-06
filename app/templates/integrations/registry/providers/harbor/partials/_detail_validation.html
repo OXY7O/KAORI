@@ -72,29 +72,26 @@
             </button>
         </form>
     {% endcall %}
-    {{ validation_poller.render(
-        validation_job and validation_job.is_active,
+    {{ validation_poller.render(validation_job and validation_job.is_active,
         url_for('harbor.validation_status', instance_id=instance.id, task_id=validation_job.task_id) if validation_job and validation_job.is_active else '',
-        '#harbor-core-validation'
+    '#harbor-core-validation'
     ) }}
     {{ provider_job_status.render(validation_job, 'Harbor validation running in worker', 'Harbor') }}
     <div class="p-5 sm:p-6">
-        {{ capability_readiness.render(
-            "Harbor Capability Readiness",
-            "Required Harbor readiness and read-capability evidence.",
-            readiness,
-            readiness_label,
-            "Required Capability Coverage",
-            required_ready ~ " / " ~ required_total,
-            capability_percent,
-            capability_metadata,
-            capability_metrics,
-            gate_label,
-            gate_body,
-            gate_tone,
-            "Full Validation owns Harbor identity, compatibility, health, and capability evidence. Runtime Refresh owns lightweight live health only.",
-            next_action
-        ) }}
+        {{ capability_readiness.render("Harbor Capability Readiness",
+                "Required Harbor readiness and read-capability evidence.",
+                readiness,
+                readiness_label,
+                "Required Capability Coverage",
+                required_ready ~ " / " ~ required_total,
+                capability_percent,
+                capability_metadata,
+                capability_metrics,
+                gate_label,
+                gate_body,
+                gate_tone,
+                "Full Validation owns Harbor identity, compatibility, health, and capability evidence. Runtime Refresh owns lightweight live health only.",
+                next_action) }}
         {% if readiness == "ready" %}
             {% set readiness_decision_title = "Provider Readiness Is Ready" %}
             {% set readiness_decision_message = "Harbor identity, compatibility, provider health, and required read capabilities satisfy the current Registry provider contract." %}
@@ -112,12 +109,10 @@
             {% set readiness_decision_message = instance.validation_message or "Run Full Validation to establish Harbor provider evidence." %}
             {% set readiness_decision_tone = "warning" %}
         {% endif %}
-        {{ readiness_explanation.render(
-            readiness_decision_title,
-            readiness_decision_message,
-            readiness_decision_tone,
-            [capability_blocked ~ " required capability gaps", "Validated " ~ validated_at_display]
-        ) }}
+        {{ readiness_explanation.render(readiness_decision_title,
+                readiness_decision_message,
+                readiness_decision_tone,
+                [capability_blocked ~ " required capability gaps", "Validated " ~ validated_at_display]) }}
         {% include "integrations/registry/providers/harbor/partials/_capability_registry.html" %}
     </div>
 </section>
