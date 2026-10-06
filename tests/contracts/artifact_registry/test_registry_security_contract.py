@@ -212,8 +212,8 @@ def test_harbor_security_refresh_is_repository_resilient_without_overriding_prov
     assert '_SECURITY_DISCOVERY_PAGE_SIZES = (20, 10)' in collector
     assert 'build_client(instance, transport_retries=_SECURITY_TRANSPORT_RETRIES)' in collector
     assert 'repository_security_refresh_unavailable' in collector
-    assert "'repository_failure_count': len(repository_failures)" in collector
-    assert "'repository_failures': repository_failures[:_MAX_REPOSITORY_FAILURE_EVIDENCE]" in collector
+    assert "'repository_failure_count': len(state.repository_failures)" in collector
+    assert "'repository_failures': state.repository_failures[:_MAX_REPOSITORY_FAILURE_EVIDENCE]" in collector
     assert 'except HarborAuthError:' in collector
     assert 'Harbor security discovery was unavailable for every committed repository' in collector
     assert 'partial_source_count' in tasks
@@ -242,7 +242,7 @@ def test_security_sync_revalidates_stale_targets_and_heartbeats_repository_disco
     assert '_build_registry_security_target_current_predicate' in sync
     assert 'target_is_current,' in sync
     assert 'skipped stale' in harbor
-    assert "'stale_target_skip_count': stale_target_skip_count" in harbor
+    assert "'stale_target_skip_count': state.stale_target_skip_count" in harbor
     assert 'discovering security page {page}' in harbor
     assert 'registry_scan_evidence_ready(scan_status)' in harbor
     assert 'page_callback: Callable[[int], None] | None = None' in client
