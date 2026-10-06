@@ -1,7 +1,7 @@
+import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
-import logging
 from typing import Any
 
 from kubernetes.client import BatchV1Api, DiscoveryV1Api

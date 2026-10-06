@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from hashlib import sha256
 import logging
+from hashlib import sha256
 from time import perf_counter, sleep
 from typing import Any
 

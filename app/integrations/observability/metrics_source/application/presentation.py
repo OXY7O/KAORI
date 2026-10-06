@@ -20,7 +20,8 @@ from app.integrations.observability.metrics_source.application.resolver import (
     resolve_metrics_sources,
 )
 from app.integrations.observability.metrics_source.binding_profiles import get_binding_validation_profile
-from app.integrations.observability.metrics_source.capabilities import PROVIDER_CAPABILITY_KEYS, definition as capability_definition
+from app.integrations.observability.metrics_source.capabilities import PROVIDER_CAPABILITY_KEYS
+from app.integrations.observability.metrics_source.capabilities import definition as capability_definition
 from app.integrations.observability.metrics_source.providers import provider_definition
 from app.integrations.observability.metrics_source.routing import normalize_routing_policy, recent_window_hours
 from app.integrations.observability.metrics_source.scope import KUBERNETES_CLUSTER_SCOPE, bindings_for_instance
