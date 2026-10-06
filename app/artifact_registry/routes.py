@@ -282,11 +282,7 @@ def security_sync() -> ResponseReturnValue:
         return response
 
     return redirect(
-        url_for(
-            'artifact_registry.security_supply_chain'
-            if kind == 'supply_chain'
-            else 'artifact_registry.security'
-        )
+        url_for('artifact_registry.security_supply_chain' if kind == 'supply_chain' else 'artifact_registry.security')
     )
 
 
@@ -560,8 +556,7 @@ def sync_inventory() -> ResponseReturnValue:
             title='Artifact Registry Worker Unavailable',
             message=str(exc),
             detail=(
-                'Restart the inventory worker so it advertises the Registry inventory task, '
-                'then retry synchronization.'
+                'Restart the inventory worker so it advertises the Registry inventory task, then retry synchronization.'
             ),
             action_url=url_for('artifact_registry.overview'),
             action_label='Open Artifact Registry',

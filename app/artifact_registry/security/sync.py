@@ -93,9 +93,7 @@ def build_registry_security_targets(identity: IntegrationInstance) -> list[Regis
             scan_status=artifact.scan_status,
             scan_completed_at=artifact.scan_completed_at,
             vulnerability_summary=(
-                dict(artifact.vulnerability_summary)
-                if isinstance(artifact.vulnerability_summary, dict)
-                else {}
+                dict(artifact.vulnerability_summary) if isinstance(artifact.vulnerability_summary, dict) else {}
             ),
             signature_status=artifact.signature_status,
             sbom_status=artifact.sbom_status,
@@ -111,12 +109,14 @@ def _commit_security_evidence(
     observed_at: datetime,
 ) -> dict[str, int]:
     artifact_ids = [item.artifact_id for item in evidence.artifacts]
-    artifacts = {
-        artifact.id: artifact
-        for artifact in RegistryArtifact.query.filter(
-            RegistryArtifact.id.in_(artifact_ids)
-        ).all()
-    } if artifact_ids else {}
+    artifacts = (
+        {
+            artifact.id: artifact
+            for artifact in RegistryArtifact.query.filter(RegistryArtifact.id.in_(artifact_ids)).all()
+        }
+        if artifact_ids
+        else {}
+    )
 
     artifact_count = refreshed_report_count = reused_report_count = finding_count = 0
     for item in evidence.artifacts:

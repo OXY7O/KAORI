@@ -38,6 +38,7 @@ from app.reports.catalog import REPORT_TYPE_SPECS
 
 FRESHNESS_HOURS = 24
 
+
 def _fmt_bytes(value: int | None) -> str:
     if value is None:
         return 'Not Collected'
@@ -87,7 +88,6 @@ def _freshness_value(value: datetime | None, *, missing: str) -> str:
     return f'Updated {_human_time(value)}' if value is not None else missing
 
 
-
 def _state_view(state: RegistryCollectionState | None) -> dict[str, Any]:
     if state is None or state.last_committed_at is None:
         return {
@@ -100,10 +100,7 @@ def _state_view(state: RegistryCollectionState | None) -> dict[str, Any]:
         }
     committed_at = _aware_datetime(state.last_committed_at)
     refresh_failed = bool(state.last_error)
-    stale = bool(
-        committed_at is not None
-        and committed_at < datetime.now(UTC) - timedelta(hours=FRESHNESS_HOURS)
-    )
+    stale = bool(committed_at is not None and committed_at < datetime.now(UTC) - timedelta(hours=FRESHNESS_HOURS))
     return {
         'status': state.status,
         'label': 'Stale Snapshot' if stale else 'Current Snapshot',
@@ -188,9 +185,7 @@ def _registry_capacity_views(
                     'project_name': str(raw.get('project_name') or 'Registry Project'),
                     'usage_bytes': float(usage) if isinstance(usage, (int, float)) else None,
                     'quota_bytes': float(quota) if isinstance(quota, (int, float)) else None,
-                    'utilization_percent': (
-                        float(utilization) if isinstance(utilization, (int, float)) else None
-                    ),
+                    'utilization_percent': (float(utilization) if isinstance(utilization, (int, float)) else None),
                     'growth_bytes_per_day': (
                         float(raw.get('growth_bytes_per_day'))
                         if isinstance(raw.get('growth_bytes_per_day'), (int, float))
@@ -231,8 +226,12 @@ def _registry_capacity_views(
 
     if risk == 'Critical':
         insight = 'Committed project quota evidence shows immediate Registry capacity pressure.'
-        risk_detail = 'At least one project is inside the 30-day quota horizon or aggregate utilization is at least 90%.'
-        recommended_action = 'Validate growth and ownership, then prepare an approved quota, retention, or cleanup change.'
+        risk_detail = (
+            'At least one project is inside the 30-day quota horizon or aggregate utilization is at least 90%.'
+        )
+        recommended_action = (
+            'Validate growth and ownership, then prepare an approved quota, retention, or cleanup change.'
+        )
     elif risk == 'Medium':
         insight = 'Committed Registry analytics shows developing project capacity pressure.'
         risk_detail = 'Quota utilization or projected exhaustion is inside the planning threshold.'
@@ -299,21 +298,24 @@ def _registry_capacity_views(
         ),
     )[:5]
     for item in top_consumers:
-        item['usage_display'] = _fmt_bytes(round(float(item['usage_bytes']))) if item['usage_bytes'] is not None else 'N/A'
-        item['quota_display'] = _fmt_bytes(round(float(item['quota_bytes']))) if item['quota_bytes'] is not None else 'N/A'
+        item['usage_display'] = (
+            _fmt_bytes(round(float(item['usage_bytes']))) if item['usage_bytes'] is not None else 'N/A'
+        )
+        item['quota_display'] = (
+            _fmt_bytes(round(float(item['quota_bytes']))) if item['quota_bytes'] is not None else 'N/A'
+        )
         item['utilization_display'] = (
-            f"{float(item['utilization_percent']):.1f}%" if item['utilization_percent'] is not None else 'N/A'
+            f'{float(item["utilization_percent"]):.1f}%' if item['utilization_percent'] is not None else 'N/A'
         )
         item['days_to_quota_display'] = (
-            f"{float(item['days_to_quota']):.1f} days" if item['days_to_quota'] is not None else 'N/A'
+            f'{float(item["days_to_quota"]):.1f} days' if item['days_to_quota'] is not None else 'N/A'
         )
     return capacity, forecast, top_consumers
 
 
 def _registry_alerts(selected_provider: IntegrationInstance | None) -> dict[str, Any]:
     catalog_rules = sum(
-        str(rule.get('domain') or '') == 'registry'
-        and str(rule.get('status') or '') == 'available'
+        str(rule.get('domain') or '') == 'registry' and str(rule.get('status') or '') == 'available'
         for rule in INTELLIGENCE_CATALOG
     )
     if selected_provider is None:
@@ -345,11 +347,7 @@ def _registry_alerts(selected_provider: IntegrationInstance | None) -> dict[str,
         'rows': [
             {
                 'title': str(case.alert_name or 'KAORI Alert Case'),
-                'description': str(
-                    case.summary
-                    or case.target
-                    or 'KAORI Registry recommendation alert case.'
-                ),
+                'description': str(case.summary or case.target or 'KAORI Registry recommendation alert case.'),
                 'severity': str(case.severity or 'info'),
                 'state': (
                     'Source Unknown'
@@ -362,6 +360,7 @@ def _registry_alerts(selected_provider: IntegrationInstance | None) -> dict[str,
             for case in cases[:5]
         ],
     }
+
 
 def _registry_recommended_actions(selected_provider: IntegrationInstance | None) -> list[dict[str, str]]:
     findings = get_dashboard_recommendation_findings(
@@ -429,20 +428,14 @@ def _overview_scope_context(
 
     providers = _providers()
     selected_provider = next(
-        (
-            provider
-            for provider in providers
-            if provider_id is not None and int(provider.id) == int(provider_id)
-        ),
+        (provider for provider in providers if provider_id is not None and int(provider.id) == int(provider_id)),
         None,
     )
     scoped_providers = [selected_provider] if selected_provider is not None else providers
 
     states_query = RegistryCollectionState.query
     if selected_provider is not None:
-        states_query = states_query.filter(
-            RegistryCollectionState.integration_instance_id == selected_provider.id
-        )
+        states_query = states_query.filter(RegistryCollectionState.integration_instance_id == selected_provider.id)
     states = states_query.all()
     committed_states = [state for state in states if state.last_committed_at is not None]
     latest = max(
@@ -467,16 +460,12 @@ def _overview_scope_context(
         page=provider_health_page,
         per_page=provider_health_per_page,
     )
-    scope_label = (
-        selected_provider.name if selected_provider is not None else 'All Registry Providers'
-    )
+    scope_label = selected_provider.name if selected_provider is not None else 'All Registry Providers'
     context = {
         'setup': {'is_blocked': not providers, 'provider_count': len(providers)},
         'providers': providers,
         'selected_provider': selected_provider,
-        'selected_provider_id': (
-            int(selected_provider.id) if selected_provider is not None else None
-        ),
+        'selected_provider_id': (int(selected_provider.id) if selected_provider is not None else None),
         'scope_label': scope_label,
         'active_tab': normalize_operational_tab(active_tab),
         'provider_count': len(scoped_providers),
@@ -498,24 +487,12 @@ def _overview_kpi_values(
     project_query = RegistryProject.query
     repository_query = RegistryRepository.query.join(RegistryProject)
     artifact_query = RegistryArtifact.query.join(RegistryRepository).join(RegistryProject)
-    tag_query = (
-        RegistryTag.query.join(RegistryArtifact)
-        .join(RegistryRepository)
-        .join(RegistryProject)
-    )
+    tag_query = RegistryTag.query.join(RegistryArtifact).join(RegistryRepository).join(RegistryProject)
     if selected_provider is not None:
-        project_query = project_query.filter(
-            RegistryProject.integration_instance_id == selected_provider.id
-        )
-        repository_query = repository_query.filter(
-            RegistryProject.integration_instance_id == selected_provider.id
-        )
-        artifact_query = artifact_query.filter(
-            RegistryProject.integration_instance_id == selected_provider.id
-        )
-        tag_query = tag_query.filter(
-            RegistryProject.integration_instance_id == selected_provider.id
-        )
+        project_query = project_query.filter(RegistryProject.integration_instance_id == selected_provider.id)
+        repository_query = repository_query.filter(RegistryProject.integration_instance_id == selected_provider.id)
+        artifact_query = artifact_query.filter(RegistryProject.integration_instance_id == selected_provider.id)
+        tag_query = tag_query.filter(RegistryProject.integration_instance_id == selected_provider.id)
     return {
         'projects': project_query.count(),
         'repositories': repository_query.count(),
@@ -562,12 +539,9 @@ def _provider_health_projection(
         RegistryProject.integration_instance_id,
         func.count(RegistryProject.id),
     )
-    repository_counts_query = (
-        RegistryRepository.query.join(RegistryProject)
-        .with_entities(
-            RegistryProject.integration_instance_id,
-            func.count(RegistryRepository.id),
-        )
+    repository_counts_query = RegistryRepository.query.join(RegistryProject).with_entities(
+        RegistryProject.integration_instance_id,
+        func.count(RegistryRepository.id),
     )
     security_counts_query = (
         RegistryArtifact.query.join(RegistryRepository)
@@ -579,9 +553,7 @@ def _provider_health_projection(
                 func.sum(
                     case(
                         (
-                            func.lower(RegistryArtifact.scan_status).in_(
-                                SUCCESSFUL_REGISTRY_SCAN_STATUSES
-                            ),
+                            func.lower(RegistryArtifact.scan_status).in_(SUCCESSFUL_REGISTRY_SCAN_STATUSES),
                             1,
                         ),
                         else_=0,
@@ -590,15 +562,11 @@ def _provider_health_projection(
                 0,
             ),
             func.coalesce(
-                func.sum(
-                    RegistryArtifact.vulnerability_summary['critical'].as_integer()
-                ),
+                func.sum(RegistryArtifact.vulnerability_summary['critical'].as_integer()),
                 0,
             ),
             func.coalesce(
-                func.sum(
-                    RegistryArtifact.vulnerability_summary['high'].as_integer()
-                ),
+                func.sum(RegistryArtifact.vulnerability_summary['high'].as_integer()),
                 0,
             ),
         )
@@ -616,15 +584,11 @@ def _provider_health_projection(
 
     project_counts = {
         int(provider_id): int(count)
-        for provider_id, count in project_counts_query.group_by(
-            RegistryProject.integration_instance_id
-        ).all()
+        for provider_id, count in project_counts_query.group_by(RegistryProject.integration_instance_id).all()
     }
     repository_counts = {
         int(provider_id): int(count)
-        for provider_id, count in repository_counts_query.group_by(
-            RegistryProject.integration_instance_id
-        ).all()
+        for provider_id, count in repository_counts_query.group_by(RegistryProject.integration_instance_id).all()
     }
     security_counts = {
         int(provider_id): {
@@ -638,10 +602,7 @@ def _provider_health_projection(
         ).all()
     }
 
-    metrics_by_provider = {
-        int(provider.id): registry_metrics_readiness(provider)
-        for provider in scoped_providers
-    }
+    metrics_by_provider = {int(provider.id): registry_metrics_readiness(provider) for provider in scoped_providers}
     provider_rows: list[dict[str, Any]] = []
     for provider in scoped_providers:
         key = int(provider.id)
@@ -666,12 +627,10 @@ def _provider_health_projection(
             )
         elif state is not None and state.status == 'failed' and not inventory_ready:
             overall_status, overall_tone = 'Critical', 'critical'
-            status_reason = (
-                'Inventory synchronization failed before a committed snapshot was established.'
-            )
+            status_reason = 'Inventory synchronization failed before a committed snapshot was established.'
         elif security['critical'] > 0:
             overall_status, overall_tone = 'Critical', 'critical'
-            status_reason = f"{security['critical']} critical security finding(s)."
+            status_reason = f'{security["critical"]} critical security finding(s).'
         elif not inventory_ready:
             overall_status, overall_tone, status_reason = (
                 'Warning',
@@ -686,9 +645,7 @@ def _provider_health_projection(
             )
         elif state is not None and state.last_error:
             overall_status, overall_tone = 'Warning', 'warning'
-            status_reason = (
-                'Latest inventory refresh failed; the previous committed snapshot is retained.'
-            )
+            status_reason = 'Latest inventory refresh failed; the previous committed snapshot is retained.'
         elif readiness == 'degraded':
             overall_status, overall_tone = 'Warning', 'warning'
             status_reason = 'Provider is usable with compatibility attention.'
@@ -701,8 +658,7 @@ def _provider_health_projection(
                 'id': key,
                 'name': provider.name,
                 'provider_label': str(
-                    (provider.metadata_json or {}).get('provider_label')
-                    or provider.provider_key.title()
+                    (provider.metadata_json or {}).get('provider_label') or provider.provider_key.title()
                 ),
                 'environment': provider.environment or 'Not Set',
                 'overall_status': overall_status,
@@ -739,14 +695,12 @@ def _overview_operations_projection(
     provider_health_page: int | str | None,
     provider_health_per_page: int,
 ) -> dict[str, Any]:
-    provider_rows, pagination, metrics_by_provider, security_counts = (
-        _provider_health_projection(
-            scoped_providers=scoped_providers,
-            states=states,
-            selected_provider=selected_provider,
-            provider_health_page=provider_health_page,
-            provider_health_per_page=provider_health_per_page,
-        )
+    provider_rows, pagination, metrics_by_provider, security_counts = _provider_health_projection(
+        scoped_providers=scoped_providers,
+        states=states,
+        selected_provider=selected_provider,
+        provider_health_page=provider_health_page,
+        provider_health_per_page=provider_health_per_page,
     )
     counts = _overview_kpi_values(selected_provider)
 
@@ -779,9 +733,7 @@ def _overview_operations_projection(
             RegistryProject,
             RegistryRepository.project_id == RegistryProject.id,
         )
-        .filter(
-            func.lower(RegistryScanSnapshot.status).in_(SUCCESSFUL_REGISTRY_SCAN_STATUSES)
-        )
+        .filter(func.lower(RegistryScanSnapshot.status).in_(SUCCESSFUL_REGISTRY_SCAN_STATUSES))
         .with_entities(
             RegistryProject.integration_instance_id,
             func.max(RegistryScanSnapshot.observed_at),
@@ -793,9 +745,7 @@ def _overview_operations_projection(
         )
     security_observed_by_provider = {
         int(provider_id): observed_at
-        for provider_id, observed_at in security_freshness_query.group_by(
-            RegistryProject.integration_instance_id
-        ).all()
+        for provider_id, observed_at in security_freshness_query.group_by(RegistryProject.integration_instance_id).all()
     }
     latest_security_at = max(
         (value for value in security_observed_by_provider.values() if value is not None),
@@ -809,13 +759,8 @@ def _overview_operations_projection(
     artifact_total = counts['artifacts']
     scanned_count = sum(item['scanned'] for item in security_counts.values())
     analytics_by_provider = _latest_registry_analytics(scoped_providers)
-    metrics_ready_count = sum(
-        metrics.get('status') == 'ready'
-        for metrics in metrics_by_provider.values()
-    )
-    analytics_ready_count = sum(
-        snapshot is not None for snapshot in analytics_by_provider.values()
-    )
+    metrics_ready_count = sum(metrics.get('status') == 'ready' for metrics in metrics_by_provider.values())
+    analytics_ready_count = sum(snapshot is not None for snapshot in analytics_by_provider.values())
     latest_analytics_at = max(
         (
             snapshot.generated_at
@@ -839,9 +784,7 @@ def _overview_operations_projection(
         selected_collection_state = state_by_provider.get(selected_key)
         selected_state = _state_view(selected_collection_state)
         selected_metrics = metrics_by_provider.get(selected_key, {})
-        selected_analytics = _analytics_snapshot_view(
-            analytics_by_provider.get(selected_key)
-        )
+        selected_analytics = _analytics_snapshot_view(analytics_by_provider.get(selected_key))
         if artifact_total == 0 and selected_state['committed_at'] is not None:
             security_status, security_tone, security_value = (
                 'No Artifacts',
@@ -859,16 +802,9 @@ def _overview_operations_projection(
             security_tone = 'warning' if artifact_total else 'unknown'
             security_value = 'No committed security snapshot'
 
-        inventory_description = (
-            'Committed projects, repositories, artifacts, tags, and provider provenance.'
-        )
-        if (
-            selected_collection_state is not None
-            and selected_collection_state.last_error
-        ):
-            inventory_description += (
-                ' Latest refresh failed; KAORI retained the previous committed snapshot.'
-            )
+        inventory_description = 'Committed projects, repositories, artifacts, tags, and provider provenance.'
+        if selected_collection_state is not None and selected_collection_state.last_error:
+            inventory_description += ' Latest refresh failed; KAORI retained the previous committed snapshot.'
         freshness = [
             {
                 'label': 'Inventory Snapshot',
@@ -885,13 +821,8 @@ def _overview_operations_projection(
                 'label': 'Metrics Snapshot',
                 'status': str(selected_metrics.get('label') or 'Not Bound'),
                 'tone': str(selected_metrics.get('tone') or 'unknown'),
-                'value': str(
-                    selected_metrics.get('selected_source')
-                    or 'No validated Metrics Source'
-                ),
-                'description': (
-                    'Validated Registry Metrics Source binding; independent from provider readiness.'
-                ),
+                'value': str(selected_metrics.get('selected_source') or 'No validated Metrics Source'),
+                'description': ('Validated Registry Metrics Source binding; independent from provider readiness.'),
                 'icon': 'activity',
             },
             {
@@ -899,9 +830,7 @@ def _overview_operations_projection(
                 'status': security_status,
                 'tone': security_tone,
                 'value': security_value,
-                'description': (
-                    'Committed vulnerability scan evidence attached to immutable artifact digests.'
-                ),
+                'description': ('Committed vulnerability scan evidence attached to immutable artifact digests.'),
                 'icon': 'shield-check',
             },
             {
@@ -912,23 +841,15 @@ def _overview_operations_projection(
                     selected_analytics['generated_at'],
                     missing='No analytics snapshot',
                 ),
-                'description': (
-                    'Materialized Registry growth, forecast, runtime, and recommendation evidence.'
-                ),
+                'description': ('Materialized Registry growth, forecast, runtime, and recommendation evidence.'),
                 'icon': 'chart-no-axes-combined',
             },
         ]
     else:
         committed_count = len(committed_states)
         if committed_count == len(scoped_providers) and scoped_providers:
-            inventory_status = (
-                'Stale'
-                if stale_count
-                else ('Attention' if failed_refresh_count else 'Ready')
-            )
-            inventory_tone = (
-                'warning' if stale_count or failed_refresh_count else 'normal'
-            )
+            inventory_status = 'Stale' if stale_count else ('Attention' if failed_refresh_count else 'Ready')
+            inventory_tone = 'warning' if stale_count or failed_refresh_count else 'normal'
         elif committed_count:
             inventory_status, inventory_tone = 'Partial', 'warning'
         else:
@@ -966,23 +887,13 @@ def _overview_operations_projection(
                         else 'No validated Metrics Source'
                     )
                 ),
-                'description': (
-                    'Validated Registry Metrics Source availability across the active scope.'
-                ),
+                'description': ('Validated Registry Metrics Source availability across the active scope.'),
                 'icon': 'activity',
             },
             {
                 'label': 'Security Snapshot',
-                'status': (
-                    'No Artifacts'
-                    if artifact_total == 0
-                    else ('Available' if scanned_count else 'Required')
-                ),
-                'tone': (
-                    'info'
-                    if artifact_total == 0
-                    else ('normal' if scanned_count else 'warning')
-                ),
+                'status': ('No Artifacts' if artifact_total == 0 else ('Available' if scanned_count else 'Required')),
+                'tone': ('info' if artifact_total == 0 else ('normal' if scanned_count else 'warning')),
                 'value': (
                     'No committed artifacts to scan'
                     if artifact_total == 0
@@ -995,9 +906,7 @@ def _overview_operations_projection(
                         else 'No committed security snapshot'
                     )
                 ),
-                'description': (
-                    'Latest committed vulnerability scan evidence across the active Registry scope.'
-                ),
+                'description': ('Latest committed vulnerability scan evidence across the active Registry scope.'),
                 'icon': 'shield-check',
             },
             {
@@ -1031,9 +940,7 @@ def _overview_operations_projection(
         'total_size': _fmt_bytes(total_size_bytes),
         'public_project_count': public_project_count,
         'scanned_count': scanned_count,
-        'scan_coverage': (
-            round((scanned_count / artifact_total) * 100) if artifact_total else 0
-        ),
+        'scan_coverage': (round((scanned_count / artifact_total) * 100) if artifact_total else 0),
         'metrics_ready_count': metrics_ready_count,
         'analytics_ready_count': analytics_ready_count,
         'provider_rows': provider_rows,
@@ -1052,9 +959,7 @@ def _overview_capacity_projection(
 ) -> dict[str, Any]:
     artifact_query = RegistryArtifact.query.join(RegistryRepository).join(RegistryProject)
     if selected_provider is not None:
-        artifact_query = artifact_query.filter(
-            RegistryProject.integration_instance_id == selected_provider.id
-        )
+        artifact_query = artifact_query.filter(RegistryProject.integration_instance_id == selected_provider.id)
     artifact_total, total_size_bytes = artifact_query.with_entities(
         func.count(RegistryArtifact.id),
         func.coalesce(func.sum(RegistryArtifact.size_bytes), 0),
@@ -1062,23 +967,15 @@ def _overview_capacity_projection(
     artifact_total = int(artifact_total or 0)
     total_size_bytes = int(total_size_bytes or 0)
 
-    metrics_by_provider = {
-        int(provider.id): registry_metrics_readiness(provider)
-        for provider in scoped_providers
-    }
-    metrics_ready_count = sum(
-        metrics.get('status') == 'ready'
-        for metrics in metrics_by_provider.values()
-    )
+    metrics_by_provider = {int(provider.id): registry_metrics_readiness(provider) for provider in scoped_providers}
+    metrics_ready_count = sum(metrics.get('status') == 'ready' for metrics in metrics_by_provider.values())
     analytics_by_provider = _latest_registry_analytics(scoped_providers)
     capacity, forecast, top_consumers = _registry_capacity_views(
         scoped_providers=scoped_providers,
         analytics_by_provider=analytics_by_provider,
         total_size_bytes=total_size_bytes,
         artifact_total=artifact_total,
-        committed_snapshot_count=sum(
-            state.last_committed_at is not None for state in states
-        ),
+        committed_snapshot_count=sum(state.last_committed_at is not None for state in states),
         metrics_ready_count=metrics_ready_count,
     )
     return {
@@ -1116,13 +1013,11 @@ def build_overview_section(
 ) -> dict[str, Any]:
     """Build one bounded Artifact Registry dashboard section."""
 
-    context, _providers_all, selected_provider, scoped_providers, states = (
-        _overview_scope_context(
-            provider_id=provider_id,
-            active_tab=normalize_operational_tab(section),
-            provider_health_page=provider_health_page,
-            provider_health_per_page=provider_health_per_page,
-        )
+    context, _providers_all, selected_provider, scoped_providers, states = _overview_scope_context(
+        provider_id=provider_id,
+        active_tab=normalize_operational_tab(section),
+        provider_health_page=provider_health_page,
+        provider_health_per_page=provider_health_per_page,
     )
 
     if section == 'kpi_cards':
@@ -1248,24 +1143,16 @@ def _artifact_row(item: RegistryArtifact) -> dict[str, Any]:
 def _decorate_inventory_provider_provenance(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     provider_ids = {int(row['provider_id']) for row in rows if row.get('provider_id') is not None}
     providers = (
-        IntegrationInstance.query.filter(IntegrationInstance.id.in_(sorted(provider_ids))).all()
-        if provider_ids
-        else []
+        IntegrationInstance.query.filter(IntegrationInstance.id.in_(sorted(provider_ids))).all() if provider_ids else []
     )
     provider_lookup = {int(provider.id): provider for provider in providers}
     for row in rows:
         provider_id = int(row['provider_id'])
         provider = provider_lookup.get(provider_id)
-        metadata = (
-            provider.metadata_json
-            if provider is not None and isinstance(provider.metadata_json, dict)
-            else {}
-        )
+        metadata = provider.metadata_json if provider is not None and isinstance(provider.metadata_json, dict) else {}
         provider_key = str(provider.provider_key or 'registry') if provider is not None else 'registry'
         row['provider_name'] = provider.name if provider is not None else f'Registry #{provider_id}'
-        row['provider_label'] = str(
-            metadata.get('provider_label') or provider_key.replace('_', ' ').title()
-        )
+        row['provider_label'] = str(metadata.get('provider_label') or provider_key.replace('_', ' ').title())
         row['provider_environment'] = (
             str(provider.environment) if provider is not None and provider.environment else 'Not Set'
         )
@@ -1334,22 +1221,16 @@ def _inventory_snapshot_context(overview: dict[str, Any]) -> dict[str, Any]:
         'source_label': 'Committed Registry State',
         'status': overview['posture']['label'],
         'tone': overview['posture']['tone'],
-        'description': (
-            'KAORI reads committed provider-neutral Registry inventory.'
-        ),
+        'description': ('KAORI reads committed provider-neutral Registry inventory.'),
         'latest_collected_at': overview['latest_committed_at'],
         'scope_label': overview['scope_label'],
-        'coverage_label': (
-            f'{snapshot_count} / {provider_count} Providers' if provider_count else 'No Providers'
-        ),
+        'coverage_label': (f'{snapshot_count} / {provider_count} Providers' if provider_count else 'No Providers'),
         'coverage_tone': coverage_tone,
         'coverage_supporting': 'Providers with committed evidence.',
         'exceptions_label': ' · '.join(exception_parts) if exception_parts else 'No Exceptions',
         'exceptions_tone': 'warning' if exception_count else 'normal',
         'exceptions_supporting': (
-            'Stale, pending, or failed committed snapshot conditions.'
-            if exception_count
-            else 'No snapshot issues.'
+            'Stale, pending, or failed committed snapshot conditions.' if exception_count else 'No snapshot issues.'
         ),
         'exception_count': exception_count,
     }
@@ -1364,9 +1245,7 @@ def _inventory_fleet_readings(overview: dict[str, Any]) -> list[dict[str, str]]:
         + int(overview['failed_refresh_count'])
     )
     project_count = int(overview['project_count'])
-    visibility_observed = RegistryProject.query.filter(
-        RegistryProject.public.is_not(None)
-    ).count()
+    visibility_observed = RegistryProject.query.filter(RegistryProject.public.is_not(None)).count()
     public_projects = RegistryProject.query.filter(RegistryProject.public.is_(True)).count()
 
     if provider_count == 0:
@@ -1374,7 +1253,9 @@ def _inventory_fleet_readings(overview: dict[str, Any]) -> list[dict[str, str]]:
         coverage_description = 'Register a Registry provider to establish committed inventory.'
     elif snapshot_count == provider_count:
         coverage_title, coverage_tone = f'{snapshot_count}/{provider_count} Providers Committed', 'normal'
-        coverage_description = 'Every configured Registry provider has retained a committed inventory snapshot as current KAORI evidence.'
+        coverage_description = (
+            'Every configured Registry provider has retained a committed inventory snapshot as current KAORI evidence.'
+        )
     else:
         coverage_title, coverage_tone = f'{snapshot_count}/{provider_count} Providers Committed', 'warning'
         coverage_description = 'One or more Registry providers still require a committed inventory snapshot.'
@@ -1450,9 +1331,7 @@ def _inventory_resource_posture_metrics(
     resource: str,
     rows: list[dict[str, Any]],
 ) -> list[tuple[str, str, Any, str, str]]:
-    provider_count = len(
-        {int(row['provider_id']) for row in rows if row.get('provider_id') is not None}
-    )
+    provider_count = len({int(row['provider_id']) for row in rows if row.get('provider_id') is not None})
 
     if resource == 'repositories':
         artifact_count = sum(int(row.get('artifact_count') or 0) for row in rows)
@@ -1608,11 +1487,7 @@ def build_inventory(
         key=lambda item: (str(item['name']).lower(), int(item['id'])),
     )
     environment_options = sorted(
-        {
-            str(row['provider_environment'])
-            for row in rows
-            if str(row.get('provider_environment') or '').strip()
-        },
+        {str(row['provider_environment']) for row in rows if str(row.get('provider_environment') or '').strip()},
         key=str.lower,
     )
     resource_posture_metrics = _inventory_resource_posture_metrics(resource, rows)
@@ -1620,11 +1495,7 @@ def build_inventory(
     if source_id is not None:
         rows = [row for row in rows if int(row['provider_id']) == int(source_id)]
     if environment_value:
-        rows = [
-            row
-            for row in rows
-            if str(row['provider_environment']).lower() == environment_value.lower()
-        ]
+        rows = [row for row in rows if str(row['provider_environment']).lower() == environment_value.lower()]
     if resource == 'projects':
         if visibility_value == 'public':
             rows = [row for row in rows if row['public'] is True]
@@ -1640,8 +1511,8 @@ def build_inventory(
             if not search_value
             or search_value
             in (
-                f"{row['name']} {row['project']} {row['provider_name']} "
-                f"{row['provider_label']} {row['provider_environment']}"
+                f'{row["name"]} {row["project"]} {row["provider_name"]} '
+                f'{row["provider_label"]} {row["provider_environment"]}'
             ).lower()
         ]
     elif resource == 'artifacts':
@@ -1651,9 +1522,9 @@ def build_inventory(
             if not search_value
             or search_value
             in (
-                f"{row['digest']} {row['repository']} {row['project']} "
-                f"{' '.join(row['tags'])} {row['provider_name']} "
-                f"{row['provider_label']} {row['provider_environment']}"
+                f'{row["digest"]} {row["repository"]} {row["project"]} '
+                f'{" ".join(row["tags"])} {row["provider_name"]} '
+                f'{row["provider_label"]} {row["provider_environment"]}'
             ).lower()
         ]
     else:
@@ -1662,10 +1533,7 @@ def build_inventory(
             for row in rows
             if not search_value
             or search_value
-            in (
-                f"{row['name']} {row['provider_name']} "
-                f"{row['provider_label']} {row['provider_environment']}"
-            ).lower()
+            in (f'{row["name"]} {row["provider_name"]} {row["provider_label"]} {row["provider_environment"]}').lower()
         ]
 
     paged, pagination = paginate_sequence(filtered, page=page, per_page=per_page)
@@ -1690,24 +1558,17 @@ def build_inventory(
     }[resource]
     snapshot_count = int(context['overview']['snapshot_count'])
     has_filters = bool(
-        search_value
-        or source_id is not None
-        or environment_value
-        or (resource == 'projects' and visibility_value)
+        search_value or source_id is not None or environment_value or (resource == 'projects' and visibility_value)
     )
 
     if has_filters:
-        empty_description = (
-            f"No committed {selected_resource['title'].lower()} match the active filters."
-        )
+        empty_description = f'No committed {selected_resource["title"].lower()} match the active filters.'
     elif snapshot_count == 0:
         empty_description = (
             'Run Artifact Registry inventory sync after the Registry provider read contract is eligible.'
         )
     else:
-        empty_description = (
-            f"The current committed Registry snapshot contains no {selected_resource['title'].lower()}."
-        )
+        empty_description = f'The current committed Registry snapshot contains no {selected_resource["title"].lower()}.'
 
     filter_query: dict[str, Any] = {
         'q': search,
@@ -1757,27 +1618,19 @@ def build_inventory(
 
 def build_inventory_project_detail(project_id: int) -> dict[str, Any] | None:
     project = (
-        RegistryProject.query.options(
-            joinedload(RegistryProject.repositories).joinedload(RegistryRepository.artifacts)
-        )
+        RegistryProject.query.options(joinedload(RegistryProject.repositories).joinedload(RegistryRepository.artifacts))
         .filter(RegistryProject.id == int(project_id))
         .first()
     )
     if project is None:
         return None
 
-    provider = IntegrationInstance.query.filter(
-        IntegrationInstance.id == int(project.integration_instance_id)
-    ).first()
+    provider = IntegrationInstance.query.filter(IntegrationInstance.id == int(project.integration_instance_id)).first()
     state = RegistryCollectionState.query.filter(
         RegistryCollectionState.integration_instance_id == int(project.integration_instance_id)
     ).first()
     snapshot = _state_view(state)
-    provider_metadata = (
-        dict(project.provider_metadata)
-        if isinstance(project.provider_metadata, dict)
-        else {}
-    )
+    provider_metadata = dict(project.provider_metadata) if isinstance(project.provider_metadata, dict) else {}
 
     if project.public is True:
         visibility_state = {'label': 'Public', 'tone': 'info', 'icon': 'globe-2'}
@@ -1791,9 +1644,7 @@ def build_inventory_project_detail(project_id: int) -> dict[str, Any] | None:
             'id': int(repository.id),
             'name': repository.name,
             'artifact_count': (
-                int(repository.artifact_count)
-                if repository.artifact_count is not None
-                else len(repository.artifacts)
+                int(repository.artifact_count) if repository.artifact_count is not None else len(repository.artifacts)
             ),
             'pull_count': repository.pull_count,
             'observed_at': repository.observed_at,
@@ -1802,11 +1653,7 @@ def build_inventory_project_detail(project_id: int) -> dict[str, Any] | None:
     ]
 
     provider_key = str(provider.provider_key or 'registry') if provider is not None else 'registry'
-    metadata = (
-        provider.metadata_json
-        if provider is not None and isinstance(provider.metadata_json, dict)
-        else {}
-    )
+    metadata = provider.metadata_json if provider is not None and isinstance(provider.metadata_json, dict) else {}
 
     return {
         'id': int(project.id),
@@ -1814,19 +1661,11 @@ def build_inventory_project_detail(project_id: int) -> dict[str, Any] | None:
         'provider_native_id': project.provider_native_id or 'Not Collected',
         'visibility': visibility_state,
         'repository_count': (
-            int(project.repository_count)
-            if project.repository_count is not None
-            else len(project.repositories)
+            int(project.repository_count) if project.repository_count is not None else len(project.repositories)
         ),
         'provider_id': int(project.integration_instance_id),
-        'provider_name': (
-            provider.name
-            if provider is not None
-            else f'Registry #{project.integration_instance_id}'
-        ),
-        'provider_label': str(
-            metadata.get('provider_label') or provider_key.replace('_', ' ').title()
-        ),
+        'provider_name': (provider.name if provider is not None else f'Registry #{project.integration_instance_id}'),
+        'provider_label': str(metadata.get('provider_label') or provider_key.replace('_', ' ').title()),
         'provider_environment': (
             str(provider.environment) if provider is not None and provider.environment else 'Not Set'
         ),
@@ -1840,26 +1679,16 @@ def build_inventory_project_detail(project_id: int) -> dict[str, Any] | None:
 
 
 def _inventory_detail_provider_context(integration_instance_id: int) -> dict[str, Any]:
-    provider = IntegrationInstance.query.filter(
-        IntegrationInstance.id == int(integration_instance_id)
-    ).first()
+    provider = IntegrationInstance.query.filter(IntegrationInstance.id == int(integration_instance_id)).first()
     state = RegistryCollectionState.query.filter(
         RegistryCollectionState.integration_instance_id == int(integration_instance_id)
     ).first()
-    metadata = (
-        provider.metadata_json
-        if provider is not None and isinstance(provider.metadata_json, dict)
-        else {}
-    )
+    metadata = provider.metadata_json if provider is not None and isinstance(provider.metadata_json, dict) else {}
     provider_key = str(provider.provider_key or 'registry') if provider is not None else 'registry'
     return {
         'provider_id': int(integration_instance_id),
-        'provider_name': (
-            provider.name if provider is not None else f'Registry #{integration_instance_id}'
-        ),
-        'provider_label': str(
-            metadata.get('provider_label') or provider_key.replace('_', ' ').title()
-        ),
+        'provider_name': (provider.name if provider is not None else f'Registry #{integration_instance_id}'),
+        'provider_label': str(metadata.get('provider_label') or provider_key.replace('_', ' ').title()),
         'provider_environment': (
             str(provider.environment) if provider is not None and provider.environment else 'Not Set'
         ),
@@ -1885,9 +1714,7 @@ def build_inventory_repository_detail(repository_id: int) -> dict[str, Any] | No
             'id': int(artifact.id),
             'digest': artifact.digest,
             'digest_short': (
-                artifact.digest
-                if len(artifact.digest) <= 32
-                else f'{artifact.digest[:20]}…{artifact.digest[-10:]}'
+                artifact.digest if len(artifact.digest) <= 32 else f'{artifact.digest[:20]}…{artifact.digest[-10:]}'
             ),
             'type': artifact.artifact_type or artifact.media_type or 'OCI Artifact',
             'size': _fmt_bytes(artifact.size_bytes),
@@ -1897,11 +1724,7 @@ def build_inventory_repository_detail(repository_id: int) -> dict[str, Any] | No
         }
         for artifact in sorted(repository.artifacts, key=lambda item: item.digest)
     ]
-    provider_metadata = (
-        dict(repository.provider_metadata)
-        if isinstance(repository.provider_metadata, dict)
-        else {}
-    )
+    provider_metadata = dict(repository.provider_metadata) if isinstance(repository.provider_metadata, dict) else {}
     return {
         'id': int(repository.id),
         'name': repository.name,
@@ -1910,9 +1733,7 @@ def build_inventory_repository_detail(repository_id: int) -> dict[str, Any] | No
         'project_id': int(repository.project.id),
         'project_name': repository.project.name,
         'artifact_count': (
-            int(repository.artifact_count)
-            if repository.artifact_count is not None
-            else len(repository.artifacts)
+            int(repository.artifact_count) if repository.artifact_count is not None else len(repository.artifacts)
         ),
         'pull_count': repository.pull_count,
         'provider_created_at': repository.provider_created_at,
@@ -1952,18 +1773,12 @@ def build_inventory_artifact_detail(artifact_id: int) -> dict[str, Any] | None:
         }
         for tag in sorted(artifact.tags, key=lambda item: item.name.lower())
     ]
-    provider_metadata = (
-        dict(artifact.provider_metadata)
-        if isinstance(artifact.provider_metadata, dict)
-        else {}
-    )
+    provider_metadata = dict(artifact.provider_metadata) if isinstance(artifact.provider_metadata, dict) else {}
     return {
         'id': int(artifact.id),
         'digest': artifact.digest,
         'digest_short': (
-            artifact.digest
-            if len(artifact.digest) <= 40
-            else f'{artifact.digest[:24]}…{artifact.digest[-12:]}'
+            artifact.digest if len(artifact.digest) <= 40 else f'{artifact.digest[:24]}…{artifact.digest[-12:]}'
         ),
         'digest_algorithm': artifact.digest_algorithm or 'unknown',
         'provider_native_id': artifact.provider_native_id or 'Not Collected',
@@ -2078,11 +1893,7 @@ def _runtime_prerequisite_guidance(
     eligible = bool(prerequisites.get('eligible'))
     missing_registry = int(prerequisites.get('artifact_count') or 0) == 0
     missing_kubernetes = int(prerequisites.get('pod_count') or 0) == 0
-    review_step = (
-        'Review Updated Bindings'
-        if has_committed_snapshot
-        else 'Review Committed Bindings'
-    )
+    review_step = 'Review Updated Bindings' if has_committed_snapshot else 'Review Committed Bindings'
 
     if missing_registry and missing_kubernetes:
         title = 'Committed Inventories Required'
@@ -2106,12 +1917,9 @@ def _runtime_prerequisite_guidance(
     elif missing_registry:
         title = 'Registry Inventory Required'
         description = (
-            'Runtime correlation requires committed Artifact Registry artifacts before '
-            'the first materialization.'
+            'Runtime correlation requires committed Artifact Registry artifacts before the first materialization.'
         )
-        refresh_description = (
-            'Runtime Usage remains readable; refresh requires current Registry inventory.'
-        )
+        refresh_description = 'Runtime Usage remains readable; refresh requires current Registry inventory.'
         steps = [
             'Sync Artifact Registry Inventory',
             'Run Runtime Correlation',
@@ -2127,9 +1935,7 @@ def _runtime_prerequisite_guidance(
             'Runtime correlation requires a current committed Kubernetes Pod inventory '
             'generation before the first materialization.'
         )
-        refresh_description = (
-            'Runtime Usage remains readable; refresh requires current Kubernetes Pod inventory.'
-        )
+        refresh_description = 'Runtime Usage remains readable; refresh requires current Kubernetes Pod inventory.'
         steps = [
             'Sync Kubernetes Inventory',
             'Run Runtime Correlation',
@@ -2251,8 +2057,7 @@ def build_runtime_usage(
         matching_source_ids = [
             int(source.id)
             for source in sources
-            if search_value
-            in f'{source.name} {source.provider_key} {source.environment or ""}'.lower()
+            if search_value in f'{source.name} {source.provider_key} {source.environment or ""}'.lower()
         ]
         search_clauses = [
             func.lower(RegistryArtifact.digest).like(pattern),
@@ -2266,35 +2071,21 @@ def build_runtime_usage(
             func.lower(func.coalesce(Cluster.name, '')).like(pattern),
         ]
         if matching_source_ids:
-            search_clauses.append(
-                RegistryProject.integration_instance_id.in_(matching_source_ids)
-            )
+            search_clauses.append(RegistryProject.integration_instance_id.in_(matching_source_ids))
         query = query.filter(or_(*search_clauses))
 
     binding_total = query.order_by(None).count()
-    digest_matches = query.filter(
-        RegistryWorkloadBinding.match_type == 'digest'
-    ).order_by(None).count()
-    tag_matches = query.filter(
-        RegistryWorkloadBinding.match_type == 'tag'
-    ).order_by(None).count()
+    digest_matches = query.filter(RegistryWorkloadBinding.match_type == 'digest').order_by(None).count()
+    tag_matches = query.filter(RegistryWorkloadBinding.match_type == 'tag').order_by(None).count()
     security_exposed = (
-        query.filter(
-            RegistryWorkloadBinding.artifact_id.in_(exposed_ids)
-        ).order_by(None).count()
-        if exposed_ids
-        else 0
+        query.filter(RegistryWorkloadBinding.artifact_id.in_(exposed_ids)).order_by(None).count() if exposed_ids else 0
     )
     critical_exposures = (
-        query.filter(
-            RegistryWorkloadBinding.artifact_id.in_(critical_ids)
-        ).order_by(None).count()
+        query.filter(RegistryWorkloadBinding.artifact_id.in_(critical_ids)).order_by(None).count()
         if critical_ids
         else 0
     )
-    artifact_count = query.with_entities(
-        RegistryWorkloadBinding.artifact_id
-    ).distinct().count()
+    artifact_count = query.with_entities(RegistryWorkloadBinding.artifact_id).distinct().count()
 
     page_items, pagination = paginate_query(
         query.order_by(
@@ -2327,17 +2118,11 @@ def build_runtime_usage(
                 'repository': repository.name,
                 'digest': artifact.digest,
                 'digest_short': (
-                    artifact.digest
-                    if len(artifact.digest) <= 28
-                    else f'{artifact.digest[:18]}…{artifact.digest[-8:]}'
+                    artifact.digest if len(artifact.digest) <= 28 else f'{artifact.digest[:18]}…{artifact.digest[-8:]}'
                 ),
                 'source_id': int(project.integration_instance_id),
                 'source_name': source.name if source is not None else 'Unknown Registry Source',
-                'provider_label': (
-                    source.provider_key.replace('_', ' ').title()
-                    if source is not None
-                    else 'Registry'
-                ),
+                'provider_label': (source.provider_key.replace('_', ' ').title() if source is not None else 'Registry'),
                 'cluster_id': str(binding.cluster_id),
                 'cluster_name': cluster.name if cluster is not None else str(binding.cluster_id),
                 'cluster_environment': cluster.environment if cluster is not None else None,
@@ -2356,9 +2141,7 @@ def build_runtime_usage(
         )
 
     latest_job = (
-        JobExecution.query.filter(
-            JobExecution.job_type == 'artifact_registry_runtime_correlation'
-        )
+        JobExecution.query.filter(JobExecution.job_type == 'artifact_registry_runtime_correlation')
         .order_by(JobExecution.created_at.desc(), JobExecution.id.desc())
         .first()
     )
@@ -2386,15 +2169,11 @@ def build_runtime_usage(
     refresh_failed = bool(
         latest_job is not None
         and latest_job.status == 'failed'
-        and (
-            latest_success is None
-            or latest_job.created_at > latest_success.created_at
-        )
+        and (latest_success is None or latest_job.created_at > latest_success.created_at)
     )
     refreshing = bool(latest_job is not None and latest_job.is_active)
     stale = bool(
-        latest_correlated_at is not None
-        and latest_correlated_at < datetime.now(UTC) - timedelta(hours=FRESHNESS_HOURS)
+        latest_correlated_at is not None and latest_correlated_at < datetime.now(UTC) - timedelta(hours=FRESHNESS_HOURS)
     )
 
     if refreshing:
@@ -2464,11 +2243,7 @@ def build_runtime_usage(
         posture = {'label': 'No Runtime Correlation', 'tone': 'unknown'}
 
     if tag_matches:
-        exceptions_label = (
-            f'{tag_matches} Tag Match'
-            if tag_matches == 1
-            else f'{tag_matches} Tag Matches'
-        )
+        exceptions_label = f'{tag_matches} Tag Match' if tag_matches == 1 else f'{tag_matches} Tag Matches'
         exceptions_supporting = 'Mutable references; lower confidence.'
         exceptions_tone = 'warning'
     elif binding_total:
@@ -2491,9 +2266,7 @@ def build_runtime_usage(
     )
     if artifact_id is not None and not binding_total:
         empty_title = 'Artifact Not Observed at Runtime'
-        empty_description = (
-            'No committed Kubernetes workload binding currently resolves to this artifact.'
-        )
+        empty_description = 'No committed Kubernetes workload binding currently resolves to this artifact.'
     elif has_filters and not binding_total:
         empty_title = 'No Runtime Bindings Match'
         empty_description = 'No committed runtime correlation matches the active filters.'
@@ -2504,16 +2277,12 @@ def build_runtime_usage(
         )
     else:
         empty_title = 'No Runtime Usage Observed'
-        empty_description = (
-            'The latest committed correlation contains no Registry-to-Kubernetes bindings.'
-        )
+        empty_description = 'The latest committed correlation contains no Registry-to-Kubernetes bindings.'
 
     namespace_options = [
         value
         for (value,) in (
-            RegistryWorkloadBinding.query.with_entities(
-                RegistryWorkloadBinding.namespace
-            )
+            RegistryWorkloadBinding.query.with_entities(RegistryWorkloadBinding.namespace)
             .distinct()
             .order_by(RegistryWorkloadBinding.namespace.asc())
             .all()
@@ -2614,9 +2383,7 @@ def build_runtime_binding_detail(binding_id: int) -> dict[str, Any] | None:
         'repository': repository.name,
         'digest': artifact.digest,
         'digest_short': (
-            artifact.digest
-            if len(artifact.digest) <= 40
-            else f'{artifact.digest[:24]}…{artifact.digest[-12:]}'
+            artifact.digest if len(artifact.digest) <= 40 else f'{artifact.digest[:24]}…{artifact.digest[-12:]}'
         ),
         'tags': [tag.name for tag in sorted(artifact.tags, key=lambda item: item.name.lower())],
         'image_reference': binding.image_reference,
@@ -2633,19 +2400,11 @@ def build_runtime_binding_detail(binding_id: int) -> dict[str, Any] | None:
         'container_name': binding.container_name or 'Container',
         'source_kind': str(details.get('source_kind') or 'container').replace('_', ' ').title(),
         'registry_host': details.get('registry_host') or 'Not Collected',
-        'registry_observed_at': _runtime_parse_observed_at(
-            details.get('registry_observed_at')
-        ) or artifact.observed_at,
-        'kubernetes_observed_at': _runtime_parse_observed_at(
-            details.get('pod_collected_at')
-        ),
+        'registry_observed_at': _runtime_parse_observed_at(details.get('registry_observed_at')) or artifact.observed_at,
+        'kubernetes_observed_at': _runtime_parse_observed_at(details.get('pod_collected_at')),
         'correlated_at': binding.observed_at,
         'security': security,
-        'scan_status': (
-            str(artifact.scan_status).replace('_', ' ').title()
-            if artifact.scan_status
-            else 'Not Scanned'
-        ),
+        'scan_status': (str(artifact.scan_status).replace('_', ' ').title() if artifact.scan_status else 'Not Scanned'),
         **source,
     }
 
@@ -2674,18 +2433,19 @@ def build_governance(
     overview = build_overview()
     identities = _providers()
     identity_by_id = {int(item.id): item for item in identities}
-    governance_states = {
-        int(item.integration_instance_id): item
-        for item in RegistryGovernanceState.query.all()
-    }
+    governance_states = {int(item.integration_instance_id): item for item in RegistryGovernanceState.query.all()}
 
     project_rows: list[dict[str, Any]] = []
-    governance_items = RegistryProjectGovernance.query.options(
-        joinedload(RegistryProjectGovernance.project),
-    ).order_by(
-        RegistryProjectGovernance.observed_at.desc(),
-        RegistryProjectGovernance.id.desc(),
-    ).all()
+    governance_items = (
+        RegistryProjectGovernance.query.options(
+            joinedload(RegistryProjectGovernance.project),
+        )
+        .order_by(
+            RegistryProjectGovernance.observed_at.desc(),
+            RegistryProjectGovernance.id.desc(),
+        )
+        .all()
+    )
     for item in governance_items:
         identity = identity_by_id.get(int(item.project.integration_instance_id))
         retention = _policy_state_view(item.retention_status)
@@ -2694,8 +2454,7 @@ def build_governance(
             {
                 'project': item.project.name,
                 'provider_label': str(
-                    (identity.metadata_json or {}).get('provider_label')
-                    or identity.provider_key.title()
+                    (identity.metadata_json or {}).get('provider_label') or identity.provider_key.title()
                 )
                 if identity is not None
                 else 'Registry',
@@ -2719,8 +2478,7 @@ def build_governance(
             {
                 'name': item.name,
                 'provider_label': str(
-                    (identity.metadata_json or {}).get('provider_label')
-                    or identity.provider_key.title()
+                    (identity.metadata_json or {}).get('provider_label') or identity.provider_key.title()
                 )
                 if identity is not None
                 else 'Registry',
@@ -2735,9 +2493,7 @@ def build_governance(
 
     provider_count = len(identities)
     project_total = (
-        RegistryProject.query.filter(
-            RegistryProject.integration_instance_id.in_(identity_by_id)
-        ).count()
+        RegistryProject.query.filter(RegistryProject.integration_instance_id.in_(identity_by_id)).count()
         if identity_by_id
         else 0
     )
@@ -2748,14 +2504,9 @@ def build_governance(
         and governance_states[int(identity.id)].status == 'ready'
         and governance_states[int(identity.id)].last_committed_at is not None
     )
-    state_views = [
-        _state_view(governance_states.get(int(identity.id)))
-        for identity in identities
-    ]
+    state_views = [_state_view(governance_states.get(int(identity.id))) for identity in identities]
     exception_count = sum(
-        1
-        for view in state_views
-        if view['status'] != 'ready' or view.get('is_stale') or view.get('refresh_failed')
+        1 for view in state_views if view['status'] != 'ready' or view.get('is_stale') or view.get('refresh_failed')
     )
     latest_committed_at = max(
         (
@@ -2766,36 +2517,20 @@ def build_governance(
         default=None,
     )
 
-    retention_configured = sum(
-        1 for row in project_rows if row['retention_status'] == 'configured'
-    )
-    retention_unavailable = sum(
-        1 for row in project_rows if row['retention_status'] == 'unavailable'
-    )
-    retention_not_configured = sum(
-        1 for row in project_rows if row['retention_status'] == 'not_configured'
-    )
+    retention_configured = sum(1 for row in project_rows if row['retention_status'] == 'configured')
+    retention_unavailable = sum(1 for row in project_rows if row['retention_status'] == 'unavailable')
+    retention_not_configured = sum(1 for row in project_rows if row['retention_status'] == 'not_configured')
     retention_observed = retention_configured + retention_not_configured
-    immutability_configured = sum(
-        1 for row in project_rows if row['immutability_status'] == 'configured'
-    )
-    immutability_unavailable = sum(
-        1 for row in project_rows if row['immutability_status'] == 'unavailable'
-    )
-    immutability_not_configured = sum(
-        1 for row in project_rows if row['immutability_status'] == 'not_configured'
-    )
+    immutability_configured = sum(1 for row in project_rows if row['immutability_status'] == 'configured')
+    immutability_unavailable = sum(1 for row in project_rows if row['immutability_status'] == 'unavailable')
+    immutability_not_configured = sum(1 for row in project_rows if row['immutability_status'] == 'not_configured')
     immutability_observed = immutability_configured + immutability_not_configured
 
     capability_counts: dict[str, dict[str, int]] = {}
     for capability in ('retention', 'immutability', 'replication'):
         counts = {'observed': 0, 'unavailable': 0, 'unsupported': 0, 'unknown': 0}
         for state in governance_states.values():
-            raw = (
-                (state.capability_states or {}).get(capability)
-                if isinstance(state.capability_states, dict)
-                else None
-            )
+            raw = (state.capability_states or {}).get(capability) if isinstance(state.capability_states, dict) else None
             status = str(raw.get('status') or 'unknown') if isinstance(raw, dict) else 'unknown'
             counts[status if status in counts else 'unknown'] += 1
         capability_counts[capability] = counts
@@ -2819,9 +2554,7 @@ def build_governance(
         else ('Not Collected' if governance_ready_count == 0 else 'Attention')
     )
     snapshot_tone = (
-        'normal'
-        if snapshot_status == 'Current'
-        else ('unknown' if snapshot_status == 'Not Collected' else 'warning')
+        'normal' if snapshot_status == 'Current' else ('unknown' if snapshot_status == 'Not Collected' else 'warning')
     )
     snapshot_context = {
         'source_label': 'Committed Registry Governance Evidence',
@@ -2832,11 +2565,7 @@ def build_governance(
         'scope_label': f'{provider_count} Registry Provider' + ('' if provider_count == 1 else 's'),
         'coverage_label': f'{governance_ready_count}/{provider_count} Providers Committed',
         'coverage_supporting': 'Provider-neutral Governance snapshots.',
-        'coverage_tone': (
-            'normal'
-            if provider_count and governance_ready_count == provider_count
-            else 'warning'
-        ),
+        'coverage_tone': ('normal' if provider_count and governance_ready_count == provider_count else 'warning'),
         'exception_count': exception_count,
         'exceptions_label': (
             'No Exceptions'
@@ -2897,18 +2626,17 @@ def build_governance(
         },
         {
             'label': 'Replication Coverage',
-            'value': f"{capability_counts['replication']['observed']}/{provider_count} Providers",
+            'value': f'{capability_counts["replication"]["observed"]}/{provider_count} Providers',
             'status_label': 'Observed' if governance_ready_count else 'Not Collected',
             'tone': (
                 'normal'
-                if provider_count
-                and capability_counts['replication']['observed'] == provider_count
+                if provider_count and capability_counts['replication']['observed'] == provider_count
                 else ('warning' if governance_ready_count else 'unknown')
             ),
             'detail': (
-                f"{len(replication_rows)} policies · "
-                f"{capability_counts['replication']['unavailable']} unavailable · "
-                f"{capability_counts['replication']['unsupported']} unsupported."
+                f'{len(replication_rows)} policies · '
+                f'{capability_counts["replication"]["unavailable"]} unavailable · '
+                f'{capability_counts["replication"]["unsupported"]} unsupported.'
             ),
         },
     ]
@@ -2941,15 +2669,20 @@ def build_analytics_shell(
     alert_per_page: int = 5,
 ) -> dict[str, Any]:
     overview = build_overview()
-    normalized_tab = active_tab if active_tab in {
-        'growth',
-        'capacity',
-        'usage',
-        'risk',
-        'governance',
-        'alerts',
-        'insights',
-    } else 'growth'
+    normalized_tab = (
+        active_tab
+        if active_tab
+        in {
+            'growth',
+            'capacity',
+            'usage',
+            'risk',
+            'governance',
+            'alerts',
+            'insights',
+        }
+        else 'growth'
+    )
     provider_count = int(overview['provider_count'])
     snapshot_count = (
         RegistryAnalyticsSnapshot.query.with_entities(
@@ -2960,9 +2693,7 @@ def build_analytics_shell(
         or 0
     )
     latest_generated_at = (
-        RegistryAnalyticsSnapshot.query.with_entities(
-            func.max(RegistryAnalyticsSnapshot.generated_at)
-        )
+        RegistryAnalyticsSnapshot.query.with_entities(func.max(RegistryAnalyticsSnapshot.generated_at))
         .filter(RegistryAnalyticsSnapshot.status == 'ready')
         .scalar()
     )
@@ -3127,9 +2858,7 @@ def build_analytics(
         pull_activity = metrics.get('project_pull_count')
         if isinstance(pull_activity, dict):
             provider_pull_total = sum(
-                float(value)
-                for value in pull_activity.values()
-                if isinstance(value, (int, float))
+                float(value) for value in pull_activity.values() if isinstance(value, (int, float))
             )
             aggregate['pull_activity'] += provider_pull_total
             for project_name, raw_value in pull_activity.items():
@@ -3154,8 +2883,7 @@ def build_analytics(
         aggregate['warning_alerts'] += sum(row.get('severity') == 'warning' for row in normalized_alert_rows)
         aggregate['info_alerts'] += sum(row.get('severity') == 'info' for row in normalized_alert_rows)
         aggregate['suppressed_alerts'] += sum(
-            bool(row.get('silenced')) or bool(row.get('inhibited'))
-            for row in normalized_alert_rows
+            bool(row.get('silenced')) or bool(row.get('inhibited')) for row in normalized_alert_rows
         )
         if alerts.get('status') == 'ready':
             aggregate['alert_sources_ready'] += 1
@@ -3183,9 +2911,7 @@ def build_analytics(
         expires_at = snapshot.expires_at
         is_stale = False
         if expires_at is not None:
-            compare_expiry = (
-                expires_at if expires_at.tzinfo is not None else expires_at.replace(tzinfo=UTC)
-            )
+            compare_expiry = expires_at if expires_at.tzinfo is not None else expires_at.replace(tzinfo=UTC)
             is_stale = datetime.now(UTC) > compare_expiry
         latest_rows.append(
             {
@@ -3203,7 +2929,10 @@ def build_analytics(
             }
         )
 
-        if any(isinstance(growth.get(key), (int, float)) for key in ('artifact_growth_per_day', 'size_growth_bytes_per_day')):
+        if any(
+            isinstance(growth.get(key), (int, float))
+            for key in ('artifact_growth_per_day', 'size_growth_bytes_per_day')
+        ):
             growth_rows.append(
                 {
                     'registry_name': identity.name,
@@ -3227,11 +2956,7 @@ def build_analytics(
                 }
             )
 
-    recommendations = (
-        get_active_recommendation_findings(domain='registry', limit=5)
-        if active_tab == 'insights'
-        else []
-    )
+    recommendations = get_active_recommendation_findings(domain='registry', limit=5) if active_tab == 'insights' else []
     recommendation_rows = [
         {
             'rule_key': str(item.get('rule_key') or ''),
@@ -3248,18 +2973,10 @@ def build_analytics(
 
     artifact_total = max(int(aggregate['artifacts']), 0)
     project_total = max(int(aggregate['projects']), 0)
-    scan_coverage = (
-        float(aggregate['scanned_artifacts']) / artifact_total * 100.0 if artifact_total else None
-    )
-    signature_coverage = (
-        float(aggregate['signed_artifacts']) / artifact_total * 100.0 if artifact_total else None
-    )
-    sbom_coverage = (
-        float(aggregate['sbom_artifacts']) / artifact_total * 100.0 if artifact_total else None
-    )
-    retention_coverage = (
-        float(aggregate['retention_configured']) / project_total * 100.0 if project_total else None
-    )
+    scan_coverage = float(aggregate['scanned_artifacts']) / artifact_total * 100.0 if artifact_total else None
+    signature_coverage = float(aggregate['signed_artifacts']) / artifact_total * 100.0 if artifact_total else None
+    sbom_coverage = float(aggregate['sbom_artifacts']) / artifact_total * 100.0 if artifact_total else None
+    retention_coverage = float(aggregate['retention_configured']) / project_total * 100.0 if project_total else None
     immutability_coverage = (
         float(aggregate['immutability_configured']) / project_total * 100.0 if project_total else None
     )
@@ -3297,11 +3014,7 @@ def build_analytics(
         for row in growth_rows
         if isinstance(row.get('artifact_growth_per_day'), (int, float))
     )
-    runtime_usage_percent = (
-        float(aggregate['running_artifacts']) / artifact_total * 100.0
-        if artifact_total
-        else None
-    )
+    runtime_usage_percent = float(aggregate['running_artifacts']) / artifact_total * 100.0 if artifact_total else None
 
     quota_rows = [
         row
@@ -3322,23 +3035,24 @@ def build_analytics(
         default=None,
     )
     nearest_quota_days = min(
-        (
-            float(row['days_to_quota'])
-            for row in forecast_rows
-            if isinstance(row.get('days_to_quota'), (int, float))
-        ),
+        (float(row['days_to_quota']) for row in forecast_rows if isinstance(row.get('days_to_quota'), (int, float))),
         default=None,
     )
 
-    normalized_tab = active_tab if active_tab in {
-        'growth',
-        'capacity',
-        'usage',
-        'risk',
-        'governance',
-        'alerts',
-        'insights',
-    } else 'growth'
+    normalized_tab = (
+        active_tab
+        if active_tab
+        in {
+            'growth',
+            'capacity',
+            'usage',
+            'risk',
+            'governance',
+            'alerts',
+            'insights',
+        }
+        else 'growth'
+    )
 
     summary_cards = [
         {
@@ -3346,7 +3060,7 @@ def build_analytics(
             'label': 'Storage Footprint',
             'value': _fmt_bytes(int(aggregate['total_size_bytes'])),
             'detail': (
-                f"{_fmt_bytes(round(growth_size_per_day))}/day materialized growth"
+                f'{_fmt_bytes(round(growth_size_per_day))}/day materialized growth'
                 if growth_rows
                 else 'Growth requires another analytics materialization'
             ),
@@ -3355,12 +3069,8 @@ def build_analytics(
         {
             'icon': 'chart-no-axes-combined',
             'label': 'Artifact Growth',
-            'value': (
-                f"{growth_artifacts_per_day:+.1f}/day"
-                if growth_rows
-                else 'N/A'
-            ),
-            'detail': f"{aggregate['artifacts']} committed artifacts",
+            'value': (f'{growth_artifacts_per_day:+.1f}/day' if growth_rows else 'N/A'),
+            'detail': f'{aggregate["artifacts"]} committed artifacts',
             'tone': 'info' if growth_rows else 'unknown',
         },
         {
@@ -3368,7 +3078,7 @@ def build_analytics(
             'label': 'Runtime-used',
             'value': str(aggregate['running_artifacts']),
             'detail': (
-                f"{runtime_usage_percent:.1f}% of committed artifact estate"
+                f'{runtime_usage_percent:.1f}% of committed artifact estate'
                 if runtime_usage_percent is not None
                 else 'No committed artifact denominator'
             ),
@@ -3390,8 +3100,8 @@ def build_analytics(
                 'icon': 'trending-up',
                 'title': 'Registry growth is materialized',
                 'detail': (
-                    f"{growth_artifacts_per_day:+.1f} artifacts/day and "
-                    f"{_fmt_bytes(round(growth_size_per_day))}/day across current providers."
+                    f'{growth_artifacts_per_day:+.1f} artifacts/day and '
+                    f'{_fmt_bytes(round(growth_size_per_day))}/day across current providers.'
                 ),
                 'tone': 'info',
             }
@@ -3402,7 +3112,7 @@ def build_analytics(
                 'icon': 'shield-alert',
                 'title': 'Critical findings intersect runtime usage',
                 'detail': (
-                    f"{aggregate['critical_runtime_artifacts']} running artifacts carry "
+                    f'{aggregate["critical_runtime_artifacts"]} running artifacts carry '
                     'critical security evidence and require Intelligence review.'
                 ),
                 'tone': 'critical',
@@ -3414,7 +3124,7 @@ def build_analytics(
                 'icon': 'archive',
                 'title': 'Stale inventory candidates exist',
                 'detail': (
-                    f"{aggregate['stale_candidates']} artifacts are review candidates only; "
+                    f'{aggregate["stale_candidates"]} artifacts are review candidates only; '
                     'Analytics never performs automatic cleanup.'
                 ),
                 'tone': 'warning',
@@ -3426,8 +3136,7 @@ def build_analytics(
                 'icon': 'scan-search',
                 'title': 'Runtime scan evidence is incomplete',
                 'detail': (
-                    f"{aggregate['runtime_scan_gaps']} running artifacts have no normalized "
-                    'successful scan evidence.'
+                    f'{aggregate["runtime_scan_gaps"]} running artifacts have no normalized successful scan evidence.'
                 ),
                 'tone': 'warning',
             }
@@ -3446,20 +3155,14 @@ def build_analytics(
         size_growth = row.get('size_growth_bytes_per_day')
         size_delta = row.get('size_delta_bytes')
         row['size_growth_display'] = (
-            f"{_fmt_bytes(round(float(size_growth)))}/day"
-            if isinstance(size_growth, (int, float))
-            else 'N/A'
+            f'{_fmt_bytes(round(float(size_growth)))}/day' if isinstance(size_growth, (int, float)) else 'N/A'
         )
         row['size_delta_display'] = (
-            _fmt_bytes(round(float(size_delta)))
-            if isinstance(size_delta, (int, float))
-            else 'N/A'
+            _fmt_bytes(round(float(size_delta))) if isinstance(size_delta, (int, float)) else 'N/A'
         )
         artifact_growth = row.get('artifact_growth_per_day')
         row['artifact_growth_display'] = (
-            f"{float(artifact_growth):+.1f}/day"
-            if isinstance(artifact_growth, (int, float))
-            else 'N/A'
+            f'{float(artifact_growth):+.1f}/day' if isinstance(artifact_growth, (int, float)) else 'N/A'
         )
 
     for row in forecast_rows:
@@ -3468,25 +3171,13 @@ def build_analytics(
         growth = row.get('growth_bytes_per_day')
         days = row.get('days_to_quota')
         utilization = row.get('utilization_percent')
-        row['usage_display'] = (
-            _fmt_bytes(round(float(usage))) if isinstance(usage, (int, float)) else 'N/A'
-        )
-        row['quota_display'] = (
-            _fmt_bytes(round(float(quota))) if isinstance(quota, (int, float)) else 'N/A'
-        )
+        row['usage_display'] = _fmt_bytes(round(float(usage))) if isinstance(usage, (int, float)) else 'N/A'
+        row['quota_display'] = _fmt_bytes(round(float(quota))) if isinstance(quota, (int, float)) else 'N/A'
         row['growth_display'] = (
-            f"{_fmt_bytes(round(float(growth)))}/day"
-            if isinstance(growth, (int, float))
-            else 'Insufficient history'
+            f'{_fmt_bytes(round(float(growth)))}/day' if isinstance(growth, (int, float)) else 'Insufficient history'
         )
-        row['days_to_quota_display'] = (
-            f"{float(days):.1f} days" if isinstance(days, (int, float)) else 'No forecast'
-        )
-        row['utilization_display'] = (
-            f"{float(utilization):.1f}%"
-            if isinstance(utilization, (int, float))
-            else 'N/A'
-        )
+        row['days_to_quota_display'] = f'{float(days):.1f} days' if isinstance(days, (int, float)) else 'No forecast'
+        row['utilization_display'] = f'{float(utilization):.1f}%' if isinstance(utilization, (int, float)) else 'N/A'
 
     severity_value = alert_severity if alert_severity in {'all', 'critical', 'warning', 'info', 'unknown'} else 'all'
     state_value = alert_state if alert_state in {'all', 'firing', 'pending', 'suppressed', 'resolved'} else 'all'
@@ -3503,8 +3194,7 @@ def build_analytics(
             continue
         if search_value:
             haystack = ' '.join(
-                str(row.get(key) or '')
-                for key in ('name', 'target', 'summary', 'registry_name', 'source')
+                str(row.get(key) or '') for key in ('name', 'target', 'summary', 'registry_name', 'source')
             ).casefold()
             if search_value not in haystack:
                 continue
@@ -3527,13 +3217,9 @@ def build_analytics(
             'nearest_quota_days': nearest_quota_days,
             'highest_utilization': highest_utilization,
             'growth_bytes_per_day': growth_size_per_day if growth_rows else None,
-            'growth_display': (
-                f"{_fmt_bytes(round(growth_size_per_day))}/day" if growth_rows else 'N/A'
-            ),
+            'growth_display': (f'{_fmt_bytes(round(growth_size_per_day))}/day' if growth_rows else 'N/A'),
             'quota_headroom_bytes': quota_headroom,
-            'quota_headroom_display': (
-                _fmt_bytes(round(quota_headroom)) if quota_headroom is not None else 'N/A'
-            ),
+            'quota_headroom_display': (_fmt_bytes(round(quota_headroom)) if quota_headroom is not None else 'N/A'),
         },
         'insights': insights[:5],
         'coverage': {
@@ -3550,7 +3236,11 @@ def build_analytics(
         'growth_rows': sorted(
             growth_rows,
             key=lambda row: (
-                -(float(row['size_growth_bytes_per_day']) if isinstance(row.get('size_growth_bytes_per_day'), (int, float)) else float('-inf')),
+                -(
+                    float(row['size_growth_bytes_per_day'])
+                    if isinstance(row.get('size_growth_bytes_per_day'), (int, float))
+                    else float('-inf')
+                ),
                 row['registry_name'].casefold(),
             ),
         )[:5],
@@ -3575,4 +3265,3 @@ def build_analytics(
         'active_signal_count': active_signal_count,
         'posture': posture,
     }
-

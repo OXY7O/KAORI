@@ -91,9 +91,7 @@ def _reconcile_tags(
         tag.push_time = _parse_datetime(raw_tag.get('push_time'))
         tag.pull_time = _parse_datetime(raw_tag.get('pull_time'))
         tag.provider_metadata = {
-            key: raw_tag.get(key)
-            for key in ('immutable', 'signed')
-            if raw_tag.get(key) is not None
+            key: raw_tag.get(key) for key in ('immutable', 'signed') if raw_tag.get(key) is not None
         }
         tag.observed_at = observed_at
         count += 1
@@ -285,7 +283,11 @@ def sync_registry_inventory(
         state = _lock_collection_state(int(identity.id))
         _mark_inventory_collection_failed(state, exc)
         db.session.commit()
-        logger.exception('Artifact Registry synchronization failed for Registry instance %s (%s).', identity.id, identity.provider_key)
+        logger.exception(
+            'Artifact Registry synchronization failed for Registry instance %s (%s).',
+            identity.id,
+            identity.provider_key,
+        )
         raise
     return {
         'integration_instance_id': int(identity.id),

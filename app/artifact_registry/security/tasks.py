@@ -50,11 +50,7 @@ def _checkpoint_source_progress(
     if job_execution_id is None:
         return
 
-    job = (
-        JobExecution.query.filter(JobExecution.id == job_execution_id)
-        .with_for_update()
-        .first()
-    )
+    job = JobExecution.query.filter(JobExecution.id == job_execution_id).with_for_update().first()
     if job is None or job.is_terminal:
         db.session.rollback()
         return
@@ -71,11 +67,7 @@ def _checkpoint_source_progress(
     aggregate_percent = min(5 + int(aggregate_fraction * 88), 93)
     current_percent = int(progress.get('percent') or 0)
 
-    completed_sources = {
-        str(value)
-        for value in (progress.get(_PROGRESS_COMPLETED_SOURCE_KEY) or [])
-        if str(value)
-    }
+    completed_sources = {str(value) for value in (progress.get(_PROGRESS_COMPLETED_SOURCE_KEY) or []) if str(value)}
     if completed:
         completed_sources.add(source_key)
         source_progress[source_key] = 1.0
@@ -197,9 +189,7 @@ def sync_registry_security_source_task(
             else {}
         )
         repository_failures = list(provider_metadata.get('repository_failures') or [])
-        repository_failure_count = int(
-            provider_metadata.get('repository_failure_count') or len(repository_failures)
-        )
+        repository_failure_count = int(provider_metadata.get('repository_failure_count') or len(repository_failures))
         result['repository_failure_count'] = repository_failure_count
 
         warning_evidence: list[dict[str, str]] = []

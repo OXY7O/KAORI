@@ -121,10 +121,7 @@ def _snapshot_status(
     )
     refreshing = bool(latest_job is not None and latest_job.is_active)
     partial = latest_status == 'partially_succeeded'
-    stale = bool(
-        successful_at is not None
-        and successful_at < datetime.now(UTC) - timedelta(hours=FRESHNESS_HOURS)
-    )
+    stale = bool(successful_at is not None and successful_at < datetime.now(UTC) - timedelta(hours=FRESHNESS_HOURS))
 
     if artifact_total == 0:
         label, tone = 'Inventory Required', 'warning'
@@ -199,13 +196,10 @@ def build_security(
     source_by_id = {int(item.id): item for item in sources}
     explicit_scope = bool(provider_value or source_id is not None)
 
-    artifact_scope = (
-        RegistryArtifact.query.join(
-            RegistryRepository,
-            RegistryArtifact.repository_id == RegistryRepository.id,
-        )
-        .join(RegistryProject, RegistryRepository.project_id == RegistryProject.id)
-    )
+    artifact_scope = RegistryArtifact.query.join(
+        RegistryRepository,
+        RegistryArtifact.repository_id == RegistryRepository.id,
+    ).join(RegistryProject, RegistryRepository.project_id == RegistryProject.id)
     artifact_scope = _apply_source_scope(
         artifact_scope,
         source_ids,
@@ -218,28 +212,32 @@ def build_security(
         RegistryArtifact.sbom_status.isnot(None),
     )
     evidence_count = artifact_scope.filter(evidence_filter).order_by(None).count()
-    scanned_artifacts = artifact_scope.filter(
-        func.lower(RegistryArtifact.scan_status).in_(SUCCESSFUL_REGISTRY_SCAN_STATUSES)
-    ).order_by(None).count()
-    signature_observed = artifact_scope.filter(
-        func.lower(RegistryArtifact.signature_status) == 'signed'
-    ).order_by(None).count()
-    sbom_available = artifact_scope.filter(
-        func.lower(RegistryArtifact.sbom_status) == 'available'
-    ).order_by(None).count()
-    coverage_gaps = artifact_scope.filter(
-        or_(
-            RegistryArtifact.signature_status.is_(None),
-            func.lower(RegistryArtifact.signature_status) != 'signed',
-            RegistryArtifact.sbom_status.is_(None),
-            func.lower(RegistryArtifact.sbom_status) != 'available',
+    scanned_artifacts = (
+        artifact_scope.filter(func.lower(RegistryArtifact.scan_status).in_(SUCCESSFUL_REGISTRY_SCAN_STATUSES))
+        .order_by(None)
+        .count()
+    )
+    signature_observed = (
+        artifact_scope.filter(func.lower(RegistryArtifact.signature_status) == 'signed').order_by(None).count()
+    )
+    sbom_available = (
+        artifact_scope.filter(func.lower(RegistryArtifact.sbom_status) == 'available').order_by(None).count()
+    )
+    coverage_gaps = (
+        artifact_scope.filter(
+            or_(
+                RegistryArtifact.signature_status.is_(None),
+                func.lower(RegistryArtifact.signature_status) != 'signed',
+                RegistryArtifact.sbom_status.is_(None),
+                func.lower(RegistryArtifact.sbom_status) != 'available',
+            )
         )
-    ).order_by(None).count()
+        .order_by(None)
+        .count()
+    )
 
     latest_snapshot_ids = (
-        RegistryScanSnapshot.query.with_entities(
-            func.max(RegistryScanSnapshot.id).label('id')
-        )
+        RegistryScanSnapshot.query.with_entities(func.max(RegistryScanSnapshot.id).label('id'))
         .group_by(RegistryScanSnapshot.artifact_id)
         .subquery()
     )
@@ -258,16 +256,12 @@ def build_security(
         source_ids,
         scoped=explicit_scope or not sources,
     )
-    critical_total = finding_scope.filter(
-        func.lower(RegistryVulnerability.severity) == 'critical'
-    ).order_by(None).count()
-    high_total = finding_scope.filter(
-        func.lower(RegistryVulnerability.severity) == 'high'
-    ).order_by(None).count()
+    critical_total = (
+        finding_scope.filter(func.lower(RegistryVulnerability.severity) == 'critical').order_by(None).count()
+    )
+    high_total = finding_scope.filter(func.lower(RegistryVulnerability.severity) == 'high').order_by(None).count()
     affected_artifacts = int(
-        finding_scope.filter(
-            func.lower(RegistryVulnerability.severity).in_(('critical', 'high'))
-        )
+        finding_scope.filter(func.lower(RegistryVulnerability.severity).in_(('critical', 'high')))
         .with_entities(func.count(func.distinct(RegistryScanSnapshot.artifact_id)))
         .scalar()
         or 0
@@ -294,10 +288,7 @@ def build_security(
         scoped=explicit_scope or not sources,
     )
     runtime_exposed = int(
-        runtime_scope.with_entities(
-            func.count(func.distinct(RegistryWorkloadBinding.id))
-        ).scalar()
-        or 0
+        runtime_scope.with_entities(func.count(func.distinct(RegistryWorkloadBinding.id))).scalar() or 0
     )
 
     finding_total = finding_scope.order_by(None).count()
@@ -329,9 +320,7 @@ def build_security(
         source_ids,
         scoped=explicit_scope or not sources,
     )
-    latest_evidence_at = latest_scan_query.with_entities(
-        func.max(RegistryScanSnapshot.observed_at)
-    ).scalar()
+    latest_evidence_at = latest_scan_query.with_entities(func.max(RegistryScanSnapshot.observed_at)).scalar()
     snapshot = _snapshot_status(
         artifact_total=artifact_total,
         evidence_count=coverage_count,
@@ -345,10 +334,7 @@ def build_security(
         selected_source = scoped_sources[0] if len(scoped_sources) == 1 else None
         if selected_source is not None:
             active_scope_label = selected_source.name
-            source_label = (
-                f'{selected_source.provider_key.replace("_", " ").title()} · '
-                f'{selected_source.name}'
-            )
+            source_label = f'{selected_source.provider_key.replace("_", " ").title()} · {selected_source.name}'
         else:
             active_scope_label = 'Selected Registry Source'
             source_label = 'No Matching Registry Source'
@@ -376,10 +362,7 @@ def build_security(
         'coverage_tone': 'normal' if artifact_total and coverage_count == artifact_total else 'warning',
     }
 
-    collectors = {
-        collector.provider_key: collector
-        for collector in registered_registry_security_collectors()
-    }
+    collectors = {collector.provider_key: collector for collector in registered_registry_security_collectors()}
     source_capabilities: list[dict[str, Any]] = []
     for source in scoped_sources:
         source_artifacts = (
@@ -402,27 +385,21 @@ def build_security(
                 'vulnerability': _capability_state(
                     supported='vulnerability' in capabilities,
                     observed=bool(
-                        source_artifacts.filter(RegistryArtifact.scan_status.isnot(None))
-                        .order_by(None)
-                        .count()
+                        source_artifacts.filter(RegistryArtifact.scan_status.isnot(None)).order_by(None).count()
                     ),
                     attempted=attempted,
                 ),
                 'signature': _capability_state(
                     supported='signature' in capabilities,
                     observed=bool(
-                        source_artifacts.filter(RegistryArtifact.signature_status.isnot(None))
-                        .order_by(None)
-                        .count()
+                        source_artifacts.filter(RegistryArtifact.signature_status.isnot(None)).order_by(None).count()
                     ),
                     attempted=attempted,
                 ),
                 'sbom': _capability_state(
                     supported='sbom' in capabilities,
                     observed=bool(
-                        source_artifacts.filter(RegistryArtifact.sbom_status.isnot(None))
-                        .order_by(None)
-                        .count()
+                        source_artifacts.filter(RegistryArtifact.sbom_status.isnot(None)).order_by(None).count()
                     ),
                     attempted=attempted,
                 ),
@@ -434,8 +411,7 @@ def build_security(
     capability_filtered = [
         row
         for row in source_capabilities
-        if not search_value
-        or search_value in f"{row['source_name']} {row['provider_label']}".lower()
+        if not search_value or search_value in f'{row["source_name"]} {row["provider_label"]}'.lower()
     ]
     capability_rows, capability_pagination = paginate_sequence(
         capability_filtered,
@@ -520,9 +496,7 @@ def build_security(
                     'repository': repository.name,
                     'project': project.name,
                     'provider_label': (
-                        source.provider_key.replace('_', ' ').title()
-                        if source is not None
-                        else 'Registry'
+                        source.provider_key.replace('_', ' ').title() if source is not None else 'Registry'
                     ),
                     'source_name': source.name if source is not None else 'Unknown Source',
                     'runtime_exposure_count': runtime_counts.get(int(artifact.id), 0),
@@ -566,9 +540,7 @@ def build_security(
                     'repository': repository.name,
                     'project': project.name,
                     'provider_label': (
-                        source.provider_key.replace('_', ' ').title()
-                        if source is not None
-                        else 'Registry'
+                        source.provider_key.replace('_', ' ').title() if source is not None else 'Registry'
                     ),
                     'source_name': source.name if source is not None else 'Unknown Source',
                     'signature': _evidence_state(artifact.signature_status, evidence='signature'),
@@ -583,9 +555,7 @@ def build_security(
         _, pagination = paginate_sequence([], page=1, per_page=per_page)
 
     active_pagination = (
-        capability_pagination
-        if view == 'supply_chain' and supply_section == 'capabilities'
-        else pagination
+        capability_pagination if view == 'supply_chain' and supply_section == 'capabilities' else pagination
     )
 
     filters_active = bool(search_value or severity_value or provider_value or source_id is not None)
@@ -684,9 +654,7 @@ def build_security(
             else 'Review provider signature and SBOM evidence without trust-policy claims.'
         ),
         'endpoint': (
-            'artifact_registry.security'
-            if view == 'vulnerabilities'
-            else 'artifact_registry.security_supply_chain'
+            'artifact_registry.security' if view == 'vulnerabilities' else 'artifact_registry.security_supply_chain'
         ),
         'setup_blocked': not sources,
         'inventory_required': bool(sources) and RegistryArtifact.query.count() == 0,

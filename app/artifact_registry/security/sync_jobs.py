@@ -30,9 +30,7 @@ def build_registry_security_targets() -> list[dict[str, str]]:
     for identity in identities:
         if identity.provider_key not in provider_keys:
             continue
-        state = RegistryCollectionState.query.filter_by(
-            integration_instance_id=int(identity.id)
-        ).first()
+        state = RegistryCollectionState.query.filter_by(integration_instance_id=int(identity.id)).first()
         if state is None or state.status != 'ready' or state.last_committed_at is None:
             continue
         if not registry_inventory_eligibility(identity).eligible:
