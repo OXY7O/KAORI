@@ -9,8 +9,8 @@ from app.kubernetes.tenant.domain_exposure import normalize_domain_pattern
 from app.kubernetes.tenant.native_provider import NativeKubernetesTenantProvider
 from app.kubernetes.tenant.service_contracts import (
     _CONTROL_TRUE_VALUES,
-    RESOURCE_PROFILE_ADVANCED_CONTROLS,
     _PROFILE_STORAGE_FIELDS,
+    RESOURCE_PROFILE_ADVANCED_CONTROLS,
     _text,
 )
 from app.kubernetes.tenant.validation import validate_storage_policy
