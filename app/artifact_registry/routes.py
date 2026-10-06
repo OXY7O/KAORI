@@ -3,8 +3,8 @@ from __future__ import annotations
 import json
 
 from flask import Blueprint, abort, jsonify, make_response, redirect, render_template, request, url_for
-from flask_login import current_user
 from flask.typing import ResponseReturnValue
+from flask_login import current_user
 
 from app.access.rbac.decorators import permission_required
 from app.artifact_registry.governance_job_adapter import (
@@ -40,6 +40,7 @@ from app.dashboards.common.operational import (
 from app.extensions import limiter
 from app.platform_operations.jobs.dispatcher import JobWorkerUnavailable, dispatch_registered_job
 from app.platform_operations.notifications.service import record_operational_activity
+
 artifact_registry_bp = Blueprint('artifact_registry', __name__, url_prefix='/artifact-registry')
 
 OVERVIEW_SECTION_TEMPLATES = {
