@@ -6,8 +6,6 @@ from threading import RLock
 from typing import Any
 
 from app.artifact_registry.contracts import RegistryInventoryEvidence
-
-
 InventoryProgressCallback = Callable[[int, int, str], None]
 CollectorCallable = Callable[[Any], RegistryInventoryEvidence]
 ProgressCollectorCallable = Callable[[Any, InventoryProgressCallback | None], RegistryInventoryEvidence]
