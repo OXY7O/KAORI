@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from app.integrations.registry.providers.harbor.client import HarborClient
-from app.integrations.registry.providers.harbor.contracts import HarborConnectionSpec
+from app.integrations.registry.providers.harbor.contracts import HarborConnectionSpec, HarborRetryPolicy
 from app.models.harbor import HarborInstance
 
 
@@ -30,6 +30,8 @@ def build_client(
         password=spec.password,
         timeout=spec.timeout,
         verify_ssl=spec.verify_ssl,
-        transport_retries=transport_retries,
-        retry_backoff_seconds=retry_backoff_seconds,
+        retry_policy=HarborRetryPolicy(
+            transport_retries=transport_retries,
+            backoff_seconds=retry_backoff_seconds,
+        ),
     )
