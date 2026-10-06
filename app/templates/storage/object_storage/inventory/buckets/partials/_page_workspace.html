@@ -5,20 +5,18 @@
         {% include "storage/object_storage/inventory/components/_onboarding_banner.html" %}
     {% else %}
         {% include "storage/object_storage/inventory/buckets/partials/_snapshot_boundary.html" %}
-        <section class="space-y-4" aria-labelledby="object-storage-buckets-posture-heading">
-            {{ section_intro.render(
-                'Operational Posture',
-                'Review namespace coverage and committed bucket/container evidence for the active scope.',
-                'object-storage-buckets-posture-heading'
-            ) }}
+        <section class="space-y-4"
+                 aria-labelledby="object-storage-buckets-posture-heading">
+            {{ section_intro.render('Operational Posture',
+                        'Review namespace coverage and committed bucket/container evidence for the active scope.',
+                        'object-storage-buckets-posture-heading') }}
             {% include "storage/object_storage/inventory/buckets/partials/_summary_cards.html" %}
         </section>
-        <section class="space-y-4" aria-labelledby="object-storage-buckets-records-heading">
-            {{ section_intro.render(
-                'Inventory Records',
-                'Browse committed bucket and container records with provider-native evidence available in details.',
-                'object-storage-buckets-records-heading'
-            ) }}
+        <section class="space-y-4"
+                 aria-labelledby="object-storage-buckets-records-heading">
+            {{ section_intro.render('Inventory Records',
+                        'Browse committed bucket and container records with provider-native evidence available in details.',
+                        'object-storage-buckets-records-heading') }}
             {% include "storage/object_storage/inventory/buckets/partials/_table_card.html" %}
         </section>
     {% endif %}
