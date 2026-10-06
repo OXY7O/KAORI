@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import cast
 import re
+from typing import cast
 
 from kubernetes.client import (
     AuthorizationV1Api,
@@ -25,6 +25,7 @@ from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_a
 )
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls import weak_tls_context
 from app.models import Cluster, ConfigurationInventory
+
 _DNS_LABEL = re.compile(r'^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?$')
 _DNS_SUBDOMAIN = re.compile(r'^[a-z0-9](?:[-a-z0-9.]*[a-z0-9])?$')
 

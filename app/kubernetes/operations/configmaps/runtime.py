@@ -14,6 +14,8 @@ from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_a
 )
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls import weak_tls_context
 from app.models.cluster import Cluster
+
+
 def runtime_client(cluster: Cluster) -> Any:
     return get_integration('container_orchestrator').execute(
         'client.build',

@@ -16,6 +16,7 @@ from app.reports.export.payloads.tenant_governance import get_report_tenant_gove
 from app.reports.export.payloads.top_consumers import get_report_top_consumers_payload
 from app.reports.export.payloads.utilization import get_report_resource_utilization_payload
 from app.reports.export.payloads.workload import get_report_workload_analysis_payload
+
 PayloadCollector = Callable[[Report], dict[str, Any]]
 
 _PAYLOAD_COLLECTORS: dict[str, PayloadCollector] = {

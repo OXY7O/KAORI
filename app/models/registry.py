@@ -54,7 +54,7 @@ class RegistryProject(db.Model):
     provider_metadata: Mapped[dict | None] = mapped_column(db.JSON, nullable=True, default=dict)
     observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
-    repositories: Mapped[list['RegistryRepository']] = relationship(
+    repositories: Mapped[list[RegistryRepository]] = relationship(
         'RegistryRepository',
         back_populates='project',
         cascade='all, delete-orphan',
@@ -89,7 +89,7 @@ class RegistryRepository(db.Model):
     observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     project: Mapped[RegistryProject] = relationship('RegistryProject', back_populates='repositories', lazy='joined')
-    artifacts: Mapped[list['RegistryArtifact']] = relationship(
+    artifacts: Mapped[list[RegistryArtifact]] = relationship(
         'RegistryArtifact',
         back_populates='repository',
         cascade='all, delete-orphan',
@@ -130,7 +130,7 @@ class RegistryArtifact(db.Model):
     provider_metadata: Mapped[dict | None] = mapped_column(db.JSON, nullable=True, default=dict)
     observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
-    scan_snapshots: Mapped[list['RegistryScanSnapshot']] = relationship(
+    scan_snapshots: Mapped[list[RegistryScanSnapshot]] = relationship(
         'RegistryScanSnapshot',
         back_populates='artifact',
         cascade='all, delete-orphan',
@@ -138,7 +138,7 @@ class RegistryArtifact(db.Model):
         order_by='RegistryScanSnapshot.observed_at.desc()',
     )
     repository: Mapped[RegistryRepository] = relationship('RegistryRepository', back_populates='artifacts', lazy='joined')
-    tags: Mapped[list['RegistryTag']] = relationship(
+    tags: Mapped[list[RegistryTag]] = relationship(
         'RegistryTag',
         back_populates='artifact',
         cascade='all, delete-orphan',
@@ -195,7 +195,7 @@ class RegistryScanSnapshot(db.Model):
     observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     artifact: Mapped[RegistryArtifact] = relationship('RegistryArtifact', back_populates='scan_snapshots', lazy='joined')
-    vulnerabilities: Mapped[list['RegistryVulnerability']] = relationship(
+    vulnerabilities: Mapped[list[RegistryVulnerability]] = relationship(
         'RegistryVulnerability',
         back_populates='scan_snapshot',
         cascade='all, delete-orphan',

@@ -11,6 +11,7 @@ from app.models.cluster import Cluster
 from app.models.integration import IntegrationInstance
 from app.models.inventory import NamespaceInventory
 from app.models.object_storage import ObjectStorageSystem
+
 KUBERNETES_CLUSTER_ASSET_TYPE = 'kubernetes_cluster'
 OBJECT_STORAGE_SYSTEM_ASSET_TYPE = 'object_storage_system'
 ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE = 'registry_integration'

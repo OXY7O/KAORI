@@ -15,12 +15,12 @@ from app.models.object_storage import ObjectStorageSystem
 from app.models.report import Report
 from app.models.user import User
 from app.reports.catalog import (
-    get_allowed_output_formats,
-    get_default_output_format,
-    get_report_type_spec,
     OUTPUT_FORMAT_OPTIONS,
     REPORT_TYPE_OPTIONS,
     REQUIRES_SELECTED_CLUSTER_REPORT_TYPES,
+    get_allowed_output_formats,
+    get_default_output_format,
+    get_report_type_spec,
 )
 from app.reports.catalog import (
     normalize_report_type as normalize_catalog_report_type,
@@ -29,11 +29,13 @@ from app.reports.generate.form_options import PERIOD_OPTIONS, SECTION_OPTIONS
 from app.reports.jobs.queue import get_reports_queue_name
 from app.reports.scope import (
     ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE,
-    get_report_namespace_options_by_cluster,
     KUBERNETES_CLUSTER_ASSET_TYPE,
     OBJECT_STORAGE_SYSTEM_ASSET_TYPE,
+    get_report_namespace_options_by_cluster,
 )
 from app.reports.storage.service import get_configured_storage_backend_name, get_report_storage_backend_status
+
+
 def report_requires_selected_cluster(
     report_type: str,
 ) -> bool:

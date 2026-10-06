@@ -125,6 +125,7 @@ from app.models.tenant_policy import (
     TenantExposurePolicyStatus,
 )
 from app.models.user import User
+
 __all__ = [
     'AlertSignalSnapshot',
     'AnalyticsSnapshot',

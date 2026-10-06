@@ -1,8 +1,8 @@
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Any
 import logging
+from typing import Any
 
 from kubernetes.client import BatchV1Api, DiscoveryV1Api
 from sqlalchemy import select
@@ -28,6 +28,7 @@ from app.kubernetes.inventory.persistence import (
 )
 from app.models import Cluster
 from app.models.kubernetes import KubernetesConnection
+
 logger = logging.getLogger(__name__)
 
 ProgressCallback = Callable[[int, str, str], None]
