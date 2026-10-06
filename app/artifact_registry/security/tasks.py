@@ -7,6 +7,9 @@ from time import perf_counter, time
 from typing import Any
 
 from celery import chord, shared_task
+from celery.exceptions import CeleryError
+from kombu.exceptions import OperationalError as KombuOperationalError
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.artifact_registry.security.queue import get_registry_security_queue_name
 from app.artifact_registry.security.sync import sync_registry_security
@@ -232,7 +235,7 @@ def sync_registry_security_source_task(
             )
         result['warning_evidence'] = warning_evidence[:50]
         result['status'] = 'warning' if repository_failure_count else 'success'
-    except Exception as exc:
+    except (LookupError, RuntimeError, ValueError, SQLAlchemyError) as exc:
         db.session.rollback()
         result['status'] = 'error'
         result['failure_evidence'] = [
@@ -418,7 +421,7 @@ def finalize_registry_security_sync_task(
                 partial=bool(failures or has_partial_refresh),
             )
         return result
-    except Exception as exc:
+    except (LookupError, RuntimeError, ValueError, SQLAlchemyError) as exc:
         db.session.rollback()
         context.fail(exc, error_code='artifact_registry_security_sync_failed')
         logger.exception('Unexpected Artifact Registry security finalization failure.')
@@ -490,7 +493,7 @@ def sync_all_registry_security_task(
             'job_execution_id': job_execution_id,
             'dispatched_at': _now_iso(),
         }
-    except Exception as exc:
+    except (CeleryError, KombuOperationalError, OSError, RuntimeError, ValueError, SQLAlchemyError) as exc:
         db.session.rollback()
         context.fail(exc, error_code='artifact_registry_security_sync_dispatch_failed')
         logger.exception('Could not dispatch Artifact Registry security source work.')
