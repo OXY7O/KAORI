@@ -50,16 +50,18 @@ def _governance_payload(instance_id: int) -> dict[str, Any]:
     }
 
 
-def _resolve_registry_instance(report: Report) -> tuple[int, IntegrationInstance] | None:
+def _resolve_registry_instance(
+    report: Report,
+) -> tuple[int | None, IntegrationInstance | None, str | None]:
     scope_id = require_artifact_registry_instance(report)
     try:
         instance_id = int(scope_id)
     except (TypeError, ValueError):
-        return None
+        return None, None, 'The selected Artifact Registry integration is invalid.'
     instance = db.session.get(IntegrationInstance, instance_id)
     if instance is None or instance.integration_type != 'registry':
-        return None
-    return instance_id, instance
+        return None, None, 'The selected Artifact Registry integration no longer exists.'
+    return instance_id, instance, None
 
 
 def _security_payload(overview: dict[str, Any], artifacts: list[RegistryArtifact]) -> dict[str, Any]:
@@ -122,10 +124,9 @@ def get_report_artifact_registry_analysis_payload(report: Report) -> dict[str, A
     """Build one governed Registry analytics payload from committed KAORI state."""
 
     validate_report_instance(report)
-    resolved = _resolve_registry_instance(report)
-    if resolved is None:
-        return {'_error': 'The selected Artifact Registry integration is invalid or no longer exists.'}
-    instance_id, instance = resolved
+    instance_id, instance, error = _resolve_registry_instance(report)
+    if error is not None or instance_id is None or instance is None:
+        return {'_error': error or 'The selected Artifact Registry integration no longer exists.'}
 
     overview = build_overview(provider_id=instance_id)
     state = db.session.get(RegistryCollectionState, instance_id)
