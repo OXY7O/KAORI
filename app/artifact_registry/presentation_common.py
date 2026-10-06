@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import case, or_
+from sqlalchemy import or_
 
 from app.common.pagination import paginate_sequence
 from app.dashboards.common.operational import normalize_operational_tab
