@@ -85,7 +85,8 @@
                 objectStorageScope?.classList.toggle('hidden', !usesObjectStorage)
                 artifactRegistryScope?.classList.toggle('hidden', !usesArtifactRegistry)
                 if (clusterSelect) clusterSelect.disabled = usesObjectStorage || usesArtifactRegistry
-                if (namespaceSelect) namespaceSelect.disabled = usesObjectStorage || usesArtifactRegistry || !clusterSelect?.value
+                if (namespaceSelect)
+                    namespaceSelect.disabled = usesObjectStorage || usesArtifactRegistry || !clusterSelect?.value
                 if (objectStorageSelect) objectStorageSelect.disabled = !usesObjectStorage
                 if (artifactRegistrySelect) artifactRegistrySelect.disabled = !usesArtifactRegistry
                 if (!usesObjectStorage && !usesArtifactRegistry) syncNamespaceOptions()

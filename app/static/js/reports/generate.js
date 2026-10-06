@@ -628,9 +628,11 @@
                 reportType && reportType.scope_asset_type ? reportType.scope_asset_type : 'kubernetes_cluster'
             const objectStorageScope = scopeType === 'object_storage_system'
             const artifactRegistryScope = scopeType === 'registry_integration'
-            if (kubernetesScopeFields) kubernetesScopeFields.classList.toggle('hidden', objectStorageScope || artifactRegistryScope)
+            if (kubernetesScopeFields)
+                kubernetesScopeFields.classList.toggle('hidden', objectStorageScope || artifactRegistryScope)
             if (objectStorageScopeFields) objectStorageScopeFields.classList.toggle('hidden', !objectStorageScope)
-            if (artifactRegistryScopeFields) artifactRegistryScopeFields.classList.toggle('hidden', !artifactRegistryScope)
+            if (artifactRegistryScopeFields)
+                artifactRegistryScopeFields.classList.toggle('hidden', !artifactRegistryScope)
             const hasSelectedSections = getSelectedSections().length > 0
             const scopeReady = scopeSelectionIsReady()
             const shouldBlock = !scopeReady || !hasSelectedSections || !storageGenerationReady
