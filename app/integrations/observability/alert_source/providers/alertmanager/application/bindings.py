@@ -11,6 +11,8 @@ from app.integrations.observability.alert_source.providers.alertmanager.applicat
 )
 from app.models.alertmanager import AlertmanagerInstance
 from app.models.integration import IntegrationBinding
+
+
 def create_or_update_binding(
     *,
     instance: AlertmanagerInstance,
