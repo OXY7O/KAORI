@@ -1,8 +1,6 @@
 {% import "components/operational_recommendation_cards.html" as recommendation_cards %}
-{{ recommendation_cards.render(
-    overview.recommended_actions,
-    'Top active Registry findings from the central Intelligence recommendation catalog.',
-    'artifact-registry-dashboard-recommended-actions',
-    'No central Intelligence recommendation matches the current Registry scope.',
-    source_icon='brain-circuit'
-) }}
+{{ recommendation_cards.render(overview.recommended_actions,
+'Top active Registry findings from the central Intelligence recommendation catalog.',
+'artifact-registry-dashboard-recommended-actions',
+'No central Intelligence recommendation matches the current Registry scope.',
+source_icon='brain-circuit') }}
