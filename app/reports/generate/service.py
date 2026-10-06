@@ -31,6 +31,7 @@ from app.reports.scope import (
     ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE,
     KUBERNETES_CLUSTER_ASSET_TYPE,
     OBJECT_STORAGE_SYSTEM_ASSET_TYPE,
+    get_active_registry_options,
     get_report_namespace_options_by_cluster,
 )
 from app.reports.storage.service import get_configured_storage_backend_name, get_report_storage_backend_status
@@ -122,7 +123,7 @@ def get_generate_report_payload(
     )
     cluster_options = _get_cluster_options()
     object_storage_system_options = _get_object_storage_system_options()
-    artifact_registry_options = _get_artifact_registry_options()
+    artifact_registry_options = get_active_registry_options()
     namespace_options_by_cluster = _get_namespace_options_by_cluster()
     scope_ready = _scope_is_ready(form_state, selected_report_type)
 
@@ -730,30 +731,6 @@ def _get_object_storage_system_options() -> list[dict[str, str]]:
             'status': system.status,
         }
         for system in systems
-    ]
-
-
-def _get_artifact_registry_options() -> list[dict[str, str]]:
-    instances = (
-        db.session.execute(
-            select(IntegrationInstance)
-            .where(
-                IntegrationInstance.integration_type == 'registry',
-                IntegrationInstance.lifecycle_status == 'active',
-            )
-            .order_by(IntegrationInstance.name.asc())
-        )
-        .scalars()
-        .all()
-    )
-    return [
-        {
-            'value': str(instance.id),
-            'label': instance.name,
-            'environment': instance.environment or 'Not Set',
-            'provider': instance.provider_key,
-        }
-        for instance in instances
     ]
 
 

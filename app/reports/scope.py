@@ -174,6 +174,27 @@ def resolve_report_scope(record: Any) -> ReportScope | None:
     return _generic_scope(record, asset_type=asset_type, **kwargs)
 
 
+
+def get_active_registry_options() -> list[dict[str, str]]:
+    """Return active Registry integration choices for report scope selection."""
+    instances = (
+        IntegrationInstance.query.filter_by(
+            integration_type='registry',
+            lifecycle_status='active',
+        )
+        .order_by(IntegrationInstance.name.asc())
+        .all()
+    )
+    return [
+        {
+            'value': str(instance.id),
+            'label': instance.name,
+            'environment': instance.environment or 'Not Set',
+            'provider': instance.provider_key,
+        }
+        for instance in instances
+    ]
+
 def get_report_namespace_options_by_cluster() -> dict[str, list[str]]:
     """Return current-inventory namespace choices keyed by Kubernetes cluster id."""
     query = db.session.query(
