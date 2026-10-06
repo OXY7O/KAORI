@@ -9,7 +9,7 @@
 {% set runtime_observed = runtime_state.has_observation|default(runtime_state.observed_at is not none) %}
 {% set runtime_gate = 'ready' if runtime_observed and runtime_state.health_status == 'healthy' else ('degraded' if runtime_observed and runtime_state.health_status in ['degraded', 'warning'] else ('blocked' if runtime_observed and runtime_state.health_status in ['unhealthy', 'failed'] else 'not_observed')) %}
 {% set runtime_gate_label = 'Observation Required' if not runtime_observed else ('Runtime Healthy' if runtime_state.health_status == 'healthy' else ('Runtime Blocked' if runtime_state.health_status in ['unhealthy', 'failed'] else 'Runtime Attention Required')) %}
-{% set runtime_identity = 'Kubernetes' %}
+{% set runtime_identity = "Kubernetes" %}
 {% if runtime_state.lifecycle_context and runtime_state.lifecycle_context.detected_version %}
     {% set runtime_identity = runtime_identity ~ ' ' ~ runtime_state.lifecycle_context.detected_version %}
 {% endif %}
