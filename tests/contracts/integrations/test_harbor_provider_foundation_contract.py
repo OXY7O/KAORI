@@ -53,7 +53,7 @@ def test_harbor_credential_material_is_encrypted_and_not_part_of_validation_evid
     validation = read('app/integrations/registry/providers/harbor/validation.py')
     contracts = read('app/integrations/registry/providers/harbor/contracts.py')
 
-    assert "password: Mapped[str | None] = mapped_column(EncryptedText()" in model
+    assert 'password: Mapped[str | None] = mapped_column(EncryptedText()' in model
     assert "'password'" not in validation
     result_dict = contracts.split('class ValidationResult', 1)[1]
     assert "'password'" not in result_dict

@@ -97,7 +97,6 @@ def test_alertmanager_runtime_history_accepts_server_side_filters():
     assert "readiness: str = ''" in presentation
 
 
-
 def test_alertmanager_connection_type_is_legacy_not_operator_configuration():
     form = read('app/templates/integrations/observability/alert_source/providers/alertmanager/instance_form.html')
     card = read(
@@ -139,15 +138,11 @@ def test_observability_connection_copy_is_concise_and_binding_scoped():
         'One Alertmanager runtime can serve multiple integrations through independent bindings and selectors.'
         in alertmanager
     )
-    assert (
-        'Update metrics connections while preserving validation, bindings, and consumer context.'
-        in metrics
-    )
+    assert 'Update metrics connections while preserving validation, bindings, and consumer context.' in metrics
     assert 'Maintain governed validation and consumer-binding context.' not in metrics
     assert 'Update Alertmanager while preserving governed bindings.' in alertmanager
     assert 'Review Alertmanager coverage, readiness, and alert consumer bindings.' in alertmanager
     assert 'Maintain governed validation and consumer-binding context.' not in alertmanager
-
 
 
 def test_alertmanager_review_copy_is_concise_and_explicit():
@@ -160,30 +155,22 @@ def test_alertmanager_review_copy_is_concise_and_explicit():
     configuration = read(
         'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_configuration.html'
     )
-    frontpage = read(
-        'app/templates/integrations/observability/alert_source/providers/alertmanager/frontpage.html'
-    )
+    frontpage = read('app/templates/integrations/observability/alert_source/providers/alertmanager/frontpage.html')
     binding_registry = read(
         'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_binding_registry.html'
     )
     binding_modal = read('app/templates/integrations/components/_observability_binding_modal.html')
-    alert_form = read(
-        'app/templates/integrations/observability/alert_source/providers/alertmanager/instance_form.html'
-    )
+    alert_form = read('app/templates/integrations/observability/alert_source/providers/alertmanager/instance_form.html')
     metrics_form = read('app/templates/integrations/observability/metrics_source/instance_form.html')
 
     assert 'Stable selectors isolate alert streams; changes require revalidation.' in detail_scope
     assert 'Review bindings, selectors, profiles, source resolution, and lifecycle guardrails.' in detail_scope
     assert 'Asset-specific alert contracts validate after binding.' in validation
     assert 'Required Alertmanager core contracts are missing.' in validation
-    assert (
-        'Defines whether KAORI verifies the source TLS certificate before trusted API access.'
-        in configuration
-    )
+    assert 'Defines whether KAORI verifies the source TLS certificate before trusted API access.' in configuration
     assert (
         'KAORI validates provider status, alert and silence API access, and compatibility evidence '
-        'before the source is eligible for governed use.'
-        in frontpage
+        'before the source is eligible for governed use.' in frontpage
     )
     assert 'Selector changes clear evidence and require revalidation.' in binding_registry
     assert 'Identity changes clear stale evidence and require revalidation.' in binding_modal

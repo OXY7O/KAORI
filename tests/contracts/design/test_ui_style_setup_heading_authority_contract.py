@@ -78,12 +78,13 @@ def test_auth_setup_workspace_uses_console_first_laptop_composition() -> None:
     assert 'Missing Schema Objects' in source
     assert 'PostgreSQL Is Unavailable' in source
 
+
 def test_info_flow_embedded_mode_remains_a_shared_component_option() -> None:
     component = INFO_FLOW_TEMPLATE.read_text(encoding='utf-8')
     standard = INFO_FLOW_STANDARD.read_text(encoding='utf-8')
 
     assert 'embedded=false' in component
-    assert "{% if embedded %}bg-transparent{% else %}" in component
+    assert '{% if embedded %}bg-transparent{% else %}' in component
     assert "'pb-3' if embedded else 'px-5 py-4'" in component
     assert "'h-8 w-8 rounded-lg' if embedded else 'h-11 w-11 rounded-xl'" in component
     assert "'h-4 w-4' if embedded else 'h-5 w-5'" in component

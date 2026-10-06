@@ -92,7 +92,6 @@ def test_domain_instance_loading_does_not_preload_unused_binding_relationship() 
     assert '_resolve_binding_detail_urls(binding_registry_rows)' in service
 
 
-
 def test_orchestration_domain_exposes_parent_context_guidance() -> None:
     workspace = read('app/templates/integrations/partials/_domain_workspace.html')
 

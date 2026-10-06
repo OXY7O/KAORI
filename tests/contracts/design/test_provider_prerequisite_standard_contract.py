@@ -55,7 +55,6 @@ def test_inventory_blocked_state_preserves_normal_metadata_roles() -> None:
     assert "page_hero.meta_label('boxes', overview.total_buckets" in object_storage
     assert "page_hero.meta_label('database-backup', overview.inventory_coverage" in object_storage
 
-
     storage_systems = read('app/templates/storage/object_storage/inventory/systems/partials/_hero.html')
     storage_assets = read('app/templates/storage/object_storage/inventory/buckets/partials/_hero.html')
     systems_metadata = storage_systems.split('page_hero.metadata_row_classes()', 1)[1].split('</div>', 1)[0]

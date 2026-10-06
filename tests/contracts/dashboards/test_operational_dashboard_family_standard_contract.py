@@ -161,10 +161,7 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
         'Capacity uses the committed Object Storage Analytics snapshot; no live provider query is issued.'
         in object_capacity
     )
-    assert (
-        'Emerging capacity or availability risk.'
-        in object_alert_guidance
-    )
+    assert 'Emerging capacity or availability risk.' in object_alert_guidance
     assert 'Low-risk operational signal. Validate relevance, recurrence, and scope.' in object_alert_guidance
     assert 'components/reporting_dashboard_workspace.html' in object_summary
 
@@ -309,7 +306,9 @@ def test_operational_dashboard_inner_presentation_is_shared_across_three_consume
     assert '{% set signal_content = caller() %}' in signal
     assert '{{ signal_content|safe }}' in signal
     assert signal.count('caller()') == 1
-    assert signal.index('{% set signal_content = caller() %}') < signal.index('{% call operational_section_card.render(')
+    assert signal.index('{% set signal_content = caller() %}') < signal.index(
+        '{% call operational_section_card.render('
+    )
     assert 'macro snapshot(' in evidence
     assert 'macro freshness(' in evidence
     assert 'rows[:5]' in alerts
@@ -392,16 +391,12 @@ def test_kubernetes_fast_shell_uses_one_bounded_lazy_projection_per_canonical_ta
     assert 'kubernetes/dashboard/partials/_inventory_summary.html' in overview_partial
     assert 'kubernetes/dashboard/partials/_data_freshness.html' in overview_partial
 
-    overview_projection = service.split("if section == 'overview':", 1)[1].split(
-        "if section == 'capacity':", 1
-    )[0]
+    overview_projection = service.split("if section == 'overview':", 1)[1].split("if section == 'capacity':", 1)[0]
     assert '_populate_cluster_health(' in overview_projection
     assert 'dashboard.inventory_snapshot = _inventory_snapshot(selected_cluster_id)' in overview_projection
     assert '_populate_data_freshness(' in overview_projection
 
-    freshness_projection = service.split('def _populate_data_freshness(', 1)[1].split(
-        'def _populate_capacity(', 1
-    )[0]
+    freshness_projection = service.split('def _populate_data_freshness(', 1)[1].split('def _populate_capacity(', 1)[0]
     assert '_capacity_signal(' not in freshness_projection
     assert '_alerts_signal(' not in freshness_projection
     assert '_top_consumers_signal(' not in freshness_projection
@@ -471,13 +466,14 @@ def test_capacity_and_signals_use_one_dashed_empty_state_contract() -> None:
     )[0]
     assert 'components/states/_blocked_state.html' not in source_unavailable_branch
 
-    assert 'dashboard.alerts_snapshot.source_status == \'Available\'' in kubernetes_response
+    assert "dashboard.alerts_snapshot.source_status == 'Available'" in kubernetes_response
     assert 'dashboard.alerts.available and dashboard.alerts.total > 0' in object_response
     assert 'overview.alerts.available and overview.alerts.total > 0' in registry_response
     for source in (kubernetes_response, object_response, registry_response):
         assert 'No Active Signals' in source
         assert 'Alert Response Not Required' in source
         assert 'empty_state_min_height = "min-h-[220px]"' in source
+
 
 def test_kubernetes_alert_response_uses_bounded_signals_tab_projection() -> None:
     routes = read('app/kubernetes/dashboard/routes.py')
@@ -487,13 +483,9 @@ def test_kubernetes_alert_response_uses_bounded_signals_tab_projection() -> None
 
     assert "'signals': 'kubernetes/dashboard/partials/_signals.html'" in routes
     assert "if section == 'signals':" in service
-    signals_projection = service.split("if section == 'signals':", 1)[1].split(
-        "if section == 'reporting':", 1
-    )[0]
+    signals_projection = service.split("if section == 'signals':", 1)[1].split("if section == 'reporting':", 1)[0]
     assert '_populate_signals(' in signals_projection
-    signal_helper = service.split('def _populate_signals(', 1)[1].split(
-        'def get_dashboard_overview(', 1
-    )[0]
+    signal_helper = service.split('def _populate_signals(', 1)[1].split('def get_dashboard_overview(', 1)[0]
     assert 'dashboard.alerts_snapshot = _kaori_alert_snapshot(selected)' in signal_helper
 
     assert "url_for('kubernetes_dashboard.section', section=tab_key)" in content
@@ -501,6 +493,7 @@ def test_kubernetes_alert_response_uses_bounded_signals_tab_projection() -> None
     assert 'kubernetes/dashboard/partials/_alert_response_guidance.html' in signals
     assert 'kubernetes/dashboard/partials/_alerts_summary.html' in signals
     assert 'kubernetes/dashboard/partials/_recommended_actions.html' in signals
+
 
 def test_artifact_registry_signals_follow_object_storage_selected_scope_contract() -> None:
     registry_signals = read('app/templates/artifact_registry/partials/_overview_signals.html')
@@ -522,6 +515,7 @@ def test_artifact_registry_signals_follow_object_storage_selected_scope_contract
     assert 'source_available=dashboard.alerts.available' in object_alerts
     assert "status_available_label='KAORI Alert Cases Available'" in registry_alerts
     assert "status_available_label='KAORI Alert Cases Available'" in object_alerts
+
 
 def test_operational_dashboard_loading_presentation_is_shared_across_current_consumers() -> None:
     shared = read('app/templates/components/operational_section_loading.html')
@@ -570,4 +564,3 @@ def test_operational_dashboard_loading_presentation_is_shared_across_current_con
     assert 'hx-trigger="revealed"' in standard
     assert 'Projection granularity remains domain-owned' in standard
     assert 'operational_section_loading.html' in dashboard_readme
-

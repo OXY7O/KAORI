@@ -14,7 +14,7 @@ def test_harbor_workspace_is_reachable_from_registry_domain_without_product_navi
 
     assert "workspace_endpoint='harbor.index'" in provider
     assert "navigation_endpoint_prefixes=('harbor.',)" in provider
-    assert "/integrations/registry/harbor/instances/{instance.id}" in provider
+    assert '/integrations/registry/harbor/instances/{instance.id}' in provider
     assert 'harbor_bp' in bootstrap
     assert "'Harbor'" not in navigation
 
@@ -51,9 +51,12 @@ def test_harbor_authentication_fields_follow_selected_auth_mode() -> None:
     assert 'class="contents"' not in form
     assert form.count('x-show="authType === \'basic\'"') == 1
     assert 'x-show="authType === \'basic\'"' in form
-    assert "class=\"mt-4 grid gap-4 md:grid-cols-2\"" in form
+    assert 'class="mt-4 grid gap-4 md:grid-cols-2"' in form
     assert "**{':required':\"authType === 'basic'\"}" in form
-    assert "**{':required':\"authType === 'basic' && \" + ('false' if instance is defined and instance else 'true')}" in form
+    assert (
+        "**{':required':\"authType === 'basic' && \" + ('false' if instance is defined and instance else 'true')}"
+        in form
+    )
     assert 'x-cloak' in form
     assert 'Ignored when Anonymous / Public Read-Only is selected.' not in form
     assert 'Stored encrypted and never emitted into validation evidence.' not in form
@@ -72,10 +75,19 @@ def test_harbor_registration_copy_is_concise_and_preserves_authority_boundaries(
     form = read('app/templates/integrations/registry/providers/harbor/instance_form.html')
     index = read('app/templates/integrations/registry/providers/harbor/index.html')
 
-    assert 'Configure Harbor identity, API access, TLS trust, and request controls. Full Validation owns readiness.' in form
-    assert 'Configure Harbor API v2.0 access and test identity/reachability. Full Validation establishes readiness.' in form
+    assert (
+        'Configure Harbor identity, API access, TLS trust, and request controls. Full Validation owns readiness.'
+        in form
+    )
+    assert (
+        'Configure Harbor API v2.0 access and test identity/reachability. Full Validation establishes readiness.'
+        in form
+    )
     assert 'Disabled connections remain registered but are not resolved for use.' in form
-    assert 'Harbor executes Registry APIs; KAORI owns normalized identity, evidence, readiness, runtime, and audit.' in form
+    assert (
+        'Harbor executes Registry APIs; KAORI owns normalized identity, evidence, readiness, runtime, and audit.'
+        in form
+    )
     assert 'How KAORI registers a reusable Registry connection.' in form
     assert 'How changes restore Registry provider readiness.' in form
     assert (
@@ -85,9 +97,7 @@ def test_harbor_registration_copy_is_concise_and_preserves_authority_boundaries(
 
 
 def test_harbor_degraded_full_validation_is_not_presented_as_validation_required() -> None:
-    validation = read(
-        'app/templates/integrations/registry/providers/harbor/partials/_detail_validation.html'
-    )
+    validation = read('app/templates/integrations/registry/providers/harbor/partials/_detail_validation.html')
     runtime = read('app/templates/integrations/registry/providers/harbor/partials/_detail_runtime.html')
     presentation = read('app/integrations/registry/providers/harbor/application/presentation.py')
     compatibility = read('app/definitions/catalogs/integrations/compatibility.yaml')
@@ -117,15 +127,14 @@ def test_harbor_degraded_full_validation_is_not_presented_as_validation_required
 
 
 def test_harbor_validation_and_authority_copy_is_compact() -> None:
-    configuration = read(
-        'app/templates/integrations/registry/providers/harbor/partials/_detail_configuration.html'
-    )
-    validation = read(
-        'app/templates/integrations/registry/providers/harbor/partials/_detail_validation.html'
-    )
+    configuration = read('app/templates/integrations/registry/providers/harbor/partials/_detail_configuration.html')
+    validation = read('app/templates/integrations/registry/providers/harbor/partials/_detail_validation.html')
 
     assert 'Harbor remains authoritative for native Registry state and policies.' in configuration
-    assert 'Harbor API base URL for read-only discovery, identity, compatibility, capabilities, and Registry evidence.' in configuration
+    assert (
+        'Harbor API base URL for read-only discovery, identity, compatibility, capabilities, and Registry evidence.'
+        in configuration
+    )
     assert (
         'Harbor owns Registry state and policy; KAORI owns registration, validation evidence, '
         'runtime observation, governance, and audit.'
@@ -135,15 +144,14 @@ def test_harbor_validation_and_authority_copy_is_compact() -> None:
         "Registry analytics.', 'chart-spline')"
     ) in configuration
     assert (
-        'setup_reference_template="integrations/registry/providers/harbor/partials/'
-        '_minimum_validation_access.html"'
+        'setup_reference_template="integrations/registry/providers/harbor/partials/_minimum_validation_access.html"'
     ) in configuration
     access_reference = read(
         'app/templates/integrations/registry/providers/harbor/partials/_minimum_validation_access.html'
     )
     assert 'Minimum Harbor API Access Example' in access_reference
     assert 'Open Access Examples' in access_reference
-    assert "setTab(tab) { this.activeTab = tab; }" in access_reference
+    assert 'setTab(tab) { this.activeTab = tab; }' in access_reference
     assert "const tabs = ['baseline', 'optional'];" in access_reference
     assert 'Required API reads:' in access_reference
     assert 'GET /api/v2.0/systeminfo' in access_reference
@@ -157,20 +165,15 @@ def test_harbor_validation_and_authority_copy_is_compact() -> None:
     ) in validation
 
     assert (
-        'Required Harbor API identity, compatibility, health, and read capability evidence '
-        'for the qualified release.'
+        'Required Harbor API identity, compatibility, health, and read capability evidence for the qualified release.'
     ) not in validation
     assert 'Optional follow-on capability evidence observed without affecting readiness.' not in validation
 
 
 def test_harbor_detail_uses_shared_provider_domains_with_inventory_lifecycle() -> None:
     detail = read('app/templates/integrations/registry/providers/harbor/instance_detail.html')
-    configuration = read(
-        'app/templates/integrations/registry/providers/harbor/partials/_detail_configuration.html'
-    )
-    validation = read(
-        'app/templates/integrations/registry/providers/harbor/partials/_detail_validation.html'
-    )
+    configuration = read('app/templates/integrations/registry/providers/harbor/partials/_detail_configuration.html')
+    validation = read('app/templates/integrations/registry/providers/harbor/partials/_detail_validation.html')
     runtime = read('app/templates/integrations/registry/providers/harbor/partials/_detail_runtime.html')
     inventory = read('app/templates/integrations/registry/providers/harbor/partials/_detail_scope.html')
 
@@ -181,7 +184,10 @@ def test_harbor_detail_uses_shared_provider_domains_with_inventory_lifecycle() -
     assert 'integrations/registry/providers/harbor/partials/_detail_scope.html' in detail
     assert 'integrations/registry/providers/harbor/partials/_delete_modal.html' in detail
     assert 'Inventory &amp; Lifecycle Decision' in inventory
-    assert 'Snapshot freshness, Registry evidence, observability, reconciliation, and deletion guardrails at a glance.' in inventory
+    assert (
+        'Snapshot freshness, Registry evidence, observability, reconciliation, and deletion guardrails at a glance.'
+        in inventory
+    )
     assert 'Snapshot Freshness' in inventory
     assert 'Lifecycle Gate' in inventory
     assert 'KAORI Operational Consumers' in inventory
@@ -203,9 +209,7 @@ def test_harbor_detail_uses_shared_provider_domains_with_inventory_lifecycle() -
 
 def test_harbor_registry_and_capabilities_use_standard_pagination_with_default_five() -> None:
     registry = read('app/templates/integrations/registry/providers/harbor/partials/_registry.html')
-    capabilities = read(
-        'app/templates/integrations/registry/providers/harbor/partials/_capability_registry.html'
-    )
+    capabilities = read('app/templates/integrations/registry/providers/harbor/partials/_capability_registry.html')
     presentation = read('app/integrations/registry/providers/harbor/application/presentation.py')
     routes = read('app/integrations/registry/providers/harbor/application/routes.py')
 
@@ -254,9 +258,7 @@ def test_harbor_workspace_does_not_add_provider_mutation_or_secret_evidence() ->
 
 def test_harbor_optional_capabilities_do_not_count_as_required_readiness_gaps() -> None:
     presentation = read('app/integrations/registry/providers/harbor/application/presentation.py')
-    validation = read(
-        'app/templates/integrations/registry/providers/harbor/partials/_detail_validation.html'
-    )
+    validation = read('app/templates/integrations/registry/providers/harbor/partials/_detail_validation.html')
 
     assert "row_status = 'ready' if available else ('blocked' if definition.required else 'degraded')" in presentation
     assert "'required_missing_count': len(required_keys) - required_ready_count" in presentation
@@ -293,7 +295,6 @@ def test_object_storage_analytics_dependency_path_keeps_metrics_and_alert_eviden
     assert 'dependency_blocked_step|default(dependency_blocker.stage|int)' in shared
 
 
-
 def test_registry_domain_exposes_parent_context_guidance() -> None:
     workspace = read('app/templates/integrations/partials/_domain_workspace.html')
 
@@ -302,7 +303,6 @@ def test_registry_domain_exposes_parent_context_guidance() -> None:
     assert 'Harbor is the first qualified Registry provider' in workspace
     assert 'provider-neutral Registry contracts' in workspace
     assert "'integration-' ~ domain.key ~ '-workspace-guidance'" in workspace
-
 
 
 def test_harbor_frontpage_hero_uses_canonical_copy_budget() -> None:
@@ -315,7 +315,6 @@ def test_harbor_frontpage_hero_uses_canonical_copy_budget() -> None:
     ) not in index
     assert len('Register Harbor connections with governed readiness and evidence.') <= 68
     assert len('Register Harbor connections with governed readiness and evidence.'.split()) == 8
-
 
 
 def test_harbor_frontpage_matches_canonical_provider_workspace_hierarchy() -> None:
@@ -340,16 +339,13 @@ def test_harbor_coverage_keeps_independent_registry_readiness_planes() -> None:
     presentation = read('app/integrations/registry/providers/harbor/application/presentation.py')
 
     for label in ('Harbor API', 'Inventory', 'Metrics Source', 'Webhook', 'Coverage'):
-        assert label in coverage or label in read(
-            'app/templates/integrations/components/_provider_registry.html'
-        )
+        assert label in coverage or label in read('app/templates/integrations/components/_provider_registry.html')
     assert '_provider_status(instance)' in presentation
     assert 'inventory_eligibility = registry_inventory_eligibility(identity)' in presentation
     assert '_inventory_status(collection, eligibility=inventory_eligibility)' in presentation
     assert '_metrics_status(metrics)' in presentation
     assert '_webhook_status(webhook)' in presentation
     assert "coverage_label = 'Complete' if complete else 'Partial'" in presentation
-
 
 
 def test_harbor_coverage_does_not_force_desktop_horizontal_scroll() -> None:
@@ -359,7 +355,6 @@ def test_harbor_coverage_does_not_force_desktop_horizontal_scroll() -> None:
     assert "table_ui.table_classes('min-w-[" not in coverage
     assert 'table_ui.table_classes()' in coverage
     assert 'class="min-w-0"' in coverage
-
 
 
 def test_harbor_inventory_lifecycle_reuses_asset_owner_contract_without_provider_mutation() -> None:
@@ -418,7 +413,7 @@ def test_harbor_inventory_lifecycle_keeps_artifact_registry_as_detail_owner() ->
         'Detailed Projects, Repositories, Artifacts, Security, Runtime Usage, Governance, '
         'and Analytics remain owned by Artifact Registry.'
     ) in inventory
-    assert "key: int(raw_counts.get(key) or 0)" in presentation
+    assert 'key: int(raw_counts.get(key) or 0)' in presentation
     for key in ("'projects'", "'repositories'", "'artifacts'", "'tags'"):
         assert key in presentation
         assert key in sync
