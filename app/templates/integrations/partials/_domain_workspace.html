@@ -49,32 +49,32 @@
 {% set domain_guidance_text = none %}
 {% set domain_guidance_items = none %}
 {% if domain.key == 'orchestration' %}
-    {% set domain_guidance_title = 'Orchestration Authority Boundary' %}
-    {% set domain_guidance_text = 'Cluster providers remain authoritative for native control-plane state and execution. KAORI governs reusable provider connections, capability validation, runtime evidence, and the asset bindings that determine where each orchestration contract may be consumed.' %}
+    {% set domain_guidance_title = "Orchestration Authority Boundary" %}
+    {% set domain_guidance_text = "Cluster providers remain authoritative for native control-plane state and execution. KAORI governs reusable provider connections, capability validation, runtime evidence, and the asset bindings that determine where each orchestration contract may be consumed." %}
     {% set domain_guidance_items = [
-        'Kubernetes API operations execute against the provider control plane; KAORI does not replace that control plane.',
-        'Operational use depends on current provider readiness and explicit asset ownership or binding evidence.'
+        "Kubernetes API operations execute against the provider control plane; KAORI does not replace that control plane.",
+        "Operational use depends on current provider readiness and explicit asset ownership or binding evidence."
     ] %}
 {% elif domain.key == 'observability' %}
-    {% set domain_guidance_title = 'Observability Routing' %}
-    {% set domain_guidance_text = 'Metrics Source and Alert Source remain independent reusable providers. Metrics queries resolve by query horizon and qualified binding priority, while alert evidence stays source-owned and is correlated through KAORI bindings.' %}
+    {% set domain_guidance_title = "Observability Routing" %}
+    {% set domain_guidance_text = "Metrics Source and Alert Source remain independent reusable providers. Metrics queries resolve by query horizon and qualified binding priority, while alert evidence stays source-owned and is correlated through KAORI bindings." %}
     {% set domain_guidance_items = [
-        'Recent or historical query horizon is evaluated before role, routing weight, and priority select a healthy matching Metrics Source.',
-        'Alertmanager remains an Alert Source and never participates in metrics-query source selection.'
+        "Recent or historical query horizon is evaluated before role, routing weight, and priority select a healthy matching Metrics Source.",
+        "Alertmanager remains an Alert Source and never participates in metrics-query source selection."
     ] %}
 {% elif domain.key == 'storage' %}
-    {% set domain_guidance_title = 'Storage Authority Boundary' %}
-    {% set domain_guidance_text = 'Storage providers remain authoritative for native storage state. KAORI governs reusable provider connections and committed storage evidence, while Metrics Source and Alert Source bindings contribute telemetry and alert context independently.' %}
+    {% set domain_guidance_title = "Storage Authority Boundary" %}
+    {% set domain_guidance_text = "Storage providers remain authoritative for native storage state. KAORI governs reusable provider connections and committed storage evidence, while Metrics Source and Alert Source bindings contribute telemetry and alert context independently." %}
     {% set domain_guidance_items = [
-        'MinIO currently owns Object Storage API state and managed-asset operations through the qualified Object Storage provider contract.',
-        'File Storage and Block Storage become operational only when a qualified provider implementation is registered.'
+        "MinIO currently owns Object Storage API state and managed-asset operations through the qualified Object Storage provider contract.",
+        "File Storage and Block Storage become operational only when a qualified provider implementation is registered."
     ] %}
 {% elif domain.key == 'registry' %}
-    {% set domain_guidance_title = 'Registry Authority and Evidence' %}
-    {% set domain_guidance_text = 'Registry providers remain authoritative for repositories, artifacts, native policies, and registry runtime state. KAORI normalizes committed inventory, security, governance, runtime correlation, analytics, and audit evidence without cloning the provider control plane.' %}
+    {% set domain_guidance_title = "Registry Authority and Evidence" %}
+    {% set domain_guidance_text = "Registry providers remain authoritative for repositories, artifacts, native policies, and registry runtime state. KAORI normalizes committed inventory, security, governance, runtime correlation, analytics, and audit evidence without cloning the provider control plane." %}
     {% set domain_guidance_items = [
-        'Harbor is the first qualified Registry provider and uses the shared provider-neutral Registry contracts.',
-        'Future Registry providers must extend the same capability and evidence boundaries without provider-specific domain navigation.'
+        "Harbor is the first qualified Registry provider and uses the shared provider-neutral Registry contracts.",
+        "Future Registry providers must extend the same capability and evidence boundaries without provider-specific domain navigation."
     ] %}
 {% endif %}
 <section class="{{ integration_ui.section_shell_classes() }}"
@@ -90,13 +90,11 @@
                         <h2 id="domain-workspace-title"
                             class="text-base font-semibold text-content-primary">Registry and Consumer Bindings</h2>
                         {% if domain_guidance_title %}
-                            {{ info_tip.render(
-                                'integration-' ~ domain.key ~ '-workspace-guidance',
-                                domain_guidance_title,
-                                domain_guidance_text,
-                                domain_guidance_items,
-                                placement='right'
-                            ) }}
+                            {{ info_tip.render('integration-' ~ domain.key ~ '-workspace-guidance',
+                                                        domain_guidance_title,
+                                                        domain_guidance_text,
+                                                        domain_guidance_items,
+                                                        placement='right') }}
                         {% endif %}
                     </div>
                     <p class="mt-1 text-sm leading-6 text-content-secondary">Review provider connections and cross-domain consumer bindings for assets in this domain.</p>
