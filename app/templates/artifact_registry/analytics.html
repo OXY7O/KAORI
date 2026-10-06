@@ -74,7 +74,16 @@
                 ], analytics.active_tab, prefix='registry-analytics', aria_label='Registry Analytics Sections', hx_target='#artifact-registry-analytics-workspace', hx_select='#artifact-registry-analytics-workspace') }}
 
                 <div id="artifact-registry-analytics-active-section"
-                     hx-get="{{ url_for('artifact_registry.analytics_section', section=analytics.active_tab) }}"
+                     hx-get="{{ url_for(
+                         'artifact_registry.analytics_section',
+                         section=analytics.active_tab,
+                         alert_q=analytics.alert_filters.search if analytics.active_tab == 'alerts' else none,
+                         alert_severity=analytics.alert_filters.severity if analytics.active_tab == 'alerts' else none,
+                         alert_state=analytics.alert_filters.state if analytics.active_tab == 'alerts' else none,
+                         alert_source=analytics.alert_filters.source if analytics.active_tab == 'alerts' else none,
+                         alert_page=analytics.alert_filters.page if analytics.active_tab == 'alerts' else none,
+                         alert_per_page=analytics.alert_filters.per_page if analytics.active_tab == 'alerts' else none
+                     ) }}"
                      hx-trigger="load"
                      hx-target="this"
                      hx-swap="outerHTML">
