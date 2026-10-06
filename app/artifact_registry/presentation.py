@@ -3391,7 +3391,13 @@ def build_analytics(*, active_tab: str = 'growth') -> dict[str, Any]:
             'nearest_quota_days': nearest_quota_days,
             'highest_utilization': highest_utilization,
             'growth_bytes_per_day': growth_size_per_day if growth_rows else None,
+            'growth_display': (
+                f"{_fmt_bytes(round(growth_size_per_day))}/day" if growth_rows else 'N/A'
+            ),
             'quota_headroom_bytes': quota_headroom,
+            'quota_headroom_display': (
+                _fmt_bytes(round(quota_headroom)) if quota_headroom is not None else 'N/A'
+            ),
         },
         'insights': insights[:5],
         'coverage': {
