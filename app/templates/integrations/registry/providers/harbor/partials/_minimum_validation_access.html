@@ -66,8 +66,8 @@
                 </header>
                 <div class="shrink-0 bg-surface-card px-4 sm:px-6">
                     {{ workspace_tabs.render([
-                        ('baseline', 'Baseline Validation Reader', 'shield-check'),
-                        ('optional', 'Optional Metadata Reader', 'scan-search')
+                                        ('baseline', 'Baseline Validation Reader', 'shield-check') ,
+                    ('optional', 'Optional Metadata Reader', 'scan-search')
                     ], prefix='harbor-access', aria_label='Harbor Access Example Type') }}
                 </div>
                 <div class="min-h-0 flex-1 overflow-y-auto bg-surface-page p-4 sm:p-6">
@@ -94,7 +94,6 @@
                         </header>
                         <div class="max-h-[26rem] overflow-auto bg-kaori-primary-dark p-4">
                             <pre x-ref="baselineChecklist" class="min-w-max whitespace-pre text-xs leading-5 text-brand-foreground"><code>KAORI Harbor baseline reader
-
 Required API reads:
 GET /api/v2.0/systeminfo
 GET /api/v2.0/health
@@ -136,7 +135,6 @@ Do not grant for baseline validation:
                         </header>
                         <div class="max-h-[24rem] overflow-auto bg-kaori-primary-dark p-4">
                             <pre x-ref="optionalChecklist" class="min-w-max whitespace-pre text-xs leading-5 text-brand-foreground"><code>Optional Harbor metadata reads
-
 When the corresponding capability is enabled:
 - artifact metadata read/list
 - vulnerability / scan-result read
