@@ -1,13 +1,11 @@
 from app.definitions.integration_registry import integration_provider_document
 from app.integrations.compatibility import (
-    PRODUCT_POLICIES,
     compatibility_selection_policy,
     evaluate_compatibility,
+    PRODUCT_POLICIES,
     resolve_contract_profile,
     resolve_qualification,
 )
-
-
 CORE_CAPABILITIES = {
     'provider_health',
     'system_identity',
