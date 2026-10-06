@@ -1,1 +1,0 @@
-"""Provider consumer result contracts."""

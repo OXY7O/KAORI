@@ -64,7 +64,6 @@ def build_overview_stats(
     }
 
 
-
 def portfolio_counts(states: list[tuple[bool, bool, str | None]]) -> dict[str, int]:
     counts = {
         'configured': 0,

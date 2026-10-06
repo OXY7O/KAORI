@@ -78,9 +78,9 @@ def _checkpoint_source_progress(
     progress[_PROGRESS_COMPLETED_SOURCE_KEY] = sorted(completed_sources)
     progress['percent'] = max(current_percent, aggregate_percent)
     progress['stage'] = event.stage[:120]
-    progress['target'] = (
-        f'{event.instance_name} · {event.item_name}' if event.item_name else event.instance_name
-    )[:255]
+    progress['target'] = (f'{event.instance_name} · {event.item_name}' if event.item_name else event.instance_name)[
+        :255
+    ]
     progress['updated_at'] = _now_iso()
 
     payload['_progress'] = progress

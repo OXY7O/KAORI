@@ -49,7 +49,6 @@ def get_cluster_map(cluster_ids: list[str]) -> dict[str, str]:
     return {item.id: item.name for item in clusters}
 
 
-
 def build_schedule_asset_filter_options(
     schedules: list[dict[str, Any]],
     cluster_options: list[dict[str, str]],

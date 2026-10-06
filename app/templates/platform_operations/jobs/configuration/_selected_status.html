@@ -1,7 +1,0 @@
-{% import "components/table_label.html" as table_label %}
-<span id="selected-job-configuration-status"
-      {% if selected_status_oob|default(false) %}hx-swap-oob="outerHTML"{% endif %}>
-    {{ table_label.status_indicator_label(selected_job.configuration_state.label,
-        selected_job.configuration_state.tone,
-        selected_job.configuration_state.icon) }}
-</span>

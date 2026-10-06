@@ -1,9 +1,0 @@
-{% macro render(href, label, external=false, icon='arrow-up-right') -%}
-    {% set opens_new_tab = external or href.startswith('http://') or href.startswith('https://') %}
-    <a href="{{ href }}"
-       {% if opens_new_tab %}target="_blank" rel="noopener noreferrer"{% endif %}
-       class="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-kaori-primary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card">
-        <span>{{ label }}</span>
-        <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
-    </a>
-{%- endmacro %}

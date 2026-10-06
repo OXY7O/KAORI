@@ -505,9 +505,7 @@ def _collect_repository_security(
 
     state.successful_repositories += 1
     raw_by_digest = {
-        str(item.get('digest') or '').strip(): item
-        for item in raw_artifacts
-        if str(item.get('digest') or '').strip()
+        str(item.get('digest') or '').strip(): item for item in raw_artifacts if str(item.get('digest') or '').strip()
     }
     for target in targets:
         if not state.current(target):

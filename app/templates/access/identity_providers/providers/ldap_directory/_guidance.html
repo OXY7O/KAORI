@@ -1,9 +1,0 @@
-{% import "components/info_flow.html" as info_flow %}
-{% set setup_steps = [('Connect Directory', 'Reach LDAPS or StartTLS and trust the directory certificate chain used by KAORI.'), ('Configure Service Bind', 'Use a read-only bind identity that can search the configured Base DN and mapped attributes.'), ('Map Identity', 'Confirm username, email, display name, and stable-ID attributes before projecting accounts.'), ('Validate and Provision', 'Test the adapter configuration, save it, then provision approved identities with a KAORI role.')] %}
-{{ info_flow.render('Directory Provider Guidance',
-'Controlled path from directory connectivity to locally authorized KAORI access.',
-setup_steps,
-icon='workflow',
-note='The directory remains the credential authority; KAORI owns identity projection and local authorization.',
-note_icon='shield-check',
-open_by_default=true) }}

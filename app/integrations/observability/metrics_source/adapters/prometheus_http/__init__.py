@@ -1,1 +1,0 @@
-"""Prometheus HTTP API adapter."""

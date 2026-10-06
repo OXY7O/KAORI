@@ -174,7 +174,6 @@ def resolve_report_scope(record: Any) -> ReportScope | None:
     return _generic_scope(record, asset_type=asset_type, **kwargs)
 
 
-
 def get_active_registry_options() -> list[dict[str, str]]:
     """Return active Registry integration choices for report scope selection."""
     instances = (

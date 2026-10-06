@@ -1,7 +1,0 @@
-{% extends "layouts/app.html" %}
-{% block title %}Ingress Inventory{% endblock title %}
-{% block dashboard_content %}
-    {% import "components/resource_detail_modal.html" as resource_detail_modal %}
-    {% include "kubernetes/inventory/ingresses/partials/_page_workspace.html" %}
-    {{ resource_detail_modal.inventory_host('Ingress', url_for('inventory.ingress_details', ingress_id=0) ) }}
-{% endblock dashboard_content %}

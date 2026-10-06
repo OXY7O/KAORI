@@ -1,1 +1,0 @@
-"""Registry provider implementations."""

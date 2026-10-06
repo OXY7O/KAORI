@@ -1,1 +1,0 @@
-"""KAORI package boundary."""

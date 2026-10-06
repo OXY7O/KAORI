@@ -1,6 +1,0 @@
-Cytoscape.js 3.33.1
-Copyright (c) 2016-2026, The Cytoscape Consortium
-Licensed under the MIT License.
-Upstream project: https://js.cytoscape.org/
-
-This file is vendored so KAORI topology can run in environments without public CDN access.

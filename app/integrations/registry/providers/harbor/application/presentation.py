@@ -497,6 +497,7 @@ def build_harbor_capability_registry(
         'optional_ready_count': optional_ready_count,
     }
 
+
 def _filter_rows(
     rows: list[dict[str, Any]],
     *,
