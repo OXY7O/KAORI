@@ -5,20 +5,18 @@
         {% include "storage/object_storage/inventory/components/_onboarding_banner.html" %}
     {% else %}
         {% include "storage/object_storage/inventory/systems/partials/_snapshot_boundary.html" %}
-        <section class="space-y-4" aria-labelledby="object-storage-systems-posture-heading">
-            {{ section_intro.render(
-                'Operational Posture',
-                'Review provider readiness and committed inventory coverage across Object Storage systems.',
-                'object-storage-systems-posture-heading'
-            ) }}
+        <section class="space-y-4"
+                 aria-labelledby="object-storage-systems-posture-heading">
+            {{ section_intro.render('Operational Posture',
+                        'Review provider readiness and committed inventory coverage across Object Storage systems.',
+                        'object-storage-systems-posture-heading') }}
             {% include "storage/object_storage/inventory/systems/partials/_summary_cards.html" %}
         </section>
-        <section class="space-y-4" aria-labelledby="object-storage-systems-records-heading">
-            {{ section_intro.render(
-                'Inventory Records',
-                'Browse committed Object Storage system records for the active inventory scope.',
-                'object-storage-systems-records-heading'
-            ) }}
+        <section class="space-y-4"
+                 aria-labelledby="object-storage-systems-records-heading">
+            {{ section_intro.render('Inventory Records',
+                        'Browse committed Object Storage system records for the active inventory scope.',
+                        'object-storage-systems-records-heading') }}
             {% include "storage/object_storage/inventory/systems/partials/_table_card.html" %}
         </section>
     {% endif %}
