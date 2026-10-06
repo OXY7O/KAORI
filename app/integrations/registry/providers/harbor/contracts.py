@@ -15,6 +15,12 @@ class HarborConnectionSpec:
 
 
 @dataclass(frozen=True, slots=True)
+class HarborRetryPolicy:
+    transport_retries: int = 0
+    backoff_seconds: float = 0.25
+
+
+@dataclass(frozen=True, slots=True)
 class ValidationStep:
     key: str
     label: str
