@@ -9,6 +9,7 @@ from flask_login import current_user
 from app.access.rbac.decorators import permission_required
 from app.artifact_registry.presentation import (
     build_analytics,
+    build_analytics_shell,
     build_governance,
     build_inventory,
     build_inventory_artifact_detail,
@@ -353,10 +354,33 @@ def runtime_binding_details(binding_id: int) -> ResponseReturnValue:
 def analytics() -> ResponseReturnValue:
     return render_template(
         'artifact_registry/analytics.html',
-        analytics=build_analytics(
+        analytics=build_analytics_shell(
             active_tab=request.args.get('tab', 'growth', type=str),
         ),
     )
+
+
+@artifact_registry_bp.get('/analytics/section/<string:section>')
+@permission_required('artifact_registry.view')
+def analytics_section(section: str) -> ResponseReturnValue:
+    allowed = {'summary', 'growth', 'capacity', 'usage', 'risk', 'governance', 'alerts', 'insights'}
+    if section not in allowed:
+        abort(404)
+    context = build_analytics(
+        active_tab='growth' if section == 'summary' else section,
+        alert_search=request.args.get('alert_q', '', type=str),
+        alert_severity=request.args.get('alert_severity', 'all', type=str),
+        alert_state=request.args.get('alert_state', 'all', type=str),
+        alert_source=request.args.get('alert_source', 'all', type=str),
+        alert_page=request.args.get('alert_page', 1, type=int) or 1,
+        alert_per_page=request.args.get('alert_per_page', 5, type=int) or 5,
+    )
+    template = (
+        'artifact_registry/partials/_analytics_summary.html'
+        if section == 'summary'
+        else 'artifact_registry/partials/_analytics_section.html'
+    )
+    return render_template(template, analytics=context)
 
 
 @artifact_registry_bp.get('/governance')
