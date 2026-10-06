@@ -6,6 +6,8 @@ from typing import Any
 from app.integrations.kernel.registry import get_integration
 from app.integrations.provider_matrix import IntegrationProviderKind, provider_kind
 from app.models.integration import IntegrationInstance
+
+
 @dataclass(frozen=True, slots=True)
 class ManagedAssetOwner:
     """Canonical provider ownership for one managed operational asset."""
