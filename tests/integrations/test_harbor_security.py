@@ -10,6 +10,8 @@ from app.integrations.registry.providers.harbor.exceptions import (
     HarborAuthError,
     HarborConnectionError,
 )
+
+
 @dataclass
 class _Instance:
     timeout: int = 5
