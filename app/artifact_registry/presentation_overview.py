@@ -537,6 +537,7 @@ def _overview_operations_projection(
         'freshness': freshness,
     }
 
+
 def _overview_capacity_projection(
     *,
     context: dict[str, Any],
