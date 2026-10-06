@@ -45,10 +45,9 @@
 <article id="harbor-runtime-panel"
          class="relative font-sans {{ integration_ui.section_shell_classes() }}"
          data-kaori-harbor-runtime-refresh-surface>
-    {{ validation_poller.render(
-        runtime_refresh_job and runtime_refresh_job.is_active,
+    {{ validation_poller.render(runtime_refresh_job and runtime_refresh_job.is_active,
         url_for('harbor.runtime_refresh_status', instance_id=instance.id, task_id=runtime_refresh_job.task_id) if runtime_refresh_job and runtime_refresh_job.is_active else '',
-        '#harbor-runtime-panel'
+    '#harbor-runtime-panel'
     ) }}
     {% call connection_validation_header.render(
         "Runtime Health & Diagnostics",
@@ -74,21 +73,20 @@
     {% endcall %}
     {{ provider_job_status.render(runtime_refresh_job, 'Harbor runtime refresh running', 'Harbor') }}
     <div class="space-y-4 p-4 sm:p-5">
-        {{ runtime_decision.render(
-            runtime_tone,
-            runtime_state.health_status_label if runtime_observed else "Not Observed",
-            runtime_state.health_score_display if runtime_observed else "N/A",
-            "Persisted Runtime Refresh evidence",
-            runtime_gate_label,
-            "Health gate only; Full Validation readiness remains independent.",
-            runtime_state.readiness,
-            runtime_state.readiness_label,
-            (runtime_state.compatibility_profile or "Compatibility not validated") ~ " · " ~ runtime_state.capability_count ~ " observed capabilities",
-            observation_rows,
-            runtime_primary_finding,
-            runtime_attention|length,
-            runtime_next_action,
-            "Runtime Refresh owns current Harbor health. Full Validation remains the authority for version compatibility, required read capabilities, and Registry provider readiness."
+        {{ runtime_decision.render(runtime_tone,
+                runtime_state.health_status_label if runtime_observed else "Not Observed",
+                runtime_state.health_score_display if runtime_observed else "N/A",
+                "Persisted Runtime Refresh evidence",
+                runtime_gate_label,
+                "Health gate only; Full Validation readiness remains independent.",
+                runtime_state.readiness,
+                runtime_state.readiness_label,
+                (runtime_state.compatibility_profile or "Compatibility not validated") ~ " · " ~ runtime_state.capability_count ~ " observed capabilities",
+        observation_rows,
+        runtime_primary_finding,
+        runtime_attention|length,
+        runtime_next_action,
+        "Runtime Refresh owns current Harbor health. Full Validation remains the authority for version compatibility, required read capabilities, and Registry provider readiness."
         ) }}
         <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
                  aria-labelledby="harbor-runtime-evidence-title"
@@ -110,7 +108,7 @@
                     ("Compatibility Profile", runtime_state.compatibility_profile or instance.compatibility_profile or "Validation Required", "Provider compatibility contract"),
                     ("Authentication", instance.auth_type|replace("_", " ")|title, "Configured API access mode"),
                     ("API Contract", "Harbor API v2.0", "Runtime and validation provider contract")
-                ] %}
+                    ] %}
                     <div class="bg-surface-card px-4 py-3.5 sm:px-5">
                         <p class="text-xs font-medium text-content-muted">{{ label }}</p>
                         <p class="mt-1 text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ value }}</p>
@@ -159,5 +157,5 @@
         {% endwith %}
     </div>
 {% endif %}
-{{ framed_workspace_tabs.badge_oob("harbor", "runtime", runtime_state.health_status_label|default("Not Observed")) }}
+{{ framed_workspace_tabs.badge_oob("harbor", "runtime", runtime_state.health_status_label|default("Not Observed") ) }}
 {% include "components/operation_feedback_oob.html" %}
