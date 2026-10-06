@@ -83,6 +83,34 @@ def build_schedule_asset_filter_options(
     ]
 
 
+def build_run_filter_options(
+    schedules: list[dict[str, Any]],
+    run_period_options: list[dict[str, str]],
+) -> dict[str, list[dict[str, str]]]:
+    return {
+        'schedules': [
+            {'value': '', 'label': 'All Schedules'},
+            *[
+                {'value': str(item['id']), 'label': str(item['name'])}
+                for item in sorted(schedules, key=lambda row: str(row['name']).casefold())
+            ],
+        ],
+        'triggers': [
+            {'value': '', 'label': 'All Triggers'},
+            {'value': 'scheduler', 'label': 'Scheduler'},
+            {'value': 'manual', 'label': 'Manual'},
+        ],
+        'statuses': [
+            {'value': '', 'label': 'All Results'},
+            {'value': 'queued', 'label': 'Queued'},
+            {'value': 'started', 'label': 'Started'},
+            {'value': 'success', 'label': 'Success'},
+            {'value': 'failed', 'label': 'Failed'},
+        ],
+        'periods': list(run_period_options),
+    }
+
+
 def get_schedule_context_map(schedule_ids: list[int]) -> dict[int, dict[str, str]]:
     if not schedule_ids:
         return {}
