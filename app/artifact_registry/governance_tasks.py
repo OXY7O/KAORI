@@ -20,6 +20,45 @@ def _now_iso() -> str:
     return datetime.now(UTC).isoformat()
 
 
+def _governance_sync_result(
+    *,
+    total: int,
+    synced: int,
+    project_count: int,
+    replication_policy_count: int,
+    failures: list[dict[str, str]],
+    requested_by_user_id: int | None,
+    started: float,
+) -> dict[str, Any]:
+    status = 'error' if failures and not synced else ('warning' if failures else 'success')
+    return {
+        'status': status,
+        'title': (
+            'Artifact Registry Governance Sync Completed'
+            if status != 'error'
+            else 'Artifact Registry Governance Sync Failed'
+        ),
+        'message': f'{synced} Registry provider(s) synchronized; {len(failures)} failed.',
+        'detail': (
+            'Failed providers retained their previous committed governance evidence.'
+            if failures
+            else (
+                f'{project_count} project governance record(s) and '
+                f'{replication_policy_count} replication policy record(s) were refreshed.'
+            )
+        ),
+        'total_count': total,
+        'synced_count': synced,
+        'failed_count': len(failures),
+        'project_count': project_count,
+        'replication_policy_count': replication_policy_count,
+        'failure_evidence': failures,
+        'requested_by_user_id': requested_by_user_id,
+        'finished_at': _now_iso(),
+        'duration_seconds': round(perf_counter() - started, 1),
+    }
+
+
 @shared_task(
     bind=True,
     name='app.artifact_registry.governance_tasks.sync_all_registry_governance',
@@ -139,33 +178,16 @@ def sync_all_registry_governance_task(
                 message=f'Finished governance collection for {instance_name}.',
             )
 
-        status = 'error' if failures and not synced else ('warning' if failures else 'success')
-        result = {
-            'status': status,
-            'title': (
-                'Artifact Registry Governance Sync Completed'
-                if status != 'error'
-                else 'Artifact Registry Governance Sync Failed'
-            ),
-            'message': f'{synced} Registry provider(s) synchronized; {len(failures)} failed.',
-            'detail': (
-                'Failed providers retained their previous committed governance evidence.'
-                if failures
-                else (
-                    f'{project_count} project governance record(s) and '
-                    f'{replication_policy_count} replication policy record(s) were refreshed.'
-                )
-            ),
-            'total_count': total,
-            'synced_count': synced,
-            'failed_count': len(failures),
-            'project_count': project_count,
-            'replication_policy_count': replication_policy_count,
-            'failure_evidence': failures,
-            'requested_by_user_id': requested_by_user_id,
-            'finished_at': _now_iso(),
-            'duration_seconds': round(perf_counter() - started, 1),
-        }
+        result = _governance_sync_result(
+            total=total,
+            synced=synced,
+            project_count=project_count,
+            replication_policy_count=replication_policy_count,
+            failures=failures,
+            requested_by_user_id=requested_by_user_id,
+            started=started,
+        )
+        status = str(result['status'])
         context.checkpoint(
             current=total,
             total=total,
