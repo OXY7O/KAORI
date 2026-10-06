@@ -194,6 +194,7 @@ def get_active_registry_options() -> list[dict[str, str]]:
         for instance in instances
     ]
 
+
 def get_report_namespace_options_by_cluster() -> dict[str, list[str]]:
     """Return current-inventory namespace choices keyed by Kubernetes cluster id."""
     query = db.session.query(
