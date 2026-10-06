@@ -386,6 +386,10 @@ def analytics_section(section: str) -> ResponseReturnValue:
 @artifact_registry_bp.get('/analytics/alerts/table')
 @permission_required('artifact_registry.view')
 def analytics_alerts_table() -> ResponseReturnValue:
+    query_args = request.args.to_dict(flat=True)
+    if not is_htmx_request(request.headers):
+        return redirect(url_for('artifact_registry.analytics', tab='alerts', **query_args))
+
     context = build_analytics(
         active_tab='alerts',
         alert_search=request.args.get('alert_q', '', type=str),
@@ -395,10 +399,20 @@ def analytics_alerts_table() -> ResponseReturnValue:
         alert_page=request.args.get('alert_page', 1, type=int) or 1,
         alert_per_page=request.args.get('alert_per_page', 5, type=int) or 5,
     )
-    return render_template(
-        'artifact_registry/partials/_analytics_section.html',
-        analytics=context,
+    response = make_response(
+        render_template(
+            'artifact_registry/partials/_analytics_section.html',
+            analytics=context,
+        )
     )
+    response.headers['HX-Push-Url'] = url_for(
+        'artifact_registry.analytics',
+        tab='alerts',
+        **query_args,
+    )
+    response.headers['Cache-Control'] = 'no-store, max-age=0'
+    response.headers['Vary'] = 'HX-Request'
+    return response
 
 
 @artifact_registry_bp.get('/governance')
