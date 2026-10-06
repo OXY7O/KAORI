@@ -350,21 +350,16 @@ def _days_between(previous: RegistryAnalyticsSnapshot | None, now: datetime) -> 
     return seconds / 86400.0 if seconds >= 300 else None
 
 
-def materialize_registry_analytics(
-    identity: IntegrationInstance,
-    *,
-    job_execution_id: int | None = None,
-    freshness_minutes: int = 15,
-    stale_grace_minutes: int = 1440,
-) -> RegistryAnalyticsSnapshot:
-    """Materialize Registry analytics from committed domain state plus bound Metrics Source."""
-
-    if identity.integration_type != 'registry':
-        raise ValueError('Registry analytics requires a Registry integration identity.')
-
-    generated_at = datetime.now(UTC)
-    previous = _previous_snapshot(identity.id)
-    projects = RegistryProject.query.filter_by(integration_instance_id=identity.id).all()
+def _registry_committed_state(
+    identity_id: int,
+) -> tuple[
+    list[RegistryProject],
+    list[RegistryRepository],
+    list[RegistryArtifact],
+    list[RegistryWorkloadBinding],
+    list[RegistryProjectGovernance],
+]:
+    projects = RegistryProject.query.filter_by(integration_instance_id=identity_id).all()
     project_ids = [project.id for project in projects]
     repositories = (
         RegistryRepository.query.filter(RegistryRepository.project_id.in_(project_ids)).all() if project_ids else []
@@ -386,37 +381,14 @@ def materialize_registry_analytics(
         if project_ids
         else []
     )
+    return projects, repositories, artifacts, bindings, governance_rows
 
-    total_size = sum(int(artifact.size_bytes or 0) for artifact in artifacts)
-    scanned = sum(registry_scan_evidence_ready(artifact.scan_status) for artifact in artifacts)
-    critical_findings = sum(
-        int((artifact.vulnerability_summary or {}).get('critical') or 0)
-        for artifact in artifacts
-        if isinstance(artifact.vulnerability_summary, dict)
-    )
-    high_findings = sum(
-        int((artifact.vulnerability_summary or {}).get('high') or 0)
-        for artifact in artifacts
-        if isinstance(artifact.vulnerability_summary, dict)
-    )
-    signed = sum(str(artifact.signature_status or '') == 'signed' for artifact in artifacts)
-    sbom = sum(str(artifact.sbom_status or '') == 'available' for artifact in artifacts)
-    runtime_artifact_ids = {binding.artifact_id for binding in bindings}
-    critical_runtime = sum(
-        artifact.id in runtime_artifact_ids and int((artifact.vulnerability_summary or {}).get('critical') or 0) > 0
-        for artifact in artifacts
-        if isinstance(artifact.vulnerability_summary, dict)
-    )
-    tag_only = sum(binding.match_type == 'tag' for binding in bindings)
-    scan_gaps_runtime = sum(
-        artifact.id in runtime_artifact_ids and not registry_scan_evidence_ready(artifact.scan_status)
-        for artifact in artifacts
-    )
-    unsigned_runtime = sum(
-        artifact.id in runtime_artifact_ids and str(artifact.signature_status or '') == 'unsigned'
-        for artifact in artifacts
-    )
 
+def _stale_candidate_count(
+    artifacts: list[RegistryArtifact],
+    runtime_artifact_ids: set[int],
+    generated_at: datetime,
+) -> int:
     inactive_cutoff = generated_at - timedelta(days=90)
     stale_candidates = 0
     for artifact in artifacts:
@@ -428,64 +400,112 @@ def materialize_registry_analytics(
         if reference_time.tzinfo is None:
             reference_time = reference_time.replace(tzinfo=UTC)
         stale_candidates += int(reference_time < inactive_cutoff)
+    return stale_candidates
 
+
+def _growth_payload(
+    previous: RegistryAnalyticsSnapshot | None,
+    *,
+    generated_at: datetime,
+    artifact_count: int,
+    total_size: int,
+) -> tuple[dict[str, Any], float | None]:
     previous_inventory = (
         previous.payload_json.get('inventory') if previous and isinstance(previous.payload_json, dict) else {}
     )
     elapsed_days = _days_between(previous, generated_at)
-    artifact_delta = len(artifacts) - int((previous_inventory or {}).get('artifacts') or len(artifacts))
+    artifact_delta = artifact_count - int((previous_inventory or {}).get('artifacts') or artifact_count)
     size_delta = total_size - int((previous_inventory or {}).get('total_size_bytes') or total_size)
-    growth = {
-        'elapsed_days': elapsed_days,
-        'artifact_delta': artifact_delta,
-        'size_delta_bytes': size_delta,
-        'artifact_growth_per_day': (artifact_delta / elapsed_days) if elapsed_days else None,
-        'size_growth_bytes_per_day': (size_delta / elapsed_days) if elapsed_days else None,
-    }
+    return (
+        {
+            'elapsed_days': elapsed_days,
+            'artifact_delta': artifact_delta,
+            'size_delta_bytes': size_delta,
+            'artifact_growth_per_day': (artifact_delta / elapsed_days) if elapsed_days else None,
+            'size_growth_bytes_per_day': (size_delta / elapsed_days) if elapsed_days else None,
+        },
+        elapsed_days,
+    )
 
-    metrics = _metrics_evidence(identity)
-    alerts = _alert_evidence(identity)
-    previous_usage = _previous_project_usage(previous)
-    project_forecasts: list[dict[str, Any]] = []
+
+def _project_forecasts(
+    metrics: dict[str, Any],
+    previous_usage: dict[str, float],
+    elapsed_days: float | None,
+) -> list[dict[str, Any]]:
     current_usage = metrics.get('project_usage_bytes') if isinstance(metrics, dict) else {}
     current_quota = metrics.get('project_quota_bytes') if isinstance(metrics, dict) else {}
-    if isinstance(current_usage, dict) and isinstance(current_quota, dict):
-        for project_name, raw_usage in current_usage.items():
-            try:
-                usage = float(raw_usage)
-                quota = float(current_quota.get(project_name) or 0)
-            except (TypeError, ValueError):
-                continue
-            if quota <= 0:
-                continue
-            prior = previous_usage.get(project_name)
-            growth_per_day = (usage - prior) / elapsed_days if prior is not None and elapsed_days else None
-            days_to_quota = (
-                max((quota - usage) / growth_per_day, 0.0)
-                if growth_per_day is not None and growth_per_day > 0 and quota > usage
-                else (0.0 if usage >= quota else None)
-            )
-            project_forecasts.append(
-                {
-                    'project_name': project_name,
-                    'usage_bytes': usage,
-                    'quota_bytes': quota,
-                    'utilization_percent': (usage / quota) * 100.0,
-                    'growth_bytes_per_day': growth_per_day,
-                    'days_to_quota': days_to_quota,
-                }
-            )
+    if not isinstance(current_usage, dict) or not isinstance(current_quota, dict):
+        return []
 
-    governance_assessed = len(governance_rows)
-    immutable_configured = sum(row.immutability_status == 'configured' for row in governance_rows)
-    retention_configured = sum(row.retention_status == 'configured' for row in governance_rows)
-    payload = {
+    forecasts: list[dict[str, Any]] = []
+    for project_name, raw_usage in current_usage.items():
+        try:
+            usage = float(raw_usage)
+            quota = float(current_quota.get(project_name) or 0)
+        except (TypeError, ValueError):
+            continue
+        if quota <= 0:
+            continue
+        prior = previous_usage.get(project_name)
+        growth_per_day = (usage - prior) / elapsed_days if prior is not None and elapsed_days else None
+        if growth_per_day is not None and growth_per_day > 0 and quota > usage:
+            days_to_quota = max((quota - usage) / growth_per_day, 0.0)
+        else:
+            days_to_quota = 0.0 if usage >= quota else None
+        forecasts.append(
+            {
+                'project_name': project_name,
+                'usage_bytes': usage,
+                'quota_bytes': quota,
+                'utilization_percent': (usage / quota) * 100.0,
+                'growth_bytes_per_day': growth_per_day,
+                'days_to_quota': days_to_quota,
+            }
+        )
+    return forecasts
+
+
+def _analytics_domain_payload(
+    *,
+    projects: list[RegistryProject],
+    repositories: list[RegistryRepository],
+    artifacts: list[RegistryArtifact],
+    bindings: list[RegistryWorkloadBinding],
+    governance_rows: list[RegistryProjectGovernance],
+    generated_at: datetime,
+    growth: dict[str, Any],
+    project_forecasts: list[dict[str, Any]],
+    metrics: dict[str, Any],
+    alerts: dict[str, Any],
+) -> dict[str, Any]:
+    total_size = sum(int(artifact.size_bytes or 0) for artifact in artifacts)
+    scanned = sum(registry_scan_evidence_ready(artifact.scan_status) for artifact in artifacts)
+    signed = sum(str(artifact.signature_status or '') == 'signed' for artifact in artifacts)
+    sbom = sum(str(artifact.sbom_status or '') == 'available' for artifact in artifacts)
+    runtime_artifact_ids = {binding.artifact_id for binding in bindings}
+    critical_findings = sum(
+        int((artifact.vulnerability_summary or {}).get('critical') or 0)
+        for artifact in artifacts
+        if isinstance(artifact.vulnerability_summary, dict)
+    )
+    high_findings = sum(
+        int((artifact.vulnerability_summary or {}).get('high') or 0)
+        for artifact in artifacts
+        if isinstance(artifact.vulnerability_summary, dict)
+    )
+    critical_runtime = sum(
+        artifact.id in runtime_artifact_ids and int((artifact.vulnerability_summary or {}).get('critical') or 0) > 0
+        for artifact in artifacts
+        if isinstance(artifact.vulnerability_summary, dict)
+    )
+    return {
         'inventory': {
             'projects': len(projects),
             'repositories': len(repositories),
             'artifacts': len(artifacts),
             'total_size_bytes': total_size,
-            'stale_candidate_count': stale_candidates,
+            'stale_candidate_count': _stale_candidate_count(artifacts, runtime_artifact_ids, generated_at),
         },
         'security': {
             'scanned_artifacts': scanned,
@@ -501,14 +521,20 @@ def materialize_registry_analytics(
             'bindings': len(bindings),
             'running_artifacts': len(runtime_artifact_ids),
             'critical_runtime_artifacts': critical_runtime,
-            'tag_only_bindings': tag_only,
-            'runtime_scan_gaps': scan_gaps_runtime,
-            'unsigned_runtime_artifacts': unsigned_runtime,
+            'tag_only_bindings': sum(binding.match_type == 'tag' for binding in bindings),
+            'runtime_scan_gaps': sum(
+                artifact.id in runtime_artifact_ids and not registry_scan_evidence_ready(artifact.scan_status)
+                for artifact in artifacts
+            ),
+            'unsigned_runtime_artifacts': sum(
+                artifact.id in runtime_artifact_ids and str(artifact.signature_status or '') == 'unsigned'
+                for artifact in artifacts
+            ),
         },
         'governance': {
-            'projects_assessed': governance_assessed,
-            'retention_configured': retention_configured,
-            'immutability_configured': immutable_configured,
+            'projects_assessed': len(governance_rows),
+            'retention_configured': sum(row.retention_status == 'configured' for row in governance_rows),
+            'immutability_configured': sum(row.immutability_status == 'configured' for row in governance_rows),
         },
         'growth': growth,
         'capacity': {'project_forecasts': project_forecasts},
@@ -520,6 +546,45 @@ def materialize_registry_analytics(
             'provider_queries_on_page_load': False,
         },
     }
+
+
+def materialize_registry_analytics(
+    identity: IntegrationInstance,
+    *,
+    job_execution_id: int | None = None,
+    freshness_minutes: int = 15,
+    stale_grace_minutes: int = 1440,
+) -> RegistryAnalyticsSnapshot:
+    """Materialize Registry analytics from committed domain state plus bound Metrics Source."""
+
+    if identity.integration_type != 'registry':
+        raise ValueError('Registry analytics requires a Registry integration identity.')
+
+    generated_at = datetime.now(UTC)
+    previous = _previous_snapshot(identity.id)
+    projects, repositories, artifacts, bindings, governance_rows = _registry_committed_state(identity.id)
+    total_size = sum(int(artifact.size_bytes or 0) for artifact in artifacts)
+    growth, elapsed_days = _growth_payload(
+        previous,
+        generated_at=generated_at,
+        artifact_count=len(artifacts),
+        total_size=total_size,
+    )
+    metrics = _metrics_evidence(identity)
+    alerts = _alert_evidence(identity)
+    project_forecasts = _project_forecasts(metrics, _previous_project_usage(previous), elapsed_days)
+    payload = _analytics_domain_payload(
+        projects=projects,
+        repositories=repositories,
+        artifacts=artifacts,
+        bindings=bindings,
+        governance_rows=governance_rows,
+        generated_at=generated_at,
+        growth=growth,
+        project_forecasts=project_forecasts,
+        metrics=metrics,
+        alerts=alerts,
+    )
 
     snapshot = RegistryAnalyticsSnapshot(
         integration_instance_id=identity.id,
