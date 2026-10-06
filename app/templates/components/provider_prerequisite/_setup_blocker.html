@@ -10,5 +10,5 @@
 {% set blocked_state_permission_granted = provider_prerequisite_permission_granted|default(none) %}
 {% set blocked_state_show_admin_required = provider_prerequisite_show_admin_required|default(true) %}
 {% set blocked_state_tone = provider_prerequisite_tone|default('warning') %}
-{% set blocked_state_variant = 'section' %}
+{% set blocked_state_variant = "section" %}
 {% include "components/states/_blocked_state.html" %}
