@@ -5,6 +5,7 @@ from typing import Any
 
 from app.extensions.db import db
 from app.integrations.registry.providers.harbor.client_factory import build_client
+from app.integrations.registry.providers.harbor.exceptions import HarborError
 from app.integrations.registry.providers.harbor.status import mark_status
 from app.models.harbor import HarborInstance
 
@@ -14,7 +15,7 @@ def refresh_instance_health(instance: HarborInstance) -> dict[str, Any]:
     started = perf_counter()
     try:
         health = build_client(instance).get_health()
-    except Exception as exc:
+    except HarborError as exc:
         mark_status(
             instance,
             status='disconnected',

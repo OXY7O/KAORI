@@ -21,23 +21,12 @@ def registry_metrics_readiness(identity: IntegrationInstance) -> dict[str, objec
         .all()
     )
     validated = [binding for binding in bindings if binding.validation_status == 'ready']
-    try:
-        resolution = resolve_metrics_sources(
-            scope_type='registry_instance',
-            scope_key=str(identity.id),
-            required_technical_capabilities=('instant_query',),
-        )
-        selected = resolution.selected
-    except Exception as exc:
-        return {
-            'status': 'unavailable' if bindings else 'not_bound',
-            'label': 'Unavailable' if bindings else 'Not Bound',
-            'tone': 'warning' if bindings else 'unknown',
-            'binding_count': len(bindings),
-            'validated_binding_count': len(validated),
-            'selected_source': None,
-            'detail': str(exc),
-        }
+    resolution = resolve_metrics_sources(
+        scope_type='registry_instance',
+        scope_key=str(identity.id),
+        required_technical_capabilities=('instant_query',),
+    )
+    selected = resolution.selected
 
     if selected is None:
         return {

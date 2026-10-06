@@ -39,8 +39,6 @@ def validate_source(source: HarborInstance, *, source_label: str) -> ValidationR
         connection = client.test_connection()
     except HarborError as exc:
         return _failure(source, exc, source_label=source_label, unexpected=False)
-    except Exception as exc:  # pragma: no cover
-        return _failure(source, exc, source_label=source_label, unexpected=True)
 
     capabilities.add('system_identity')
     steps.append(
