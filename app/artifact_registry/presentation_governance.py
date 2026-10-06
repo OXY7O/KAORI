@@ -14,6 +14,7 @@ from app.models.registry import (
     RegistryReplicationPolicy,
 )
 
+
 def _policy_state_view(value: str | None) -> dict[str, str]:
     key = str(value or 'not_collected').strip().lower()
     if key == 'configured':
