@@ -12,7 +12,12 @@ from app.models.cluster import Cluster
 from app.models.object_storage import ObjectStorageSystem
 from app.models.report import ReportSchedule
 from app.reports.catalog import REPORT_TYPE_OPTIONS
-from app.reports.scope import get_report_namespace_options_by_cluster
+from app.reports.scope import (
+    ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE,
+    KUBERNETES_CLUSTER_ASSET_TYPE,
+    OBJECT_STORAGE_SYSTEM_ASSET_TYPE,
+    get_report_namespace_options_by_cluster,
+)
 
 DEFAULT_TIMEZONE = 'Asia/Jakarta'
 
@@ -43,6 +48,40 @@ def get_cluster_map(cluster_ids: list[str]) -> dict[str, str]:
     clusters = db.session.scalars(select(Cluster).where(Cluster.id.in_(cluster_ids))).all()
     return {item.id: item.name for item in clusters}
 
+
+
+def build_schedule_asset_filter_options(
+    schedules: list[dict[str, Any]],
+    cluster_options: list[dict[str, str]],
+    object_storage_system_options: list[dict[str, str]],
+    artifact_registry_options: list[dict[str, str]],
+) -> list[dict[str, str]]:
+    asset_options: dict[str, str] = {
+        f'{KUBERNETES_CLUSTER_ASSET_TYPE}:{item["value"]}': f'Kubernetes · {item["label"]}' for item in cluster_options
+    }
+    asset_options.update(
+        {
+            f'{OBJECT_STORAGE_SYSTEM_ASSET_TYPE}:{item["value"]}': f'Object Storage · {item["label"]}'
+            for item in object_storage_system_options
+        }
+    )
+    asset_options.update(
+        {
+            f'{ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE}:{item["value"]}': f'Artifact Registry · {item["label"]}'
+            for item in artifact_registry_options
+        }
+    )
+    for schedule in schedules:
+        key = str(schedule.get('scope_asset_filter_key') or '')
+        if key and key not in asset_options:
+            asset_options[key] = f'{schedule["scope_label"]} · {schedule["scope"]}'
+    return [
+        {'value': '', 'label': 'All Infrastructure Assets'},
+        *[
+            {'value': value, 'label': label}
+            for value, label in sorted(asset_options.items(), key=lambda item: item[1].casefold())
+        ],
+    ]
 
 def get_schedule_context_map(schedule_ids: list[int]) -> dict[int, dict[str, str]]:
     if not schedule_ids:

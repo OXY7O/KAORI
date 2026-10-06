@@ -47,6 +47,7 @@ from app.reports.schedules.presentation import serialize_schedule as _serialize_
 from app.reports.schedules.presentation import title_case_period_options as _title_case_period_options
 from app.reports.schedules.registry import filter_schedule_rows as _filter_schedule_rows
 from app.reports.schedules.registry import get_selected_filters as _get_selected_filters
+from app.reports.schedules.support import build_schedule_asset_filter_options as _build_schedule_asset_filter_options
 from app.reports.schedules.support import build_schedule_evidence_snapshot as _build_schedule_evidence_snapshot
 from app.reports.schedules.support import ensure_utc as _ensure_utc
 from app.reports.schedules.support import get_cluster_map as _get_cluster_map
@@ -70,6 +71,7 @@ from app.reports.scope import (
     ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE,
     KUBERNETES_CLUSTER_ASSET_TYPE,
     OBJECT_STORAGE_SYSTEM_ASSET_TYPE,
+    get_active_registry_options as _get_artifact_registry_options,
 )
 from app.reports.storage.service import get_configured_storage_backend_name, get_report_storage_backend_status
 
@@ -846,30 +848,6 @@ def _get_run_filter_options(
     }
 
 
-def _get_artifact_registry_options() -> list[dict[str, str]]:
-    instances = (
-        db.session.execute(
-            select(IntegrationInstance)
-            .where(
-                IntegrationInstance.integration_type == 'registry',
-                IntegrationInstance.lifecycle_status == 'active',
-            )
-            .order_by(IntegrationInstance.name.asc())
-        )
-        .scalars()
-        .all()
-    )
-    return [
-        {
-            'value': str(instance.id),
-            'label': instance.name,
-            'environment': instance.environment or 'Not Set',
-            'provider': instance.provider_key,
-        }
-        for instance in instances
-    ]
-
-
 def _get_schedule_filter_options(
     schedules: list[dict[str, Any]],
     cluster_options: list[dict[str, str]],
@@ -877,25 +855,12 @@ def _get_schedule_filter_options(
     artifact_registry_options: list[dict[str, str]],
 ) -> dict[str, list[dict[str, str]]]:
     delivery_catalog = _get_delivery_channel_options()
-    asset_options: dict[str, str] = {
-        f'{KUBERNETES_CLUSTER_ASSET_TYPE}:{item["value"]}': f'Kubernetes · {item["label"]}' for item in cluster_options
-    }
-    asset_options.update(
-        {
-            f'{OBJECT_STORAGE_SYSTEM_ASSET_TYPE}:{item["value"]}': f'Object Storage · {item["label"]}'
-            for item in object_storage_system_options
-        }
+    asset_filter_options = _build_schedule_asset_filter_options(
+        schedules,
+        cluster_options,
+        object_storage_system_options,
+        artifact_registry_options,
     )
-    asset_options.update(
-        {
-            f'{ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE}:{item["value"]}': f'Artifact Registry · {item["label"]}'
-            for item in artifact_registry_options
-        }
-    )
-    for schedule in schedules:
-        key = str(schedule.get('scope_asset_filter_key') or '')
-        if key and key not in asset_options:
-            asset_options[key] = f'{schedule["scope_label"]} · {schedule["scope"]}'
     return {
         'statuses': [
             {'value': '', 'label': 'All Statuses'},
@@ -910,13 +875,7 @@ def _get_schedule_filter_options(
             {'value': '', 'label': 'All Report Types'},
             *[{'value': item['value'], 'label': item['label']} for item in REPORT_TYPE_OPTIONS],
         ],
-        'assets': [
-            {'value': '', 'label': 'All Infrastructure Assets'},
-            *[
-                {'value': value, 'label': label}
-                for value, label in sorted(asset_options.items(), key=lambda item: item[1].casefold())
-            ],
-        ],
+        'assets': asset_filter_options,
         'deliveries': [
             {'value': '', 'label': 'All Delivery'},
             {'value': 'none', 'label': 'No Notification'},
