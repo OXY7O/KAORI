@@ -47,6 +47,7 @@ from app.models.tenant import (
 _advanced_profile_controls = _resource_profile_controls._advanced_profile_controls
 _control_contract_present = _resource_profile_controls._control_contract_present
 _control_enabled = _resource_profile_controls._control_enabled
+_storage_policy_values = _resource_profile_controls._storage_policy_values
 _tenant_capability_statuses = _resource_profile_controls._tenant_capability_statuses
 _validate_resource_profile_attachment_controls = (
     _resource_profile_controls._validate_resource_profile_attachment_controls
@@ -258,15 +259,6 @@ def _profile_values(source: Mapping[str, Any]) -> tuple[dict[str, str], dict[str
             limits.setdefault(group, {})[resource] = value
 
     return validate_profile_spec(quota, limits)
-
-
-def _storage_policy_values(source: Mapping[str, Any]) -> dict[str, str]:
-    policy = {
-        target: value
-        for field, target in _PROFILE_STORAGE_FIELDS.items()
-        if _control_enabled(source, field) and (value := _text(source, field))
-    }
-    return validate_storage_policy(policy)
 
 
 def _preset_storage_policy_values(
