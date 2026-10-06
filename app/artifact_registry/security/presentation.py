@@ -504,9 +504,7 @@ def _security_supply_evidence_page(
                 ),
                 'repository': repository.name,
                 'project': project.name,
-                'provider_label': (
-                    source.provider_key.replace('_', ' ').title() if source is not None else 'Registry'
-                ),
+                'provider_label': (source.provider_key.replace('_', ' ').title() if source is not None else 'Registry'),
                 'source_name': source.name if source is not None else 'Unknown Source',
                 'signature': _evidence_state(artifact.signature_status, evidence='signature'),
                 'trust': {'label': 'Not Evaluated', 'tone': 'unknown'},
