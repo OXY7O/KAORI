@@ -20,10 +20,7 @@ def test_inventory_read_contract_eligibility_matrix(
     compatibility_status: str | None,
     expected: bool,
 ) -> None:
-    assert (
-        eligibility.inventory_read_contract_eligible(readiness, compatibility_status)
-        is expected
-    )
+    assert eligibility.inventory_read_contract_eligible(readiness, compatibility_status) is expected
 
 
 def test_extended_support_provider_is_inventory_eligible(monkeypatch) -> None:
@@ -36,9 +33,7 @@ def test_extended_support_provider_is_inventory_eligible(monkeypatch) -> None:
     )
     runtime_state = SimpleNamespace(
         readiness='degraded',
-        snapshot=SimpleNamespace(
-            metadata={'compatibility_status': 'compatible_with_warnings'}
-        ),
+        snapshot=SimpleNamespace(metadata={'compatibility_status': 'compatible_with_warnings'}),
     )
     module = SimpleNamespace(
         require_record_for_canonical=lambda _identity_id: object(),

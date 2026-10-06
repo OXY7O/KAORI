@@ -139,7 +139,6 @@ def test_tenant_and_identity_provider_capabilities_are_discoverable_through_curr
     assert 'identity providers' in access['search_text']
 
 
-
 def test_artifact_registry_workspace_is_discoverable_from_domain_permission(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
