@@ -1,23 +1,50 @@
 {% if dependency_blocker.kind == 'analytics_snapshot' %}
     {% set dependency_steps = [
-        {"label": "Object Storage", "icon": "database-zap", "description": "Registered system and committed inventory"},
-        {"label": "Metrics Source", "icon": "activity", "description": "Prometheus-compatible operational metrics source and Object Storage analytics capability"},
-        {"label": "Alert Source", "icon": "bell-ring", "description": "Alertmanager when available, with the existing qualified metrics-backed alert fallback"},
-        {"label": "Analytics Snapshot", "icon": "database-clock", "description": "Worker-committed operational analytics evidence"}
+        {
+            "label": "Object Storage",
+            "icon": "database-zap",
+            "description": "Registered system and committed inventory"
+        },
+        {
+            "label": "Metrics Source",
+            "icon": "activity",
+            "description": "Prometheus-compatible operational metrics source and Object Storage analytics capability"
+        },
+        {
+            "label": "Alert Source",
+            "icon": "bell-ring",
+            "description": "Alertmanager when available, with the existing qualified metrics-backed alert fallback"
+        },
+        {
+            "label": "Analytics Snapshot",
+            "icon": "database-clock",
+            "description": "Worker-committed operational analytics evidence"
+        }
     ] %}
     {% set dependency_route_summary = "Object Storage → Metrics Source → Alert Source → Analytics Snapshot" %}
     {% set dependency_grid_classes = "lg:grid-cols-4" %}
     {% set dependency_blocked_step = 4 %}
 {% else %}
     {% set dependency_steps = [
-        {"label": "Object Storage", "icon": "database-zap", "description": "Registered system and committed inventory"},
-        {"label": "Metrics Source", "icon": "activity", "description": "Prometheus-compatible operational metrics source and Object Storage analytics capability"},
-        {"label": "Alert Source", "icon": "bell-ring", "description": "Alertmanager when available, with the existing qualified metrics-backed alert fallback"}
+        {
+            "label": "Object Storage",
+            "icon": "database-zap",
+            "description": "Registered system and committed inventory"
+        },
+        {
+            "label": "Metrics Source",
+            "icon": "activity",
+            "description": "Prometheus-compatible operational metrics source and Object Storage analytics capability"
+        },
+        {
+            "label": "Alert Source",
+            "icon": "bell-ring",
+            "description": "Alertmanager when available, with the existing qualified metrics-backed alert fallback"
+        }
     ] %}
     {% set dependency_route_summary = "Object Storage → Metrics Source → Alert Source" %}
     {% set dependency_grid_classes = "lg:grid-cols-3" %}
 {% endif %}
-
 {% if dependency_blocker.kind == 'system_required' %}
     {% set dependency_missing_label = "Object Storage system" %}
 {% elif dependency_blocker.kind == 'inventory_required' %}
