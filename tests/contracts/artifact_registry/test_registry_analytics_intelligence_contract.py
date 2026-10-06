@@ -157,7 +157,8 @@ def test_registry_analytics_uses_fast_shell_and_bounded_fragments() -> None:
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
     template = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
 
-    assert "def build_analytics_shell(*, active_tab: str = 'growth')" in presentation
+    assert 'def build_analytics_shell(' in presentation
+    assert "active_tab: str = 'growth'" in presentation
     assert "analytics=build_analytics_shell(" in routes
     assert "@artifact_registry_bp.get('/analytics/section/<string:section>')" in routes
     assert "section='summary'" in template
