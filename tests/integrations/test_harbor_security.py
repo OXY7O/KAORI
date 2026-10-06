@@ -5,13 +5,11 @@ from dataclasses import dataclass
 import pytest
 
 from app.artifact_registry.security.contracts import RegistrySecurityTarget
+from app.integrations.registry.providers.harbor import security as harbor_security
 from app.integrations.registry.providers.harbor.exceptions import (
     HarborAuthError,
     HarborConnectionError,
 )
-from app.integrations.registry.providers.harbor import security as harbor_security
-
-
 @dataclass
 class _Instance:
     timeout: int = 5
