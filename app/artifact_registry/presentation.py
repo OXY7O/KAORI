@@ -2953,7 +2953,7 @@ def build_analytics_shell(
         'alerts',
         'insights',
     } else 'growth'
-    provider_count = len(_providers())
+    provider_count = int(overview['provider_count'])
     snapshot_count = (
         RegistryAnalyticsSnapshot.query.with_entities(
             func.count(func.distinct(RegistryAnalyticsSnapshot.integration_instance_id))
