@@ -9,8 +9,8 @@ from sqlalchemy.orm import joinedload
 from app.artifact_registry.correlation_sync_jobs import correlation_prerequisites
 from app.artifact_registry.observability import registry_metrics_readiness
 from app.artifact_registry.security.contracts import (
-    registry_scan_evidence_ready,
     SUCCESSFUL_REGISTRY_SCAN_STATUSES,
+    registry_scan_evidence_ready,
 )
 from app.common.pagination import paginate_query, paginate_sequence
 from app.dashboards.common.operational import normalize_operational_tab
@@ -35,6 +35,7 @@ from app.models.registry import (
 )
 from app.models.report import Report, ReportSchedule, ReportTemplate
 from app.reports.catalog import REPORT_TYPE_SPECS
+
 FRESHNESS_HOURS = 24
 
 def _fmt_bytes(value: int | None) -> str:
