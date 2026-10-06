@@ -41,23 +41,25 @@ from app.intelligence.registry_recommendations import build_registry_recommendat
 from app.intelligence.rule_exceptions import build_rule_exception_view
 from app.intelligence.rule_presentation import (
     CATEGORY_OPTIONS,
-    clean,
-    domain_label,
     DOMAIN_OPTIONS,
     LOGIC_TYPE_OPTIONS,
-    matches,
-    normalize_rule,
     PER_PAGE_OPTIONS,
-    provider_keys,
-    provider_label,
     PROVIDER_OPTIONS,
     SEVERITY_OPTIONS,
     SIGNAL_SOURCE_OPTIONS,
     SOURCE_KIND_OPTIONS,
     STATUS_OPTIONS,
+    clean,
+    domain_label,
+    matches,
+    normalize_rule,
+    provider_keys,
+    provider_label,
     to_int,
 )
 from app.intelligence.tenant_governance_recommendations import build_tenant_governance_recommendation_findings
+
+
 def _is_active_filter_value(value: str | None) -> bool:
     normalized = clean(value).lower()
     return normalized not in {'', 'all'}
@@ -316,6 +318,7 @@ def _cluster_name_map(cluster_ids: set[str]) -> dict[str, str]:
         return {}
     try:
         from app.models import Cluster
+
     except ImportError:
         return {}
     try:
@@ -334,6 +337,7 @@ def _build_tls_certificate_findings(rules: dict[str, dict[str, Any]]) -> list[di
 
     try:
         from app.models import TLSCertificateInventory
+
     except ImportError:
         return []
 

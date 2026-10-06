@@ -15,6 +15,7 @@ from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_a
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls import weak_tls_context
 from app.intelligence.alert_signals.config import alert_signal_freshness_minutes
 from app.models import AlertSignalSnapshot, Cluster
+
 KUBERNETES_RUNTIME_HEALTH_PROFILE = 'kubernetes_runtime_health'
 KUBERNETES_RUNTIME_HEALTH_SIGNAL = 'kubernetes.runtime_health'
 _SIGNAL_SCHEMA_VERSION = 1

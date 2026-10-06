@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+import logging
 from time import perf_counter
 from typing import Any
-import logging
 
 from celery import shared_task
 from redis.exceptions import RedisError
@@ -18,6 +18,7 @@ from app.kubernetes.cluster.sync_state import mark_cluster_sync_completed, store
 from app.models import Cluster
 from app.platform_operations.jobs.execution import JobExecutionContext
 from app.platform_operations.notifications.service import create_notification
+
 logger = logging.getLogger(__name__)
 
 

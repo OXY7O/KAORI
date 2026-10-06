@@ -5,9 +5,9 @@ from app.artifact_registry.governance import register_registry_governance_collec
 from app.artifact_registry.security.providers import register_registry_security_collector
 from app.common.integration_errors import describe_integration_failure
 from app.integrations.kernel.registry import (
-    canonical_model_loader,
     IntegrationImplementation,
     IntegrationModule,
+    canonical_model_loader,
     model_loader,
     registry,
 )
@@ -20,6 +20,8 @@ from app.integrations.registry.providers.harbor.governance import collector as g
 from app.integrations.registry.providers.harbor.inventory import collector as inventory_collector
 from app.integrations.registry.providers.harbor.security import collector as security_collector
 from app.models.harbor import HarborInstance
+
+
 def _detail_url(instance: HarborInstance, section: str) -> str:
     suffix = f'#{section}' if section else ''
     return f'/integrations/registry/harbor/instances/{instance.id}{suffix}'

@@ -5,15 +5,16 @@ from time import perf_counter, sleep
 from typing import Any
 from urllib.parse import quote
 
+import requests
 from requests import Response
 from requests.auth import HTTPBasicAuth
-import requests
 
 from app.integrations.registry.providers.harbor.exceptions import (
     HarborAuthError,
     HarborConnectionError,
     HarborResponseError,
 )
+
 _TRANSIENT_STATUS_CODES = frozenset({429, 502, 503, 504})
 
 

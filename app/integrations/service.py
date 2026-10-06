@@ -42,6 +42,8 @@ from app.models import (
 from app.models.integration import IntegrationInstance
 from app.models.kubernetes import KubernetesConnection
 from app.models.runtime import IntegrationRuntimeObservation
+
+
 @dataclass(frozen=True, slots=True)
 class MetricsSourceRegistryFilters:
     query: str = ''
