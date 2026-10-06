@@ -422,8 +422,7 @@ def _runtime_snapshot_state(prerequisites: dict[str, Any]) -> dict[str, Any]:
     )
     refreshing = bool(latest_job is not None and latest_job.is_active)
     stale = bool(
-        latest_correlated_at is not None
-        and latest_correlated_at < datetime.now(UTC) - timedelta(hours=FRESHNESS_HOURS)
+        latest_correlated_at is not None and latest_correlated_at < datetime.now(UTC) - timedelta(hours=FRESHNESS_HOURS)
     )
     if refreshing:
         status, tone = 'Refreshing', 'info'
@@ -692,6 +691,7 @@ def _build_runtime_usage(request: RuntimeUsageRequest) -> dict[str, Any]:
 
 def build_runtime_usage(**kwargs: Any) -> dict[str, Any]:
     return _build_runtime_usage(_runtime_usage_request(kwargs))
+
 
 def build_runtime_binding_detail(binding_id: int) -> dict[str, Any] | None:
     binding = (
