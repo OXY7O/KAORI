@@ -25,7 +25,11 @@ from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_a
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.messages import (
     compact_readiness_reasons,
 )
-from app.integrations.overview_extensions import sort_runtime_rows
+from app.integrations.overview_extensions import (
+    build_provider_portfolio_counts,
+    portfolio_posture,
+    sort_runtime_rows,
+)
 from app.integrations.provider_matrix import provider_kind
 from app.integrations.taxonomy import (
     capability_definitions_for_domain,
@@ -451,100 +455,6 @@ def build_alertmanager_page(
     )
 
 
-def _portfolio_counts(states: list[tuple[bool, bool, str | None]]) -> dict[str, int]:
-    counts = {
-        'configured': 0,
-        'ready': 0,
-        'degraded': 0,
-        'blocked': 0,
-        'validation_required': 0,
-        'disabled': 0,
-        'not_configured': 0,
-        'total': 0,
-        'attention': 0,
-    }
-    for is_configured, is_enabled, readiness in states:
-        counts['total'] += 1
-        if not is_configured:
-            counts['not_configured'] += 1
-            continue
-        counts['configured'] += 1
-        if not is_enabled:
-            counts['disabled'] += 1
-            continue
-        state = str(readiness or 'validation_required').strip().lower()
-        if state == 'ready':
-            counts['ready'] += 1
-        elif state == 'degraded':
-            counts['degraded'] += 1
-        elif state in {'blocked', 'unavailable', 'failed', 'incompatible'}:
-            counts['blocked'] += 1
-        else:
-            counts['validation_required'] += 1
-    counts['attention'] = max(counts['total'] - counts['ready'], 0)
-    return counts
-
-
-def _portfolio_posture(counts: dict[str, int]) -> tuple[str, str]:
-    total = int(counts.get('total') or 0)
-    configured = int(counts.get('configured') or 0)
-    ready = int(counts.get('ready') or 0)
-    if total <= 0 or configured <= 0:
-        return 'not_configured', 'Not Configured'
-    if ready == total:
-        return 'ready', 'Ready'
-    if total == 1:
-        for key, label in (
-            ('degraded', 'Degraded'),
-            ('blocked', 'Blocked'),
-            ('validation_required', 'Validation Required'),
-            ('disabled', 'Disabled'),
-            ('not_configured', 'Not Configured'),
-        ):
-            if int(counts.get(key) or 0) == 1:
-                return key, label
-    if int(counts.get('disabled') or 0) == total:
-        return 'disabled', 'Disabled'
-    if ready == 0 and int(counts.get('not_configured') or 0) == 0 and int(counts.get('disabled') or 0) == 0:
-        for key, label in (
-            ('blocked', 'Blocked'),
-            ('degraded', 'Degraded'),
-            ('validation_required', 'Validation Required'),
-        ):
-            if int(counts.get(key) or 0) == configured:
-                return key, label
-    return 'attention', 'Needs Review'
-
-
-def _provider_portfolio_counts(
-    *,
-    kubernetes_connections: list[KubernetesConnection],
-    metrics_sources: list[MetricsSource],
-    alertmanager_instances: list[AlertmanagerInstance],
-    extension_instances: list[IntegrationInstance],
-) -> dict[str, dict[str, int]]:
-    counts = {
-        'container_orchestrator': _portfolio_counts(
-            [
-                (True, bool(item.integration_instance.enabled), _kubernetes_readiness(item))
-                for item in kubernetes_connections
-            ]
-        ),
-        'metrics_source': _portfolio_counts(
-            [(bool(item.endpoint), bool(item.enabled), item.readiness_status) for item in metrics_sources]
-        ),
-        'alert_source': _portfolio_counts(
-            [(bool(item.endpoint), bool(item.enabled), item.readiness_status) for item in alertmanager_instances]
-        ),
-    }
-    for integration_type in {item.integration_type for item in extension_instances}:
-        targets = [item for item in extension_instances if item.integration_type == integration_type]
-        counts[integration_type] = _portfolio_counts(
-            [(True, bool(item.enabled), item.readiness_status) for item in targets]
-        )
-    return counts
-
-
 def _coverage(
     *,
     kubernetes_connections: list[KubernetesConnection],
@@ -552,7 +462,7 @@ def _coverage(
     alertmanager_instances: list[AlertmanagerInstance],
     extension_instances: list[IntegrationInstance],
 ) -> list[dict[str, Any]]:
-    provider_counts = _provider_portfolio_counts(
+    provider_counts = build_provider_portfolio_counts(
         kubernetes_connections=kubernetes_connections,
         metrics_sources=metrics_sources,
         alertmanager_instances=alertmanager_instances,
@@ -589,7 +499,7 @@ def _coverage(
         if lifecycle != 'available':
             posture_state, posture_label = 'planned', 'Planned'
         else:
-            posture_state, posture_label = _portfolio_posture(summary)
+            posture_state, posture_label = portfolio_posture(summary)
         rows.append(
             {
                 'key': domain.key,
@@ -646,7 +556,7 @@ def _catalog(
         ready = int(counts.get('ready') or 0)
         total = int(counts.get('total') or 0)
         attention = int(counts.get('attention') or 0)
-        posture_state, posture_label = _portfolio_posture(counts)
+        posture_state, posture_label = portfolio_posture(counts)
         rows.append(
             {
                 'key': module.integration_type,
