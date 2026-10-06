@@ -3333,6 +3333,52 @@ def build_analytics(*, active_tab: str = 'growth') -> dict[str, Any]:
             }
         )
 
+    for row in growth_rows:
+        size_growth = row.get('size_growth_bytes_per_day')
+        size_delta = row.get('size_delta_bytes')
+        row['size_growth_display'] = (
+            f"{_fmt_bytes(round(float(size_growth)))}/day"
+            if isinstance(size_growth, (int, float))
+            else 'N/A'
+        )
+        row['size_delta_display'] = (
+            _fmt_bytes(round(float(size_delta)))
+            if isinstance(size_delta, (int, float))
+            else 'N/A'
+        )
+        artifact_growth = row.get('artifact_growth_per_day')
+        row['artifact_growth_display'] = (
+            f"{float(artifact_growth):+.1f}/day"
+            if isinstance(artifact_growth, (int, float))
+            else 'N/A'
+        )
+
+    for row in forecast_rows:
+        usage = row.get('usage_bytes')
+        quota = row.get('quota_bytes')
+        growth = row.get('growth_bytes_per_day')
+        days = row.get('days_to_quota')
+        utilization = row.get('utilization_percent')
+        row['usage_display'] = (
+            _fmt_bytes(round(float(usage))) if isinstance(usage, (int, float)) else 'N/A'
+        )
+        row['quota_display'] = (
+            _fmt_bytes(round(float(quota))) if isinstance(quota, (int, float)) else 'N/A'
+        )
+        row['growth_display'] = (
+            f"{_fmt_bytes(round(float(growth)))}/day"
+            if isinstance(growth, (int, float))
+            else 'Insufficient history'
+        )
+        row['days_to_quota_display'] = (
+            f"{float(days):.1f} days" if isinstance(days, (int, float)) else 'No forecast'
+        )
+        row['utilization_display'] = (
+            f"{float(utilization):.1f}%"
+            if isinstance(utilization, (int, float))
+            else 'N/A'
+        )
+
     return {
         'setup': overview['setup'],
         'provider_count': len(identities),
