@@ -8,11 +8,11 @@ from sqlalchemy.orm import joinedload
 
 from app.artifact_registry.security.contracts import SUCCESSFUL_REGISTRY_SCAN_STATUSES
 from app.artifact_registry.security.job_adapter import build_registry_security_sync_state
-from app.artifact_registry.security.providers import registered_registry_security_collectors
 from app.artifact_registry.security.presentation_scope import (
     _security_scope_labels,
     _security_snapshot_context,
 )
+from app.artifact_registry.security.providers import registered_registry_security_collectors
 from app.common.pagination import paginate_query, paginate_sequence
 from app.models.integration import IntegrationInstance
 from app.models.job import JobExecution
