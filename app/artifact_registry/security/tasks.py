@@ -375,7 +375,7 @@ def finalize_registry_security_sync_task(
             create_notification(
                 user_id=requested_by_user_id,
                 event_type='artifact_registry_security_sync',
-                status=status,
+                status=str(result['status']),
                 title=result['title'],
                 message=result['message'],
                 detail=result['detail'],
