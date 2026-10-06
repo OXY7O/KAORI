@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -458,24 +459,41 @@ def _project_forecasts(
     return forecasts
 
 
-def _analytics_domain_payload(
-    *,
-    projects: list[RegistryProject],
-    repositories: list[RegistryRepository],
-    artifacts: list[RegistryArtifact],
-    bindings: list[RegistryWorkloadBinding],
-    governance_rows: list[RegistryProjectGovernance],
-    generated_at: datetime,
-    growth: dict[str, Any],
-    project_forecasts: list[dict[str, Any]],
-    metrics: dict[str, Any],
-    alerts: dict[str, Any],
+@dataclass(frozen=True, slots=True)
+class _AnalyticsDomainState:
+    projects: list[RegistryProject]
+    repositories: list[RegistryRepository]
+    artifacts: list[RegistryArtifact]
+    bindings: list[RegistryWorkloadBinding]
+    governance_rows: list[RegistryProjectGovernance]
+    generated_at: datetime
+    growth: dict[str, Any]
+    project_forecasts: list[dict[str, Any]]
+    metrics: dict[str, Any]
+    alerts: dict[str, Any]
+
+
+def _analytics_inventory_payload(
+    state: _AnalyticsDomainState,
+    runtime_artifact_ids: set[int],
 ) -> dict[str, Any]:
-    total_size = sum(int(artifact.size_bytes or 0) for artifact in artifacts)
+    return {
+        'projects': len(state.projects),
+        'repositories': len(state.repositories),
+        'artifacts': len(state.artifacts),
+        'total_size_bytes': sum(int(artifact.size_bytes or 0) for artifact in state.artifacts),
+        'stale_candidate_count': _stale_candidate_count(
+            state.artifacts,
+            runtime_artifact_ids,
+            state.generated_at,
+        ),
+    }
+
+
+def _analytics_security_payload(artifacts: list[RegistryArtifact]) -> dict[str, Any]:
     scanned = sum(registry_scan_evidence_ready(artifact.scan_status) for artifact in artifacts)
     signed = sum(str(artifact.signature_status or '') == 'signed' for artifact in artifacts)
     sbom = sum(str(artifact.sbom_status or '') == 'available' for artifact in artifacts)
-    runtime_artifact_ids = {binding.artifact_id for binding in bindings}
     critical_findings = sum(
         int((artifact.vulnerability_summary or {}).get('critical') or 0)
         for artifact in artifacts
@@ -486,52 +504,65 @@ def _analytics_domain_payload(
         for artifact in artifacts
         if isinstance(artifact.vulnerability_summary, dict)
     )
+    total = len(artifacts)
+    return {
+        'scanned_artifacts': scanned,
+        'scan_coverage_percent': round((scanned / total) * 100, 1) if total else 0.0,
+        'critical_findings': critical_findings,
+        'high_findings': high_findings,
+        'signed_artifacts': signed,
+        'signature_coverage_percent': round((signed / total) * 100, 1) if total else 0.0,
+        'sbom_artifacts': sbom,
+        'sbom_coverage_percent': round((sbom / total) * 100, 1) if total else 0.0,
+    }
+
+
+def _analytics_runtime_payload(
+    artifacts: list[RegistryArtifact],
+    bindings: list[RegistryWorkloadBinding],
+) -> tuple[dict[str, Any], set[int]]:
+    runtime_artifact_ids = {binding.artifact_id for binding in bindings}
     critical_runtime = sum(
         artifact.id in runtime_artifact_ids and int((artifact.vulnerability_summary or {}).get('critical') or 0) > 0
         for artifact in artifacts
         if isinstance(artifact.vulnerability_summary, dict)
     )
+    payload = {
+        'bindings': len(bindings),
+        'running_artifacts': len(runtime_artifact_ids),
+        'critical_runtime_artifacts': critical_runtime,
+        'tag_only_bindings': sum(binding.match_type == 'tag' for binding in bindings),
+        'runtime_scan_gaps': sum(
+            artifact.id in runtime_artifact_ids and not registry_scan_evidence_ready(artifact.scan_status)
+            for artifact in artifacts
+        ),
+        'unsigned_runtime_artifacts': sum(
+            artifact.id in runtime_artifact_ids and str(artifact.signature_status or '') == 'unsigned'
+            for artifact in artifacts
+        ),
+    }
+    return payload, runtime_artifact_ids
+
+
+def _analytics_governance_payload(rows: list[RegistryProjectGovernance]) -> dict[str, Any]:
     return {
-        'inventory': {
-            'projects': len(projects),
-            'repositories': len(repositories),
-            'artifacts': len(artifacts),
-            'total_size_bytes': total_size,
-            'stale_candidate_count': _stale_candidate_count(artifacts, runtime_artifact_ids, generated_at),
-        },
-        'security': {
-            'scanned_artifacts': scanned,
-            'scan_coverage_percent': round((scanned / len(artifacts)) * 100, 1) if artifacts else 0.0,
-            'critical_findings': critical_findings,
-            'high_findings': high_findings,
-            'signed_artifacts': signed,
-            'signature_coverage_percent': round((signed / len(artifacts)) * 100, 1) if artifacts else 0.0,
-            'sbom_artifacts': sbom,
-            'sbom_coverage_percent': round((sbom / len(artifacts)) * 100, 1) if artifacts else 0.0,
-        },
-        'runtime': {
-            'bindings': len(bindings),
-            'running_artifacts': len(runtime_artifact_ids),
-            'critical_runtime_artifacts': critical_runtime,
-            'tag_only_bindings': sum(binding.match_type == 'tag' for binding in bindings),
-            'runtime_scan_gaps': sum(
-                artifact.id in runtime_artifact_ids and not registry_scan_evidence_ready(artifact.scan_status)
-                for artifact in artifacts
-            ),
-            'unsigned_runtime_artifacts': sum(
-                artifact.id in runtime_artifact_ids and str(artifact.signature_status or '') == 'unsigned'
-                for artifact in artifacts
-            ),
-        },
-        'governance': {
-            'projects_assessed': len(governance_rows),
-            'retention_configured': sum(row.retention_status == 'configured' for row in governance_rows),
-            'immutability_configured': sum(row.immutability_status == 'configured' for row in governance_rows),
-        },
-        'growth': growth,
-        'capacity': {'project_forecasts': project_forecasts},
-        'metrics': metrics,
-        'alerts': alerts,
+        'projects_assessed': len(rows),
+        'retention_configured': sum(row.retention_status == 'configured' for row in rows),
+        'immutability_configured': sum(row.immutability_status == 'configured' for row in rows),
+    }
+
+
+def _analytics_domain_payload(state: _AnalyticsDomainState) -> dict[str, Any]:
+    runtime_payload, runtime_artifact_ids = _analytics_runtime_payload(state.artifacts, state.bindings)
+    return {
+        'inventory': _analytics_inventory_payload(state, runtime_artifact_ids),
+        'security': _analytics_security_payload(state.artifacts),
+        'runtime': runtime_payload,
+        'governance': _analytics_governance_payload(state.governance_rows),
+        'growth': state.growth,
+        'capacity': {'project_forecasts': state.project_forecasts},
+        'metrics': state.metrics,
+        'alerts': state.alerts,
         'evidence': {
             'source': 'committed_registry_state',
             'metrics_source_optional': True,
@@ -566,16 +597,18 @@ def materialize_registry_analytics(
     alerts = _alert_evidence(identity)
     project_forecasts = _project_forecasts(metrics, _previous_project_usage(previous), elapsed_days)
     payload = _analytics_domain_payload(
-        projects=projects,
-        repositories=repositories,
-        artifacts=artifacts,
-        bindings=bindings,
-        governance_rows=governance_rows,
-        generated_at=generated_at,
-        growth=growth,
-        project_forecasts=project_forecasts,
-        metrics=metrics,
-        alerts=alerts,
+        _AnalyticsDomainState(
+            projects=projects,
+            repositories=repositories,
+            artifacts=artifacts,
+            bindings=bindings,
+            governance_rows=governance_rows,
+            generated_at=generated_at,
+            growth=growth,
+            project_forecasts=project_forecasts,
+            metrics=metrics,
+            alerts=alerts,
+        )
     )
 
     snapshot = RegistryAnalyticsSnapshot(
