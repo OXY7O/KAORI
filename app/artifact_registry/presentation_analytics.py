@@ -10,6 +10,7 @@ from app.artifact_registry.presentation_overview import build_overview
 from app.common.pagination import paginate_sequence
 from app.models.registry import RegistryAnalyticsSnapshot
 
+
 def build_analytics_shell(
     *,
     active_tab: str = 'growth',
