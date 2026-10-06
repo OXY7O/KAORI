@@ -15,6 +15,7 @@ from app.models.registry import (
     RegistryRepository,
 )
 
+
 def _project_row(item: RegistryProject) -> dict[str, Any]:
     return {
         'id': item.id,
