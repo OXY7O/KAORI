@@ -1,5 +1,4 @@
 from pathlib import Path
-
 ROOT = Path(__file__).resolve().parents[3]
 
 
@@ -27,11 +26,6 @@ def test_dashboard_recommended_actions_share_intelligence_copy_and_detail_owner(
     object_storage = read('app/templates/storage/object_storage/dashboard/partials/_recommended_actions.html')
     registry = read('app/templates/artifact_registry/partials/_overview_recommended_actions.html')
     shared = read('app/templates/components/operational_recommendation_cards.html')
-    kubernetes_projection = read('app/kubernetes/dashboard/sections/recommendations.py')
-    kubernetes_schema = read('app/kubernetes/dashboard/schema.py')
-    kubernetes_utils = read('app/kubernetes/dashboard/utils.py')
-    object_projection = read('app/storage/object_storage/dashboard/service.py')
-    registry_projection = read('app/artifact_registry/presentation.py')
 
     canonical = 'Top active findings from the Intelligence recommendation catalog.'
     assert canonical in kubernetes
