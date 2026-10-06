@@ -543,7 +543,7 @@ def _catalog(
     alertmanager_instances: list[AlertmanagerInstance],
     extension_instances: list[IntegrationInstance],
 ) -> list[dict[str, Any]]:
-    provider_counts = _provider_portfolio_counts(
+    provider_counts = build_provider_portfolio_counts(
         kubernetes_connections=kubernetes_connections,
         metrics_sources=metrics_sources,
         alertmanager_instances=alertmanager_instances,
