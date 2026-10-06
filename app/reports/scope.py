@@ -55,6 +55,98 @@ def _lookup_asset_label(model: Any, asset_id: str) -> str:
     return str(getattr(asset, 'name', '') or '').strip()
 
 
+def _kubernetes_scope(
+    record: Any,
+    *,
+    asset_id: str,
+    snapshot: str,
+    domain: str,
+    source_kind: str,
+) -> ReportScope | None:
+    if not asset_id:
+        return None
+    label = snapshot or _related_asset_label(record, 'cluster') or _lookup_asset_label(Cluster, asset_id) or asset_id
+    return ReportScope(
+        asset_type=KUBERNETES_CLUSTER_ASSET_TYPE,
+        asset_id=asset_id,
+        label=label,
+        domain=domain or 'kubernetes',
+        source_kind=source_kind or 'kubernetes',
+        namespace=str(getattr(record, 'namespace', '') or '').strip() or None,
+    )
+
+
+def _object_storage_scope(
+    record: Any,
+    *,
+    asset_id: str,
+    snapshot: str,
+    domain: str,
+    source_kind: str,
+) -> ReportScope | None:
+    if not asset_id:
+        return None
+    label = (
+        snapshot
+        or _related_asset_label(record, 'object_storage_system')
+        or _lookup_asset_label(ObjectStorageSystem, asset_id)
+        or asset_id
+    )
+    return ReportScope(
+        asset_type=OBJECT_STORAGE_SYSTEM_ASSET_TYPE,
+        asset_id=asset_id,
+        label=label,
+        domain=domain or 'object_storage',
+        source_kind=source_kind or 'object_storage',
+    )
+
+
+def _registry_scope(
+    *,
+    asset_id: str,
+    snapshot: str,
+    domain: str,
+    source_kind: str,
+) -> ReportScope | None:
+    if not asset_id:
+        return None
+    try:
+        instance_id = int(asset_id)
+    except (TypeError, ValueError):
+        return None
+    instance = db.session.get(IntegrationInstance, instance_id)
+    if instance is None or instance.integration_type != 'registry':
+        return None
+    return ReportScope(
+        asset_type=ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE,
+        asset_id=asset_id,
+        label=snapshot or instance.name or asset_id,
+        domain=domain or 'artifact_registry',
+        source_kind=source_kind or 'artifact_registry',
+    )
+
+
+def _generic_scope(
+    record: Any,
+    *,
+    asset_type: str,
+    asset_id: str,
+    snapshot: str,
+    domain: str,
+    source_kind: str,
+) -> ReportScope | None:
+    if not asset_type or not asset_id:
+        return None
+    return ReportScope(
+        asset_type=asset_type,
+        asset_id=asset_id,
+        label=snapshot or asset_id,
+        domain=domain,
+        source_kind=source_kind,
+        namespace=str(getattr(record, 'namespace', '') or '').strip() or None,
+    )
+
+
 def resolve_report_scope(record: Any) -> ReportScope | None:
     asset_type = str(getattr(record, 'scope_asset_type', '') or '').strip()
     asset_id = str(getattr(record, 'scope_asset_id', '') or '').strip()
@@ -62,72 +154,24 @@ def resolve_report_scope(record: Any) -> ReportScope | None:
     domain = str(getattr(record, 'report_domain', '') or 'kubernetes').strip()
     source_kind = str(getattr(record, 'source_kind', '') or domain).strip()
 
-    # Backward compatibility for reports created before generic report scope.
     cluster_id = str(getattr(record, 'cluster_id', '') or '').strip()
     if not asset_type and cluster_id:
         asset_type = KUBERNETES_CLUSTER_ASSET_TYPE
         asset_id = cluster_id
 
+    kwargs = {
+        'asset_id': asset_id,
+        'snapshot': snapshot,
+        'domain': domain,
+        'source_kind': source_kind,
+    }
     if asset_type == KUBERNETES_CLUSTER_ASSET_TYPE:
-        if not asset_id:
-            return None
-        label = (
-            snapshot or _related_asset_label(record, 'cluster') or _lookup_asset_label(Cluster, asset_id) or asset_id
-        )
-        return ReportScope(
-            asset_type=asset_type,
-            asset_id=asset_id,
-            label=label,
-            domain=domain or 'kubernetes',
-            source_kind=source_kind or 'kubernetes',
-            namespace=str(getattr(record, 'namespace', '') or '').strip() or None,
-        )
-
+        return _kubernetes_scope(record, **kwargs)
     if asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE:
-        if not asset_id:
-            return None
-        label = (
-            snapshot
-            or _related_asset_label(record, 'object_storage_system')
-            or _lookup_asset_label(ObjectStorageSystem, asset_id)
-            or asset_id
-        )
-        return ReportScope(
-            asset_type=asset_type,
-            asset_id=asset_id,
-            label=label,
-            domain=domain or 'object_storage',
-            source_kind=source_kind or 'object_storage',
-        )
-
+        return _object_storage_scope(record, **kwargs)
     if asset_type == ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE:
-        if not asset_id:
-            return None
-        try:
-            instance_id = int(asset_id)
-        except (TypeError, ValueError):
-            return None
-        instance = db.session.get(IntegrationInstance, instance_id)
-        if instance is None or instance.integration_type != 'registry':
-            return None
-        return ReportScope(
-            asset_type=asset_type,
-            asset_id=asset_id,
-            label=snapshot or instance.name or asset_id,
-            domain=domain or 'artifact_registry',
-            source_kind=source_kind or 'artifact_registry',
-        )
-
-    if asset_type and asset_id:
-        return ReportScope(
-            asset_type=asset_type,
-            asset_id=asset_id,
-            label=snapshot or asset_id,
-            domain=domain,
-            source_kind=source_kind,
-            namespace=str(getattr(record, 'namespace', '') or '').strip() or None,
-        )
-    return None
+        return _registry_scope(**kwargs)
+    return _generic_scope(record, asset_type=asset_type, **kwargs)
 
 
 def get_report_namespace_options_by_cluster() -> dict[str, list[str]]:
