@@ -115,36 +115,37 @@ def test_registry_analytics_materializes_operational_harbor_metric_profile() -> 
 
 
 def test_registry_analytics_workspace_is_reusable_and_intelligence_bounded() -> None:
-    template = (
-        ROOT / 'app/templates/artifact_registry/analytics.html'
+    shell = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
+    section = (
+        ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html'
     ).read_text()
     presentation = (ROOT / 'app/artifact_registry/presentation.py').read_text()
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
 
-    assert 'components/framed_workspace_tabs.html' in template
-    assert 'framed_workspace_tabs.render_navigation' in template
-    for section in (
-        'Analytics Summary',
-        'Analytics Workspace',
+    assert 'components/framed_workspace_tabs.html' in shell
+    assert 'framed_workspace_tabs.render_navigation' in shell
+    assert 'Analytics Workspace' in shell
+    for title in (
         'Registry Growth',
         'Capacity Outlook',
         'Artifact Usage',
         'Risk Concentration',
         'Governance Gaps',
+        'Operational Alerts',
         'Derived Insights',
         'Central Intelligence',
     ):
-        assert section in template
+        assert title in section
 
-    for tab in ('growth', 'capacity', 'usage', 'risk', 'governance', 'insights'):
-        assert f"'{tab}'" in template
+    for tab in ('growth', 'capacity', 'usage', 'risk', 'governance', 'alerts', 'insights'):
+        assert f"'{tab}'" in shell
         assert f"'{tab}'" in presentation
 
     assert "active_tab=request.args.get('tab', 'growth', type=str)" in routes
-    assert 'no request-time Harbor or Prometheus dependency' in template
-    assert 'never auto-cleaned' in template
-    assert 'recommendation lifecycle, Accepted Risk, escalation, and automation control remain centrally governed' in template
-    assert "url_for('intelligence.recommendations', domain='registry')" in template
+    assert 'never waits on live Harbor, Alertmanager, Prometheus, or Thanos requests' in shell
+    assert 'never auto-cleaned' in section
+    assert 'central Intelligence owns recommendation semantics, Accepted Risk, escalation, and automation control' in section
+    assert "url_for('intelligence.recommendations', domain='registry')" in shell
 
     assert "aggregate['inflight_requests'] > 100" not in presentation
     assert "aggregate['task_queue_size'] > 0" not in presentation
