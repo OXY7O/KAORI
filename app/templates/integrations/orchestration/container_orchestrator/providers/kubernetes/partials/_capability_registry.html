@@ -262,7 +262,7 @@
     {% set discovery_path = ('/apis/' ~ row.api_version if '/' in row.api_version else '/api/' ~ row.api_version) if has_selected_contract else '' %}
     {% set api_group_argument = '--api-group=' ~ api_group if api_group else '--api-group=""' %}
     {% if not has_selected_contract %}
-        {% set runnable_script = '' %}
+        {% set runnable_script = "" %}
     {% elif row.required %}
         {% set runnable_script = [
                     'set -euo pipefail',
@@ -298,7 +298,7 @@
     {% set authorization_scope = 'All namespaces' if row.required else ('Cluster-scoped governed workflow' if is_cluster_scoped_optional else 'Approved namespace only') %}
     {% if optional_gap %}
         {% if row.message == 'No supported API candidate with the required verbs is available.' %}
-            {% set decision_message = 'This optional Tenant capability is unavailable. Core readiness is unaffected; no supported API contract currently satisfies the required verbs.' %}
+            {% set decision_message = "This optional Tenant capability is unavailable. Core readiness is unaffected; no supported API contract currently satisfies the required verbs." %}
         {% else %}
             {% set decision_message = 'This optional Tenant capability is unavailable. Core readiness is unaffected.' ~ (' ' ~ row.message if row.message else '') %}
         {% endif %}
@@ -371,12 +371,12 @@
                 </header>
                 <ol class="grid gap-px bg-outline-subtle lg:grid-cols-3">
                     {% if not has_selected_contract %}
-                        {% set api_serving_description = 'Full Validation did not select an API version for this capability; KAORI does not infer one.' %}
-                        {% set resource_discovery_description = 'Resource discovery remains unresolved until a supported API contract is selected.' %}
+                        {% set api_serving_description = "Full Validation did not select an API version for this capability; KAORI does not infer one." %}
+                        {% set resource_discovery_description = "Resource discovery remains unresolved until a supported API contract is selected." %}
                         {% set authorization_description = 'Optional workflows must establish their own approved access boundary.' if not row.required else 'Required authorization remains unresolved until a valid API/resource contract is selected.' %}
                     {% else %}
-                        {% set api_serving_description = 'Selected API is served by the registered Kubernetes API.' %}
-                        {% set resource_discovery_description = 'Expected resource is discoverable through the selected API contract.' %}
+                        {% set api_serving_description = "Selected API is served by the registered Kubernetes API." %}
+                        {% set resource_discovery_description = "Expected resource is discoverable through the selected API contract." %}
                         {% set authorization_description = 'Required verbs are evaluated across all namespaces for this cluster-wide contract.' if row.required else ('Required verbs are evaluated against the cluster-scoped admission resource for this optional governance contract.' if is_cluster_scoped_optional else 'Required verbs are evaluated only in the approved namespace for this optional contract.') %}
                     {% endif %}
                     {% set validation_steps = [
