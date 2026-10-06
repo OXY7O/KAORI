@@ -56,8 +56,7 @@ def build_schedule_asset_filter_options(
     artifact_registry_options: list[dict[str, str]],
 ) -> list[dict[str, str]]:
     asset_options: dict[str, str] = {
-        f'{KUBERNETES_CLUSTER_ASSET_TYPE}:{item["value"]}': f'Kubernetes · {item["label"]}'
-        for item in cluster_options
+        f'{KUBERNETES_CLUSTER_ASSET_TYPE}:{item["value"]}': f'Kubernetes · {item["label"]}' for item in cluster_options
     }
     asset_options.update(
         {
