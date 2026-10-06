@@ -22,23 +22,23 @@
 {% endfor %}
 {% set capability_total = feature_rows|length %}
 {% if blocked_features %}
-    {% set capability_readiness_state = 'blocked' %}
-    {% set capability_readiness_label = 'Blocked' %}
-    {% set capability_gate_title = 'Remediation Required' %}
-    {% set capability_gate_description = 'Resolve required API or RBAC gaps.' %}
-    {% set capability_gate_tone = 'critical' %}
+    {% set capability_readiness_state = "blocked" %}
+    {% set capability_readiness_label = "Blocked" %}
+    {% set capability_gate_title = "Remediation Required" %}
+    {% set capability_gate_description = "Resolve required API or RBAC gaps." %}
+    {% set capability_gate_tone = "critical" %}
 {% elif legacy_features %}
-    {% set capability_readiness_state = 'degraded' %}
-    {% set capability_readiness_label = 'Degraded' %}
-    {% set capability_gate_title = 'Core Workspaces Eligible' %}
-    {% set capability_gate_description = 'Required contracts remain usable through legacy API fallbacks; migrate before upstream removal.' %}
-    {% set capability_gate_tone = 'warning' %}
+    {% set capability_readiness_state = "degraded" %}
+    {% set capability_readiness_label = "Degraded" %}
+    {% set capability_gate_title = "Core Workspaces Eligible" %}
+    {% set capability_gate_description = "Required contracts remain usable through legacy API fallbacks; migrate before upstream removal." %}
+    {% set capability_gate_tone = "warning" %}
 {% else %}
-    {% set capability_readiness_state = 'ready' %}
-    {% set capability_readiness_label = 'Ready' %}
-    {% set capability_gate_title = 'Core Workspaces Eligible' %}
-    {% set capability_gate_description = 'Core API/RBAC is ready; Tenant access remains workflow-scoped.' %}
-    {% set capability_gate_tone = 'normal' %}
+    {% set capability_readiness_state = "ready" %}
+    {% set capability_readiness_label = "Ready" %}
+    {% set capability_gate_title = "Core Workspaces Eligible" %}
+    {% set capability_gate_description = "Core API/RBAC is ready; Tenant access remains workflow-scoped." %}
+    {% set capability_gate_tone = "normal" %}
 {% endif %}
 {% set capability_readiness_percent = ((validated_feature_count * 100 / capability_total) if capability_total else 0) %}
 {% set capability_metadata = [
