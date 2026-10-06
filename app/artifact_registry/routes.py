@@ -383,6 +383,24 @@ def analytics_section(section: str) -> ResponseReturnValue:
     return render_template(template, analytics=context)
 
 
+@artifact_registry_bp.get('/analytics/alerts/table')
+@permission_required('artifact_registry.view')
+def analytics_alerts_table() -> ResponseReturnValue:
+    context = build_analytics(
+        active_tab='alerts',
+        alert_search=request.args.get('alert_q', '', type=str),
+        alert_severity=request.args.get('alert_severity', 'all', type=str),
+        alert_state=request.args.get('alert_state', 'all', type=str),
+        alert_source=request.args.get('alert_source', 'all', type=str),
+        alert_page=request.args.get('alert_page', 1, type=int) or 1,
+        alert_per_page=request.args.get('alert_per_page', 5, type=int) or 5,
+    )
+    return render_template(
+        'artifact_registry/partials/_analytics_section.html',
+        analytics=context,
+    )
+
+
 @artifact_registry_bp.get('/governance')
 @permission_required('artifact_registry.view')
 def governance() -> ResponseReturnValue:
