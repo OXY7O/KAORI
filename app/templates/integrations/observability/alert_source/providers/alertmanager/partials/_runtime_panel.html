@@ -10,7 +10,7 @@
 {% set health_tone = 'ready' if runtime_observed and runtime_state.health_status == 'healthy' else ('degraded' if runtime_observed and runtime_state.health_status in ['degraded', 'warning'] else ('blocked' if runtime_observed and runtime_state.health_status in ['unhealthy', 'failed'] else 'not_observed')) %}
 {% set attention_factors = runtime_state.attention_factors or runtime_state.factors or [] %}
 {% set runtime_gate_label = 'Observation Required' if not runtime_observed else ('Runtime Healthy' if runtime_state.health_status == 'healthy' else ('Runtime Blocked' if runtime_state.health_status in ['unhealthy', 'failed'] else 'Runtime Attention Required')) %}
-{% set runtime_identity = 'Alertmanager' %}
+{% set runtime_identity = "Alertmanager" %}
 {% if instance.detected_version %}
     {% set runtime_identity = runtime_identity ~ ' ' ~ instance.detected_version %}
 {% endif %}
