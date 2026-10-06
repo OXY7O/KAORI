@@ -29,7 +29,7 @@
                     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div>
                             <p class="text-sm font-semibold text-content-primary">{{ row.registry_name }}</p>
-                            <p class="mt-1 text-xs text-content-muted">{{ row.provider_key|replace('_', ' ')|title }} · committed materialization delta</p>
+                            <p class="mt-1 text-xs text-content-muted">{{ row.provider_key|replace('_', ' ') |title }} · committed materialization delta</p>
                         </div>
                         <div class="flex flex-wrap gap-2">
                             {{ table_label.status_indicator_label(row.artifact_growth_display, 'info') }}
@@ -37,16 +37,24 @@
                         </div>
                     </div>
                     <div class="mt-3 grid gap-3 text-xs sm:grid-cols-3">
-                        <div><span class="text-content-muted">Artifact Δ</span><p class="mt-1 font-semibold text-content-primary">{{ row.artifact_delta if row.artifact_delta is not none else 'N/A' }}</p></div>
-                        <div><span class="text-content-muted">Storage Δ</span><p class="mt-1 font-semibold text-content-primary">{{ row.size_delta_display }}</p></div>
-                        <div><span class="text-content-muted">Window</span><p class="mt-1 font-semibold text-content-primary">{{ ('%.1f days'|format(row.elapsed_days)) if row.elapsed_days is not none else 'N/A' }}</p></div>
+                        <div>
+                            <span class="text-content-muted">Artifact Δ</span>
+                            <p class="mt-1 font-semibold text-content-primary">{{ row.artifact_delta if row.artifact_delta is not none else 'N/A' }}</p>
+                        </div>
+                        <div>
+                            <span class="text-content-muted">Storage Δ</span>
+                            <p class="mt-1 font-semibold text-content-primary">{{ row.size_delta_display }}</p>
+                        </div>
+                        <div>
+                            <span class="text-content-muted">Window</span>
+                            <p class="mt-1 font-semibold text-content-primary">{{ ('%.1f days'|format(row.elapsed_days) ) if row.elapsed_days is not none else 'N/A' }}</p>
+                        </div>
                     </div>
                 </article>
             {% else %}
                 <div class="rounded-lg border border-dashed border-outline-default p-6 text-center text-xs text-content-muted">At least two committed analytics materializations are required before growth velocity can be derived.</div>
             {% endfor %}
         </div>
-
     {% elif analytics.active_tab == 'capacity' %}
         <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Capacity Outlook</p>
         <h3 class="mt-1 text-base font-semibold text-content-primary">Project quota outlook</h3>
@@ -57,7 +65,7 @@
                 ('Highest Utilization', ('%.1f%%'|format(analytics.capacity_outlook.highest_utilization)) if analytics.capacity_outlook.highest_utilization is not none else 'N/A', 'Highest observed quota usage'),
                 ('Growth Velocity', analytics.capacity_outlook.growth_display, 'Materialized storage growth'),
                 ('Quota Headroom', analytics.capacity_outlook.quota_headroom_display, 'Qualified committed quota headroom')
-            ] %}
+                ] %}
                 <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4">
                     <p class="text-xs font-semibold text-content-muted">{{ label }}</p>
                     <p class="mt-2 text-xl font-semibold text-content-primary">{{ value }}</p>
@@ -68,24 +76,34 @@
         <div class="mt-5 overflow-x-auto rounded-xl border border-outline-subtle">
             <table class="min-w-full divide-y divide-outline-subtle text-sm">
                 <thead class="bg-surface-hover text-left text-xs font-semibold text-content-muted">
-                    <tr><th class="px-4 py-3">Registry / Project</th><th class="px-4 py-3">Usage / Quota</th><th class="px-4 py-3">Utilization</th><th class="px-4 py-3">Growth</th><th class="px-4 py-3">Forecast</th></tr>
+                    <tr>
+                        <th class="px-4 py-3">Registry / Project</th>
+                        <th class="px-4 py-3">Usage / Quota</th>
+                        <th class="px-4 py-3">Utilization</th>
+                        <th class="px-4 py-3">Growth</th>
+                        <th class="px-4 py-3">Forecast</th>
+                    </tr>
                 </thead>
                 <tbody class="divide-y divide-outline-subtle">
                     {% for row in analytics.forecast_rows[:5] %}
                         <tr>
-                            <td class="px-4 py-3"><p class="font-semibold text-content-primary">{{ row.project_name }}</p><p class="text-xs text-content-muted">{{ row.registry_name }}</p></td>
+                            <td class="px-4 py-3">
+                                <p class="font-semibold text-content-primary">{{ row.project_name }}</p>
+                                <p class="text-xs text-content-muted">{{ row.registry_name }}</p>
+                            </td>
                             <td class="px-4 py-3 text-content-secondary">{{ row.usage_display }} / {{ row.quota_display }}</td>
                             <td class="px-4 py-3 text-content-secondary">{{ row.utilization_display }}</td>
                             <td class="px-4 py-3 text-content-secondary">{{ row.growth_display }}</td>
                             <td class="px-4 py-3">{{ table_label.status_indicator_label(row.days_to_quota_display, 'info') }}</td>
                         </tr>
                     {% else %}
-                        <tr><td colspan="5" class="px-4 py-8 text-center text-content-muted">No qualified project quota forecast is available.</td></tr>
+                        <tr>
+                            <td colspan="5" class="px-4 py-8 text-center text-content-muted">No qualified project quota forecast is available.</td>
+                        </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-
     {% elif analytics.active_tab == 'usage' %}
         <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Artifact Usage</p>
         <h3 class="mt-1 text-base font-semibold text-content-primary">Runtime and demand evidence</h3>
@@ -95,9 +113,11 @@
                 ('Runtime-used', analytics.aggregate.running_artifacts, analytics.aggregate.runtime_bindings ~ ' committed bindings'),
                 ('Observed Pull Activity', '%.0f'|format(analytics.aggregate.pull_activity), 'Provider counter evidence'),
                 ('Stale Candidates', analytics.aggregate.stale_candidates, 'Review candidates only')
-            ] %}
+                ] %}
                 <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4">
-                    <p class="text-xs font-semibold text-content-muted">{{ label }}</p><p class="mt-2 text-xl font-semibold text-content-primary">{{ value }}</p><p class="mt-1 text-xs text-content-muted">{{ detail }}</p>
+                    <p class="text-xs font-semibold text-content-muted">{{ label }}</p>
+                    <p class="mt-2 text-xl font-semibold text-content-primary">{{ value }}</p>
+                    <p class="mt-1 text-xs text-content-muted">{{ detail }}</p>
                 </div>
             {% endfor %}
         </div>
@@ -105,15 +125,17 @@
             {% for row in analytics.activity_rows %}
                 <div class="rounded-lg border border-outline-subtle p-3">
                     <div class="flex items-start justify-between gap-3">
-                        <div><p class="text-sm font-semibold text-content-primary">{{ row.project_name }}</p><p class="mt-1 text-xs text-content-muted">{{ row.registry_name }}</p></div>
-                        {{ table_label.status_indicator_label('%.0f'|format(row.pull_count), 'info') }}
+                        <div>
+                            <p class="text-sm font-semibold text-content-primary">{{ row.project_name }}</p>
+                            <p class="mt-1 text-xs text-content-muted">{{ row.registry_name }}</p>
+                        </div>
+                        {{ table_label.status_indicator_label('%.0f'|format(row.pull_count) , 'info') }}
                     </div>
                 </div>
             {% else %}
                 <div class="rounded-lg border border-dashed border-outline-default p-4 text-xs text-content-muted">No committed pull-counter evidence is available.</div>
             {% endfor %}
         </div>
-
     {% elif analytics.active_tab == 'risk' %}
         <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Risk Concentration</p>
         <h3 class="mt-1 text-base font-semibold text-content-primary">Security × Runtime</h3>
@@ -124,18 +146,23 @@
                 ('Critical + Running', analytics.aggregate.critical_runtime_artifacts, 'Critical evidence intersecting runtime', 'critical' if analytics.aggregate.critical_runtime_artifacts else 'normal'),
                 ('Unsigned + Running', analytics.aggregate.unsigned_runtime_artifacts, 'Runtime artifacts without signature evidence', 'warning' if analytics.aggregate.unsigned_runtime_artifacts else 'normal'),
                 ('Unscanned + Running', analytics.aggregate.runtime_scan_gaps, 'No normalized successful scan evidence', 'warning' if analytics.aggregate.runtime_scan_gaps else 'normal')
-            ] %}
+                ] %}
                 <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4">
-                    <div class="flex items-start justify-between gap-2"><p class="text-xs font-semibold text-content-muted">{{ label }}</p>{{ table_label.status_indicator_label('Review' if tone in ['critical', 'warning'] else 'Evidence', tone) }}</div>
-                    <p class="mt-2 text-xl font-semibold text-content-primary">{{ value }}</p><p class="mt-1 text-xs text-content-muted">{{ detail }}</p>
+                    <div class="flex items-start justify-between gap-2">
+                        <p class="text-xs font-semibold text-content-muted">{{ label }}</p>
+                        {{ table_label.status_indicator_label('Review' if tone in ['critical', 'warning'] else 'Evidence', tone) }}
+                    </div>
+                    <p class="mt-2 text-xl font-semibold text-content-primary">{{ value }}</p>
+                    <p class="mt-1 text-xs text-content-muted">{{ detail }}</p>
                 </div>
             {% endfor %}
         </div>
         <div class="mt-5 flex flex-wrap gap-2">
-            <a href="{{ url_for('artifact_registry.security') }}" class="{{ table_ui.action_classes() }}">Open Security</a>
-            <a href="{{ url_for('artifact_registry.runtime') }}" class="{{ table_ui.action_classes() }}">Open Runtime</a>
+            <a href="{{ url_for('artifact_registry.security') }}"
+               class="{{ table_ui.action_classes() }}">Open Security</a>
+            <a href="{{ url_for('artifact_registry.runtime') }}"
+               class="{{ table_ui.action_classes() }}">Open Runtime</a>
         </div>
-
     {% elif analytics.active_tab == 'governance' %}
         <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Governance Gaps</p>
         <h3 class="mt-1 text-base font-semibold text-content-primary">Policy coverage concentration</h3>
@@ -146,12 +173,16 @@
                 ('Without Retention', [analytics.aggregate.projects - analytics.aggregate.retention_configured, 0]|max, 'Projects requiring review'),
                 ('Immutability Coverage', ('%.1f%%'|format(analytics.coverage.immutability)) if analytics.coverage.immutability is not none else 'N/A', analytics.aggregate.immutability_configured ~ '/' ~ analytics.aggregate.projects ~ ' configured'),
                 ('Without Immutability', [analytics.aggregate.projects - analytics.aggregate.immutability_configured, 0]|max, 'Projects requiring review')
-            ] %}
-                <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4"><p class="text-xs font-semibold text-content-muted">{{ label }}</p><p class="mt-2 text-xl font-semibold text-content-primary">{{ value }}</p><p class="mt-1 text-xs text-content-muted">{{ detail }}</p></div>
+                ] %}
+                <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4">
+                    <p class="text-xs font-semibold text-content-muted">{{ label }}</p>
+                    <p class="mt-2 text-xl font-semibold text-content-primary">{{ value }}</p>
+                    <p class="mt-1 text-xs text-content-muted">{{ detail }}</p>
+                </div>
             {% endfor %}
         </div>
-        <a href="{{ url_for('artifact_registry.governance') }}" class="mt-5 {{ table_ui.action_classes() }}">Review Governance</a>
-
+        <a href="{{ url_for('artifact_registry.governance') }}"
+           class="mt-5 {{ table_ui.action_classes() }}">Review Governance</a>
     {% elif analytics.active_tab == 'alerts' %}
         <div id="artifact-registry-alert-records">
             <div class="flex flex-col gap-1 lg:flex-row lg:items-end lg:justify-between">
@@ -160,37 +191,40 @@
                     <h3 class="mt-1 text-base font-semibold text-content-primary">Alertmanager + Metrics Source evidence</h3>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Alertmanager is primary. Metrics Source is fallback evidence. All records shown here came from committed Analytics materialization.</p>
                 </div>
-                {{ table_label.status_indicator_label(
-                    analytics.aggregate.alert_sources_ready ~ '/' ~ analytics.provider_count ~ ' Sources Ready',
-                    'normal' if analytics.aggregate.alert_sources_ready == analytics.provider_count and analytics.provider_count else 'warning'
-                ) }}
+                {{ table_label.status_indicator_label(analytics.aggregate.alert_sources_ready ~ '/' ~ analytics.provider_count ~ ' Sources Ready',
+                                'normal' if analytics.aggregate.alert_sources_ready == analytics.provider_count and analytics.provider_count else 'warning') }}
             </div>
-
             <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 {% for label, value, tone in [
                     ('Active Alerts', analytics.aggregate.active_alerts, 'info' if analytics.aggregate.active_alerts else 'normal'),
                     ('Critical', analytics.aggregate.critical_alerts, 'critical' if analytics.aggregate.critical_alerts else 'normal'),
                     ('Warning', analytics.aggregate.warning_alerts, 'warning' if analytics.aggregate.warning_alerts else 'normal'),
                     ('Suppressed', analytics.aggregate.suppressed_alerts, 'info' if analytics.aggregate.suppressed_alerts else 'normal')
-                ] %}
-                    <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4"><div class="flex items-start justify-between gap-2"><p class="text-xs font-semibold text-content-muted">{{ label }}</p>{{ table_label.status_indicator_label('Observed', tone) }}</div><p class="mt-2 text-xl font-semibold text-content-primary">{{ value }}</p></div>
+                    ] %}
+                    <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4">
+                        <div class="flex items-start justify-between gap-2">
+                            <p class="text-xs font-semibold text-content-muted">{{ label }}</p>
+                            {{ table_label.status_indicator_label('Observed', tone) }}
+                        </div>
+                        <p class="mt-2 text-xl font-semibold text-content-primary">{{ value }}</p>
+                    </div>
                 {% endfor %}
             </div>
-
             <div class="mt-4 grid gap-3 lg:grid-cols-2">
                 {% for source in analytics.alert_source_rows %}
                     <div class="rounded-lg border border-outline-subtle p-4">
                         <div class="flex items-start justify-between gap-3">
-                            <div><p class="text-sm font-semibold text-content-primary">{{ source.registry_name }}</p><p class="mt-1 text-xs leading-5 text-content-muted">{{ source.detail }}</p></div>
-                            {{ table_label.status_indicator_label(
-                                source.source_label ~ (' · Fallback' if source.fallback_used else ''),
-                                'warning' if source.fallback_used else ('normal' if source.status == 'ready' else 'unknown')
+                            <div>
+                                <p class="text-sm font-semibold text-content-primary">{{ source.registry_name }}</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ source.detail }}</p>
+                            </div>
+                            {{ table_label.status_indicator_label(source.source_label ~ (' · Fallback' if source.fallback_used else '') ,
+                            'warning' if source.fallback_used else ('normal' if source.status == 'ready' else 'unknown')
                             ) }}
                         </div>
                     </div>
                 {% endfor %}
             </div>
-
             <form method="GET"
                   action="{{ url_for('artifact_registry.analytics_alerts_table') }}"
                   hx-get="{{ url_for('artifact_registry.analytics_alerts_table') }}"
@@ -200,52 +234,96 @@
                   hx-sync="closest section:replace"
                   class="mt-5 {{ table_ui.filter_layout_classes() }}">
                 <input type="hidden" name="alert_page" value="1">
-                <input type="hidden" name="alert_per_page" value="{{ analytics.alert_pagination.per_page }}">
-                <label class="min-w-0 flex-1 basis-full sm:basis-56"><span class="{{ table_ui.filter_label_classes() }}">Search</span><input type="search" name="alert_q" value="{{ analytics.alert_filters.search }}" placeholder="Alert, target, Registry" class="{{ table_ui.filter_input_classes() }}"></label>
-                <label class="min-w-0 flex-1 basis-full sm:basis-56"><span class="{{ table_ui.filter_label_classes() }}">Severity</span><select name="alert_severity" class="{{ table_ui.filter_select_classes() }}">{% for value, label in [('all','All'),('critical','Critical'),('warning','Warning'),('info','Info'),('unknown','Unknown')] %}<option value="{{ value }}" {% if analytics.alert_filters.severity == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
-                <label class="min-w-0 flex-1 basis-full sm:basis-56"><span class="{{ table_ui.filter_label_classes() }}">State</span><select name="alert_state" class="{{ table_ui.filter_select_classes() }}">{% for value, label in [('all','All'),('firing','Firing'),('pending','Pending'),('suppressed','Suppressed'),('resolved','Resolved')] %}<option value="{{ value }}" {% if analytics.alert_filters.state == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
-                <label class="min-w-0 flex-1 basis-full sm:basis-56"><span class="{{ table_ui.filter_label_classes() }}">Source</span><select name="alert_source" class="{{ table_ui.filter_select_classes() }}">{% for value, label in [('all','All'),('alertmanager','Alertmanager'),('metrics_source','Metrics Source')] %}<option value="{{ value }}" {% if analytics.alert_filters.source == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+                <input type="hidden"
+                       name="alert_per_page"
+                       value="{{ analytics.alert_pagination.per_page }}">
+                <label class="min-w-0 flex-1 basis-full sm:basis-56">
+                    <span class="{{ table_ui.filter_label_classes() }}">Search</span>
+                    <input type="search"
+                           name="alert_q"
+                           value="{{ analytics.alert_filters.search }}"
+                           placeholder="Alert, target, Registry"
+                           class="{{ table_ui.filter_input_classes() }}">
+                </label>
+                <label class="min-w-0 flex-1 basis-full sm:basis-56">
+                    <span class="{{ table_ui.filter_label_classes() }}">Severity</span>
+                    <select name="alert_severity" class="{{ table_ui.filter_select_classes() }}">
+                        {% for value, label in [('all','All'),('critical','Critical'),('warning','Warning'),('info','Info'),('unknown','Unknown')] %}
+                            <option value="{{ value }}"
+                                    {% if analytics.alert_filters.severity == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label class="min-w-0 flex-1 basis-full sm:basis-56">
+                    <span class="{{ table_ui.filter_label_classes() }}">State</span>
+                    <select name="alert_state" class="{{ table_ui.filter_select_classes() }}">
+                        {% for value, label in [('all','All'),('firing','Firing'),('pending','Pending'),('suppressed','Suppressed'),('resolved','Resolved')] %}
+                            <option value="{{ value }}"
+                                    {% if analytics.alert_filters.state == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label class="min-w-0 flex-1 basis-full sm:basis-56">
+                    <span class="{{ table_ui.filter_label_classes() }}">Source</span>
+                    <select name="alert_source" class="{{ table_ui.filter_select_classes() }}">
+                        {% for value, label in [('all','All'),('alertmanager','Alertmanager'),('metrics_source','Metrics Source')] %}
+                            <option value="{{ value }}"
+                                    {% if analytics.alert_filters.source == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
             </form>
-
-            <div id="artifact-registry-alerts-loading" class="htmx-indicator mt-3 text-xs text-content-muted">Loading committed alert records…</div>
+            <div id="artifact-registry-alerts-loading"
+                 class="htmx-indicator mt-3 text-xs text-content-muted">Loading committed alert records…</div>
             <div class="mt-3 overflow-x-auto rounded-xl border border-outline-subtle">
                 <table class="min-w-full divide-y divide-outline-subtle text-sm">
-                    <thead class="bg-surface-hover text-left text-xs font-semibold text-content-muted"><tr><th class="px-4 py-3">Alert</th><th class="px-4 py-3">Severity</th><th class="px-4 py-3">State</th><th class="px-4 py-3">Target</th><th class="px-4 py-3">Since</th><th class="px-4 py-3">Source</th></tr></thead>
+                    <thead class="bg-surface-hover text-left text-xs font-semibold text-content-muted">
+                        <tr>
+                            <th class="px-4 py-3">Alert</th>
+                            <th class="px-4 py-3">Severity</th>
+                            <th class="px-4 py-3">State</th>
+                            <th class="px-4 py-3">Target</th>
+                            <th class="px-4 py-3">Since</th>
+                            <th class="px-4 py-3">Source</th>
+                        </tr>
+                    </thead>
                     <tbody class="divide-y divide-outline-subtle">
                         {% for row in analytics.alert_rows %}
                             <tr>
-                                <td class="px-4 py-3"><p class="font-semibold text-content-primary">{{ row.name }}</p><p class="mt-0.5 max-w-xl text-xs text-content-muted">{{ row.registry_name }} · {{ row.summary }}</p></td>
+                                <td class="px-4 py-3">
+                                    <p class="font-semibold text-content-primary">{{ row.name }}</p>
+                                    <p class="mt-0.5 max-w-xl text-xs text-content-muted">{{ row.registry_name }} · {{ row.summary }}</p>
+                                </td>
                                 <td class="px-4 py-3">{{ table_label.status_indicator_label(row.severity|title, row.severity if row.severity in ['critical','warning','info'] else 'unknown') }}</td>
-                                <td class="px-4 py-3">{{ table_label.status_indicator_label(row.effective_state|title, 'warning' if row.effective_state == 'pending' else ('info' if row.effective_state == 'suppressed' else 'normal')) }}</td>
+                                <td class="px-4 py-3">{{ table_label.status_indicator_label(row.effective_state|title, 'warning' if row.effective_state == 'pending' else ('info' if row.effective_state == 'suppressed' else 'normal') ) }}</td>
                                 <td class="px-4 py-3 text-content-secondary">{{ row.target }}</td>
                                 <td class="px-4 py-3 text-content-secondary">{{ row.starts_at or 'Not Observed' }}</td>
                                 <td class="px-4 py-3 text-content-secondary">{{ row.source }}</td>
                             </tr>
                         {% else %}
-                            <tr><td colspan="6" class="px-4 py-8 text-center text-content-muted">No committed alert records match the active filters.</td></tr>
+                            <tr>
+                                <td colspan="6" class="px-4 py-8 text-center text-content-muted">No committed alert records match the active filters.</td>
+                            </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-            {{ registry.footer(
-                'artifact_registry.analytics_alerts_table',
-                'artifact-registry-analytics-active-section',
-                'artifact-registry-alerts-loading',
-                analytics.alert_pagination,
-                {
-                    'alert_q': analytics.alert_filters.search,
-                    'alert_severity': analytics.alert_filters.severity,
-                    'alert_state': analytics.alert_filters.state,
-                    'alert_source': analytics.alert_filters.source
-                },
-                [5, 10, 25, 50],
-                resource_label='Alerts',
-                control_name='artifact-registry-alerts',
-                page_param='alert_page',
-                per_page_param='alert_per_page'
-            ) }}
+            {{ registry.footer('artifact_registry.analytics_alerts_table',
+                        'artifact-registry-analytics-active-section',
+                        'artifact-registry-alerts-loading',
+                        analytics.alert_pagination,
+                        {
+                        'alert_q': analytics.alert_filters.search,
+                        'alert_severity': analytics.alert_filters.severity,
+                        'alert_state': analytics.alert_filters.state,
+                        'alert_source': analytics.alert_filters.source
+                        },
+                        [5, 10, 25, 50],
+                        resource_label='Alerts',
+                        control_name='artifact-registry-alerts',
+                        page_param='alert_page',
+                        per_page_param='alert_per_page') }}
         </div>
-
     {% else %}
         <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.8fr)]">
             <article>
@@ -254,7 +332,17 @@
                 <p class="mt-1 text-xs leading-5 text-content-muted">Analytics produces facts; central Intelligence owns recommendation semantics, Accepted Risk, escalation, and automation control.</p>
                 <div class="mt-4 space-y-3">
                     {% for insight in analytics.insights %}
-                        <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4"><div class="flex items-start gap-3"><i data-lucide="{{ insight.icon }}" class="mt-0.5 h-4 w-4 text-kaori-primary dark:text-kaori-accent" aria-hidden="true"></i><div><p class="text-sm font-semibold text-content-primary">{{ insight.title }}</p><p class="mt-1 text-xs text-content-muted">{{ insight.detail }}</p></div></div></div>
+                        <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4">
+                            <div class="flex items-start gap-3">
+                                <i data-lucide="{{ insight.icon }}"
+                                   class="mt-0.5 h-4 w-4 text-kaori-primary dark:text-kaori-accent"
+                                   aria-hidden="true"></i>
+                                <div>
+                                    <p class="text-sm font-semibold text-content-primary">{{ insight.title }}</p>
+                                    <p class="mt-1 text-xs text-content-muted">{{ insight.detail }}</p>
+                                </div>
+                            </div>
+                        </div>
                     {% endfor %}
                 </div>
             </article>
@@ -263,12 +351,21 @@
                 <h3 class="mt-1 text-base font-semibold text-content-primary">Active recommendations</h3>
                 <div class="mt-4 space-y-3">
                     {% for row in analytics.recommendations %}
-                        <div class="rounded-lg bg-surface-subtle p-3"><div class="flex items-start justify-between gap-3"><div><p class="text-sm font-semibold text-content-primary">{{ row.title }}</p><p class="mt-1 text-xs text-content-muted">{{ row.summary }}</p></div>{{ table_label.status_indicator_label(row.severity_label, row.severity) }}</div></div>
+                        <div class="rounded-lg bg-surface-subtle p-3">
+                            <div class="flex items-start justify-between gap-3">
+                                <div>
+                                    <p class="text-sm font-semibold text-content-primary">{{ row.title }}</p>
+                                    <p class="mt-1 text-xs text-content-muted">{{ row.summary }}</p>
+                                </div>
+                                {{ table_label.status_indicator_label(row.severity_label, row.severity) }}
+                            </div>
+                        </div>
                     {% else %}
                         <p class="text-xs text-content-muted">No active Registry recommendation is currently projected.</p>
                     {% endfor %}
                 </div>
-                <a href="{{ url_for('intelligence.recommendations', domain='registry') }}" class="mt-4 {{ table_ui.action_classes() }}">Open Intelligence</a>
+                <a href="{{ url_for('intelligence.recommendations', domain='registry') }}"
+                   class="mt-4 {{ table_ui.action_classes() }}">Open Intelligence</a>
             </aside>
         </div>
     {% endif %}
