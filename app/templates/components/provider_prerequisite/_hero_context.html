@@ -14,19 +14,18 @@
 {% set prerequisite_action_label = provider_prerequisite_action_label|default(none) %}
 {% set prerequisite_action_href = provider_prerequisite_action_href|default(none) %}
 {% set prerequisite_action_icon = provider_prerequisite_action_icon|default('settings-2') %}
-{{ page_hero.blocked_context_body(
-    prerequisite_scope,
-    prerequisite_title,
-    [
-        (prerequisite_resource_icon, prerequisite_resource_label, prerequisite_resource_value, prerequisite_resource_supporting),
-        (prerequisite_state_icon, prerequisite_state_label, prerequisite_state_value, prerequisite_state_supporting, 'text-sm font-semibold leading-5')
-    ],
-    prerequisite_info,
-    provider_prerequisite_status_label|default(none),
-    prerequisite_tone,
-    provider_prerequisite_header_icon|default('lock-keyhole'),
-    provider_prerequisite_info_icon|default('triangle-alert'),
-    prerequisite_action_label,
-    prerequisite_action_href,
-    prerequisite_action_icon
+{{ page_hero.blocked_context_body(prerequisite_scope,
+prerequisite_title,
+[
+(prerequisite_resource_icon, prerequisite_resource_label, prerequisite_resource_value, prerequisite_resource_supporting) ,
+(prerequisite_state_icon, prerequisite_state_label, prerequisite_state_value, prerequisite_state_supporting, 'text-sm font-semibold leading-5')
+],
+prerequisite_info,
+provider_prerequisite_status_label|default(none),
+prerequisite_tone,
+provider_prerequisite_header_icon|default('lock-keyhole'),
+provider_prerequisite_info_icon|default('triangle-alert'),
+prerequisite_action_label,
+prerequisite_action_href,
+prerequisite_action_icon
 ) }}
