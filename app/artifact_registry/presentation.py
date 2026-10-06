@@ -2933,7 +2933,16 @@ def build_governance(
     }
 
 
-def build_analytics_shell(*, active_tab: str = 'growth') -> dict[str, Any]:
+def build_analytics_shell(
+    *,
+    active_tab: str = 'growth',
+    alert_search: str = '',
+    alert_severity: str = 'all',
+    alert_state: str = 'all',
+    alert_source: str = 'all',
+    alert_page: int = 1,
+    alert_per_page: int = 5,
+) -> dict[str, Any]:
     overview = build_overview()
     normalized_tab = active_tab if active_tab in {
         'growth',
@@ -2966,6 +2975,14 @@ def build_analytics_shell(*, active_tab: str = 'growth') -> dict[str, Any]:
         'snapshot_count': int(snapshot_count),
         'latest_generated_at': latest_generated_at,
         'active_tab': normalized_tab,
+        'alert_filters': {
+            'search': alert_search,
+            'severity': alert_severity,
+            'state': alert_state,
+            'source': alert_source,
+            'page': alert_page,
+            'per_page': alert_per_page,
+        },
     }
 
 
