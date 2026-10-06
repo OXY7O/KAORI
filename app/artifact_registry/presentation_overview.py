@@ -204,40 +204,15 @@ def _provider_health_projection(
     return visible_rows, pagination, metrics_by_provider, security_counts
 
 
-def _overview_operations_projection(
-    *,
-    context: dict[str, Any],
-    scoped_providers: list[IntegrationInstance],
-    states: list[RegistryCollectionState],
+def _overview_inventory_evidence(
     selected_provider: IntegrationInstance | None,
-    provider_health_page: int | str | None,
-    provider_health_per_page: int,
-) -> dict[str, Any]:
-    provider_rows, pagination, metrics_by_provider, security_counts = _provider_health_projection(
-        scoped_providers=scoped_providers,
-        states=states,
-        selected_provider=selected_provider,
-        provider_health_page=provider_health_page,
-        provider_health_per_page=provider_health_per_page,
-    )
-    counts = _overview_kpi_values(selected_provider)
-
+) -> tuple[int, int, Any]:
     artifact_summary_query = (
         RegistryArtifact.query.join(RegistryRepository)
         .join(RegistryProject)
         .with_entities(func.coalesce(func.sum(RegistryArtifact.size_bytes), 0))
     )
     public_projects_query = RegistryProject.query.filter(RegistryProject.public.is_(True))
-    if selected_provider is not None:
-        artifact_summary_query = artifact_summary_query.filter(
-            RegistryProject.integration_instance_id == selected_provider.id
-        )
-        public_projects_query = public_projects_query.filter(
-            RegistryProject.integration_instance_id == selected_provider.id
-        )
-    total_size_bytes = int(artifact_summary_query.one()[0] or 0)
-    public_project_count = public_projects_query.count()
-
     security_freshness_query = (
         RegistryScanSnapshot.query.join(
             RegistryArtifact,
@@ -258,22 +233,247 @@ def _overview_operations_projection(
         )
     )
     if selected_provider is not None:
+        artifact_summary_query = artifact_summary_query.filter(
+            RegistryProject.integration_instance_id == selected_provider.id
+        )
+        public_projects_query = public_projects_query.filter(
+            RegistryProject.integration_instance_id == selected_provider.id
+        )
         security_freshness_query = security_freshness_query.filter(
             RegistryProject.integration_instance_id == selected_provider.id
         )
-    security_observed_by_provider = {
+    observed_by_provider = {
         int(provider_id): observed_at
         for provider_id, observed_at in security_freshness_query.group_by(RegistryProject.integration_instance_id).all()
     }
     latest_security_at = max(
-        (value for value in security_observed_by_provider.values() if value is not None),
+        (value for value in observed_by_provider.values() if value is not None),
         default=None,
     )
+    return int(artifact_summary_query.one()[0] or 0), public_projects_query.count(), latest_security_at
 
+
+def _overview_inventory_items(
+    counts: dict[str, int],
+    *,
+    artifact_total: int,
+    total_size_bytes: int,
+    public_project_count: int,
+) -> list[dict[str, Any]]:
+    return [
+        {'label': 'Projects', 'value': counts['projects'], 'icon': 'folder-kanban', 'role': 'Scope'},
+        {'label': 'Repositories', 'value': counts['repositories'], 'icon': 'package-open', 'role': 'Catalog'},
+        {'label': 'Artifacts', 'value': artifact_total, 'icon': 'fingerprint', 'role': 'Immutable'},
+        {'label': 'Tags', 'value': counts['tags'], 'icon': 'tags', 'role': 'Aliases'},
+        {'label': 'Artifact Footprint', 'value': _fmt_bytes(total_size_bytes), 'icon': 'database', 'role': 'Storage'},
+        {'label': 'Public Projects', 'value': public_project_count, 'icon': 'globe-2', 'role': 'Exposure'},
+    ]
+
+
+def _security_freshness_status(
+    *,
+    artifact_total: int,
+    scanned_count: int,
+    committed_at: Any,
+    latest_security_at: Any,
+) -> tuple[str, str, str]:
+    if artifact_total == 0 and committed_at is not None:
+        return 'No Artifacts', 'info', 'No committed artifacts to scan'
+    if scanned_count:
+        return (
+            'Available',
+            'normal',
+            _freshness_value(latest_security_at, missing='Committed scan evidence available'),
+        )
+    return (
+        'Required',
+        'warning' if artifact_total else 'unknown',
+        'No committed security snapshot',
+    )
+
+
+def _selected_provider_freshness(
+    *,
+    selected_provider: IntegrationInstance,
+    state_by_provider: dict[int, RegistryCollectionState],
+    metrics_by_provider: dict[int, dict[str, Any]],
+    analytics_by_provider: dict[int, Any],
+    artifact_total: int,
+    scanned_count: int,
+    latest_security_at: Any,
+) -> list[dict[str, Any]]:
+    selected_key = int(selected_provider.id)
+    selected_collection_state = state_by_provider.get(selected_key)
+    selected_state = _state_view(selected_collection_state)
+    selected_metrics = metrics_by_provider.get(selected_key, {})
+    selected_analytics = _analytics_snapshot_view(analytics_by_provider.get(selected_key))
+    security_status, security_tone, security_value = _security_freshness_status(
+        artifact_total=artifact_total,
+        scanned_count=scanned_count,
+        committed_at=selected_state['committed_at'],
+        latest_security_at=latest_security_at,
+    )
+    inventory_description = 'Committed projects, repositories, artifacts, tags, and provider provenance.'
+    if selected_collection_state is not None and selected_collection_state.last_error:
+        inventory_description += ' Latest refresh failed; KAORI retained the previous committed snapshot.'
+    return [
+        {
+            'label': 'Inventory Snapshot',
+            'status': selected_state['label'],
+            'tone': selected_state['tone'],
+            'value': _freshness_value(
+                selected_state['committed_at'],
+                missing='No committed inventory snapshot',
+            ),
+            'description': inventory_description,
+            'icon': 'database-zap',
+        },
+        {
+            'label': 'Metrics Snapshot',
+            'status': str(selected_metrics.get('label') or 'Not Bound'),
+            'tone': str(selected_metrics.get('tone') or 'unknown'),
+            'value': str(selected_metrics.get('selected_source') or 'No validated Metrics Source'),
+            'description': 'Validated Registry Metrics Source binding; independent from provider readiness.',
+            'icon': 'activity',
+        },
+        {
+            'label': 'Security Snapshot',
+            'status': security_status,
+            'tone': security_tone,
+            'value': security_value,
+            'description': 'Committed vulnerability scan evidence attached to immutable artifact digests.',
+            'icon': 'shield-check',
+        },
+        {
+            'label': 'Analytics Snapshot',
+            'status': selected_analytics['label'],
+            'tone': selected_analytics['tone'],
+            'value': _freshness_value(
+                selected_analytics['generated_at'],
+                missing='No analytics snapshot',
+            ),
+            'description': 'Materialized Registry growth, forecast, runtime, and recommendation evidence.',
+            'icon': 'chart-no-axes-combined',
+        },
+    ]
+
+
+def _fleet_inventory_status(
+    *,
+    committed_count: int,
+    provider_count: int,
+    stale_count: int,
+    failed_refresh_count: int,
+) -> tuple[str, str]:
+    if committed_count == provider_count and provider_count:
+        return (
+            'Stale' if stale_count else ('Attention' if failed_refresh_count else 'Ready'),
+            'warning' if stale_count or failed_refresh_count else 'normal',
+        )
+    if committed_count:
+        return 'Partial', 'warning'
+    return 'Required', 'unknown'
+
+
+def _fleet_freshness(
+    *,
+    context: dict[str, Any],
+    provider_count: int,
+    stats: dict[str, Any],
+) -> list[dict[str, Any]]:
+    inventory_status, inventory_tone = _fleet_inventory_status(
+        committed_count=stats['committed_count'],
+        provider_count=provider_count,
+        stale_count=context['stale_snapshot_count'],
+        failed_refresh_count=context['failed_refresh_count'],
+    )
+    metrics_ready_count = stats['metrics_ready_count']
+    analytics_ready_count = stats['analytics_ready_count']
+    artifact_total = stats['artifact_total']
+    scanned_count = stats['scanned_count']
+    metrics_all_ready = bool(provider_count) and metrics_ready_count == provider_count
+    analytics_all_ready = bool(provider_count) and analytics_ready_count == provider_count
+    return [
+        {
+            'label': 'Inventory Snapshot',
+            'status': inventory_status,
+            'tone': inventory_tone,
+            'value': _freshness_value(
+                context['latest_committed_at'],
+                missing='No committed inventory snapshot',
+            ),
+            'description': 'Latest retained committed inventory evidence across the active Registry scope.',
+            'icon': 'database-zap',
+        },
+        {
+            'label': 'Metrics Snapshot',
+            'status': 'Ready' if metrics_all_ready else ('Partial' if metrics_ready_count else 'Not Bound'),
+            'tone': 'normal' if metrics_all_ready else ('warning' if metrics_ready_count else 'unknown'),
+            'value': (
+                'Validated Metrics Source available'
+                if metrics_all_ready
+                else (
+                    'Validated Metrics Source partially available'
+                    if metrics_ready_count
+                    else 'No validated Metrics Source'
+                )
+            ),
+            'description': 'Validated Registry Metrics Source availability across the active scope.',
+            'icon': 'activity',
+        },
+        {
+            'label': 'Security Snapshot',
+            'status': 'No Artifacts' if artifact_total == 0 else ('Available' if scanned_count else 'Required'),
+            'tone': 'info' if artifact_total == 0 else ('normal' if scanned_count else 'warning'),
+            'value': (
+                'No committed artifacts to scan'
+                if artifact_total == 0
+                else (
+                    _freshness_value(
+                        stats['latest_security_at'],
+                        missing='Committed scan evidence available',
+                    )
+                    if scanned_count
+                    else 'No committed security snapshot'
+                )
+            ),
+            'description': 'Latest committed vulnerability scan evidence across the active Registry scope.',
+            'icon': 'shield-check',
+        },
+        {
+            'label': 'Analytics Snapshot',
+            'status': 'Ready' if analytics_all_ready else ('Partial' if analytics_ready_count else 'Required'),
+            'tone': 'normal' if analytics_all_ready else ('warning' if analytics_ready_count else 'unknown'),
+            'value': _freshness_value(
+                stats['latest_analytics_at'],
+                missing='No analytics snapshot',
+            ),
+            'description': 'Latest ready Registry analytics materialization across the active scope.',
+            'icon': 'chart-no-axes-combined',
+        },
+    ]
+
+
+def _overview_operations_projection(
+    *,
+    context: dict[str, Any],
+    scoped_providers: list[IntegrationInstance],
+    states: list[RegistryCollectionState],
+    selected_provider: IntegrationInstance | None,
+    provider_health_page: int | str | None,
+    provider_health_per_page: int,
+) -> dict[str, Any]:
+    provider_rows, pagination, metrics_by_provider, security_counts = _provider_health_projection(
+        scoped_providers=scoped_providers,
+        states=states,
+        selected_provider=selected_provider,
+        provider_health_page=provider_health_page,
+        provider_health_per_page=provider_health_per_page,
+    )
+    counts = _overview_kpi_values(selected_provider)
+    total_size_bytes, public_project_count, latest_security_at = _overview_inventory_evidence(selected_provider)
     state_by_provider = {int(state.integration_instance_id): state for state in states}
     committed_states = [state for state in states if state.last_committed_at is not None]
-    stale_count = context['stale_snapshot_count']
-    failed_refresh_count = context['failed_refresh_count']
     artifact_total = counts['artifacts']
     scanned_count = sum(item['scanned'] for item in security_counts.values())
     analytics_by_provider = _latest_registry_analytics(scoped_providers)
@@ -287,167 +487,32 @@ def _overview_operations_projection(
         ),
         default=None,
     )
-
-    inventory_items = [
-        {'label': 'Projects', 'value': counts['projects'], 'icon': 'folder-kanban', 'role': 'Scope'},
-        {'label': 'Repositories', 'value': counts['repositories'], 'icon': 'package-open', 'role': 'Catalog'},
-        {'label': 'Artifacts', 'value': artifact_total, 'icon': 'fingerprint', 'role': 'Immutable'},
-        {'label': 'Tags', 'value': counts['tags'], 'icon': 'tags', 'role': 'Aliases'},
-        {'label': 'Artifact Footprint', 'value': _fmt_bytes(total_size_bytes), 'icon': 'database', 'role': 'Storage'},
-        {'label': 'Public Projects', 'value': public_project_count, 'icon': 'globe-2', 'role': 'Exposure'},
-    ]
-
-    if selected_provider is not None:
-        selected_key = int(selected_provider.id)
-        selected_collection_state = state_by_provider.get(selected_key)
-        selected_state = _state_view(selected_collection_state)
-        selected_metrics = metrics_by_provider.get(selected_key, {})
-        selected_analytics = _analytics_snapshot_view(analytics_by_provider.get(selected_key))
-        if artifact_total == 0 and selected_state['committed_at'] is not None:
-            security_status, security_tone, security_value = (
-                'No Artifacts',
-                'info',
-                'No committed artifacts to scan',
-            )
-        elif scanned_count:
-            security_status, security_tone = 'Available', 'normal'
-            security_value = _freshness_value(
-                latest_security_at,
-                missing='Committed scan evidence available',
-            )
-        else:
-            security_status = 'Required'
-            security_tone = 'warning' if artifact_total else 'unknown'
-            security_value = 'No committed security snapshot'
-
-        inventory_description = 'Committed projects, repositories, artifacts, tags, and provider provenance.'
-        if selected_collection_state is not None and selected_collection_state.last_error:
-            inventory_description += ' Latest refresh failed; KAORI retained the previous committed snapshot.'
-        freshness = [
-            {
-                'label': 'Inventory Snapshot',
-                'status': selected_state['label'],
-                'tone': selected_state['tone'],
-                'value': _freshness_value(
-                    selected_state['committed_at'],
-                    missing='No committed inventory snapshot',
-                ),
-                'description': inventory_description,
-                'icon': 'database-zap',
-            },
-            {
-                'label': 'Metrics Snapshot',
-                'status': str(selected_metrics.get('label') or 'Not Bound'),
-                'tone': str(selected_metrics.get('tone') or 'unknown'),
-                'value': str(selected_metrics.get('selected_source') or 'No validated Metrics Source'),
-                'description': ('Validated Registry Metrics Source binding; independent from provider readiness.'),
-                'icon': 'activity',
-            },
-            {
-                'label': 'Security Snapshot',
-                'status': security_status,
-                'tone': security_tone,
-                'value': security_value,
-                'description': ('Committed vulnerability scan evidence attached to immutable artifact digests.'),
-                'icon': 'shield-check',
-            },
-            {
-                'label': 'Analytics Snapshot',
-                'status': selected_analytics['label'],
-                'tone': selected_analytics['tone'],
-                'value': _freshness_value(
-                    selected_analytics['generated_at'],
-                    missing='No analytics snapshot',
-                ),
-                'description': ('Materialized Registry growth, forecast, runtime, and recommendation evidence.'),
-                'icon': 'chart-no-axes-combined',
-            },
-        ]
-    else:
-        committed_count = len(committed_states)
-        if committed_count == len(scoped_providers) and scoped_providers:
-            inventory_status = 'Stale' if stale_count else ('Attention' if failed_refresh_count else 'Ready')
-            inventory_tone = 'warning' if stale_count or failed_refresh_count else 'normal'
-        elif committed_count:
-            inventory_status, inventory_tone = 'Partial', 'warning'
-        else:
-            inventory_status, inventory_tone = 'Required', 'unknown'
-        freshness = [
-            {
-                'label': 'Inventory Snapshot',
-                'status': inventory_status,
-                'tone': inventory_tone,
-                'value': _freshness_value(
-                    context['latest_committed_at'],
-                    missing='No committed inventory snapshot',
-                ),
-                'description': 'Latest retained committed inventory evidence across the active Registry scope.',
-                'icon': 'database-zap',
-            },
-            {
-                'label': 'Metrics Snapshot',
-                'status': (
-                    'Ready'
-                    if metrics_ready_count == len(scoped_providers) and scoped_providers
-                    else ('Partial' if metrics_ready_count else 'Not Bound')
-                ),
-                'tone': (
-                    'normal'
-                    if metrics_ready_count == len(scoped_providers) and scoped_providers
-                    else ('warning' if metrics_ready_count else 'unknown')
-                ),
-                'value': (
-                    'Validated Metrics Source available'
-                    if metrics_ready_count == len(scoped_providers) and scoped_providers
-                    else (
-                        'Validated Metrics Source partially available'
-                        if metrics_ready_count
-                        else 'No validated Metrics Source'
-                    )
-                ),
-                'description': ('Validated Registry Metrics Source availability across the active scope.'),
-                'icon': 'activity',
-            },
-            {
-                'label': 'Security Snapshot',
-                'status': ('No Artifacts' if artifact_total == 0 else ('Available' if scanned_count else 'Required')),
-                'tone': ('info' if artifact_total == 0 else ('normal' if scanned_count else 'warning')),
-                'value': (
-                    'No committed artifacts to scan'
-                    if artifact_total == 0
-                    else (
-                        _freshness_value(
-                            latest_security_at,
-                            missing='Committed scan evidence available',
-                        )
-                        if scanned_count
-                        else 'No committed security snapshot'
-                    )
-                ),
-                'description': ('Latest committed vulnerability scan evidence across the active Registry scope.'),
-                'icon': 'shield-check',
-            },
-            {
-                'label': 'Analytics Snapshot',
-                'status': (
-                    'Ready'
-                    if analytics_ready_count == len(scoped_providers) and scoped_providers
-                    else ('Partial' if analytics_ready_count else 'Required')
-                ),
-                'tone': (
-                    'normal'
-                    if analytics_ready_count == len(scoped_providers) and scoped_providers
-                    else ('warning' if analytics_ready_count else 'unknown')
-                ),
-                'value': _freshness_value(
-                    latest_analytics_at,
-                    missing='No analytics snapshot',
-                ),
-                'description': 'Latest ready Registry analytics materialization across the active scope.',
-                'icon': 'chart-no-axes-combined',
-            },
-        ]
-
+    stats = {
+        'artifact_total': artifact_total,
+        'scanned_count': scanned_count,
+        'committed_count': len(committed_states),
+        'metrics_ready_count': metrics_ready_count,
+        'analytics_ready_count': analytics_ready_count,
+        'latest_security_at': latest_security_at,
+        'latest_analytics_at': latest_analytics_at,
+    }
+    freshness = (
+        _selected_provider_freshness(
+            selected_provider=selected_provider,
+            state_by_provider=state_by_provider,
+            metrics_by_provider=metrics_by_provider,
+            analytics_by_provider=analytics_by_provider,
+            artifact_total=artifact_total,
+            scanned_count=scanned_count,
+            latest_security_at=latest_security_at,
+        )
+        if selected_provider is not None
+        else _fleet_freshness(
+            context=context,
+            provider_count=len(scoped_providers),
+            stats=stats,
+        )
+    )
     return {
         **context,
         'project_count': counts['projects'],
@@ -458,15 +523,19 @@ def _overview_operations_projection(
         'total_size': _fmt_bytes(total_size_bytes),
         'public_project_count': public_project_count,
         'scanned_count': scanned_count,
-        'scan_coverage': (round((scanned_count / artifact_total) * 100) if artifact_total else 0),
+        'scan_coverage': round((scanned_count / artifact_total) * 100) if artifact_total else 0,
         'metrics_ready_count': metrics_ready_count,
         'analytics_ready_count': analytics_ready_count,
         'provider_rows': provider_rows,
         'provider_health_pagination': pagination,
-        'inventory_items': inventory_items,
+        'inventory_items': _overview_inventory_items(
+            counts,
+            artifact_total=artifact_total,
+            total_size_bytes=total_size_bytes,
+            public_project_count=public_project_count,
+        ),
         'freshness': freshness,
     }
-
 
 def _overview_capacity_projection(
     *,
