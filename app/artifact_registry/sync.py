@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import selectinload
 
 from app.artifact_registry.collectors import InventoryProgressCallback, get_registry_collector
@@ -278,7 +279,7 @@ def sync_registry_inventory(
         )
         counts = commit_registry_inventory(identity, evidence, observed_at=observed_at)
         db.session.commit()
-    except Exception as exc:
+    except (LookupError, RuntimeError, ValueError, SQLAlchemyError) as exc:
         db.session.rollback()
         state = _lock_collection_state(int(identity.id))
         _mark_inventory_collection_failed(state, exc)
