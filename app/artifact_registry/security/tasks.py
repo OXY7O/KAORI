@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from time import perf_counter, time
 from typing import Any
@@ -26,26 +27,25 @@ def _now_iso() -> str:
     return datetime.now(UTC).isoformat()
 
 
+@dataclass(frozen=True, slots=True)
+class _SecuritySourceProgress:
+    source_key: str
+    source_total: int
+    instance_name: str
+    item_current: int
+    item_total: int
+    item_name: str
+    stage: str
+    message: str
+    completed: bool = False
+
+
 def _checkpoint_source_progress(
     *,
     job_execution_id: int | None,
-    source_key: str,
-    source_total: int,
-    instance_name: str,
-    item_current: int,
-    item_total: int,
-    item_name: str,
-    stage: str,
-    message: str,
-    completed: bool = False,
+    event: _SecuritySourceProgress,
 ) -> None:
-    """Update one fleet Job Execution from an independently running Registry source.
-
-    A row lock keeps concurrent source workers from moving aggregate progress
-    backwards. Per-source fractions are stored only as execution metadata; the
-    committed Artifact Registry security evidence remains owned by the domain
-    tables and provider collector.
-    """
+    """Update one fleet Job Execution from an independently running Registry source."""
 
     if job_execution_id is None:
         return
@@ -59,33 +59,35 @@ def _checkpoint_source_progress(
     progress = dict(payload.get('_progress') or {})
     source_progress = dict(progress.get(_PROGRESS_SOURCE_KEY) or {})
 
-    local_fraction = item_current / max(item_total, 1) if item_total else 0.0
-    previous_fraction = float(source_progress.get(source_key) or 0.0)
-    source_progress[source_key] = max(previous_fraction, min(max(local_fraction, 0.0), 1.0))
+    local_fraction = event.item_current / max(event.item_total, 1) if event.item_total else 0.0
+    previous_fraction = float(source_progress.get(event.source_key) or 0.0)
+    source_progress[event.source_key] = max(previous_fraction, min(max(local_fraction, 0.0), 1.0))
 
-    aggregate_fraction = sum(float(value or 0.0) for value in source_progress.values()) / max(source_total, 1)
+    aggregate_fraction = sum(float(value or 0.0) for value in source_progress.values()) / max(event.source_total, 1)
     aggregate_percent = min(5 + int(aggregate_fraction * 88), 93)
     current_percent = int(progress.get('percent') or 0)
 
     completed_sources = {str(value) for value in (progress.get(_PROGRESS_COMPLETED_SOURCE_KEY) or []) if str(value)}
-    if completed:
-        completed_sources.add(source_key)
-        source_progress[source_key] = 1.0
-        aggregate_fraction = sum(float(value or 0.0) for value in source_progress.values()) / max(source_total, 1)
+    if event.completed:
+        completed_sources.add(event.source_key)
+        source_progress[event.source_key] = 1.0
+        aggregate_fraction = sum(float(value or 0.0) for value in source_progress.values()) / max(event.source_total, 1)
         aggregate_percent = min(5 + int(aggregate_fraction * 88), 93)
 
     progress[_PROGRESS_SOURCE_KEY] = source_progress
     progress[_PROGRESS_COMPLETED_SOURCE_KEY] = sorted(completed_sources)
     progress['percent'] = max(current_percent, aggregate_percent)
-    progress['stage'] = stage[:120]
-    progress['target'] = (f'{instance_name} · {item_name}' if item_name else instance_name)[:255]
+    progress['stage'] = event.stage[:120]
+    progress['target'] = (
+        f'{event.instance_name} · {event.item_name}' if event.item_name else event.instance_name
+    )[:255]
     progress['updated_at'] = _now_iso()
 
     payload['_progress'] = progress
     job.payload_json = to_json_compatible(payload)
     job.progress_current = len(completed_sources)
-    job.progress_total = max(source_total, 0)
-    job.progress_message = message[:255]
+    job.progress_total = max(event.source_total, 0)
+    job.progress_message = event.message[:255]
     job.heartbeat_at = datetime.now(UTC)
     db.session.commit()
 
@@ -126,14 +128,16 @@ def sync_registry_security_source_task(
 
     _checkpoint_source_progress(
         job_execution_id=job_execution_id,
-        source_key=source_key,
-        source_total=source_total,
-        instance_name=instance_name,
-        item_current=0,
-        item_total=0,
-        item_name='',
-        stage='Preparing Registry Security Source',
-        message=f'Preparing incremental security refresh for {instance_name}.',
+        event=_SecuritySourceProgress(
+            source_key=source_key,
+            source_total=source_total,
+            instance_name=instance_name,
+            item_current=0,
+            item_total=0,
+            item_name='',
+            stage='Preparing Registry Security Source',
+            message=f'Preparing incremental security refresh for {instance_name}.',
+        ),
     )
 
     def report_security_progress(item_current: int, item_total: int, item_name: str) -> None:
@@ -145,14 +149,16 @@ def sync_registry_security_source_task(
         )
         _checkpoint_source_progress(
             job_execution_id=job_execution_id,
-            source_key=source_key,
-            source_total=source_total,
-            instance_name=instance_name,
-            item_current=item_current,
-            item_total=item_total,
-            item_name=item_name,
-            stage=stage,
-            message=message,
+            event=_SecuritySourceProgress(
+                source_key=source_key,
+                source_total=source_total,
+                instance_name=instance_name,
+                item_current=item_current,
+                item_total=item_total,
+                item_name=item_name,
+                stage=stage,
+                message=message,
+            ),
         )
         self.update_state(
             state='PROGRESS',
@@ -232,15 +238,17 @@ def sync_registry_security_source_task(
     )
     _checkpoint_source_progress(
         job_execution_id=job_execution_id,
-        source_key=source_key,
-        source_total=source_total,
-        instance_name=instance_name,
-        item_current=1,
-        item_total=1,
-        item_name='',
-        stage='Registry Security Source Completed',
-        message=completed_message,
-        completed=True,
+        event=_SecuritySourceProgress(
+            source_key=source_key,
+            source_total=source_total,
+            instance_name=instance_name,
+            item_current=1,
+            item_total=1,
+            item_name='',
+            stage='Registry Security Source Completed',
+            message=completed_message,
+            completed=True,
+        ),
     )
     return result
 
