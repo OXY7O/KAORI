@@ -18,8 +18,8 @@ from app.integrations.observability.alert_source.providers.alertmanager.applicat
     resolve_sources,
 )
 from app.integrations.observability.alert_source.providers.alertmanager.application.consumer import (
-    get_scope_status,
     KUBERNETES_CLUSTER_SCOPE,
+    get_scope_status,
     list_alerts_for_scope,
     list_silences_for_scope,
 )
@@ -43,6 +43,8 @@ from app.models.alertmanager import AlertmanagerInstance
 from app.models.cluster import Cluster
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.platform_operations.jobs.service import acquire_resource_admission_locks
+
+
 def get_cluster_by_id(cluster_id: str) -> Cluster | None:
     return db.session.get(Cluster, cluster_id)
 
