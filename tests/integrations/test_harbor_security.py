@@ -219,3 +219,41 @@ def test_harbor_security_refreshes_progress_during_repository_discovery(monkeypa
 
     assert (0, 1, 'base/filebeat · discovering security page 1') in progress
     assert (0, 1, 'base/filebeat · discovering security page 2') in progress
+
+
+
+def test_harbor_security_does_not_fetch_vulnerability_detail_for_unscanned_artifact(monkeypatch) -> None:
+    vulnerability_calls: list[str] = []
+
+    class _Client:
+        def list_all_artifacts(self, **_kwargs):
+            return [
+                {
+                    'digest': 'sha256:chart',
+                    'scan_overview': {
+                        'application/vnd.security.vulnerability.report; version=1.1': {
+                            'scan_status': 'not_scanned',
+                            'summary': {},
+                        }
+                    },
+                }
+            ]
+
+        def get_vulnerability_report(self, **kwargs):
+            vulnerability_calls.append(str(kwargs['reference']))
+            raise AssertionError('unscanned artifact must not request vulnerability detail')
+
+    monkeypatch.setattr(
+        harbor_security,
+        'build_client',
+        lambda _instance, **_kwargs: _Client(),
+    )
+
+    evidence = harbor_security.collect_harbor_security(
+        _Instance(),
+        [_target(1, repository='charts', digest='sha256:chart')],
+    )
+
+    assert vulnerability_calls == []
+    assert evidence.artifacts[0].scan_status == 'not_scanned'
+    assert evidence.provider_metadata['refreshed_vulnerability_reports'] == 0

@@ -247,4 +247,5 @@ def test_security_sync_revalidates_stale_targets_and_heartbeats_repository_disco
     assert 'skipped stale' in harbor
     assert "'stale_target_skip_count': stale_target_skip_count" in harbor
     assert 'discovering security page {page}' in harbor
+    assert 'registry_scan_evidence_ready(scan_status)' in harbor
     assert 'page_callback: Callable[[int], None] | None = None' in client

@@ -169,7 +169,6 @@ class HarborClient:
             page_callback=page_callback,
         )
 
-
     def get_project(self, *, project_name_or_id: str | int) -> dict[str, Any]:
         scope = quote(str(project_name_or_id).strip(), safe='')
         payload = self._request_json(f'/api/v2.0/projects/{scope}')

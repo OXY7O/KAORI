@@ -9,6 +9,7 @@ from app.artifact_registry.security.contracts import (
     RegistryArtifactSecurityEvidence,
     RegistrySecurityEvidence,
     RegistrySecurityTarget,
+    registry_scan_evidence_ready,
 )
 from app.artifact_registry.security.providers import (
     RegistrySecurityCollector,
@@ -434,7 +435,7 @@ def collect_harbor_security(
                 report_error: str | None = None
                 scan_snapshot: dict[str, Any] | None = None
 
-                if scan is not None and changed:
+                if scan is not None and changed and registry_scan_evidence_ready(scan_status):
                     try:
                         payload = client.get_vulnerability_report(
                             project_name_or_id=project_name,
