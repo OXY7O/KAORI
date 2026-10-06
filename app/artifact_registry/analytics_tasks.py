@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from celery import shared_task
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.artifact_registry.analytics import materialize_registry_analytics
 from app.extensions.db import db
@@ -58,7 +59,7 @@ def materialize_registry_analytics_task(
                 identity,
                 job_execution_id=job_execution_id,
             )
-        except Exception as exc:
+        except (LookupError, RuntimeError, ValueError, SQLAlchemyError) as exc:
             db.session.rollback()
             failures.append(
                 {
