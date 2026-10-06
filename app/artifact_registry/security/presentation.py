@@ -159,7 +159,7 @@ def _snapshot_status(
         exceptions_tone = 'warning'
     elif gap_count:
         exceptions_label = f'{gap_count} Coverage Gaps'
-        exceptions_supporting = 'Artifacts without committed security evidence.'
+        exceptions_supporting = 'Artifacts missing security evidence.'
         exceptions_tone = 'warning'
     else:
         exceptions_label = 'No Exceptions'
@@ -363,7 +363,7 @@ def build_security(
 
     coverage_percent = round((coverage_count / artifact_total) * 100) if artifact_total else 0
     coverage_supporting = (
-        f'{coverage_percent}% usable vulnerability scan coverage.'
+        f'{coverage_percent}% usable scan coverage.'
         if view == 'vulnerabilities'
         else f'{coverage_percent}% security evidence coverage.'
     )
