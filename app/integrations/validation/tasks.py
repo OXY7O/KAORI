@@ -1,16 +1,15 @@
 from __future__ import annotations
 
-import logging
 from datetime import UTC, datetime
 from typing import Any
+import logging
 
 from celery import shared_task
 
-import app.integrations.runtime.refresh as runtime_refresh
 from app.common.presentation import present_key_label
 from app.extensions.db import db
-from app.integrations.lifecycle import ensure_provider_operational
 from app.integrations.kernel.registry import execute_integration_operation, get_integration
+from app.integrations.lifecycle import ensure_provider_operational
 from app.integrations.runtime.recovery import enqueue_recovery_work, is_runtime_recovery, latest_runtime_health
 from app.integrations.runtime.repository import persist_runtime_state
 from app.integrations.validation.completion import final_payload
@@ -26,7 +25,7 @@ from app.platform_operations.jobs.service import (
     update_job_progress,
 )
 from app.platform_operations.notifications.service import record_operational_activity
-
+import app.integrations.runtime.refresh as runtime_refresh
 logger = logging.getLogger(__name__)
 
 INSTANCE_VALIDATION_TASK_NAME = 'app.integrations.validation.tasks.validate_integration_instance'
