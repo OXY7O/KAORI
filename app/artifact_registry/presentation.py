@@ -2946,14 +2946,33 @@ def build_analytics() -> dict[str, Any]:
         'artifacts': 0,
         'total_size_bytes': 0,
         'stale_candidates': 0,
+        'scanned_artifacts': 0,
+        'signed_artifacts': 0,
+        'sbom_artifacts': 0,
         'critical_findings': 0,
         'high_findings': 0,
+        'runtime_bindings': 0,
+        'running_artifacts': 0,
         'critical_runtime_artifacts': 0,
         'tag_only_bindings': 0,
         'runtime_scan_gaps': 0,
+        'unsigned_runtime_artifacts': 0,
+        'governance_projects_assessed': 0,
+        'retention_configured': 0,
+        'immutability_configured': 0,
         'metrics_ready': 0,
+        'healthy_providers': 0,
+        'component_up_providers': 0,
+        'request_rate_per_second': 0.0,
+        'backend_request_rate_per_second': 0.0,
+        'inflight_requests': 0.0,
+        'task_queue_size': 0.0,
+        'pull_activity': 0.0,
+        'metric_capability_gaps': 0,
     }
     forecast_rows: list[dict[str, Any]] = []
+    activity_rows: list[dict[str, Any]] = []
+    growth_rows: list[dict[str, Any]] = []
 
     for identity in identities:
         snapshot = (
@@ -2974,32 +2993,96 @@ def build_analytics() -> dict[str, Any]:
                     'snapshot': None,
                     'status_label': 'Not Materialized',
                     'tone': 'unknown',
+                    'inventory': {},
+                    'security': {},
+                    'runtime': {},
+                    'governance': {},
+                    'metrics': {},
+                    'growth': {},
                 }
             )
             continue
+
         payload = snapshot.payload_json
         inventory = payload.get('inventory') if isinstance(payload.get('inventory'), dict) else {}
         security = payload.get('security') if isinstance(payload.get('security'), dict) else {}
         runtime = payload.get('runtime') if isinstance(payload.get('runtime'), dict) else {}
+        governance = payload.get('governance') if isinstance(payload.get('governance'), dict) else {}
         metrics = payload.get('metrics') if isinstance(payload.get('metrics'), dict) else {}
         capacity = payload.get('capacity') if isinstance(payload.get('capacity'), dict) else {}
+        growth = payload.get('growth') if isinstance(payload.get('growth'), dict) else {}
 
         aggregate['projects'] += int(inventory.get('projects') or 0)
         aggregate['repositories'] += int(inventory.get('repositories') or 0)
         aggregate['artifacts'] += int(inventory.get('artifacts') or 0)
         aggregate['total_size_bytes'] += int(inventory.get('total_size_bytes') or 0)
         aggregate['stale_candidates'] += int(inventory.get('stale_candidate_count') or 0)
+        aggregate['scanned_artifacts'] += int(security.get('scanned_artifacts') or 0)
+        aggregate['signed_artifacts'] += int(security.get('signed_artifacts') or 0)
+        aggregate['sbom_artifacts'] += int(security.get('sbom_artifacts') or 0)
         aggregate['critical_findings'] += int(security.get('critical_findings') or 0)
         aggregate['high_findings'] += int(security.get('high_findings') or 0)
+        aggregate['runtime_bindings'] += int(runtime.get('bindings') or 0)
+        aggregate['running_artifacts'] += int(runtime.get('running_artifacts') or 0)
         aggregate['critical_runtime_artifacts'] += int(runtime.get('critical_runtime_artifacts') or 0)
         aggregate['tag_only_bindings'] += int(runtime.get('tag_only_bindings') or 0)
         aggregate['runtime_scan_gaps'] += int(runtime.get('runtime_scan_gaps') or 0)
-        aggregate['metrics_ready'] += int(metrics.get('status') == 'ready')
+        aggregate['unsigned_runtime_artifacts'] += int(runtime.get('unsigned_runtime_artifacts') or 0)
+        aggregate['governance_projects_assessed'] += int(governance.get('projects_assessed') or 0)
+        aggregate['retention_configured'] += int(governance.get('retention_configured') or 0)
+        aggregate['immutability_configured'] += int(governance.get('immutability_configured') or 0)
+
+        metrics_ready = metrics.get('status') == 'ready'
+        aggregate['metrics_ready'] += int(metrics_ready)
+        aggregate['healthy_providers'] += int(
+            metrics_ready
+            and isinstance(metrics.get('provider_health_value'), (int, float))
+            and float(metrics.get('provider_health_value')) > 0
+        )
+        aggregate['component_up_providers'] += int(
+            metrics_ready
+            and isinstance(metrics.get('component_up_value'), (int, float))
+            and float(metrics.get('component_up_value')) > 0
+        )
+        for aggregate_key, metric_key in (
+            ('request_rate_per_second', 'request_rate_per_second'),
+            ('backend_request_rate_per_second', 'backend_request_rate_per_second'),
+            ('inflight_requests', 'inflight_requests'),
+            ('task_queue_size', 'task_queue_size'),
+        ):
+            raw_value = metrics.get(metric_key)
+            if isinstance(raw_value, (int, float)):
+                aggregate[aggregate_key] += float(raw_value)
+
+        pull_activity = metrics.get('project_pull_count')
+        if isinstance(pull_activity, dict):
+            provider_pull_total = sum(
+                float(value)
+                for value in pull_activity.values()
+                if isinstance(value, (int, float))
+            )
+            aggregate['pull_activity'] += provider_pull_total
+            for project_name, raw_value in pull_activity.items():
+                if isinstance(raw_value, (int, float)):
+                    activity_rows.append(
+                        {
+                            'registry_name': identity.name,
+                            'provider_key': identity.provider_key,
+                            'project_name': str(project_name),
+                            'pull_count': float(raw_value),
+                        }
+                    )
+
+        capability_gaps = metrics.get('capability_gaps')
+        if isinstance(capability_gaps, dict):
+            aggregate['metric_capability_gaps'] += len(capability_gaps)
 
         expires_at = snapshot.expires_at
         is_stale = False
         if expires_at is not None:
-            compare_expiry = expires_at if expires_at.tzinfo is not None else expires_at.replace(tzinfo=UTC)
+            compare_expiry = (
+                expires_at if expires_at.tzinfo is not None else expires_at.replace(tzinfo=UTC)
+            )
             is_stale = datetime.now(UTC) > compare_expiry
         latest_rows.append(
             {
@@ -3010,10 +3093,25 @@ def build_analytics() -> dict[str, Any]:
                 'inventory': inventory,
                 'security': security,
                 'runtime': runtime,
+                'governance': governance,
                 'metrics': metrics,
-                'growth': payload.get('growth') if isinstance(payload.get('growth'), dict) else {},
+                'growth': growth,
             }
         )
+
+        if any(isinstance(growth.get(key), (int, float)) for key in ('artifact_growth_per_day', 'size_growth_bytes_per_day')):
+            growth_rows.append(
+                {
+                    'registry_name': identity.name,
+                    'provider_key': identity.provider_key,
+                    'artifact_growth_per_day': growth.get('artifact_growth_per_day'),
+                    'size_growth_bytes_per_day': growth.get('size_growth_bytes_per_day'),
+                    'artifact_delta': growth.get('artifact_delta'),
+                    'size_delta_bytes': growth.get('size_delta_bytes'),
+                    'elapsed_days': growth.get('elapsed_days'),
+                }
+            )
+
         for forecast in capacity.get('project_forecasts') or []:
             if not isinstance(forecast, dict):
                 continue
@@ -3039,20 +3137,72 @@ def build_analytics() -> dict[str, Any]:
         }
         for item in recommendations
     ]
+
+    artifact_total = max(int(aggregate['artifacts']), 0)
+    project_total = max(int(aggregate['projects']), 0)
+    scan_coverage = (
+        float(aggregate['scanned_artifacts']) / artifact_total * 100.0 if artifact_total else None
+    )
+    signature_coverage = (
+        float(aggregate['signed_artifacts']) / artifact_total * 100.0 if artifact_total else None
+    )
+    sbom_coverage = (
+        float(aggregate['sbom_artifacts']) / artifact_total * 100.0 if artifact_total else None
+    )
+    retention_coverage = (
+        float(aggregate['retention_configured']) / project_total * 100.0 if project_total else None
+    )
+    immutability_coverage = (
+        float(aggregate['immutability_configured']) / project_total * 100.0 if project_total else None
+    )
+
     active_signal_count = (
-        aggregate['critical_runtime_artifacts']
-        + aggregate['tag_only_bindings']
-        + aggregate['runtime_scan_gaps']
-        + aggregate['stale_candidates']
+        int(aggregate['critical_runtime_artifacts'])
+        + int(aggregate['tag_only_bindings'])
+        + int(aggregate['runtime_scan_gaps'])
+        + int(aggregate['unsigned_runtime_artifacts'])
+        + int(aggregate['stale_candidates'])
+        + int(aggregate['metric_capability_gaps'])
     )
     if not latest_rows or not any(row.get('snapshot') for row in latest_rows):
         posture = {'label': 'Materialization Required', 'tone': 'warning'}
     elif aggregate['critical_runtime_artifacts']:
         posture = {'label': 'Critical Runtime Exposure', 'tone': 'critical'}
-    elif active_signal_count:
+    elif aggregate['task_queue_size'] > 0 or active_signal_count:
         posture = {'label': 'Review Required', 'tone': 'warning'}
     else:
-        posture = {'label': 'No Active Analytics Signals', 'tone': 'normal'}
+        posture = {'label': 'Operationally Healthy', 'tone': 'normal'}
+
+    operational_metrics = {
+        'health': {
+            'value': f"{aggregate['healthy_providers']}/{len(identities)}",
+            'label': 'Provider Health',
+            'detail': 'Healthy Registry providers from bound Metrics Source evidence.',
+            'tone': (
+                'normal'
+                if identities and aggregate['healthy_providers'] == len(identities)
+                else ('warning' if identities else 'unknown')
+            ),
+        },
+        'request_rate': {
+            'value': f"{aggregate['request_rate_per_second']:.2f}/s",
+            'label': 'Core Request Rate',
+            'detail': 'Aggregate Harbor core HTTP request throughput over the registered metrics profile.',
+            'tone': 'normal' if aggregate['metrics_ready'] else 'unknown',
+        },
+        'inflight': {
+            'value': f"{aggregate['inflight_requests']:.0f}",
+            'label': 'Inflight Requests',
+            'detail': 'Current aggregate core request concurrency.',
+            'tone': 'warning' if aggregate['inflight_requests'] > 100 else 'normal',
+        },
+        'queue': {
+            'value': f"{aggregate['task_queue_size']:.0f}",
+            'label': 'Task Queue',
+            'detail': 'Current Harbor task queue depth from committed analytics evidence.',
+            'tone': 'warning' if aggregate['task_queue_size'] > 0 else 'normal',
+        },
+    }
 
     return {
         'setup': overview['setup'],
@@ -3060,6 +3210,25 @@ def build_analytics() -> dict[str, Any]:
         'snapshot_count': sum(bool(row.get('snapshot')) for row in latest_rows),
         'aggregate': aggregate,
         'latest_rows': latest_rows,
+        'operational_metrics': operational_metrics,
+        'coverage': {
+            'scan': scan_coverage,
+            'signature': signature_coverage,
+            'sbom': sbom_coverage,
+            'retention': retention_coverage,
+            'immutability': immutability_coverage,
+        },
+        'activity_rows': sorted(
+            activity_rows,
+            key=lambda row: (-float(row['pull_count']), row['project_name'].casefold()),
+        )[:5],
+        'growth_rows': sorted(
+            growth_rows,
+            key=lambda row: (
+                -(float(row['size_growth_bytes_per_day']) if isinstance(row.get('size_growth_bytes_per_day'), (int, float)) else float('-inf')),
+                row['registry_name'].casefold(),
+            ),
+        )[:5],
         'forecast_rows': sorted(
             forecast_rows,
             key=lambda row: (
@@ -3072,3 +3241,4 @@ def build_analytics() -> dict[str, Any]:
         'active_signal_count': active_signal_count,
         'posture': posture,
     }
+
