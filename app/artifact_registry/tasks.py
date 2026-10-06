@@ -20,6 +20,40 @@ def _now_iso() -> str:
     return datetime.now(UTC).isoformat()
 
 
+def _inventory_sync_result(
+    *,
+    total: int,
+    synced: int,
+    artifact_count: int,
+    failures: list[dict[str, str]],
+    requested_by_user_id: int | None,
+    started: float,
+) -> dict[str, Any]:
+    status = 'error' if failures and not synced else ('warning' if failures else 'success')
+    return {
+        'status': status,
+        'title': (
+            'Artifact Registry Inventory Sync Completed'
+            if status != 'error'
+            else 'Artifact Registry Inventory Sync Failed'
+        ),
+        'message': f'{synced} Registry provider(s) synchronized; {len(failures)} failed.',
+        'detail': (
+            'Failed providers retained their previous committed snapshots.'
+            if failures
+            else f'{artifact_count} artifact record(s) are represented by the latest committed snapshots.'
+        ),
+        'total_count': total,
+        'synced_count': synced,
+        'failed_count': len(failures),
+        'artifact_count': artifact_count,
+        'failure_evidence': failures,
+        'requested_by_user_id': requested_by_user_id,
+        'finished_at': _now_iso(),
+        'duration_seconds': round(perf_counter() - started, 1),
+    }
+
+
 @shared_task(
     bind=True,
     name='app.artifact_registry.tasks.sync_all_registry',
@@ -140,29 +174,15 @@ def sync_all_registry_task(
                 message=f'Finished Registry collection for {instance_name}.',
             )
 
-        status = 'error' if failures and not synced else ('warning' if failures else 'success')
-        result = {
-            'status': status,
-            'title': (
-                'Artifact Registry Inventory Sync Completed'
-                if status != 'error'
-                else 'Artifact Registry Inventory Sync Failed'
-            ),
-            'message': f'{synced} Registry provider(s) synchronized; {len(failures)} failed.',
-            'detail': (
-                'Failed providers retained their previous committed snapshots.'
-                if failures
-                else f'{artifact_count} artifact record(s) are represented by the latest committed snapshots.'
-            ),
-            'total_count': total,
-            'synced_count': synced,
-            'failed_count': len(failures),
-            'artifact_count': artifact_count,
-            'failure_evidence': failures,
-            'requested_by_user_id': requested_by_user_id,
-            'finished_at': _now_iso(),
-            'duration_seconds': round(perf_counter() - started, 1),
-        }
+        result = _inventory_sync_result(
+            total=total,
+            synced=synced,
+            artifact_count=artifact_count,
+            failures=failures,
+            requested_by_user_id=requested_by_user_id,
+            started=started,
+        )
+        status = str(result['status'])
         if requested_by_user_id is not None:
             create_notification(
                 user_id=requested_by_user_id,
