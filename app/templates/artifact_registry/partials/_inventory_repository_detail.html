@@ -12,21 +12,19 @@
         {% call detail.workspace_header(
             'Repository identity, project scope, artifact coverage, provider provenance, and committed collection context.',
             'package-open'
-        ) %}
+            ) %}
             {% call detail.header_identity_row() %}
                 {{ detail.inventory_title(repository.name) }}
                 {{ table_label.metadata_label(repository.project_name, 'folder-kanban') }}
                 {{ table_label.metadata_label(repository.provider_name, 'boxes') }}
             {% endcall %}
         {% endcall %}
-
         {{ detail.inspector_summary_strip([
-            {'label': 'Project', 'value': repository.project_name, 'supporting': 'Owning Registry project', 'icon': 'folder-kanban', 'tone': 'brand'},
-            {'label': 'Artifacts', 'value': repository.artifact_count, 'supporting': 'Committed artifacts', 'icon': 'fingerprint', 'tone': 'brand'},
-            {'label': 'Pull Count', 'value': repository.pull_count if repository.pull_count is not none else 'Not Collected', 'supporting': 'Provider-observed evidence', 'icon': 'activity', 'tone': 'brand'},
-            {'label': 'Snapshot', 'value': repository.snapshot.label, 'supporting': 'Committed collection state', 'icon': 'database-backup', 'tone': repository.snapshot.tone}
-        ]) }}
-
+                {'label': 'Project', 'value': repository.project_name, 'supporting': 'Owning Registry project', 'icon': 'folder-kanban', 'tone': 'brand'},
+                {'label': 'Artifacts', 'value': repository.artifact_count, 'supporting': 'Committed artifacts', 'icon': 'fingerprint', 'tone': 'brand'},
+                {'label': 'Pull Count', 'value': repository.pull_count if repository.pull_count is not none else 'Not Collected', 'supporting': 'Provider-observed evidence', 'icon': 'activity', 'tone': 'brand'},
+                {'label': 'Snapshot', 'value': repository.snapshot.label, 'supporting': 'Committed collection state', 'icon': 'database-backup', 'tone': repository.snapshot.tone}
+                ]) }}
         <div class="min-w-0 space-y-4 p-4 sm:p-5 lg:p-6">
             {% call detail.resource_sheet() %}
                 {% call detail.inventory_section(
@@ -34,7 +32,7 @@
                     'badge-info',
                     repository.artifact_count ~ (' Artifact' if repository.artifact_count == 1 else ' Artifacts'),
                     description='Provider-neutral repository identity.'
-                ) %}
+                    ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_technical_row('Repository Name', repository.name, class_name='lg:col-span-2') }}
                         {{ detail.inventory_technical_row('Provider Native ID', repository.provider_native_id, class_name='lg:col-span-2') }}
@@ -44,28 +42,26 @@
                         {{ detail.inventory_row('Description', repository.description, class_name='lg:col-span-2') }}
                     </dl>
                 {% endcall %}
-
                 {% call detail.inventory_section(
                     'Registry Source',
                     'boxes',
                     repository.provider_label,
                     description='Registry integration and environment that supplied this committed repository record.'
-                ) %}
+                    ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_row('Source', repository.provider_name, class_name='lg:col-span-2') }}
                         {{ detail.inventory_row('Provider', repository.provider_label) }}
-                        {{ detail.inventory_row('Environment', repository.provider_environment|environment_name(empty='Not Set')) }}
+                        {{ detail.inventory_row('Environment', repository.provider_environment|environment_name(empty='Not Set') ) }}
                         {{ detail.inventory_technical_row('Source ID', repository.provider_id) }}
                         {{ detail.inventory_row('Last Observed', repository.observed_at|user_datetime, nowrap=true) }}
                     </dl>
                 {% endcall %}
-
                 {% call detail.inventory_section(
                     'Artifact Coverage',
                     'fingerprint',
                     repository.artifact_count ~ (' Artifact' if repository.artifact_count == 1 else ' Artifacts'),
                     description='Bounded artifact preview retained under this repository in the current committed Registry inventory.'
-                ) %}
+                    ) %}
                     {% if repository.artifact_preview %}
                         <div class="overflow-x-auto">
                             <table class="{{ table_ui.table_classes('min-w-[52rem]') }}">
@@ -112,43 +108,34 @@
                             </table>
                         </div>
                         {% if repository.artifact_truncated %}
-                            {{ detail.inventory_note(
-                                'Showing the first 25 artifacts. Use Artifact Inventory for the complete committed repository catalog.',
-                                'info'
-                            ) }}
+                            {{ detail.inventory_note('Showing the first 25 artifacts. Use Artifact Inventory for the complete committed repository catalog.',
+                                                        'info') }}
                         {% endif %}
                     {% else %}
-                        {{ detail.empty_evidence(
-                            'No Artifacts Collected',
-                            'The committed repository record does not currently contain artifact inventory.',
-                            'fingerprint'
-                        ) }}
+                        {{ detail.empty_evidence('No Artifacts Collected',
+                                                'The committed repository record does not currently contain artifact inventory.',
+                                                'fingerprint') }}
                     {% endif %}
                 {% endcall %}
-
                 {% call detail.inventory_section(
                     'Provider Timing',
                     'clock-3',
                     repository.observed_at|user_datetime,
                     description='Provider lifecycle timestamps for this repository.'
-                ) %}
+                    ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_row('Provider Created', repository.provider_created_at|user_datetime if repository.provider_created_at else 'Not Collected', nowrap=true) }}
                         {{ detail.inventory_row('Provider Updated', repository.provider_updated_at|user_datetime if repository.provider_updated_at else 'Not Collected', nowrap=true) }}
                         {{ detail.inventory_row('Observed At', repository.observed_at|user_datetime, nowrap=true) }}
                     </dl>
                 {% endcall %}
-
-                {{ metadata_collection.render(
-                    'Provider Metadata',
-                    repository.provider_metadata,
-                    'braces',
-                    'No Provider Metadata Collected',
-                    'Provider metadata will appear when retained with the committed repository record.',
-                    'Provider-specific fields remain factual evidence and do not redefine the provider-neutral repository identity.',
-                    embedded=true
-                ) }}
-
+                {{ metadata_collection.render('Provider Metadata',
+                                repository.provider_metadata,
+                                'braces',
+                                'No Provider Metadata Collected',
+                                'Provider metadata will appear when retained with the committed repository record.',
+                                'Provider-specific fields remain factual evidence and do not redefine the provider-neutral repository identity.',
+                                embedded=true) }}
                 {% call detail.inventory_section(
                     'Snapshot Context',
                     'database-backup',
@@ -156,7 +143,7 @@
                     'status',
                     repository.snapshot.tone,
                     description='Committed snapshot freshness and evidence boundary.'
-                ) %}
+                    ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_status_row('Snapshot State', repository.snapshot.label, repository.snapshot.tone) }}
                         {{ detail.inventory_row('Committed At', repository.snapshot.committed_at|user_datetime if repository.snapshot.committed_at else 'Not Collected', nowrap=true) }}
@@ -164,22 +151,17 @@
                     </dl>
                 {% endcall %}
             {% endcall %}
-
             <div class="grid min-w-0 gap-4 xl:grid-cols-12">
-                {{ operational_callout.render(
-                    'Committed Snapshot Boundary',
-                    'Latest committed Artifact Registry inventory; no live provider request.',
-                    'database',
-                    'info',
-                    extra_classes='xl:col-span-5'
-                ) }}
-                {{ operational_callout.render(
-                    'Repository Interpretation',
-                    'Artifact and pull counts are provider-observed evidence.',
-                    'scan-search',
-                    'info',
-                    extra_classes='xl:col-span-7'
-                ) }}
+                {{ operational_callout.render('Committed Snapshot Boundary',
+                                'Latest committed Artifact Registry inventory; no live provider request.',
+                                'database',
+                                'info',
+                                extra_classes='xl:col-span-5') }}
+                {{ operational_callout.render('Repository Interpretation',
+                                'Artifact and pull counts are provider-observed evidence.',
+                                'scan-search',
+                                'info',
+                                extra_classes='xl:col-span-7') }}
             </div>
         </div>
     </div>
