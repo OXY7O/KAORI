@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -182,34 +183,63 @@ def _runtime_prerequisite_guidance(
     }
 
 
-def build_runtime_usage(
+@dataclass(frozen=True, slots=True)
+class RuntimeUsageRequest:
+    search: Any = ''
+    source_id: int | None = None
+    cluster_id: str = ''
+    namespace: str = ''
+    match_type: str = ''
+    exposure: str = ''
+    artifact_id: int | None = None
+    page: int = 1
+    per_page: int = 5
+
+
+def _runtime_usage_request(kwargs: dict[str, Any]) -> RuntimeUsageRequest:
+    allowed = {
+        'search',
+        'source_id',
+        'cluster_id',
+        'namespace',
+        'match_type',
+        'exposure',
+        'artifact_id',
+        'page',
+        'per_page',
+    }
+    unknown = sorted(set(kwargs) - allowed)
+    if unknown:
+        joined = ', '.join(unknown)
+        raise TypeError(f'Unexpected runtime usage argument(s): {joined}')
+    return RuntimeUsageRequest(
+        search=kwargs.get('search', ''),
+        source_id=kwargs.get('source_id'),
+        cluster_id=kwargs.get('cluster_id', ''),
+        namespace=kwargs.get('namespace', ''),
+        match_type=kwargs.get('match_type', ''),
+        exposure=kwargs.get('exposure', ''),
+        artifact_id=kwargs.get('artifact_id'),
+        page=kwargs.get('page', 1),
+        per_page=kwargs.get('per_page', 5),
+    )
+
+
+def _runtime_filtered_query(
+    request: RuntimeUsageRequest,
     *,
-    search: str = '',
-    source_id: int | None = None,
-    cluster_id: str = '',
-    namespace: str = '',
-    match_type: str = '',
-    exposure: str = '',
-    artifact_id: int | None = None,
-    page: int = 1,
-    per_page: int = 5,
-) -> dict[str, Any]:
-    sources = _providers()
-    source_by_id = {int(item.id): item for item in sources}
-    clusters = Cluster.query.order_by(Cluster.name.asc()).all()
-    cluster_by_id = {str(item.id): item for item in clusters}
-    prerequisites = correlation_prerequisites()
-
-    search_value = str(search or '').strip().lower()
-    cluster_value = str(cluster_id or '').strip()
-    namespace_value = str(namespace or '').strip()
-    match_value = str(match_type or '').strip().lower()
-    exposure_value = str(exposure or '').strip().lower()
-
-    security_by_artifact, critical_ids, high_ids, scanned_ids = _runtime_security_index()
-    exposed_ids = critical_ids | high_ids
-    safe_scanned_ids = scanned_ids - exposed_ids
-
+    sources: list[Any],
+    critical_ids: set[int],
+    high_ids: set[int],
+    scanned_ids: set[int],
+) -> tuple[Any, dict[str, str]]:
+    filters = {
+        'search': str(request.search or '').strip().lower(),
+        'cluster': str(request.cluster_id or '').strip(),
+        'namespace': str(request.namespace or '').strip(),
+        'match': str(request.match_type or '').strip().lower(),
+        'exposure': str(request.exposure or '').strip().lower(),
+    }
     query = (
         RegistryWorkloadBinding.query.join(
             RegistryArtifact,
@@ -230,45 +260,40 @@ def build_runtime_usage(
             .joinedload(RegistryRepository.project)
         )
     )
+    if request.source_id is not None:
+        query = query.filter(RegistryProject.integration_instance_id == int(request.source_id))
+    if filters['cluster']:
+        query = query.filter(RegistryWorkloadBinding.cluster_id == filters['cluster'])
+    if filters['namespace']:
+        query = query.filter(RegistryWorkloadBinding.namespace == filters['namespace'])
+    if filters['match'] in {'digest', 'tag'}:
+        query = query.filter(RegistryWorkloadBinding.match_type == filters['match'])
+    if request.artifact_id is not None:
+        query = query.filter(RegistryWorkloadBinding.artifact_id == int(request.artifact_id))
 
-    if source_id is not None:
-        query = query.filter(RegistryProject.integration_instance_id == int(source_id))
-    if cluster_value:
-        query = query.filter(RegistryWorkloadBinding.cluster_id == cluster_value)
-    if namespace_value:
-        query = query.filter(RegistryWorkloadBinding.namespace == namespace_value)
-    if match_value in {'digest', 'tag'}:
-        query = query.filter(RegistryWorkloadBinding.match_type == match_value)
-    if artifact_id is not None:
-        query = query.filter(RegistryWorkloadBinding.artifact_id == int(artifact_id))
-
-    if exposure_value == 'critical':
+    exposed_ids = critical_ids | high_ids
+    safe_scanned_ids = scanned_ids - exposed_ids
+    exposure_sets = {
+        'critical': critical_ids,
+        'high': high_ids,
+        'no_high_risk': safe_scanned_ids,
+    }
+    selected_ids = exposure_sets.get(filters['exposure'])
+    if selected_ids is not None:
         query = (
-            query.filter(RegistryWorkloadBinding.artifact_id.in_(critical_ids))
-            if critical_ids
+            query.filter(RegistryWorkloadBinding.artifact_id.in_(selected_ids))
+            if selected_ids
             else query.filter(RegistryWorkloadBinding.id == -1)
         )
-    elif exposure_value == 'high':
-        query = (
-            query.filter(RegistryWorkloadBinding.artifact_id.in_(high_ids))
-            if high_ids
-            else query.filter(RegistryWorkloadBinding.id == -1)
-        )
-    elif exposure_value == 'no_high_risk':
-        query = (
-            query.filter(RegistryWorkloadBinding.artifact_id.in_(safe_scanned_ids))
-            if safe_scanned_ids
-            else query.filter(RegistryWorkloadBinding.id == -1)
-        )
-    elif exposure_value == 'not_scanned' and scanned_ids:
+    elif filters['exposure'] == 'not_scanned' and scanned_ids:
         query = query.filter(~RegistryWorkloadBinding.artifact_id.in_(scanned_ids))
 
-    if search_value:
-        pattern = f'%{search_value}%'
+    if filters['search']:
+        pattern = f'%{filters["search"]}%'
         matching_source_ids = [
             int(source.id)
             for source in sources
-            if search_value in f'{source.name} {source.provider_key} {source.environment or ""}'.lower()
+            if filters['search'] in f'{source.name} {source.provider_key} {source.environment or ""}'.lower()
         ]
         search_clauses = [
             func.lower(RegistryArtifact.digest).like(pattern),
@@ -284,31 +309,41 @@ def build_runtime_usage(
         if matching_source_ids:
             search_clauses.append(RegistryProject.integration_instance_id.in_(matching_source_ids))
         query = query.filter(or_(*search_clauses))
+    return query, filters
 
-    binding_total = query.order_by(None).count()
-    digest_matches = query.filter(RegistryWorkloadBinding.match_type == 'digest').order_by(None).count()
-    tag_matches = query.filter(RegistryWorkloadBinding.match_type == 'tag').order_by(None).count()
-    security_exposed = (
-        query.filter(RegistryWorkloadBinding.artifact_id.in_(exposed_ids)).order_by(None).count() if exposed_ids else 0
-    )
-    critical_exposures = (
-        query.filter(RegistryWorkloadBinding.artifact_id.in_(critical_ids)).order_by(None).count()
-        if critical_ids
-        else 0
-    )
-    artifact_count = query.with_entities(RegistryWorkloadBinding.artifact_id).distinct().count()
 
-    page_items, pagination = paginate_query(
-        query.order_by(
-            RegistryWorkloadBinding.namespace.asc(),
-            RegistryWorkloadBinding.workload_name.asc(),
-            RegistryWorkloadBinding.pod_name.asc(),
-            RegistryWorkloadBinding.id.asc(),
+def _runtime_usage_counts(
+    query: Any,
+    *,
+    critical_ids: set[int],
+    high_ids: set[int],
+) -> dict[str, int]:
+    exposed_ids = critical_ids | high_ids
+    return {
+        'binding_total': query.order_by(None).count(),
+        'digest_matches': query.filter(RegistryWorkloadBinding.match_type == 'digest').order_by(None).count(),
+        'tag_matches': query.filter(RegistryWorkloadBinding.match_type == 'tag').order_by(None).count(),
+        'security_exposed': (
+            query.filter(RegistryWorkloadBinding.artifact_id.in_(exposed_ids)).order_by(None).count()
+            if exposed_ids
+            else 0
         ),
-        page=page,
-        per_page=per_page,
-    )
+        'critical_exposures': (
+            query.filter(RegistryWorkloadBinding.artifact_id.in_(critical_ids)).order_by(None).count()
+            if critical_ids
+            else 0
+        ),
+        'artifact_count': query.with_entities(RegistryWorkloadBinding.artifact_id).distinct().count(),
+    }
 
+
+def _runtime_usage_rows(
+    page_items: list[Any],
+    *,
+    source_by_id: dict[int, Any],
+    cluster_by_id: dict[str, Any],
+    security_by_artifact: dict[int, dict[str, Any]],
+) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for binding in page_items:
         artifact = binding.artifact
@@ -320,7 +355,6 @@ def build_runtime_usage(
             int(artifact.id),
             _runtime_security_state(artifact.scan_status, artifact.vulnerability_summary),
         )
-        match = _runtime_match_state(binding.match_type, binding.confidence)
         rows.append(
             {
                 'id': int(binding.id),
@@ -333,7 +367,7 @@ def build_runtime_usage(
                 ),
                 'source_id': int(project.integration_instance_id),
                 'source_name': source.name if source is not None else 'Unknown Registry Source',
-                'provider_label': (source.provider_key.replace('_', ' ').title() if source is not None else 'Registry'),
+                'provider_label': source.provider_key.replace('_', ' ').title() if source is not None else 'Registry',
                 'cluster_id': str(binding.cluster_id),
                 'cluster_name': cluster.name if cluster is not None else str(binding.cluster_id),
                 'cluster_environment': cluster.environment if cluster is not None else None,
@@ -343,14 +377,17 @@ def build_runtime_usage(
                 'pod_name': binding.pod_name,
                 'container_name': binding.container_name or 'Container',
                 'image_reference': binding.image_reference,
-                'match': match,
+                'match': _runtime_match_state(binding.match_type, binding.confidence),
                 'match_type': binding.match_type,
                 'confidence': binding.confidence,
                 'security': security,
                 'observed_at': binding.observed_at,
             }
         )
+    return rows
 
+
+def _runtime_snapshot_state(prerequisites: dict[str, Any]) -> dict[str, Any]:
     latest_job = (
         JobExecution.query.filter(JobExecution.job_type == 'artifact_registry_runtime_correlation')
         .order_by(JobExecution.created_at.desc(), JobExecution.id.desc())
@@ -384,54 +421,68 @@ def build_runtime_usage(
     )
     refreshing = bool(latest_job is not None and latest_job.is_active)
     stale = bool(
-        latest_correlated_at is not None and latest_correlated_at < datetime.now(UTC) - timedelta(hours=FRESHNESS_HOURS)
+        latest_correlated_at is not None
+        and latest_correlated_at < datetime.now(UTC) - timedelta(hours=FRESHNESS_HOURS)
     )
-
     if refreshing:
-        snapshot_status, snapshot_tone = 'Refreshing', 'info'
-        snapshot_description = 'Runtime correlation is rebuilding from committed Registry and Kubernetes evidence.'
+        status, tone = 'Refreshing', 'info'
+        description = 'Runtime correlation is rebuilding from committed Registry and Kubernetes evidence.'
     elif setup['refresh_blocked']:
-        snapshot_status, snapshot_tone = 'Refresh Unavailable', 'warning'
-        snapshot_description = setup['refresh_description']
+        status, tone, description = 'Refresh Unavailable', 'warning', setup['refresh_description']
     elif setup['is_blocked']:
-        snapshot_status, snapshot_tone = 'Prerequisites Required', 'warning'
-        snapshot_description = setup['description']
+        status, tone, description = 'Prerequisites Required', 'warning', setup['description']
     elif latest_correlated_at is None:
-        snapshot_status, snapshot_tone = 'Not Materialized', 'unknown'
-        snapshot_description = 'No committed runtime correlation snapshot is available yet.'
+        status, tone = 'Not Materialized', 'unknown'
+        description = 'No committed runtime correlation snapshot is available yet.'
     elif refresh_failed:
-        snapshot_status, snapshot_tone = 'Refresh Failed', 'warning'
-        snapshot_description = 'The latest rebuild failed; the previous committed correlation remains readable.'
+        status, tone = 'Refresh Failed', 'warning'
+        description = 'The latest rebuild failed; the previous committed correlation remains readable.'
     elif stale:
-        snapshot_status, snapshot_tone = 'Stale', 'warning'
-        snapshot_description = 'Committed runtime correlation is older than the current freshness window.'
+        status, tone = 'Stale', 'warning'
+        description = 'Committed runtime correlation is older than the current freshness window.'
     else:
-        snapshot_status, snapshot_tone = 'Ready', 'normal'
-        snapshot_description = 'Committed cross-domain runtime correlation is available for the active scope.'
+        status, tone = 'Ready', 'normal'
+        description = 'Committed cross-domain runtime correlation is available for the active scope.'
+    return {
+        'setup': setup,
+        'latest_correlated_at': latest_correlated_at,
+        'status': status,
+        'tone': tone,
+        'description': description,
+    }
 
-    selected_source = source_by_id.get(int(source_id)) if source_id is not None else None
-    source_scope_label = (
+
+def _runtime_scope_projection(
+    request: RuntimeUsageRequest,
+    *,
+    source_by_id: dict[int, Any],
+    cluster_by_id: dict[str, Any],
+    cluster_value: str,
+    namespace_value: str,
+) -> dict[str, str]:
+    selected_source = source_by_id.get(int(request.source_id)) if request.source_id is not None else None
+    source_label = (
         selected_source.name
         if selected_source is not None
-        else ('Selected Registry Source' if source_id is not None else 'All Registry Sources')
+        else ('Selected Registry Source' if request.source_id is not None else 'All Registry Sources')
     )
     selected_cluster = cluster_by_id.get(cluster_value) if cluster_value else None
-    cluster_scope_label = (
+    cluster_label = (
         selected_cluster.name
         if selected_cluster is not None
         else ('Selected Kubernetes Cluster' if cluster_value else 'All Kubernetes Clusters')
     )
-    scope_label = f'{source_scope_label} × {cluster_scope_label}'
+    scope_label = f'{source_label} × {cluster_label}'
     if namespace_value:
         scope_label = f'{scope_label} · {namespace_value}'
 
     artifact_filter_label = ''
-    if artifact_id is not None:
+    if request.artifact_id is not None:
         artifact_filter = (
             RegistryArtifact.query.options(
                 joinedload(RegistryArtifact.repository).joinedload(RegistryRepository.project)
             )
-            .filter(RegistryArtifact.id == int(artifact_id))
+            .filter(RegistryArtifact.id == int(request.artifact_id))
             .first()
         )
         if artifact_filter is not None:
@@ -441,56 +492,77 @@ def build_runtime_usage(
                 f'{artifact_filter.digest[:18]}…'
             )
             scope_label = f'{scope_label} · Artifact Scoped'
+    return {
+        'label': scope_label,
+        'source_label': source_label,
+        'cluster_label': cluster_label,
+        'artifact_filter_label': artifact_filter_label,
+    }
 
-    if critical_exposures:
-        posture = {'label': 'Critical Runtime Exposure', 'tone': 'critical'}
-    elif security_exposed:
-        posture = {'label': 'High-Risk Runtime Exposure', 'tone': 'warning'}
-    elif binding_total and tag_matches:
-        posture = {'label': 'Tag-Matched Runtime Evidence', 'tone': 'info'}
-    elif binding_total:
-        posture = {'label': 'Digest-Correlated', 'tone': 'normal'}
-    else:
-        posture = {'label': 'No Runtime Correlation', 'tone': 'unknown'}
 
-    if tag_matches:
-        exceptions_label = f'{tag_matches} Tag Match' if tag_matches == 1 else f'{tag_matches} Tag Matches'
-        exceptions_supporting = 'Mutable references; lower confidence.'
-        exceptions_tone = 'warning'
-    elif binding_total:
-        exceptions_label = 'Digest-only'
-        exceptions_supporting = 'No tag-only correlation in this scope.'
-        exceptions_tone = 'normal'
-    else:
-        exceptions_label = 'No Correlation'
-        exceptions_supporting = 'No committed runtime binding in this scope.'
-        exceptions_tone = 'unknown'
+def _runtime_posture(counts: dict[str, int]) -> dict[str, str]:
+    if counts['critical_exposures']:
+        return {'label': 'Critical Runtime Exposure', 'tone': 'critical'}
+    if counts['security_exposed']:
+        return {'label': 'High-Risk Runtime Exposure', 'tone': 'warning'}
+    if counts['binding_total'] and counts['tag_matches']:
+        return {'label': 'Tag-Matched Runtime Evidence', 'tone': 'info'}
+    if counts['binding_total']:
+        return {'label': 'Digest-Correlated', 'tone': 'normal'}
+    return {'label': 'No Runtime Correlation', 'tone': 'unknown'}
 
-    has_filters = bool(
-        search_value
-        or source_id is not None
-        or cluster_value
-        or namespace_value
-        or match_value
-        or exposure_value
-        or artifact_id is not None
-    )
+
+def _runtime_exceptions(counts: dict[str, int]) -> dict[str, str]:
+    if counts['tag_matches']:
+        return {
+            'label': (
+                f'{counts["tag_matches"]} Tag Match'
+                if counts['tag_matches'] == 1
+                else f'{counts["tag_matches"]} Tag Matches'
+            ),
+            'supporting': 'Mutable references; lower confidence.',
+            'tone': 'warning',
+        }
+    if counts['binding_total']:
+        return {
+            'label': 'Digest-only',
+            'supporting': 'No tag-only correlation in this scope.',
+            'tone': 'normal',
+        }
+    return {
+        'label': 'No Correlation',
+        'supporting': 'No committed runtime binding in this scope.',
+        'tone': 'unknown',
+    }
+
+
+def _runtime_empty_state(
+    *,
+    artifact_id: int | None,
+    binding_total: int,
+    has_filters: bool,
+    latest_correlated_at: Any,
+) -> tuple[str, str]:
     if artifact_id is not None and not binding_total:
-        empty_title = 'Artifact Not Observed at Runtime'
-        empty_description = 'No committed Kubernetes workload binding currently resolves to this artifact.'
-    elif has_filters and not binding_total:
-        empty_title = 'No Runtime Bindings Match'
-        empty_description = 'No committed runtime correlation matches the active filters.'
-    elif latest_correlated_at is None:
-        empty_title = 'Runtime Correlation Not Materialized'
-        empty_description = (
-            'Run the canonical Runtime Correlation job after Registry and Kubernetes inventory are committed.'
+        return (
+            'Artifact Not Observed at Runtime',
+            'No committed Kubernetes workload binding currently resolves to this artifact.',
         )
-    else:
-        empty_title = 'No Runtime Usage Observed'
-        empty_description = 'The latest committed correlation contains no Registry-to-Kubernetes bindings.'
+    if has_filters and not binding_total:
+        return 'No Runtime Bindings Match', 'No committed runtime correlation matches the active filters.'
+    if latest_correlated_at is None:
+        return (
+            'Runtime Correlation Not Materialized',
+            'Run the canonical Runtime Correlation job after Registry and Kubernetes inventory are committed.',
+        )
+    return (
+        'No Runtime Usage Observed',
+        'The latest committed correlation contains no Registry-to-Kubernetes bindings.',
+    )
 
-    namespace_options = [
+
+def _runtime_namespace_options() -> list[str]:
+    return [
         value
         for (value,) in (
             RegistryWorkloadBinding.query.with_entities(RegistryWorkloadBinding.namespace)
@@ -501,34 +573,87 @@ def build_runtime_usage(
         if value
     ]
 
+
+def _build_runtime_usage(request: RuntimeUsageRequest) -> dict[str, Any]:
+    sources = _providers()
+    source_by_id = {int(item.id): item for item in sources}
+    clusters = Cluster.query.order_by(Cluster.name.asc()).all()
+    cluster_by_id = {str(item.id): item for item in clusters}
+    prerequisites = correlation_prerequisites()
+    security_by_artifact, critical_ids, high_ids, scanned_ids = _runtime_security_index()
+    query, filters = _runtime_filtered_query(
+        request,
+        sources=sources,
+        critical_ids=critical_ids,
+        high_ids=high_ids,
+        scanned_ids=scanned_ids,
+    )
+    counts = _runtime_usage_counts(query, critical_ids=critical_ids, high_ids=high_ids)
+    page_items, pagination = paginate_query(
+        query.order_by(
+            RegistryWorkloadBinding.namespace.asc(),
+            RegistryWorkloadBinding.workload_name.asc(),
+            RegistryWorkloadBinding.pod_name.asc(),
+            RegistryWorkloadBinding.id.asc(),
+        ),
+        page=request.page,
+        per_page=request.per_page,
+    )
+    rows = _runtime_usage_rows(
+        page_items,
+        source_by_id=source_by_id,
+        cluster_by_id=cluster_by_id,
+        security_by_artifact=security_by_artifact,
+    )
+    snapshot = _runtime_snapshot_state(prerequisites)
+    scope = _runtime_scope_projection(
+        request,
+        source_by_id=source_by_id,
+        cluster_by_id=cluster_by_id,
+        cluster_value=filters['cluster'],
+        namespace_value=filters['namespace'],
+    )
+    has_filters = bool(
+        filters['search']
+        or request.source_id is not None
+        or filters['cluster']
+        or filters['namespace']
+        or filters['match']
+        or filters['exposure']
+        or request.artifact_id is not None
+    )
+    empty_title, empty_description = _runtime_empty_state(
+        artifact_id=request.artifact_id,
+        binding_total=counts['binding_total'],
+        has_filters=has_filters,
+        latest_correlated_at=snapshot['latest_correlated_at'],
+    )
+    exceptions = _runtime_exceptions(counts)
     return {
-        'setup': {
-            **setup,
-            'provider_count': len(sources),
-        },
+        'setup': {**snapshot['setup'], 'provider_count': len(sources)},
         'prerequisites': prerequisites,
-        'total': binding_total,
-        'digest_matches': digest_matches,
-        'tag_matches': tag_matches,
-        'security_exposed': security_exposed,
-        'critical_exposures': critical_exposures,
-        'artifact_count': artifact_count,
-        'posture': posture,
+        'total': counts['binding_total'],
+        'digest_matches': counts['digest_matches'],
+        'tag_matches': counts['tag_matches'],
+        'security_exposed': counts['security_exposed'],
+        'critical_exposures': counts['critical_exposures'],
+        'artifact_count': counts['artifact_count'],
+        'posture': _runtime_posture(counts),
         'rows': rows,
         'pagination': pagination,
         'has_filters': has_filters,
         'filters': {
-            'search': search,
-            'source_id': source_id,
-            'cluster_id': cluster_value,
-            'namespace': namespace_value,
-            'match_type': match_value,
-            'exposure': exposure_value,
-            'artifact_id': artifact_id,
+            'search': request.search,
+            'source_id': request.source_id,
+            'cluster_id': filters['cluster'],
+            'namespace': filters['namespace'],
+            'match_type': filters['match'],
+            'exposure': filters['exposure'],
+            'artifact_id': request.artifact_id,
         },
         'source_options': sources,
         'cluster_options': clusters,
-        'namespace_options': namespace_options,
+        'namespace_options': _runtime_namespace_options(),
         'match_options': [
             {'value': 'digest', 'label': 'Digest Match'},
             {'value': 'tag', 'label': 'Tag Match'},
@@ -540,29 +665,32 @@ def build_runtime_usage(
             {'value': 'not_scanned', 'label': 'Not Scanned'},
         ],
         'scope': {
-            'label': scope_label,
-            'source_label': source_scope_label,
-            'cluster_label': cluster_scope_label,
+            'label': scope['label'],
+            'source_label': scope['source_label'],
+            'cluster_label': scope['cluster_label'],
         },
-        'artifact_filter_label': artifact_filter_label,
+        'artifact_filter_label': scope['artifact_filter_label'],
         'snapshot': {
             'source_label': 'Committed Artifact Registry × Kubernetes',
-            'status': snapshot_status,
-            'tone': snapshot_tone,
-            'description': snapshot_description,
-            'latest_collected_at': latest_correlated_at,
-            'scope_label': scope_label,
-            'coverage_label': f'{artifact_count} artifacts · {binding_total} bindings',
+            'status': snapshot['status'],
+            'tone': snapshot['tone'],
+            'description': snapshot['description'],
+            'latest_collected_at': snapshot['latest_correlated_at'],
+            'scope_label': scope['label'],
+            'coverage_label': f'{counts["artifact_count"]} artifacts · {counts["binding_total"]} bindings',
             'coverage_supporting': 'Runtime usage in scope.',
-            'coverage_tone': 'normal' if binding_total else 'warning',
-            'exceptions_label': exceptions_label,
-            'exceptions_supporting': exceptions_supporting,
-            'exceptions_tone': exceptions_tone,
+            'coverage_tone': 'normal' if counts['binding_total'] else 'warning',
+            'exceptions_label': exceptions['label'],
+            'exceptions_supporting': exceptions['supporting'],
+            'exceptions_tone': exceptions['tone'],
         },
         'empty_title': empty_title,
         'empty_description': empty_description,
     }
 
+
+def build_runtime_usage(**kwargs: Any) -> dict[str, Any]:
+    return _build_runtime_usage(_runtime_usage_request(kwargs))
 
 def build_runtime_binding_detail(binding_id: int) -> dict[str, Any] | None:
     binding = (
