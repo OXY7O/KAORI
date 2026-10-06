@@ -224,7 +224,6 @@ def _list_repository_security_artifacts(
                 with_scan_overview=True,
                 with_sbom_overview=True,
                 with_signature=True,
-                with_immutable_status=False,
                 page_callback=(
                     (
                         lambda page: progress_callback(
