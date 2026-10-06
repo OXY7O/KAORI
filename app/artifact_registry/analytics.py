@@ -260,11 +260,20 @@ def _metrics_alert_rows(payload: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def _alert_evidence(identity: IntegrationInstance) -> dict[str, Any]:
-    alertmanager = list_alerts_for_scope(
-        scope_type='registry_instance',
-        scope_key=str(identity.id),
-        required_capabilities=('alerts_v2',),
-    )
+    try:
+        alertmanager = list_alerts_for_scope(
+            scope_type='registry_instance',
+            scope_key=str(identity.id),
+            required_capabilities=('alerts_v2',),
+        )
+    except Exception as exc:  # provider boundary: alert evidence must not invalidate analytics
+        alertmanager = {
+            'connected': False,
+            'alerts': [],
+            'error': str(exc) or exc.__class__.__name__,
+            'source_errors': [str(exc) or exc.__class__.__name__],
+        }
+
     if alertmanager.get('connected'):
         return {
             'status': 'ready',
