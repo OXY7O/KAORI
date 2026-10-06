@@ -253,6 +253,83 @@ def sync_registry_security_source_task(
     return result
 
 
+def _finalize_security_result(
+    source_results: list[dict[str, Any]],
+    *,
+    source_total: int,
+    requested_by_user_id: int | None,
+    started_at_epoch: float,
+) -> tuple[dict[str, Any], list[dict[str, Any]], int, bool]:
+    normalized_results = [item for item in source_results if isinstance(item, dict)]
+    failures = [
+        failure
+        for item in normalized_results
+        for failure in list(item.get('failure_evidence') or [])
+        if isinstance(failure, dict)
+    ]
+    warning_evidence = [
+        warning
+        for item in normalized_results
+        for warning in list(item.get('warning_evidence') or [])
+        if isinstance(warning, dict)
+    ]
+    synced = sum(1 for item in normalized_results if str(item.get('status') or '') != 'error')
+    partial_source_count = sum(1 for item in normalized_results if str(item.get('status') or '') == 'warning')
+    repository_failure_count = sum(int(item.get('repository_failure_count') or 0) for item in normalized_results)
+    artifact_count = sum(int(item.get('artifact_count') or 0) for item in normalized_results)
+    refreshed_reports = sum(int(item.get('refreshed_report_count') or 0) for item in normalized_results)
+    reused_reports = sum(int(item.get('reused_report_count') or 0) for item in normalized_results)
+    finding_count = sum(int(item.get('finding_count') or 0) for item in normalized_results)
+
+    has_partial_refresh = bool(partial_source_count or repository_failure_count)
+    status = 'error' if failures and not synced else ('warning' if failures or has_partial_refresh else 'success')
+    if failures and not synced:
+        detail = 'Failed providers retained their previous committed security evidence.'
+    elif has_partial_refresh:
+        detail = (
+            'Security evidence was committed for available repositories; previous committed evidence '
+            'was retained for repositories that could not be refreshed.'
+        )
+    else:
+        detail = (
+            f'{artifact_count} artifacts evaluated; {refreshed_reports} vulnerability report(s) refreshed '
+            f'and {reused_reports} unchanged report(s) reused.'
+        )
+
+    return (
+        {
+            'status': status,
+            'title': (
+                'Artifact Registry Security Sync Completed'
+                if status != 'error'
+                else 'Artifact Registry Security Sync Failed'
+            ),
+            'message': (
+                f'{synced} Registry provider(s) synchronized; {len(failures)} failed; '
+                f'{repository_failure_count} repository refresh warning(s).'
+            ),
+            'detail': detail,
+            'total_count': source_total,
+            'synced_count': synced,
+            'failed_count': len(failures),
+            'artifact_count': artifact_count,
+            'refreshed_report_count': refreshed_reports,
+            'reused_report_count': reused_reports,
+            'finding_count': finding_count,
+            'partial_source_count': partial_source_count,
+            'repository_failure_count': repository_failure_count,
+            'failure_evidence': failures,
+            'warning_evidence': warning_evidence[:50],
+            'requested_by_user_id': requested_by_user_id,
+            'finished_at': _now_iso(),
+            'duration_seconds': round(max(time() - float(started_at_epoch), 0.0), 1),
+        },
+        failures,
+        synced,
+        has_partial_refresh,
+    )
+
+
 @shared_task(
     bind=True,
     name='app.artifact_registry.security.tasks.finalize_registry_security_sync',
@@ -272,68 +349,12 @@ def finalize_registry_security_sync_task(
     context = JobExecutionContext(task_id, job_execution_id)
 
     try:
-        normalized_results = [item for item in source_results if isinstance(item, dict)]
-        failures = [
-            failure
-            for item in normalized_results
-            for failure in list(item.get('failure_evidence') or [])
-            if isinstance(failure, dict)
-        ]
-        warning_evidence = [
-            warning
-            for item in normalized_results
-            for warning in list(item.get('warning_evidence') or [])
-            if isinstance(warning, dict)
-        ]
-        synced = sum(1 for item in normalized_results if str(item.get('status') or '') != 'error')
-        partial_source_count = sum(1 for item in normalized_results if str(item.get('status') or '') == 'warning')
-        repository_failure_count = sum(int(item.get('repository_failure_count') or 0) for item in normalized_results)
-        artifact_count = sum(int(item.get('artifact_count') or 0) for item in normalized_results)
-        refreshed_reports = sum(int(item.get('refreshed_report_count') or 0) for item in normalized_results)
-        reused_reports = sum(int(item.get('reused_report_count') or 0) for item in normalized_results)
-        finding_count = sum(int(item.get('finding_count') or 0) for item in normalized_results)
-
-        has_partial_refresh = bool(partial_source_count or repository_failure_count)
-        status = 'error' if failures and not synced else ('warning' if failures or has_partial_refresh else 'success')
-        result = {
-            'status': status,
-            'title': (
-                'Artifact Registry Security Sync Completed'
-                if status != 'error'
-                else 'Artifact Registry Security Sync Failed'
-            ),
-            'message': (
-                f'{synced} Registry provider(s) synchronized; {len(failures)} failed; '
-                f'{repository_failure_count} repository refresh warning(s).'
-            ),
-            'detail': (
-                'Failed providers retained their previous committed security evidence.'
-                if failures and not synced
-                else (
-                    'Security evidence was committed for available repositories; previous committed evidence '
-                    'was retained for repositories that could not be refreshed.'
-                    if has_partial_refresh
-                    else (
-                        f'{artifact_count} artifacts evaluated; {refreshed_reports} vulnerability report(s) refreshed '
-                        f'and {reused_reports} unchanged report(s) reused.'
-                    )
-                )
-            ),
-            'total_count': source_total,
-            'synced_count': synced,
-            'failed_count': len(failures),
-            'artifact_count': artifact_count,
-            'refreshed_report_count': refreshed_reports,
-            'reused_report_count': reused_reports,
-            'finding_count': finding_count,
-            'partial_source_count': partial_source_count,
-            'repository_failure_count': repository_failure_count,
-            'failure_evidence': failures,
-            'warning_evidence': warning_evidence[:50],
-            'requested_by_user_id': requested_by_user_id,
-            'finished_at': _now_iso(),
-            'duration_seconds': round(max(time() - float(started_at_epoch), 0.0), 1),
-        }
+        result, failures, synced, has_partial_refresh = _finalize_security_result(
+            source_results,
+            source_total=source_total,
+            requested_by_user_id=requested_by_user_id,
+            started_at_epoch=started_at_epoch,
+        )
 
         context.checkpoint(
             current=source_total,
