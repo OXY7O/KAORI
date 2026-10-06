@@ -12,21 +12,19 @@
         {% call detail.workspace_header(
             'Immutable digest identity, Registry location, tag references, provider provenance, and committed collection context.',
             'fingerprint'
-        ) %}
+            ) %}
             {% call detail.header_identity_row() %}
                 {{ detail.inventory_title(artifact.digest_short) }}
                 {{ table_label.metadata_label(artifact.repository_name, 'package-open') }}
                 {{ table_label.metadata_label(artifact.provider_name, 'boxes') }}
             {% endcall %}
         {% endcall %}
-
         {{ detail.inspector_summary_strip([
-            {'label': 'Type', 'value': artifact.type, 'supporting': artifact.media_type, 'icon': 'box', 'tone': 'brand'},
-            {'label': 'Size', 'value': artifact.size, 'supporting': 'Committed size evidence', 'icon': 'hard-drive', 'tone': 'brand'},
-            {'label': 'Tags', 'value': artifact.tag_count, 'supporting': 'Mutable references', 'icon': 'tags', 'tone': 'brand'},
-            {'label': 'Snapshot', 'value': artifact.snapshot.label, 'supporting': 'Committed collection state', 'icon': 'database-backup', 'tone': artifact.snapshot.tone}
-        ]) }}
-
+                {'label': 'Type', 'value': artifact.type, 'supporting': artifact.media_type, 'icon': 'box', 'tone': 'brand'},
+                {'label': 'Size', 'value': artifact.size, 'supporting': 'Committed size evidence', 'icon': 'hard-drive', 'tone': 'brand'},
+                {'label': 'Tags', 'value': artifact.tag_count, 'supporting': 'Mutable references', 'icon': 'tags', 'tone': 'brand'},
+                {'label': 'Snapshot', 'value': artifact.snapshot.label, 'supporting': 'Committed collection state', 'icon': 'database-backup', 'tone': artifact.snapshot.tone}
+                ]) }}
         <div class="min-w-0 space-y-4 p-4 sm:p-5 lg:p-6">
             {% call detail.resource_sheet() %}
                 {% call detail.inventory_section(
@@ -34,7 +32,7 @@
                     'fingerprint',
                     artifact.type,
                     description='Immutable digest-oriented artifact identity.'
-                ) %}
+                    ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_technical_row('Digest', artifact.digest, copyable=true, class_name='lg:col-span-2') }}
                         {{ detail.inventory_row('Digest Algorithm', artifact.digest_algorithm) }}
@@ -45,13 +43,12 @@
                         {{ detail.inventory_row('Tags', artifact.tag_count) }}
                     </dl>
                 {% endcall %}
-
                 {% call detail.inventory_section(
                     'Registry Location',
                     'package-open',
                     artifact.repository_name,
                     description='Project and repository scope that own this committed artifact identity.'
-                ) %}
+                    ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_row('Project', artifact.project_name) }}
                         {{ detail.inventory_row('Repository', artifact.repository_name) }}
@@ -59,13 +56,12 @@
                         {{ detail.inventory_technical_row('Repository ID', artifact.repository_id) }}
                     </dl>
                 {% endcall %}
-
                 {% call detail.inventory_section(
                     'Tag References',
                     'tags',
                     artifact.tag_count ~ (' Tag' if artifact.tag_count == 1 else ' Tags'),
                     description='Mutable tags attached to this immutable digest.'
-                ) %}
+                    ) %}
                     {% if artifact.tag_preview %}
                         <div class="overflow-x-auto">
                             <table class="{{ table_ui.table_classes('min-w-[46rem]') }}">
@@ -81,9 +77,7 @@
                                 <tbody class="{{ table_ui.body_classes() }}">
                                     {% for tag in artifact.tag_preview %}
                                         <tr class="{{ table_ui.row_classes() }}">
-                                            <td class="{{ table_ui.cell_classes() }}">
-                                                {{ table_ui.title_cell(tag.name, 'Mutable artifact reference', 'tag') }}
-                                            </td>
+                                            <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(tag.name, 'Mutable artifact reference', 'tag') }}</td>
                                             <td class="{{ table_ui.cell_classes() }}">
                                                 <span class="font-mono text-xs text-content-secondary">{{ tag.provider_native_id }}</span>
                                             </td>
@@ -102,57 +96,47 @@
                             </table>
                         </div>
                         {% if artifact.tag_truncated %}
-                            {{ detail.inventory_note(
-                                'Showing the first 25 tags. The artifact identity remains the digest; tags are mutable references.',
-                                'info'
-                            ) }}
+                            {{ detail.inventory_note('Showing the first 25 tags. The artifact identity remains the digest; tags are mutable references.',
+                                                        'info') }}
                         {% endif %}
                     {% else %}
-                        {{ detail.empty_evidence(
-                            'No Tags Collected',
-                            'This committed artifact currently has no tag references.',
-                            'tag'
-                        ) }}
+                        {{ detail.empty_evidence('No Tags Collected',
+                                                'This committed artifact currently has no tag references.',
+                                                'tag') }}
                     {% endif %}
                 {% endcall %}
-
                 {% call detail.inventory_section(
                     'Artifact Timing',
                     'clock-3',
                     artifact.observed_at|user_datetime,
                     description='Provider-observed push, pull, and Inventory observation timestamps.'
-                ) %}
+                    ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_row('Push Time', artifact.push_time|user_datetime if artifact.push_time else 'Not Collected', nowrap=true) }}
                         {{ detail.inventory_row('Pull Time', artifact.pull_time|user_datetime if artifact.pull_time else 'Not Collected', nowrap=true) }}
                         {{ detail.inventory_row('Observed At', artifact.observed_at|user_datetime, nowrap=true) }}
                     </dl>
                 {% endcall %}
-
                 {% call detail.inventory_section(
                     'Registry Source',
                     'boxes',
                     artifact.provider_label,
                     description='Registry integration and environment that supplied this committed artifact record.'
-                ) %}
+                    ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_row('Source', artifact.provider_name, class_name='lg:col-span-2') }}
                         {{ detail.inventory_row('Provider', artifact.provider_label) }}
-                        {{ detail.inventory_row('Environment', artifact.provider_environment|environment_name(empty='Not Set')) }}
+                        {{ detail.inventory_row('Environment', artifact.provider_environment|environment_name(empty='Not Set') ) }}
                         {{ detail.inventory_technical_row('Source ID', artifact.provider_id) }}
                     </dl>
                 {% endcall %}
-
-                {{ metadata_collection.render(
-                    'Provider Metadata',
-                    artifact.provider_metadata,
-                    'braces',
-                    'No Provider Metadata Collected',
-                    'Provider metadata will appear when retained with the committed artifact record.',
-                    'Provider-specific fields remain factual evidence and do not redefine the digest-oriented artifact identity.',
-                    embedded=true
-                ) }}
-
+                {{ metadata_collection.render('Provider Metadata',
+                                artifact.provider_metadata,
+                                'braces',
+                                'No Provider Metadata Collected',
+                                'Provider metadata will appear when retained with the committed artifact record.',
+                                'Provider-specific fields remain factual evidence and do not redefine the digest-oriented artifact identity.',
+                                embedded=true) }}
                 {% call detail.inventory_section(
                     'Snapshot Context',
                     'database-backup',
@@ -160,7 +144,7 @@
                     'status',
                     artifact.snapshot.tone,
                     description='Committed snapshot freshness and evidence boundary.'
-                ) %}
+                    ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_status_row('Snapshot State', artifact.snapshot.label, artifact.snapshot.tone) }}
                         {{ detail.inventory_row('Committed At', artifact.snapshot.committed_at|user_datetime if artifact.snapshot.committed_at else 'Not Collected', nowrap=true) }}
@@ -168,22 +152,17 @@
                     </dl>
                 {% endcall %}
             {% endcall %}
-
             <div class="grid min-w-0 gap-4 xl:grid-cols-12">
-                {{ operational_callout.render(
-                    'Committed Snapshot Boundary',
-                    'Latest committed Artifact Registry inventory; no live provider request.',
-                    'database',
-                    'info',
-                    extra_classes='xl:col-span-5'
-                ) }}
-                {{ operational_callout.render(
-                    'Artifact Interpretation',
-                    'Digest, type, size, timing, and tags are Inventory evidence.',
-                    'scan-search',
-                    'info',
-                    extra_classes='xl:col-span-7'
-                ) }}
+                {{ operational_callout.render('Committed Snapshot Boundary',
+                                'Latest committed Artifact Registry inventory; no live provider request.',
+                                'database',
+                                'info',
+                                extra_classes='xl:col-span-5') }}
+                {{ operational_callout.render('Artifact Interpretation',
+                                'Digest, type, size, timing, and tags are Inventory evidence.',
+                                'scan-search',
+                                'info',
+                                extra_classes='xl:col-span-7') }}
             </div>
         </div>
     </div>
