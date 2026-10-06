@@ -109,10 +109,7 @@ def _analytics_aggregate() -> dict[str, Any]:
 
 def _analytics_sections(payload: dict[str, Any]) -> dict[str, dict[str, Any]]:
     keys = ('inventory', 'security', 'runtime', 'governance', 'metrics', 'alerts', 'capacity', 'growth')
-    return {
-        key: value if isinstance((value := payload.get(key)), dict) else {}
-        for key in keys
-    }
+    return {key: value if isinstance((value := payload.get(key)), dict) else {} for key in keys}
 
 
 def _accumulate_domain_counts(aggregate: dict[str, Any], sections: dict[str, dict[str, Any]]) -> None:
@@ -224,8 +221,7 @@ def _accumulate_alerts(
         }
     )
     alert_rows.extend(
-        {**row, 'registry_name': identity.name, 'provider_key': identity.provider_key}
-        for row in normalized_rows
+        {**row, 'registry_name': identity.name, 'provider_key': identity.provider_key} for row in normalized_rows
     )
 
 
@@ -449,20 +445,14 @@ def _analytics_capacity_outlook(
         default=None,
     )
     nearest_quota_days = min(
-        (
-            float(row['days_to_quota'])
-            for row in forecast_rows
-            if isinstance(row.get('days_to_quota'), (int, float))
-        ),
+        (float(row['days_to_quota']) for row in forecast_rows if isinstance(row.get('days_to_quota'), (int, float))),
         default=None,
     )
     return {
         'nearest_quota_days': nearest_quota_days,
         'highest_utilization': highest_utilization,
         'growth_bytes_per_day': growth['size_per_day'] if growth_rows else None,
-        'growth_display': (
-            f'{_fmt_bytes(round(growth["size_per_day"]))}/day' if growth_rows else 'N/A'
-        ),
+        'growth_display': (f'{_fmt_bytes(round(growth["size_per_day"]))}/day' if growth_rows else 'N/A'),
         'quota_headroom_bytes': quota_headroom,
         'quota_headroom_display': _fmt_bytes(round(quota_headroom)) if quota_headroom is not None else 'N/A',
     }
@@ -610,12 +600,8 @@ def _decorate_analytics_rows(
         row['growth_display'] = (
             f'{_fmt_bytes(round(float(growth)))}/day' if isinstance(growth, (int, float)) else 'Insufficient history'
         )
-        row['days_to_quota_display'] = (
-            f'{float(days):.1f} days' if isinstance(days, (int, float)) else 'No forecast'
-        )
-        row['utilization_display'] = (
-            f'{float(utilization):.1f}%' if isinstance(utilization, (int, float)) else 'N/A'
-        )
+        row['days_to_quota_display'] = f'{float(days):.1f} days' if isinstance(days, (int, float)) else 'No forecast'
+        row['utilization_display'] = f'{float(utilization):.1f}%' if isinstance(utilization, (int, float)) else 'N/A'
 
 
 def _analytics_alert_page(
@@ -653,12 +639,16 @@ def _analytics_alert_page(
         page=page,
         per_page=per_page if per_page in {5, 10, 25, 50} else 5,
     )
-    return page_rows, pagination, {
-        'search': search,
-        'severity': severity_value,
-        'state': state_value,
-        'source': source_value,
-    }
+    return (
+        page_rows,
+        pagination,
+        {
+            'search': search,
+            'severity': severity_value,
+            'state': state_value,
+            'source': source_value,
+        },
+    )
 
 
 def build_analytics(
