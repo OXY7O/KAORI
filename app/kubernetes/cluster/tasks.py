@@ -1,24 +1,23 @@
 from __future__ import annotations
 
-import logging
 from datetime import UTC, datetime
 from time import perf_counter
 from typing import Any
+import logging
 
 from celery import shared_task
 from redis.exceptions import RedisError
 
 from app.extensions.db import db
+from app.integrations.kernel.registry import get_integration
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver import (
     connection_for_cluster,
 )
-from app.integrations.kernel.registry import get_integration
 from app.kubernetes.cluster.individual_sync_state import store_individual_sync_metadata
 from app.kubernetes.cluster.sync_state import mark_cluster_sync_completed, store_cluster_sync_metadata
 from app.models import Cluster
 from app.platform_operations.jobs.execution import JobExecutionContext
 from app.platform_operations.notifications.service import create_notification
-
 logger = logging.getLogger(__name__)
 
 
