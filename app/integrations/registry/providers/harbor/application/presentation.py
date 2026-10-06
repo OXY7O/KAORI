@@ -376,74 +376,64 @@ def build_detail_context(
     }
 
 
-def build_harbor_capability_registry(
-    instance: HarborInstance,
-    *,
-    query: str = '',
-    requirement: str = '',
-    status: str = '',
-    page: int = 1,
-    per_page: int = 5,
-) -> dict[str, Any]:
-    observed = set(instance.capabilities or ())
-    rows: list[dict[str, Any]] = []
-    for definition in CAPABILITIES:
-        available = definition.key in observed
-        row_status = 'ready' if available else ('blocked' if definition.required else 'degraded')
-        rows.append(
-            {
-                'key': definition.key,
-                'label': definition.label,
-                'description': definition.description,
-                'required': bool(definition.required),
-                'requirement_label': 'Required' if definition.required else 'Optional',
-                'status': row_status,
-                'status_label': 'Ready' if available else ('Blocked' if definition.required else 'Not Observed'),
-                'available': available,
-                'contract': CAPABILITY_PROFILE,
-                'category': definition.category,
-                'source_owner': 'Harbor API v2.0',
-                'evidence': (
-                    f'Full Validation observed {definition.label} in the persisted Harbor capability snapshot.'
-                    if available
-                    else (
-                        f'Full Validation did not observe required capability {definition.label}.'
-                        if definition.required
-                        else f'Optional capability {definition.label} is not observed in this foundation validation scope.'
-                    )
-                ),
-                'success_criteria': definition.success_criteria or definition.description,
-                'impact': definition.impact
-                or (
-                    'Required Harbor provider capability used to establish Registry readiness.'
-                    if definition.required
-                    else 'Optional read-only evidence that can support future Registry workflows.'
-                ),
-                'next_action': (
-                    'No corrective action is required. Revalidate after Harbor upgrades or credential changes.'
-                    if available
-                    else (
-                        'Verify Harbor endpoint access and read permissions, then rerun Full Validation.'
-                        if definition.required
-                        else 'No readiness remediation is required; this optional capability belongs to a follow-on Registry workstream.'
-                    )
-                ),
-                'remediation': (
-                    []
-                    if available or not definition.required
-                    else (
-                        list(definition.remediation)
-                        if definition.remediation
-                        else [
-                            'Verify the registered Harbor endpoint and read-only credential permissions.',
-                            'Rerun Full Validation and confirm this capability becomes Ready.',
-                        ]
-                    )
-                ),
-                'technical_checks': [],
-            }
+def _capability_row(definition: Any, observed: set[str]) -> dict[str, Any]:
+    available = definition.key in observed
+    row_status = 'ready' if available else ('blocked' if definition.required else 'degraded')
+    if available:
+        evidence = f'Full Validation observed {definition.label} in the persisted Harbor capability snapshot.'
+        next_action = 'No corrective action is required. Revalidate after Harbor upgrades or credential changes.'
+    elif definition.required:
+        evidence = f'Full Validation did not observe required capability {definition.label}.'
+        next_action = 'Verify Harbor endpoint access and read permissions, then rerun Full Validation.'
+    else:
+        evidence = f'Optional capability {definition.label} is not observed in this foundation validation scope.'
+        next_action = (
+            'No readiness remediation is required; this optional capability belongs to a follow-on Registry workstream.'
         )
 
+    remediation = []
+    if not available and definition.required:
+        remediation = (
+            list(definition.remediation)
+            if definition.remediation
+            else [
+                'Verify the registered Harbor endpoint and read-only credential permissions.',
+                'Rerun Full Validation and confirm this capability becomes Ready.',
+            ]
+        )
+    return {
+        'key': definition.key,
+        'label': definition.label,
+        'description': definition.description,
+        'required': bool(definition.required),
+        'requirement_label': 'Required' if definition.required else 'Optional',
+        'status': row_status,
+        'status_label': 'Ready' if available else ('Blocked' if definition.required else 'Not Observed'),
+        'available': available,
+        'contract': CAPABILITY_PROFILE,
+        'category': definition.category,
+        'source_owner': 'Harbor API v2.0',
+        'evidence': evidence,
+        'success_criteria': definition.success_criteria or definition.description,
+        'impact': definition.impact
+        or (
+            'Required Harbor provider capability used to establish Registry readiness.'
+            if definition.required
+            else 'Optional read-only evidence that can support future Registry workflows.'
+        ),
+        'next_action': next_action,
+        'remediation': remediation,
+        'technical_checks': [],
+    }
+
+
+def _filter_capability_rows(
+    rows: list[dict[str, Any]],
+    *,
+    query: str,
+    requirement: str,
+    status: str,
+) -> tuple[list[dict[str, Any]], str, str, str]:
     normalized_query = str(query or '').strip().lower()
     normalized_requirement = str(requirement or '').strip().lower()
     normalized_status = str(status or '').strip().lower()
@@ -465,7 +455,26 @@ def build_harbor_capability_registry(
         rows = [row for row in rows if row['status'] == normalized_status]
     else:
         normalized_status = ''
+    return rows, normalized_query, normalized_requirement, normalized_status
 
+
+def build_harbor_capability_registry(
+    instance: HarborInstance,
+    *,
+    query: str = '',
+    requirement: str = '',
+    status: str = '',
+    page: int = 1,
+    per_page: int = 5,
+) -> dict[str, Any]:
+    observed = set(instance.capabilities or ())
+    rows = [_capability_row(definition, observed) for definition in CAPABILITIES]
+    rows, normalized_query, normalized_requirement, normalized_status = _filter_capability_rows(
+        rows,
+        query=query,
+        requirement=requirement,
+        status=status,
+    )
     page_rows, pagination = paginate_sequence(rows, page=page, per_page=per_page)
     required_keys = {item.key for item in CAPABILITIES if item.required}
     optional_keys = {item.key for item in CAPABILITIES if not item.required}
@@ -487,7 +496,6 @@ def build_harbor_capability_registry(
         'optional_count': len(optional_keys),
         'optional_ready_count': optional_ready_count,
     }
-
 
 def _filter_rows(
     rows: list[dict[str, Any]],
