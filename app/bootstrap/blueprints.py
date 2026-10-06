@@ -6,11 +6,11 @@ from flask import Flask
 def register_blueprints(app: Flask) -> None:
     """Import and register KAORI web domains after extensions are initialized."""
     from app.access import bp as access_bp
-    from app.artifact_registry.routes import artifact_registry_bp
     from app.access.authentication.routes import auth_bp
     from app.access.identity_providers.routes import bp as identity_providers_bp
     from app.access.users.routes import bp as users_bp
     from app.analytics.routes import analytics_bp
+    from app.artifact_registry.routes import artifact_registry_bp
     from app.integrations.delivery.notification_channels.routes import notification_channels_bp
     from app.integrations.observability.alert_source.providers.alertmanager.application.routes import alertmanager_bp
     from app.integrations.observability.metrics_source.application.routes import metrics_bp

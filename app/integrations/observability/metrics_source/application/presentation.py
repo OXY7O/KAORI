@@ -20,8 +20,7 @@ from app.integrations.observability.metrics_source.application.resolver import (
     resolve_metrics_sources,
 )
 from app.integrations.observability.metrics_source.binding_profiles import get_binding_validation_profile
-from app.integrations.observability.metrics_source.capabilities import definition as capability_definition
-from app.integrations.observability.metrics_source.capabilities import PROVIDER_CAPABILITY_KEYS
+from app.integrations.observability.metrics_source.capabilities import PROVIDER_CAPABILITY_KEYS, definition as capability_definition
 from app.integrations.observability.metrics_source.providers import provider_definition
 from app.integrations.observability.metrics_source.routing import normalize_routing_policy, recent_window_hours
 from app.integrations.observability.metrics_source.scope import KUBERNETES_CLUSTER_SCOPE, bindings_for_instance
@@ -29,8 +28,8 @@ from app.integrations.readiness import resolve_binding_operational_status
 from app.integrations.runtime.presentation import runtime_history_view, runtime_state_view
 from app.integrations.runtime.repository import paginate_runtime_history
 from app.models import Cluster, MetricsSource, ObjectStorageSystem
-from app.models.integration import IntegrationBinding
-from app.models.integration import IntegrationInstance
+from app.models.integration import IntegrationBinding, IntegrationInstance
+
 _CORE_CAPABILITIES = set(PROVIDER_CAPABILITY_KEYS)
 
 _RESOLUTION_CONSUMERS: tuple[dict[str, Any], ...] = (

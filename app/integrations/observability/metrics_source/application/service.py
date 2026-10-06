@@ -12,8 +12,8 @@ from app.integrations.binding_service import SourceBindingSpec
 from app.integrations.deletion import DeletionBlocked, provider_deletion_guard
 from app.integrations.kernel.registry import get_integration
 from app.integrations.lifecycle import (
-    bind_instance,
     BindingPersistenceSpec,
+    bind_instance,
     ensure_canonical_instance,
     invalidate_bindings,
 )
@@ -29,6 +29,8 @@ from app.integrations.observability.metrics_source.query_profiles import resolve
 from app.models import Cluster, MetricsSource
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.platform_operations.jobs.service import acquire_resource_admission_locks
+
+
 class MetricsService:
     """Provider-neutral query and lifecycle boundary for registered metrics sources."""
 

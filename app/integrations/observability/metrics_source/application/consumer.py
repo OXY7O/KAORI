@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from hashlib import sha256
+import logging
 from time import perf_counter, sleep
 from typing import Any
-import logging
 
 from flask import current_app, has_app_context
 

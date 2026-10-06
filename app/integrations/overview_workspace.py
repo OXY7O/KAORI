@@ -24,6 +24,8 @@ from app.integrations.service import (
 from app.models import AlertmanagerInstance, Cluster, MetricsSource
 from app.models.integration import IntegrationInstance
 from app.models.kubernetes import KubernetesConnection
+
+
 def build_integrations_overview(
     *,
     tab: str = 'catalog',

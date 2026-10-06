@@ -10,6 +10,7 @@ from app.integrations.observability.metrics_source.binding_validators.registry i
 )
 from app.integrations.observability.metrics_source.binding_validators.registry_asset import validate_registry_binding
 from app.integrations.observability.metrics_source.scope import KUBERNETES_CLUSTER_SCOPE
+
 PROMETHEUS_HTTP_ADAPTER = 'prometheus_http'
 
 register_binding_validator(PROMETHEUS_HTTP_ADAPTER, KUBERNETES_CLUSTER_SCOPE, validate_kubernetes_binding)

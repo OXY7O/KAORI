@@ -1,7 +1,7 @@
 from app.integrations.kernel.registry import (
-    canonical_model_loader,
     IntegrationImplementation,
     IntegrationModule,
+    canonical_model_loader,
     model_loader,
     registry,
 )
@@ -11,6 +11,8 @@ from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_a
     COMPATIBILITY_PROFILES,
 )
 from app.models.kubernetes import KubernetesConnection
+
+
 def _detail_url(instance: KubernetesConnection, section: str) -> str:
     return f'/integrations/kubernetes/{instance.cluster_id}#{section}'
 
