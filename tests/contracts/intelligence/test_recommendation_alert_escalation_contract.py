@@ -137,6 +137,7 @@ def test_recommendations_can_filter_large_finding_sets_by_alert_handling() -> No
     assert 'name="alert_handling"' in filters
     assert 'All Alert Handling' in service
 
+
 def test_registry_recommendation_alerts_use_registry_instance_source_lifecycle() -> None:
     recommendation_source = read('app/intelligence/alert_intelligence/recommendation_source.py')
     support = read('app/intelligence/alert_intelligence/recommendation_source_support.py')
@@ -152,4 +153,3 @@ def test_registry_recommendation_alerts_use_registry_instance_source_lifecycle()
     assert "evidence.get('registry_instance_name')" in support
     assert "if domain == 'registry' and asset_key != 'unknown':" in support
     assert "identity.integration_type == 'registry'" in support
-

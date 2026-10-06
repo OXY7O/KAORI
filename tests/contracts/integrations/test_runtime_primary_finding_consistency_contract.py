@@ -62,4 +62,7 @@ def test_integrations_standard_keeps_primary_finding_detail_out_of_hover_disclos
 
     assert '**Runtime Decision Primary Finding contract.**' in standard
     assert 'must not expose an Info Tip / hover disclosure' in standard
-    assert 'Detailed lifecycle, compatibility, capability, diagnostic, and remediation evidence stays in Runtime Evidence and Recent Runtime Observations.' in standard
+    assert (
+        'Detailed lifecycle, compatibility, capability, diagnostic, and remediation evidence stays in Runtime Evidence and Recent Runtime Observations.'
+        in standard
+    )

@@ -328,12 +328,10 @@ def test_object_storage_dashboard_uses_fast_shell_without_rebuilding_overview_pe
     assert "elif section == 'signals':" in section
     assert "elif section == 'reporting':" in section
 
-    signals_branch = section.split("elif section == 'signals':", 1)[1].split(
-        "elif section == 'reporting':", 1
-    )[0]
-    assert "_forecast(selected)" not in signals_branch
-    assert "_capacity(selected)" not in signals_branch
-    assert "_top_consumers(selected)" not in signals_branch
+    signals_branch = section.split("elif section == 'signals':", 1)[1].split("elif section == 'reporting':", 1)[0]
+    assert '_forecast(selected)' not in signals_branch
+    assert '_capacity(selected)' not in signals_branch
+    assert '_top_consumers(selected)' not in signals_branch
 
     reporting_branch = section.split("elif section == 'reporting':", 1)[1]
-    assert "_freshness(selected, systems)" not in reporting_branch
+    assert '_freshness(selected, systems)' not in reporting_branch

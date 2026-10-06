@@ -200,7 +200,6 @@ def test_metrics_source_provider_selector_uses_canonical_hero_shell_api() -> Non
     assert 'page_hero.hero(' not in selector
 
 
-
 def test_harbor_frontpage_uses_registry_evidence_coverage_contract() -> None:
     page = read('app/templates/integrations/registry/providers/harbor/index.html')
     coverage = read('app/templates/integrations/registry/providers/harbor/partials/_coverage.html')

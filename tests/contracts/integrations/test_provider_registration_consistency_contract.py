@@ -264,13 +264,31 @@ def test_provider_registration_and_metrics_validation_guidance_stays_concise() -
     )
 
     assert 'Review Kubernetes coverage, readiness, and consumer bindings.' in kubernetes_add
-    assert 'Kubernetes owns live cluster state. KAORI governs connection readiness, synchronized evidence, and consumer bindings.' in kubernetes_add
+    assert (
+        'Kubernetes owns live cluster state. KAORI governs connection readiness, synchronized evidence, and consumer bindings.'
+        in kubernetes_add
+    )
     assert 'Review Kubernetes coverage, API readiness, and consumer bindings.' in kubernetes_edit
-    assert 'Kubernetes owns live resources and API authorization. KAORI governs provider readiness, normalized evidence, and consumer resolution.' in kubernetes_edit
+    assert (
+        'Kubernetes owns live resources and API authorization. KAORI governs provider readiness, normalized evidence, and consumer resolution.'
+        in kubernetes_edit
+    )
 
-    assert 'Provider identity is immutable. Bindings use the global Metrics Source contract; adapter and query-language details remain provider-defined.' in metrics_source
-    assert 'One metrics source can serve multiple managed assets through independent bindings and horizon-aware routing.' in metrics_source
-    assert 'executes metric queries; the source platform owns collection and retention. KAORI governs readiness, binding validation, and source resolution.' in metrics_source
+    assert (
+        'Provider identity is immutable. Bindings use the global Metrics Source contract; adapter and query-language details remain provider-defined.'
+        in metrics_source
+    )
+    assert (
+        'One metrics source can serve multiple managed assets through independent bindings and horizon-aware routing.'
+        in metrics_source
+    )
+    assert (
+        'executes metric queries; the source platform owns collection and retention. KAORI governs readiness, binding validation, and source resolution.'
+        in metrics_source
+    )
 
-    assert 'Validate provider compatibility and the Prometheus HTTP API v1 / PromQL core. Consumer contracts remain in Bindings & Consumers.' in metrics_validation
+    assert (
+        'Validate provider compatibility and the Prometheus HTTP API v1 / PromQL core. Consumer contracts remain in Bindings & Consumers.'
+        in metrics_validation
+    )
     assert 'Core API evidence sets provider readiness; consumer evidence stays with each binding.' in metrics_validation

@@ -30,7 +30,7 @@ def test_dashboard_uses_shared_workspace_tabs_and_persists_url_state() -> None:
     assert 'id="{{ input_id }}"' in framework
     assert 'hx-include="#dashboard-active-tab"' in selector
     assert 'normalize_operational_tab' in routes
-    assert "OPERATIONAL_DASHBOARD_TABS: tuple[str, ...] = (" in application_contract
+    assert 'OPERATIONAL_DASHBOARD_TABS: tuple[str, ...] = (' in application_contract
     for tab in ("'overview'", "'capacity'", "'signals'", "'reporting'"):
         assert tab in application_contract
     assert "active_tab: str = 'overview'" in schema

@@ -48,12 +48,23 @@ def test_edit_form_operator_language_uses_full_validation() -> None:
     minio = read(PROVIDER_EDIT_FORMS['minio'])
     harbor = read(PROVIDER_EDIT_FORMS['harbor'])
 
-    assert "('Run Full Validation', 'Rebuild Kubernetes API, capability, RBAC, and runtime evidence before operational use.')" in kubernetes
-    assert "('Run Full Validation', 'Rebuild provider compatibility and adapter and query-contract readiness evidence.')" in metrics
-    assert "Saving changes does not establish readiness until Full Validation succeeds." in metrics
-    assert "('Run Full Validation', 'Rebuild Alertmanager API compatibility and provider readiness evidence.')" in alertmanager
-    assert "Saving changes does not establish readiness until Full Validation succeeds." in alertmanager
-    assert "('Run Full Validation', 'Rebuild MinIO compatibility and provider capability evidence after saving.')" in minio
+    assert (
+        "('Run Full Validation', 'Rebuild Kubernetes API, capability, RBAC, and runtime evidence before operational use.')"
+        in kubernetes
+    )
+    assert (
+        "('Run Full Validation', 'Rebuild provider compatibility and adapter and query-contract readiness evidence.')"
+        in metrics
+    )
+    assert 'Saving changes does not establish readiness until Full Validation succeeds.' in metrics
+    assert (
+        "('Run Full Validation', 'Rebuild Alertmanager API compatibility and provider readiness evidence.')"
+        in alertmanager
+    )
+    assert 'Saving changes does not establish readiness until Full Validation succeeds.' in alertmanager
+    assert (
+        "('Run Full Validation', 'Rebuild MinIO compatibility and provider capability evidence after saving.')" in minio
+    )
     assert 'Save changes, then run Full Validation.' in minio
     assert "('Run Full Validation', 'Rebuild compatibility and capability evidence after saving.')" in harbor
 

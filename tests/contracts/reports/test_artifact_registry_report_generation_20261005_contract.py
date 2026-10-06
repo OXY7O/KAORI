@@ -39,7 +39,7 @@ def test_registry_scope_is_resolved_from_active_integration_identity_not_provide
     schedules = read('app/reports/schedules/service.py')
 
     assert "ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE = 'registry_integration'" in scope
-    assert "IntegrationInstance" in scope
+    assert 'IntegrationInstance' in scope
     assert "instance.integration_type != 'registry'" in scope
     assert "'Artifact Registry'" in scope
     assert "'Integration Scope'" in scope
@@ -95,7 +95,9 @@ def test_registry_inventory_export_is_committed_snapshot_only_and_reuses_invento
     assert "identity_columns=('registry', 'project', 'repository', 'digest')" in profile
 
 
-def test_registry_analysis_combines_dashboard_alert_intelligence_and_recommendations_without_live_provider_calls() -> None:
+def test_registry_analysis_combines_dashboard_alert_intelligence_and_recommendations_without_live_provider_calls() -> (
+    None
+):
     payload = read('app/reports/export/payloads/artifact_registry_analysis.py')
     collectors = read('app/reports/export/html_pdf/collectors.py')
     builder = read('app/reports/export/html_pdf/builder.py')
