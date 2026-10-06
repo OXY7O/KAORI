@@ -17,9 +17,9 @@
                         <h1 class="{{ page_hero.title_classes() }}">{{ instance.name }}</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">Review Harbor configuration, validation, and runtime evidence.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label("shield-check", readiness|replace("_", " ")|title) }}
+                            {{ page_hero.meta_label("shield-check", readiness|replace("_", " ") |title) }}
                             {{ page_hero.meta_label("layers-3", (capability_count|string) ~ " Validated Capabilities") }}
-                            {{ page_hero.meta_label("package", instance.environment|default("")|title) }}
+                            {{ page_hero.meta_label("package", instance.environment|default("") |title) }}
                         </div>
                     {% endcall %}
                 </div>
@@ -28,22 +28,22 @@
                                 source_posture,
                                 "shield-check",
                                 "Harbor API",
-                                readiness|replace("_", " ")|title,
-                                "Produced by Full Validation",
-                                "layers-3",
-                                "Validated Capabilities",
-                                capability_count,
-                                "Harbor API read contracts",
-                                url_for("harbor.index")) }}
+                                readiness|replace("_", " ") |title,
+                "Produced by Full Validation",
+                "layers-3",
+                "Validated Capabilities",
+                capability_count,
+                "Harbor API read contracts",
+                url_for("harbor.index")) }}
             </div>
         </section>
         <section id="harbor-detail-tabs"
                  class="rounded-xl border border-outline-default bg-surface-card shadow-sm">
             {{ framed_workspace_tabs.render([
-                ("configuration", "Configuration", "settings-2", instance.environment|default("")|title),
-                ("validation", "Validation & Capabilities", "scan-search", readiness|replace("_", " ")|title),
-                ("runtime", "Runtime & History", "activity", runtime_state.health_status_label|default("Not Observed")),
-                ("inventory", "Inventory & Lifecycle", "database", inventory_status.label|default("Not Collected"))
+                        ("configuration", "Configuration", "settings-2", instance.environment|default("") |title),
+            ("validation", "Validation & Capabilities", "scan-search", readiness|replace("_", " ")|title),
+            ("runtime", "Runtime & History", "activity", runtime_state.health_status_label|default("Not Observed")),
+            ("inventory", "Inventory & Lifecycle", "database", inventory_status.label|default("Not Collected"))
             ], prefix="harbor", aria_label="Harbor Connection Domains") }}
             <div class="p-4 sm:p-5 lg:p-6">
                 <div id="harbor-panel-configuration"
@@ -71,9 +71,7 @@
                      role="tabpanel"
                      aria-labelledby="harbor-tab-inventory"
                      x-show="activeTab === 'inventory'"
-                     x-cloak>
-                    {% include "integrations/registry/providers/harbor/partials/_detail_scope.html" %}
-                </div>
+                     x-cloak>{% include "integrations/registry/providers/harbor/partials/_detail_scope.html" %}</div>
             </div>
         </section>
         {% include "integrations/registry/providers/harbor/partials/_delete_modal.html" %}
