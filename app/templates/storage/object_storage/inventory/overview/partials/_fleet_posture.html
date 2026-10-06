@@ -1,11 +1,10 @@
 {% import "components/operational_callout.html" as operational_callout %}
 {% import "components/section_intro.html" as section_intro %}
-<section class="space-y-4" aria-labelledby="object-storage-fleet-posture-heading">
-    {{ section_intro.render(
-        'Fleet Inventory Posture',
+<section class="space-y-4"
+         aria-labelledby="object-storage-fleet-posture-heading">
+    {{ section_intro.render('Fleet Inventory Posture',
         'Prioritized committed-snapshot signals across quota, protection, exposure, and optional usage evidence.',
-        'object-storage-fleet-posture-heading'
-    ) }}
+        'object-storage-fleet-posture-heading') }}
     <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {% for reading in overview.fleet_readings %}
             {{ operational_callout.render(reading.title,
