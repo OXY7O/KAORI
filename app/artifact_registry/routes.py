@@ -351,7 +351,12 @@ def runtime_binding_details(binding_id: int) -> ResponseReturnValue:
 @artifact_registry_bp.get('/analytics')
 @permission_required('artifact_registry.view')
 def analytics() -> ResponseReturnValue:
-    return render_template('artifact_registry/analytics.html', analytics=build_analytics())
+    return render_template(
+        'artifact_registry/analytics.html',
+        analytics=build_analytics(
+            active_tab=request.args.get('tab', 'growth', type=str),
+        ),
+    )
 
 
 @artifact_registry_bp.get('/governance')
