@@ -9,22 +9,23 @@
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('chart-column', 'Artifact Registry · Analytics', 'chart-no-axes-combined') %}
                         <h1 class="{{ page_hero.title_classes() }}">Analytics</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">Analyze committed Registry growth, supply-chain coverage, runtime exposure, governance posture, and quota forecast snapshots without live provider queries on page load.</p>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Correlate committed Registry inventory, Harbor operational metrics, security, runtime, governance, and growth evidence into reviewable operational insight.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('database-backup', analytics.snapshot_count ~ '/' ~ analytics.provider_count ~ ' Materialized') }}
-                            {{ page_hero.meta_label('package-open', analytics.aggregate.artifacts ~ ' Artifacts') }}
+                            {{ page_hero.meta_label('activity', analytics.aggregate.metrics_ready ~ '/' ~ analytics.provider_count ~ ' Metrics Ready') }}
                             {{ page_hero.meta_label('sparkles', analytics.recommendation_count ~ ' Central Recommendations') }}
                         </div>
                     {% endcall %}
                 </div>
-                {{ page_hero.context_card('Artifact Registry analytics posture',
-                    'Worker-Materialized Evidence',
+                {{ page_hero.context_card(
+                    'Artifact Registry analytics posture',
+                    'Committed + Materialized Evidence',
                     'Analytics Posture',
                     analytics.posture.label,
                     analytics.posture.tone,
                     [
-                        ('triangle-alert', 'Active Signals', analytics.active_signal_count, 'Derived domain facts requiring review'),
-                        ('activity', 'Metrics Coverage', analytics.aggregate.metrics_ready ~ '/' ~ analytics.provider_count, 'Qualified Metrics Source bindings')
+                        ('triangle-alert', 'Active Signals', analytics.active_signal_count, 'Cross-domain evidence requiring review'),
+                        ('package-open', 'Artifact Estate', analytics.aggregate.artifacts, 'Committed artifact identities')
                     ],
                     'Open Intelligence',
                     url_for('intelligence.recommendations', domain='registry'),
@@ -36,39 +37,226 @@
         {% if analytics.setup.is_blocked %}
             {% include "artifact_registry/components/_setup_blocker.html" %}
         {% else %}
-            <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                {% for label, value, helper, icon in [
-                    ('Artifact Inventory', analytics.aggregate.artifacts, 'Committed OCI artifact identities', 'fingerprint'),
-                    ('Critical Findings', analytics.aggregate.critical_findings, 'Normalized vulnerability findings', 'octagon-alert'),
-                    ('Runtime Exposure', analytics.aggregate.critical_runtime_artifacts, 'Artifacts with critical findings and runtime bindings', 'boxes'),
-                    ('Stale Candidates', analytics.aggregate.stale_candidates, 'No runtime binding and no pull/push activity inside 90 days', 'archive')
-                ] %}
-                    <article class="rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm">
-                        <div class="flex items-center gap-2 text-xs font-semibold text-content-muted"><i data-lucide="{{ icon }}" class="h-4 w-4 text-kaori-primary"></i>{{ label }}</div>
-                        <p class="mt-2 text-2xl font-semibold text-content-primary">{{ value }}</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
-                    </article>
-                {% endfor %}
+            <section>
+                <div class="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Operational Signals</p>
+                        <h2 class="mt-1 text-base font-semibold text-content-primary">Registry Health & Throughput</h2>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Materialized Harbor metrics enrich committed Registry state; page rendering never queries Harbor or Prometheus directly.</p>
+                    </div>
+                    <span class="text-xs text-content-muted">{{ analytics.aggregate.metric_capability_gaps }} optional metric gaps</span>
+                </div>
+                <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    {% for metric in [
+                        analytics.operational_metrics.health,
+                        analytics.operational_metrics.request_rate,
+                        analytics.operational_metrics.inflight,
+                        analytics.operational_metrics.queue
+                    ] %}
+                        <article class="rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm">
+                            <div class="flex items-start justify-between gap-3">
+                                <p class="text-xs font-semibold text-content-muted">{{ metric.label }}</p>
+                                {{ table_label.status_indicator_label(
+                                    'Healthy' if metric.tone == 'normal' else ('Review' if metric.tone == 'warning' else 'Unavailable'),
+                                    metric.tone
+                                ) }}
+                            </div>
+                            <p class="mt-3 text-2xl font-semibold text-content-primary">{{ metric.value }}</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ metric.detail }}</p>
+                        </article>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section class="grid gap-4 xl:grid-cols-3">
+                <article class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm xl:col-span-2">
+                    <div class="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Estate Trend</p>
+                            <h2 class="mt-1 text-base font-semibold text-content-primary">Growth & Capacity Outlook</h2>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Inventory deltas and quota telemetry show where Registry growth is concentrating before capacity becomes operational risk.</p>
+                        </div>
+                        <div class="mt-2 flex flex-wrap gap-2 sm:mt-0">
+                            {{ table_label.status_indicator_label(analytics.aggregate.projects ~ ' Projects', 'info') }}
+                            {{ table_label.status_indicator_label(analytics.aggregate.repositories ~ ' Repositories', 'info') }}
+                        </div>
+                    </div>
+
+                    <div class="mt-4 grid gap-3 sm:grid-cols-3">
+                        <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-3">
+                            <p class="text-[11px] font-semibold uppercase tracking-wide text-content-muted">Artifact Estate</p>
+                            <p class="mt-1 text-xl font-semibold text-content-primary">{{ analytics.aggregate.artifacts }}</p>
+                            <p class="mt-1 text-xs text-content-muted">Committed artifact identities</p>
+                        </div>
+                        <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-3">
+                            <p class="text-[11px] font-semibold uppercase tracking-wide text-content-muted">Stale Candidates</p>
+                            <p class="mt-1 text-xl font-semibold text-content-primary">{{ analytics.aggregate.stale_candidates }}</p>
+                            <p class="mt-1 text-xs text-content-muted">Review candidates only; no automatic cleanup</p>
+                        </div>
+                        <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-3">
+                            <p class="text-[11px] font-semibold uppercase tracking-wide text-content-muted">Pull Activity</p>
+                            <p class="mt-1 text-xl font-semibold text-content-primary">{{ '%.0f'|format(analytics.aggregate.pull_activity) }}</p>
+                            <p class="mt-1 text-xs text-content-muted">Observed project pull counter evidence</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 overflow-x-auto">
+                        <table class="min-w-full divide-y divide-outline-subtle text-sm">
+                            <thead class="bg-surface-hover text-left text-xs font-semibold text-content-muted">
+                                <tr>
+                                    <th class="px-4 py-3">Registry / Project</th>
+                                    <th class="px-4 py-3">Utilization</th>
+                                    <th class="px-4 py-3">Growth / Day</th>
+                                    <th class="px-4 py-3">Days to Quota</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-outline-subtle">
+                                {% for row in analytics.forecast_rows[:5] %}
+                                    <tr>
+                                        <td class="px-4 py-3">
+                                            <p class="font-semibold text-content-primary">{{ row.project_name }}</p>
+                                            <p class="text-xs text-content-muted">{{ row.registry_name }}</p>
+                                        </td>
+                                        <td class="px-4 py-3 text-content-secondary">{{ '%.1f%%'|format(row.utilization_percent) }}</td>
+                                        <td class="px-4 py-3 text-content-secondary">{{ ('%.0f B/day'|format(row.growth_bytes_per_day)) if row.growth_bytes_per_day is not none else 'Insufficient history' }}</td>
+                                        <td class="px-4 py-3">
+                                            {{ table_label.status_indicator_label(
+                                                ('%.1f days'|format(row.days_to_quota)) if row.days_to_quota is not none else 'No forecast',
+                                                'critical' if row.days_to_quota is not none and row.days_to_quota <= 30 else ('warning' if row.days_to_quota is not none and row.days_to_quota <= 90 else 'normal')
+                                            ) }}
+                                        </td>
+                                    </tr>
+                                {% else %}
+                                    <tr><td colspan="4" class="px-4 py-8 text-center text-content-muted">No quota forecast yet. Two materializations plus qualified quota metrics are required.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </article>
+
+                <article class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Demand Concentration</p>
+                    <h2 class="mt-1 text-base font-semibold text-content-primary">Most Pulled Projects</h2>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Use activity with growth and runtime evidence to distinguish hot content from stale inventory.</p>
+                    <div class="mt-4 space-y-3">
+                        {% for row in analytics.activity_rows %}
+                            <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-3">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <p class="truncate text-sm font-semibold text-content-primary">{{ row.project_name }}</p>
+                                        <p class="mt-0.5 truncate text-xs text-content-muted">{{ row.registry_name }}</p>
+                                    </div>
+                                    <span class="text-sm font-semibold text-content-primary">{{ '%.0f'|format(row.pull_count) }}</span>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="rounded-lg border border-dashed border-outline-default p-4 text-center text-xs text-content-muted">Pull activity is not available from the current metrics evidence.</div>
+                        {% endfor %}
+                    </div>
+                </article>
+            </section>
+
+            <section class="grid gap-4 lg:grid-cols-2">
+                <article class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Supply Chain</p>
+                    <h2 class="mt-1 text-base font-semibold text-content-primary">Security Evidence Coverage</h2>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Coverage is factual Registry evidence. Escalation requires runtime and policy context through central Intelligence.</p>
+                    <div class="mt-4 grid gap-3 sm:grid-cols-3">
+                        {% for label, value, helper in [
+                            ('Scan', analytics.coverage.scan, analytics.aggregate.critical_findings ~ ' critical · ' ~ analytics.aggregate.high_findings ~ ' high'),
+                            ('Signature', analytics.coverage.signature, analytics.aggregate.unsigned_runtime_artifacts ~ ' unsigned in runtime'),
+                            ('SBOM', analytics.coverage.sbom, analytics.aggregate.sbom_artifacts ~ ' artifacts with SBOM evidence')
+                        ] %}
+                            <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-3">
+                                <p class="text-xs font-semibold text-content-muted">{{ label }}</p>
+                                <p class="mt-2 text-xl font-semibold text-content-primary">{{ '%.1f%%'|format(value) if value is not none else 'N/A' }}</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="mt-4 grid gap-3 sm:grid-cols-3">
+                        <div class="rounded-lg border border-outline-subtle p-3">
+                            <p class="text-xs text-content-muted">Critical Runtime</p>
+                            <p class="mt-1 text-lg font-semibold text-content-primary">{{ analytics.aggregate.critical_runtime_artifacts }}</p>
+                        </div>
+                        <div class="rounded-lg border border-outline-subtle p-3">
+                            <p class="text-xs text-content-muted">Runtime Scan Gaps</p>
+                            <p class="mt-1 text-lg font-semibold text-content-primary">{{ analytics.aggregate.runtime_scan_gaps }}</p>
+                        </div>
+                        <div class="rounded-lg border border-outline-subtle p-3">
+                            <p class="text-xs text-content-muted">Tag-only Bindings</p>
+                            <p class="mt-1 text-lg font-semibold text-content-primary">{{ analytics.aggregate.tag_only_bindings }}</p>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Governance</p>
+                    <h2 class="mt-1 text-base font-semibold text-content-primary">Policy Coverage</h2>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Governance evidence stays provider-capability aware and does not fabricate unsupported retention or immutability semantics.</p>
+                    <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                        <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4">
+                            <p class="text-xs font-semibold text-content-muted">Retention</p>
+                            <p class="mt-2 text-2xl font-semibold text-content-primary">{{ '%.1f%%'|format(analytics.coverage.retention) if analytics.coverage.retention is not none else 'N/A' }}</p>
+                            <p class="mt-1 text-xs text-content-muted">{{ analytics.aggregate.retention_configured }}/{{ analytics.aggregate.projects }} projects configured</p>
+                        </div>
+                        <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4">
+                            <p class="text-xs font-semibold text-content-muted">Immutability</p>
+                            <p class="mt-2 text-2xl font-semibold text-content-primary">{{ '%.1f%%'|format(analytics.coverage.immutability) if analytics.coverage.immutability is not none else 'N/A' }}</p>
+                            <p class="mt-1 text-xs text-content-muted">{{ analytics.aggregate.immutability_configured }}/{{ analytics.aggregate.projects }} projects configured</p>
+                        </div>
+                    </div>
+                    <div class="mt-4 rounded-lg border border-outline-subtle p-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <p class="text-sm font-semibold text-content-primary">Runtime Correlation</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Committed Kubernetes correlation adds operational blast-radius context without turning Analytics into the runtime authority.</p>
+                            </div>
+                            {{ table_label.status_indicator_label(analytics.aggregate.runtime_bindings ~ ' Bindings', 'info') }}
+                        </div>
+                        <div class="mt-3 grid grid-cols-2 gap-3 text-xs">
+                            <div><span class="text-content-muted">Running artifacts</span><p class="mt-1 font-semibold text-content-primary">{{ analytics.aggregate.running_artifacts }}</p></div>
+                            <div><span class="text-content-muted">Governed projects</span><p class="mt-1 font-semibold text-content-primary">{{ analytics.aggregate.governance_projects_assessed }}</p></div>
+                        </div>
+                    </div>
+                </article>
             </section>
 
             <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
                 <header class="border-b border-outline-subtle px-5 py-4">
-                    <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Materialized Analytics</p>
-                    <h2 class="mt-1 text-base font-semibold text-content-primary">Registry Snapshot Coverage</h2>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Worker output remains reusable across users. Metrics Source is optional enrichment; inventory/security/governance/runtime truth remains committed in the Registry domain.</p>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Evidence Plane</p>
+                    <h2 class="mt-1 text-base font-semibold text-content-primary">Analytics Materialization Coverage</h2>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Each provider keeps independent committed analytics evidence, freshness, Metrics Source qualification, and capability gaps.</p>
                 </header>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-outline-subtle text-sm">
-                        <thead class="bg-surface-hover text-left text-xs font-semibold text-content-muted"><tr><th class="px-5 py-3">Registry</th><th class="px-5 py-3">Snapshot</th><th class="px-5 py-3">Artifacts</th><th class="px-5 py-3">Critical / High</th><th class="px-5 py-3">Runtime Bindings</th><th class="px-5 py-3">Metrics</th><th class="px-5 py-3">Generated</th></tr></thead>
+                        <thead class="bg-surface-hover text-left text-xs font-semibold text-content-muted">
+                            <tr>
+                                <th class="px-5 py-3">Registry</th>
+                                <th class="px-5 py-3">Snapshot</th>
+                                <th class="px-5 py-3">Health</th>
+                                <th class="px-5 py-3">Requests</th>
+                                <th class="px-5 py-3">Queue</th>
+                                <th class="px-5 py-3">Metrics Source</th>
+                                <th class="px-5 py-3">Generated</th>
+                            </tr>
+                        </thead>
                         <tbody class="divide-y divide-outline-subtle">
                             {% for row in analytics.latest_rows %}
                                 <tr>
                                     <td class="px-5 py-3"><p class="font-semibold text-content-primary">{{ row.identity.name }}</p><p class="text-xs text-content-muted">{{ row.identity.provider_key|replace('_',' ')|title }}</p></td>
                                     <td class="px-5 py-3">{{ table_label.status_indicator_label(row.status_label, row.tone) }}</td>
-                                    <td class="px-5 py-3 text-content-secondary">{{ row.inventory.artifacts if row.snapshot else 'Not Materialized' }}</td>
-                                    <td class="px-5 py-3 text-content-secondary">{{ row.security.critical_findings ~ ' / ' ~ row.security.high_findings if row.snapshot else '—' }}</td>
-                                    <td class="px-5 py-3 text-content-secondary">{{ row.runtime.bindings if row.snapshot else '—' }}</td>
-                                    <td class="px-5 py-3">{{ table_label.status_indicator_label(('Ready' if row.metrics.status == 'ready' else 'Optional / Unavailable') if row.snapshot else 'Not Materialized', 'normal' if row.snapshot and row.metrics.status == 'ready' else 'unknown') }}</td>
+                                    <td class="px-5 py-3">{{ table_label.status_indicator_label('Healthy' if row.snapshot and row.metrics.provider_health_value is number and row.metrics.provider_health_value > 0 else ('Unavailable' if row.snapshot else 'Not Materialized'), 'normal' if row.snapshot and row.metrics.provider_health_value is number and row.metrics.provider_health_value > 0 else 'unknown') }}</td>
+                                    <td class="px-5 py-3 text-content-secondary">{{ ('%.2f/s'|format(row.metrics.request_rate_per_second)) if row.snapshot and row.metrics.request_rate_per_second is number else 'N/A' }}</td>
+                                    <td class="px-5 py-3 text-content-secondary">{{ ('%.0f'|format(row.metrics.task_queue_size)) if row.snapshot and row.metrics.task_queue_size is number else 'N/A' }}</td>
+                                    <td class="px-5 py-3">
+                                        {% if row.snapshot and row.metrics.status == 'ready' %}
+                                            <p class="font-semibold text-content-primary">{{ row.metrics.metrics_source }}</p>
+                                            <p class="text-xs text-content-muted">{{ row.metrics.capability_gaps|length }} optional gaps</p>
+                                        {% else %}
+                                            {{ table_label.status_indicator_label('Optional / Unavailable', 'unknown') }}
+                                        {% endif %}
+                                    </td>
                                     <td class="px-5 py-3 text-content-muted">{{ row.snapshot.generated_at|user_datetime if row.snapshot else 'Not Materialized' }}</td>
                                 </tr>
                             {% endfor %}
@@ -78,13 +266,28 @@
             </section>
 
             <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-                <header class="border-b border-outline-subtle px-5 py-4"><p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Capacity Forecast</p><h2 class="mt-1 text-base font-semibold text-content-primary">Project Quota Outlook</h2><p class="mt-1 text-xs leading-5 text-content-muted">Forecast appears only after at least two materializations provide a measurable project-usage slope through a qualified Metrics Source binding.</p></header>
-                <div class="overflow-x-auto"><table class="min-w-full divide-y divide-outline-subtle text-sm"><thead class="bg-surface-hover text-left text-xs font-semibold text-content-muted"><tr><th class="px-5 py-3">Registry / Project</th><th class="px-5 py-3">Utilization</th><th class="px-5 py-3">Growth / Day</th><th class="px-5 py-3">Days to Quota</th></tr></thead><tbody class="divide-y divide-outline-subtle">{% for row in analytics.forecast_rows %}<tr><td class="px-5 py-3"><p class="font-semibold text-content-primary">{{ row.project_name }}</p><p class="text-xs text-content-muted">{{ row.registry_name }}</p></td><td class="px-5 py-3 text-content-secondary">{{ '%.1f%%'|format(row.utilization_percent) }}</td><td class="px-5 py-3 text-content-secondary">{{ ('%.0f B/day'|format(row.growth_bytes_per_day)) if row.growth_bytes_per_day is not none else 'Insufficient history' }}</td><td class="px-5 py-3">{{ table_label.status_indicator_label(('%.1f days'|format(row.days_to_quota)) if row.days_to_quota is not none else 'No exhaustion forecast', 'critical' if row.days_to_quota is not none and row.days_to_quota <= 30 else ('warning' if row.days_to_quota is not none and row.days_to_quota <= 90 else 'normal')) }}</td></tr>{% else %}<tr><td colspan="4" class="px-5 py-8 text-center text-content-muted">No project quota forecast is available yet. A qualified Metrics Source binding and at least two materialized observations are required.</td></tr>{% endfor %}</tbody></table></div>
-            </section>
-
-            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-                <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-start sm:justify-between"><div><p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Central Intelligence Projection</p><h2 class="mt-1 text-base font-semibold text-content-primary">Recommendations</h2><p class="mt-1 text-xs leading-5 text-content-muted">Recommendation lifecycle, Accepted Risk, Alert Intelligence, and decisions remain owned by Intelligence. This surface only projects central state.</p></div><a href="{{ url_for('intelligence.recommendations', domain='registry') }}" class="inline-flex h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary hover:bg-surface-hover"><i data-lucide="external-link" class="h-3.5 w-3.5"></i>Open Recommendations</a></header>
-                <div class="divide-y divide-outline-subtle">{% for row in analytics.recommendations %}<article class="px-5 py-4"><div class="flex flex-wrap items-center gap-2">{{ table_label.status_indicator_label(row.severity_label, 'critical' if row.severity == 'critical' else ('warning' if row.severity == 'warning' else 'info')) }}<p class="text-sm font-semibold text-content-primary">{{ row.title }}</p></div><p class="mt-1 text-xs leading-5 text-content-secondary">{{ row.summary }}</p><p class="mt-2 font-mono text-[11px] text-content-muted">{{ row.rule_key }}</p></article>{% else %}<div class="px-5 py-8 text-center text-content-muted">No active central Intelligence recommendation is currently projected for Artifact Registry.</div>{% endfor %}</div>
+                <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Central Intelligence Projection</p>
+                        <h2 class="mt-1 text-base font-semibold text-content-primary">Recommendations</h2>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Analytics produces evidence; recommendation lifecycle, Accepted Risk, escalation, and automation control remain centrally governed.</p>
+                    </div>
+                    <a href="{{ url_for('intelligence.recommendations', domain='registry') }}" class="inline-flex h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary hover:bg-surface-hover"><i data-lucide="external-link" class="h-3.5 w-3.5"></i>Open Recommendations</a>
+                </header>
+                <div class="divide-y divide-outline-subtle">
+                    {% for row in analytics.recommendations %}
+                        <article class="px-5 py-4">
+                            <div class="flex flex-wrap items-center gap-2">
+                                {{ table_label.status_indicator_label(row.severity_label, 'critical' if row.severity == 'critical' else ('warning' if row.severity == 'warning' else 'info')) }}
+                                <p class="text-sm font-semibold text-content-primary">{{ row.title }}</p>
+                            </div>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">{{ row.summary }}</p>
+                            <p class="mt-2 font-mono text-[11px] text-content-muted">{{ row.rule_key }}</p>
+                        </article>
+                    {% else %}
+                        <div class="px-5 py-8 text-center text-content-muted">No active central Intelligence recommendation is currently projected for Artifact Registry.</div>
+                    {% endfor %}
+                </div>
             </section>
         {% endif %}
     </div>
