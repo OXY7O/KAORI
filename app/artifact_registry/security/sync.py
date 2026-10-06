@@ -4,6 +4,7 @@ import logging
 from datetime import UTC, datetime
 from typing import Any
 
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload
 
 from app.artifact_registry.collectors import InventoryProgressCallback
@@ -208,7 +209,7 @@ def sync_registry_security(
             observed_at=observed_at,
         )
         db.session.commit()
-    except Exception:
+    except (LookupError, RuntimeError, ValueError, SQLAlchemyError):
         db.session.rollback()
         logger.exception(
             'Artifact Registry security synchronization failed for Registry instance %s (%s).',
