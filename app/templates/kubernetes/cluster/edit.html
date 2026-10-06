@@ -5,18 +5,18 @@
 {% block dashboard_content %}
     <div class="kaori-integration-semantic space-y-6">
         {{ provider_edit_hero.render("boxes",
-                    "Cluster Orchestration Integration",
-                    "settings-2",
-                    "Edit Kubernetes Connection",
-                    "Update Kubernetes access while preserving cluster identity, bindings, and validation context.",
-                    "server-cog",
-                    "Kubernetes API",
-                    "Managed Cluster",
-                    cluster.name,
-                    cluster.environment|environment_name,
-                    cluster.kubernetes_connection.readiness_status or "validation_required",
-                    url_for("integrations.kubernetes"),
-                    "Kubernetes configuration posture") }}
+                "Cluster Orchestration Integration",
+                "settings-2",
+                "Edit Kubernetes Connection",
+                "Update Kubernetes access while preserving cluster identity, bindings, and validation context.",
+                "server-cog",
+                "Kubernetes API",
+                "Managed Cluster",
+                cluster.name,
+                cluster.environment|environment_name,
+                cluster.kubernetes_connection.readiness_status or "validation_required",
+                url_for("integrations.kubernetes") ,
+        "Kubernetes configuration posture") }}
         {% set form_mode = "edit" %}{% set form_icon = "settings-2" %}{% set form_title = "Kubernetes Connection Configuration" %}{% set form_description = "Modify identity, rotate kubeconfig credentials when required, and test the submitted transport contract before saving." %}{% set submit_label = "Save Changes" %}{% set action_helper = "Test credentials before saving. Connection or TLS changes require Full Validation." %}
         <div class="grid gap-6 xl:grid-cols-12 xl:items-start">
             <div class="xl:col-span-8">{% include "kubernetes/cluster/partials/_form.html" %}</div>
