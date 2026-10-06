@@ -40,6 +40,23 @@ class _SecuritySourceProgress:
     completed: bool = False
 
 
+@dataclass(frozen=True, slots=True)
+class _SecurityResultSummary:
+    failures: list[dict[str, Any]]
+    warning_evidence: list[dict[str, Any]]
+    synced: int
+    partial_source_count: int
+    repository_failure_count: int
+    artifact_count: int
+    refreshed_reports: int
+    reused_reports: int
+    finding_count: int
+
+    @property
+    def has_partial_refresh(self) -> bool:
+        return bool(self.partial_source_count or self.repository_failure_count)
+
+
 def _checkpoint_source_progress(
     *,
     job_execution_id: int | None,
@@ -253,13 +270,7 @@ def sync_registry_security_source_task(
     return result
 
 
-def _finalize_security_result(
-    source_results: list[dict[str, Any]],
-    *,
-    source_total: int,
-    requested_by_user_id: int | None,
-    started_at_epoch: float,
-) -> tuple[dict[str, Any], list[dict[str, Any]], int, bool]:
+def _summarize_security_results(source_results: list[dict[str, Any]]) -> _SecurityResultSummary:
     normalized_results = [item for item in source_results if isinstance(item, dict)]
     failures = [
         failure
@@ -273,61 +284,75 @@ def _finalize_security_result(
         for warning in list(item.get('warning_evidence') or [])
         if isinstance(warning, dict)
     ]
-    synced = sum(1 for item in normalized_results if str(item.get('status') or '') != 'error')
-    partial_source_count = sum(1 for item in normalized_results if str(item.get('status') or '') == 'warning')
-    repository_failure_count = sum(int(item.get('repository_failure_count') or 0) for item in normalized_results)
-    artifact_count = sum(int(item.get('artifact_count') or 0) for item in normalized_results)
-    refreshed_reports = sum(int(item.get('refreshed_report_count') or 0) for item in normalized_results)
-    reused_reports = sum(int(item.get('reused_report_count') or 0) for item in normalized_results)
-    finding_count = sum(int(item.get('finding_count') or 0) for item in normalized_results)
-
-    has_partial_refresh = bool(partial_source_count or repository_failure_count)
-    status = 'error' if failures and not synced else ('warning' if failures or has_partial_refresh else 'success')
-    if failures and not synced:
-        detail = 'Failed providers retained their previous committed security evidence.'
-    elif has_partial_refresh:
-        detail = (
-            'Security evidence was committed for available repositories; previous committed evidence '
-            'was retained for repositories that could not be refreshed.'
-        )
-    else:
-        detail = (
-            f'{artifact_count} artifacts evaluated; {refreshed_reports} vulnerability report(s) refreshed '
-            f'and {reused_reports} unchanged report(s) reused.'
-        )
-
-    return (
-        {
-            'status': status,
-            'title': (
-                'Artifact Registry Security Sync Completed'
-                if status != 'error'
-                else 'Artifact Registry Security Sync Failed'
-            ),
-            'message': (
-                f'{synced} Registry provider(s) synchronized; {len(failures)} failed; '
-                f'{repository_failure_count} repository refresh warning(s).'
-            ),
-            'detail': detail,
-            'total_count': source_total,
-            'synced_count': synced,
-            'failed_count': len(failures),
-            'artifact_count': artifact_count,
-            'refreshed_report_count': refreshed_reports,
-            'reused_report_count': reused_reports,
-            'finding_count': finding_count,
-            'partial_source_count': partial_source_count,
-            'repository_failure_count': repository_failure_count,
-            'failure_evidence': failures,
-            'warning_evidence': warning_evidence[:50],
-            'requested_by_user_id': requested_by_user_id,
-            'finished_at': _now_iso(),
-            'duration_seconds': round(max(time() - float(started_at_epoch), 0.0), 1),
-        },
-        failures,
-        synced,
-        has_partial_refresh,
+    return _SecurityResultSummary(
+        failures=failures,
+        warning_evidence=warning_evidence,
+        synced=sum(1 for item in normalized_results if str(item.get('status') or '') != 'error'),
+        partial_source_count=sum(1 for item in normalized_results if str(item.get('status') or '') == 'warning'),
+        repository_failure_count=sum(
+            int(item.get('repository_failure_count') or 0) for item in normalized_results
+        ),
+        artifact_count=sum(int(item.get('artifact_count') or 0) for item in normalized_results),
+        refreshed_reports=sum(int(item.get('refreshed_report_count') or 0) for item in normalized_results),
+        reused_reports=sum(int(item.get('reused_report_count') or 0) for item in normalized_results),
+        finding_count=sum(int(item.get('finding_count') or 0) for item in normalized_results),
     )
+
+
+def _security_result_status_detail(summary: _SecurityResultSummary) -> tuple[str, str]:
+    if summary.failures and not summary.synced:
+        return 'error', 'Failed providers retained their previous committed security evidence.'
+    if summary.failures or summary.has_partial_refresh:
+        return (
+            'warning',
+            'Security evidence was committed for available repositories; previous committed evidence '
+            'was retained for repositories that could not be refreshed.',
+        )
+    return (
+        'success',
+        f'{summary.artifact_count} artifacts evaluated; '
+        f'{summary.refreshed_reports} vulnerability report(s) refreshed and '
+        f'{summary.reused_reports} unchanged report(s) reused.',
+    )
+
+
+def _finalize_security_result(
+    source_results: list[dict[str, Any]],
+    *,
+    source_total: int,
+    requested_by_user_id: int | None,
+    started_at_epoch: float,
+) -> tuple[dict[str, Any], list[dict[str, Any]], int, bool]:
+    summary = _summarize_security_results(source_results)
+    status, detail = _security_result_status_detail(summary)
+    result = {
+        'status': status,
+        'title': (
+            'Artifact Registry Security Sync Completed'
+            if status != 'error'
+            else 'Artifact Registry Security Sync Failed'
+        ),
+        'message': (
+            f'{summary.synced} Registry provider(s) synchronized; {len(summary.failures)} failed; '
+            f'{summary.repository_failure_count} repository refresh warning(s).'
+        ),
+        'detail': detail,
+        'total_count': source_total,
+        'synced_count': summary.synced,
+        'failed_count': len(summary.failures),
+        'artifact_count': summary.artifact_count,
+        'refreshed_report_count': summary.refreshed_reports,
+        'reused_report_count': summary.reused_reports,
+        'finding_count': summary.finding_count,
+        'partial_source_count': summary.partial_source_count,
+        'repository_failure_count': summary.repository_failure_count,
+        'failure_evidence': summary.failures,
+        'warning_evidence': summary.warning_evidence[:50],
+        'requested_by_user_id': requested_by_user_id,
+        'finished_at': _now_iso(),
+        'duration_seconds': round(max(time() - float(started_at_epoch), 0.0), 1),
+    }
+    return result, summary.failures, summary.synced, summary.has_partial_refresh
 
 
 @shared_task(
