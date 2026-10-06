@@ -16,6 +16,7 @@ from app.integrations.coverage import (
     build_provider_coverage,
 )
 from app.integrations.deletion import kubernetes_deletion_guard
+from app.integrations.kernel.registry import get_integration, registry
 from app.integrations.observability.metrics_source.providers import provider_definition, provider_options
 from app.integrations.observability.metrics_source.scope import cluster_bindings_for_instance
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.compatibility import (
@@ -26,7 +27,6 @@ from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_a
 )
 from app.integrations.overview_extensions import sort_runtime_rows
 from app.integrations.provider_matrix import provider_kind
-from app.integrations.kernel.registry import get_integration, registry
 from app.integrations.taxonomy import (
     capability_definitions_for_domain,
     ordered_domain_definitions,
@@ -42,8 +42,6 @@ from app.models import (
 from app.models.integration import IntegrationInstance
 from app.models.kubernetes import KubernetesConnection
 from app.models.runtime import IntegrationRuntimeObservation
-
-
 @dataclass(frozen=True, slots=True)
 class MetricsSourceRegistryFilters:
     query: str = ''
