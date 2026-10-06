@@ -210,15 +210,15 @@
             <div id="artifact-registry-alerts-loading" class="htmx-indicator mt-3 text-xs text-content-muted">Loading committed alert records…</div>
             <div class="mt-3 overflow-x-auto rounded-xl border border-outline-subtle">
                 <table class="min-w-full divide-y divide-outline-subtle text-sm">
-                    <thead class="bg-surface-hover text-left text-xs font-semibold text-content-muted"><tr><th class="px-4 py-3">Alert</th><th class="px-4 py-3">Severity</th><th class="px-4 py-3">State</th><th class="px-4 py-3">Target</th><th class="px-4 py-3">Registry</th><th class="px-4 py-3">Source</th></tr></thead>
+                    <thead class="bg-surface-hover text-left text-xs font-semibold text-content-muted"><tr><th class="px-4 py-3">Alert</th><th class="px-4 py-3">Severity</th><th class="px-4 py-3">State</th><th class="px-4 py-3">Target</th><th class="px-4 py-3">Since</th><th class="px-4 py-3">Source</th></tr></thead>
                     <tbody class="divide-y divide-outline-subtle">
                         {% for row in analytics.alert_rows %}
                             <tr>
-                                <td class="px-4 py-3"><p class="font-semibold text-content-primary">{{ row.name }}</p><p class="mt-0.5 max-w-xl text-xs text-content-muted">{{ row.summary }}</p></td>
+                                <td class="px-4 py-3"><p class="font-semibold text-content-primary">{{ row.name }}</p><p class="mt-0.5 max-w-xl text-xs text-content-muted">{{ row.registry_name }} · {{ row.summary }}</p></td>
                                 <td class="px-4 py-3">{{ table_label.status_indicator_label(row.severity|title, row.severity if row.severity in ['critical','warning','info'] else 'unknown') }}</td>
                                 <td class="px-4 py-3">{{ table_label.status_indicator_label(row.effective_state|title, 'warning' if row.effective_state == 'pending' else ('info' if row.effective_state == 'suppressed' else 'normal')) }}</td>
                                 <td class="px-4 py-3 text-content-secondary">{{ row.target }}</td>
-                                <td class="px-4 py-3 text-content-secondary">{{ row.registry_name }}</td>
+                                <td class="px-4 py-3 text-content-secondary">{{ row.starts_at or 'Not Observed' }}</td>
                                 <td class="px-4 py-3 text-content-secondary">{{ row.source }}</td>
                             </tr>
                         {% else %}
