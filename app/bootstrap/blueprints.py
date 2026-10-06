@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from flask import Flask
+
+
 def register_blueprints(app: Flask) -> None:
     """Import and register KAORI web domains after extensions are initialized."""
     from app.access import bp as access_bp
