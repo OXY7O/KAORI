@@ -408,9 +408,7 @@ def _inventory_scope_filter(
     if source_id is not None:
         filtered = [row for row in filtered if int(row['provider_id']) == int(source_id)]
     if environment:
-        filtered = [
-            row for row in filtered if str(row['provider_environment']).lower() == environment.lower()
-        ]
+        filtered = [row for row in filtered if str(row['provider_environment']).lower() == environment.lower()]
     if resource != 'projects':
         return filtered
     visibility_predicates = {
@@ -434,10 +432,7 @@ def _inventory_search_text(resource: str, row: dict[str, Any]) -> str:
             f'{" ".join(row["tags"])} {row["provider_name"]} '
             f'{row["provider_label"]} {row["provider_environment"]}'
         ).lower()
-    return (
-        f'{row["name"]} {row["provider_name"]} {row["provider_label"]} '
-        f'{row["provider_environment"]}'
-    ).lower()
+    return (f'{row["name"]} {row["provider_name"]} {row["provider_label"]} {row["provider_environment"]}').lower()
 
 
 def _inventory_posture_copy(resource: str) -> dict[str, str]:
@@ -500,9 +495,7 @@ def build_inventory(
         environment=environment_value,
         visibility=visibility_value,
     )
-    filtered = [
-        row for row in rows if not search_value or search_value in _inventory_search_text(resource, row)
-    ]
+    filtered = [row for row in rows if not search_value or search_value in _inventory_search_text(resource, row)]
     paged, pagination = paginate_sequence(filtered, page=page, per_page=per_page)
     context = _inventory_base_context()
     selected_resource = context['resource_catalog'][resource]
@@ -558,6 +551,7 @@ def build_inventory(
             else []
         ),
     }
+
 
 def build_inventory_project_detail(project_id: int) -> dict[str, Any] | None:
     project = (
