@@ -2933,7 +2933,7 @@ def build_governance(
     }
 
 
-def build_analytics() -> dict[str, Any]:
+def build_analytics(*, active_tab: str = 'growth') -> dict[str, Any]:
     from app.intelligence.service import get_active_recommendation_findings
     from app.models.registry import RegistryAnalyticsSnapshot
 
@@ -3164,45 +3164,174 @@ def build_analytics() -> dict[str, Any]:
         + int(aggregate['stale_candidates'])
         + int(aggregate['metric_capability_gaps'])
     )
+    risk_candidate_count = (
+        int(aggregate['critical_runtime_artifacts'])
+        + int(aggregate['runtime_scan_gaps'])
+        + int(aggregate['unsigned_runtime_artifacts'])
+        + int(aggregate['stale_candidates'])
+    )
     if not latest_rows or not any(row.get('snapshot') for row in latest_rows):
         posture = {'label': 'Materialization Required', 'tone': 'warning'}
     elif aggregate['critical_runtime_artifacts']:
         posture = {'label': 'Critical Runtime Exposure', 'tone': 'critical'}
-    elif aggregate['task_queue_size'] > 0 or active_signal_count:
+    elif active_signal_count:
         posture = {'label': 'Review Required', 'tone': 'warning'}
     else:
-        posture = {'label': 'Operationally Healthy', 'tone': 'normal'}
+        posture = {'label': 'Evidence Ready', 'tone': 'normal'}
 
-    operational_metrics = {
-        'health': {
-            'value': f"{aggregate['healthy_providers']}/{len(identities)}",
-            'label': 'Provider Health',
-            'detail': 'Healthy Registry providers from bound Metrics Source evidence.',
-            'tone': (
-                'normal'
-                if identities and aggregate['healthy_providers'] == len(identities)
-                else ('warning' if identities else 'unknown')
+    growth_size_per_day = sum(
+        float(row['size_growth_bytes_per_day'])
+        for row in growth_rows
+        if isinstance(row.get('size_growth_bytes_per_day'), (int, float))
+    )
+    growth_artifacts_per_day = sum(
+        float(row['artifact_growth_per_day'])
+        for row in growth_rows
+        if isinstance(row.get('artifact_growth_per_day'), (int, float))
+    )
+    runtime_usage_percent = (
+        float(aggregate['running_artifacts']) / artifact_total * 100.0
+        if artifact_total
+        else None
+    )
+
+    quota_rows = [
+        row
+        for row in forecast_rows
+        if isinstance(row.get('usage_bytes'), (int, float))
+        and isinstance(row.get('quota_bytes'), (int, float))
+        and float(row.get('quota_bytes') or 0) > 0
+    ]
+    quota_usage = sum(float(row['usage_bytes']) for row in quota_rows)
+    quota_total = sum(float(row['quota_bytes']) for row in quota_rows)
+    quota_headroom = max(quota_total - quota_usage, 0.0) if quota_total else None
+    highest_utilization = max(
+        (
+            float(row['utilization_percent'])
+            for row in forecast_rows
+            if isinstance(row.get('utilization_percent'), (int, float))
+        ),
+        default=None,
+    )
+    nearest_quota_days = min(
+        (
+            float(row['days_to_quota'])
+            for row in forecast_rows
+            if isinstance(row.get('days_to_quota'), (int, float))
+        ),
+        default=None,
+    )
+
+    normalized_tab = active_tab if active_tab in {
+        'growth',
+        'capacity',
+        'usage',
+        'risk',
+        'governance',
+        'insights',
+    } else 'growth'
+
+    summary_cards = [
+        {
+            'icon': 'database',
+            'label': 'Storage Footprint',
+            'value': _fmt_bytes(int(aggregate['total_size_bytes'])),
+            'detail': (
+                f"{_fmt_bytes(round(growth_size_per_day))}/day materialized growth"
+                if growth_rows
+                else 'Growth requires another analytics materialization'
             ),
+            'tone': 'brand',
         },
-        'request_rate': {
-            'value': f"{aggregate['request_rate_per_second']:.2f}/s",
-            'label': 'Core Request Rate',
-            'detail': 'Aggregate Harbor core HTTP request throughput over the registered metrics profile.',
-            'tone': 'normal' if aggregate['metrics_ready'] else 'unknown',
+        {
+            'icon': 'chart-no-axes-combined',
+            'label': 'Artifact Growth',
+            'value': (
+                f"{growth_artifacts_per_day:+.1f}/day"
+                if growth_rows
+                else 'N/A'
+            ),
+            'detail': f"{aggregate['artifacts']} committed artifacts",
+            'tone': 'info' if growth_rows else 'unknown',
         },
-        'inflight': {
-            'value': f"{aggregate['inflight_requests']:.0f}",
-            'label': 'Inflight Requests',
-            'detail': 'Current aggregate core request concurrency.',
-            'tone': 'warning' if aggregate['inflight_requests'] > 100 else 'normal',
+        {
+            'icon': 'boxes',
+            'label': 'Runtime-used',
+            'value': str(aggregate['running_artifacts']),
+            'detail': (
+                f"{runtime_usage_percent:.1f}% of committed artifact estate"
+                if runtime_usage_percent is not None
+                else 'No committed artifact denominator'
+            ),
+            'tone': 'normal' if aggregate['running_artifacts'] else 'unknown',
         },
-        'queue': {
-            'value': f"{aggregate['task_queue_size']:.0f}",
-            'label': 'Task Queue',
-            'detail': 'Current Harbor task queue depth from committed analytics evidence.',
-            'tone': 'warning' if aggregate['task_queue_size'] > 0 else 'normal',
+        {
+            'icon': 'triangle-alert',
+            'label': 'Risk Candidates',
+            'value': str(risk_candidate_count),
+            'detail': 'Cross-domain review signals; candidates may overlap',
+            'tone': 'warning' if risk_candidate_count else 'normal',
         },
-    }
+    ]
+
+    insights: list[dict[str, str]] = []
+    if growth_rows:
+        insights.append(
+            {
+                'icon': 'trending-up',
+                'title': 'Registry growth is materialized',
+                'detail': (
+                    f"{growth_artifacts_per_day:+.1f} artifacts/day and "
+                    f"{_fmt_bytes(round(growth_size_per_day))}/day across current providers."
+                ),
+                'tone': 'info',
+            }
+        )
+    if aggregate['critical_runtime_artifacts']:
+        insights.append(
+            {
+                'icon': 'shield-alert',
+                'title': 'Critical findings intersect runtime usage',
+                'detail': (
+                    f"{aggregate['critical_runtime_artifacts']} running artifacts carry "
+                    'critical security evidence and require Intelligence review.'
+                ),
+                'tone': 'critical',
+            }
+        )
+    if aggregate['stale_candidates']:
+        insights.append(
+            {
+                'icon': 'archive',
+                'title': 'Stale inventory candidates exist',
+                'detail': (
+                    f"{aggregate['stale_candidates']} artifacts are review candidates only; "
+                    'Analytics never performs automatic cleanup.'
+                ),
+                'tone': 'warning',
+            }
+        )
+    if aggregate['runtime_scan_gaps']:
+        insights.append(
+            {
+                'icon': 'scan-search',
+                'title': 'Runtime scan evidence is incomplete',
+                'detail': (
+                    f"{aggregate['runtime_scan_gaps']} running artifacts have no normalized "
+                    'successful scan evidence.'
+                ),
+                'tone': 'warning',
+            }
+        )
+    if not insights:
+        insights.append(
+            {
+                'icon': 'circle-check',
+                'title': 'No derived review signal',
+                'detail': 'Current committed analytics evidence has no derived review signal.',
+                'tone': 'normal',
+            }
+        )
 
     return {
         'setup': overview['setup'],
@@ -3210,7 +3339,15 @@ def build_analytics() -> dict[str, Any]:
         'snapshot_count': sum(bool(row.get('snapshot')) for row in latest_rows),
         'aggregate': aggregate,
         'latest_rows': latest_rows,
-        'operational_metrics': operational_metrics,
+        'active_tab': normalized_tab,
+        'summary_cards': summary_cards,
+        'capacity_outlook': {
+            'nearest_quota_days': nearest_quota_days,
+            'highest_utilization': highest_utilization,
+            'growth_bytes_per_day': growth_size_per_day if growth_rows else None,
+            'quota_headroom_bytes': quota_headroom,
+        },
+        'insights': insights[:5],
         'coverage': {
             'scan': scan_coverage,
             'signature': signature_coverage,
