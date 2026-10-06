@@ -49,6 +49,16 @@ def format_cadence_detail(schedule: ReportSchedule) -> str:
     return f'Every Day at {schedule.run_time}'
 
 
+def _schedule_scope_projection(schedule: ReportSchedule) -> tuple[str, str, str, str]:
+    scope_asset_type = schedule.scope_asset_type or KUBERNETES_CLUSTER_ASSET_TYPE
+    scope_asset_id = schedule.scope_asset_id or schedule.cluster_id or ''
+    if scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE:
+        return scope_asset_type, scope_asset_id, 'Object Storage System', schedule.namespace or 'System Scope'
+    if scope_asset_type == ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE:
+        return scope_asset_type, scope_asset_id, 'Artifact Registry', schedule.namespace or 'Integration Scope'
+    return scope_asset_type, scope_asset_id, 'Kubernetes Cluster', schedule.namespace or 'All Namespaces'
+
+
 def serialize_schedule(
     schedule: ReportSchedule,
     cluster_map: dict[str, str],
@@ -63,20 +73,7 @@ def serialize_schedule(
     delivery_channels = schedule.notification_channel_ids_as_list()
     delivery_labels = [delivery_label_map.get(item, f'Channel {item}') for item in delivery_channels]
     scope = resolve_report_scope(schedule)
-    scope_asset_type = schedule.scope_asset_type or KUBERNETES_CLUSTER_ASSET_TYPE
-    scope_asset_id = schedule.scope_asset_id or schedule.cluster_id or ''
-    scope_label = (
-        'Object Storage System'
-        if scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE
-        else (
-            'Artifact Registry' if scope_asset_type == ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE else 'Kubernetes Cluster'
-        )
-    )
-    namespace_label = schedule.namespace or (
-        'System Scope'
-        if scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE
-        else ('Integration Scope' if scope_asset_type == ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE else 'All Namespaces')
-    )
+    scope_asset_type, scope_asset_id, scope_label, namespace_label = _schedule_scope_projection(schedule)
     return {
         'id': schedule.id,
         'name': schedule.name,
