@@ -15,32 +15,25 @@
     ("key-round", "info", "Access Contract", instance.auth_type|replace("_", " ")|title, "Credentials remain encrypted and are never retained in validation evidence."),
     ("package-search", "success", "Registry Authority", "Harbor", "Harbor remains authoritative for native Registry state and policies.")
 ] %}
-{% set flow_items = [
-    ('Configure', 'Register Harbor endpoint identity, authentication, TLS policy, and timeout.', 'settings-2'),
-    ('Validate', 'Resolve Harbor identity, release compatibility, provider health, and required read capabilities.', 'badge-check'),
-    ('Observe', 'Persist lightweight runtime health independently from Full Validation evidence.', 'activity'),
-    ('Bind Metrics', 'Bind Prometheus/Thanos through Metrics Source for current and long-term Registry analytics.', 'chart-spline')
-] %}
+{% set flow_items = [('Configure', 'Register Harbor endpoint identity, authentication, TLS policy, and timeout.', 'settings-2'), ('Validate', 'Resolve Harbor identity, release compatibility, provider health, and required read capabilities.', 'badge-check'), ('Observe', 'Persist lightweight runtime health independently from Full Validation evidence.', 'activity'), ('Bind Metrics', 'Bind Prometheus/Thanos through Metrics Source for current and long-term Registry analytics.', 'chart-spline')] %}
 {% set operational_metadata = [
     "Harbor API Authority",
     "Read-Oriented Foundation",
     "Auth · " ~ (instance.auth_type|replace("_", " ")|title),
     "Timeout · " ~ instance.timeout ~ "s"
 ] %}
-{{ provider_configuration_contract.render(
-    "Harbor",
-    "package",
-    readiness,
-    summary_items,
-    evidence_items,
-    "Harbor owns Registry state and policy; KAORI owns registration, validation evidence, runtime observation, governance, and audit.",
-    flow_items,
-    "Connection-sensitive changes reset readiness until Full Validation confirms the updated Harbor contract. Artifact inventory and provider mutation are outside this foundation slice.",
-    url_for("harbor.edit_instance", instance_id=instance.id),
-    operational_metadata=operational_metadata,
+{{ provider_configuration_contract.render("Harbor",
+"package",
+readiness,
+summary_items,
+evidence_items,
+"Harbor owns Registry state and policy; KAORI owns registration, validation evidence, runtime observation, governance, and audit.",
+flow_items,
+"Connection-sensitive changes reset readiness until Full Validation confirms the updated Harbor contract. Artifact inventory and provider mutation are outside this foundation slice.",
+url_for("harbor.edit_instance", instance_id=instance.id) ,
+operational_metadata=operational_metadata,
 setup_reference_template="integrations/registry/providers/harbor/partials/_minimum_validation_access.html"
 ) }}
-
 <section class="{{ integration_ui.section_shell_classes() }} mt-4"
          aria-labelledby="harbor-webhook-configuration-title"
          data-kaori-harbor-webhook-configuration>
@@ -56,7 +49,7 @@ setup_reference_template="integrations/registry/providers/harbor/partials/_minim
                 </div>
             </div>
             <div class="shrink-0">
-                {{ table_label.status_indicator_label(webhook_status.label, 'normal' if webhook_status.status == 'ready' else ('warning' if webhook_status.status == 'attention' else 'unknown')) }}
+                {{ table_label.status_indicator_label(webhook_status.label, 'normal' if webhook_status.status == 'ready' else ('warning' if webhook_status.status == 'attention' else 'unknown') ) }}
             </div>
         </div>
     </header>
@@ -104,5 +97,6 @@ setup_reference_template="integrations/registry/providers/harbor/partials/_minim
             {% endif %}
         </div>
     </div>
-    <div id="harbor-webhook-token-result" class="border-t border-outline-subtle p-5 empty:hidden"></div>
+    <div id="harbor-webhook-token-result"
+         class="border-t border-outline-subtle p-5 empty:hidden"></div>
 </section>
