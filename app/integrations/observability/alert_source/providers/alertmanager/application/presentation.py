@@ -36,6 +36,8 @@ from app.models.alertmanager import AlertmanagerInstance
 from app.models.cluster import Cluster
 from app.models.integration import IntegrationBinding
 from app.models.object_storage import ObjectStorageSystem
+
+
 def build_inventory_context(
     *,
     query: str = '',
