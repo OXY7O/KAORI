@@ -22,6 +22,9 @@ from app.models.registry import (
 from app.models.report import Report, ReportSchedule, ReportTemplate
 from app.reports.catalog import REPORT_TYPE_SPECS
 
+FRESHNESS_HOURS = 24
+
+
 def _fmt_bytes(value: int | None) -> str:
     if value is None:
         return 'Not Collected'
