@@ -26,11 +26,9 @@
                              hx-trigger="revealed"
                              hx-target="this"
                              hx-swap="outerHTML">
-                            {{ section_loading.section(
-                                tab_label,
-                                'Preparing committed Object Storage dashboard evidence.',
-                                tab_icon
-                            ) }}
+                            {{ section_loading.section(tab_label,
+                                                        'Preparing committed Object Storage dashboard evidence.',
+                                                        tab_icon) }}
                         </div>
                     {% endcall %}
                 {% endfor %}
