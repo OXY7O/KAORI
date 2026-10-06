@@ -1,7 +1,7 @@
 {% set provider_prerequisite_scope = cluster_blocked_scope|default('Workspace Readiness') %}
 {% set provider_prerequisite_title = cluster_blocked_title|default('Cluster Setup Required') %}
 {% set provider_prerequisite_info = cluster_blocked_info|default('Add a Kubernetes cluster to activate this workspace in KAORI.') %}
-{% set provider_prerequisite_resource_icon = 'boxes' %}
+{% set provider_prerequisite_resource_icon = "boxes" %}
 {% set provider_prerequisite_resource_label = cluster_blocked_cluster_label|default('Connected Clusters') %}
 {% set provider_prerequisite_resource_value = cluster_blocked_cluster_value|default('0') %}
 {% set provider_prerequisite_resource_supporting = cluster_blocked_cluster_supporting|default('No Kubernetes connection available') %}
