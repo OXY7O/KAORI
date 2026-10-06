@@ -6,6 +6,7 @@ from decimal import Decimal, InvalidOperation
 from typing import Any
 
 from sqlalchemy.exc import SQLAlchemyError
+
 from app.extensions.db import db
 from app.kubernetes.analytics.materialization.service import SnapshotResult, read_snapshot, read_snapshots
 from app.kubernetes.tenant.capacity import (
@@ -16,6 +17,12 @@ from app.kubernetes.tenant.capacity import (
     classify_capacity_state,
     evaluate_allocation_preflight,
     quota_request_vector,
+)
+from app.kubernetes.tenant.capacity_allocation_state import (
+    _aggregate_committed_allocation,
+    _canonical_shared_allocation_quota,
+    _committed_tenant_allocation,
+    _committed_tenant_allocations,
 )
 from app.kubernetes.tenant.capacity_governance_support import (
     _GIB,
@@ -41,12 +48,6 @@ from app.kubernetes.tenant.capacity_governance_support import (
 from app.kubernetes.tenant.capacity_governance_support import (
     _quantity_gib_text as _quantity_gib_text,
 )
-from app.kubernetes.tenant.capacity_allocation_state import (
-    _aggregate_committed_allocation,
-    _canonical_shared_allocation_quota,
-    _committed_tenant_allocation,
-    _committed_tenant_allocations,
-)
 from app.models import Cluster
 from app.models.tenant import (
     Tenant,
@@ -57,6 +58,7 @@ from app.models.tenant import (
     TenantNamespaceProvisioningStatus,
     TenantResourceProfile,
 )
+
 _ZERO = Decimal('0')
 
 
