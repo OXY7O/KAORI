@@ -9,21 +9,19 @@
         {% call detail.workspace_header(
             'Artifact identity, Registry provenance, Kubernetes runtime target, correlation confidence, and security exposure.',
             'waypoints'
-        ) %}
+            ) %}
             {% call detail.header_identity_row() %}
                 {{ detail.inventory_title(binding.repository) }}
                 {{ table_label.metadata_label(binding.project, 'folder-kanban') }}
                 {{ table_label.status_label(binding.match.label, binding.match.tone) }}
             {% endcall %}
         {% endcall %}
-
         {{ detail.inspector_summary_strip([
-            {'label': 'Registry Source', 'value': binding.provider_name, 'supporting': binding.provider_label, 'icon': 'blocks', 'tone': 'brand'},
-            {'label': 'Kubernetes Cluster', 'value': binding.cluster_name, 'supporting': binding.namespace, 'icon': 'boxes', 'tone': 'brand'},
-            {'label': 'Correlation', 'value': binding.match.label, 'supporting': binding.match.description, 'icon': 'waypoints', 'tone': binding.match.tone},
-            {'label': 'Security', 'value': binding.security.label, 'supporting': 'Committed scanner evidence', 'icon': 'shield-alert', 'tone': binding.security.tone}
-        ]) }}
-
+                {'label': 'Registry Source', 'value': binding.provider_name, 'supporting': binding.provider_label, 'icon': 'blocks', 'tone': 'brand'},
+                {'label': 'Kubernetes Cluster', 'value': binding.cluster_name, 'supporting': binding.namespace, 'icon': 'boxes', 'tone': 'brand'},
+                {'label': 'Correlation', 'value': binding.match.label, 'supporting': binding.match.description, 'icon': 'waypoints', 'tone': binding.match.tone},
+                {'label': 'Security', 'value': binding.security.label, 'supporting': 'Committed scanner evidence', 'icon': 'shield-alert', 'tone': binding.security.tone}
+                ]) }}
         <div class="min-w-0 space-y-4 p-4 sm:p-5 lg:p-6">
             {% call detail.resource_sheet() %}
                 {% call detail.inventory_section(
@@ -31,7 +29,7 @@
                     'fingerprint',
                     binding.project ~ '/' ~ binding.repository,
                     description='Immutable Registry artifact identity used for runtime correlation.'
-                ) %}
+                    ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_row('Project', binding.project) }}
                         {{ detail.inventory_row('Repository', binding.repository) }}
@@ -39,31 +37,29 @@
                         {{ detail.inventory_row('Tags', binding.tags|join(', ') if binding.tags else 'Untagged', class_name='lg:col-span-2') }}
                     </dl>
                 {% endcall %}
-
                 {% call detail.inventory_section(
                     'Registry Provenance',
                     'blocks',
                     binding.provider_label,
                     description='Registry source that supplied the committed artifact identity.'
-                ) %}
+                    ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_row('Source', binding.provider_name, class_name='lg:col-span-2') }}
                         {{ detail.inventory_row('Provider', binding.provider_label) }}
-                        {{ detail.inventory_row('Environment', binding.provider_environment|environment_name(empty='Not Set')) }}
+                        {{ detail.inventory_row('Environment', binding.provider_environment|environment_name(empty='Not Set') ) }}
                         {{ detail.inventory_row('Registry Observed', binding.registry_observed_at|user_datetime if binding.registry_observed_at else 'Not Collected', nowrap=true) }}
                         {{ detail.inventory_row('Registry Host', binding.registry_host) }}
                     </dl>
                 {% endcall %}
-
                 {% call detail.inventory_section(
                     'Runtime Target',
                     'boxes',
                     binding.cluster_name ~ ' · ' ~ binding.namespace,
                     description='Kubernetes workload using the correlated artifact reference.'
-                ) %}
+                    ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_row('Cluster', binding.cluster_name) }}
-                        {{ detail.inventory_row('Environment', binding.cluster_environment|environment_name(empty='Not Set')) }}
+                        {{ detail.inventory_row('Environment', binding.cluster_environment|environment_name(empty='Not Set') ) }}
                         {{ detail.inventory_row('Namespace', binding.namespace) }}
                         {{ detail.inventory_row('Workload', binding.workload_type ~ ' · ' ~ binding.workload_name) }}
                         {{ detail.inventory_row('Pod', binding.pod_name) }}
@@ -71,7 +67,6 @@
                         {{ detail.inventory_technical_row('Image Reference', binding.image_reference, copyable=true, class_name='lg:col-span-2') }}
                     </dl>
                 {% endcall %}
-
                 {% call detail.inventory_section(
                     'Correlation Evidence',
                     'waypoints',
@@ -79,7 +74,7 @@
                     'status',
                     binding.match.tone,
                     description=binding.match.description
-                ) %}
+                    ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_status_row('Match Type', binding.match.label, binding.match.tone) }}
                         {{ detail.inventory_row('Confidence', binding.match.confidence) }}
@@ -88,7 +83,6 @@
                         {{ detail.inventory_row('Kubernetes Observed', binding.kubernetes_observed_at|user_datetime if binding.kubernetes_observed_at else 'Not Collected', nowrap=true) }}
                     </dl>
                 {% endcall %}
-
                 {% call detail.inventory_section(
                     'Security Exposure',
                     'shield-alert',
@@ -96,7 +90,7 @@
                     'status',
                     binding.security.tone,
                     description='Committed scanner evidence enriches runtime blast radius; Runtime Usage does not trigger provider scans.'
-                ) %}
+                    ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_row('Critical Findings', binding.security.critical) }}
                         {{ detail.inventory_row('High Findings', binding.security.high) }}
@@ -105,22 +99,17 @@
                     </dl>
                 {% endcall %}
             {% endcall %}
-
             <div class="grid min-w-0 gap-4 xl:grid-cols-12">
-                {{ operational_callout.render(
-                    'Evidence Boundary',
-                    'Committed Artifact Registry and Kubernetes inventory only; no live provider request.',
-                    'database',
-                    'info',
-                    extra_classes='xl:col-span-6'
-                ) }}
-                {{ operational_callout.render(
-                    'Correlation Confidence',
-                    binding.match.description,
-                    'waypoints',
-                    'warning' if binding.match_type == 'tag' else 'info',
-                    extra_classes='xl:col-span-6'
-                ) }}
+                {{ operational_callout.render('Evidence Boundary',
+                                'Committed Artifact Registry and Kubernetes inventory only; no live provider request.',
+                                'database',
+                                'info',
+                                extra_classes='xl:col-span-6') }}
+                {{ operational_callout.render('Correlation Confidence',
+                                binding.match.description,
+                                'waypoints',
+                                'warning' if binding.match_type == 'tag' else 'info',
+                                extra_classes='xl:col-span-6') }}
             </div>
         </div>
     </div>
