@@ -289,9 +289,7 @@ def _summarize_security_results(source_results: list[dict[str, Any]]) -> _Securi
         warning_evidence=warning_evidence,
         synced=sum(1 for item in normalized_results if str(item.get('status') or '') != 'error'),
         partial_source_count=sum(1 for item in normalized_results if str(item.get('status') or '') == 'warning'),
-        repository_failure_count=sum(
-            int(item.get('repository_failure_count') or 0) for item in normalized_results
-        ),
+        repository_failure_count=sum(int(item.get('repository_failure_count') or 0) for item in normalized_results),
         artifact_count=sum(int(item.get('artifact_count') or 0) for item in normalized_results),
         refreshed_reports=sum(int(item.get('refreshed_report_count') or 0) for item in normalized_results),
         reused_reports=sum(int(item.get('reused_report_count') or 0) for item in normalized_results),
