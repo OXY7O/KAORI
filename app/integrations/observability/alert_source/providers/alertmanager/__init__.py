@@ -1,7 +1,7 @@
 from app.integrations.kernel.registry import (
-    canonical_model_loader,
     IntegrationImplementation,
     IntegrationModule,
+    canonical_model_loader,
     model_loader,
     registry,
 )
@@ -11,6 +11,8 @@ from app.integrations.observability.alert_source.providers.alertmanager.capabili
     CORE_CAPABILITY_KEYS,
 )
 from app.models.alertmanager import AlertmanagerInstance
+
+
 def _detail_url(instance: AlertmanagerInstance, section: str) -> str:
     return f'/integrations/alertmanager/instances/{instance.id}#{section}'
 
