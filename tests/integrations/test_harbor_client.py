@@ -7,6 +7,7 @@ import pytest
 import requests
 
 from app.integrations.registry.providers.harbor.client import HarborClient
+from app.integrations.registry.providers.harbor.contracts import HarborRetryPolicy
 from app.integrations.registry.providers.harbor.exceptions import HarborAuthError, HarborConnectionError
 
 
@@ -84,7 +85,7 @@ def test_harbor_client_rejects_auth_without_leaking_secret(monkeypatch) -> None:
         endpoint='https://harbor.example.test',
         username='robot$kaori',
         password=secret,
-        transport_retries=2,
+        retry_policy=HarborRetryPolicy(transport_retries=2),
     )
 
     with pytest.raises(HarborAuthError) as exc_info:
@@ -130,8 +131,7 @@ def test_harbor_client_retries_transient_transport_failure_with_bounded_backoff(
 
     client = HarborClient(
         endpoint='https://harbor.example.test',
-        transport_retries=2,
-        retry_backoff_seconds=0.1,
+        retry_policy=HarborRetryPolicy(transport_retries=2, backoff_seconds=0.1),
     )
 
     assert client.get_health()['status'] == 'healthy'
