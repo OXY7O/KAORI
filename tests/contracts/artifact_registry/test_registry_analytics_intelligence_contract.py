@@ -149,3 +149,54 @@ def test_registry_analytics_workspace_is_reusable_and_intelligence_bounded() -> 
     assert "aggregate['inflight_requests'] > 100" not in presentation
     assert "aggregate['task_queue_size'] > 0" not in presentation
 
+
+
+def test_registry_analytics_uses_fast_shell_and_bounded_fragments() -> None:
+    presentation = (ROOT / 'app/artifact_registry/presentation.py').read_text()
+    routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
+    template = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
+
+    assert "def build_analytics_shell(*, active_tab: str = 'growth')" in presentation
+    assert "analytics=build_analytics_shell(" in routes
+    assert "@artifact_registry_bp.get('/analytics/section/<string:section>')" in routes
+    assert "section='summary'" in template
+    assert "section=analytics.active_tab" in template
+    assert 'hx-trigger="load"' in template
+    assert 'Fast shell · bounded HTMX projection' in template
+    assert 'never waits on live Harbor, Alertmanager, Prometheus, or Thanos requests' in template
+
+
+def test_registry_alert_source_is_worker_materialized_and_provider_neutral() -> None:
+    analytics = (ROOT / 'app/artifact_registry/analytics.py').read_text()
+    presentation = (ROOT / 'app/artifact_registry/presentation.py').read_text()
+    routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
+    definition = (
+        ROOT
+        / 'app/definitions/catalogs/integrations/observability/alert_source/providers/alertmanager.yaml'
+    ).read_text()
+
+    assert 'asset_type: registry_instance' in definition
+    assert 'profile_key: registry-alerts-v1' in definition
+    assert "scope_type='registry_instance'" in analytics
+    assert 'list_alerts_for_scope(' in analytics
+    assert 'ACTIVE_ALERTS_EXPRESSION' in analytics
+    assert "'alerts': alerts" in analytics
+
+    assert 'list_alerts_for_scope' not in presentation
+    assert 'list_alerts_for_scope' not in routes
+    assert 'MetricsConsumer' not in routes
+    assert "@artifact_registry_bp.get('/analytics/alerts/table')" in routes
+
+
+def test_registry_alert_workspace_reuses_committed_alert_evidence_contract() -> None:
+    template = (
+        ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html'
+    ).read_text()
+    shell = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
+
+    assert "('alerts', 'Alerts', 'siren'" in shell
+    assert 'Alertmanager is primary. Metrics Source is fallback evidence.' in template
+    assert 'committed Analytics materialization' in template
+    assert 'alert_per_page' in template
+    assert "[5, 10, 25, 50]" in template
+    assert "url_for('artifact_registry.analytics_alerts_table')" in template
