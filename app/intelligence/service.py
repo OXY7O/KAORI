@@ -20,7 +20,6 @@ from app.intelligence.finding_presentation import (
 )
 from app.intelligence.kubernetes_runtime_recommendations import build_kubernetes_runtime_recommendation_findings
 from app.intelligence.object_storage_recommendations import build_object_storage_recommendation_findings
-from app.intelligence.registry_recommendations import build_registry_recommendation_findings
 from app.intelligence.recommendation_alerting import (
     decorate_catalog_rules,
     decorate_recommendation_findings,
@@ -38,28 +37,27 @@ from app.intelligence.recommendation_builders import (
 from app.intelligence.recommendation_builders import (
     build_workload_resource_governance_findings as _build_workload_resource_governance_findings_impl,
 )
+from app.intelligence.registry_recommendations import build_registry_recommendation_findings
 from app.intelligence.rule_exceptions import build_rule_exception_view
 from app.intelligence.rule_presentation import (
     CATEGORY_OPTIONS,
+    clean,
+    domain_label,
     DOMAIN_OPTIONS,
     LOGIC_TYPE_OPTIONS,
+    matches,
+    normalize_rule,
     PER_PAGE_OPTIONS,
+    provider_keys,
+    provider_label,
     PROVIDER_OPTIONS,
     SEVERITY_OPTIONS,
     SIGNAL_SOURCE_OPTIONS,
     SOURCE_KIND_OPTIONS,
     STATUS_OPTIONS,
-    clean,
-    domain_label,
-    matches,
-    normalize_rule,
-    provider_keys,
-    provider_label,
     to_int,
 )
 from app.intelligence.tenant_governance_recommendations import build_tenant_governance_recommendation_findings
-
-
 def _is_active_filter_value(value: str | None) -> bool:
     normalized = clean(value).lower()
     return normalized not in {'', 'all'}
