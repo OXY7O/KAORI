@@ -101,7 +101,7 @@
                             {% if alert.state or alert.age %}
                                 <div class="shrink-0 text-right">
                                     {% if alert.state %}
-                                        {{ table_label.status_label(alert.state, 'critical' if row_severity == 'critical' else ('warning' if row_severity == 'warning' else 'info')) }}
+                                        {{ table_label.status_label(alert.state, 'critical' if row_severity == 'critical' else ('warning' if row_severity == 'warning' else 'info') ) }}
                                     {% endif %}
                                     {% if alert.age %}
                                         <p class="{% if alert.state %}mt-1 {% endif %}text-xs text-content-muted">{{ alert.age }}</p>
@@ -136,17 +136,27 @@
                     data-kaori-alert-insight-metrics="dedicated-row">
                     <div>
                         <dt class="text-content-muted">Total</dt>
-                        <dd class="mt-1 text-base font-semibold text-content-primary">{{ total_alerts }}</dd>
+                        <dd class="mt-1 text-base font-semibold text-content-primary">
+                            {{ total_alerts }}
+                        </dd>
                     </div>
                     <div>
                         <dt class="text-content-muted">Highest</dt>
                         <dd class="mt-1 text-base font-semibold {% if critical > 0 %}text-status-critical-text{% elif warning > 0 %}text-status-warning-text{% else %}text-status-info-text{% endif %}">
-                            {% if critical > 0 %}Critical{% elif warning > 0 %}Warning{% else %}Info{% endif %}
+                            {% if critical > 0 %}
+                                Critical
+                            {% elif warning > 0 %}
+                                Warning
+                            {% else %}
+                                Info
+                            {% endif %}
                         </dd>
                     </div>
                     <div>
                         <dt class="text-content-muted">Source</dt>
-                        <dd class="mt-1 whitespace-nowrap text-sm font-semibold leading-5 text-content-primary">{{ source_label }}</dd>
+                        <dd class="mt-1 whitespace-nowrap text-sm font-semibold leading-5 text-content-primary">
+                            {{ source_label }}
+                        </dd>
                     </div>
                 </dl>
                 <div class="mt-3 flex flex-wrap gap-2">
