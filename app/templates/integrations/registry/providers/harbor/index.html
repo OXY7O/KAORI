@@ -5,32 +5,32 @@
 {% block dashboard_content %}
     {% set posture_status = "Healthy" if stats.total and not stats.attention else ("Attention" if stats.total else "Not Configured") %}
     {% set overview_metrics = [
-        {"label": "Registered Connections", "value": stats.total, "description": "Reusable Harbor Registry endpoints", "icon": "server-cog"},
-        {"label": "Validated Connections", "value": stats.ready, "description": "Full Validation ready", "icon": "badge-check"},
-        {"label": "Needs Attention", "value": stats.attention, "description": "Validation or runtime review", "icon": "triangle-alert"},
-        {"label": "Coverage Gaps", "value": stats.uncovered, "description": "Registry instances with partial evidence coverage", "icon": "unlink"}
-    ] %}
+            {"label": "Registered Connections", "value": stats.total, "description": "Reusable Harbor Registry endpoints", "icon": "server-cog"},
+            {"label": "Validated Connections", "value": stats.ready, "description": "Full Validation ready", "icon": "badge-check"},
+            {"label": "Needs Attention", "value": stats.attention, "description": "Validation or runtime review", "icon": "triangle-alert"},
+            {"label": "Coverage Gaps", "value": stats.uncovered, "description": "Registry instances with partial evidence coverage", "icon": "unlink"}
+        ] %}
     <div class="kaori-integration-semantic space-y-6">
         {{ provider_front.hero("package",
-                    "container",
-                    "Harbor Integrations",
-                    "Register Harbor connections with governed readiness and evidence.",
-                    stats.total,
-                    stats.ready,
-                    stats.bindings,
-                    posture_status,
-                    url_for("harbor.new_instance"),
-                    register_label="Register Connection") }}
+                "container",
+                "Harbor Integrations",
+                "Register Harbor connections with governed readiness and evidence.",
+                stats.total,
+                stats.ready,
+                stats.bindings,
+                posture_status,
+                url_for("harbor.new_instance") ,
+        register_label="Register Connection") }}
         {{ provider_front.overview("package-search",
-                    "Harbor Integration Overview",
-                    "Register Harbor once; committed Registry inventory, Metrics Source bindings, webhook readiness, and provider validation remain independent.",
-                    overview_metrics,
-                    "Harbor API v2.0",
-                    "Endpoint identity, authentication, compatibility, and required Registry capabilities are validated before operational use.",
-                    "Committed Evidence and Consumer Resolution",
-                    "KAORI reads committed Registry inventory and resolves Registry operational metrics through validated Metrics Source bindings.",
-                    "Harbor Remains Authoritative",
-                    "Harbor owns repositories, artifacts, native policies, and Registry runtime state; KAORI governs validation, normalization, correlation, and committed evidence.") }}
+                "Harbor Integration Overview",
+                "Register Harbor once; committed Registry inventory, Metrics Source bindings, webhook readiness, and provider validation remain independent.",
+                overview_metrics,
+                "Harbor API v2.0",
+                "Endpoint identity, authentication, compatibility, and required Registry capabilities are validated before operational use.",
+                "Committed Evidence and Consumer Resolution",
+                "KAORI reads committed Registry inventory and resolves Registry operational metrics through validated Metrics Source bindings.",
+                "Harbor Remains Authoritative",
+                "Harbor owns repositories, artifacts, native policies, and Registry runtime state; KAORI governs validation, normalization, correlation, and committed evidence.") }}
         {% call(tab_name) integration_tabs.render("harbor", active_tab, stats.total, stats.total) %}
             {% if tab_name == "coverage" %}
                 {% include "integrations/registry/providers/harbor/partials/_coverage.html" %}
