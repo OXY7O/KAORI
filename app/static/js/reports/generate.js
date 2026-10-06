@@ -638,13 +638,13 @@
             const shouldBlock = !scopeReady || !hasSelectedSections || !storageGenerationReady
             const readinessBlockers = []
             if (!scopeReady) {
-                let missingScope = 'Kubernetes cluster scope'
-                if (objectStorageScope) {
-                    missingScope = 'Object Storage system scope'
-                } else if (artifactRegistryScope) {
-                    missingScope = 'Artifact Registry scope'
-                }
-                readinessBlockers.push(missingScope)
+                readinessBlockers.push(
+                    objectStorageScope
+                        ? 'Object Storage system scope'
+                        : artifactRegistryScope
+                          ? 'Artifact Registry scope'
+                          : 'Kubernetes cluster scope',
+                )
             }
             if (!hasSelectedSections) {
                 readinessBlockers.push('report section selection')
