@@ -43,9 +43,7 @@
          hx-trigger="load"
          hx-target="this"
          hx-swap="outerHTML">
-        {{ section_loading.kpis(
-            item_count=4,
-            aria_label='Artifact Registry Operational Indicators Loading'
-        ) }}
+        {{ section_loading.kpis(item_count=4,
+                aria_label='Artifact Registry Operational Indicators Loading') }}
     </div>
 {% endcall %}
