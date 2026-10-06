@@ -4,13 +4,11 @@
      aria-live="polite"
      data-kaori-artifact-registry-operational-kpis>
     {% for kpi in overview.kpis %}
-        {{ operational_metric_card.render(
-            label=kpi.label,
-            value=kpi.value,
-            description=kpi.description,
-            icon=kpi.icon,
-            source_label='Committed Inventory',
-            scope_label='Active Scope'
-        ) }}
+        {{ operational_metric_card.render(label=kpi.label,
+                value=kpi.value,
+                description=kpi.description,
+                icon=kpi.icon,
+                source_label='Committed Inventory',
+                scope_label='Active Scope') }}
     {% endfor %}
 </div>
