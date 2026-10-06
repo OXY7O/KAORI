@@ -1432,6 +1432,33 @@ def _inventory_base_context() -> dict[str, Any]:
         'artifact_count': counts['artifacts'],
     }
     resource_catalog = _inventory_resource_catalog(overview)
+    severity_value = alert_severity if alert_severity in {'all', 'critical', 'warning', 'info', 'unknown'} else 'all'
+    state_value = alert_state if alert_state in {'all', 'firing', 'pending', 'suppressed', 'resolved'} else 'all'
+    source_value = alert_source if alert_source in {'all', 'alertmanager', 'metrics_source'} else 'all'
+    search_value = alert_search.strip().casefold()
+    filtered_alert_rows = []
+    for row in alert_rows:
+        effective_state = 'suppressed' if row.get('silenced') or row.get('inhibited') else str(row.get('state') or '')
+        if severity_value != 'all' and row.get('severity') != severity_value:
+            continue
+        if state_value != 'all' and effective_state != state_value:
+            continue
+        if source_value != 'all' and row.get('source_key') != source_value:
+            continue
+        if search_value:
+            haystack = ' '.join(
+                str(row.get(key) or '')
+                for key in ('name', 'target', 'summary', 'registry_name', 'source')
+            ).casefold()
+            if search_value not in haystack:
+                continue
+        filtered_alert_rows.append({**row, 'effective_state': effective_state})
+    alert_page_rows, alert_pagination = paginate_sequence(
+        filtered_alert_rows,
+        page=alert_page,
+        per_page=alert_per_page if alert_per_page in {5, 10, 25, 50} else 5,
+    )
+
     return {
         'setup': overview['setup'],
         'overview': overview,
@@ -2933,7 +2960,52 @@ def build_governance(
     }
 
 
-def build_analytics(*, active_tab: str = 'growth') -> dict[str, Any]:
+def build_analytics_shell(*, active_tab: str = 'growth') -> dict[str, Any]:
+    overview = build_overview()
+    normalized_tab = active_tab if active_tab in {
+        'growth',
+        'capacity',
+        'usage',
+        'risk',
+        'governance',
+        'alerts',
+        'insights',
+    } else 'growth'
+    provider_count = len(_providers())
+    snapshot_count = (
+        RegistryAnalyticsSnapshot.query.with_entities(
+            func.count(func.distinct(RegistryAnalyticsSnapshot.integration_instance_id))
+        )
+        .filter(RegistryAnalyticsSnapshot.status == 'ready')
+        .scalar()
+        or 0
+    )
+    latest_generated_at = (
+        RegistryAnalyticsSnapshot.query.with_entities(
+            func.max(RegistryAnalyticsSnapshot.generated_at)
+        )
+        .filter(RegistryAnalyticsSnapshot.status == 'ready')
+        .scalar()
+    )
+    return {
+        'setup': overview['setup'],
+        'provider_count': provider_count,
+        'snapshot_count': int(snapshot_count),
+        'latest_generated_at': latest_generated_at,
+        'active_tab': normalized_tab,
+    }
+
+
+def build_analytics(
+    *,
+    active_tab: str = 'growth',
+    alert_search: str = '',
+    alert_severity: str = 'all',
+    alert_state: str = 'all',
+    alert_source: str = 'all',
+    alert_page: int = 1,
+    alert_per_page: int = 5,
+) -> dict[str, Any]:
     from app.intelligence.service import get_active_recommendation_findings
     from app.models.registry import RegistryAnalyticsSnapshot
 
@@ -2969,10 +3041,19 @@ def build_analytics(*, active_tab: str = 'growth') -> dict[str, Any]:
         'task_queue_size': 0.0,
         'pull_activity': 0.0,
         'metric_capability_gaps': 0,
+        'active_alerts': 0,
+        'critical_alerts': 0,
+        'warning_alerts': 0,
+        'info_alerts': 0,
+        'suppressed_alerts': 0,
+        'alert_sources_ready': 0,
+        'alert_source_fallbacks': 0,
     }
     forecast_rows: list[dict[str, Any]] = []
     activity_rows: list[dict[str, Any]] = []
     growth_rows: list[dict[str, Any]] = []
+    alert_rows: list[dict[str, Any]] = []
+    alert_source_rows: list[dict[str, Any]] = []
 
     for identity in identities:
         snapshot = (
@@ -2998,6 +3079,7 @@ def build_analytics(*, active_tab: str = 'growth') -> dict[str, Any]:
                     'runtime': {},
                     'governance': {},
                     'metrics': {},
+                    'alerts': {},
                     'growth': {},
                 }
             )
@@ -3009,6 +3091,7 @@ def build_analytics(*, active_tab: str = 'growth') -> dict[str, Any]:
         runtime = payload.get('runtime') if isinstance(payload.get('runtime'), dict) else {}
         governance = payload.get('governance') if isinstance(payload.get('governance'), dict) else {}
         metrics = payload.get('metrics') if isinstance(payload.get('metrics'), dict) else {}
+        alerts = payload.get('alerts') if isinstance(payload.get('alerts'), dict) else {}
         capacity = payload.get('capacity') if isinstance(payload.get('capacity'), dict) else {}
         growth = payload.get('growth') if isinstance(payload.get('growth'), dict) else {}
 
@@ -3077,6 +3160,39 @@ def build_analytics(*, active_tab: str = 'growth') -> dict[str, Any]:
         if isinstance(capability_gaps, dict):
             aggregate['metric_capability_gaps'] += len(capability_gaps)
 
+        alert_evidence_rows = alerts.get('rows') if isinstance(alerts.get('rows'), list) else []
+        normalized_alert_rows = [row for row in alert_evidence_rows if isinstance(row, dict)]
+        aggregate['active_alerts'] += len(normalized_alert_rows)
+        aggregate['critical_alerts'] += sum(row.get('severity') == 'critical' for row in normalized_alert_rows)
+        aggregate['warning_alerts'] += sum(row.get('severity') == 'warning' for row in normalized_alert_rows)
+        aggregate['info_alerts'] += sum(row.get('severity') == 'info' for row in normalized_alert_rows)
+        aggregate['suppressed_alerts'] += sum(
+            bool(row.get('silenced')) or bool(row.get('inhibited'))
+            for row in normalized_alert_rows
+        )
+        if alerts.get('status') == 'ready':
+            aggregate['alert_sources_ready'] += 1
+        if alerts.get('fallback_used'):
+            aggregate['alert_source_fallbacks'] += 1
+        alert_source_rows.append(
+            {
+                'registry_name': identity.name,
+                'status': str(alerts.get('status') or 'unavailable'),
+                'source_label': str(alerts.get('source_label') or 'Unavailable'),
+                'resolved_source': str(alerts.get('resolved_source') or 'none'),
+                'fallback_used': bool(alerts.get('fallback_used')),
+                'detail': str(alerts.get('detail') or ''),
+            }
+        )
+        for row in normalized_alert_rows:
+            alert_rows.append(
+                {
+                    **row,
+                    'registry_name': identity.name,
+                    'provider_key': identity.provider_key,
+                }
+            )
+
         expires_at = snapshot.expires_at
         is_stale = False
         if expires_at is not None:
@@ -3095,6 +3211,7 @@ def build_analytics(*, active_tab: str = 'growth') -> dict[str, Any]:
                 'runtime': runtime,
                 'governance': governance,
                 'metrics': metrics,
+                'alerts': alerts,
                 'growth': growth,
             }
         )
@@ -3123,7 +3240,11 @@ def build_analytics(*, active_tab: str = 'growth') -> dict[str, Any]:
                 }
             )
 
-    recommendations = get_active_recommendation_findings(domain='registry', limit=5)
+    recommendations = (
+        get_active_recommendation_findings(domain='registry', limit=5)
+        if active_tab == 'insights'
+        else []
+    )
     recommendation_rows = [
         {
             'rule_key': str(item.get('rule_key') or ''),
@@ -3228,6 +3349,7 @@ def build_analytics(*, active_tab: str = 'growth') -> dict[str, Any]:
         'usage',
         'risk',
         'governance',
+        'alerts',
         'insights',
     } else 'growth'
 
@@ -3425,6 +3547,15 @@ def build_analytics(*, active_tab: str = 'growth') -> dict[str, Any]:
                 float(row.get('days_to_quota') or 1e18),
             ),
         ),
+        'alert_rows': alert_page_rows,
+        'alert_source_rows': alert_source_rows,
+        'alert_pagination': alert_pagination,
+        'alert_filters': {
+            'search': alert_search,
+            'severity': severity_value,
+            'state': state_value,
+            'source': source_value,
+        },
         'recommendations': recommendation_rows,
         'recommendation_count': len(recommendation_rows),
         'active_signal_count': active_signal_count,
