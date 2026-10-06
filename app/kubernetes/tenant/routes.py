@@ -55,6 +55,8 @@ from app.kubernetes.tenant.live_connection import get_live_tenant_connection_con
 from app.kubernetes.tenant.overview import dispatch_tenant_inventory_sync
 from app.kubernetes.tenant.route_common import (
     _csrf,
+    _operations_active_tab,
+    _operations_provisioning_context,
     _record,
     _required_int,
     _tenant_active_section_context,
@@ -376,33 +378,6 @@ def namespace_provisioning():
         active_namespace_view=active_view,
         **context,
     )
-
-
-def _operations_active_tab() -> str:
-    active_tab = str(request.args.get('tab') or 'provisioning')
-    if active_tab not in {'provisioning', 'runs-evidence', 'drift-reconcile', 'activity'}:
-        return 'provisioning'
-    return active_tab
-
-
-def _operations_provisioning_context() -> dict[str, Any]:
-    namespace_context = get_namespace_registry_context(
-        page=request.args.get('ops_namespace_page', 1, type=int) or 1,
-        per_page=request.args.get('ops_namespace_per_page', 5, type=int) or 5,
-        search=str(request.args.get('ops_namespace_search') or ''),
-        tenant_id=str(request.args.get('ops_namespace_tenant_id') or ''),
-        environment=str(request.args.get('ops_namespace_environment') or ''),
-        status=str(request.args.get('ops_namespace_status') or ''),
-        include_workflow_support=False,
-    )
-    return {
-        'operations_namespace_rows': namespace_context['namespaces'],
-        'operations_namespace_pagination': namespace_context['namespace_pagination'],
-        'operations_namespace_filters': namespace_context['namespace_registry_filters'],
-        'operations_namespace_tenant_options': namespace_context['namespace_registry_tenant_options'],
-        'operations_namespace_environment_options': namespace_context['namespace_environment_filter_options'],
-        'operations_namespace_status_options': namespace_context['namespace_status_filter_options'],
-    }
 
 
 def _operations_drift_context() -> dict[str, Any]:
