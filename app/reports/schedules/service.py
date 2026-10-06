@@ -71,8 +71,8 @@ from app.reports.scope import (
     ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE,
     KUBERNETES_CLUSTER_ASSET_TYPE,
     OBJECT_STORAGE_SYSTEM_ASSET_TYPE,
-    get_active_registry_options as _get_artifact_registry_options,
 )
+from app.reports.scope import get_active_registry_options as _get_artifact_registry_options
 from app.reports.storage.service import get_configured_storage_backend_name, get_report_storage_backend_status
 
 CADENCE_OPTIONS: list[dict[str, str]] = [
