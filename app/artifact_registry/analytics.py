@@ -5,8 +5,14 @@ from typing import Any
 
 from app.artifact_registry.security.contracts import registry_scan_evidence_ready
 from app.extensions.db import db
+from app.integrations.observability.alert_source.providers.alertmanager.application.consumer import (
+    list_alerts_for_scope,
+)
 from app.integrations.observability.metrics_source.application.consumer import MetricsConsumer
 from app.integrations.observability.metrics_source.exceptions import MetricsSourceError
+from app.integrations.observability.metrics_source.query_profiles.alerts_v1 import (
+    ACTIVE_ALERTS_EXPRESSION,
+)
 from app.integrations.observability.metrics_source.query_profiles.registry_harbor_v1 import (
     get_registry_query_expression,
 )
@@ -122,6 +128,184 @@ def _metrics_evidence(identity: IntegrationInstance) -> dict[str, Any]:
         'binding_id': consumer.binding.id,
         'capability_gaps': gaps,
         **values,
+    }
+
+
+def _alert_severity(value: Any) -> str:
+    normalized = str(value or '').strip().lower()
+    if normalized in {'critical', 'fatal', 'error', 'p1'}:
+        return 'critical'
+    if normalized in {'warning', 'warn', 'p2'}:
+        return 'warning'
+    if normalized in {'info', 'informational', 'notice', 'p3', 'p4'}:
+        return 'info'
+    return 'unknown'
+
+
+def _alert_state(value: Any) -> str:
+    normalized = str(value or '').strip().lower()
+    if normalized in {'firing', 'active'}:
+        return 'firing'
+    if normalized in {'pending', 'unprocessed'}:
+        return 'pending'
+    if normalized in {'suppressed'}:
+        return 'suppressed'
+    if normalized in {'resolved', 'inactive'}:
+        return 'resolved'
+    return normalized or 'firing'
+
+
+def _alert_target(labels: dict[str, Any]) -> str:
+    for key in ('project_name', 'project', 'repository', 'service', 'deployment', 'instance', 'job'):
+        value = str(labels.get(key) or '').strip()
+        if value:
+            return value
+    return '-'
+
+
+def _alert_identity(row: dict[str, Any]) -> tuple[Any, ...]:
+    fingerprint = str(row.get('fingerprint') or '').strip()
+    if fingerprint:
+        return ('fingerprint', fingerprint)
+    labels = row.get('labels') if isinstance(row.get('labels'), dict) else {}
+    stable_labels = tuple(
+        sorted(
+            (str(key), str(value))
+            for key, value in labels.items()
+            if str(key).lower() not in {'alertstate', '__replica__'}
+        )
+    )
+    return (
+        str(row.get('name') or '').casefold(),
+        str(row.get('target') or '').casefold(),
+        stable_labels,
+    )
+
+
+def _deduplicate_alert_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    selected: dict[tuple[Any, ...], dict[str, Any]] = {}
+    for row in rows:
+        selected.setdefault(_alert_identity(row), row)
+    return list(selected.values())
+
+
+def _alertmanager_rows(items: list[Any]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        labels = dict(item.get('labels') or {}) if isinstance(item.get('labels'), dict) else {}
+        annotations = (
+            dict(item.get('annotations') or {}) if isinstance(item.get('annotations'), dict) else {}
+        )
+        status_payload = item.get('status') if isinstance(item.get('status'), dict) else {}
+        raw_state = item.get('state')
+        if raw_state is None and isinstance(item.get('status'), str):
+            raw_state = item.get('status')
+        if raw_state is None:
+            raw_state = status_payload.get('state')
+        rows.append(
+            {
+                'name': str(
+                    item.get('alert_name')
+                    or item.get('alertname')
+                    or labels.get('alertname')
+                    or item.get('name')
+                    or 'Unknown Alert'
+                ),
+                'severity': _alert_severity(item.get('severity') or labels.get('severity')),
+                'state': _alert_state(raw_state),
+                'target': _alert_target(labels),
+                'summary': str(
+                    item.get('summary')
+                    or annotations.get('summary')
+                    or annotations.get('description')
+                    or '-'
+                ),
+                'starts_at': item.get('starts_at') or item.get('startsAt'),
+                'receiver': str(item.get('receiver') or '-'),
+                'silenced': bool(item.get('silenced')) or bool(status_payload.get('silencedBy')),
+                'inhibited': bool(item.get('inhibited')) or bool(status_payload.get('inhibitedBy')),
+                'fingerprint': str(item.get('fingerprint') or ''),
+                'labels': labels,
+                'source': 'Alertmanager',
+                'source_key': 'alertmanager',
+            }
+        )
+    return _deduplicate_alert_rows(rows)
+
+
+def _metrics_alert_rows(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for item in _vector(payload):
+        labels = dict(item.get('metric') or {}) if isinstance(item.get('metric'), dict) else {}
+        rows.append(
+            {
+                'name': str(labels.get('alertname') or 'Unknown Alert'),
+                'severity': _alert_severity(labels.get('severity')),
+                'state': _alert_state(labels.get('alertstate')),
+                'target': _alert_target(labels),
+                'summary': str(labels.get('alertname') or 'Metrics alert evidence'),
+                'starts_at': None,
+                'receiver': '-',
+                'silenced': False,
+                'inhibited': False,
+                'fingerprint': '',
+                'labels': labels,
+                'source': 'Metrics Source',
+                'source_key': 'metrics_source',
+            }
+        )
+    return _deduplicate_alert_rows(rows)
+
+
+def _alert_evidence(identity: IntegrationInstance) -> dict[str, Any]:
+    alertmanager = list_alerts_for_scope(
+        scope_type='registry_instance',
+        scope_key=str(identity.id),
+        required_capabilities=('alerts_v2',),
+    )
+    if alertmanager.get('connected'):
+        return {
+            'status': 'ready',
+            'resolved_source': 'alertmanager',
+            'source_label': 'Alertmanager',
+            'fallback_used': bool(alertmanager.get('fallback_used')),
+            'detail': 'Alertmanager is the committed primary alert evidence source.',
+            'rows': _alertmanager_rows(alertmanager.get('alerts') or []),
+            'source_errors': alertmanager.get('source_errors') or [],
+        }
+
+    alertmanager_error = str(alertmanager.get('error') or 'Alertmanager unavailable.')
+    try:
+        consumer = MetricsConsumer.for_asset(
+            scope_type='registry_instance',
+            scope_key=identity.id,
+            scope_name=identity.name,
+        )
+        metrics_payload = consumer.query(ACTIVE_ALERTS_EXPRESSION, retry_count=0)
+    except MetricsSourceError as exc:
+        return {
+            'status': 'unavailable',
+            'resolved_source': 'none',
+            'source_label': 'Unavailable',
+            'fallback_used': False,
+            'detail': f'Alertmanager: {alertmanager_error} Metrics Source: {exc}',
+            'rows': [],
+            'source_errors': [alertmanager_error, str(exc)],
+        }
+
+    return {
+        'status': 'ready',
+        'resolved_source': 'metrics_source',
+        'source_label': consumer.config.name,
+        'fallback_used': True,
+        'detail': (
+            f'Alertmanager was unavailable: {alertmanager_error} '
+            'Metrics Source active-alert evidence was materialized as fallback.'
+        ),
+        'rows': _metrics_alert_rows(metrics_payload),
+        'source_errors': [alertmanager_error],
     }
 
 
@@ -257,6 +441,7 @@ def materialize_registry_analytics(
     }
 
     metrics = _metrics_evidence(identity)
+    alerts = _alert_evidence(identity)
     previous_usage = _previous_project_usage(previous)
     project_forecasts: list[dict[str, Any]] = []
     current_usage = metrics.get('project_usage_bytes') if isinstance(metrics, dict) else {}
@@ -329,6 +514,7 @@ def materialize_registry_analytics(
         'growth': growth,
         'capacity': {'project_forecasts': project_forecasts},
         'metrics': metrics,
+        'alerts': alerts,
         'evidence': {
             'source': 'committed_registry_state',
             'metrics_source_optional': True,
