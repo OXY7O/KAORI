@@ -57,7 +57,8 @@ def build_schedule_asset_filter_options(
     artifact_registry_options: list[dict[str, str]],
 ) -> list[dict[str, str]]:
     asset_options: dict[str, str] = {
-        f'{KUBERNETES_CLUSTER_ASSET_TYPE}:{item["value"]}': f'Kubernetes · {item["label"]}' for item in cluster_options
+        f'{KUBERNETES_CLUSTER_ASSET_TYPE}:{item["value"]}': f'Kubernetes · {item["label"]}'
+        for item in cluster_options
     }
     asset_options.update(
         {
@@ -82,6 +83,7 @@ def build_schedule_asset_filter_options(
             for value, label in sorted(asset_options.items(), key=lambda item: item[1].casefold())
         ],
     ]
+
 
 def get_schedule_context_map(schedule_ids: list[int]) -> dict[int, dict[str, str]]:
     if not schedule_ids:
