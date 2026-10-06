@@ -1,7 +1,8 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "integrations/components/_asset_owner_observability_sources.html" as asset_owner_sources %}
-<section id="kubernetes-binding-registry" data-kaori-kubernetes-binding-registry>
+<section id="kubernetes-binding-registry"
+         data-kaori-kubernetes-binding-registry>
     {{ loading_bar.render("kubernetes-binding-registry-loading", label="Refreshing Bound Observability Sources") }}
     {{ asset_owner_sources.render(source_bindings,
         total_count=source_binding_total,
