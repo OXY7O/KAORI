@@ -157,6 +157,7 @@ def build_provider_portfolio_counts(
         )
     return counts
 
+
 def load_extension_integration_instances() -> list[IntegrationInstance]:
     integration_types = tuple(
         module.integration_type
