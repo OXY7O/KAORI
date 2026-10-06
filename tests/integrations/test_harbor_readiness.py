@@ -155,9 +155,7 @@ def test_full_validation_blocks_when_no_project_can_anchor_repository_discovery(
     assert 'project_discovery' in result.capabilities
     assert 'repository_discovery' not in result.capabilities
     assert any(
-        step.key == 'repository_discovery'
-        and step.status == 'failed'
-        and 'no visible project' in step.detail
+        step.key == 'repository_discovery' and step.status == 'failed' and 'no visible project' in step.detail
         for step in result.validation_steps
     )
 

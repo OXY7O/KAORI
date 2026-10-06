@@ -149,9 +149,7 @@ def test_portfolio_posture_uses_needs_review_for_mixed_readiness() -> None:
 
 
 def test_generic_overview_aggregation_includes_object_storage_canonical_instances() -> None:
-    assert SPECIALIZED_OVERVIEW_TYPES == frozenset(
-        {'container_orchestrator', 'metrics_source', 'alert_source'}
-    )
+    assert SPECIALIZED_OVERVIEW_TYPES == frozenset({'container_orchestrator', 'metrics_source', 'alert_source'})
     assert 'object_storage' not in SPECIALIZED_OVERVIEW_TYPES
     assert 'registry' not in SPECIALIZED_OVERVIEW_TYPES
 

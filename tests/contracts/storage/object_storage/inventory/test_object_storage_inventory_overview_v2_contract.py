@@ -110,7 +110,6 @@ def test_object_storage_system_detail_uses_compact_release_and_profile_labels() 
     assert "detail.inventory_row('Compatibility Profile', system.compatibility_profile_label, nowrap=true)" in detail
 
 
-
 def test_public_exposure_clean_state_names_committed_inventory_evidence() -> None:
     presentation = read('app/storage/object_storage/inventory/presentation.py')
 

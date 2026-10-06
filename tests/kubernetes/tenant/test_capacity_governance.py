@@ -642,9 +642,7 @@ def test_fleet_capacity_summary_batches_snapshot_reads(monkeypatch) -> None:
         },
     )
 
-    summaries = capacity_governance.build_capacity_governance_summaries(
-        ['cluster-1', 'cluster-2', 'cluster-1']
-    )
+    summaries = capacity_governance.build_capacity_governance_summaries(['cluster-1', 'cluster-2', 'cluster-1'])
 
     assert batch_calls == [['cluster-1', 'cluster-2']]
     assert list(summaries) == ['cluster-1', 'cluster-2']

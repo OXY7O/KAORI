@@ -106,7 +106,6 @@ def test_tenant_workspace_metadata_requires_tenant_permission(monkeypatch: pytes
     assert 'tenant.view' not in search_text
 
 
-
 def test_artifact_registry_workspace_metadata_requires_registry_permission(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

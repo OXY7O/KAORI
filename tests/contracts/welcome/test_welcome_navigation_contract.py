@@ -160,7 +160,6 @@ def test_welcome_tenant_and_access_cards_track_current_capabilities() -> None:
     assert 'directory-projected external identities' in access_block.lower()
 
 
-
 def test_welcome_artifact_registry_card_uses_dedicated_permission() -> None:
     shortcuts = (ROOT / 'app/welcome/shortcuts.py').read_text(encoding='utf-8')
 

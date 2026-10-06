@@ -147,7 +147,6 @@ def test_harbor_security_keeps_authentication_failure_fail_fast(monkeypatch) -> 
     assert page_sizes == [20]
 
 
-
 def test_harbor_security_skips_stale_targets_without_vulnerability_detail(monkeypatch) -> None:
     vulnerability_calls: list[str] = []
     progress: list[tuple[int, int, str]] = []
@@ -219,7 +218,6 @@ def test_harbor_security_refreshes_progress_during_repository_discovery(monkeypa
 
     assert (0, 1, 'base/filebeat · discovering security page 1') in progress
     assert (0, 1, 'base/filebeat · discovering security page 2') in progress
-
 
 
 def test_harbor_security_does_not_fetch_vulnerability_detail_for_unscanned_artifact(monkeypatch) -> None:
