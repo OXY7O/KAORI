@@ -13,7 +13,7 @@
                 {% call page_hero.intro('waypoints', 'Artifact Registry · Runtime Correlation', 'git-compare-arrows') %}
                     <h1 class="{{ page_hero.title_classes() }}">Runtime Usage</h1>
                     <p class="mt-2 {{ page_hero.description_classes() }}">
-                        Review committed Artifact Registry × Kubernetes blast radius without live provider requests.
+                        Correlate Registry artifacts with Kubernetes Pod images; digest matches are stronger than tags.
                     </p>
                     <div class="{{ page_hero.metadata_row_classes() }}">
                         {{ page_hero.meta_label('link-2', runtime.total ~ ' Bindings') }}
@@ -64,7 +64,7 @@
             icon='waypoints',
             title='Correlation Snapshot',
             latest_supporting='Last successful Runtime Correlation.',
-            scope_supporting='Committed Registry × Kubernetes scope.',
+            scope_supporting='Committed Registry × Kubernetes.',
             coverage_supporting=runtime.snapshot.coverage_supporting,
             exceptions_supporting=runtime.snapshot.exceptions_supporting,
             coverage_tone=runtime.snapshot.coverage_tone,
@@ -97,7 +97,7 @@
             {{ metric_card.render(
                 'Tag Matched',
                 runtime.tag_matches,
-                'Mutable tag references retained as lower-confidence evidence.',
+                'Mutable tag matches; lower confidence.',
                 'tags',
                 source_label='Registry × Kubernetes',
                 scope_label=runtime.scope.label
@@ -105,7 +105,7 @@
             {{ metric_card.render(
                 'Security Exposed',
                 runtime.security_exposed,
-                'Runtime bindings using artifacts with critical or high findings.',
+                'Runtime artifacts with critical or high findings.',
                 'shield-alert',
                 source_label='Security × Runtime',
                 scope_label=runtime.scope.label
