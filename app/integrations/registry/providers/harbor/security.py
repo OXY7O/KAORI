@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
@@ -271,6 +272,257 @@ def _retained_repository_target(
     )
 
 
+@dataclass(slots=True)
+class _SecurityCollectionState:
+    total: int
+    progress_callback: InventoryProgressCallback | None
+    target_is_current: SecurityTargetCurrentPredicate | None
+    processed: int = 0
+    refreshed_reports: int = 0
+    reused_reports: int = 0
+    stale_target_skip_count: int = 0
+    successful_repositories: int = 0
+    records: list[RegistryArtifactSecurityEvidence] = field(default_factory=list)
+    repository_failures: list[dict[str, str]] = field(default_factory=list)
+
+    def current(self, target: RegistrySecurityTarget) -> bool:
+        return self.target_is_current is None or self.target_is_current(target)
+
+    def progress(self, message: str) -> None:
+        if self.progress_callback is not None:
+            self.progress_callback(self.processed, self.total, message)
+
+    def skip(self, target: RegistrySecurityTarget) -> None:
+        self.stale_target_skip_count += 1
+        self.processed += 1
+        self.progress(f'{target.project_name}/{target.repository_name}@{target.digest[:20]} · skipped stale')
+
+    def append(
+        self,
+        target: RegistrySecurityTarget,
+        record: RegistryArtifactSecurityEvidence,
+        *,
+        message: str = '',
+        refreshed: int = 0,
+        reused: int = 0,
+    ) -> None:
+        self.records.append(record)
+        self.refreshed_reports += refreshed
+        self.reused_reports += reused
+        self.processed += 1
+        self.progress(message or f'{target.project_name}/{target.repository_name}@{target.digest[:20]}')
+
+
+def _group_security_targets(
+    state: _SecurityCollectionState,
+    targets: list[RegistrySecurityTarget],
+) -> dict[tuple[str, str], list[RegistrySecurityTarget]]:
+    grouped: dict[tuple[str, str], list[RegistrySecurityTarget]] = defaultdict(list)
+    for target in targets:
+        if not state.current(target):
+            state.skip(target)
+            continue
+        grouped[(target.project_name, target.repository_name)].append(target)
+    return grouped
+
+
+def _current_repository_targets(
+    state: _SecurityCollectionState,
+    targets: list[RegistrySecurityTarget],
+) -> list[RegistrySecurityTarget]:
+    current: list[RegistrySecurityTarget] = []
+    for target in targets:
+        if state.current(target):
+            current.append(target)
+        else:
+            state.skip(target)
+    return current
+
+
+def _retain_repository_failure(
+    state: _SecurityCollectionState,
+    *,
+    project_name: str,
+    repository_name: str,
+    targets: list[RegistrySecurityTarget],
+    error: HarborConnectionError | HarborResponseError,
+) -> None:
+    state.repository_failures.append(
+        {
+            'project_name': project_name,
+            'repository_name': repository_name,
+            'error_type': type(error).__name__,
+            'message': str(error)[:500],
+        }
+    )
+    for target in targets:
+        if not state.current(target):
+            state.skip(target)
+            continue
+        state.append(
+            target,
+            _retained_repository_target(
+                target,
+                project_name=project_name,
+                repository_name=repository_name,
+                error=error,
+            ),
+            message=f'{project_name}/{repository_name}@{target.digest[:20]} · retained',
+            reused=int(target.has_scan_snapshot),
+        )
+
+
+def _artifact_security_record(
+    client: Any,
+    target: RegistrySecurityTarget,
+    raw: dict[str, Any] | None,
+    *,
+    project_name: str,
+    repository_name: str,
+) -> tuple[RegistryArtifactSecurityEvidence, int, int]:
+    if raw is None:
+        return (
+            RegistryArtifactSecurityEvidence(
+                artifact_id=target.artifact_id,
+                scan_status=target.scan_status,
+                scan_completed_at=target.scan_completed_at,
+                vulnerability_summary=dict(target.vulnerability_summary or {}),
+                signature_status=target.signature_status,
+                sbom_status=target.sbom_status,
+                reuse_existing_scan=bool(target.has_scan_snapshot),
+                provider_metadata={'provider_evidence': 'artifact_not_observed_in_security_refresh'},
+            ),
+            0,
+            int(target.has_scan_snapshot),
+        )
+
+    scan = _scan_overview(raw.get('scan_overview'))
+    if scan is None and target.has_scan_snapshot:
+        scan_status = target.scan_status
+        scan_completed_at = target.scan_completed_at
+        scan_summary = dict(target.vulnerability_summary or {})
+        changed = False
+    else:
+        scan_status = str((scan or {}).get('scan_status') or (scan or {}).get('status') or '').strip().lower() or None
+        scan_completed_at = _parse_datetime((scan or {}).get('end_time'))
+        scan_summary = _summary_from_scan(scan)
+        changed = _scan_identity_changed(
+            target,
+            scan_status=scan_status,
+            scan_completed_at=scan_completed_at,
+            vulnerability_summary=scan_summary,
+        )
+
+    vulnerabilities: list[dict[str, Any]] = []
+    report_meta: dict[str, Any] = {}
+    report_error: str | None = None
+    scan_snapshot: dict[str, Any] | None = None
+    refreshed = 0
+    reused = 0
+
+    if scan is not None and changed and registry_scan_evidence_ready(scan_status):
+        try:
+            payload = client.get_vulnerability_report(
+                project_name_or_id=project_name,
+                repository_name=repository_name,
+                reference=target.digest,
+            )
+        except HarborError as exc:
+            report_error = f'{type(exc).__name__}: {exc}'[:1000]
+            report_summary: dict[str, int] = {}
+        else:
+            vulnerabilities, report_summary, report_meta = _normalize_vulnerabilities(payload)
+        scanner_name, scanner_version = _scanner_identity(scan, report_meta)
+        if report_summary:
+            scan_summary = report_summary
+        scan_completed_at = _parse_datetime((scan or {}).get('end_time') or report_meta.get('generated_at'))
+        scan_snapshot = {
+            'scanner': scanner_name,
+            'scanner_version': scanner_version,
+            'report_id': str((scan or {}).get('report_id') or '').strip() or None,
+            'status': scan_status or 'not_scanned',
+            'severity_summary': scan_summary,
+            'provider_metadata': {
+                'report_error': report_error,
+                'scan_overview': scan,
+                **report_meta,
+            },
+        }
+        refreshed = 1
+    elif target.has_scan_snapshot:
+        reused = 1
+
+    return (
+        RegistryArtifactSecurityEvidence(
+            artifact_id=target.artifact_id,
+            scan_status=scan_status,
+            scan_completed_at=scan_completed_at,
+            vulnerability_summary=scan_summary,
+            signature_status=_artifact_signature_status(raw),
+            sbom_status=_artifact_sbom_status(raw),
+            scan_snapshot=scan_snapshot,
+            vulnerabilities=vulnerabilities,
+            reuse_existing_scan=bool(target.has_scan_snapshot and not changed),
+            provider_metadata={
+                'project_name': project_name,
+                'repository_name': repository_name,
+                'scan_changed': changed,
+            },
+        ),
+        refreshed,
+        reused,
+    )
+
+
+def _collect_repository_security(
+    state: _SecurityCollectionState,
+    client: Any,
+    *,
+    project_name: str,
+    repository_name: str,
+    targets: list[RegistrySecurityTarget],
+) -> None:
+    try:
+        raw_artifacts = _list_repository_security_artifacts(
+            client,
+            project_name=project_name,
+            repository_name=repository_name,
+            processed=state.processed,
+            total=state.total,
+            progress_callback=state.progress_callback,
+        )
+    except HarborAuthError:
+        raise
+    except (HarborConnectionError, HarborResponseError) as exc:
+        _retain_repository_failure(
+            state,
+            project_name=project_name,
+            repository_name=repository_name,
+            targets=targets,
+            error=exc,
+        )
+        return
+
+    state.successful_repositories += 1
+    raw_by_digest = {
+        str(item.get('digest') or '').strip(): item
+        for item in raw_artifacts
+        if str(item.get('digest') or '').strip()
+    }
+    for target in targets:
+        if not state.current(target):
+            state.skip(target)
+            continue
+        record, refreshed, reused = _artifact_security_record(
+            client,
+            target,
+            raw_by_digest.get(target.digest),
+            project_name=project_name,
+            repository_name=repository_name,
+        )
+        state.append(target, record, refreshed=refreshed, reused=reused)
+
+
 def collect_harbor_security(
     instance: HarborInstance,
     targets: list[RegistrySecurityTarget],
@@ -280,237 +532,47 @@ def collect_harbor_security(
     """Collect Harbor security evidence incrementally from committed artifact identities."""
 
     client = build_client(instance, transport_retries=_SECURITY_TRANSPORT_RETRIES)
-    total = len(targets)
-    processed = 0
-    refreshed_reports = 0
-    reused_reports = 0
-    stale_target_skip_count = 0
-    records: list[RegistryArtifactSecurityEvidence] = []
-    repository_failures: list[dict[str, str]] = []
-    successful_repositories = 0
-    grouped: dict[tuple[str, str], list[RegistrySecurityTarget]] = defaultdict(list)
-
+    state = _SecurityCollectionState(
+        total=len(targets),
+        progress_callback=progress_callback,
+        target_is_current=target_is_current,
+    )
     if progress_callback is not None:
-        progress_callback(0, total, 'Security Discovery')
+        progress_callback(0, state.total, 'Security Discovery')
 
-    for target in targets:
-        if target_is_current is not None and not target_is_current(target):
-            stale_target_skip_count += 1
-            processed += 1
-            if progress_callback is not None:
-                progress_callback(
-                    processed,
-                    total,
-                    f'{target.project_name}/{target.repository_name}@{target.digest[:20]} · skipped stale',
-                )
-            continue
-        grouped[(target.project_name, target.repository_name)].append(target)
-
+    grouped = _group_security_targets(state, targets)
     for (project_name, repository_name), repository_targets in grouped.items():
-        current_repository_targets: list[RegistrySecurityTarget] = []
-        for target in repository_targets:
-            if target_is_current is not None and not target_is_current(target):
-                stale_target_skip_count += 1
-                processed += 1
-                if progress_callback is not None:
-                    progress_callback(
-                        processed,
-                        total,
-                        f'{project_name}/{repository_name}@{target.digest[:20]} · skipped stale',
-                    )
-                continue
-            current_repository_targets.append(target)
-        if not current_repository_targets:
-            continue
-        repository_targets = current_repository_targets
-        try:
-            raw_artifacts = _list_repository_security_artifacts(
+        current_targets = _current_repository_targets(state, repository_targets)
+        if current_targets:
+            _collect_repository_security(
+                state,
                 client,
                 project_name=project_name,
                 repository_name=repository_name,
-                processed=processed,
-                total=total,
-                progress_callback=progress_callback,
+                targets=current_targets,
             )
-        except HarborAuthError:
-            raise
-        except (HarborConnectionError, HarborResponseError) as exc:
-            repository_failures.append(
-                {
-                    'project_name': project_name,
-                    'repository_name': repository_name,
-                    'error_type': type(exc).__name__,
-                    'message': str(exc)[:500],
-                }
-            )
-            for target in repository_targets:
-                if target_is_current is not None and not target_is_current(target):
-                    stale_target_skip_count += 1
-                    processed += 1
-                    if progress_callback is not None:
-                        progress_callback(
-                            processed,
-                            total,
-                            f'{project_name}/{repository_name}@{target.digest[:20]} · skipped stale',
-                        )
-                    continue
-                records.append(
-                    _retained_repository_target(
-                        target,
-                        project_name=project_name,
-                        repository_name=repository_name,
-                        error=exc,
-                    )
-                )
-                reused_reports += int(target.has_scan_snapshot)
-                processed += 1
-                if progress_callback is not None:
-                    progress_callback(
-                        processed,
-                        total,
-                        f'{project_name}/{repository_name}@{target.digest[:20]} · retained',
-                    )
-            continue
 
-        successful_repositories += 1
-        raw_by_digest = {
-            str(item.get('digest') or '').strip(): item
-            for item in raw_artifacts
-            if str(item.get('digest') or '').strip()
-        }
-
-        for target in repository_targets:
-            if target_is_current is not None and not target_is_current(target):
-                stale_target_skip_count += 1
-                processed += 1
-                if progress_callback is not None:
-                    progress_callback(
-                        processed,
-                        total,
-                        f'{project_name}/{repository_name}@{target.digest[:20]} · skipped stale',
-                    )
-                continue
-
-            raw = raw_by_digest.get(target.digest)
-            if raw is None:
-                records.append(
-                    RegistryArtifactSecurityEvidence(
-                        artifact_id=target.artifact_id,
-                        scan_status=target.scan_status,
-                        scan_completed_at=target.scan_completed_at,
-                        vulnerability_summary=dict(target.vulnerability_summary or {}),
-                        signature_status=target.signature_status,
-                        sbom_status=target.sbom_status,
-                        reuse_existing_scan=bool(target.has_scan_snapshot),
-                        provider_metadata={'provider_evidence': 'artifact_not_observed_in_security_refresh'},
-                    )
-                )
-                reused_reports += int(target.has_scan_snapshot)
-            else:
-                scan = _scan_overview(raw.get('scan_overview'))
-                if scan is None and target.has_scan_snapshot:
-                    scan_status = target.scan_status
-                    scan_completed_at = target.scan_completed_at
-                    scan_summary = dict(target.vulnerability_summary or {})
-                    changed = False
-                else:
-                    scan_status = (
-                        str((scan or {}).get('scan_status') or (scan or {}).get('status') or '').strip().lower() or None
-                    )
-                    scan_completed_at = _parse_datetime((scan or {}).get('end_time'))
-                    scan_summary = _summary_from_scan(scan)
-                    changed = _scan_identity_changed(
-                        target,
-                        scan_status=scan_status,
-                        scan_completed_at=scan_completed_at,
-                        vulnerability_summary=scan_summary,
-                    )
-                signature_status = _artifact_signature_status(raw)
-                sbom_status = _artifact_sbom_status(raw)
-
-                vulnerabilities: list[dict[str, Any]] = []
-                report_summary: dict[str, int] = {}
-                report_meta: dict[str, Any] = {}
-                report_error: str | None = None
-                scan_snapshot: dict[str, Any] | None = None
-
-                if scan is not None and changed and registry_scan_evidence_ready(scan_status):
-                    try:
-                        payload = client.get_vulnerability_report(
-                            project_name_or_id=project_name,
-                            repository_name=repository_name,
-                            reference=target.digest,
-                        )
-                    except Exception as exc:
-                        report_error = f'{type(exc).__name__}: {exc}'[:1000]
-                    else:
-                        vulnerabilities, report_summary, report_meta = _normalize_vulnerabilities(payload)
-                    scanner_name, scanner_version = _scanner_identity(scan, report_meta)
-                    if report_summary:
-                        scan_summary = report_summary
-                    scan_completed_at = _parse_datetime((scan or {}).get('end_time') or report_meta.get('generated_at'))
-                    scan_snapshot = {
-                        'scanner': scanner_name,
-                        'scanner_version': scanner_version,
-                        'report_id': str((scan or {}).get('report_id') or '').strip() or None,
-                        'status': scan_status or 'not_scanned',
-                        'severity_summary': scan_summary,
-                        'provider_metadata': {
-                            'report_error': report_error,
-                            'scan_overview': scan,
-                            **report_meta,
-                        },
-                    }
-                    refreshed_reports += 1
-                elif target.has_scan_snapshot:
-                    reused_reports += 1
-
-                records.append(
-                    RegistryArtifactSecurityEvidence(
-                        artifact_id=target.artifact_id,
-                        scan_status=scan_status,
-                        scan_completed_at=scan_completed_at,
-                        vulnerability_summary=scan_summary,
-                        signature_status=signature_status,
-                        sbom_status=sbom_status,
-                        scan_snapshot=scan_snapshot,
-                        vulnerabilities=vulnerabilities,
-                        reuse_existing_scan=bool(target.has_scan_snapshot and not changed),
-                        provider_metadata={
-                            'project_name': project_name,
-                            'repository_name': repository_name,
-                            'scan_changed': changed,
-                        },
-                    )
-                )
-
-            processed += 1
-            if progress_callback is not None:
-                progress_callback(
-                    processed,
-                    total,
-                    f'{project_name}/{repository_name}@{target.digest[:20]}',
-                )
-
-    if repository_failures and successful_repositories == 0:
+    if state.repository_failures and state.successful_repositories == 0:
         raise HarborConnectionError(
             'Harbor security discovery was unavailable for every committed repository; '
             'previous committed security evidence was retained.'
         )
 
     return RegistrySecurityEvidence(
-        artifacts=records,
+        artifacts=state.records,
         provider_metadata={
             'provider_key': 'harbor',
             'source': 'harbor_api_v2',
-            'refreshed_vulnerability_reports': refreshed_reports,
-            'reused_vulnerability_reports': reused_reports,
+            'refreshed_vulnerability_reports': state.refreshed_reports,
+            'reused_vulnerability_reports': state.reused_reports,
             'repository_count': len(grouped),
-            'successful_repository_count': successful_repositories,
-            'repository_failure_count': len(repository_failures),
-            'stale_target_skip_count': stale_target_skip_count,
-            'repository_failures': repository_failures[:_MAX_REPOSITORY_FAILURE_EVIDENCE],
-            'repository_failure_evidence_truncated': (len(repository_failures) > _MAX_REPOSITORY_FAILURE_EVIDENCE),
+            'successful_repository_count': state.successful_repositories,
+            'repository_failure_count': len(state.repository_failures),
+            'stale_target_skip_count': state.stale_target_skip_count,
+            'repository_failures': state.repository_failures[:_MAX_REPOSITORY_FAILURE_EVIDENCE],
+            'repository_failure_evidence_truncated': (
+                len(state.repository_failures) > _MAX_REPOSITORY_FAILURE_EVIDENCE
+            ),
             'security_discovery_page_sizes': list(_SECURITY_DISCOVERY_PAGE_SIZES),
         },
     )
