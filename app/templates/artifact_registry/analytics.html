@@ -193,12 +193,12 @@
                             </div>
                             <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4">
                                 <p class="text-xs font-semibold text-content-muted">Growth Velocity</p>
-                                <p class="mt-2 text-xl font-semibold text-content-primary">{{ analytics.summary_cards[0].detail.split(' materialized')[0] if analytics.growth_rows else 'N/A' }}</p>
+                                <p class="mt-2 text-xl font-semibold text-content-primary">{{ analytics.capacity_outlook.growth_display }}</p>
                                 <p class="mt-1 text-xs text-content-muted">Materialized storage growth</p>
                             </div>
                             <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4">
                                 <p class="text-xs font-semibold text-content-muted">Quota Headroom</p>
-                                <p class="mt-2 text-xl font-semibold text-content-primary">{{ analytics.capacity_outlook.quota_headroom_bytes|int if analytics.capacity_outlook.quota_headroom_bytes is not none else 'N/A' }}</p>
+                                <p class="mt-2 text-xl font-semibold text-content-primary">{{ analytics.capacity_outlook.quota_headroom_display }}</p>
                                 <p class="mt-1 text-xs text-content-muted">Raw committed bytes across qualified quotas</p>
                             </div>
                         </div>
