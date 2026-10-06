@@ -1,4 +1,7 @@
-class HarborError(Exception):
+from app.integrations.contracts.exceptions import IntegrationError
+
+
+class HarborError(IntegrationError):
     """Base exception for Harbor integration failures."""
 
 
