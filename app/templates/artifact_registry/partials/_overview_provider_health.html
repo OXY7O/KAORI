@@ -31,61 +31,61 @@
             <tbody class="{{ table_ui.body_classes() }}">
                 {% if overview.provider_rows %}
                     {% for row in overview.provider_rows %}
-                    <tr class="{{ table_ui.row_classes() }}">
-                        <td class="{{ table_ui.cell_classes() }} align-top">
-                            {{ table_ui.title_cell(row.name, row.provider_label ~ ' · ' ~ row.environment|title, 'package') }}
-                        </td>
-                        <td class="{{ table_ui.cell_classes() }} align-top">
-                            <div class="space-y-1.5">
-                                {{ table_label.status_indicator_label(row.overall_status, row.overall_tone) }}
-                                <p class="max-w-[220px] text-xs leading-5 text-content-muted">{{ row.status_reason }}</p>
-                            </div>
-                        </td>
-                        <td class="{{ table_ui.cell_classes() }} align-top">
-                            <p class="text-sm font-semibold text-content-primary">{{ row.project_count }}</p>
-                            <p class="mt-1 text-xs text-content-muted">Committed Scope</p>
-                        </td>
-                        <td class="{{ table_ui.cell_classes() }} align-top">
-                            <p class="text-sm font-semibold text-content-primary">{{ row.repository_count }}</p>
-                            <p class="mt-1 text-xs text-content-muted">Repositories</p>
-                        </td>
-                        <td class="{{ table_ui.cell_classes() }} align-top">
-                            <p class="text-sm font-semibold text-content-primary">{{ row.artifact_count }}</p>
-                            <p class="mt-1 text-xs text-content-muted">Digest Identities</p>
-                        </td>
-                        <td class="{{ table_ui.cell_classes() }} align-top">
-                            {% if row.security_not_applicable %}
-                                <p class="text-sm font-semibold text-content-disabled">N/A</p>
-                                <p class="mt-1 text-xs text-status-info-text">No Artifacts</p>
-                            {% elif row.security_ready %}
-                                <p class="text-sm font-semibold {% if row.critical_findings > 0 %}text-status-critical-text{% elif row.high_findings > 0 %}text-status-warning-text{% else %}text-status-normal-text{% endif %}">
-                                    {{ row.critical_findings }} Critical
-                                </p>
-                                <p class="mt-1 text-xs text-content-muted">{{ row.high_findings }} High</p>
-                            {% else %}
-                                <p class="text-sm font-semibold text-content-disabled">N/A</p>
-                                <p class="mt-1 text-xs text-status-unknown-text">
-                                    {{ 'Security Not Collected' if row.inventory_ready else 'Inventory Not Collected' }}
-                                </p>
-                            {% endif %}
-                        </td>
-                        <td class="{{ table_ui.cell_classes(action=true) }} align-top">
-                            <div class="ml-auto flex w-fit flex-col items-end gap-1.5 text-xs">
-                                <span class="inline-flex items-center gap-2 text-content-muted">
-                                    <span class="h-2 w-2 rounded-full {% if row.inventory_ready %}bg-status-normal{% else %}bg-status-unknown{% endif %}"></span>
-                                    Inventory
-                                </span>
-                                <span class="inline-flex items-center gap-2 text-content-muted">
-                                    <span class="h-2 w-2 rounded-full {% if row.metrics_ready %}bg-status-normal{% else %}bg-status-unknown{% endif %}"></span>
-                                    Metrics Source
-                                </span>
-                                <span class="inline-flex items-center gap-2 text-content-muted">
-                                    <span class="h-2 w-2 rounded-full {% if row.security_ready %}bg-status-normal{% elif row.security_not_applicable %}bg-status-info{% else %}bg-status-unknown{% endif %}"></span>
-                                    Security Evidence
-                                </span>
-                            </div>
-                        </td>
-                    </tr>
+                        <tr class="{{ table_ui.row_classes() }}">
+                            <td class="{{ table_ui.cell_classes() }} align-top">
+                                {{ table_ui.title_cell(row.name, row.provider_label ~ ' · ' ~ row.environment|title, 'package') }}
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }} align-top">
+                                <div class="space-y-1.5">
+                                    {{ table_label.status_indicator_label(row.overall_status, row.overall_tone) }}
+                                    <p class="max-w-[220px] text-xs leading-5 text-content-muted">{{ row.status_reason }}</p>
+                                </div>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }} align-top">
+                                <p class="text-sm font-semibold text-content-primary">{{ row.project_count }}</p>
+                                <p class="mt-1 text-xs text-content-muted">Committed Scope</p>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }} align-top">
+                                <p class="text-sm font-semibold text-content-primary">{{ row.repository_count }}</p>
+                                <p class="mt-1 text-xs text-content-muted">Repositories</p>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }} align-top">
+                                <p class="text-sm font-semibold text-content-primary">{{ row.artifact_count }}</p>
+                                <p class="mt-1 text-xs text-content-muted">Digest Identities</p>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }} align-top">
+                                {% if row.security_not_applicable %}
+                                    <p class="text-sm font-semibold text-content-disabled">N/A</p>
+                                    <p class="mt-1 text-xs text-status-info-text">No Artifacts</p>
+                                {% elif row.security_ready %}
+                                    <p class="text-sm font-semibold {% if row.critical_findings > 0 %}text-status-critical-text{% elif row.high_findings > 0 %}text-status-warning-text{% else %}text-status-normal-text{% endif %}">
+                                        {{ row.critical_findings }} Critical
+                                    </p>
+                                    <p class="mt-1 text-xs text-content-muted">{{ row.high_findings }} High</p>
+                                {% else %}
+                                    <p class="text-sm font-semibold text-content-disabled">N/A</p>
+                                    <p class="mt-1 text-xs text-status-unknown-text">
+                                        {{ 'Security Not Collected' if row.inventory_ready else 'Inventory Not Collected' }}
+                                    </p>
+                                {% endif %}
+                            </td>
+                            <td class="{{ table_ui.cell_classes(action=true) }} align-top">
+                                <div class="ml-auto flex w-fit flex-col items-end gap-1.5 text-xs">
+                                    <span class="inline-flex items-center gap-2 text-content-muted">
+                                        <span class="h-2 w-2 rounded-full {% if row.inventory_ready %}bg-status-normal{% else %}bg-status-unknown{% endif %}"></span>
+                                        Inventory
+                                    </span>
+                                    <span class="inline-flex items-center gap-2 text-content-muted">
+                                        <span class="h-2 w-2 rounded-full {% if row.metrics_ready %}bg-status-normal{% else %}bg-status-unknown{% endif %}"></span>
+                                        Metrics Source
+                                    </span>
+                                    <span class="inline-flex items-center gap-2 text-content-muted">
+                                        <span class="h-2 w-2 rounded-full {% if row.security_ready %}bg-status-normal{% elif row.security_not_applicable %}bg-status-info{% else %}bg-status-unknown{% endif %}"></span>
+                                        Security Evidence
+                                    </span>
+                                </div>
+                            </td>
+                        </tr>
                     {% endfor %}
                 {% else %}
                     <tr>
@@ -130,7 +130,8 @@
                             hx-disabled-elt="this"
                             hx-indicator="#artifact-registry-provider-health-loading">
                         {% for size in pagination.allowed_per_page %}
-                            <option value="{{ size }}" {% if pagination.per_page == size %}selected{% endif %}>{{ size }}</option>
+                            <option value="{{ size }}"
+                                    {% if pagination.per_page == size %}selected{% endif %}>{{ size }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -149,27 +150,26 @@
                         Previous
                     </button>
                 {% else %}
-                    <span class="{{ pagination_ui.navigation_classes(disabled=true) }}" aria-disabled="true">
+                    <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"
+                          aria-disabled="true">
                         <i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>
                         Previous
                     </span>
                 {% endif %}
-                {{ pagination_ui.numeric_pages(
-                    pagination.page,
-                    pagination.total_pages,
-                    'provider_health_page',
-                    '#artifact-registry-provider-health-section',
-                    '#artifact-registry-provider-health-loading',
-                    'artifact_registry.overview_section',
-                    {
-                        'section': 'provider_health',
-                        'provider_id': overview.selected_provider_id or '',
-                        'provider_health_per_page': pagination.per_page,
-                        'tab': 'overview'
-                    },
-                    'outerHTML',
-                    'artifact_registry.overview'
-                ) }}
+                {{ pagination_ui.numeric_pages(pagination.page,
+                                pagination.total_pages,
+                                'provider_health_page',
+                                '#artifact-registry-provider-health-section',
+                                '#artifact-registry-provider-health-loading',
+                                'artifact_registry.overview_section',
+                                {
+                                'section': 'provider_health',
+                                'provider_id': overview.selected_provider_id or '',
+                                'provider_health_per_page': pagination.per_page,
+                                'tab': 'overview'
+                                },
+                                'outerHTML',
+                                'artifact_registry.overview') }}
                 {% if pagination.has_next %}
                     <button type="button"
                             hx-get="{{ next_url }}"
@@ -181,7 +181,8 @@
                         <i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
                     </button>
                 {% else %}
-                    <span class="{{ pagination_ui.navigation_classes(disabled=true) }}" aria-disabled="true">
+                    <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"
+                          aria-disabled="true">
                         Next
                         <i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
                     </span>
