@@ -9,8 +9,8 @@ from sqlalchemy.orm import joinedload
 from app.artifact_registry.correlation_sync_jobs import correlation_prerequisites
 from app.artifact_registry.observability import registry_metrics_readiness
 from app.artifact_registry.security.contracts import (
-    SUCCESSFUL_REGISTRY_SCAN_STATUSES,
     registry_scan_evidence_ready,
+    SUCCESSFUL_REGISTRY_SCAN_STATUSES,
 )
 from app.common.pagination import paginate_query, paginate_sequence
 from app.dashboards.common.operational import normalize_operational_tab
@@ -20,8 +20,6 @@ from app.intelligence.dashboard_recommendations import get_dashboard_recommendat
 from app.models.cluster import Cluster
 from app.models.integration import IntegrationInstance
 from app.models.job import JobExecution
-from app.models.report import Report, ReportSchedule, ReportTemplate
-from app.reports.catalog import REPORT_TYPE_SPECS
 from app.models.registry import (
     RegistryAnalyticsSnapshot,
     RegistryArtifact,
@@ -35,7 +33,8 @@ from app.models.registry import (
     RegistryTag,
     RegistryWorkloadBinding,
 )
-
+from app.models.report import Report, ReportSchedule, ReportTemplate
+from app.reports.catalog import REPORT_TYPE_SPECS
 FRESHNESS_HOURS = 24
 
 def _fmt_bytes(value: int | None) -> str:
