@@ -199,7 +199,6 @@ def test_minio_asset_owner_lifecycle_preserves_observability_sources() -> None:
     assert 'Inventory & Lifecycle' in detail
 
 
-
 def test_minio_review_copy_keeps_secret_and_revalidation_guidance_concise() -> None:
     form = read('app/templates/integrations/storage/object_storage/providers/minio/instance_form.html')
     configuration = read(
@@ -226,14 +225,17 @@ def test_minio_review_copy_keeps_secret_and_revalidation_guidance_concise() -> N
     assert 'Environment context for coverage, policy, ownership, and consumer resolution.' in configuration
     assert 'Product family resolved by Full Validation for compatibility and capability selection.' in configuration
     assert 'Canonical S3-compatible API base endpoint KAORI uses for identity checks' in configuration
-    assert 'MinIO owns S3 state; observability sources stay independent. KAORI correlates binding evidence without copying credentials.' in configuration
+    assert (
+        'MinIO owns S3 state; observability sources stay independent. KAORI correlates binding evidence without copying credentials.'
+        in configuration
+    )
     assert (
         'setup_reference_template="integrations/storage/object_storage/providers/minio/partials/'
         '_minimum_validation_access.html"'
     ) in configuration
     assert 'Minimum S3 Access Example' in access_reference
     assert 'Open Access Examples' in access_reference
-    assert "setTab(tab) { this.activeTab = tab; }" in access_reference
+    assert 'setTab(tab) { this.activeTab = tab; }' in access_reference
     assert "const tabs = ['baseline', 'inventory'];" in access_reference
     assert 's3:ListAllMyBuckets' in access_reference
     assert 'Optional Inventory Enrichment Reader' in access_reference

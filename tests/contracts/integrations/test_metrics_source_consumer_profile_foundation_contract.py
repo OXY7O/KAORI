@@ -133,4 +133,4 @@ def test_metrics_source_effective_resolution_projects_registered_consumer_assets
     assert "'technical_capabilities': ()," in presentation
     assert "'selected_status': selected_status" in presentation
     assert 'consumer.selected_status' in scope
-    assert 'candidate.operational_state == \'healthy\'' in scope
+    assert "candidate.operational_state == 'healthy'" in scope

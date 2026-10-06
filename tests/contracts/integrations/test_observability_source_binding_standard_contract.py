@@ -44,7 +44,10 @@ def test_metrics_source_and_alertmanager_own_binding_mutation_through_one_shared
     assert 'Create Binding' in modal
     assert 'max-w-5xl' in modal
     assert 'Choose the consumer, set preference and identity, then validate binding eligibility.' in modal
-    assert 'This binding is asset-scoped. Role and priority set preference without bypassing readiness or validation.' in modal
+    assert (
+        'This binding is asset-scoped. Role and priority set preference without bypassing readiness or validation.'
+        in modal
+    )
     assert 'Saving creates Validation Required evidence. Validate the binding before it becomes eligible.' in modal
     assert 'w-[min(46rem,calc(100vw-2rem))]' not in modal
 

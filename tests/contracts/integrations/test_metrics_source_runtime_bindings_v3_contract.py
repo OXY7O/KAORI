@@ -79,7 +79,10 @@ def test_runtime_decision_primary_finding_is_plain_and_metrics_copy_is_concise()
     assert 'primary_finding_info_title' not in decision
     assert 'info_tip.render(' not in decision
     assert 'Primary Finding' in decision
-    assert 'Validate compatibility and Prometheus/PromQL core; consumer contracts stay in Bindings & Consumers.' in validation
+    assert (
+        'Validate compatibility and Prometheus/PromQL core; consumer contracts stay in Bindings & Consumers.'
+        in validation
+    )
 
 
 def test_metrics_source_degraded_runtime_uses_compatibility_guidance() -> None:

@@ -25,7 +25,10 @@ def test_storage_domain_keeps_owner_and_observability_source_boundaries_explicit
     assert 'Storage providers remain authoritative for native storage state.' in workspace
     assert 'MinIO currently owns Object Storage API state and managed-asset operations' in workspace
     assert 'Metrics Source and Alert Source bindings contribute telemetry and alert context independently.' in workspace
-    assert 'File Storage and Block Storage become operational only when a qualified provider implementation is registered.' in workspace
+    assert (
+        'File Storage and Block Storage become operational only when a qualified provider implementation is registered.'
+        in workspace
+    )
 
 
 def test_storage_asset_owner_projection_uses_metrics_provider_registry() -> None:

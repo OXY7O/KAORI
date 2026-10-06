@@ -84,18 +84,12 @@ def test_asset_owner_lifecycle_uses_shared_read_only_observability_registry() ->
         'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/'
         '_binding_registry.html'
     )
-    minio = read(
-        'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_scope.html'
-    )
+    minio = read('app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_scope.html')
     minio_registry = read(
         'app/templates/integrations/storage/object_storage/providers/minio/partials/_binding_registry.html'
     )
-    harbor = read(
-        'app/templates/integrations/registry/providers/harbor/partials/_detail_scope.html'
-    )
-    harbor_registry = read(
-        'app/templates/integrations/registry/providers/harbor/partials/_binding_registry.html'
-    )
+    harbor = read('app/templates/integrations/registry/providers/harbor/partials/_detail_scope.html')
+    harbor_registry = read('app/templates/integrations/registry/providers/harbor/partials/_binding_registry.html')
 
     for provider, scope in (
         ('kubernetes', kubernetes),
@@ -147,21 +141,13 @@ def test_asset_owner_lifecycle_status_and_actions_match_locked_contract() -> Non
         'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/'
         '_inventory_lifecycle.html'
     )
-    minio = read(
-        'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_scope.html'
-    )
-    minio_presentation = read(
-        'app/integrations/storage/object_storage/providers/minio/application/presentation.py'
-    )
-    harbor = read(
-        'app/templates/integrations/registry/providers/harbor/partials/_detail_scope.html'
-    )
-    harbor_presentation = read(
-        'app/integrations/registry/providers/harbor/application/presentation.py'
-    )
+    minio = read('app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_scope.html')
+    minio_presentation = read('app/integrations/storage/object_storage/providers/minio/application/presentation.py')
+    harbor = read('app/templates/integrations/registry/providers/harbor/partials/_detail_scope.html')
+    harbor_presentation = read('app/integrations/registry/providers/harbor/application/presentation.py')
 
-    assert "operational_use.inventory_status" in kubernetes
-    assert "operational_use.inventory_status_label" in kubernetes
+    assert 'operational_use.inventory_status' in kubernetes
+    assert 'operational_use.inventory_status_label' in kubernetes
 
     assert 'inventory_status_label' in minio
     assert 'instance.readiness_status' not in minio
@@ -172,7 +158,9 @@ def test_asset_owner_lifecycle_status_and_actions_match_locked_contract() -> Non
     assert 'integration_status(inventory_status.status, inventory_status.label' in harbor
     assert "'label': 'Committed Snapshot'" in harbor_presentation
     assert "'label': 'No Committed Inventory'" in harbor_presentation
-    inventory_status_function = harbor_presentation.split('def _inventory_status(', 1)[1].split('def _metrics_status(', 1)[0]
+    inventory_status_function = harbor_presentation.split('def _inventory_status(', 1)[1].split(
+        'def _metrics_status(', 1
+    )[0]
     assert "'label': 'Validation Required'" not in inventory_status_function
     assert "'label': 'Validation Blocked'" not in inventory_status_function
     assert 'Open Artifact Registry' not in harbor
@@ -194,5 +182,5 @@ def test_asset_owner_standard_names_all_current_asset_owner_providers() -> None:
         'Kubernetes, Object Storage / MinIO, and Registry / Harbor asset-owner workspaces '
         'remain read-only for binding mutation.'
     ) in standard
-    assert 'fourth-domain header status MUST represent that domain\'s evidence plane' in standard
+    assert "fourth-domain header status MUST represent that domain's evidence plane" in standard
     assert 'provider-local job-management or product-navigation shortcuts' in standard

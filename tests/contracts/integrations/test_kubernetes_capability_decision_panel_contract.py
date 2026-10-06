@@ -142,12 +142,11 @@ def test_optional_capability_gaps_are_separate_from_core_readiness() -> None:
     registry = REGISTRY.read_text(encoding='utf-8')
 
     assert "{% set capability_readiness_state = 'blocked' %}" in workspace
-    assert "{% elif legacy_features %}" in workspace
+    assert '{% elif legacy_features %}' in workspace
     assert "{% set capability_readiness_state = 'ready' %}" in workspace
     assert (
         'Core required API and RBAC evidence for Kubernetes workspaces; '
-        'optional Tenant contracts are tracked separately.'
-        in workspace
+        'optional Tenant contracts are tracked separately.' in workspace
     )
     assert 'Why Provider Validation Is {{ validation_state.readiness_label }}' in workspace
     assert "' required blocks'" in workspace
@@ -157,8 +156,7 @@ def test_optional_capability_gaps_are_separate_from_core_readiness() -> None:
     assert 'Optional Capability Unavailable' in registry
     assert (
         'This optional Tenant capability is unavailable. Core readiness is unaffected; '
-        'no supported API contract currently satisfies the required verbs.'
-        in registry
+        'no supported API contract currently satisfies the required verbs.' in registry
     )
     assert 'Cluster-scoped optional governance contract' in registry
     assert 'workflow-required access; do not broaden the baseline ClusterRole' in registry
@@ -172,9 +170,7 @@ def test_capability_modal_does_not_guess_commands_without_selected_contract() ->
     assert 'data-kaori-capability-verification-unavailable' in registry
     assert 'No executable command is generated without a selected API/resource contract.' in registry
     assert (
-        'No API/resource contract was selected. Enable the approved workflow, '
-        'then rerun Full Validation.'
-        in registry
+        'No API/resource contract was selected. Enable the approved workflow, then rerun Full Validation.' in registry
     )
     assert 'Optional admission-governance access is cluster scoped' in registry
 
@@ -183,15 +179,9 @@ def test_capability_copy_keeps_optional_governance_concise() -> None:
     workspace = _source()
     registry = REGISTRY.read_text(encoding='utf-8')
 
-    assert (
-        'Core API/RBAC is ready; Tenant access remains workflow-scoped.'
-        in workspace
-    )
+    assert 'Core API/RBAC is ready; Tenant access remains workflow-scoped.' in workspace
     assert 'Core API/RBAC is validated; Tenant contracts remain optional.' in workspace
     assert 'Optional gaps do not affect core readiness.' in workspace
     assert 'without broadening the baseline ClusterRole.' in workspace
     assert 'Optional workflows must establish their own approved access boundary.' in registry
-    assert (
-        'Full Validation owns API/RBAC readiness; runtime and inventory remain separate.'
-        in registry
-    )
+    assert 'Full Validation owns API/RBAC readiness; runtime and inventory remain separate.' in registry
