@@ -31,14 +31,13 @@
                 {% if filters.query or filters.requirement or filters.status %}
                     {% set clear_href = url_for('harbor.instance_detail', instance_id=instance.id, capability_page=1, capability_per_page=pagination.per_page) ~ '#validation' %}
                     {% set clear_url = url_for('harbor.capability_registry', instance_id=instance.id, capability_page=1, capability_per_page=pagination.per_page) %}
-                    {{ registry_ui.clear_filters_action(
-                        clear_href,
-                        table_ui.action_classes(),
-                        hx_get=clear_url,
-                        target='#harbor-capability-registry',
-                        indicator='#harbor-capability-loading',
-                        swap='outerHTML',
-                        marker='harbor-capability-registry'
+                    {{ registry_ui.clear_filters_action(clear_href,
+                                        table_ui.action_classes() ,
+                    hx_get=clear_url,
+                    target='#harbor-capability-registry',
+                    indicator='#harbor-capability-loading',
+                    swap='outerHTML',
+                    marker='harbor-capability-registry'
                     ) }}
                 {% endif %}
             </div>
@@ -56,7 +55,9 @@
           hx-trigger="input changed delay:300ms from:#harbor-capability-search, change delay:100ms from:select"
           class="{{ integration_ui.filter_region_classes() }}">
         <input type="hidden" name="capability_page" value="1">
-        <input type="hidden" name="capability_per_page" value="{{ pagination.per_page }}">
+        <input type="hidden"
+               name="capability_per_page"
+               value="{{ pagination.per_page }}">
         <div class="{{ table_ui.filter_layout_classes() }}">
             <label class="block min-w-0">
                 <span class="{{ integration_ui.control_label_classes() }}">Search Capability</span>
@@ -75,19 +76,25 @@
             </label>
             <label class="block">
                 <span class="{{ integration_ui.control_label_classes() }}">Requirement</span>
-                <select name="capability_requirement" class="{{ integration_ui.control_classes() }}">
+                <select name="capability_requirement"
+                        class="{{ integration_ui.control_classes() }}">
                     <option value="" {% if not filters.requirement %}selected{% endif %}>All Requirements</option>
-                    <option value="required" {% if filters.requirement == "required" %}selected{% endif %}>Required</option>
-                    <option value="optional" {% if filters.requirement == "optional" %}selected{% endif %}>Optional</option>
+                    <option value="required"
+                            {% if filters.requirement == "required" %}selected{% endif %}>Required</option>
+                    <option value="optional"
+                            {% if filters.requirement == "optional" %}selected{% endif %}>Optional</option>
                 </select>
             </label>
             <label class="block">
                 <span class="{{ integration_ui.control_label_classes() }}">Validation Status</span>
-                <select name="capability_status" class="{{ integration_ui.control_classes() }}">
+                <select name="capability_status"
+                        class="{{ integration_ui.control_classes() }}">
                     <option value="" {% if not filters.status %}selected{% endif %}>All Statuses</option>
                     <option value="ready" {% if filters.status == "ready" %}selected{% endif %}>Ready</option>
-                    <option value="blocked" {% if filters.status == "blocked" %}selected{% endif %}>Blocked</option>
-                    <option value="degraded" {% if filters.status == "degraded" %}selected{% endif %}>Not Observed</option>
+                    <option value="blocked"
+                            {% if filters.status == "blocked" %}selected{% endif %}>Blocked</option>
+                    <option value="degraded"
+                            {% if filters.status == "degraded" %}selected{% endif %}>Not Observed</option>
                 </select>
             </label>
         </div>
@@ -118,13 +125,16 @@
                             <div class="flex min-w-0 items-start gap-3">
                                 {{ integration_ui.palette_icon("package-check" if row.required else "shield", icon_tone, size="md") }}
                                 <div class="min-w-0">
-                                    <p class="truncate text-sm font-semibold text-content-primary" title="{{ row.label }}">{{ row.label }}</p>
-                                    <p class="mt-0.5 truncate text-xs leading-5 text-content-muted" title="{{ row.description }}">{{ row.description }}</p>
+                                    <p class="truncate text-sm font-semibold text-content-primary"
+                                       title="{{ row.label }}">{{ row.label }}</p>
+                                    <p class="mt-0.5 truncate text-xs leading-5 text-content-muted"
+                                       title="{{ row.description }}">{{ row.description }}</p>
                                 </div>
                             </div>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
-                            <p class="truncate font-semibold text-content-primary" title="{{ row.contract }}">{{ row.contract }}</p>
+                            <p class="truncate font-semibold text-content-primary"
+                               title="{{ row.contract }}">{{ row.contract }}</p>
                             <p class="mt-0.5 truncate text-xs text-content-muted">{{ row.category }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(row.requirement_label) }}</td>
@@ -158,15 +168,19 @@
                   class="{{ pagination_ui.rows_group_classes() }}">
                 <input type="hidden" name="capability_page" value="1">
                 <input type="hidden" name="capability_q" value="{{ filters.query }}">
-                <input type="hidden" name="capability_requirement" value="{{ filters.requirement }}">
+                <input type="hidden"
+                       name="capability_requirement"
+                       value="{{ filters.requirement }}">
                 <input type="hidden" name="capability_status" value="{{ filters.status }}">
-                <label for="harbor-capability-per-page" class="font-semibold text-content-secondary">Rows</label>
+                <label for="harbor-capability-per-page"
+                       class="font-semibold text-content-secondary">Rows</label>
                 <select id="harbor-capability-per-page"
                         name="capability_per_page"
                         data-kaori-auto-submit
                         class="{{ pagination_ui.page_size_classes() }}">
                     {% for option in pagination.allowed_per_page %}
-                        <option value="{{ option }}" {% if option == pagination.per_page %}selected{% endif %}>{{ option }}</option>
+                        <option value="{{ option }}"
+                                {% if option == pagination.per_page %}selected{% endif %}>{{ option }}</option>
                     {% endfor %}
                 </select>
             </form>
@@ -182,19 +196,18 @@
                    hx-indicator="#harbor-capability-loading"
                    class="{{ pagination_ui.navigation_classes(false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
             {% else %}
-                <span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
+                <span class="{{ pagination_ui.navigation_classes(true) }}"
+                      aria-disabled="true"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
             {% endif %}
-            {{ pagination_ui.numeric_pages(
-                pagination.page,
-                pagination.total_pages,
-                "capability_page",
-                hx_target="#harbor-capability-registry",
-                hx_indicator="#harbor-capability-loading",
-                endpoint="harbor.capability_registry",
-                query_params={"instance_id": instance.id, "capability_q": filters.query, "capability_requirement": filters.requirement, "capability_status": filters.status, "capability_per_page": pagination.per_page},
-                hx_swap="outerHTML",
-                href_endpoint="harbor.instance_detail"
-            ) }}
+            {{ pagination_ui.numeric_pages(pagination.page,
+                        pagination.total_pages,
+                        "capability_page",
+                        hx_target="#harbor-capability-registry",
+                        hx_indicator="#harbor-capability-loading",
+                        endpoint="harbor.capability_registry",
+                        query_params={"instance_id": instance.id, "capability_q": filters.query, "capability_requirement": filters.requirement, "capability_status": filters.status, "capability_per_page": pagination.per_page},
+                        hx_swap="outerHTML",
+                        href_endpoint="harbor.instance_detail") }}
             {% if pagination.has_next %}
                 <a href="{{ url_for('harbor.instance_detail', instance_id=instance.id, capability_page=pagination.next_page, **capability_query) }}#validation"
                    hx-get="{{ url_for('harbor.capability_registry', instance_id=instance.id, capability_page=pagination.next_page, **capability_query) }}"
@@ -203,7 +216,8 @@
                    hx-indicator="#harbor-capability-loading"
                    class="{{ pagination_ui.navigation_classes(false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
             {% else %}
-                <span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
+                <span class="{{ pagination_ui.navigation_classes(true) }}"
+                      aria-disabled="true">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
             {% endif %}
         </nav>
     </footer>
@@ -217,14 +231,12 @@
             icon="scan-search",
             footer_text="Capability details use the latest completed Harbor Full Validation evidence.",
             size="standard"
-        ) %}
-            {{ provider_capability_detail.content(
-                row,
-                "Harbor",
-                row.source_owner,
-                "Harbor API Probe",
-                "Full Validation owns Harbor identity, compatibility, provider health, and required read capability evidence. Runtime Refresh owns lightweight health only."
-            ) }}
+            ) %}
+            {{ provider_capability_detail.content(row,
+                        "Harbor",
+                        row.source_owner,
+                        "Harbor API Probe",
+                        "Full Validation owns Harbor identity, compatibility, provider health, and required read capability evidence. Runtime Refresh owns lightweight health only.") }}
         {% endcall %}
     {% endfor %}
 </section>
