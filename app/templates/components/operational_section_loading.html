@@ -28,12 +28,12 @@
              aria-label="{{ title }} Loading"
              aria-busy="true">
             {% for _ in range(item_count) %}
-                <div class="h-14 animate-pulse rounded-lg bg-surface-hover" aria-hidden="true"></div>
+                <div class="h-14 animate-pulse rounded-lg bg-surface-hover"
+                     aria-hidden="true"></div>
             {% endfor %}
         </div>
     {% endcall %}
 {%- endmacro %}
-
 {% macro kpis(
     item_count=4,
     aria_label='Operational Indicators Loading'
@@ -42,7 +42,8 @@
          aria-label="{{ aria_label }}"
          aria-busy="true">
         {% for _ in range(item_count) %}
-            <div class="h-28 animate-pulse rounded-lg bg-surface-hover" aria-hidden="true"></div>
+            <div class="h-28 animate-pulse rounded-lg bg-surface-hover"
+                 aria-hidden="true"></div>
         {% endfor %}
     </div>
 {%- endmacro %}
