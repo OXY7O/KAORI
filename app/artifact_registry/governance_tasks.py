@@ -6,6 +6,7 @@ from time import perf_counter
 from typing import Any
 
 from celery import shared_task
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.artifact_registry.governance import sync_registry_governance
 from app.extensions.db import db
@@ -156,7 +157,7 @@ def sync_all_registry_governance_task(
                 synced += 1
                 project_count += int(result.get('projects') or 0)
                 replication_policy_count += int(result.get('replication_policies') or 0)
-            except Exception as exc:
+            except (LookupError, RuntimeError, ValueError, SQLAlchemyError) as exc:
                 db.session.rollback()
                 failures.append(
                     {
@@ -219,7 +220,7 @@ def sync_all_registry_governance_task(
                 partial=bool(failures),
             )
         return result
-    except Exception as exc:
+    except (LookupError, RuntimeError, ValueError, SQLAlchemyError) as exc:
         db.session.rollback()
         context.fail(exc, error_code='artifact_registry_governance_sync_failed')
         logger.exception('Unexpected Artifact Registry governance synchronization failure.')
