@@ -83,9 +83,9 @@ def ingest_webhook(
 
     canonical = json.dumps(payload, sort_keys=True, separators=(',', ':'), default=str)
     payload_digest = hashlib.sha256(canonical.encode()).hexdigest()
-    provider_event_id = str(
-        payload.get('id') or payload.get('event_id') or payload.get('occur_at') or ''
-    ).strip() or None
+    provider_event_id = (
+        str(payload.get('id') or payload.get('event_id') or payload.get('occur_at') or '').strip() or None
+    )
     event_type = str(payload.get('type') or payload.get('event_type') or 'UNKNOWN').strip()
     dedup_source = f'{provider_event_id or ""}:{event_type}:{payload_digest}'
     dedup_key = hashlib.sha256(dedup_source.encode()).hexdigest()

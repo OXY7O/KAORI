@@ -502,7 +502,6 @@ def runtime_history(instance_id: int) -> ResponseReturnValue:
     )
 
 
-
 @harbor_bp.get('/instances/<int:instance_id>/bindings/registry')
 @permission_required('integrations.manage')
 def binding_registry(instance_id: int) -> ResponseReturnValue:

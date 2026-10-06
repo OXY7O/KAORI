@@ -114,9 +114,9 @@ class HarborRuntimeAdapter:
                 key='runtime',
                 label='Runtime observation',
                 category='runtime',
-                status='success' if instance.last_status == 'connected' else (
-                    'failed' if instance.last_status in {'error', 'disconnected'} else 'unknown'
-                ),
+                status='success'
+                if instance.last_status == 'connected'
+                else ('failed' if instance.last_status in {'error', 'disconnected'} else 'unknown'),
                 detail=instance.last_error or instance.validation_message or 'Runtime has not been observed.',
             ),
         )
@@ -133,33 +133,31 @@ class HarborRuntimeAdapter:
             HealthFactor(
                 'connectivity',
                 'Connectivity',
-                'success' if instance.last_status == 'connected' else (
-                    'failed' if instance.last_status in {'error', 'disconnected'} else 'unknown'
-                ),
+                'success'
+                if instance.last_status == 'connected'
+                else ('failed' if instance.last_status in {'error', 'disconnected'} else 'unknown'),
                 30,
-                100 if instance.last_status == 'connected' else (
-                    0 if instance.last_status in {'error', 'disconnected'} else 50
-                ),
+                100
+                if instance.last_status == 'connected'
+                else (0 if instance.last_status in {'error', 'disconnected'} else 50),
                 instance.last_error or '',
             ),
             HealthFactor(
                 'readiness',
                 'Readiness',
-                'success' if instance.readiness_status == 'ready' else (
-                    'failed' if instance.readiness_status == 'blocked' else 'warning'
-                ),
+                'success'
+                if instance.readiness_status == 'ready'
+                else ('failed' if instance.readiness_status == 'blocked' else 'warning'),
                 25,
-                100 if instance.readiness_status == 'ready' else (
-                    0 if instance.readiness_status == 'blocked' else 65
-                ),
+                100 if instance.readiness_status == 'ready' else (0 if instance.readiness_status == 'blocked' else 65),
                 instance.validation_message or '',
             ),
             HealthFactor(
                 'provider_api',
                 'Provider API',
-                'failed' if api_failed else (
-                    'warning' if api_warning else ('success' if instance.last_status == 'connected' else 'unknown')
-                ),
+                'failed'
+                if api_failed
+                else ('warning' if api_warning else ('success' if instance.last_status == 'connected' else 'unknown')),
                 25,
                 0 if api_failed else (65 if api_warning else (100 if instance.last_status == 'connected' else 50)),
             ),
@@ -173,13 +171,13 @@ class HarborRuntimeAdapter:
             HealthFactor(
                 'latency',
                 'Latency',
-                'warning' if (instance.last_response_time_ms or 0) > 1500 else (
-                    'success' if instance.last_response_time_ms is not None else 'unknown'
-                ),
+                'warning'
+                if (instance.last_response_time_ms or 0) > 1500
+                else ('success' if instance.last_response_time_ms is not None else 'unknown'),
                 10,
-                60 if (instance.last_response_time_ms or 0) > 1500 else (
-                    100 if instance.last_response_time_ms is not None else 50
-                ),
+                60
+                if (instance.last_response_time_ms or 0) > 1500
+                else (100 if instance.last_response_time_ms is not None else 50),
             ),
         )
 

@@ -445,7 +445,11 @@ def _binding_row(binding: IntegrationBinding, source: MetricsSource) -> dict[str
     scope_label = (
         cluster.name
         if cluster is not None
-        else (object_storage.name if object_storage is not None else (registry_instance.name if registry_instance is not None else binding.asset_key))
+        else (
+            object_storage.name
+            if object_storage is not None
+            else (registry_instance.name if registry_instance is not None else binding.asset_key)
+        )
     )
     scope_type_label = (
         'Kubernetes Cluster'
@@ -453,7 +457,11 @@ def _binding_row(binding: IntegrationBinding, source: MetricsSource) -> dict[str
         else (
             'Object Storage System'
             if binding.asset_type == 'object_storage_system'
-            else ('Registry Instance' if binding.asset_type == 'registry_instance' else binding.asset_type.replace('_', ' ').title())
+            else (
+                'Registry Instance'
+                if binding.asset_type == 'registry_instance'
+                else binding.asset_type.replace('_', ' ').title()
+            )
         )
     )
     routing_policy = normalize_routing_policy(binding.routing_policy)

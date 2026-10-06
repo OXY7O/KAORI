@@ -310,9 +310,7 @@ class HarborClient:
             except requests.RequestException as exc:
                 last_transport_error = exc
                 if attempt >= self.transport_retries:
-                    raise HarborConnectionError(
-                        'Harbor API request failed before a response was received.'
-                    ) from exc
+                    raise HarborConnectionError('Harbor API request failed before a response was received.') from exc
                 if self.retry_backoff_seconds:
                     sleep(self.retry_backoff_seconds * (2**attempt))
                 continue

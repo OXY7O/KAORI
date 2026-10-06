@@ -52,9 +52,7 @@ class HarborDetailQuery:
 def build_index_context(query: HarborIndexQuery | None = None) -> dict[str, Any]:
     query = query or HarborIndexQuery()
     instances = (
-        HarborInstance.query.join(HarborInstance.integration_instance)
-        .order_by(IntegrationInstance.name.asc())
-        .all()
+        HarborInstance.query.join(HarborInstance.integration_instance).order_by(IntegrationInstance.name.asc()).all()
     )
     identity_ids = [int(instance.integration_instance_id) for instance in instances]
     collection_states = {
@@ -97,8 +95,7 @@ def build_index_context(query: HarborIndexQuery | None = None) -> dict[str, Any]
         webhook_status = _webhook_status(webhook)
 
         complete = all(
-            item['status'] == 'ready'
-            for item in (api_status, inventory_status, metrics_status, webhook_status)
+            item['status'] == 'ready' for item in (api_status, inventory_status, metrics_status, webhook_status)
         )
         coverage_status = 'ready' if complete else 'attention'
         coverage_label = 'Complete' if complete else 'Partial'
@@ -165,9 +162,7 @@ def build_index_context(query: HarborIndexQuery | None = None) -> dict[str, Any]
         'selected_coverage_query': query.coverage_query,
         'selected_coverage_environment': query.coverage_environment,
         'selected_coverage_status': query.coverage_status,
-        'registry_has_active_filters': bool(
-            query.query or query.environment or query.readiness or query.compatibility
-        ),
+        'registry_has_active_filters': bool(query.query or query.environment or query.readiness or query.compatibility),
         'coverage_has_active_filters': bool(
             query.coverage_query or query.coverage_environment or query.coverage_status
         ),
@@ -181,9 +176,7 @@ def build_index_context(query: HarborIndexQuery | None = None) -> dict[str, Any]
         'compatibility_options': sorted(
             {row['compatibility_profile'] for row in rows if row.get('compatibility_profile')}
         ),
-        'coverage_environment_options': sorted(
-            {row['environment'] for row in coverage_rows if row.get('environment')}
-        ),
+        'coverage_environment_options': sorted({row['environment'] for row in coverage_rows if row.get('environment')}),
         'coverage_status_options': [
             {'value': 'ready', 'label': 'Complete'},
             {'value': 'attention', 'label': 'Partial'},
@@ -204,7 +197,11 @@ def _provider_status(instance: HarborInstance) -> dict[str, str]:
     if readiness == 'ready':
         return {'status': 'ready', 'label': 'Ready', 'detail': 'Full Validation ready'}
     if readiness == 'degraded':
-        return {'status': 'attention', 'label': 'Degraded', 'detail': 'Full Validation completed with compatibility attention'}
+        return {
+            'status': 'attention',
+            'label': 'Degraded',
+            'detail': 'Full Validation completed with compatibility attention',
+        }
     if readiness == 'blocked':
         return {'status': 'blocked', 'label': 'Blocked', 'detail': 'Provider readiness blocked'}
     return {'status': 'attention', 'label': 'Validation Required', 'detail': 'Run Full Validation'}
@@ -345,10 +342,7 @@ def build_detail_context(
         per_page=query.binding_per_page,
     )
     raw_counts = collection_state.counts if collection_state and isinstance(collection_state.counts, dict) else {}
-    inventory_counts = {
-        key: int(raw_counts.get(key) or 0)
-        for key in ('projects', 'repositories', 'artifacts', 'tags')
-    }
+    inventory_counts = {key: int(raw_counts.get(key) or 0) for key in ('projects', 'repositories', 'artifacts', 'tags')}
     return {
         'instance': instance,
         'canonical': identity,
@@ -419,7 +413,8 @@ def build_harbor_capability_registry(
                     )
                 ),
                 'success_criteria': definition.success_criteria or definition.description,
-                'impact': definition.impact or (
+                'impact': definition.impact
+                or (
                     'Required Harbor provider capability used to establish Registry readiness.'
                     if definition.required
                     else 'Optional read-only evidence that can support future Registry workflows.'

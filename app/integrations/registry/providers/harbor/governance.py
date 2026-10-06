@@ -128,10 +128,7 @@ def collect_harbor_governance(
                 detail='Immutability evidence could not be collected.',
             )
         else:
-            enabled_rules = [
-                rule for rule in immutable_rules
-                if bool(rule.get('disabled')) is False
-            ]
+            enabled_rules = [rule for rule in immutable_rules if bool(rule.get('disabled')) is False]
             immutability_status = 'configured' if enabled_rules else 'not_configured'
 
         try:
@@ -191,11 +188,7 @@ def collect_harbor_governance(
                 provider_native_id=native_id,
                 name=str(policy.get('name') or f'Policy {native_id}'),
                 enabled=bool(policy.get('enabled')) if policy.get('enabled') is not None else None,
-                trigger_type=(
-                    str(trigger.get('type') or '').strip() or None
-                    if isinstance(trigger, dict)
-                    else None
-                ),
+                trigger_type=(str(trigger.get('type') or '').strip() or None if isinstance(trigger, dict) else None),
                 source_registry=_endpoint_name(source),
                 destination_registry=_endpoint_name(destination),
                 destination_namespace=str(policy.get('dest_namespace') or '').strip() or None,
