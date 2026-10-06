@@ -30,6 +30,40 @@ from app.models.registry import (
     RegistryScanSnapshot,
 )
 
+
+def _provider_health_status(
+    *,
+    readiness: str,
+    state: RegistryCollectionState | None,
+    snapshot: dict[str, Any],
+    security: dict[str, int],
+    inventory_ready: bool,
+) -> tuple[str, str, str]:
+    if readiness == 'blocked':
+        return 'Critical', 'critical', 'Provider readiness is blocked.'
+    if state is not None and state.status == 'failed' and not inventory_ready:
+        return (
+            'Critical',
+            'critical',
+            'Inventory synchronization failed before a committed snapshot was established.',
+        )
+    if security['critical'] > 0:
+        return 'Critical', 'critical', f'{security["critical"]} critical security finding(s).'
+    if not inventory_ready:
+        return 'Warning', 'warning', 'Committed inventory has not been collected.'
+    if snapshot['is_stale']:
+        return 'Warning', 'warning', 'Committed inventory snapshot is stale.'
+    if state is not None and state.last_error:
+        return (
+            'Warning',
+            'warning',
+            'Latest inventory refresh failed; the previous committed snapshot is retained.',
+        )
+    if readiness == 'degraded':
+        return 'Warning', 'warning', 'Provider is usable with compatibility attention.'
+    return 'Healthy', 'normal', 'Provider and committed inventory are operational.'
+
+
 def _provider_health_projection(
     *,
     scoped_providers: list[IntegrationInstance],
@@ -129,39 +163,13 @@ def _provider_health_projection(
         security_ready = bool(security['scanned'])
         security_not_applicable = inventory_ready and provider_artifact_count == 0
 
-        if readiness == 'blocked':
-            overall_status, overall_tone, status_reason = (
-                'Critical',
-                'critical',
-                'Provider readiness is blocked.',
-            )
-        elif state is not None and state.status == 'failed' and not inventory_ready:
-            overall_status, overall_tone = 'Critical', 'critical'
-            status_reason = 'Inventory synchronization failed before a committed snapshot was established.'
-        elif security['critical'] > 0:
-            overall_status, overall_tone = 'Critical', 'critical'
-            status_reason = f'{security["critical"]} critical security finding(s).'
-        elif not inventory_ready:
-            overall_status, overall_tone, status_reason = (
-                'Warning',
-                'warning',
-                'Committed inventory has not been collected.',
-            )
-        elif snapshot['is_stale']:
-            overall_status, overall_tone, status_reason = (
-                'Warning',
-                'warning',
-                'Committed inventory snapshot is stale.',
-            )
-        elif state is not None and state.last_error:
-            overall_status, overall_tone = 'Warning', 'warning'
-            status_reason = 'Latest inventory refresh failed; the previous committed snapshot is retained.'
-        elif readiness == 'degraded':
-            overall_status, overall_tone = 'Warning', 'warning'
-            status_reason = 'Provider is usable with compatibility attention.'
-        else:
-            overall_status, overall_tone = 'Healthy', 'normal'
-            status_reason = 'Provider and committed inventory are operational.'
+        overall_status, overall_tone, status_reason = _provider_health_status(
+            readiness=readiness,
+            state=state,
+            snapshot=snapshot,
+            security=security,
+            inventory_ready=inventory_ready,
+        )
 
         provider_rows.append(
             {
