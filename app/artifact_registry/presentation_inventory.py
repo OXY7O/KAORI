@@ -350,23 +350,7 @@ def _inventory_resource_posture_metrics(
     ]
 
 
-def build_inventory(
-    *,
-    resource: str,
-    page: int,
-    per_page: int,
-    search: str = '',
-    source_id: int | None = None,
-    environment: str = '',
-    visibility: str = '',
-) -> dict[str, Any]:
-    resource = resource if resource in {'projects', 'repositories', 'artifacts'} else 'projects'
-    search_value = search.strip().lower()
-    environment_value = environment.strip()
-    visibility_value = visibility.strip().lower()
-    if visibility_value not in {'public', 'private', 'not_observed'}:
-        visibility_value = ''
-
+def _inventory_rows(resource: str) -> list[dict[str, Any]]:
     if resource == 'repositories':
         items = RegistryRepository.query.options(
             joinedload(RegistryRepository.project),
@@ -382,9 +366,12 @@ def build_inventory(
     else:
         items = RegistryProject.query.options(joinedload(RegistryProject.repositories)).all()
         rows = [_project_row(item) for item in items]
+    return _decorate_inventory_provider_provenance(rows)
 
-    rows = _decorate_inventory_provider_provenance(rows)
 
+def _inventory_filter_options(
+    rows: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], list[str]]:
     source_lookup: dict[int, dict[str, Any]] = {}
     for row in rows:
         provider_id = int(row['provider_id'])
@@ -405,56 +392,55 @@ def build_inventory(
         {str(row['provider_environment']) for row in rows if str(row.get('provider_environment') or '').strip()},
         key=str.lower,
     )
-    resource_posture_metrics = _inventory_resource_posture_metrics(resource, rows)
+    return source_options, environment_options
 
+
+def _inventory_scope_filter(
+    rows: list[dict[str, Any]],
+    *,
+    resource: str,
+    source_id: int | None,
+    environment: str,
+    visibility: str,
+) -> list[dict[str, Any]]:
+    filtered = rows
     if source_id is not None:
-        rows = [row for row in rows if int(row['provider_id']) == int(source_id)]
-    if environment_value:
-        rows = [row for row in rows if str(row['provider_environment']).lower() == environment_value.lower()]
-    if resource == 'projects':
-        if visibility_value == 'public':
-            rows = [row for row in rows if row['public'] is True]
-        elif visibility_value == 'private':
-            rows = [row for row in rows if row['public'] is False]
-        elif visibility_value == 'not_observed':
-            rows = [row for row in rows if row['public'] is None]
+        filtered = [row for row in filtered if int(row['provider_id']) == int(source_id)]
+    if environment:
+        filtered = [
+            row for row in filtered if str(row['provider_environment']).lower() == environment.lower()
+        ]
+    if resource != 'projects':
+        return filtered
+    visibility_predicates = {
+        'public': lambda row: row['public'] is True,
+        'private': lambda row: row['public'] is False,
+        'not_observed': lambda row: row['public'] is None,
+    }
+    predicate = visibility_predicates.get(visibility)
+    return [row for row in filtered if predicate(row)] if predicate is not None else filtered
 
+
+def _inventory_search_text(resource: str, row: dict[str, Any]) -> str:
     if resource == 'repositories':
-        filtered = [
-            row
-            for row in rows
-            if not search_value
-            or search_value
-            in (
-                f'{row["name"]} {row["project"]} {row["provider_name"]} '
-                f'{row["provider_label"]} {row["provider_environment"]}'
-            ).lower()
-        ]
-    elif resource == 'artifacts':
-        filtered = [
-            row
-            for row in rows
-            if not search_value
-            or search_value
-            in (
-                f'{row["digest"]} {row["repository"]} {row["project"]} '
-                f'{" ".join(row["tags"])} {row["provider_name"]} '
-                f'{row["provider_label"]} {row["provider_environment"]}'
-            ).lower()
-        ]
-    else:
-        filtered = [
-            row
-            for row in rows
-            if not search_value
-            or search_value
-            in (f'{row["name"]} {row["provider_name"]} {row["provider_label"]} {row["provider_environment"]}').lower()
-        ]
+        return (
+            f'{row["name"]} {row["project"]} {row["provider_name"]} '
+            f'{row["provider_label"]} {row["provider_environment"]}'
+        ).lower()
+    if resource == 'artifacts':
+        return (
+            f'{row["digest"]} {row["repository"]} {row["project"]} '
+            f'{" ".join(row["tags"])} {row["provider_name"]} '
+            f'{row["provider_label"]} {row["provider_environment"]}'
+        ).lower()
+    return (
+        f'{row["name"]} {row["provider_name"]} {row["provider_label"]} '
+        f'{row["provider_environment"]}'
+    ).lower()
 
-    paged, pagination = paginate_sequence(filtered, page=page, per_page=per_page)
-    context = _inventory_base_context()
-    selected_resource = context['resource_catalog'][resource]
-    posture_copy = {
+
+def _inventory_posture_copy(resource: str) -> dict[str, str]:
+    return {
         'projects': {
             'title': 'Project Inventory Posture',
             'intro': 'Review committed project coverage, Registry-source participation, and visibility evidence.',
@@ -471,20 +457,58 @@ def build_inventory(
             'description': 'Committed artifact catalog posture across the current Artifact Registry inventory.',
         },
     }[resource]
-    snapshot_count = int(context['overview']['snapshot_count'])
+
+
+def _inventory_empty_description(
+    *,
+    has_filters: bool,
+    snapshot_count: int,
+    resource_title: str,
+) -> str:
+    if has_filters:
+        return f'No committed {resource_title.lower()} match the active filters.'
+    if snapshot_count == 0:
+        return 'Run Artifact Registry inventory sync after the Registry provider read contract is eligible.'
+    return f'The current committed Registry snapshot contains no {resource_title.lower()}.'
+
+
+def build_inventory(
+    *,
+    resource: str,
+    page: int,
+    per_page: int,
+    search: str = '',
+    source_id: int | None = None,
+    environment: str = '',
+    visibility: str = '',
+) -> dict[str, Any]:
+    resource = resource if resource in {'projects', 'repositories', 'artifacts'} else 'projects'
+    search_value = search.strip().lower()
+    environment_value = environment.strip()
+    visibility_value = visibility.strip().lower()
+    if visibility_value not in {'public', 'private', 'not_observed'}:
+        visibility_value = ''
+
+    rows = _inventory_rows(resource)
+    source_options, environment_options = _inventory_filter_options(rows)
+    resource_posture_metrics = _inventory_resource_posture_metrics(resource, rows)
+    rows = _inventory_scope_filter(
+        rows,
+        resource=resource,
+        source_id=source_id,
+        environment=environment_value,
+        visibility=visibility_value,
+    )
+    filtered = [
+        row for row in rows if not search_value or search_value in _inventory_search_text(resource, row)
+    ]
+    paged, pagination = paginate_sequence(filtered, page=page, per_page=per_page)
+    context = _inventory_base_context()
+    selected_resource = context['resource_catalog'][resource]
+    posture_copy = _inventory_posture_copy(resource)
     has_filters = bool(
         search_value or source_id is not None or environment_value or (resource == 'projects' and visibility_value)
     )
-
-    if has_filters:
-        empty_description = f'No committed {selected_resource["title"].lower()} match the active filters.'
-    elif snapshot_count == 0:
-        empty_description = (
-            'Run Artifact Registry inventory sync after the Registry provider read contract is eligible.'
-        )
-    else:
-        empty_description = f'The current committed Registry snapshot contains no {selected_resource["title"].lower()}.'
-
     filter_query: dict[str, Any] = {
         'q': search,
         'source_id': source_id,
@@ -505,7 +529,11 @@ def build_inventory(
         'pagination': pagination,
         'search': search,
         'total': len(filtered),
-        'empty_description': empty_description,
+        'empty_description': _inventory_empty_description(
+            has_filters=has_filters,
+            snapshot_count=int(context['overview']['snapshot_count']),
+            resource_title=selected_resource['title'],
+        ),
         'filters': {
             'source_id': source_id,
             'environment': environment_value,
@@ -529,7 +557,6 @@ def build_inventory(
             else []
         ),
     }
-
 
 def build_inventory_project_detail(project_id: int) -> dict[str, Any] | None:
     project = (
