@@ -1462,7 +1462,7 @@ def _inventory_resource_posture_metrics(
                 'package-open',
                 'Repositories',
                 len(rows),
-                'Committed Registry repository identities retained across the current provider-neutral inventory snapshot.',
+                'Committed repositories in the current inventory.',
                 'brand',
             ),
             (
@@ -2091,8 +2091,7 @@ def _runtime_prerequisite_guidance(
             'current Kubernetes Pod inventory before the first materialization.'
         )
         refresh_description = (
-            'Existing committed Runtime Usage remains readable, but correlation refresh '
-            'requires committed Artifact Registry artifacts and current Kubernetes Pod inventory.'
+            'Runtime Usage remains readable; refresh requires current Registry and Kubernetes inventory.'
         )
         steps = [
             'Sync Artifact Registry Inventory',
@@ -2111,8 +2110,7 @@ def _runtime_prerequisite_guidance(
             'the first materialization.'
         )
         refresh_description = (
-            'Existing committed Runtime Usage remains readable, but correlation refresh '
-            'requires committed Artifact Registry artifacts.'
+            'Runtime Usage remains readable; refresh requires current Registry inventory.'
         )
         steps = [
             'Sync Artifact Registry Inventory',
@@ -2130,8 +2128,7 @@ def _runtime_prerequisite_guidance(
             'generation before the first materialization.'
         )
         refresh_description = (
-            'Existing committed Runtime Usage remains readable, but correlation refresh '
-            'requires a current committed Kubernetes Pod inventory generation.'
+            'Runtime Usage remains readable; refresh requires current Kubernetes Pod inventory.'
         )
         steps = [
             'Sync Kubernetes Inventory',
@@ -2472,7 +2469,7 @@ def build_runtime_usage(
             if tag_matches == 1
             else f'{tag_matches} Tag Matches'
         )
-        exceptions_supporting = 'Mutable-reference evidence; lower confidence.'
+        exceptions_supporting = 'Mutable references; lower confidence.'
         exceptions_tone = 'warning'
     elif binding_total:
         exceptions_label = 'Digest-only'
@@ -2576,7 +2573,7 @@ def build_runtime_usage(
             'latest_collected_at': latest_correlated_at,
             'scope_label': scope_label,
             'coverage_label': f'{artifact_count} artifacts · {binding_total} bindings',
-            'coverage_supporting': 'Committed runtime usage in the active scope.',
+            'coverage_supporting': 'Runtime usage in scope.',
             'coverage_tone': 'normal' if binding_total else 'warning',
             'exceptions_label': exceptions_label,
             'exceptions_supporting': exceptions_supporting,
