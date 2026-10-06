@@ -17,10 +17,18 @@
         <header class="border-b border-kaori-primary/15 bg-kaori-soft px-5 py-4 sm:px-6">
             <div class="flex items-start gap-3">
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm"><i data-lucide="settings-2" class="h-4 w-4"></i></span>
-                <div><p class="text-xs font-semibold text-kaori-primary">Policy &amp; Configuration</p><h3 class="mt-1 text-base font-semibold text-content-primary">Artifact Registry Inventory Sync Policy</h3><p class="mt-1 text-xs leading-5 text-content-muted">Scheduled reconciliation remains the correctness path; webhooks are only a later fast path.</p></div>
+                <div>
+                    <p class="text-xs font-semibold text-kaori-primary">Policy &amp; Configuration</p>
+                    <h3 class="mt-1 text-base font-semibold text-content-primary">Artifact Registry Inventory Sync Policy</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Scheduled reconciliation remains the correctness path; webhooks are only a later fast path.</p>
+                </div>
             </div>
         </header>
-        <form method="post" action="{{ url_for('jobs.update_policy', job_key=definition.key) }}" hx-post="{{ url_for('jobs.update_policy', job_key=definition.key) }}" hx-target="#job-configuration-workspace" hx-swap="outerHTML">
+        <form method="post"
+              action="{{ url_for('jobs.update_policy', job_key=definition.key) }}"
+              hx-post="{{ url_for('jobs.update_policy', job_key=definition.key) }}"
+              hx-target="#job-configuration-workspace"
+              hx-swap="outerHTML">
             {{ policy_form.hidden_tag() }}
             <div class="grid gap-5 p-5 sm:p-6 lg:grid-cols-12">
                 <label class="flex cursor-pointer items-center justify-between gap-5 rounded-xl border border-kaori-primary/20 bg-kaori-soft px-4 py-4 lg:col-span-7">
@@ -30,11 +38,17 @@
                 <label class="rounded-xl border border-outline-default bg-surface-hover px-4 py-4 lg:col-span-5">
                     <span class="text-sm font-semibold text-content-primary">Execution Interval</span>
                     <div class="relative mt-3">{{ policy_form.interval_minutes(class_="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 pr-20 text-sm font-semibold text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20", min=definition.minimum_interval_minutes, max=definition.maximum_interval_minutes, disabled=not can_configure) }}<span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs font-medium text-content-muted">Minutes</span></div>
-                    {% for error in policy_form.interval_minutes.errors %}<p class="mt-2 text-xs font-medium text-status-critical-text">{{ error }}</p>{% endfor %}
+                    {% for error in policy_form.interval_minutes.errors %}
+                        <p class="mt-2 text-xs font-medium text-status-critical-text">{{ error }}</p>
+                    {% endfor %}
                 </label>
             </div>
             <footer class="flex justify-end border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6">
-                {% if can_configure %}<button type="submit" class="{{ action_button.classes('primary') }}"><i data-lucide="save" class="h-4 w-4"></i>Save Policy</button>{% else %}{{ table_label.status_indicator_label('View Only', 'unknown') }}{% endif %}
+                {% if can_configure %}
+                    <button type="submit" class="{{ action_button.classes('primary') }}"><i data-lucide="save" class="h-4 w-4"></i>Save Policy</button>
+                {% else %}
+                    {{ table_label.status_indicator_label('View Only', 'unknown') }}
+                {% endif %}
             </footer>
         </form>
     </section>
