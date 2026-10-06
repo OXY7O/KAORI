@@ -13,7 +13,8 @@
         <header class="flex items-start gap-3 {{ 'pb-3' if embedded else 'px-5 py-4' }}">
             <span class="flex {{ 'h-8 w-8 rounded-lg' if embedded else 'h-11 w-11 rounded-xl' }} shrink-0 items-center justify-center bg-kaori-soft text-kaori-primary dark:text-kaori-accent"
                   aria-hidden="true">
-                <i data-lucide="{{ icon }}" class="{{ 'h-4 w-4' if embedded else 'h-5 w-5' }}"></i>
+                <i data-lucide="{{ icon }}"
+                   class="{{ 'h-4 w-4' if embedded else 'h-5 w-5' }}"></i>
             </span>
             <div class="min-w-0">
                 <h2 class="text-base font-semibold text-content-primary">{{ title }}</h2>
