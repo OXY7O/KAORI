@@ -50,7 +50,12 @@ def test_registry_inventory_sync_uses_operational_read_contract_eligibility() ->
     assert "normalized_readiness == 'ready'" in eligibility
     assert "normalized_readiness == 'degraded'" in eligibility
     assert "normalized_compatibility == 'compatible_with_warnings'" in eligibility
-    assert "unverified_version" not in eligibility.split('def inventory_read_contract_eligible', 1)[1].split('def registry_inventory_eligibility', 1)[0]
+    assert (
+        'unverified_version'
+        not in eligibility.split('def inventory_read_contract_eligible', 1)[1].split(
+            'def registry_inventory_eligibility', 1
+        )[0]
+    )
     assert 'registry_inventory_eligibility(identity, provider_record=provider_record)' in sync
     assert "identity.readiness_status != 'ready'" not in sync
     assert 'registry_inventory_eligibility(identity)' in sync_jobs
@@ -63,13 +68,9 @@ def test_global_sync_all_inventory_includes_artifact_registry() -> None:
 
     assert "current_user.has_permission('artifact_registry.sync')" in routes
     assert "job_keys.append('artifact_registry.inventory.sync')" in routes
+    assert ("can_sync_artifact_registry_inventory = current_user.has_permission('artifact_registry.sync')") in navbar
     assert (
-        "can_sync_artifact_registry_inventory = "
-        "current_user.has_permission('artifact_registry.sync')"
-    ) in navbar
-    assert (
-        'can_sync_kubernetes_inventory or can_sync_object_storage_inventory or '
-        'can_sync_artifact_registry_inventory'
+        'can_sync_kubernetes_inventory or can_sync_object_storage_inventory or can_sync_artifact_registry_inventory'
     ) in navbar
 
 
@@ -90,6 +91,7 @@ def test_registry_inventory_worker_registration_matches_dispatch_contract() -> N
     assert sync_jobs.count('require_registered_worker=True') >= 2
     assert 'JobWorkerUnavailable' in routes
     assert 'Artifact Registry Worker Unavailable' in routes
+
 
 def test_registry_inventory_worker_does_not_cross_into_other_registry_workstreams() -> None:
     task = (ROOT / 'app/artifact_registry/tasks.py').read_text()
@@ -114,6 +116,7 @@ def test_registry_inventory_reports_live_provider_progress() -> None:
     assert 'report_inventory_progress' in task
     assert "self.update_state(state='PROGRESS'" in task
 
+
 def test_registry_inventory_reconciles_stable_rows_without_erasing_downstream_evidence() -> None:
     sync = (ROOT / 'app/artifact_registry/sync.py').read_text()
 
@@ -133,12 +136,8 @@ def test_registry_inventory_reconciles_stable_rows_without_erasing_downstream_ev
 
 
 def test_registry_inventory_reuses_canonical_inventory_workspace_primitives() -> None:
-    overview_template = (
-        ROOT / 'app/templates/artifact_registry/partials/_inventory_overview.html'
-    ).read_text()
-    resource_template = (
-        ROOT / 'app/templates/artifact_registry/partials/_inventory_workspace.html'
-    ).read_text()
+    overview_template = (ROOT / 'app/templates/artifact_registry/partials/_inventory_overview.html').read_text()
+    resource_template = (ROOT / 'app/templates/artifact_registry/partials/_inventory_workspace.html').read_text()
     presentation = (ROOT / 'app/artifact_registry/presentation.py').read_text()
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
     navigation = (ROOT / 'app/common/workspace_navigation_catalog.py').read_text()
@@ -154,7 +153,7 @@ def test_registry_inventory_reuses_canonical_inventory_workspace_primitives() ->
     assert 'Inventory Assets' not in overview_template
     assert 'inventory.fleet_readings' in overview_template
     assert "variant='neutral'" in overview_template
-    assert "url_for(asset.endpoint)" in overview_template
+    assert 'url_for(asset.endpoint)' in overview_template
     assert 'components/snapshot_context_bar.html' in resource_template
     assert 'components/operational_section_card.html' in resource_template
     assert 'components/resource_posture_grid.html' in resource_template
@@ -162,10 +161,13 @@ def test_registry_inventory_reuses_canonical_inventory_workspace_primitives() ->
     assert 'inventory.resource_posture_intro' in resource_template
     assert 'inventory.resource_posture_description' in resource_template
     assert 'inventory.resource_posture_metrics' in resource_template
-    assert "inventory.resource == 'projects'" not in resource_template.split(
-        'registry-resource-posture-heading',
-        1,
-    )[1].split('registry-inventory-records-heading', 1)[0]
+    assert (
+        "inventory.resource == 'projects'"
+        not in resource_template.split(
+            'registry-resource-posture-heading',
+            1,
+        )[1].split('registry-inventory-records-heading', 1)[0]
+    )
     assert 'components/table.html' in resource_template
     assert 'components/states/_empty_state.html' in resource_template
     assert 'artifact-registry-inventory-content' in resource_template
@@ -203,7 +205,6 @@ def test_registry_inventory_reuses_canonical_inventory_workspace_primitives() ->
     assert "row['provider_name']" in presentation
 
 
-
 def test_registry_inventory_overview_restores_asset_counts_from_existing_kpis() -> None:
     presentation = (ROOT / 'app/artifact_registry/presentation.py').read_text()
 
@@ -220,16 +221,12 @@ def test_registry_inventory_overview_restores_asset_counts_from_existing_kpis() 
 def test_registry_project_inventory_reuses_canonical_filters_and_detail_modal() -> None:
     presentation = (ROOT / 'app/artifact_registry/presentation.py').read_text()
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
-    workspace = (
-        ROOT / 'app/templates/artifact_registry/partials/_inventory_workspace.html'
-    ).read_text()
+    workspace = (ROOT / 'app/templates/artifact_registry/partials/_inventory_workspace.html').read_text()
     page = (ROOT / 'app/templates/artifact_registry/inventory_resource.html').read_text()
-    detail = (
-        ROOT / 'app/templates/artifact_registry/partials/_inventory_project_detail.html'
-    ).read_text()
+    detail = (ROOT / 'app/templates/artifact_registry/partials/_inventory_project_detail.html').read_text()
 
     assert 'table_ui.inventory_filter_bar_classes()' in workspace
-    assert "id=\"artifact-registry-inventory-table\"" in workspace
+    assert 'id="artifact-registry-inventory-table"' in workspace
     assert "target='#artifact-registry-inventory-table'" in workspace
     assert "'artifact-registry-inventory-table'," in workspace
     assert 'name="source_id"' in workspace
@@ -239,8 +236,8 @@ def test_registry_project_inventory_reuses_canonical_filters_and_detail_modal() 
     assert 'id="artifact-registry-inventory-environment"' in workspace
     assert "'source_id': source_id" in presentation
     assert "'environment': environment_value" in presentation
-    assert "or source_id is not None" in presentation
-    assert "or environment_value" in presentation
+    assert 'or source_id is not None' in presentation
+    assert 'or environment_value' in presentation
     assert "copyable=true, class_name='lg:col-span-2'" not in detail
     assert 'resource_detail_modal.detail_button' in workspace
     assert 'resource_detail_modal.inventory_host' in page
@@ -255,22 +252,18 @@ def test_registry_project_inventory_reuses_canonical_filters_and_detail_modal() 
 def test_registry_repository_and_artifact_inventory_reuse_full_workspace_detail_modal() -> None:
     presentation = (ROOT / 'app/artifact_registry/presentation.py').read_text()
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
-    workspace = (
-        ROOT / 'app/templates/artifact_registry/partials/_inventory_workspace.html'
-    ).read_text()
+    workspace = (ROOT / 'app/templates/artifact_registry/partials/_inventory_workspace.html').read_text()
     page = (ROOT / 'app/templates/artifact_registry/inventory_resource.html').read_text()
     repository_detail = (
         ROOT / 'app/templates/artifact_registry/partials/_inventory_repository_detail.html'
     ).read_text()
-    artifact_detail = (
-        ROOT / 'app/templates/artifact_registry/partials/_inventory_artifact_detail.html'
-    ).read_text()
+    artifact_detail = (ROOT / 'app/templates/artifact_registry/partials/_inventory_artifact_detail.html').read_text()
 
     assert 'def build_inventory_repository_detail(repository_id: int)' in presentation
     assert 'def build_inventory_artifact_detail(artifact_id: int)' in presentation
     assert 'build_client' not in presentation
-    assert "RegistryRepository.query.options(" in presentation
-    assert "RegistryArtifact.query.options(" in presentation
+    assert 'RegistryRepository.query.options(' in presentation
+    assert 'RegistryArtifact.query.options(' in presentation
 
     assert "@artifact_registry_bp.get('/inventory/repositories/<int:repository_id>/details')" in routes
     assert "@artifact_registry_bp.get('/inventory/artifacts/<int:artifact_id>/details')" in routes
@@ -300,7 +293,10 @@ def test_registry_repository_and_artifact_inventory_reuse_full_workspace_detail_
     assert 'Tag References' in artifact_detail
     assert 'artifact.tag_preview' in artifact_detail
     assert "copyable=true, class_name='lg:col-span-2'" not in repository_detail
-    assert "detail.inventory_technical_row('Provider Native ID', artifact.provider_native_id, copyable=true)" not in artifact_detail
+    assert (
+        "detail.inventory_technical_row('Provider Native ID', artifact.provider_native_id, copyable=true)"
+        not in artifact_detail
+    )
     assert "detail.inventory_technical_row('Digest', artifact.digest, copyable=true" in artifact_detail
     assert 'artifact.scan_status' not in artifact_detail
     assert 'artifact.vulnerability_summary' not in artifact_detail

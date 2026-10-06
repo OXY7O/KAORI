@@ -24,9 +24,7 @@ def test_registry_metrics_reuses_canonical_metrics_source_binding() -> None:
     metrics_contract = (
         ROOT / 'app/definitions/catalogs/integrations/observability/metrics_source/contract.yaml'
     ).read_text()
-    validators = (
-        ROOT / 'app/integrations/observability/metrics_source/binding_validators/__init__.py'
-    ).read_text()
+    validators = (ROOT / 'app/integrations/observability/metrics_source/binding_validators/__init__.py').read_text()
     registry_validator = (
         ROOT / 'app/integrations/observability/metrics_source/binding_validators/registry_asset.py'
     ).read_text()
@@ -79,10 +77,8 @@ def test_governance_sync_uses_registered_jobexecution_boundary() -> None:
     assert 'build_registry_governance_sync_state' in adapter
     assert "GOVERNANCE_SYNC_JOB_TYPE = 'artifact_registry_governance'" in adapter
     assert 'get_or_create_job_policy(GOVERNANCE_SYNC_JOB_KEY)' in adapter
-    assert "def governance_sync_status(public_id: str)" in routes
-    live_state = (
-        ROOT / 'app/templates/artifact_registry/partials/_governance_sync_live_state.html'
-    ).read_text()
+    assert 'def governance_sync_status(public_id: str)' in routes
+    live_state = (ROOT / 'app/templates/artifact_registry/partials/_governance_sync_live_state.html').read_text()
     assert "url_for('artifact_registry.governance_sync_status'" in live_state
     assert 'hx-trigger="every 1s"' in live_state
     assert 'progress_bar.job_progress' in live_state

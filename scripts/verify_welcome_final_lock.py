@@ -180,8 +180,7 @@ def _verify_catalog_contract(errors: list[str]) -> None:
     require(
         registry_workspace is not None
         and registry_workspace.get('scope') == 'Registry'
-        and ('artifact_registry.view', 'artifact_registry.overview')
-        in (registry_workspace.get('targets') or ()),
+        and ('artifact_registry.view', 'artifact_registry.overview') in (registry_workspace.get('targets') or ()),
         'Artifact Registry must remain a provider-neutral Welcome workspace owned by artifact_registry.view.',
         errors,
     )

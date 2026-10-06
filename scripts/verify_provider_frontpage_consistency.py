@@ -38,9 +38,7 @@ def main() -> int:
         'MinIO': read(
             'app/templates/integrations/storage/object_storage/providers/minio/partials/_registry_content.html'
         ),
-        'Harbor': read(
-            'app/templates/integrations/registry/providers/harbor/partials/_registry.html'
-        ),
+        'Harbor': read('app/templates/integrations/registry/providers/harbor/partials/_registry.html'),
     }
     direct_coverage = {
         'Kubernetes': read(

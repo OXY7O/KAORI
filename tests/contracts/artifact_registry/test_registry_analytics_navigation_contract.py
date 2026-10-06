@@ -16,12 +16,12 @@ def test_artifact_registry_workspace_exposes_complete_review_surface() -> None:
     ):
         assert capability in navigation
     for route in (
-        "def overview()",
-        "def inventory()",
-        "def security()",
-        "def runtime()",
-        "def governance()",
-        "def analytics()",
+        'def overview()',
+        'def inventory()',
+        'def security()',
+        'def runtime()',
+        'def governance()',
+        'def analytics()',
     ):
         assert route in routes
 

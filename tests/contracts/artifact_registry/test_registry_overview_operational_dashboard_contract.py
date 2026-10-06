@@ -24,7 +24,7 @@ def test_artifact_registry_overview_consumes_operational_dashboard_family() -> N
     assert 'dashboard_workspace.controller(' in content
     assert 'dashboard_workspace.navigation(' in content
     assert 'for tab_key, tab_label, tab_icon in dashboard_workspace.standard_tabs' in content
-    assert "dashboard_workspace.panel(" in content
+    assert 'dashboard_workspace.panel(' in content
     assert "url_for('artifact_registry.overview_section', section=tab_key)" in content
     assert 'hx-trigger="revealed"' in content
     assert 'Preparing committed Artifact Registry dashboard evidence.' in content
@@ -139,8 +139,8 @@ def test_artifact_registry_operations_overview_matches_reference_dashboard_gramm
     for source in ('Inventory', 'Metrics Source', 'Security Evidence'):
         assert source in health
     assert 'components/pagination.html' in health
-    assert "for size in pagination.allowed_per_page" in health
-    assert "[5, 10, 25, 50]" not in health
+    assert 'for size in pagination.allowed_per_page' in health
+    assert '[5, 10, 25, 50]' not in health
 
     for label in (
         "'Projects'",
@@ -312,6 +312,7 @@ def test_artifact_registry_dashboard_uses_bounded_section_projections() -> None:
     assert 'build_overview_section(' in routes
     assert "section='kpi_cards'" in signal
 
+
 def test_artifact_registry_data_freshness_uses_evidence_age_not_coverage_counts() -> None:
     presentation = read('app/artifact_registry/presentation.py')
     projection = presentation.split('def _overview_operations_projection(', 1)[1].split(
@@ -339,9 +340,10 @@ def test_artifact_registry_data_freshness_uses_evidence_age_not_coverage_counts(
     ):
         assert evidence_value in projection
 
-    assert "_freshness_value(" in projection
-    assert "latest_security_at" in projection
-    assert "latest_analytics_at" in projection
+    assert '_freshness_value(' in projection
+    assert 'latest_security_at' in projection
+    assert 'latest_analytics_at' in projection
+
 
 def test_artifact_registry_signals_match_object_storage_scope_and_alert_logic() -> None:
     registry_signals = read('app/templates/artifact_registry/partials/_overview_signals.html')
@@ -388,9 +390,8 @@ def test_artifact_registry_signals_match_object_storage_scope_and_alert_logic() 
         assert 'empty_state_min_height = "min-h-[220px]"' in source
 
     assert 'def _registry_alerts(selected_provider: IntegrationInstance | None)' in presentation
-    assert "active_recommendation_alert_cases(" in presentation
+    assert 'active_recommendation_alert_cases(' in presentation
     assert "domain='registry'" in presentation
     assert "'available': False" in presentation
     assert "'available': True" in presentation
     assert "'alerts': _registry_alerts(selected_provider)" in presentation
-

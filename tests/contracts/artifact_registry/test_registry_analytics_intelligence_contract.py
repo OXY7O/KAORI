@@ -7,9 +7,7 @@ def test_registry_analytics_is_worker_materialized_and_page_reads_snapshot() -> 
     analytics = (ROOT / 'app/artifact_registry/analytics.py').read_text()
     presentation = (ROOT / 'app/artifact_registry/presentation.py').read_text()
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
-    jobs = (
-        ROOT / 'app/definitions/catalogs/platform_operations/jobs/registered_jobs.yaml'
-    ).read_text()
+    jobs = (ROOT / 'app/definitions/catalogs/platform_operations/jobs/registered_jobs.yaml').read_text()
 
     assert 'RegistryAnalyticsSnapshot(' in analytics
     assert 'MetricsConsumer.for_asset' in analytics
@@ -60,19 +58,18 @@ def test_raw_vulnerability_evidence_does_not_auto_escalate() -> None:
 
 
 def test_domain_intelligence_ownership_standard_is_present() -> None:
-    standard = (
-        ROOT / 'docs/architecture/domain-intelligence-ownership-standard.md'
-    ).read_text()
+    standard = (ROOT / 'docs/architecture/domain-intelligence-ownership-standard.md').read_text()
     assert 'Intelligence owns recommendation semantics' in standard
     assert 'Automation Control' in standard
     assert 'Direct Recommendation → provider mutation is not allowed.' in standard
+
 
 def test_registry_scan_gap_recommendation_uses_usable_scan_evidence_semantics() -> None:
     evaluator = (ROOT / 'app/intelligence/registry_recommendations.py').read_text()
     rules = (ROOT / 'app/definitions/catalogs/intelligence/rules.yaml').read_text()
 
     assert 'from app.artifact_registry.security.contracts import registry_scan_evidence_ready' in evaluator
-    assert "if not registry_scan_evidence_ready(artifact.scan_status):" in evaluator
+    assert 'if not registry_scan_evidence_ready(artifact.scan_status):' in evaluator
     assert 'Running Registry artifact has no usable scan evidence' in evaluator
     assert 'not a normalized ' in evaluator
     assert 'successful scan state.' in evaluator
@@ -85,12 +82,10 @@ def test_registry_scan_gap_recommendation_uses_usable_scan_evidence_semantics() 
     assert 'success, finished, or completed' in scan_gap
     assert 'runtime binding' in scan_gap.lower()
 
+
 def test_registry_analytics_materializes_operational_harbor_metric_profile() -> None:
     analytics = (ROOT / 'app/artifact_registry/analytics.py').read_text()
-    profile = (
-        ROOT
-        / 'app/integrations/observability/metrics_source/query_profiles/registry_harbor_v1.py'
-    ).read_text()
+    profile = (ROOT / 'app/integrations/observability/metrics_source/query_profiles/registry_harbor_v1.py').read_text()
 
     for query_key in (
         'registry.health',
@@ -115,9 +110,7 @@ def test_registry_analytics_materializes_operational_harbor_metric_profile() -> 
 
 def test_registry_analytics_workspace_is_reusable_and_intelligence_bounded() -> None:
     shell = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
-    section = (
-        ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html'
-    ).read_text()
+    section = (ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html').read_text()
     presentation = (ROOT / 'app/artifact_registry/presentation.py').read_text()
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
 
@@ -143,12 +136,14 @@ def test_registry_analytics_workspace_is_reusable_and_intelligence_bounded() -> 
     assert "active_tab=request.args.get('tab', 'growth', type=str)" in routes
     assert 'never waits on live Harbor, Alertmanager, Prometheus, or Thanos requests' in shell
     assert 'never auto-cleaned' in section
-    assert 'central Intelligence owns recommendation semantics, Accepted Risk, escalation, and automation control' in section
+    assert (
+        'central Intelligence owns recommendation semantics, Accepted Risk, escalation, and automation control'
+        in section
+    )
     assert "url_for('intelligence.recommendations', domain='registry')" in shell
 
     assert "aggregate['inflight_requests'] > 100" not in presentation
     assert "aggregate['task_queue_size'] > 0" not in presentation
-
 
 
 def test_registry_analytics_uses_fast_shell_and_bounded_fragments() -> None:
@@ -158,10 +153,10 @@ def test_registry_analytics_uses_fast_shell_and_bounded_fragments() -> None:
 
     assert 'def build_analytics_shell(' in presentation
     assert "active_tab: str = 'growth'" in presentation
-    assert "analytics=build_analytics_shell(" in routes
+    assert 'analytics=build_analytics_shell(' in routes
     assert "@artifact_registry_bp.get('/analytics/section/<string:section>')" in routes
     assert "section='summary'" in template
-    assert "section=analytics.active_tab" in template
+    assert 'section=analytics.active_tab' in template
     assert 'hx-trigger="load"' in template
     assert 'Fast shell · bounded HTMX projection' in template
     assert 'never waits on live Harbor, Alertmanager, Prometheus, or Thanos requests' in template
@@ -172,8 +167,7 @@ def test_registry_alert_source_is_worker_materialized_and_provider_neutral() -> 
     presentation = (ROOT / 'app/artifact_registry/presentation.py').read_text()
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
     definition = (
-        ROOT
-        / 'app/definitions/catalogs/integrations/observability/alert_source/providers/alertmanager.yaml'
+        ROOT / 'app/definitions/catalogs/integrations/observability/alert_source/providers/alertmanager.yaml'
     ).read_text()
 
     assert 'asset_type: registry_instance' in definition
@@ -190,14 +184,12 @@ def test_registry_alert_source_is_worker_materialized_and_provider_neutral() -> 
 
 
 def test_registry_alert_workspace_reuses_committed_alert_evidence_contract() -> None:
-    template = (
-        ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html'
-    ).read_text()
+    template = (ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html').read_text()
     shell = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
 
     assert "('alerts', 'Alerts', 'siren'" in shell
     assert 'Alertmanager is primary. Metrics Source is fallback evidence.' in template
     assert 'committed Analytics materialization' in template
     assert 'alert_per_page' in template
-    assert "[5, 10, 25, 50]" in template
+    assert '[5, 10, 25, 50]' in template
     assert "url_for('artifact_registry.analytics_alerts_table')" in template

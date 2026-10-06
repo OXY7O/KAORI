@@ -666,12 +666,12 @@ def test_object_storage_alerts_use_independent_alert_and_metric_evidence_paths()
     assert "validation_profile = 'object-storage-alerts-v1'" in migration
     assert "validation_status = 'validation_required'" in migration
 
+
 def test_object_storage_analytics_snapshot_blocker_targets_current_jobs_workspace() -> None:
     dependencies = read('app/storage/object_storage/analytics/dependencies.py')
     jobs_routes = read('app/platform_operations/jobs/routes.py')
 
     assert "'action_endpoint': 'jobs.configuration'" in dependencies
     assert "'action_endpoint': 'jobs.overview'" not in dependencies
-    assert "def configuration() -> ResponseReturnValue:" in jobs_routes
+    assert 'def configuration() -> ResponseReturnValue:' in jobs_routes
     assert "@bp.get('/configuration')" in jobs_routes
-
