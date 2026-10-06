@@ -239,9 +239,9 @@ def _security_scope_evidence(
         .join(RegistryProject, RegistryRepository.project_id == RegistryProject.id)
     )
     finding_scope = _apply_source_scope(finding_scope, source_ids, scoped=scoped)
-    critical_total = finding_scope.filter(
-        func.lower(RegistryVulnerability.severity) == 'critical'
-    ).order_by(None).count()
+    critical_total = (
+        finding_scope.filter(func.lower(RegistryVulnerability.severity) == 'critical').order_by(None).count()
+    )
     high_total = finding_scope.filter(func.lower(RegistryVulnerability.severity) == 'high').order_by(None).count()
     affected_artifacts = int(
         finding_scope.filter(func.lower(RegistryVulnerability.severity).in_(('critical', 'high')))
@@ -452,9 +452,7 @@ def _security_vulnerability_page(
                 ),
                 'repository': repository.name,
                 'project': project.name,
-                'provider_label': (
-                    source.provider_key.replace('_', ' ').title() if source is not None else 'Registry'
-                ),
+                'provider_label': (source.provider_key.replace('_', ' ').title() if source is not None else 'Registry'),
                 'source_name': source.name if source is not None else 'Unknown Source',
                 'runtime_exposure_count': runtime_counts.get(int(artifact.id), 0),
                 'observed_at': scan_snapshot.observed_at,
