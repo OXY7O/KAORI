@@ -1,7 +1,7 @@
 # Artifact Registry Domain
 
 Issue #558 defines the provider-neutral Registry direction. Artifact Registry operational work is split across
-#895 (inventory), #896/#915 (security), #897 (runtime correlation), #898 (governance), and #899 (analytics).
+#895 (inventory), #896/#915 (security), #897 (runtime correlation), #898 (governance), #899 (analytics), and #952 (Registry alert-source analytics / fast Analytics delivery).
 
 ## Responsibility Boundary
 
@@ -161,6 +161,46 @@ if a later Registry artifact snapshot or current Kubernetes Pod generation becom
 must keep the committed evidence visible and surface **Refresh Unavailable** only in the Correlation Snapshot
 status/description; it must not render a second blocking banner above readable data. Full-page prerequisite
 blocking is reserved for the pre-materialization state where no committed Runtime Correlation snapshot exists.
+
+## Registry Alert Analytics Contract
+
+Artifact Registry alert analytics extends the same Alert Source architecture already used by Kubernetes and
+Object Storage. It does not introduce a Registry-local Alertmanager client or binding model.
+
+```text
+Alertmanager
+  → Alert Source / IntegrationBinding
+  → registry_instance
+  → Analytics worker materialization
+  → RegistryAnalyticsSnapshot.alerts
+  → Artifact Registry → Analytics → Alerts
+```
+
+Alertmanager is the primary alert-state authority. When Alertmanager is not eligible or available, the
+bound Metrics Source may provide bounded active-alert fallback evidence through the canonical
+`ALERTS{alertstate=~"pending|firing"}` query path. Both sources are read by worker materialization; normal
+Registry page rendering never performs live Alertmanager, Prometheus, or Thanos requests.
+
+The canonical consumer profile is `registry-alerts-v1` for `registry_instance`. Shared sources require
+selector isolation and existing bindings must be revalidated so the canonical consumer profile and
+capability evidence are recorded.
+
+Alert-source failure is an observability dependency only. It does not invalidate committed Registry
+inventory, security, runtime, or governance truth.
+
+## Analytics Fast-Shell Contract
+
+Artifact Registry Analytics uses the same bounded delivery principle as the canonical operational dashboard:
+
+```text
+GET /artifact-registry/analytics
+  → fast shell
+  → lazy Analytics Summary
+  → lazy active workspace section
+```
+
+Inactive Analytics tabs are not rendered before first paint. Growth, Capacity, Usage, Risk, Governance,
+Alerts, and Insights remain separate analytical projections over committed materialization.
 
 ## Operational UI Contract
 
