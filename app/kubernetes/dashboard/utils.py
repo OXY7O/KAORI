@@ -3,9 +3,8 @@ from __future__ import annotations
 from collections.abc import Iterable
 from datetime import UTC, datetime
 from typing import Any
+
 from app.kubernetes.dashboard.schema import CapacityItem, CapacitySnapshot, DashboardClusterOption
-
-
 def get_attr(obj: Any, *names: str, default: Any = None) -> Any:
     for name in names:
         if hasattr(obj, name):
