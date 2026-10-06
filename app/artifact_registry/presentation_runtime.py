@@ -21,6 +21,7 @@ from app.models.registry import (
     RegistryWorkloadBinding,
 )
 
+
 def _runtime_match_state(match_type: str, confidence: str) -> dict[str, str]:
     if str(match_type or '').lower() == 'digest':
         return {
