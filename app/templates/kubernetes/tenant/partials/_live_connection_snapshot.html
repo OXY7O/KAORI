@@ -1,6 +1,8 @@
 {% import "components/action_button.html" as action_button %}
 {% import "components/snapshot_context_bar.html" as snapshot_context %}
-<div id="tenant-live-provider-connectivity" class="space-y-2" aria-live="polite">
+<div id="tenant-live-provider-connectivity"
+     class="space-y-2"
+     aria-live="polite">
     {{ snapshot_context.render(source_label=tenant_live_connection.source_label,
         status=tenant_live_connection.status,
         tone=tenant_live_connection.tone,
