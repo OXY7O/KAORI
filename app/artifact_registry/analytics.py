@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from app.artifact_registry.security.contracts import registry_scan_evidence_ready
 from app.extensions.db import db
 from app.integrations.observability.metrics_source.application.consumer import MetricsConsumer
 from app.integrations.observability.metrics_source.exceptions import MetricsSourceError
@@ -123,6 +124,7 @@ def _metrics_evidence(identity: IntegrationInstance) -> dict[str, Any]:
         **values,
     }
 
+
 def _previous_snapshot(identity_id: int) -> RegistryAnalyticsSnapshot | None:
     return (
         RegistryAnalyticsSnapshot.query.filter_by(
@@ -200,7 +202,7 @@ def materialize_registry_analytics(
     )
 
     total_size = sum(int(artifact.size_bytes or 0) for artifact in artifacts)
-    scanned = sum(bool(str(artifact.scan_status or '').strip()) for artifact in artifacts)
+    scanned = sum(registry_scan_evidence_ready(artifact.scan_status) for artifact in artifacts)
     critical_findings = sum(
         int((artifact.vulnerability_summary or {}).get('critical') or 0)
         for artifact in artifacts
@@ -222,7 +224,7 @@ def materialize_registry_analytics(
     )
     tag_only = sum(binding.match_type == 'tag' for binding in bindings)
     scan_gaps_runtime = sum(
-        artifact.id in runtime_artifact_ids and not str(artifact.scan_status or '').strip()
+        artifact.id in runtime_artifact_ids and not registry_scan_evidence_ready(artifact.scan_status)
         for artifact in artifacts
     )
     unsigned_runtime = sum(
