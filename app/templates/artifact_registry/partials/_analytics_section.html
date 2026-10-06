@@ -192,8 +192,8 @@
             </div>
 
             <form method="GET"
-                  action="{{ url_for('artifact_registry.analytics_section', section='alerts') }}"
-                  hx-get="{{ url_for('artifact_registry.analytics_section', section='alerts') }}"
+                  action="{{ url_for('artifact_registry.analytics_alerts_table') }}"
+                  hx-get="{{ url_for('artifact_registry.analytics_alerts_table') }}"
                   hx-trigger="change, input changed delay:450ms"
                   hx-target="#artifact-registry-analytics-active-section"
                   hx-swap="outerHTML"
@@ -228,12 +228,11 @@
                 </table>
             </div>
             {{ registry.footer(
-                'artifact_registry.analytics_section',
+                'artifact_registry.analytics_alerts_table',
                 'artifact-registry-analytics-active-section',
                 'artifact-registry-alerts-loading',
                 analytics.alert_pagination,
                 {
-                    'section': 'alerts',
                     'alert_q': analytics.alert_filters.search,
                     'alert_severity': analytics.alert_filters.severity,
                     'alert_state': analytics.alert_filters.state,
