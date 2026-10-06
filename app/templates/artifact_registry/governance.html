@@ -22,55 +22,50 @@
                     {% endcall %}
                 </div>
                 {{ page_hero.context_card('Registry governance posture',
-                    'Committed Evidence',
-                    'Governance Posture',
-                    governance.posture.label,
-                    governance.posture.tone,
-                    [
-                        ('database-backup', 'Committed Providers', governance.governance_ready_count ~ '/' ~ governance.provider_count, 'Governance snapshots'),
-                        ('clock-3', 'Last Committed', governance.snapshot_context.latest_collected_at|user_datetime if governance.snapshot_context.latest_collected_at else 'Not Collected', 'Policy and replication evidence')
-                    ],
-                    'Open Registry Integrations',
-                    url_for('integrations.registry'),
-                    action_icon='settings-2'
+                                'Committed Evidence',
+                                'Governance Posture',
+                                governance.posture.label,
+                                governance.posture.tone,
+                                [
+                                ('database-backup', 'Committed Providers', governance.governance_ready_count ~ '/' ~ governance.provider_count, 'Governance snapshots') ,
+                ('clock-3', 'Last Committed', governance.snapshot_context.latest_collected_at|user_datetime if governance.snapshot_context.latest_collected_at else 'Not Collected', 'Policy and replication evidence')
+                ],
+                'Open Registry Integrations',
+                url_for('integrations.registry'),
+                action_icon='settings-2'
                 ) }}
             </div>
         </section>
-
         {% if governance.setup.is_blocked %}
             {% include "artifact_registry/components/_setup_blocker.html" %}
         {% else %}
-            {{ snapshot_context_bar.render(
-                source_label=governance.snapshot_context.source_label,
-                status=governance.snapshot_context.status,
-                tone=governance.snapshot_context.tone,
-                description=governance.snapshot_context.description,
-                latest_collected=governance.snapshot_context.latest_collected_at|user_datetime if governance.snapshot_context.latest_collected_at else 'Not Collected',
-                scope_label=governance.snapshot_context.scope_label,
-                coverage_label=governance.snapshot_context.coverage_label,
-                exceptions_label=governance.snapshot_context.exceptions_label,
-                title='Governance Data Snapshot',
-                icon='scale',
-                latest_supporting='Latest committed Governance evidence.',
-                scope_supporting='Provider-neutral Registry scope.',
-                coverage_supporting=governance.snapshot_context.coverage_supporting,
-                exceptions_supporting=governance.snapshot_context.exceptions_supporting,
-                coverage_tone=governance.snapshot_context.coverage_tone,
-                exceptions_tone=governance.snapshot_context.exceptions_tone,
-                metric_icon_palette='brand',
-                coverage_metric_label='Governance Coverage',
-                exceptions_metric_label='Evidence Exceptions'
-            ) }}
-
+            {{ snapshot_context_bar.render(source_label=governance.snapshot_context.source_label,
+                        status=governance.snapshot_context.status,
+                        tone=governance.snapshot_context.tone,
+                        description=governance.snapshot_context.description,
+                        latest_collected=governance.snapshot_context.latest_collected_at|user_datetime if governance.snapshot_context.latest_collected_at else 'Not Collected',
+                        scope_label=governance.snapshot_context.scope_label,
+                        coverage_label=governance.snapshot_context.coverage_label,
+                        exceptions_label=governance.snapshot_context.exceptions_label,
+                        title='Governance Data Snapshot',
+                        icon='scale',
+                        latest_supporting='Latest committed Governance evidence.',
+                        scope_supporting='Provider-neutral Registry scope.',
+                        coverage_supporting=governance.snapshot_context.coverage_supporting,
+                        exceptions_supporting=governance.snapshot_context.exceptions_supporting,
+                        coverage_tone=governance.snapshot_context.coverage_tone,
+                        exceptions_tone=governance.snapshot_context.exceptions_tone,
+                        metric_icon_palette='brand',
+                        coverage_metric_label='Governance Coverage',
+                        exceptions_metric_label='Evidence Exceptions') }}
             <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
                      aria-labelledby="artifact-registry-governance-operations-heading">
                 <header class="flex flex-col gap-4 border-b border-outline-subtle px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
-                    <div class="min-w-0 flex-1">
-                        {% include "artifact_registry/partials/_governance_sync_live_state.html" %}
-                    </div>
+                    <div class="min-w-0 flex-1">{% include "artifact_registry/partials/_governance_sync_live_state.html" %}</div>
                     <div class="flex shrink-0 flex-wrap items-center gap-2">
                         {% if current_user.has_permission('artifact_registry.sync') %}
-                            <form method="post" action="{{ url_for('artifact_registry.governance_sync') }}">
+                            <form method="post"
+                                  action="{{ url_for('artifact_registry.governance_sync') }}">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button type="submit"
                                         {% if governance.sync_state.is_active %}disabled{% endif %}
@@ -120,19 +115,16 @@
                     {% endfor %}
                 </div>
             </section>
-
             <section id="artifact-registry-governance-registry"
                      class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
                 {{ framed_workspace_tabs.render_navigation([
-                    ('policies', 'Policies', 'shield-check', url_for('artifact_registry.governance', tab='policies', page=1, per_page=governance.pagination.per_page), governance.project_count),
-                    ('replication', 'Replication', 'git-compare-arrows', url_for('artifact_registry.governance', tab='replication', page=1, per_page=governance.pagination.per_page), governance.replication_count)
+                                ('policies', 'Policies', 'shield-check', url_for('artifact_registry.governance', tab='policies', page=1, per_page=governance.pagination.per_page) , governance.project_count),
+                ('replication', 'Replication', 'git-compare-arrows', url_for('artifact_registry.governance', tab='replication', page=1, per_page=governance.pagination.per_page), governance.replication_count)
                 ], governance.active_tab, prefix='registry-governance', aria_label='Registry Governance Sections', hx_target='#artifact-registry-governance-registry', hx_select='#artifact-registry-governance-registry') }}
-
                 <div id="artifact-registry-governance-loading"
                      class="htmx-indicator border-b border-outline-subtle px-5 py-2 text-xs text-content-muted">
                     Loading Governance evidence…
                 </div>
-
                 {% if governance.active_tab == 'policies' %}
                     <header class="border-b border-outline-subtle px-5 py-4">
                         <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Policy Evidence</p>
@@ -167,16 +159,14 @@
                             </tbody>
                         </table>
                     </div>
-                    {{ registry.footer(
-                        'artifact_registry.governance',
-                        'artifact-registry-governance-registry',
-                        'artifact-registry-governance-loading',
-                        governance.pagination,
-                        governance.filter_query,
-                        [5, 10, 25, 50],
-                        resource_label='Projects',
-                        control_name='artifact-registry-governance-policies'
-                    ) }}
+                    {{ registry.footer('artifact_registry.governance',
+                                        'artifact-registry-governance-registry',
+                                        'artifact-registry-governance-loading',
+                                        governance.pagination,
+                                        governance.filter_query,
+                                        [5, 10, 25, 50],
+                                        resource_label='Projects',
+                                        control_name='artifact-registry-governance-policies') }}
                 {% else %}
                     <header class="border-b border-outline-subtle px-5 py-4">
                         <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Resilience Evidence</p>
@@ -201,12 +191,14 @@
                                     <tr>
                                         <td class="px-5 py-3 font-semibold text-content-primary">{{ row.name }}</td>
                                         <td class="px-5 py-3 text-content-secondary">{{ row.provider_label }}</td>
-                                        <td class="px-5 py-3">{{ table_label.status_indicator_label('Enabled' if row.enabled else ('Disabled' if row.enabled is not none else 'Unknown'), 'normal' if row.enabled else ('info' if row.enabled is false else 'unknown')) }}</td>
+                                        <td class="px-5 py-3">{{ table_label.status_indicator_label('Enabled' if row.enabled else ('Disabled' if row.enabled is not none else 'Unknown') , 'normal' if row.enabled else ('info' if row.enabled is false else 'unknown')) }}</td>
                                         <td class="px-5 py-3 text-content-secondary">{{ row.trigger_type or 'Not Observed' }}</td>
                                         <td class="px-5 py-3 text-content-secondary">{{ row.source_registry or 'Provider Default' }}</td>
                                         <td class="px-5 py-3 text-content-secondary">
                                             <p>{{ row.destination_registry or 'Not Observed' }}</p>
-                                            {% if row.destination_namespace %}<p class="mt-0.5 text-xs text-content-muted">{{ row.destination_namespace }}</p>{% endif %}
+                                            {% if row.destination_namespace %}
+                                                <p class="mt-0.5 text-xs text-content-muted">{{ row.destination_namespace }}</p>
+                                            {% endif %}
                                         </td>
                                         <td class="px-5 py-3 text-content-muted">{{ row.observed_at|user_datetime }}</td>
                                     </tr>
@@ -218,16 +210,14 @@
                             </tbody>
                         </table>
                     </div>
-                    {{ registry.footer(
-                        'artifact_registry.governance',
-                        'artifact-registry-governance-registry',
-                        'artifact-registry-governance-loading',
-                        governance.pagination,
-                        governance.filter_query,
-                        [5, 10, 25, 50],
-                        resource_label='Replication Policies',
-                        control_name='artifact-registry-governance-replication'
-                    ) }}
+                    {{ registry.footer('artifact_registry.governance',
+                                        'artifact-registry-governance-registry',
+                                        'artifact-registry-governance-loading',
+                                        governance.pagination,
+                                        governance.filter_query,
+                                        [5, 10, 25, 50],
+                                        resource_label='Replication Policies',
+                                        control_name='artifact-registry-governance-replication') }}
                 {% endif %}
             </section>
         {% endif %}
