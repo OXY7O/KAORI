@@ -114,24 +114,38 @@ def test_registry_analytics_materializes_operational_harbor_metric_profile() -> 
     assert "scope_type='registry_instance'" in analytics
 
 
-def test_registry_analytics_workspace_is_operational_and_intelligence_bounded() -> None:
+def test_registry_analytics_workspace_is_reusable_and_intelligence_bounded() -> None:
     template = (
         ROOT / 'app/templates/artifact_registry/analytics.html'
     ).read_text()
+    presentation = (ROOT / 'app/artifact_registry/presentation.py').read_text()
+    routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
 
+    assert 'components/framed_workspace_tabs.html' in template
+    assert 'framed_workspace_tabs.render_navigation' in template
     for section in (
-        'Registry Health & Throughput',
-        'Growth & Capacity Outlook',
-        'Most Pulled Projects',
-        'Security Evidence Coverage',
-        'Policy Coverage',
-        'Analytics Materialization Coverage',
-        'Central Intelligence Projection',
+        'Analytics Summary',
+        'Analytics Workspace',
+        'Registry Growth',
+        'Capacity Outlook',
+        'Artifact Usage',
+        'Risk Concentration',
+        'Governance Gaps',
+        'Derived Insights',
+        'Central Intelligence',
     ):
         assert section in template
 
-    assert 'page rendering never queries Harbor or Prometheus directly' in template
-    assert 'Review candidates only; no automatic cleanup' in template
+    for tab in ('growth', 'capacity', 'usage', 'risk', 'governance', 'insights'):
+        assert f"'{tab}'" in template
+        assert f"'{tab}'" in presentation
+
+    assert "active_tab=request.args.get('tab', 'growth', type=str)" in routes
+    assert 'no request-time Harbor or Prometheus dependency' in template
+    assert 'never auto-cleaned' in template
     assert 'recommendation lifecycle, Accepted Risk, escalation, and automation control remain centrally governed' in template
     assert "url_for('intelligence.recommendations', domain='registry')" in template
+
+    assert "aggregate['inflight_requests'] > 100" not in presentation
+    assert "aggregate['task_queue_size'] > 0" not in presentation
 
