@@ -18,14 +18,12 @@
         {% include 'components/states/_blocked_state.html' %}
     {% endcall %}
 {% elif dashboard.alerts_snapshot.source_status == 'Available' and alert_total > 0 %}
-    {{ alert_response.render(
-    'Meaning, triage order, and controlled response flow for active Kubernetes alerts.',
-    alert_response_steps,
-    'Controlled Alert Response Flow',
-    'Potential active impact. Start incident triage and establish ownership.',
-    'Degradation or risk is developing. Investigate before escalation.',
-    'Operational context or low-risk signal. Validate relevance and recurrence.'
-) }}
+    {{ alert_response.render('Meaning, triage order, and controlled response flow for active Kubernetes alerts.',
+        alert_response_steps,
+        'Controlled Alert Response Flow',
+        'Potential active impact. Start incident triage and establish ownership.',
+        'Degradation or risk is developing. Investigate before escalation.',
+        'Operational context or low-risk signal. Validate relevance and recurrence.') }}
 {% else %}
     {% call operational_section_card.render(
         'Alert Interpretation & Response',
