@@ -42,7 +42,9 @@ def upgrade() -> None:
         ),
     )
     op.create_index('ix_registry_workload_bindings_artifact_id', 'registry_workload_bindings', ['artifact_id'])
-    op.create_index('ix_registry_workload_bindings_pod_inventory_id', 'registry_workload_bindings', ['pod_inventory_id'])
+    op.create_index(
+        'ix_registry_workload_bindings_pod_inventory_id', 'registry_workload_bindings', ['pod_inventory_id']
+    )
     op.create_index('ix_registry_workload_bindings_cluster_id', 'registry_workload_bindings', ['cluster_id'])
     op.create_index(
         'ix_registry_workload_bindings_cluster_namespace',

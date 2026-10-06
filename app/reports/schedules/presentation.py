@@ -68,7 +68,9 @@ def serialize_schedule(
     scope_label = (
         'Object Storage System'
         if scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE
-        else ('Artifact Registry' if scope_asset_type == ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE else 'Kubernetes Cluster')
+        else (
+            'Artifact Registry' if scope_asset_type == ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE else 'Kubernetes Cluster'
+        )
     )
     namespace_label = schedule.namespace or (
         'System Scope'

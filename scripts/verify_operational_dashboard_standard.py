@@ -32,9 +32,7 @@ ARTIFACT_HERO = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / 
 ARTIFACT_SIGNAL_OVERVIEW = (
     ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_signal_overview.html'
 )
-ARTIFACT_KPI_CARDS = (
-    ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_kpi_cards.html'
-)
+ARTIFACT_KPI_CARDS = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_kpi_cards.html'
 ARTIFACT_REPORTING = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_reporting.html'
 ARTIFACT_CAPACITY = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_capacity.html'
 ARTIFACT_SIGNALS = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_signals.html'
@@ -73,8 +71,12 @@ KUBERNETES_INVENTORY = DASHBOARD_DIR / 'partials' / '_inventory_summary.html'
 KUBERNETES_FRESHNESS = DASHBOARD_DIR / 'partials' / '_data_freshness.html'
 OBJECT_OVERVIEW = OBJECT_DASHBOARD_DIR / 'partials' / '_overview.html'
 ARTIFACT_ALERT_SUMMARY = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_alerts_summary.html'
-ARTIFACT_ALERT_GUIDANCE = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_alert_response_guidance.html'
-ARTIFACT_RECOMMENDATIONS = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_recommended_actions.html'
+ARTIFACT_ALERT_GUIDANCE = (
+    ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_alert_response_guidance.html'
+)
+ARTIFACT_RECOMMENDATIONS = (
+    ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_recommended_actions.html'
+)
 TENANT_SETUP_WORKSPACE = (
     ROOT / 'app' / 'templates' / 'kubernetes' / 'tenant' / 'partials' / '_tenant_setup_workspace.html'
 )
@@ -444,9 +446,7 @@ def _verify_artifact_registry_dashboard(
         ),
         'Artifact Registry committed bounded dashboard projection',
     )
-    shell_projection = presentation.split('def build_overview(', 1)[1].split(
-        'def build_overview_section(', 1
-    )[0]
+    shell_projection = presentation.split('def build_overview(', 1)[1].split('def build_overview_section(', 1)[0]
     for forbidden in (
         'RegistryProject.query',
         'RegistryRepository.query',
@@ -458,18 +458,14 @@ def _verify_artifact_registry_dashboard(
         '_registry_reporting(',
     ):
         if forbidden in shell_projection:
-            raise AssertionError(
-                f'Artifact Registry Fast Shell contains unrelated projection work: {forbidden}'
-            )
+            raise AssertionError(f'Artifact Registry Fast Shell contains unrelated projection work: {forbidden}')
     for token in (
         'HarborClient(',
         'requests.get',
         'httpx.get',
     ):
         if token in routes or token in presentation:
-            raise AssertionError(
-                f'Artifact Registry dashboard web boundary contains live provider access: {token}'
-            )
+            raise AssertionError(f'Artifact Registry dashboard web boundary contains live provider access: {token}')
 
 
 def verify() -> None:
@@ -740,9 +736,7 @@ def verify() -> None:
         if 'item_count=4' not in signal_source:
             raise AssertionError(f'{owner}: KPI loader must represent four indicators')
     if LEGACY_KUBERNETES_SECTION_LOADING.exists():
-        raise AssertionError(
-            'Kubernetes dashboard retains retired page-local _section_loading.html'
-        )
+        raise AssertionError('Kubernetes dashboard retains retired page-local _section_loading.html')
     _require(
         dashboards_readme,
         (
@@ -1078,20 +1072,18 @@ def verify() -> None:
         ),
         'shared Alerts Summary dashed empty evidence',
     )
-    unavailable_alert_branch = alert_summary_workspace.split(
-        '{% elif not source_available %}', 1
-    )[1].split('{% elif total_alerts == 0 %}', 1)[0]
+    unavailable_alert_branch = alert_summary_workspace.split('{% elif not source_available %}', 1)[1].split(
+        '{% elif total_alerts == 0 %}', 1
+    )[0]
     if 'components/states/_blocked_state.html' in unavailable_alert_branch:
-        raise AssertionError(
-            'shared Alerts Summary source-unavailable evidence must use dashed empty-state panel'
-        )
+        raise AssertionError('shared Alerts Summary source-unavailable evidence must use dashed empty-state panel')
 
     _require(
         recommendation_cards,
         (
             'macro render(',
             "'Recommended Actions'",
-            "intelligence.recommendation_details",
+            'intelligence.recommendation_details',
             'normalized_priority',
             'No Active Recommendations',
         ),
@@ -1167,7 +1159,7 @@ def verify() -> None:
         ('Artifact Registry Operational Signal KPI cards', artifact_signal_overview),
     ):
         for retired_scope in (
-            "scope_label=overview.scope_label",
+            'scope_label=overview.scope_label',
             "scope_label='Selected System'",
             "scope_label='Fleet'",
             'scope_label=scope_label',
@@ -1213,7 +1205,7 @@ def verify() -> None:
     _require(
         dashboard_application_contract,
         (
-            "OPERATIONAL_DASHBOARD_TABS: tuple[str, ...] = (",
+            'OPERATIONAL_DASHBOARD_TABS: tuple[str, ...] = (',
             "'overview'",
             "'capacity'",
             "'signals'",
@@ -1313,9 +1305,7 @@ def verify() -> None:
         ),
         'dashboard service boundary',
     )
-    freshness_projection = service.split('def _populate_data_freshness(', 1)[1].split(
-        'def _populate_capacity(', 1
-    )[0]
+    freshness_projection = service.split('def _populate_data_freshness(', 1)[1].split('def _populate_capacity(', 1)[0]
     for broad_builder in (
         '_capacity_signal(',
         '_alerts_signal(',
@@ -1324,9 +1314,7 @@ def verify() -> None:
         'build_reporting_snapshot(',
     ):
         if broad_builder in freshness_projection:
-            raise AssertionError(
-                f'Kubernetes Data Freshness rebuilds unrelated presentation evidence: {broad_builder}'
-            )
+            raise AssertionError(f'Kubernetes Data Freshness rebuilds unrelated presentation evidence: {broad_builder}')
     _require(
         service,
         ('from app.common.pagination import paginate_sequence',),
@@ -1338,9 +1326,7 @@ def verify() -> None:
         'ClusterHealthPagination',
     ):
         if stale in cluster_health_builder or stale in schema:
-            raise AssertionError(
-                f'Kubernetes Cluster Health retains local pagination mechanics: {stale}'
-            )
+            raise AssertionError(f'Kubernetes Cluster Health retains local pagination mechanics: {stale}')
     for token in (
         'kubernetes.client',
         'prometheus_api_client',

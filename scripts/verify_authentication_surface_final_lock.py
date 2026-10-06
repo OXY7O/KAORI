@@ -162,7 +162,11 @@ def main() -> int:
     )
     require('lg:grid-cols-3' in setup and 'lg:col-span-2' in setup, 'Setup Required console split drifted', errors)
     require('Readiness Summary' not in setup, 'Setup Required must not duplicate readiness in a summary panel', errors)
-    require('components/info_flow.html' not in setup, 'Setup Required must not return to the vertical Info Flow layout', errors)
+    require(
+        'components/info_flow.html' not in setup,
+        'Setup Required must not return to the vertical Info Flow layout',
+        errors,
+    )
     require(
         'components/operational_section_card.html' not in setup,
         'Setup Required must not return to the giant outer operational card',

@@ -567,14 +567,19 @@ def _validate_primary_scope(
             errors.append('A selected Object Storage system is required for this report artifact.')
 
     if report_spec.scope_asset_type == ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE:
-        registry_count = db.session.scalar(
-            select(func.count(IntegrationInstance.id)).where(
-                IntegrationInstance.integration_type == 'registry',
-                IntegrationInstance.lifecycle_status == 'active',
+        registry_count = (
+            db.session.scalar(
+                select(func.count(IntegrationInstance.id)).where(
+                    IntegrationInstance.integration_type == 'registry',
+                    IntegrationInstance.lifecycle_status == 'active',
+                )
             )
-        ) or 0
+            or 0
+        )
         if registry_count == 0:
-            errors.append('Add at least one active Artifact Registry integration before creating Registry reports or schedules.')
+            errors.append(
+                'Add at least one active Artifact Registry integration before creating Registry reports or schedules.'
+            )
         if not str(form_state.get('registry_integration_id') or '').strip():
             errors.append('A selected Artifact Registry integration is required for this report artifact.')
 

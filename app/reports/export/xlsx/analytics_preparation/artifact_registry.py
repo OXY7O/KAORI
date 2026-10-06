@@ -44,8 +44,14 @@ def prepare_artifact_registry(
         {'dimension': 'Scan Coverage', 'value': first(security, 'scan_coverage', default='Not Available')},
         {'dimension': 'Critical Findings', 'value': integer(security.get('critical_findings')) or 0},
         {'dimension': 'Runtime Bindings', 'value': integer(runtime.get('bindings')) or 0},
-        {'dimension': 'Governance Collection', 'value': first(governance, 'collection_status', default='Not Collected')},
-        {'dimension': 'Growth / Day', 'value': first(mapping(capacity.get('growth')), 'size_growth_display', default='Not Available')},
+        {
+            'dimension': 'Governance Collection',
+            'value': first(governance, 'collection_status', default='Not Collected'),
+        },
+        {
+            'dimension': 'Growth / Day',
+            'value': first(mapping(capacity.get('growth')), 'size_growth_display', default='Not Available'),
+        },
     ]
     tables = [
         table(
@@ -110,10 +116,7 @@ def prepare_artifact_registry(
             )
         )
 
-    chart_rows = tuple(
-        {'category': row['project'], 'value': index}
-        for index, row in enumerate(consumers[:8], start=1)
-    )
+    chart_rows = tuple({'category': row['project'], 'value': index} for index, row in enumerate(consumers[:8], start=1))
     chart = (
         AnalyticsChartData(
             title='Registry Top Consumer Order',
@@ -128,7 +131,7 @@ def prepare_artifact_registry(
         else None
     )
     readout = (
-        f"{consumers[0]['project']} is the leading committed consumer in the current Registry scope."
+        f'{consumers[0]["project"]} is the leading committed consumer in the current Registry scope.'
         if consumers
         else 'No committed consumer ranking is available for the selected Registry integration.'
     )

@@ -35,7 +35,9 @@ PERMISSIONS = (
 )
 
 
-def _ensure_permission(bind, permissions, *, key: str, module: str, action: str, description: str, now: datetime) -> int:
+def _ensure_permission(
+    bind, permissions, *, key: str, module: str, action: str, description: str, now: datetime
+) -> int:
     permission_id = bind.execute(sa.select(permissions.c.id).where(permissions.c.key == key)).scalar()
     if permission_id is None:
         bind.execute(
@@ -51,13 +53,13 @@ def _ensure_permission(bind, permissions, *, key: str, module: str, action: str,
     return int(permission_id)
 
 
-def _copy_role_assignments(bind, permissions, role_permissions, *, source_key: str, target_id: int, now: datetime) -> None:
+def _copy_role_assignments(
+    bind, permissions, role_permissions, *, source_key: str, target_id: int, now: datetime
+) -> None:
     source_id = bind.execute(sa.select(permissions.c.id).where(permissions.c.key == source_key)).scalar()
     if source_id is None:
         return
-    for row in bind.execute(
-        sa.select(role_permissions.c.role_id).where(role_permissions.c.permission_id == source_id)
-    ):
+    for row in bind.execute(sa.select(role_permissions.c.role_id).where(role_permissions.c.permission_id == source_id)):
         exists = bind.execute(
             sa.select(role_permissions.c.role_id).where(
                 role_permissions.c.role_id == row.role_id,

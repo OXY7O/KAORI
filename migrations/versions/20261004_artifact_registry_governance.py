@@ -126,7 +126,9 @@ def upgrade() -> None:
         ),
     )
     op.alter_column('registry_webhook_events', 'status', server_default=None)
-    op.create_index('ix_registry_webhook_events_integration_instance_id', 'registry_webhook_events', ['integration_instance_id'])
+    op.create_index(
+        'ix_registry_webhook_events_integration_instance_id', 'registry_webhook_events', ['integration_instance_id']
+    )
     op.create_index('ix_registry_webhook_events_job_execution_id', 'registry_webhook_events', ['job_execution_id'])
     op.create_index(
         'ix_registry_webhook_events_instance_received',
@@ -144,7 +146,9 @@ def downgrade() -> None:
     op.drop_table('registry_webhook_events')
     op.drop_table('registry_webhook_endpoints')
     op.drop_index('ix_registry_replication_instance_observed', table_name='registry_replication_policies')
-    op.drop_index('ix_registry_replication_policies_integration_instance_id', table_name='registry_replication_policies')
+    op.drop_index(
+        'ix_registry_replication_policies_integration_instance_id', table_name='registry_replication_policies'
+    )
     op.drop_table('registry_replication_policies')
     op.drop_index('ix_registry_project_governance_observed', table_name='registry_project_governance')
     op.drop_index('ix_registry_project_governance_project_id', table_name='registry_project_governance')
