@@ -22,23 +22,21 @@
                     </div>
                 {% endcall %}
             </div>
-            {{ page_hero.context_card(
-                'Cross-Domain Correlation',
-                'Committed Runtime Evidence',
-                'Evidence Boundary',
-                runtime.posture.label,
-                runtime.posture.tone,
-                [
-                    ('database', 'Registry Scope', runtime.scope.source_label, 'Committed Artifact Registry'),
-                    ('boxes', 'Kubernetes Scope', runtime.scope.cluster_label, 'Committed Kubernetes inventory')
-                ],
-                'Open Security',
-                url_for('artifact_registry.security'),
-                action_icon='shield-check'
+            {{ page_hero.context_card('Cross-Domain Correlation',
+                        'Committed Runtime Evidence',
+                        'Evidence Boundary',
+                        runtime.posture.label,
+                        runtime.posture.tone,
+                        [
+                        ('database', 'Registry Scope', runtime.scope.source_label, 'Committed Artifact Registry') ,
+            ('boxes', 'Kubernetes Scope', runtime.scope.cluster_label, 'Committed Kubernetes inventory')
+            ],
+            'Open Security',
+            url_for('artifact_registry.security'),
+            action_icon='shield-check'
             ) }}
         </div>
     </section>
-
     {% if runtime.setup.is_blocked %}
         {% set blocked_state_icon = "waypoints" %}
         {% set blocked_state_label = "Correlation Prerequisites" %}
@@ -52,123 +50,106 @@
         {% set blocked_state_variant = "section" %}
         {% include "components/states/_blocked_state.html" %}
     {% else %}
-        {{ snapshot_context_bar.render(
-            source_label=runtime.snapshot.source_label,
-            status=runtime.snapshot.status,
-            tone=runtime.snapshot.tone,
-            description=runtime.snapshot.description,
-            latest_collected=runtime.snapshot.latest_collected_at|user_datetime if runtime.snapshot.latest_collected_at else 'Not Materialized',
-            scope_label=runtime.snapshot.scope_label,
-            coverage_label=runtime.snapshot.coverage_label,
-            exceptions_label=runtime.snapshot.exceptions_label,
-            icon='waypoints',
-            title='Correlation Snapshot',
-            latest_supporting='Last successful Runtime Correlation.',
-            scope_supporting='Committed Registry × Kubernetes.',
-            coverage_supporting=runtime.snapshot.coverage_supporting,
-            exceptions_supporting=runtime.snapshot.exceptions_supporting,
-            coverage_tone=runtime.snapshot.coverage_tone,
-            exceptions_tone=runtime.snapshot.exceptions_tone,
-            metric_icon_palette='brand',
-            latest_label='Last Correlated',
-            scope_metric_label='Active Scope',
-            coverage_metric_label='Runtime Coverage',
-            exceptions_metric_label='Correlation Exceptions'
-        ) }}
-
+        {{ snapshot_context_bar.render(source_label=runtime.snapshot.source_label,
+                status=runtime.snapshot.status,
+                tone=runtime.snapshot.tone,
+                description=runtime.snapshot.description,
+                latest_collected=runtime.snapshot.latest_collected_at|user_datetime if runtime.snapshot.latest_collected_at else 'Not Materialized',
+                scope_label=runtime.snapshot.scope_label,
+                coverage_label=runtime.snapshot.coverage_label,
+                exceptions_label=runtime.snapshot.exceptions_label,
+                icon='waypoints',
+                title='Correlation Snapshot',
+                latest_supporting='Last successful Runtime Correlation.',
+                scope_supporting='Committed Registry × Kubernetes.',
+                coverage_supporting=runtime.snapshot.coverage_supporting,
+                exceptions_supporting=runtime.snapshot.exceptions_supporting,
+                coverage_tone=runtime.snapshot.coverage_tone,
+                exceptions_tone=runtime.snapshot.exceptions_tone,
+                metric_icon_palette='brand',
+                latest_label='Last Correlated',
+                scope_metric_label='Active Scope',
+                coverage_metric_label='Runtime Coverage',
+                exceptions_metric_label='Correlation Exceptions') }}
         <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
                  aria-label="Runtime Usage summary">
-            {{ metric_card.render(
-                'Runtime Bindings',
-                runtime.total,
-                'Committed Registry artifact to Kubernetes runtime bindings.',
-                'link-2',
-                source_label='Committed Correlation',
-                scope_label=runtime.scope.label
-            ) }}
-            {{ metric_card.render(
-                'Digest Matched',
-                runtime.digest_matches,
-                'Immutable artifact identity matched at runtime.',
-                'fingerprint',
-                source_label='Registry × Kubernetes',
-                scope_label=runtime.scope.label
-            ) }}
-            {{ metric_card.render(
-                'Tag Matched',
-                runtime.tag_matches,
-                'Mutable tag matches; lower confidence.',
-                'tags',
-                source_label='Registry × Kubernetes',
-                scope_label=runtime.scope.label
-            ) }}
-            {{ metric_card.render(
-                'Security Exposed',
-                runtime.security_exposed,
-                'Runtime artifacts with critical or high findings.',
-                'shield-alert',
-                source_label='Security × Runtime',
-                scope_label=runtime.scope.label
-            ) }}
+            {{ metric_card.render('Runtime Bindings',
+                        runtime.total,
+                        'Committed Registry artifact to Kubernetes runtime bindings.',
+                        'link-2',
+                        source_label='Committed Correlation',
+                        scope_label=runtime.scope.label) }}
+            {{ metric_card.render('Digest Matched',
+                        runtime.digest_matches,
+                        'Immutable artifact identity matched at runtime.',
+                        'fingerprint',
+                        source_label='Registry × Kubernetes',
+                        scope_label=runtime.scope.label) }}
+            {{ metric_card.render('Tag Matched',
+                        runtime.tag_matches,
+                        'Mutable tag matches; lower confidence.',
+                        'tags',
+                        source_label='Registry × Kubernetes',
+                        scope_label=runtime.scope.label) }}
+            {{ metric_card.render('Security Exposed',
+                        runtime.security_exposed,
+                        'Runtime artifacts with critical or high findings.',
+                        'shield-alert',
+                        source_label='Security × Runtime',
+                        scope_label=runtime.scope.label) }}
         </section>
-
-        <section class="space-y-4" aria-labelledby="artifact-registry-runtime-bindings-heading">
-            {{ section_intro.render(
-                'Runtime Bindings',
-                'Trace committed artifact usage across Kubernetes workloads and review blast radius.',
-                'artifact-registry-runtime-bindings-heading',
-                supporting=runtime.artifact_filter_label if runtime.artifact_filter_label else 'All committed runtime correlation'
-            ) }}
+        <section class="space-y-4"
+                 aria-labelledby="artifact-registry-runtime-bindings-heading">
+            {{ section_intro.render('Runtime Bindings',
+                        'Trace committed artifact usage across Kubernetes workloads and review blast radius.',
+                        'artifact-registry-runtime-bindings-heading',
+                        supporting=runtime.artifact_filter_label if runtime.artifact_filter_label else 'All committed runtime correlation') }}
             {% set result_badge %}
-                {{ table_label.metadata_label(
-                    runtime.total ~ (' Binding' if runtime.total == 1 else ' Bindings'),
-                    icon='list-filter'
+                {{ table_label.metadata_label(runtime.total ~ (' Binding' if runtime.total == 1 else ' Bindings') ,
+                icon='list-filter'
                 ) }}
             {% endset %}
             {% set runtime_header_actions = none %}
             {% if runtime.has_filters %}
                 {% set runtime_header_actions %}
-                    {{ registry.clear_filters_link(
-                        'artifact_registry.runtime',
-                        'artifact-registry-runtime-table',
-                        'artifact-registry-runtime-loading',
-                        runtime.pagination.per_page,
-                        table_ui.action_classes()
+                    {{ registry.clear_filters_link('artifact_registry.runtime',
+                                        'artifact-registry-runtime-table',
+                                        'artifact-registry-runtime-loading',
+                                        runtime.pagination.per_page,
+                                        table_ui.action_classes() 
                     ) }}
                 {% endset %}
             {% endif %}
-            <section id="artifact-registry-runtime-table" class="{{ table_ui.block_classes() }}">
-                {{ table_ui.inventory_block_header(
-                    'waypoints',
-                    'Runtime Bindings',
-                    'Committed cross-domain correlation with digest-first identity and explicit tag-match confidence.',
-                    'artifact-registry-runtime-loading',
-                    'Refreshing Runtime Bindings',
-                    none,
-                    none,
-                    header_actions=runtime_header_actions,
-                    title_extra=result_badge
-                ) }}
-
+            <section id="artifact-registry-runtime-table"
+                     class="{{ table_ui.block_classes() }}">
+                {{ table_ui.inventory_block_header('waypoints',
+                                'Runtime Bindings',
+                                'Committed cross-domain correlation with digest-first identity and explicit tag-match confidence.',
+                                'artifact-registry-runtime-loading',
+                                'Refreshing Runtime Bindings',
+                                none,
+                                none,
+                                header_actions=runtime_header_actions,
+                                title_extra=result_badge) }}
                 <div class="{{ table_ui.inventory_filter_bar_classes() }}">
                     {% call registry.filter_form(
                         'artifact_registry.runtime',
                         'artifact-registry-runtime-table',
                         'artifact-registry-runtime-loading',
                         runtime.pagination.per_page
-                    ) %}
+                        ) %}
                         {% if runtime.filters.artifact_id %}
-                            <input type="hidden" name="artifact_id" value="{{ runtime.filters.artifact_id }}">
+                            <input type="hidden"
+                                   name="artifact_id"
+                                   value="{{ runtime.filters.artifact_id }}">
                         {% endif %}
                         <div>
                             <label for="artifact-registry-runtime-search"
                                    class="{{ table_ui.filter_label_classes() }}">Search</label>
-                            {{ table_ui.search_field(
-                                'q',
-                                runtime.filters.search,
-                                'Search artifact or runtime…',
-                                'artifact-registry-runtime-search'
-                            ) }}
+                            {{ table_ui.search_field('q',
+                                                        runtime.filters.search,
+                                                        'Search artifact or runtime…',
+                                                        'artifact-registry-runtime-search') }}
                         </div>
                         <label>
                             <span class="{{ table_ui.filter_label_classes() }}">Registry Source</span>
@@ -222,7 +203,6 @@
                         </label>
                     {% endcall %}
                 </div>
-
                 <div class="overflow-x-auto">
                     <table class="{{ table_ui.table_classes('min-w-[78rem]') }}">
                         <caption class="sr-only">Committed Artifact Registry to Kubernetes runtime bindings.</caption>
@@ -240,18 +220,14 @@
                             {% for row in runtime.rows %}
                                 <tr class="{{ table_ui.row_classes() }}">
                                     <td class="{{ table_ui.cell_classes() }}">
-                                        {{ table_ui.title_cell(
-                                            row.repository,
-                                            row.project ~ ' · ' ~ row.digest_short,
-                                            'package-search'
-                                        ) }}
+                                        {{ table_ui.title_cell(row.repository,
+                                                                                row.project ~ ' · ' ~ row.digest_short,
+                                                                                'package-search') }}
                                     </td>
                                     <td class="{{ table_ui.cell_classes() }}">
-                                        {{ table_ui.title_cell(
-                                            row.source_name,
-                                            row.provider_label,
-                                            'blocks'
-                                        ) }}
+                                        {{ table_ui.title_cell(row.source_name,
+                                                                                row.provider_label,
+                                                                                'blocks') }}
                                     </td>
                                     <td class="{{ table_ui.cell_classes() }}">
                                         <p class="font-semibold text-content-primary">{{ row.cluster_name }} · {{ row.namespace }}</p>
@@ -265,12 +241,11 @@
                                         {{ table_label.status_indicator_label(row.security.label, row.security.tone) }}
                                     </td>
                                     <td class="{{ table_ui.cell_classes(true) }}">
-                                        {{ resource_detail_modal.detail_button(
-                                            row.id,
-                                            url_for('artifact_registry.runtime_binding_details', binding_id=row.id),
-                                            row.repository,
-                                            'Runtime Binding',
-                                            label='View More'
+                                        {{ resource_detail_modal.detail_button(row.id,
+                                                                                url_for('artifact_registry.runtime_binding_details', binding_id=row.id) ,
+                                        row.repository,
+                                        'Runtime Binding',
+                                        label='View More'
                                         ) }}
                                     </td>
                                 </tr>
@@ -289,26 +264,23 @@
                         </tbody>
                     </table>
                 </div>
-
                 {% set footer_filters = {
-                    'q': runtime.filters.search,
-                    'source_id': runtime.filters.source_id,
-                    'cluster_id': runtime.filters.cluster_id,
-                    'namespace': runtime.filters.namespace,
-                    'match_type': runtime.filters.match_type,
-                    'exposure': runtime.filters.exposure,
-                    'artifact_id': runtime.filters.artifact_id
-                } %}
-                {{ registry.footer(
-                    'artifact_registry.runtime',
-                    'artifact-registry-runtime-table',
-                    'artifact-registry-runtime-loading',
-                    runtime.pagination,
-                    footer_filters,
-                    [5, 10, 25, 50],
-                    resource_label='Bindings',
-                    control_name='artifact-registry-runtime'
-                ) }}
+                                    'q': runtime.filters.search,
+                                    'source_id': runtime.filters.source_id,
+                                    'cluster_id': runtime.filters.cluster_id,
+                                    'namespace': runtime.filters.namespace,
+                                    'match_type': runtime.filters.match_type,
+                                    'exposure': runtime.filters.exposure,
+                                    'artifact_id': runtime.filters.artifact_id
+                                } %}
+                {{ registry.footer('artifact_registry.runtime',
+                                'artifact-registry-runtime-table',
+                                'artifact-registry-runtime-loading',
+                                runtime.pagination,
+                                footer_filters,
+                                [5, 10, 25, 50],
+                                resource_label='Bindings',
+                                control_name='artifact-registry-runtime') }}
             </section>
         </section>
     {% endif %}
