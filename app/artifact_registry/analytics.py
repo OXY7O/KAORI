@@ -55,6 +55,16 @@ def _scalar(payload: dict[str, Any]) -> float | None:
     return None
 
 
+def _metric_payload(
+    consumer: MetricsConsumer,
+    key: str,
+) -> tuple[dict[str, Any] | None, str | None]:
+    try:
+        return consumer.query(get_registry_query_expression(key)), None
+    except MetricsSourceError as exc:
+        return None, str(exc)
+
+
 def _metrics_evidence(identity: IntegrationInstance) -> dict[str, Any]:
     try:
         consumer = MetricsConsumer.for_asset(
@@ -62,35 +72,56 @@ def _metrics_evidence(identity: IntegrationInstance) -> dict[str, Any]:
             scope_key=identity.id,
             scope_name=identity.name,
         )
-        usage = _project_vector(
-            consumer.query(get_registry_query_expression('registry.project.quota.usage_bytes'))
-        )
-        quota = _project_vector(
-            consumer.query(get_registry_query_expression('registry.project.quota.bytes'))
-        )
-        request_rate = _scalar(
-            consumer.query(get_registry_query_expression('registry.core.request_rate'))
-        )
-        health = _scalar(
-            consumer.query(get_registry_query_expression('registry.health'))
-        )
     except MetricsSourceError as exc:
         return {
             'status': 'unavailable',
             'detail': str(exc),
+            'metrics_source': None,
+            'binding_id': None,
             'project_usage_bytes': {},
             'project_quota_bytes': {},
+            'project_artifacts': {},
+            'project_pull_count': {},
+            'capability_gaps': {},
         }
+
+    values: dict[str, Any] = {}
+    gaps: dict[str, str] = {}
+
+    project_queries = {
+        'project_usage_bytes': 'registry.project.quota.usage_bytes',
+        'project_quota_bytes': 'registry.project.quota.bytes',
+        'project_artifacts': 'registry.project.artifacts',
+        'project_pull_count': 'registry.project.pull_count',
+    }
+    for field, key in project_queries.items():
+        payload, error = _metric_payload(consumer, key)
+        values[field] = _project_vector(payload or {})
+        if error:
+            gaps[key] = error
+
+    scalar_queries = {
+        'provider_health_value': 'registry.health',
+        'component_up_value': 'registry.component.up',
+        'projects_total_metric': 'registry.projects.total',
+        'request_rate_per_second': 'registry.core.request_rate',
+        'inflight_requests': 'registry.core.inflight',
+        'backend_request_rate_per_second': 'registry.backend.request_rate',
+        'task_queue_size': 'registry.task.queue_size',
+    }
+    for field, key in scalar_queries.items():
+        payload, error = _metric_payload(consumer, key)
+        values[field] = _scalar(payload or {})
+        if error:
+            gaps[key] = error
+
     return {
         'status': 'ready',
         'metrics_source': consumer.config.name,
         'binding_id': consumer.binding.id,
-        'project_usage_bytes': usage,
-        'project_quota_bytes': quota,
-        'request_rate_per_second': request_rate,
-        'provider_health_value': health,
+        'capability_gaps': gaps,
+        **values,
     }
-
 
 def _previous_snapshot(identity_id: int) -> RegistryAnalyticsSnapshot | None:
     return (
