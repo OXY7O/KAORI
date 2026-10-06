@@ -2,31 +2,31 @@
 {% block title %}Artifact Registry Analytics{% endblock title %}
 {% block dashboard_content %}
     {% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
+    {% import "components/operational_section_loading.html" as section_loading %}
     {% import "components/page_hero.html" as page_hero %}
-    {% import "components/table_label.html" as table_label %}
     <div class="space-y-6">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('chart-column', 'Artifact Registry · Analytics', 'chart-no-axes-combined') %}
                         <h1 class="{{ page_hero.title_classes() }}">Analytics</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">Understand Registry growth, usage, risk concentration, and capacity outlook from committed operational evidence.</p>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Understand Registry growth, usage, risk concentration, alerts, and capacity outlook from committed operational evidence.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('database-backup', analytics.snapshot_count ~ '/' ~ analytics.provider_count ~ ' Analytics Snapshots') }}
-                            {{ page_hero.meta_label('activity', analytics.aggregate.metrics_ready ~ '/' ~ analytics.provider_count ~ ' Metrics Sources Ready') }}
-                            {{ page_hero.meta_label('sparkles', analytics.recommendation_count ~ ' Active Recommendations') }}
+                            {{ page_hero.meta_label('clock-3', analytics.latest_generated_at|user_datetime if analytics.latest_generated_at else 'Not Materialized') }}
+                            {{ page_hero.meta_label('layers-3', 'Committed Evidence') }}
                         </div>
                     {% endcall %}
                 </div>
                 {{ page_hero.context_card(
-                    'Artifact Registry analytics posture',
-                    'Committed + Materialized Evidence',
-                    'Analytics Posture',
-                    analytics.posture.label,
-                    analytics.posture.tone,
+                    'Artifact Registry analytics',
+                    'Fast Shell · Committed Evidence',
+                    'Materialization',
+                    'Ready' if analytics.snapshot_count else 'Required',
+                    'normal' if analytics.snapshot_count else 'warning',
                     [
-                        ('triangle-alert', 'Active Signals', analytics.active_signal_count, 'Cross-domain evidence requiring review'),
-                        ('package-open', 'Artifact Estate', analytics.aggregate.artifacts, 'Committed artifact identities')
+                        ('database-backup', 'Snapshots', analytics.snapshot_count ~ '/' ~ analytics.provider_count, 'Materialized Registry analytics evidence'),
+                        ('layout-dashboard', 'Workspace', analytics.active_tab|replace('_', ' ')|title, 'Lazy-loaded bounded analytics section')
                     ],
                     'Open Intelligence',
                     url_for('intelligence.recommendations', domain='registry'),
@@ -38,42 +38,28 @@
         {% if analytics.setup.is_blocked %}
             {% include "artifact_registry/components/_setup_blocker.html" %}
         {% else %}
-            <section aria-labelledby="artifact-registry-analytics-summary-heading">
-                <div class="mb-3">
-                    <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Analytics Summary</p>
-                    <h2 id="artifact-registry-analytics-summary-heading" class="mt-1 text-base font-semibold text-content-primary">Registry analytical posture</h2>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">A compact cross-domain summary derived from committed inventory, metrics, runtime, security, and governance evidence.</p>
-                </div>
-                <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    {% for card in analytics.summary_cards %}
-                        <article class="rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm">
-                            <div class="flex items-start justify-between gap-3">
-                                <div class="flex min-w-0 items-center gap-2">
-                                    <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-subtle text-kaori-primary dark:text-kaori-accent">
-                                        <i data-lucide="{{ card.icon }}" class="h-4 w-4" aria-hidden="true"></i>
-                                    </span>
-                                    <p class="text-xs font-semibold text-content-muted">{{ card.label }}</p>
-                                </div>
-                                {{ table_label.status_indicator_label('Ready' if card.tone in ['brand', 'normal', 'info'] else ('Review' if card.tone == 'warning' else 'Unavailable'), card.tone) }}
-                            </div>
-                            <p class="mt-3 text-2xl font-semibold text-content-primary">{{ card.value }}</p>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ card.detail }}</p>
-                        </article>
-                    {% endfor %}
-                </div>
+            <section id="artifact-registry-analytics-summary"
+                     hx-get="{{ url_for('artifact_registry.analytics_section', section='summary') }}"
+                     hx-trigger="load"
+                     hx-target="this"
+                     hx-swap="outerHTML">
+                {{ section_loading.section(
+                    'Analytics Summary',
+                    'Loading committed Registry analytical posture.',
+                    'chart-column'
+                ) }}
             </section>
 
             <section id="artifact-registry-analytics-workspace"
-                     class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
-                     aria-labelledby="artifact-registry-analytics-workspace-heading">
+                     class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
                 <header class="border-b border-outline-subtle px-5 py-4">
                     <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Analytics Workspace</p>
                     <div class="mt-1 flex flex-col gap-1 lg:flex-row lg:items-end lg:justify-between">
                         <div>
-                            <h2 id="artifact-registry-analytics-workspace-heading" class="text-base font-semibold text-content-primary">Cross-domain Registry analytics</h2>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Use one analytical frame to explore change, capacity, usage, risk, governance gaps, and derived insight without duplicating authoritative Registry workspaces.</p>
+                            <h2 class="text-base font-semibold text-content-primary">Cross-domain Registry analytics</h2>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Only the active analytical surface is projected. Normal navigation reads committed KAORI evidence and never waits on live Harbor, Alertmanager, Prometheus, or Thanos requests.</p>
                         </div>
-                        <span class="text-xs text-content-muted">Committed-state only · no request-time Harbor or Prometheus dependency</span>
+                        <span class="text-xs text-content-muted">Fast shell · bounded HTMX projection</span>
                     </div>
                 </header>
 
@@ -83,377 +69,21 @@
                     ('usage', 'Usage', 'activity', url_for('artifact_registry.analytics', tab='usage')),
                     ('risk', 'Risk', 'shield-alert', url_for('artifact_registry.analytics', tab='risk')),
                     ('governance', 'Governance', 'scale', url_for('artifact_registry.analytics', tab='governance')),
-                    ('insights', 'Insights', 'sparkles', url_for('artifact_registry.analytics', tab='insights'), analytics.recommendation_count)
-                ], analytics.active_tab, prefix='registry-analytics', aria_label='Registry Analytics Sections', hx_target='#artifact-registry-analytics-workspace', hx_select='#artifact-registry-analytics-workspace') }}
+                    ('alerts', 'Alerts', 'siren', url_for('artifact_registry.analytics', tab='alerts')),
+                    ('insights', 'Insights', 'sparkles', url_for('artifact_registry.analytics', tab='insights'))
+                ], analytics.active_tab, prefix='registry-analytics', aria_label='Registry Analytics Sections') }}
 
-                <div class="htmx-indicator border-b border-outline-subtle px-5 py-2 text-xs text-content-muted">
-                    Loading Analytics evidence…
+                <div id="artifact-registry-analytics-active-section"
+                     hx-get="{{ url_for('artifact_registry.analytics_section', section=analytics.active_tab) }}"
+                     hx-trigger="load"
+                     hx-target="this"
+                     hx-swap="outerHTML">
+                    {{ section_loading.section(
+                        analytics.active_tab|replace('_', ' ')|title,
+                        'Preparing committed Analytics evidence for the active workspace.',
+                        'chart-no-axes-combined'
+                    ) }}
                 </div>
-
-                {% if analytics.active_tab == 'growth' %}
-                    <div class="grid gap-0 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.75fr)]">
-                        <article class="border-b border-outline-subtle p-5 xl:border-b-0 xl:border-r">
-                            <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Registry Growth</p>
-                            <h3 class="mt-1 text-base font-semibold text-content-primary">Growth trajectory</h3>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Worker-materialized inventory deltas show how each Registry source is changing between committed analytics snapshots.</p>
-
-                            <div class="mt-4 grid gap-3 sm:grid-cols-3">
-                                <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-3">
-                                    <p class="text-[11px] font-semibold uppercase tracking-wide text-content-muted">Current Footprint</p>
-                                    <p class="mt-1 text-lg font-semibold text-content-primary">{{ analytics.summary_cards[0].value }}</p>
-                                    <p class="mt-1 text-xs text-content-muted">{{ analytics.aggregate.artifacts }} artifacts</p>
-                                </div>
-                                <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-3">
-                                    <p class="text-[11px] font-semibold uppercase tracking-wide text-content-muted">Artifact Velocity</p>
-                                    <p class="mt-1 text-lg font-semibold text-content-primary">{{ analytics.summary_cards[1].value }}</p>
-                                    <p class="mt-1 text-xs text-content-muted">Across materialized providers</p>
-                                </div>
-                                <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-3">
-                                    <p class="text-[11px] font-semibold uppercase tracking-wide text-content-muted">Stale Candidates</p>
-                                    <p class="mt-1 text-lg font-semibold text-content-primary">{{ analytics.aggregate.stale_candidates }}</p>
-                                    <p class="mt-1 text-xs text-content-muted">Review only; never auto-cleaned</p>
-                                </div>
-                            </div>
-
-                            <div class="mt-5 space-y-3">
-                                {% for row in analytics.growth_rows %}
-                                    <div class="rounded-lg border border-outline-subtle p-4">
-                                        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                                            <div class="min-w-0">
-                                                <p class="text-sm font-semibold text-content-primary">{{ row.registry_name }}</p>
-                                                <p class="mt-1 text-xs text-content-muted">{{ row.provider_key|replace('_', ' ')|title }} · materialized provider delta</p>
-                                            </div>
-                                            <div class="flex flex-wrap gap-2">
-                                                {{ table_label.status_indicator_label(row.artifact_growth_display, 'info') }}
-                                                {{ table_label.status_indicator_label(row.size_growth_display, 'normal') }}
-                                            </div>
-                                        </div>
-                                        <div class="mt-3 grid gap-3 text-xs sm:grid-cols-3">
-                                            <div>
-                                                <span class="text-content-muted">Artifact Δ</span>
-                                                <p class="mt-1 font-semibold text-content-primary">{{ row.artifact_delta if row.artifact_delta is not none else 'N/A' }}</p>
-                                            </div>
-                                            <div>
-                                                <span class="text-content-muted">Storage Δ</span>
-                                                <p class="mt-1 font-semibold text-content-primary">{{ row.size_delta_display }}</p>
-                                            </div>
-                                            <div>
-                                                <span class="text-content-muted">Observed Window</span>
-                                                <p class="mt-1 font-semibold text-content-primary">{{ ('%.1f days'|format(row.elapsed_days)) if row.elapsed_days is not none else 'N/A' }}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                {% else %}
-                                    <div class="rounded-lg border border-dashed border-outline-default p-6 text-center">
-                                        <p class="text-sm font-semibold text-content-primary">Growth history is not available yet</p>
-                                        <p class="mt-1 text-xs leading-5 text-content-muted">At least two committed analytics materializations are required before KAORI can derive growth velocity.</p>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        </article>
-
-                        <aside class="p-5">
-                            <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Growth Drivers</p>
-                            <h3 class="mt-1 text-base font-semibold text-content-primary">Demand concentration</h3>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Pull activity provides supporting demand evidence; KAORI does not reinterpret provider counters as a rate.</p>
-                            <div class="mt-4 space-y-3">
-                                {% for row in analytics.activity_rows %}
-                                    <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-3">
-                                        <div class="flex items-start justify-between gap-3">
-                                            <div class="min-w-0">
-                                                <p class="truncate text-sm font-semibold text-content-primary">{{ row.project_name }}</p>
-                                                <p class="mt-0.5 truncate text-xs text-content-muted">{{ row.registry_name }}</p>
-                                            </div>
-                                            <span class="text-sm font-semibold text-content-primary">{{ '%.0f'|format(row.pull_count) }}</span>
-                                        </div>
-                                    </div>
-                                {% else %}
-                                    <div class="rounded-lg border border-dashed border-outline-default p-4 text-center text-xs text-content-muted">No committed pull-counter evidence is available.</div>
-                                {% endfor %}
-                            </div>
-                        </aside>
-                    </div>
-
-                {% elif analytics.active_tab == 'capacity' %}
-                    <div class="p-5">
-                        <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Capacity Outlook</p>
-                        <h3 class="mt-1 text-base font-semibold text-content-primary">Project quota outlook</h3>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Quota evidence is combined with materialized growth velocity to surface planning horizons without mutating provider quota or retention policy.</p>
-
-                        <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                            <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4">
-                                <p class="text-xs font-semibold text-content-muted">Nearest Exhaustion</p>
-                                <p class="mt-2 text-xl font-semibold text-content-primary">{{ ('%.1f days'|format(analytics.capacity_outlook.nearest_quota_days)) if analytics.capacity_outlook.nearest_quota_days is not none else 'N/A' }}</p>
-                                <p class="mt-1 text-xs text-content-muted">Earliest qualified project forecast</p>
-                            </div>
-                            <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4">
-                                <p class="text-xs font-semibold text-content-muted">Highest Utilization</p>
-                                <p class="mt-2 text-xl font-semibold text-content-primary">{{ ('%.1f%%'|format(analytics.capacity_outlook.highest_utilization)) if analytics.capacity_outlook.highest_utilization is not none else 'N/A' }}</p>
-                                <p class="mt-1 text-xs text-content-muted">Highest observed project quota usage</p>
-                            </div>
-                            <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4">
-                                <p class="text-xs font-semibold text-content-muted">Growth Velocity</p>
-                                <p class="mt-2 text-xl font-semibold text-content-primary">{{ analytics.capacity_outlook.growth_display }}</p>
-                                <p class="mt-1 text-xs text-content-muted">Materialized storage growth</p>
-                            </div>
-                            <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4">
-                                <p class="text-xs font-semibold text-content-muted">Quota Headroom</p>
-                                <p class="mt-2 text-xl font-semibold text-content-primary">{{ analytics.capacity_outlook.quota_headroom_display }}</p>
-                                <p class="mt-1 text-xs text-content-muted">Raw committed bytes across qualified quotas</p>
-                            </div>
-                        </div>
-
-                        <div class="mt-5 overflow-x-auto rounded-xl border border-outline-subtle">
-                            <table class="min-w-full divide-y divide-outline-subtle text-sm">
-                                <thead class="bg-surface-hover text-left text-xs font-semibold text-content-muted">
-                                    <tr>
-                                        <th class="px-4 py-3">Registry / Project</th>
-                                        <th class="px-4 py-3">Usage / Quota</th>
-                                        <th class="px-4 py-3">Utilization</th>
-                                        <th class="px-4 py-3">Growth</th>
-                                        <th class="px-4 py-3">Forecast</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-outline-subtle">
-                                    {% for row in analytics.forecast_rows[:5] %}
-                                        <tr>
-                                            <td class="px-4 py-3">
-                                                <p class="font-semibold text-content-primary">{{ row.project_name }}</p>
-                                                <p class="text-xs text-content-muted">{{ row.registry_name }}</p>
-                                            </td>
-                                            <td class="px-4 py-3 text-content-secondary">{{ row.usage_display }} / {{ row.quota_display }}</td>
-                                            <td class="px-4 py-3 text-content-secondary">{{ row.utilization_display }}</td>
-                                            <td class="px-4 py-3 text-content-secondary">{{ row.growth_display }}</td>
-                                            <td class="px-4 py-3">{{ table_label.status_indicator_label(row.days_to_quota_display, 'info') }}</td>
-                                        </tr>
-                                    {% else %}
-                                        <tr>
-                                            <td colspan="5" class="px-4 py-8 text-center text-content-muted">No qualified project quota forecast is available yet.</td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                {% elif analytics.active_tab == 'usage' %}
-                    <div class="grid gap-0 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.8fr)]">
-                        <article class="border-b border-outline-subtle p-5 xl:border-b-0 xl:border-r">
-                            <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Artifact Usage</p>
-                            <h3 class="mt-1 text-base font-semibold text-content-primary">Runtime and demand evidence</h3>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">KAORI correlates committed Registry activity with Kubernetes runtime usage without pretending provider pull counters are time-normalized rates.</p>
-
-                            <div class="mt-4 grid gap-3 sm:grid-cols-3">
-                                <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4">
-                                    <p class="text-xs font-semibold text-content-muted">Runtime-used</p>
-                                    <p class="mt-2 text-xl font-semibold text-content-primary">{{ analytics.aggregate.running_artifacts }}</p>
-                                    <p class="mt-1 text-xs text-content-muted">{{ analytics.aggregate.runtime_bindings }} committed bindings</p>
-                                </div>
-                                <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4">
-                                    <p class="text-xs font-semibold text-content-muted">Observed Pull Activity</p>
-                                    <p class="mt-2 text-xl font-semibold text-content-primary">{{ '%.0f'|format(analytics.aggregate.pull_activity) }}</p>
-                                    <p class="mt-1 text-xs text-content-muted">Provider counter evidence</p>
-                                </div>
-                                <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4">
-                                    <p class="text-xs font-semibold text-content-muted">Stale Candidates</p>
-                                    <p class="mt-2 text-xl font-semibold text-content-primary">{{ analytics.aggregate.stale_candidates }}</p>
-                                    <p class="mt-1 text-xs text-content-muted">Review candidates only</p>
-                                </div>
-                            </div>
-
-                            <div class="mt-5 rounded-lg border border-outline-subtle p-4">
-                                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                                    <div>
-                                        <p class="text-sm font-semibold text-content-primary">Runtime correlation remains authoritative in Runtime</p>
-                                        <p class="mt-1 text-xs leading-5 text-content-muted">Analytics shows usage concentration and review candidates; workload-level correlation stays in the Runtime workspace.</p>
-                                    </div>
-                                    <a href="{{ url_for('artifact_registry.runtime') }}" class="inline-flex min-h-9 shrink-0 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition-colors hover:bg-surface-hover hover:text-content-primary">
-                                        Open Runtime
-                                        <i data-lucide="arrow-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                    </a>
-                                </div>
-                            </div>
-                        </article>
-
-                        <aside class="p-5">
-                            <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Activity Concentration</p>
-                            <h3 class="mt-1 text-base font-semibold text-content-primary">Most pulled projects</h3>
-                            <div class="mt-4 space-y-3">
-                                {% for row in analytics.activity_rows %}
-                                    <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-3">
-                                        <div class="flex items-start justify-between gap-3">
-                                            <div class="min-w-0">
-                                                <p class="truncate text-sm font-semibold text-content-primary">{{ row.project_name }}</p>
-                                                <p class="mt-0.5 truncate text-xs text-content-muted">{{ row.registry_name }}</p>
-                                            </div>
-                                            <span class="text-sm font-semibold text-content-primary">{{ '%.0f'|format(row.pull_count) }}</span>
-                                        </div>
-                                    </div>
-                                {% else %}
-                                    <div class="rounded-lg border border-dashed border-outline-default p-4 text-center text-xs text-content-muted">Pull activity is not available from committed metrics evidence.</div>
-                                {% endfor %}
-                            </div>
-                        </aside>
-                    </div>
-
-                {% elif analytics.active_tab == 'risk' %}
-                    <div class="p-5">
-                        <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Risk Concentration</p>
-                        <h3 class="mt-1 text-base font-semibold text-content-primary">Security × Runtime</h3>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Analytics prioritizes cross-domain concentration. Detailed vulnerability evidence remains authoritative in Security; workload blast radius remains authoritative in Runtime.</p>
-
-                        <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                            {% for label, value, detail, tone in [
-                                ('Critical Findings', analytics.aggregate.critical_findings, 'Committed Registry security evidence', 'info'),
-                                ('Critical + Running', analytics.aggregate.critical_runtime_artifacts, 'Critical evidence intersecting runtime', 'critical' if analytics.aggregate.critical_runtime_artifacts else 'normal'),
-                                ('Unsigned + Running', analytics.aggregate.unsigned_runtime_artifacts, 'Runtime artifacts without signature evidence', 'warning' if analytics.aggregate.unsigned_runtime_artifacts else 'normal'),
-                                ('Unscanned + Running', analytics.aggregate.runtime_scan_gaps, 'No normalized successful scan evidence', 'warning' if analytics.aggregate.runtime_scan_gaps else 'normal')
-                            ] %}
-                                <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4">
-                                    <div class="flex items-start justify-between gap-3">
-                                        <p class="text-xs font-semibold text-content-muted">{{ label }}</p>
-                                        {{ table_label.status_indicator_label('Review' if tone in ['critical', 'warning'] else 'Evidence', tone) }}
-                                    </div>
-                                    <p class="mt-2 text-xl font-semibold text-content-primary">{{ value }}</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ detail }}</p>
-                                </div>
-                            {% endfor %}
-                        </div>
-
-                        <div class="mt-5 grid gap-4 lg:grid-cols-2">
-                            <div class="rounded-lg border border-outline-subtle p-4">
-                                <p class="text-sm font-semibold text-content-primary">Security evidence coverage</p>
-                                <div class="mt-3 grid grid-cols-3 gap-3 text-xs">
-                                    <div>
-                                        <span class="text-content-muted">Scan</span>
-                                        <p class="mt-1 font-semibold text-content-primary">{{ '%.1f%%'|format(analytics.coverage.scan) if analytics.coverage.scan is not none else 'N/A' }}</p>
-                                    </div>
-                                    <div>
-                                        <span class="text-content-muted">Signature</span>
-                                        <p class="mt-1 font-semibold text-content-primary">{{ '%.1f%%'|format(analytics.coverage.signature) if analytics.coverage.signature is not none else 'N/A' }}</p>
-                                    </div>
-                                    <div>
-                                        <span class="text-content-muted">SBOM</span>
-                                        <p class="mt-1 font-semibold text-content-primary">{{ '%.1f%%'|format(analytics.coverage.sbom) if analytics.coverage.sbom is not none else 'N/A' }}</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="rounded-lg border border-outline-subtle p-4">
-                                <p class="text-sm font-semibold text-content-primary">Correlation quality</p>
-                                <div class="mt-3 grid grid-cols-2 gap-3 text-xs">
-                                    <div>
-                                        <span class="text-content-muted">Runtime bindings</span>
-                                        <p class="mt-1 font-semibold text-content-primary">{{ analytics.aggregate.runtime_bindings }}</p>
-                                    </div>
-                                    <div>
-                                        <span class="text-content-muted">Tag-only bindings</span>
-                                        <p class="mt-1 font-semibold text-content-primary">{{ analytics.aggregate.tag_only_bindings }}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="mt-5 flex flex-wrap gap-2">
-                            <a href="{{ url_for('artifact_registry.security') }}" class="inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition-colors hover:bg-surface-hover hover:text-content-primary">Open Security <i data-lucide="arrow-right" class="h-3.5 w-3.5" aria-hidden="true"></i></a>
-                            <a href="{{ url_for('artifact_registry.runtime') }}" class="inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition-colors hover:bg-surface-hover hover:text-content-primary">Open Runtime <i data-lucide="arrow-right" class="h-3.5 w-3.5" aria-hidden="true"></i></a>
-                        </div>
-                    </div>
-
-                {% elif analytics.active_tab == 'governance' %}
-                    <div class="p-5">
-                        <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Governance Gaps</p>
-                        <h3 class="mt-1 text-base font-semibold text-content-primary">Policy coverage concentration</h3>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Analytics highlights control gaps only. Provider-native policy evidence and replication posture remain authoritative in Governance.</p>
-
-                        <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                            <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4">
-                                <p class="text-xs font-semibold text-content-muted">Retention Coverage</p>
-                                <p class="mt-2 text-xl font-semibold text-content-primary">{{ '%.1f%%'|format(analytics.coverage.retention) if analytics.coverage.retention is not none else 'N/A' }}</p>
-                                <p class="mt-1 text-xs text-content-muted">{{ analytics.aggregate.retention_configured }}/{{ analytics.aggregate.projects }} projects configured</p>
-                            </div>
-                            <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4">
-                                <p class="text-xs font-semibold text-content-muted">Without Retention</p>
-                                <p class="mt-2 text-xl font-semibold text-content-primary">{{ [analytics.aggregate.projects - analytics.aggregate.retention_configured, 0]|max }}</p>
-                                <p class="mt-1 text-xs text-content-muted">Projects requiring governance review</p>
-                            </div>
-                            <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4">
-                                <p class="text-xs font-semibold text-content-muted">Immutability Coverage</p>
-                                <p class="mt-2 text-xl font-semibold text-content-primary">{{ '%.1f%%'|format(analytics.coverage.immutability) if analytics.coverage.immutability is not none else 'N/A' }}</p>
-                                <p class="mt-1 text-xs text-content-muted">{{ analytics.aggregate.immutability_configured }}/{{ analytics.aggregate.projects }} projects configured</p>
-                            </div>
-                            <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4">
-                                <p class="text-xs font-semibold text-content-muted">Without Immutability</p>
-                                <p class="mt-2 text-xl font-semibold text-content-primary">{{ [analytics.aggregate.projects - analytics.aggregate.immutability_configured, 0]|max }}</p>
-                                <p class="mt-1 text-xs text-content-muted">Projects requiring governance review</p>
-                            </div>
-                        </div>
-
-                        <div class="mt-5 rounded-lg border border-outline-subtle p-4">
-                            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                                <div>
-                                    <p class="text-sm font-semibold text-content-primary">Governance remains the policy authority</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Unsupported provider capabilities stay explicit and do not invalidate unrelated Analytics evidence.</p>
-                                </div>
-                                <a href="{{ url_for('artifact_registry.governance') }}" class="inline-flex min-h-9 shrink-0 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition-colors hover:bg-surface-hover hover:text-content-primary">
-                                    Review Governance
-                                    <i data-lucide="arrow-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-
-                {% else %}
-                    <div class="grid gap-0 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.8fr)]">
-                        <article class="border-b border-outline-subtle p-5 xl:border-b-0 xl:border-r">
-                            <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Derived Insights</p>
-                            <h3 class="mt-1 text-base font-semibold text-content-primary">What deserves attention</h3>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Derived observations stay factual and evidence-linked; recommendation lifecycle, Accepted Risk, escalation, and automation control remain centrally governed.</p>
-                            <div class="mt-4 space-y-3">
-                                {% for insight in analytics.insights %}
-                                    <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4">
-                                        <div class="flex items-start gap-3">
-                                            <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-card text-kaori-primary dark:text-kaori-accent">
-                                                <i data-lucide="{{ insight.icon }}" class="h-4 w-4" aria-hidden="true"></i>
-                                            </span>
-                                            <div class="min-w-0">
-                                                <div class="flex flex-wrap items-center gap-2">
-                                                    <p class="text-sm font-semibold text-content-primary">{{ insight.title }}</p>
-                                                    {{ table_label.status_indicator_label('Review' if insight.tone in ['critical', 'warning'] else 'Observed', insight.tone) }}
-                                                </div>
-                                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ insight.detail }}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        </article>
-
-                        <aside class="p-5">
-                            <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Central Intelligence</p>
-                            <h3 class="mt-1 text-base font-semibold text-content-primary">Active recommendations</h3>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Analytics produces facts and derived evidence. Intelligence owns recommendation semantics and lifecycle.</p>
-                            <div class="mt-4 space-y-3">
-                                {% for row in analytics.recommendations %}
-                                    <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-3">
-                                        <div class="flex items-start justify-between gap-3">
-                                            <div class="min-w-0">
-                                                <p class="text-sm font-semibold text-content-primary">{{ row.title }}</p>
-                                                <p class="mt-1 line-clamp-2 text-xs leading-5 text-content-muted">{{ row.summary }}</p>
-                                            </div>
-                                            {{ table_label.status_indicator_label(row.severity_label, row.severity) }}
-                                        </div>
-                                    </div>
-                                {% else %}
-                                    <div class="rounded-lg border border-dashed border-outline-default p-4 text-center text-xs text-content-muted">No active Registry recommendation is currently projected by central Intelligence.</div>
-                                {% endfor %}
-                            </div>
-                            <a href="{{ url_for('intelligence.recommendations', domain='registry') }}" class="mt-4 inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition-colors hover:bg-surface-hover hover:text-content-primary">
-                                Open Intelligence
-                                <i data-lucide="arrow-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                            </a>
-                        </aside>
-                    </div>
-                {% endif %}
             </section>
         {% endif %}
     </div>
