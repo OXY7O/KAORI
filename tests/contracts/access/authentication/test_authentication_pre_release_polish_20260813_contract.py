@@ -39,17 +39,16 @@ def test_database_setup_workspace_uses_release_hierarchy_and_copyable_commands()
     runtime = read('app/static/js/clipboard.js')
 
     for token in (
-        'data-kaori-setup-workspace="release-v2"',
+        'data-kaori-setup-workspace="release-v4"',
         'Initialization Path',
-        'PostgreSQL Reachable',
-        'Schema Missing',
+        'Application Schema',
         'Development Bootstrap',
-        'Recommended path',
-        'Security Boundary',
+        'Encryption Key Requirement',
+        'Advanced Setup',
         'Copy Command',
         'Copy Commands',
         'Copy Checks',
-        'This readiness check is read-only.',
+        'This readiness workspace is read-only.',
     ):
         assert token in setup
 
