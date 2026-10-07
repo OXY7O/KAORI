@@ -92,7 +92,7 @@ def test_registry_inventory_export_is_committed_snapshot_only_and_reuses_invento
     assert 'get_report_artifact_registry_inventory_payload' in common
     assert "'artifact_registry_inventory': InventoryWorkbookProfile(" in profile
     assert "row_source='inventory_assets'" in profile
-    assert "identity_columns=('registry', 'project', 'repository', 'digest')" in profile
+    assert "identity_columns=('registry', 'environment', 'project', 'repository', 'digest')" in profile
 
 
 def test_registry_analysis_combines_dashboard_alert_intelligence_and_recommendations_without_live_provider_calls() -> (
