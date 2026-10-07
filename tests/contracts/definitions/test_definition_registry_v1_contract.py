@@ -139,6 +139,7 @@ def test_integration_definitions_are_taxonomy_policy_contract_and_qualification_
     assert {item['profile_key'] for item in metrics_source['binding_profiles']} == {
         'kubernetes-metrics-v1',
         'object-storage-metrics-v1',
+        'registry-metrics-v1',
     }
     assert {item['profile_key'] for item in alertmanager['consumer_profiles']} >= {
         'kubernetes-alerts-v1',
