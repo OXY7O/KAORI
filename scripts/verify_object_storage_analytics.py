@@ -313,7 +313,9 @@ def main() -> int:
     assert "'Current Step'" not in hero_blocked
     assert "'Progress'" not in hero_blocked
     assert "'Analytics Readiness'" in hero_blocked
-    for evidence_label in ('System Context', 'Inventory Snapshot', 'Operational Metrics', 'Analytics Snapshot'):
+    assert 'components/provider_prerequisite/_hero_context.html' in hero_blocked
+    assert 'Object Storage Setup Required' in hero_blocked
+    for evidence_label in ('Inventory Snapshot', 'Operational Metrics', 'Analytics Snapshot'):
         assert evidence_label in hero_blocked
     assert "'Overview'" in pages
     assert "'Analytics Overview'" not in pages
