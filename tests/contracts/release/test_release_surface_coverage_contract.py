@@ -17,16 +17,23 @@ def read(relative: str) -> str:
 
 
 def test_release_registry_closes_navigation_and_blueprint_inventory() -> None:
-    assert len(navigation_endpoints()) == 66
-    assert len(set(navigation_endpoints())) == 66
-    assert len(blueprint_vars()) == 28
-    assert len(set(blueprint_vars())) == 28
-    assert len(SURFACES) == 17
+    assert len(navigation_endpoints()) == 73
+    assert len(set(navigation_endpoints())) == 73
+    assert len(blueprint_vars()) == 30
+    assert len(set(blueprint_vars())) == 30
+    assert len(SURFACES) == 18
 
     assert {surface.lock_state for surface in SURFACES} == {'LOCKED', 'BASELINE LOCKED', 'SYSTEM LOCKED'}
     assert next(surface for surface in SURFACES if surface.key == 'intelligence').lock_state == 'BASELINE LOCKED'
     assert next(surface for surface in SURFACES if surface.key == 'health').lock_state == 'SYSTEM LOCKED'
     assert next(surface for surface in SURFACES if surface.key == 'tenant').lock_state == 'BASELINE LOCKED'
+    artifact_registry = next(surface for surface in SURFACES if surface.key == 'artifact_registry')
+    assert artifact_registry.lock_state == 'BASELINE LOCKED'
+    assert artifact_registry.navigation_source == 'app/common/workspace_navigation_catalog.py'
+    assert artifact_registry.blueprint_vars == ('artifact_registry_bp',)
+    integrations = next(surface for surface in SURFACES if surface.key == 'integrations')
+    assert 'integrations.registry' in integrations.navigation_endpoints
+    assert 'harbor_bp' in integrations.blueprint_vars
     assert next(surface for surface in SURFACES if surface.key == 'welcome').navigation_source == (
         'app/common/workspace_navigation.py'
     )
@@ -90,8 +97,9 @@ def test_cluster_listing_legacy_chain_is_retired_and_guarded() -> None:
 def test_release_coverage_documentation_keeps_explicit_incomplete_feature_state() -> None:
     documentation = read('docs/architecture/RELEASE_SURFACE_COVERAGE.md')
     for token in (
-        '66 navigation links',
-        '28 registered blueprints',
+        '73 navigation links',
+        '30 registered blueprints',
+        'Artifact Registry | BASELINE LOCKED',
         'Intelligence | BASELINE LOCKED',
         'Runtime Health | SYSTEM LOCKED',
         'Tenant | BASELINE LOCKED',

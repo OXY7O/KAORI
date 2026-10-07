@@ -4,7 +4,7 @@ Status: **Locked release-coverage contract**
 
 This registry answers one release question: **is every operator-visible menu, nested web domain, and non-navigation system surface explicitly owned by a release verifier or test boundary?**
 
-The current baseline contains **66 navigation links** across the authenticated application shell and **28 registered blueprints**. A new menu link, menu template, or registered Blueprint must be added to the canonical registry in the same change or the general release audit fails closed.
+The current baseline contains **73 navigation links** across the authenticated application shell and **30 registered blueprints**. A new menu link, workspace capability, menu template, or registered Blueprint must be added to the canonical registry in the same change or the general release audit fails closed.
 
 ## Navigation and Surface Matrix
 
@@ -14,6 +14,7 @@ The current baseline contains **66 navigation links** across the authenticated a
 | Operational Dashboards | LOCKED | Main → Dashboards → Kubernetes + Object Storage | `verify_operational_dashboard_standard.py` + Object Storage dashboard contracts |
 | Kubernetes Inventory | LOCKED | Kubernetes → Inventory | `verify_inventory_final_lock.py` |
 | Object Storage Inventory | LOCKED | Storage → Object Storage | `verify_object_storage_inventory_final_lock.py` |
+| Artifact Registry | BASELINE LOCKED | Infrastructure → Artifact Registry | Artifact Registry contracts |
 | Kubernetes Operations | LOCKED | Kubernetes → Operations | `verify_kubernetes_operations_final_lock.py` |
 | Kubernetes Governance | LOCKED | Kubernetes → Governance | `verify_governance_final_lock.py` |
 | Tenant | BASELINE LOCKED | Kubernetes → Tenant | baseline + integrated Tenant UAT contracts |
@@ -79,10 +80,11 @@ A failed child verifier prints its complete captured diagnostics after a concise
 When adding or moving a menu/domain:
 
 1. Update `scripts/release_surface_registry.py` with ownership, endpoints, lock state, verifier, and release evidence.
-2. Update this matrix.
-3. Add/update the domain verifier and contract/runtime evidence.
-4. Run `python scripts/verify_release_surface_coverage.py`.
-5. Run `python scripts/verify_final_release.py --all` before release.
+2. For catalog-backed workspaces, keep the release owner aligned with the canonical `WorkspaceDefinition`; do not create a duplicate menu only to satisfy release coverage.
+3. Update this matrix.
+4. Add/update the domain verifier and contract/runtime evidence.
+5. Run `python scripts/verify_release_surface_coverage.py`.
+6. Run `python scripts/verify_final_release.py --all` before release.
 
 Do not silence a new endpoint by increasing a baseline or by classifying an active surface as hidden without an explicit ownership decision.
 
@@ -109,3 +111,22 @@ The evidence contract is snapshot-first: committed Object Storage Inventory owns
 `Kubernetes → Tenant` is a distinct provider-neutral Kubernetes capability surface. Tenant is one expandable parent with five release-owned submenu destinations: **Overview**, **Tenants**, **Resource Profiles**, **Namespace Provisioning**, and **Operations**. Native Kubernetes and Capsule remain providers behind the same Tenant contract and do not become sidebar products. Operations owns task-level Content Tabs for Provisioning, Runs & Evidence, Drift & Reconcile, and Activity; no third sidebar nesting level is introduced.
 
 The current state remains **BASELINE LOCKED** until #125 completes full staging UAT and human acceptance. #728 owns the human-UAT navigation/UI correction that recomposes the admitted Tenant domain, access/credential, capacity, managed-resource/policy, provider, audit, Intelligence, and Reports authorities into the approved five-destination Tenant IA. Native Kubernetes is mandatory for baseline acceptance. Capsule execution remains capability-conditional and must not be inferred from fixture-only evidence.
+
+
+## Registry and Artifact Registry Expansion
+
+`Integrations → Registry` owns provider connectivity, readiness, diagnostics, and instance lifecycle. Harbor remains the first Registry provider and `harbor_bp` stays release-owned by the Integrations surface.
+
+`Artifact Registry` is a separate provider-neutral operational workspace backed by committed KAORI state. Its release-owned navigation is **Overview**, **Inventory**, **Security**, **Runtime Usage**, **Governance**, and **Analytics**. The `artifact_registry_bp` Blueprint is therefore owned by the Artifact Registry surface rather than being folded into the Harbor provider surface.
+
+The boundary remains:
+
+```text
+Integrations → Registry → Harbor → Instance
+    = provider connection / readiness / diagnostics
+
+Artifact Registry
+    = committed inventory / security / runtime correlation / governance / analytics
+```
+
+The Artifact Registry surface is **BASELINE LOCKED** while the consolidated staging candidate proceeds through staging/UAT. This preserves the existing provider-first integration taxonomy without treating Harbor as a KAORI product domain.

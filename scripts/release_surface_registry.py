@@ -83,6 +83,27 @@ SURFACES: tuple[ReleaseSurface, ...] = (
         ),
     ),
     ReleaseSurface(
+        key='artifact_registry',
+        title='Artifact Registry',
+        lock_state='BASELINE LOCKED',
+        navigation_source='app/common/workspace_navigation_catalog.py',
+        navigation_endpoints=(
+            'artifact_registry.overview',
+            'artifact_registry.inventory',
+            'artifact_registry.security',
+            'artifact_registry.runtime',
+            'artifact_registry.governance',
+            'artifact_registry.analytics',
+        ),
+        blueprint_vars=('artifact_registry_bp',),
+        verifiers=(),
+        contract_paths=('tests/contracts/artifact_registry',),
+        notes=(
+            'Provider-neutral committed Registry operations. Provider connection/readiness remains owned by '
+            'Integrations → Registry; Harbor is the first provider, not the operational product identity.'
+        ),
+    ),
+    ReleaseSurface(
         key='kubernetes_operations',
         title='Kubernetes Operations',
         lock_state='LOCKED',
@@ -209,6 +230,7 @@ SURFACES: tuple[ReleaseSurface, ...] = (
             'integrations.orchestration',
             'integrations.observability',
             'integrations.storage',
+            'integrations.registry',
             'notification_channels.index',
         ),
         blueprint_vars=(
@@ -218,6 +240,7 @@ SURFACES: tuple[ReleaseSurface, ...] = (
             'metrics_bp',
             'alertmanager_bp',
             'minio_bp',
+            'harbor_bp',
         ),
         verifiers=(
             'scripts/verify_integration_provider_foundation.py',
