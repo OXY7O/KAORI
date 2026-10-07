@@ -194,9 +194,7 @@ def _collect_registry_capacity_analytics(
                     'usage_bytes': float(usage) if isinstance(usage, (int, float)) else None,
                     'quota_bytes': float(quota) if isinstance(quota, (int, float)) else None,
                     'utilization_percent': float(utilization) if isinstance(utilization, (int, float)) else None,
-                    'growth_bytes_per_day': (
-                        float(growth_bytes) if isinstance(growth_bytes, (int, float)) else None
-                    ),
+                    'growth_bytes_per_day': (float(growth_bytes) if isinstance(growth_bytes, (int, float)) else None),
                     'days_to_quota': float(days) if isinstance(days, (int, float)) else None,
                 }
             )
