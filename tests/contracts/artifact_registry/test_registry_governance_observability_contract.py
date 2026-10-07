@@ -46,10 +46,7 @@ def test_artifact_registry_has_no_direct_prometheus_transport() -> None:
 
 
 def test_governance_workspace_keeps_independent_readiness_planes_out_of_posture() -> None:
-    presentation = (ROOT / 'app/artifact_registry/presentation.py').read_text()
-    start = presentation.index('def build_governance(')
-    end = presentation.index('def build_analytics()', start)
-    governance_presentation = presentation[start:end]
+    governance_presentation = (ROOT / 'app/artifact_registry/presentation_governance.py').read_text()
     template = (ROOT / 'app/templates/artifact_registry/governance.html').read_text()
 
     for label in (
