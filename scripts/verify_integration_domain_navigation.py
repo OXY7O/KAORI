@@ -15,7 +15,7 @@ def main() -> int:
 
     taxonomy = read('app/integrations/taxonomy.py')
     taxonomy_catalog = read('app/definitions/catalogs/integrations/taxonomy.yaml')
-    registry = read('app/integrations/registry.py')
+    registry = read('app/integrations/kernel/registry.py')
     navigation = read('app/integrations/navigation.py')
     sidebar = read('app/templates/components/navigation/integrations_menu.html')
     routes = read('app/integrations/routes.py')
