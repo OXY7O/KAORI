@@ -56,6 +56,8 @@ def test_dashboard_freshness_keeps_raw_alert_source_readiness_separate() -> None
     object_storage = read('app/storage/object_storage/dashboard/service.py')
 
     assert "if section == 'data_freshness':" in kubernetes
-    assert 'dashboard.alerts_snapshot, alerts_result = _alerts_signal(selected)' in kubernetes
+    assert 'def _populate_data_freshness(' in kubernetes
+    assert 'dataset_key=DASHBOARD_ALERTS_DATASET_KEY' in kubernetes
+    assert 'has_alertmanager_data = alerts_result is not None and alerts_result.available' in kubernetes
     assert "'label': 'Alert Evidence'" in object_storage
     assert 'Alertmanager preferred with Metrics Source fallback' in object_storage
