@@ -48,7 +48,7 @@ def test_dashboard_recommendation_projection_has_one_canonical_shape() -> None:
     schema = read('app/kubernetes/dashboard/schema.py')
     utils = read('app/kubernetes/dashboard/utils.py')
     object_storage = read('app/storage/object_storage/dashboard/service.py')
-    registry = read('app/artifact_registry/presentation.py')
+    registry = read('app/artifact_registry/presentation_overview.py')
 
     for token in (
         'title=',
