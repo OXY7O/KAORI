@@ -213,12 +213,12 @@ def test_integration_overview_uses_canonical_label_roles() -> None:
 def test_integration_overview_readiness_copy_is_explicit_and_actionable() -> None:
     overview = read('app/templates/integrations/overview.html')
 
-    assert 'Targets that completed required validation and remain eligible for governed operational use.' in overview
+    assert 'Validated targets eligible for governed use.' in overview
     assert (
         'Registered targets that still lack a complete, usable connection configuration and cannot enter readiness validation.'
         in overview
     )
-    assert 'Targets that completed required validation and remain eligible for governed operational use' in overview
+    assert 'Validated targets eligible for governed use' in overview
 
 
 def test_overview_generic_instance_loader_does_not_drop_object_storage() -> None:
