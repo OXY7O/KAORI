@@ -50,7 +50,8 @@ def test_registry_scope_is_resolved_from_active_integration_identity_not_provide
     assert 'report.scope_asset_type = report_spec.scope_asset_type' in generation
     assert 'report.scope_asset_id = registry_integration_id' in generation
 
-    assert "IntegrationInstance.integration_type == 'registry'" in schedules
+    assert 'from app.reports.scope import get_active_registry_options as _get_artifact_registry_options' in schedules
+    assert 'artifact_registry_options = _get_artifact_registry_options()' in schedules
     assert "'artifact_registries': artifact_registry_options" in schedules
     assert 'schedule.scope_asset_type = spec.scope_asset_type' in schedules
     assert 'schedule.scope_asset_id = instance_id or None' in schedules
