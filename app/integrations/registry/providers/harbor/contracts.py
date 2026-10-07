@@ -3,8 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, TypedDict
 
- 
- 
+
 class HarborConnectionResult(TypedDict):
     connected: bool
     response_time_ms: int
