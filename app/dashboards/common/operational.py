@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Any, Protocol
+from collections.abc import Mapping
+from typing import Any
+
+from werkzeug.datastructures import Headers
 
 from app.common.pagination import DEFAULT_PER_PAGE, PER_PAGE_OPTIONS, normalize_per_page
 
@@ -34,11 +37,7 @@ def normalize_dashboard_page_size(value: Any) -> int:
     )
 
 
-class _HeaderLookup(Protocol):
-    def get(self, key: str, default: Any = None, type: Any = None) -> Any: ...
-
-
-def is_htmx_request(headers: _HeaderLookup) -> bool:
+def is_htmx_request(headers: Headers | Mapping[str, Any]) -> bool:
     """Return whether request headers identify an HTMX request."""
 
     return str(headers.get('HX-Request') or '').strip().lower() == 'true'
