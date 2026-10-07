@@ -121,6 +121,7 @@ def test_tenant_provider_scope_remains_provider_neutral_in_navigation() -> None:
 
 def test_tenant_operations_data_surfaces_are_canonical_paginated_registries() -> None:
     routes = _read('app/kubernetes/tenant/routes.py')
+    route_common = _read('app/kubernetes/tenant/route_common.py')
     workspace = _read('app/kubernetes/tenant/workspace.py')
     partial_paths = (
         'app/templates/kubernetes/tenant/partials/_operations_namespace_registry.html',
@@ -144,7 +145,7 @@ def test_tenant_operations_data_surfaces_are_canonical_paginated_registries() ->
         'ops_provider_per_page',
         'ops_access_per_page',
     ):
-        assert key in routes
+        assert key in routes or key in route_common
     assert 'get_tenant_operations_evidence_context' in routes
     assert '_OPERATIONS_EVIDENCE_TYPES' in workspace
     assert 'paginate_query(' in workspace
