@@ -222,7 +222,7 @@ def test_artifact_registry_overview_keeps_reference_information_hierarchy() -> N
     assert "'capacity': capacity" in presentation
     assert "'alerts': _registry_alerts(selected_provider)" in presentation
     assert "'recommended_actions': _registry_recommended_actions(selected_provider)" in presentation
-    assert "'reporting': reporting" in presentation
+    assert "'reporting': _registry_reporting(selected_provider)" in presentation
 
 
 def test_artifact_registry_dashboard_state_semantics_and_jinja_mapping_safety() -> None:
@@ -361,9 +361,9 @@ def test_artifact_registry_data_freshness_uses_evidence_age_not_coverage_counts(
         'No committed inventory snapshot',
         'No validated Metrics Source',
         'No committed security snapshot',
-        'No materialized analytics snapshot',
+        'No analytics snapshot',
     ):
-        assert evidence_value in projection
+        assert evidence_value in presentation
 
     assert '_freshness_value(' in projection
     assert 'latest_security_at' in projection
