@@ -77,7 +77,7 @@ def test_minio_validation_runtime_and_inventory_ownership_are_separated() -> Non
     assert 'lightweight provider health probe without collecting inventory' in client.lower()
     assert 'Visible Buckets' not in validation
     assert 'Required Contracts' in validation
-    assert 'Inventory Sync owns committed assets' in validation
+    assert 'Inventory Sync owns assets' in validation
     assert 'without capability mutation or inventory discovery' in runtime
 
 
@@ -90,8 +90,9 @@ def test_inventory_pages_and_minio_lifecycle_read_only_committed_job_snapshot() 
     assert 'instance.object_storage_system.inventory_observed_at' in minio_presentation
     assert 'Inventory Snapshot · ' in scope
     assert 'Object Storage Inventory Sync' in scope
-    assert 'Manage Inventory Jobs' in scope
-    assert "job_key='object_storage.inventory.sync'" in scope
+    assert 'Manage Inventory Jobs' not in scope
+    assert "job_key='object_storage.inventory.sync'" not in scope
+    assert 'Open Observability' in scope
     assert 'latest completed MinIO Full Validation' not in scope
     assert 'Run Object Storage Inventory Sync from Job Execution' in storage_presentation
     assert "'source_label': 'Committed Snapshot'" in storage_presentation
