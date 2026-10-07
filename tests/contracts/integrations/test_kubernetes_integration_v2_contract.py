@@ -244,7 +244,7 @@ def test_secret_capability_is_optional_and_kept_out_of_baseline_readiness() -> N
     assert 'Core Kubernetes readiness is unaffected' in validation
     assert "'requirement_label': 'Required' if required else 'Optional'" in service
     assert 'Optional Capability Access Is Limited' in capability
-    assert 'Do not expand the baseline ClusterRole.' in capability
+    assert 'do not broaden the baseline ClusterRole' in capability
     assert 'badge_oob("kubernetes", "validation", validation_state.readiness_label)' in capability
 
 
