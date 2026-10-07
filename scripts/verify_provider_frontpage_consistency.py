@@ -99,7 +99,7 @@ def main() -> int:
         'item.posture_state',
         'item.posture_label',
         'item.readiness_percent',
-        'Operational Readiness',
+        'Ready Coverage',
         'progress_bar.bar(item.readiness_percent',
     ):
         assert marker in overview
