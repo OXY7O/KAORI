@@ -6,6 +6,7 @@ from app.extensions.db import db
 from app.integrations.deletion import DeletionBlocked, asset_owner_deletion_guard
 from app.integrations.registry.providers.harbor.application.contracts import HarborRegistrationInput
 from app.integrations.registry.providers.harbor.client import HarborClient
+from app.integrations.registry.providers.harbor.contracts import HarborConnectionResult
 from app.models.harbor import HarborInstance
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.platform_operations.jobs.service import acquire_resource_admission_locks
@@ -15,7 +16,7 @@ def get_harbor_instance(instance_id: int) -> HarborInstance | None:
     return HarborInstance.query.filter_by(id=instance_id).first()
 
 
-def test_harbor_connection(values: HarborRegistrationInput) -> dict[str, object]:
+def test_harbor_connection(values: HarborRegistrationInput) -> HarborConnectionResult:
     client = HarborClient(
         endpoint=values.endpoint,
         auth_type=values.auth_type,
