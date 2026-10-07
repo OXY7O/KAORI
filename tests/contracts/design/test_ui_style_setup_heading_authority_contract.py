@@ -66,7 +66,7 @@ def test_auth_setup_workspace_uses_console_first_laptop_composition() -> None:
     assert "table_label.status_indicator_label('Reachable', 'normal')" in source
     assert "table_label.status_indicator_label('Missing', 'warning')" in source
     assert "table_label.status_indicator_label('Blocked', 'critical')" in source
-    assert "section_link_button.render(url_for('auth.login'), 'Retry Setup Check', icon='refresh-cw')" in source
+    assert "section_link_button.render(url_for('auth.login') , 'Retry Setup Check', icon='refresh-cw')" in source
     assert 'compact=true' in source
     assert 'operational_flow_steps.render(initialization_flow_rows' in source
     assert 'view_more_content.render(' in source
