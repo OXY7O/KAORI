@@ -16,7 +16,7 @@ def has_jinja_assignment(source: str, variable: str, value: str) -> bool:
 def test_reviewed_product_surfaces_use_the_canonical_state_components() -> None:
     reviewed_empty_state_owners = (
         'app/templates/welcome/index.html',
-        'app/templates/kubernetes/dashboard/partials/_alerts_summary.html',
+        'app/templates/components/operational_alert_summary.html',
         'app/templates/storage/object_storage/inventory/systems/partials/_table_content.html',
         'app/templates/components/kubernetes_operation_ui.html',
         'app/templates/kubernetes/analytics/components/_evidence_record_list.html',
@@ -29,6 +29,10 @@ def test_reviewed_product_surfaces_use_the_canonical_state_components() -> None:
     )
     for relative in reviewed_empty_state_owners:
         assert 'components/states/_empty_state.html' in read(relative), relative
+
+    dashboard_alerts = read('app/templates/kubernetes/dashboard/partials/_alerts_summary.html')
+    assert 'components/operational_alert_summary.html' in dashboard_alerts
+    assert 'components/states/_empty_state.html' not in dashboard_alerts
 
     overview = read('app/templates/platform_operations/overview/index.html')
     assert 'data-kaori-empty-state' not in overview
