@@ -23,7 +23,8 @@ def test_dashboard_uses_shared_workspace_tabs_and_persists_url_state() -> None:
     assert 'components/operational_dashboard_workspace.html' in source
     assert 'dashboard_workspace.controller(' in source
     assert 'dashboard_workspace.navigation(' in source
-    assert source.count('dashboard_workspace.panel(') == 4
+    assert '{% for tab_key, tab_label, tab_icon in dashboard_workspace.standard_tabs %}' in source
+    assert source.count('dashboard_workspace.panel(') == 1
     assert 'workspace_tabs.render(standard_tabs' in framework
     assert "url.searchParams.set('tab', tab)" in framework
     assert "window.history.replaceState({}, '', url)" in framework
@@ -43,12 +44,19 @@ def test_dashboard_uses_integrated_tabs_and_equal_height_peer_content() -> None:
     framework = read('app/templates/components/operational_dashboard_workspace.html')
     integrated_tabs = tabs.split('{% macro render(', 1)[1].split('{%- endmacro %}', 1)[0]
 
-    assert '{% import "components/peer_content_grid.html" as peer_content_grid %}' in source
+    overview = read('app/templates/kubernetes/dashboard/partials/_overview.html')
+    capacity = read('app/templates/kubernetes/dashboard/partials/_capacity.html')
+    signals = read('app/templates/kubernetes/dashboard/partials/_signals.html')
+    reporting = read('app/templates/kubernetes/dashboard/partials/_reporting.html')
+    sections = (overview, capacity, signals, reporting)
+
     assert 'components/operational_dashboard_workspace.html' in source
     assert 'data-kaori-dashboard-framework="operational-v1"' in framework
-    assert source.count('peer_content_grid.layout_classes()') == 4
-    assert "column_classes('primary', 'seven-five')" in source
-    assert "column_classes('secondary', 'seven-five')" in source
+    for section in sections:
+        assert '{% import "components/peer_content_grid.html" as peer_content_grid %}' in section
+        assert 'peer_content_grid.layout_classes()' in section
+    assert "column_classes('primary', 'seven-five')" in reporting
+    assert "column_classes('secondary', 'seven-five')" in reporting
     assert 'components/context_rail.html' not in source
     assert 'components/related_page_card.html' not in source
     assert 'xl:grid-cols-12' in grid
@@ -61,9 +69,10 @@ def test_dashboard_uses_integrated_tabs_and_equal_height_peer_content() -> None:
     assert 'shadow-sm' not in integrated_tabs
     assert 'border-b border-outline-subtle' in integrated_tabs
     assert 'data-kaori-tab-variant="integrated-workspace"' in integrated_tabs
-    assert "dashboard_workspace.panel('capacity'" in source
-    assert "dashboard_workspace.panel('signals'" in source
-    assert "'reporting'," in source
+    assert 'dashboard_workspace.standard_tabs' in source
+    assert "('capacity', 'Capacity & Demand', 'gauge')" in framework
+    assert "('signals', 'Signals & Actions', 'bell-ring')" in framework
+    assert "('reporting', 'Reporting', 'file-text')" in framework
 
 
 def test_dashboard_sections_use_the_canonical_operational_section_card() -> None:
@@ -78,7 +87,6 @@ def test_dashboard_sections_use_the_canonical_operational_section_card() -> None
         '_alerts_summary.html',
         '_recommended_actions.html',
         '_alert_response_guidance.html',
-        '_section_loading.html',
     ]
 
     shared_owners = {
@@ -94,6 +102,10 @@ def test_dashboard_sections_use_the_canonical_operational_section_card() -> None
         else:
             assert 'components/operational_section_card.html' in source, name
             assert 'operational_section_card.render(' in source, name
+
+    loading = read('app/templates/components/operational_section_loading.html')
+    assert 'components/operational_section_card.html' in loading
+    assert 'operational_section_card.render(' in loading
 
     reporting_summary = read('app/templates/kubernetes/dashboard/partials/_reporting_summary.html')
     reporting_guidance = read('app/templates/kubernetes/dashboard/partials/_reporting_guidance.html')
@@ -224,13 +236,15 @@ def test_dashboard_copy_uses_canonical_casing() -> None:
 def test_dashboard_uses_local_skeletons_and_section_owned_loading_bar() -> None:
     content = read('app/templates/kubernetes/dashboard/partials/_content.html')
     selector = read('app/templates/kubernetes/dashboard/partials/_signal_overview.html')
-    loading = read('app/templates/kubernetes/dashboard/partials/_section_loading.html')
+    loading = read('app/templates/components/operational_section_loading.html')
     cluster_health = read('app/templates/kubernetes/dashboard/partials/_cluster_health.html')
     section_card = read('app/templates/components/operational_section_card.html')
     contract = read('docs/design/components/LOADING.md')
 
     assert 'dashboard-loading-bar' not in content
     assert 'dashboard-loading-bar' not in selector
+    assert 'components/operational_section_loading.html' in content
+    assert 'section_loading.section(' in content
     assert 'animate-pulse' in loading
     assert 'loading_bar_active=loading_bar_id is not none' in loading
     assert 'components/loading_bar.html' in section_card
