@@ -55,7 +55,8 @@ def test_tenant_workspace_reads_committed_cross_child_state() -> None:
 
     assert 'get_active_tenant_governance_findings()' in workspace
     assert 'build_namespace_access_package' in workspace
-    assert "startswith('kubernetes.tenant.')" in workspace
+    assert '_OPERATIONS_EVIDENCE_TYPES' in workspace
+    assert 'get_tenant_operations_evidence_context' in workspace
 
 
 def test_tenant_tenants_surface_exposes_governed_access_and_credential_lifecycle_without_secrets() -> None:

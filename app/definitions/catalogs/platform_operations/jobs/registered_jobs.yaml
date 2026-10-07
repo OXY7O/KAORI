@@ -96,7 +96,9 @@ jobs:
   minimum_interval_minutes: 15
   maximum_interval_minutes: 1440
   safety_summary: Each Registry provider replaces its committed snapshot only after provider collection succeeds.
-  execution_summary: Run Registry reconciliation and monitor the canonical execution without querying providers from operational pages.
+  execution_summary: >-
+    Run Registry reconciliation and monitor the canonical execution without querying providers from
+    operational pages.
   recent_execution_summary: Latest scheduled and manual Artifact Registry reconciliation runs.
   legacy_module: artifact_registry_inventory_sync
 - key: artifact_registry.security.sync
@@ -145,7 +147,9 @@ jobs:
   default_interval_minutes: 360
   minimum_interval_minutes: 30
   maximum_interval_minutes: 1440
-  safety_summary: Governance collection is read-only and never mutates Registry retention, immutability, webhook, or replication policy.
+  safety_summary: >-
+    Governance collection is read-only and never mutates Registry retention, immutability, webhook, or
+    replication policy.
   execution_summary: Refresh provider governance evidence independently from inventory reconciliation.
   recent_execution_summary: Latest scheduled and manual Artifact Registry governance synchronizations.
   legacy_module: artifact_registry_governance_sync
@@ -177,7 +181,9 @@ jobs:
 - key: artifact_registry.analytics.materialize
   name: Artifact Registry Analytics Data Refresh
   domain: Artifact Registry
-  description: Materialize Registry analytics from committed inventory, security, governance, runtime, and optional metrics evidence.
+  description: >-
+    Materialize Registry analytics from committed inventory, security, governance, runtime, and optional
+    metrics evidence.
   icon: chart-column
   queue_name: analytics-batch
   workload_class: analytics
@@ -195,7 +201,9 @@ jobs:
   default_interval_minutes: 15
   minimum_interval_minutes: 5
   maximum_interval_minutes: 1440
-  safety_summary: Analytics reads committed Registry evidence and qualified Metrics Source bindings, then commits reusable snapshots before pages can consume them.
+  safety_summary: >-
+    Analytics reads committed Registry evidence and qualified Metrics Source bindings, then commits reusable
+    snapshots before pages can consume them.
   execution_summary: Refresh Artifact Registry analytics without issuing provider queries from user page requests.
   recent_execution_summary: Latest scheduled and manual Artifact Registry analytics materialization runs.
   default_configuration:

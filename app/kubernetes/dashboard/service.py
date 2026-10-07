@@ -151,7 +151,7 @@ def _alerts_snapshot_from_cases(cases: list[Any]) -> AlertsSnapshot:
                 state=(
                     'Source Unknown'
                     if case.source_state == 'unknown'
-                    else str(case.workflow_state or 'active').replace('_', ' ').title()
+                    else str(getattr(case, 'workflow_state', None) or 'active').replace('_', ' ').title()
                 ),
                 age=human_time(case.first_seen_at) if case.first_seen_at is not None else '',
             )

@@ -262,6 +262,7 @@ def test_signals_and_reporting_match_kubernetes_dashboard_composition() -> None:
     shared_response = read('app/templates/components/operational_alert_response.html')
     shared_recommendations = read('app/templates/components/operational_recommendation_cards.html')
     kubernetes_signals = read('app/templates/kubernetes/dashboard/partials/_signals.html')
+    kubernetes_actions = read('app/templates/kubernetes/dashboard/partials/_recommended_actions.html')
     kubernetes_reporting = read('app/templates/kubernetes/dashboard/partials/_reporting_guidance.html')
     service = read('app/storage/object_storage/dashboard/service.py')
 
@@ -282,7 +283,8 @@ def test_signals_and_reporting_match_kubernetes_dashboard_composition() -> None:
     assert 'components/operational_flow_steps.html' not in response
     assert 'components/operational_recommendation_cards.html' in actions
     assert 'Recommended Actions' in shared_recommendations
-    assert 'dashboard-recommended-actions' in kubernetes_signals
+    assert 'kubernetes/dashboard/partials/_recommended_actions.html' in kubernetes_signals
+    assert 'dashboard-recommended-actions' in kubernetes_actions
     assert "dashboard['recommended_actions'] = _recommended_actions(selected)" in service
     assert 'get_dashboard_recommendation_findings' in service
 

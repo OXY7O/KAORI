@@ -1640,7 +1640,7 @@ def test_capsule_global_resource_quota_joins_canonical_allocation_governance() -
 
     assert 'def _canonical_shared_allocation_quota' in allocation_state
     assert '_canonical_shared_allocation_quota,' in capacity
-    assert "evidence.get('allocation_governance_scope') != 'tenant_shared'" in capacity
+    assert "evidence.get('allocation_governance_scope') != 'tenant_shared'" in allocation_state
     assert 'def enforce_shared_tenant_allocation_preflight' in capacity
     assert "allocation_scope='tenant_shared'" in capacity
     assert 'shared_quota_by_tenant=shared' in capacity
