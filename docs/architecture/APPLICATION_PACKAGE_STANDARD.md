@@ -16,6 +16,7 @@ A developer should be able to start from the product concept and predict the pac
 - `app/integrations/` — provider-neutral integration contracts, providers/adapters, registration and binding workspaces.
 - `app/kubernetes/` — Kubernetes managed-asset lifecycle, dashboard, inventory, analytics, governance, and live operations.
 - `app/storage/` — infrastructure storage managed assets; Object Storage inventory/analytics live here.
+- `app/artifact_registry/` — provider-neutral committed Registry inventory, security evidence, governance evidence, runtime correlation, analytics, and reporting context; provider connectivity remains under `app/integrations/registry/` as defined by `artifact-registry-domain.md`.
 - `app/intelligence/` — recommendations, Alert Intelligence, Automation Control, Knowledge, and resolver workflows.
 - `app/platform_operations/` — jobs/executions, operational notifications, health, Data Lifecycle, and operational control surfaces.
 - `app/reports/`, `app/settings/`, `app/welcome/` — independent application capabilities.
