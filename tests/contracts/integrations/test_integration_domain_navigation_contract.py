@@ -50,7 +50,7 @@ def test_builtin_providers_declare_domain_navigation_ownership() -> None:
         'app/integrations/observability/metrics_source/__init__.py': "navigation_endpoint_prefixes=('integrations.metrics_sources', 'metrics.')",
         'app/integrations/observability/alert_source/providers/alertmanager/__init__.py': "navigation_endpoint_prefixes=('integrations.alertmanager', 'alertmanager.')",
         'app/integrations/storage/object_storage/providers/minio/__init__.py': "navigation_endpoint_prefixes=('minio.',)",
-        'app/integrations/registry/providers/harbor/__init__.py': "navigation_endpoint_prefixes=('integrations.registry',)",
+        'app/integrations/registry/providers/harbor/__init__.py': "navigation_endpoint_prefixes=('harbor.',)",
     }
     for relative, marker in expected.items():
         assert marker in read(relative)
