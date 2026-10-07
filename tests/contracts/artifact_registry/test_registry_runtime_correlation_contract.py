@@ -53,7 +53,7 @@ def test_runtime_usage_is_cross_domain_canonical_workspace() -> None:
     assert "'All Kubernetes Clusters'" in presentation
     assert 'RegistryWorkloadBinding.query.join(' in presentation
     assert 'RegistryWorkloadBinding.image_reference' in presentation
-    assert 'RegistryWorkloadBinding.artifact_id == int(artifact_id)' in presentation
+    assert 'RegistryWorkloadBinding.artifact_id == int(request.artifact_id)' in presentation
     assert "'security_exposed': security_exposed" in presentation
     assert 'def build_runtime_binding_detail(binding_id: int)' in presentation
 
@@ -100,7 +100,7 @@ def test_runtime_usage_keeps_committed_snapshot_readable_when_refresh_is_unavail
     assert "'refresh_blocked': bool(not eligible and has_committed_snapshot)" in presentation
     assert "'Kubernetes Inventory Required'" in presentation
     assert "action_endpoint = 'inventory.overview'" in presentation
-    assert "snapshot_status, snapshot_tone = 'Refresh Unavailable', 'warning'" in presentation
+    assert "status, tone, description = 'Refresh Unavailable', 'warning', setup['refresh_description']" in presentation
     assert 'has_committed_snapshot=latest_correlated_at is not None' in presentation
 
     assert '{% if runtime.setup.refresh_blocked %}' not in workspace
