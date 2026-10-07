@@ -39,6 +39,7 @@ EXPECTED_REPORT_TYPES = {
     'storage_inventory',
     'object_storage_inventory',
     'tls_inventory',
+    'artifact_registry_inventory',
 }
 
 
