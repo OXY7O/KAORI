@@ -247,12 +247,14 @@ def test_kubernetes_blocker_families_are_locked_to_general_and_analytics() -> No
     analytics = (ROOT / 'app' / 'templates' / 'kubernetes' / 'analytics' / 'overview' / 'index.html').read_text(
         encoding='utf-8'
     )
+    app_layout = (ROOT / 'app' / 'templates' / 'layouts' / 'app.html').read_text(encoding='utf-8')
 
     assert 'Kubernetes has exactly two prerequisite blocker families' in standard
     assert 'components/cluster/_hero_blocked_context.html' in tenant
     assert 'components/cluster/_onboarding_banner.html' in tenant
     assert 'components/states/_blocked_state.html' not in tenant
-    assert '{% block page_capability_navigation %}' in analytics
+    assert '{% block page_capability_navigation %}' in app_layout
+    assert '{% block page_capability_navigation %}' not in analytics
     assert '{% if dependency_blocker %}' in analytics
 
 
