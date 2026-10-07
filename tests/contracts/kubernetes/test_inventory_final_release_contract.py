@@ -29,6 +29,8 @@ def test_inventory_final_standard_documents_authz_snapshot_and_shared_ui_contrac
     assert 'Operational Posture' in standard
     assert 'Inventory Records' in standard
     assert 'Open Cluster Integrations' in standard
+    assert 'metadata roles remain stable' in standard
+    assert 'components/provider_prerequisite/_hero_context.html' in standard
 
 
 def test_inventory_read_side_no_longer_owns_obsolete_template_or_helpers() -> None:
