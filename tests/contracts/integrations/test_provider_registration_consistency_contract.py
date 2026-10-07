@@ -263,12 +263,12 @@ def test_provider_registration_and_metrics_validation_guidance_stays_concise() -
         'app/templates/integrations/observability/metrics_source/partials/_detail_validation_content.html'
     )
 
-    assert 'Review Kubernetes coverage, readiness, and consumer bindings.' in kubernetes_add
+    assert 'Review Kubernetes integration coverage, API readiness, and governed consumer bindings before operational use.' in kubernetes_add
     assert (
         'Kubernetes owns live cluster state. KAORI governs connection readiness, synchronized evidence, and consumer bindings.'
         in kubernetes_add
     )
-    assert 'Review Kubernetes coverage, API readiness, and consumer bindings.' in kubernetes_edit
+    assert 'Review Kubernetes integration coverage, API readiness, and governed consumer bindings before operational use.' in kubernetes_edit
     assert (
         'Kubernetes owns live resources and API authorization. KAORI governs provider readiness, normalized evidence, and consumer resolution.'
         in kubernetes_edit
