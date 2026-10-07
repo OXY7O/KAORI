@@ -4,9 +4,9 @@ import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from time import perf_counter, time
-from typing import Any
+from typing import Any, cast
 
-from celery import chord, shared_task
+from celery import Task, chord, shared_task
 from celery.exceptions import CeleryError
 from kombu.exceptions import OperationalError as KombuOperationalError
 from sqlalchemy.exc import SQLAlchemyError
@@ -471,19 +471,25 @@ def sync_all_registry_security_task(
         )
 
         header = [
-            sync_registry_security_source_task.s(
+            cast(Task, sync_registry_security_source_task)
+            .s(
                 target=target,
                 source_total=total,
                 job_execution_id=job_execution_id,
-            ).set(queue=queue_name)
+            )
+            .set(queue=queue_name)
             for target in targets
         ]
-        callback = finalize_registry_security_sync_task.s(
-            requested_by_user_id=requested_by_user_id,
-            source_total=total,
-            started_at_epoch=time(),
-            job_execution_id=job_execution_id,
-        ).set(queue=queue_name)
+        callback = (
+            cast(Task, finalize_registry_security_sync_task)
+            .s(
+                requested_by_user_id=requested_by_user_id,
+                source_total=total,
+                started_at_epoch=time(),
+                job_execution_id=job_execution_id,
+            )
+            .set(queue=queue_name)
+        )
 
         chord(header, callback).apply_async()
         return {
