@@ -7,6 +7,10 @@ import secrets
 from datetime import UTC, datetime
 from typing import Any
 
+from celery.exceptions import CeleryError
+from kombu.exceptions import OperationalError as KombuOperationalError
+from sqlalchemy.exc import SQLAlchemyError
+
 from app.artifact_registry.sync_jobs import enqueue_registry_target_refresh
 from app.extensions.db import db
 from app.models.integration import IntegrationInstance
@@ -133,7 +137,7 @@ def ingest_webhook(
                 'artifact_tag': fields['artifact_tag'],
             },
         )
-    except Exception as exc:
+    except (CeleryError, KombuOperationalError, OSError, RuntimeError, ValueError, SQLAlchemyError) as exc:
         event.status = 'refresh_failed'
         event.processed_at = datetime.now(UTC)
         event.metadata_json = {
