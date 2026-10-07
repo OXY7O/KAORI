@@ -360,9 +360,10 @@ def test_object_storage_analytics_uses_explicit_runtime_states_and_blocking() ->
     assert 'object-storage-analytics-refresh-indicator' in controls
     shared_blocker = read('app/templates/components/dependencies/_blocker.html')
     assert 'components/dependencies/_blocker.html' in blocker
-    assert 'Object Storage → Metrics → Analytics Snapshot' in blocker
+    assert 'Object Storage → Metrics Source → Alert Source → Analytics Snapshot' in blocker
     assert 'Alert Evidence' not in blocker
-    assert blocker.count('dependency_grid_classes = "lg:grid-cols-3"') == 2
+    assert blocker.count('dependency_grid_classes = "lg:grid-cols-3"') == 1
+    assert blocker.count('dependency_grid_classes = "lg:grid-cols-4"') == 1
     assert 'Analytics Setup Path' in shared_blocker
     assert 'Current Blocker' in shared_blocker
     assert 'Missing dependency:' in shared_blocker
