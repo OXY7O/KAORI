@@ -7,9 +7,12 @@ from app.common.integration_errors import describe_integration_failure
 from app.extensions.db import db
 from app.integrations.compatibility import evaluate_compatibility
 from app.integrations.registry.providers.harbor.capabilities import CAPABILITY_PROFILE
-from app.integrations.registry.providers.harbor.contracts import HarborConnectionResult
 from app.integrations.registry.providers.harbor.client_factory import build_client
-from app.integrations.registry.providers.harbor.contracts import ValidationResult, ValidationStep
+from app.integrations.registry.providers.harbor.contracts import (
+    HarborConnectionResult,
+    ValidationResult,
+    ValidationStep,
+)
 from app.integrations.registry.providers.harbor.exceptions import HarborError, HarborResponseError
 from app.integrations.registry.providers.harbor.status import mark_status
 from app.models.harbor import HarborInstance
