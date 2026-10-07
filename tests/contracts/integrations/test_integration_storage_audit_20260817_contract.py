@@ -19,7 +19,7 @@ def test_storage_domain_keeps_owner_and_observability_source_boundaries_explicit
     assert "domain_key='storage'" in registration
     assert "capability_key='object_storage'" in registration
     assert 'components/info_tip.html' in workspace
-    assert "'Storage Authority Boundary'" in workspace
+    assert 'Storage Authority Boundary' in workspace
     assert "'integration-' ~ domain.key ~ '-workspace-guidance'" in workspace
     assert 'data-kaori-storage-binding-boundary' not in workspace
     assert 'Storage providers remain authoritative for native storage state.' in workspace
