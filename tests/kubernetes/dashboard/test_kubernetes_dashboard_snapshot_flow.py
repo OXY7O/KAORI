@@ -102,6 +102,7 @@ def test_cluster_health_reads_capacity_and_alert_snapshots_only(monkeypatch) -> 
         summary='Review capacity pressure.',
         target='cluster-1',
         first_seen_at=None,
+        source_state='active',
     )
     monkeypatch.setattr(service, '_alert_cases_by_asset', lambda _cluster_ids: {'cluster-1': [alert_case]})
 
@@ -396,8 +397,8 @@ def test_cluster_health_snapshot_reads_are_bounded_to_visible_page(monkeypatch) 
     expected = [f'cluster-{index}' for index in range(5, 10)]
     assert capacity_reads == expected
     assert alert_case_reads == [expected]
-    assert dashboard.cluster_health_pagination.page == 2
-    assert dashboard.cluster_health_pagination.per_page == 5
+    assert dashboard.cluster_health_pagination['page'] == 2
+    assert dashboard.cluster_health_pagination['per_page'] == 5
 
 
 def test_dashboard_forecast_snapshot_exposes_chart_values_and_horizon() -> None:
