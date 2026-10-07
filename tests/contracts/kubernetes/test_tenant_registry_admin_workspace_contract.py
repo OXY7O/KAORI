@@ -622,12 +622,12 @@ def test_governed_tenant_decommission_is_async_provider_verified_and_fail_closed
 
 
 def test_tenant_registry_distinguishes_active_namespaces_from_retained_history() -> None:
-    service = tenant_service_source()
+    registry_context = read('app/kubernetes/tenant/registry_context.py')
     registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
 
-    assert 'namespace_history_count_map' in service
-    assert 'TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value' in service
-    assert "'namespace_history_count': namespace_history_count_map.get(item.id, 0)" in service
+    assert 'namespace_history_count_map' in registry_context
+    assert 'TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value' in registry_context
+    assert "row['namespace_history_count'] = namespace_history_count_map.get(item.id, 0)" in registry_context
     assert 'historical namespace record' in registry
     assert 'Active managed namespaces' in registry
 
@@ -810,7 +810,7 @@ def test_committed_tenant_snapshot_is_separate_from_on_demand_live_provider_conn
     assert 'hx-trigger="load"' not in live_loader
     assert 'Check Live Connectivity' in live_loader
     assert 'Routine page load performs no provider request' in live_loader
-    assert 'Committed KAORI Tenant state is already loaded.' in live_loader
+    assert 'Committed Tenant state is loaded. Check live reachability only when required.' in live_loader
     assert "title='Live Provider Connectivity'" in live_loader
     assert 'Refresh Live Connectivity' in live_partial
 
@@ -1601,6 +1601,7 @@ def test_capsule_global_resource_quota_joins_canonical_allocation_governance() -
     governance = read('app/kubernetes/tenant/capsule_allocation_governance.py')
     advanced = read('app/kubernetes/tenant/capsule_advanced.py')
     capacity = read('app/kubernetes/tenant/capacity_governance.py')
+    allocation_state = read('app/kubernetes/tenant/capacity_allocation_state.py')
     tasks = read('app/kubernetes/tenant/tasks.py')
     routes = tenant_routes_source()
     namespace_page = read('app/templates/kubernetes/tenant/namespace_provisioning.html')
@@ -1637,7 +1638,8 @@ def test_capsule_global_resource_quota_joins_canonical_allocation_governance() -
     assert 'Capsule provider resource UID changed' in advanced
     assert 'Capsule provider resourceVersion changed' in advanced
 
-    assert 'def _canonical_shared_allocation_quota' in capacity
+    assert 'def _canonical_shared_allocation_quota' in allocation_state
+    assert '_canonical_shared_allocation_quota,' in capacity
     assert "evidence.get('allocation_governance_scope') != 'tenant_shared'" in capacity
     assert 'def enforce_shared_tenant_allocation_preflight' in capacity
     assert "allocation_scope='tenant_shared'" in capacity
