@@ -47,7 +47,8 @@ def _sample_value(item: dict[str, Any]) -> float | None:
 def _project_vector(payload: dict[str, Any]) -> dict[str, float]:
     values: dict[str, float] = {}
     for item in _vector(payload):
-        metric = item.get('metric') if isinstance(item.get('metric'), dict) else {}
+        raw_metric = item.get('metric')
+        metric = raw_metric if isinstance(raw_metric, dict) else {}
         project = str(metric.get('project_name') or '').strip()
         sample = _sample_value(item)
         if project and sample is not None:
@@ -168,7 +169,8 @@ def _alert_identity(row: dict[str, Any]) -> tuple[Any, ...]:
     fingerprint = str(row.get('fingerprint') or '').strip()
     if fingerprint:
         return ('fingerprint', fingerprint)
-    labels = row.get('labels') if isinstance(row.get('labels'), dict) else {}
+    raw_labels = row.get('labels')
+    labels = raw_labels if isinstance(raw_labels, dict) else {}
     stable_labels = tuple(
         sorted(
             (str(key), str(value))
@@ -195,12 +197,15 @@ def _alertmanager_rows(items: list[Any]) -> list[dict[str, Any]]:
     for item in items:
         if not isinstance(item, dict):
             continue
-        labels = dict(item.get('labels') or {}) if isinstance(item.get('labels'), dict) else {}
-        annotations = dict(item.get('annotations') or {}) if isinstance(item.get('annotations'), dict) else {}
-        status_payload = item.get('status') if isinstance(item.get('status'), dict) else {}
+        raw_labels = item.get('labels')
+        labels = dict(raw_labels) if isinstance(raw_labels, dict) else {}
+        raw_annotations = item.get('annotations')
+        annotations = dict(raw_annotations) if isinstance(raw_annotations, dict) else {}
+        raw_status = item.get('status')
+        status_payload = raw_status if isinstance(raw_status, dict) else {}
         raw_state = item.get('state')
-        if raw_state is None and isinstance(item.get('status'), str):
-            raw_state = item.get('status')
+        if raw_state is None and isinstance(raw_status, str):
+            raw_state = raw_status
         if raw_state is None:
             raw_state = status_payload.get('state')
         rows.append(
@@ -234,7 +239,8 @@ def _alertmanager_rows(items: list[Any]) -> list[dict[str, Any]]:
 def _metrics_alert_rows(payload: dict[str, Any]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for item in _vector(payload):
-        labels = dict(item.get('metric') or {}) if isinstance(item.get('metric'), dict) else {}
+        raw_metric = item.get('metric')
+        labels = dict(raw_metric) if isinstance(raw_metric, dict) else {}
         rows.append(
             {
                 'name': str(labels.get('alertname') or 'Unknown Alert'),
@@ -611,17 +617,16 @@ def materialize_registry_analytics(
         )
     )
 
-    snapshot = RegistryAnalyticsSnapshot(
-        integration_instance_id=identity.id,
-        time_range='current',
-        payload_json=payload,
-        status='ready',
-        generated_at=generated_at,
-        expires_at=generated_at + timedelta(minutes=max(int(freshness_minutes), 1)),
-        freshness_minutes=max(int(freshness_minutes), 1),
-        stale_grace_minutes=max(int(stale_grace_minutes), 1),
-        last_job_execution_id=job_execution_id,
-    )
+    snapshot = RegistryAnalyticsSnapshot()
+    snapshot.integration_instance_id = identity.id
+    snapshot.time_range = 'current'
+    snapshot.payload_json = payload
+    snapshot.status = 'ready'
+    snapshot.generated_at = generated_at
+    snapshot.expires_at = generated_at + timedelta(minutes=max(int(freshness_minutes), 1))
+    snapshot.freshness_minutes = max(int(freshness_minutes), 1)
+    snapshot.stale_grace_minutes = max(int(stale_grace_minutes), 1)
+    snapshot.last_job_execution_id = job_execution_id
     db.session.add(snapshot)
     db.session.commit()
     return snapshot
