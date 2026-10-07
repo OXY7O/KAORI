@@ -33,7 +33,8 @@ def test_deck_and_page_tabs_use_quiet_kaori_surfaces() -> None:
     assert expected_track in shell
     assert 'components/framed_workspace_tabs.html' in page
     assert 'framed_workspace_tabs.render_navigation(' in page
-    assert 'border-b border-outline-default bg-surface-hover px-4 pt-4' in framed_tabs
+    assert 'bg-surface-hover px-4 pt-4' in framed_tabs
+    assert 'gap-2 border-b border-outline-default' in framed_tabs
     assert 'bg-surface-card text-kaori-primary' in shell
     assert 'bg-surface-card text-kaori-primary' in framed_tabs
     assert 'role="tablist"' in shell
