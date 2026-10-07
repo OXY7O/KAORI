@@ -104,7 +104,7 @@
                 metric_icon_palette='brand',
                 coverage_metric_label='Security Coverage',
                 exceptions_metric_label='Security Exceptions') }}
-        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+        <section class="{{ section_card.shell_classes() }}"
                  aria-labelledby="artifact-registry-security-operations-heading">
             <header class="flex flex-col gap-4 border-b border-outline-subtle px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
                 <div class="min-w-0 flex-1">{% include "artifact_registry/partials/_security_sync_live_state.html" %}</div>
