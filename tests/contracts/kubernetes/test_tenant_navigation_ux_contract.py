@@ -100,7 +100,7 @@ def test_sidebar_authority_documents_tenant_capability_v21() -> None:
     standard = (ROOT / 'docs/design/components/SIDEBAR_NAVIGATION.md').read_text(encoding='utf-8')
     verifier = (ROOT / 'scripts/verify_sidebar_navigation_standard.py').read_text(encoding='utf-8')
 
-    assert 'KAORI Sidebar Navigation Standard v2.1' in standard
+    assert 'KAORI Sidebar Navigation Standard v2.2' in standard
     assert 'Level 1 — Workspace / Domain' in standard
     assert 'Level 2 — Capability' in standard
     assert 'Tenant' in standard
