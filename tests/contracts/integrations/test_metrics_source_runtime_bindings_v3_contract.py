@@ -89,5 +89,5 @@ def test_metrics_source_degraded_runtime_uses_compatibility_guidance() -> None:
     runtime = read('app/templates/integrations/observability/metrics_source/partials/_runtime_panel.html')
 
     assert "runtime_state.readiness == 'degraded'" in runtime
-    assert 'This source remains usable with degraded compatibility.' in runtime
-    assert 'Move to a current qualified release or qualify the detected release' in runtime
+    assert 'Source is usable with degraded compatibility.' in runtime
+    assert 'Upgrade or qualify the detected release' in runtime
