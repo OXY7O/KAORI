@@ -1,7 +1,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, TypedDict
+
+ 
+ 
+class HarborConnectionResult(TypedDict):
+    connected: bool
+    response_time_ms: int
+    version: str
+    registry_url: object | None
+    external_url: object | None
 
 
 @dataclass(frozen=True, slots=True)
