@@ -137,7 +137,7 @@ def test_metrics_source_workspace_filters_by_provider_key_not_product_category()
     assert 'row.routing_label' in domain
     assert 'components/info_tip.html' in domain
     assert 'info_tip.render(' in domain
-    assert "'Observability Routing'" in domain
+    assert 'Observability Routing' in domain
     assert 'Alertmanager remains an Alert Source' in domain
 
 
