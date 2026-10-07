@@ -83,10 +83,8 @@ def test_overview_ready_counts_require_enabled_targets_and_domain_zero_targets_a
     assert "readiness == 'ready'" in extension
 
     coverage = service.split('def _coverage(', 1)[1].split('def _coverage_stats', 1)[0]
-    posture = extension.split('def portfolio_posture(', 1)[1].split(
-        'def build_provider_portfolio_counts', 1
-    )[0]
-    assert 'posture_state, posture_label = _portfolio_posture(summary)' in coverage
+    posture = extension.split('def portfolio_posture(', 1)[1].split('def build_provider_portfolio_counts', 1)[0]
+    assert 'posture_state, posture_label = portfolio_posture(summary)' in coverage
     assert "return 'not_configured', 'Not Configured'" in posture
     assert "return 'ready', 'Ready'" in posture
     assert "return 'attention', 'Needs Review'" in posture
