@@ -3,6 +3,7 @@
 {% block dashboard_content %}
     {% import "components/action_button.html" as action_button %}
     {% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
+    {% import "components/operational_section_card.html" as section_card %}
     {% import "components/page_hero.html" as page_hero %}
     {% import "components/snapshot_context_bar.html" as snapshot_context_bar %}
     {% import "components/table_registry.html" as registry %}
@@ -58,7 +59,7 @@
                         metric_icon_palette='brand',
                         coverage_metric_label='Governance Coverage',
                         exceptions_metric_label='Evidence Exceptions') }}
-            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+            <section class="{{ section_card.shell_classes() }}"
                      aria-labelledby="artifact-registry-governance-operations-heading">
                 <header class="flex flex-col gap-4 border-b border-outline-subtle px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
                     <div class="min-w-0 flex-1">{% include "artifact_registry/partials/_governance_sync_live_state.html" %}</div>
@@ -116,7 +117,7 @@
                 </div>
             </section>
             <section id="artifact-registry-governance-registry"
-                     class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+                     class="{{ section_card.shell_classes() }}">
                 {{ framed_workspace_tabs.render_navigation([
                                 ('policies', 'Policies', 'shield-check', url_for('artifact_registry.governance', tab='policies', page=1, per_page=governance.pagination.per_page) , governance.project_count),
                 ('replication', 'Replication', 'git-compare-arrows', url_for('artifact_registry.governance', tab='replication', page=1, per_page=governance.pagination.per_page), governance.replication_count)
