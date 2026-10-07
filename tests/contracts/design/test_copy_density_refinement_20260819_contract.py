@@ -37,7 +37,7 @@ def test_minio_copy_is_balanced_between_registration_detail_and_boundary_density
         in index
     )
     assert (
-        'MinIO owns S3 storage state; observability sources remain independent. KAORI correlates asset-scoped binding evidence without copying credentials.'
+        'MinIO owns S3 state; observability sources stay independent. KAORI correlates binding evidence without copying credentials.'
         in configuration
     )
     assert (
@@ -54,9 +54,9 @@ def test_metrics_source_validation_copy_keeps_provider_consumer_boundary_concise
         'app/templates/integrations/observability/metrics_source/partials/_detail_validation_content.html'
     )
 
-    assert 'Core API evidence sets provider readiness; consumer evidence stays binding-scoped.' in validation
+    assert 'Core APIs set readiness; bindings own consumer evidence.' in validation
     assert (
-        'Validate provider compatibility and Prometheus HTTP API v1 / PromQL core. Consumer contracts stay in Bindings & Consumers.'
+        'Validate compatibility and Prometheus/PromQL core; consumer contracts stay in Bindings & Consumers.'
         in validation
     )
 
