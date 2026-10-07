@@ -64,7 +64,7 @@ def test_provider_frontpage_consistency_verifier_uses_current_title_case_contrac
     assert "'Pre-Save Requirements'" in verifier
     assert "'Pre-save Requirements'" not in verifier
     assert "'Full Validation'" in verifier
-    assert "'Core Validation'" not in verifier
+    assert "assert 'Core Validation' not in form, provider" in verifier
     assert '├── Coverage Gaps' in standard
     assert 'fourth metric is always `Coverage Gaps`' in standard
     assert 'Provider Catalog shows registered count, ready count, real readiness percentage' in standard
