@@ -67,7 +67,7 @@ def test_artifact_registry_overview_scope_is_committed_and_provider_neutral() ->
     assert 'registry_metrics_readiness(provider)' in presentation
     assert 'HarborClient(' not in presentation
     assert 'requests.' not in routes
-    assert 'Registry Provider Health Summary' in operations
+    assert 'artifact_registry/partials/_overview_provider_health.html' in operations
     assert 'Inventory Snapshot' in operations
     assert 'Data Freshness' in operations
 
@@ -220,7 +220,7 @@ def test_artifact_registry_overview_keeps_reference_information_hierarchy() -> N
     assert '_registry_reporting(' not in build_overview
     assert "'failed_refresh_count': failed_refresh_count" in presentation
     assert "'capacity': capacity" in presentation
-    assert "'alerts': alerts" in presentation
+    assert "'alerts': _registry_alerts(selected_provider)" in presentation
     assert "'recommended_actions': recommended_actions" in presentation
     assert "'reporting': reporting" in presentation
 
@@ -343,9 +343,9 @@ def test_artifact_registry_data_freshness_uses_evidence_age_not_coverage_counts(
         'def _overview_capacity_projection(', 1
     )[0]
 
-    assert "_SUCCESSFUL_SCAN_STATES = ('success', 'finished', 'completed')" in presentation
+    assert 'from app.artifact_registry.security.contracts import SUCCESSFUL_REGISTRY_SCAN_STATUSES' in presentation
     assert 'func.lower(RegistryArtifact.scan_status).in_(' in presentation
-    assert '_scan_evidence_ready(artifact.scan_status)' in presentation
+    assert 'func.lower(RegistryArtifact.scan_status).in_(SUCCESSFUL_REGISTRY_SCAN_STATUSES)' in presentation
     assert 'RegistryScanSnapshot.observed_at' in projection
 
     for retired_value in (
