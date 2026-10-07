@@ -136,7 +136,10 @@ def test_security_scope_labels_are_explicit_and_provider_neutral() -> None:
     assert "return 'Selected Registry Source', 'No Matching Registry Source'" in scope_logic
     assert 'if provider_label:' in scope_logic
     assert "return provider_label, f'{provider_label} · {len(scoped_sources)} {source_count_label}'" in scope_logic
-    assert "return 'All Registry Sources', f'{len(scoped_sources)} Registered Registry {source_count_label}'" in scope_logic
+    assert (
+        "return 'All Registry Sources', f'{len(scoped_sources)} Registered Registry {source_count_label}'"
+        in scope_logic
+    )
     assert scope_logic.index('if source_id is not None:') < scope_logic.index('if provider_label:')
 
 
