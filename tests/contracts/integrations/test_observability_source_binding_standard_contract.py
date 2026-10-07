@@ -83,8 +83,12 @@ def test_asset_owner_pages_inventory_bound_sources_without_owning_binding_mutati
     for marker in ('Source', 'Source Readiness', 'Binding Validation', 'Effective Resolution'):
         assert marker in shared_inventory
 
-    assert '_asset_owner_observability_sources.html' in kubernetes_lifecycle
-    assert 'asset_owner_sources.render(' in kubernetes_lifecycle
+    kubernetes_binding_registry = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_binding_registry.html'
+    )
+    assert 'integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_binding_registry.html' in kubernetes_lifecycle
+    assert '_asset_owner_observability_sources.html' in kubernetes_binding_registry
+    assert 'asset_owner_sources.render(' in kubernetes_binding_registry
     assert '_asset_owner_observability_sources.html' in minio_binding_registry
     assert 'asset_owner_sources.render(' in minio_binding_registry
     assert 'integrations/storage/object_storage/providers/minio/partials/_binding_registry.html' in minio_lifecycle
