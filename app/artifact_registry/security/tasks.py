@@ -471,25 +471,25 @@ def sync_all_registry_security_task(
         )
 
         header = [
-            cast(Task, sync_registry_security_source_task)
-            .s(
-                target=target,
-                source_total=total,
-                job_execution_id=job_execution_id,
-            )
-            .set(queue=queue_name)
+            cast(
+                Any,
+                cast(Task, sync_registry_security_source_task).s(
+                    target=target,
+                    source_total=total,
+                    job_execution_id=job_execution_id,
+                ),
+            ).set(queue=queue_name)
             for target in targets
         ]
-        callback = (
-            cast(Task, finalize_registry_security_sync_task)
-            .s(
+        callback = cast(
+            Any,
+            cast(Task, finalize_registry_security_sync_task).s(
                 requested_by_user_id=requested_by_user_id,
                 source_total=total,
                 started_at_epoch=time(),
                 job_execution_id=job_execution_id,
-            )
-            .set(queue=queue_name)
-        )
+            ),
+        ).set(queue=queue_name)
 
         chord(header, callback).apply_async()
         return {
