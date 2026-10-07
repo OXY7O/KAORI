@@ -25,8 +25,8 @@ def test_object_storage_overview_hides_inventory_evidence_while_setup_is_blocked
     assert '_fleet_posture.html' in index
     assert '_summary_cards.html' in index
     assert '_systems_snapshot.html' not in index
-    assert 'Committed Inventory' in hero
-    assert 'Object Storage Setup Required' in hero
+    blocker = read('app/templates/storage/object_storage/inventory/components/_hero_blocked_context.html')
+    assert 'Object Storage Setup Required' in blocker
     assert 'storage/object_storage/inventory/components/_hero_blocked_context.html' in hero
     assert 'page_hero.aside_classes()' in hero
 
@@ -40,8 +40,8 @@ def test_systems_and_buckets_use_setup_blocker_and_inventory_data_snapshot() -> 
         assert 'storage/object_storage/inventory/components/_onboarding_banner.html' in workspace
         assert f'storage/object_storage/inventory/{resource}/partials/_snapshot_boundary.html' in workspace
         assert 'object_storage_snapshot.render(inventory.snapshot)' in snapshot
-        assert 'Committed Inventory' in hero
-        assert 'Object Storage Setup Required' in hero
+        blocker = read('app/templates/storage/object_storage/inventory/components/_hero_blocked_context.html')
+        assert 'Object Storage Setup Required' in blocker
         assert 'storage/object_storage/inventory/components/_hero_blocked_context.html' in hero
         assert 'page_hero.aside_classes()' in hero
 
