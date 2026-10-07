@@ -562,7 +562,7 @@ def _dashboard_descriptions(paths: list[Path]) -> dict[str, str]:
 def _provider_component_descriptions() -> dict[str, str]:
     _require_tokens(
         _read(PROVIDER_EDIT_HERO),
-        (PROVIDER_EDIT_SHORT_DESCRIPTION_SUFFIX, 'description.split()|length < 11'),
+        (PROVIDER_EDIT_SHORT_DESCRIPTION_SUFFIX, 'description.split()|length < 7'),
         'Integration provider edit Hero description normalization',
     )
     descriptions: dict[str, str] = {}
