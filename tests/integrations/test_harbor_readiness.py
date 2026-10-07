@@ -225,7 +225,7 @@ def test_inventory_status_surfaces_validation_prerequisite_before_first_snapshot
 
     assert status == {
         'status': 'attention',
-        'label': 'Validation Required',
+        'label': 'No Committed Inventory',
         'detail': 'Run Full Validation before Artifact Registry inventory synchronization.',
     }
 
@@ -242,5 +242,5 @@ def test_inventory_status_keeps_not_collected_after_validation_until_inventory_s
     )
 
     assert status['status'] == 'unknown'
-    assert status['label'] == 'Not Collected'
+    assert status['label'] == 'No Committed Inventory'
     assert 'Artifact Registry inventory synchronization' in status['detail']
