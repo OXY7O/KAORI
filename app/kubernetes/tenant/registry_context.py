@@ -276,8 +276,8 @@ def get_tenant_registry_context(
             .order_by(TenantEnvironment.tenant_id.asc(), TenantEnvironment.environment.asc())
             .all()
         )
-        for row in environment_rows:
-            environment_map.setdefault(row.tenant_id, []).append(row.environment)
+        for environment_row in environment_rows:
+            environment_map.setdefault(environment_row.tenant_id, []).append(environment_row.environment)
 
         if include_decommission_preflight:
             namespace_history_rows = (
