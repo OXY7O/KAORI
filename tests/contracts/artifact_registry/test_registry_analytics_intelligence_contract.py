@@ -175,7 +175,7 @@ def test_registry_alert_source_is_worker_materialized_and_provider_neutral() -> 
     assert "scope_type='registry_instance'" in analytics
     assert 'list_alerts_for_scope(' in analytics
     assert 'ACTIVE_ALERTS_EXPRESSION' in analytics
-    assert "'alerts': alerts" in analytics
+    assert "'alerts': state.alerts" in analytics
 
     assert 'list_alerts_for_scope' not in presentation
     assert 'list_alerts_for_scope' not in routes
