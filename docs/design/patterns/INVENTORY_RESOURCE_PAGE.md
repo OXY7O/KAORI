@@ -85,8 +85,9 @@ A Blueprint-level `before_request` must not short-circuit protected Inventory pa
 
 When the Kubernetes onboarding blocker is active, the page renders the canonical Hero plus onboarding blocker only. **Inventory Data Snapshot, posture summaries, tables, and topology workspace stay hidden** because they would imply an available committed inventory scope when no cluster is registered.
 
-The Hero itself remains structurally stable while blocked. Its right panel must use the shared Kubernetes setup-blocked context from `components/cluster/_hero_blocked_context.html` with `Inventory Readiness` as the domain label. The normal Inventory posture/context panel returns only after cluster setup is available.
-While blocked, Hero metadata must not present zero-valued asset/resource counters as committed evidence; use `Committed Inventory` plus `Cluster Setup Required` until a valid cluster scope exists.
+The Hero itself remains structurally stable while blocked. Its eyebrow, H1, description, and metadata roles remain stable across Normal and Blocked states in accordance with the provider-prerequisite contract in #894. Its right panel must use the shared Kubernetes setup-blocked context from `components/cluster/_hero_blocked_context.html`, which delegates geometry to `components/provider_prerequisite/_hero_context.html`, with `Inventory Readiness` as the domain label. The normal Inventory posture/context panel returns only after cluster setup is available.
+
+Blocked readiness is additive context, not replacement metadata. Factual registration/scope/count roles may resolve to zero when no Kubernetes provider is registered, but those values must not be presented as provider readiness or as evidence of a successful inventory collection. Do not replace the normal metadata vocabulary with blocker-only labels such as `Committed Inventory`; the provider-prerequisite context owns `Cluster Setup Required` and the below-Hero onboarding blocker owns remediation.
 
 All resource template registry entries are rooted at `inventory/kubernetes/<resource>/...`. Route helpers must never fall back to the retired `inventory/<resource>/...` namespace; the canonical namespace is release-verified so full-page and HTMX rendering cannot drift apart.
 
