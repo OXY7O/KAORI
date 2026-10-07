@@ -140,7 +140,8 @@ def _collect_registry_capacity_analytics(
             continue
         growth['analytics_count'] += 1
         payload = _analytics_payload(snapshot)
-        growth_payload = payload.get('growth') if isinstance(payload.get('growth'), dict) else {}
+        raw_growth_payload = payload.get('growth')
+        growth_payload = raw_growth_payload if isinstance(raw_growth_payload, dict) else {}
         size_growth = growth_payload.get('size_growth_bytes_per_day')
         artifact_growth = growth_payload.get('artifact_growth_per_day')
         if isinstance(size_growth, (int, float)):
@@ -150,7 +151,8 @@ def _collect_registry_capacity_analytics(
             growth['artifacts_per_day'] += float(artifact_growth)
             growth['observed'] = True
 
-        capacity = payload.get('capacity') if isinstance(payload.get('capacity'), dict) else {}
+        raw_capacity = payload.get('capacity')
+        capacity = raw_capacity if isinstance(raw_capacity, dict) else {}
         rows = capacity.get('project_forecasts')
         if not isinstance(rows, list):
             continue
@@ -161,6 +163,7 @@ def _collect_registry_capacity_analytics(
             quota = raw.get('quota_bytes')
             utilization = raw.get('utilization_percent')
             days = raw.get('days_to_quota')
+            growth_bytes = raw.get('growth_bytes_per_day')
             project_forecasts.append(
                 {
                     'provider_id': provider_id,
@@ -170,9 +173,7 @@ def _collect_registry_capacity_analytics(
                     'quota_bytes': float(quota) if isinstance(quota, (int, float)) else None,
                     'utilization_percent': float(utilization) if isinstance(utilization, (int, float)) else None,
                     'growth_bytes_per_day': (
-                        float(raw.get('growth_bytes_per_day'))
-                        if isinstance(raw.get('growth_bytes_per_day'), (int, float))
-                        else None
+                        float(growth_bytes) if isinstance(growth_bytes, (int, float)) else None
                     ),
                     'days_to_quota': float(days) if isinstance(days, (int, float)) else None,
                 }
