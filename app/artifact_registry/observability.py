@@ -1,10 +1,22 @@
 from __future__ import annotations
 
+from typing import TypedDict
+
 from app.integrations.observability.metrics_source.application.resolver import resolve_metrics_sources
 from app.models.integration import IntegrationBinding, IntegrationInstance
 
 
-def registry_metrics_readiness(identity: IntegrationInstance) -> dict[str, object]:
+class RegistryMetricsReadiness(TypedDict):
+    status: str
+    label: str
+    tone: str
+    binding_count: int
+    validated_binding_count: int
+    selected_source: str | None
+    detail: str
+
+
+def registry_metrics_readiness(identity: IntegrationInstance) -> RegistryMetricsReadiness:
     """Return DB-backed Metrics Source readiness without executing a provider query."""
 
     bindings = (
