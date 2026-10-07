@@ -285,7 +285,7 @@ def test_object_storage_analytics_dependency_path_keeps_metrics_and_alert_eviden
 
     assert '"Metrics Source"' in blocker
     assert '"Alert Source"' in blocker
-    assert 'Alertmanager or qualified metrics-backed alert evidence' in blocker
+    assert 'Alertmanager when available, with the existing qualified metrics-backed alert fallback' in blocker
     assert 'Object Storage → Metrics Source → Alert Source' in blocker
     assert 'Object Storage → Metrics Source → Alert Source → Analytics Snapshot' in blocker
     assert 'Prometheus-compatible operational metrics source' in blocker
