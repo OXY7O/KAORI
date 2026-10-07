@@ -134,31 +134,28 @@ def _commit_security_evidence(
 
         if item.scan_snapshot is not None and not item.reuse_existing_scan:
             snapshot_data = item.scan_snapshot
-            snapshot = RegistryScanSnapshot(
-                artifact_id=artifact.id,
-                scanner=snapshot_data.get('scanner'),
-                scanner_version=snapshot_data.get('scanner_version'),
-                report_id=snapshot_data.get('report_id'),
-                status=str(snapshot_data.get('status') or 'not_scanned'),
-                severity_summary=snapshot_data.get('severity_summary') or {},
-                provider_metadata=snapshot_data.get('provider_metadata') or {},
-                observed_at=observed_at,
-            )
+            snapshot = RegistryScanSnapshot()
+            snapshot.artifact_id = artifact.id
+            snapshot.scanner = snapshot_data.get('scanner')
+            snapshot.scanner_version = snapshot_data.get('scanner_version')
+            snapshot.report_id = snapshot_data.get('report_id')
+            snapshot.status = str(snapshot_data.get('status') or 'not_scanned')
+            snapshot.severity_summary = snapshot_data.get('severity_summary') or {}
+            snapshot.provider_metadata = snapshot_data.get('provider_metadata') or {}
+            snapshot.observed_at = observed_at
             db.session.add(snapshot)
             db.session.flush()
             for finding in item.vulnerabilities:
-                db.session.add(
-                    RegistryVulnerability(
-                        scan_snapshot_id=snapshot.id,
-                        vulnerability_id=finding['vulnerability_id'],
-                        package=finding['package'],
-                        installed_version=finding['installed_version'],
-                        fixed_version=finding['fixed_version'],
-                        severity=finding['severity'],
-                        description=finding['description'],
-                        provider_metadata=finding['provider_metadata'],
-                    )
-                )
+                vulnerability = RegistryVulnerability()
+                vulnerability.scan_snapshot_id = snapshot.id
+                vulnerability.vulnerability_id = finding['vulnerability_id']
+                vulnerability.package = finding['package']
+                vulnerability.installed_version = finding['installed_version']
+                vulnerability.fixed_version = finding['fixed_version']
+                vulnerability.severity = finding['severity']
+                vulnerability.description = finding['description']
+                vulnerability.provider_metadata = finding['provider_metadata']
+                db.session.add(vulnerability)
                 finding_count += 1
             refreshed_report_count += 1
         elif item.reuse_existing_scan:
