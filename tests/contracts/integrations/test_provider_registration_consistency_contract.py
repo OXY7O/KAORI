@@ -289,12 +289,12 @@ def test_provider_registration_and_metrics_validation_guidance_stays_concise() -
         in metrics_source
     )
     assert (
-        'executes metric queries; the source platform owns collection and retention. KAORI governs readiness, binding validation, and source resolution.'
+        'executes queries; the source owns collection and retention. KAORI governs readiness, bindings, and resolution.'
         in metrics_source
     )
 
     assert (
-        'Validate provider compatibility and the Prometheus HTTP API v1 / PromQL core. Consumer contracts remain in Bindings & Consumers.'
+        'Validate compatibility and Prometheus/PromQL core; consumer contracts stay in Bindings & Consumers.'
         in metrics_validation
     )
-    assert 'Core API evidence sets provider readiness; consumer evidence stays with each binding.' in metrics_validation
+    assert 'Core APIs set readiness; bindings own consumer evidence.' in metrics_validation
