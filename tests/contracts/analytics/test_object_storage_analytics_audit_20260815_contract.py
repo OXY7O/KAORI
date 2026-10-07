@@ -32,9 +32,10 @@ def test_object_storage_blocker_reuses_kubernetes_analytics_dependency_surface()
     blocked_hero = read('app/templates/storage/object_storage/analytics/partials/_hero_blocked_posture.html')
 
     assert 'components/dependencies/_blocker.html' in object_blocker
-    assert 'Object Storage → Metrics → Analytics Snapshot' in object_blocker
+    assert 'Object Storage → Metrics Source → Alert Source → Analytics Snapshot' in object_blocker
     assert 'Alert Evidence' not in object_blocker
-    assert object_blocker.count('dependency_grid_classes = "lg:grid-cols-3"') == 2
+    assert object_blocker.count('dependency_grid_classes = "lg:grid-cols-3"') == 1
+    assert object_blocker.count('dependency_grid_classes = "lg:grid-cols-4"') == 1
     assert 'Analytics Setup Path' in shared_blocker
     assert 'Current Blocker' in shared_blocker
     assert 'Missing dependency:' in shared_blocker
