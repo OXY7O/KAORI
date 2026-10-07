@@ -1083,10 +1083,13 @@ def verify() -> None:
         _verify_primitive_shell(path)
 
     profile_templates = _profile_templates()
-    if len(profile_templates) != 2:
+    if len(profile_templates) != 3:
         raise AssertionError(
-            f'Operational Dashboard profile must have exactly two consumers; found {len(profile_templates)}'
+            f'Operational Dashboard profile must have exactly three current consumers; found {len(profile_templates)}'
         )
+    artifact_registry_dashboard = ROOT / 'app/templates/artifact_registry/partials/_hero.html'
+    if artifact_registry_dashboard not in profile_templates:
+        raise AssertionError('Artifact Registry Overview must consume the Operational Dashboard Hero profile')
 
     identity_pairs = _verify_non_redundant_hero_identity()
     _verify_dynamic_hero_identity_authorities()
