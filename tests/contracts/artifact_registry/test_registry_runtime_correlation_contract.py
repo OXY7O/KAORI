@@ -41,7 +41,7 @@ def test_runtime_correlation_is_bounded_atomic_and_progress_aware() -> None:
 
 
 def test_runtime_usage_is_cross_domain_canonical_workspace() -> None:
-    presentation = (ROOT / 'app/artifact_registry/presentation.py').read_text()
+    presentation = (ROOT / 'app/artifact_registry/presentation_runtime.py').read_text()
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
     page = (ROOT / 'app/templates/artifact_registry/runtime.html').read_text()
     workspace = (ROOT / 'app/templates/artifact_registry/partials/_runtime_workspace.html').read_text()
@@ -92,7 +92,7 @@ def test_runtime_usage_is_cross_domain_canonical_workspace() -> None:
 
 
 def test_runtime_usage_keeps_committed_snapshot_readable_when_refresh_is_unavailable() -> None:
-    presentation = (ROOT / 'app/artifact_registry/presentation.py').read_text()
+    presentation = (ROOT / 'app/artifact_registry/presentation_runtime.py').read_text()
     workspace = (ROOT / 'app/templates/artifact_registry/partials/_runtime_workspace.html').read_text()
 
     assert 'def _runtime_prerequisite_guidance(' in presentation
@@ -109,7 +109,7 @@ def test_runtime_usage_keeps_committed_snapshot_readable_when_refresh_is_unavail
 
 
 def test_runtime_usage_preserves_digest_first_and_explicit_tag_confidence() -> None:
-    presentation = (ROOT / 'app/artifact_registry/presentation.py').read_text()
+    presentation = (ROOT / 'app/artifact_registry/presentation_runtime.py').read_text()
     workspace = (ROOT / 'app/templates/artifact_registry/partials/_runtime_workspace.html').read_text()
 
     assert "'description': 'Immutable digest identity match.'" in presentation
