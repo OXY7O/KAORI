@@ -244,8 +244,5 @@ def test_minio_review_copy_keeps_secret_and_revalidation_guidance_concise() -> N
         'Revalidate after MinIO release, credential, endpoint, TLS, region, addressing, or S3 API changes.'
         in validation
     )
-    assert (
-        'Resolve the identified MinIO API, credential, TLS, compatibility, or required-capability gaps, then rerun '
-        'Full Validation to refresh committed readiness evidence.'
-    ) in validation
+    assert 'Resolve MinIO API, credential, TLS, compatibility, or capability gaps, then rerun Full Validation.' in validation
     assert 'to refresh governed readiness evidence.' not in validation
