@@ -177,7 +177,7 @@ jobs:
 - key: artifact_registry.analytics.materialize
   name: Artifact Registry Analytics Data Refresh
   domain: Artifact Registry
-  description: Materialize reusable Registry analytics from committed inventory, security, governance, runtime, and optional Metrics Source evidence.
+  description: Materialize Registry analytics from committed inventory, security, governance, runtime, and optional metrics evidence.
   icon: chart-column
   queue_name: analytics-batch
   workload_class: analytics
