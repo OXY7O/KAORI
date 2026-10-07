@@ -54,7 +54,7 @@ def test_runtime_usage_is_cross_domain_canonical_workspace() -> None:
     assert 'RegistryWorkloadBinding.query.join(' in presentation
     assert 'RegistryWorkloadBinding.image_reference' in presentation
     assert 'RegistryWorkloadBinding.artifact_id == int(request.artifact_id)' in presentation
-    assert "'security_exposed': security_exposed" in presentation
+    assert "'security_exposed': counts['security_exposed']" in presentation
     assert 'def build_runtime_binding_detail(binding_id: int)' in presentation
 
     assert "request.args.get('source_id', type=int)" in routes
