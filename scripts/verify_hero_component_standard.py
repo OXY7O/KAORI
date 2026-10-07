@@ -1087,7 +1087,7 @@ def verify() -> None:
         raise AssertionError(
             f'Operational Dashboard profile must have exactly three current consumers; found {len(profile_templates)}'
         )
-    artifact_registry_dashboard = ROOT / 'app/templates/artifact_registry/partials/_hero.html'
+    artifact_registry_dashboard = ROOT / 'app/templates/artifact_registry/partials/_overview_hero.html'
     if artifact_registry_dashboard not in profile_templates:
         raise AssertionError('Artifact Registry Overview must consume the Operational Dashboard Hero profile')
 
