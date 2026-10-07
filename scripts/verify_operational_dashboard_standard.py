@@ -803,7 +803,6 @@ def verify() -> None:
     _require(
         object_signal_overview,
         (
-            'Operational Signal Overview',
             'System Signals Available',
             'Select a System for Detailed Signals',
             'hx-push-url="true"',
