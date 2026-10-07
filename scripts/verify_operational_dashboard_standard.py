@@ -42,6 +42,8 @@ ARTIFACT_PROVIDER_HEALTH = (
 )
 ARTIFACT_ROUTES = ROOT / 'app' / 'artifact_registry' / 'routes.py'
 ARTIFACT_PRESENTATION = ROOT / 'app' / 'artifact_registry' / 'presentation.py'
+ARTIFACT_PRESENTATION_COMMON = ROOT / 'app' / 'artifact_registry' / 'presentation_common.py'
+ARTIFACT_PRESENTATION_OVERVIEW = ROOT / 'app' / 'artifact_registry' / 'presentation_overview.py'
 OBJECT_ROUTES = ROOT / 'app' / 'storage' / 'object_storage' / 'dashboard' / 'routes.py'
 DASHBOARD_APPLICATION_CONTRACT = ROOT / 'app' / 'dashboards' / 'common' / 'operational.py'
 COMMON_PAGINATION = ROOT / 'app' / 'common' / 'pagination.py'
@@ -500,7 +502,13 @@ def verify() -> None:
     artifact_operations = _read(ARTIFACT_OPERATIONS)
     artifact_provider_health = _read(ARTIFACT_PROVIDER_HEALTH)
     artifact_routes = _read(ARTIFACT_ROUTES)
-    artifact_presentation = _read(ARTIFACT_PRESENTATION)
+    artifact_presentation = '\n'.join(
+        (
+            _read(ARTIFACT_PRESENTATION),
+            _read(ARTIFACT_PRESENTATION_COMMON),
+            _read(ARTIFACT_PRESENTATION_OVERVIEW),
+        )
+    )
     object_routes = _read(OBJECT_ROUTES)
     dashboard_application_contract = _read(DASHBOARD_APPLICATION_CONTRACT)
     common_pagination = _read(COMMON_PAGINATION)
