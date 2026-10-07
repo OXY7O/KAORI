@@ -597,11 +597,11 @@ def verify() -> None:
     _require(
         onboarding_banner,
         (
-            'blocked_state_steps = ["Open Cluster Integrations", "Register Cluster", "Run Sync"]',
-            "blocked_state_action_url = url_for('integrations.kubernetes')",
-            'blocked_state_action_label = "Open Cluster Integrations"',
-            'blocked_state_action_icon = "plug-zap"',
-            'blocked_state_permission = "clusters.manage"',
+            'provider_prerequisite_steps = ["Open Cluster Integrations", "Register Cluster", "Run Sync"]',
+            "provider_prerequisite_action_url = url_for('integrations.kubernetes')",
+            'provider_prerequisite_action_label = "Open Cluster Integrations"',
+            'provider_prerequisite_action_icon = "plug-zap"',
+            'provider_prerequisite_permission = "clusters.manage"',
         ),
         'shared Kubernetes onboarding contract',
     )
