@@ -879,17 +879,36 @@ def _verify_primitive_shell(path: Path) -> None:
 
 
 def _verify_blocked_context_ownership() -> None:
-    wrappers = (
+    prerequisite_wrappers = (
         TEMPLATES / 'components' / 'cluster' / '_hero_blocked_context.html',
         TEMPLATES / 'storage' / 'object_storage' / 'inventory' / 'components' / '_hero_blocked_context.html',
+    )
+    analytics_wrappers = (
         TEMPLATES / 'kubernetes' / 'analytics' / 'components' / '_blocked_posture.html',
         TEMPLATES / 'storage' / 'object_storage' / 'analytics' / 'partials' / '_hero_blocked_posture.html',
     )
-    for path in wrappers:
+    shared_context = _read(TEMPLATES / 'components' / 'provider_prerequisite' / '_hero_context.html')
+    if 'page_hero.blocked_context_body(' not in shared_context:
+        raise AssertionError('Shared provider prerequisite Hero context must use blocked_context_body()')
+
+    for path in prerequisite_wrappers:
         source = _read(path)
         relative = path.relative_to(ROOT)
-        if 'page_hero.blocked_context_body(' not in source:
-            raise AssertionError(f'{relative}: blocked Hero must use blocked_context_body()')
+        if 'components/provider_prerequisite/_hero_context.html' not in source:
+            raise AssertionError(f'{relative}: provider prerequisite Hero must delegate to the shared context owner')
+        if 'page_hero.blocked_context_body(' in source:
+            raise AssertionError(f'{relative}: provider prerequisite wrapper must not own blocked Hero geometry')
+        if 'page_hero.context_panel_classes()' in source:
+            raise AssertionError(f'{relative}: blocked wrapper must not own context geometry')
+
+    for path in analytics_wrappers:
+        source = _read(path)
+        relative = path.relative_to(ROOT)
+        if (
+            'page_hero.blocked_context_body(' not in source
+            and 'components/provider_prerequisite/_hero_context.html' not in source
+        ):
+            raise AssertionError(f'{relative}: Analytics blocked Hero must use a canonical blocked context owner')
         if 'page_hero.context_panel_classes()' in source:
             raise AssertionError(f'{relative}: blocked wrapper must not own context geometry')
 
