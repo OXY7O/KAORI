@@ -4,7 +4,7 @@ from typing import Any
 
 from sqlalchemy import case, func
 
-from app.artifact_registry.observability import registry_metrics_readiness
+from app.artifact_registry.observability import RegistryMetricsReadiness, registry_metrics_readiness
 from app.artifact_registry.presentation_common import (
     _analytics_snapshot_view,
     _fmt_bytes,
@@ -74,7 +74,7 @@ def _provider_health_projection(
 ) -> tuple[
     list[dict[str, Any]],
     Any,
-    dict[int, dict[str, Any]],
+    dict[int, RegistryMetricsReadiness],
     dict[int, dict[str, int]],
 ]:
     state_by_provider = {int(state.integration_instance_id): state for state in states}
@@ -152,7 +152,7 @@ def _provider_health_projection(
         key = int(provider.id)
         state = state_by_provider.get(key)
         snapshot = _state_view(state)
-        metrics = metrics_by_provider.get(key, {})
+        metrics = metrics_by_provider[key]
         security = security_counts.get(
             key,
             {'artifacts': 0, 'scanned': 0, 'critical': 0, 'high': 0},
@@ -296,7 +296,7 @@ def _selected_provider_freshness(
     *,
     selected_provider: IntegrationInstance,
     state_by_provider: dict[int, RegistryCollectionState],
-    metrics_by_provider: dict[int, dict[str, Any]],
+    metrics_by_provider: dict[int, RegistryMetricsReadiness],
     analytics_by_provider: dict[int, Any],
     artifact_total: int,
     scanned_count: int,
@@ -305,7 +305,7 @@ def _selected_provider_freshness(
     selected_key = int(selected_provider.id)
     selected_collection_state = state_by_provider.get(selected_key)
     selected_state = _state_view(selected_collection_state)
-    selected_metrics = metrics_by_provider.get(selected_key, {})
+    selected_metrics = metrics_by_provider[selected_key]
     selected_analytics = _analytics_snapshot_view(analytics_by_provider.get(selected_key))
     security_status, security_tone, security_value = _security_freshness_status(
         artifact_total=artifact_total,
