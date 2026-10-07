@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from typing import Any
 
 from flask import Blueprint, abort, jsonify, make_response, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
@@ -388,7 +389,7 @@ def analytics_section(section: str) -> ResponseReturnValue:
 @artifact_registry_bp.get('/analytics/alerts/table')
 @permission_required('artifact_registry.view')
 def analytics_alerts_table() -> ResponseReturnValue:
-    query_args = request.args.to_dict(flat=True)
+    query_args: dict[str, Any] = request.args.to_dict(flat=True)
     query_args.pop('tab', None)
     if not is_htmx_request(request.headers):
         return redirect(url_for('artifact_registry.analytics', tab='alerts', **query_args))
