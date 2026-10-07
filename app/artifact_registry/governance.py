@@ -125,7 +125,8 @@ def sync_registry_governance(
 
     state = db.session.get(RegistryGovernanceState, identity.id)
     if state is None:
-        state = RegistryGovernanceState(integration_instance_id=identity.id)
+        state = RegistryGovernanceState()
+        state.integration_instance_id = identity.id
         db.session.add(state)
 
     project_by_name = {
@@ -145,37 +146,33 @@ def sync_registry_governance(
         project = project_by_name.get(record.project_name)
         if project is None:
             continue
-        db.session.add(
-            RegistryProjectGovernance(
-                project_id=project.id,
-                retention_status=record.retention_status,
-                retention_policy_ref=record.retention_policy_ref,
-                retention_summary=record.retention_summary,
-                immutability_status=record.immutability_status,
-                immutability_rule_count=record.immutability_rule_count,
-                immutability_summary=record.immutability_summary,
-                provider_metadata=record.provider_metadata,
-                observed_at=observed_at,
-            )
-        )
+        governance = RegistryProjectGovernance()
+        governance.project_id = project.id
+        governance.retention_status = record.retention_status
+        governance.retention_policy_ref = record.retention_policy_ref
+        governance.retention_summary = record.retention_summary
+        governance.immutability_status = record.immutability_status
+        governance.immutability_rule_count = record.immutability_rule_count
+        governance.immutability_summary = record.immutability_summary
+        governance.provider_metadata = record.provider_metadata
+        governance.observed_at = observed_at
+        db.session.add(governance)
         committed_projects += 1
 
     for record in evidence.replication_policies:
-        db.session.add(
-            RegistryReplicationPolicy(
-                integration_instance_id=identity.id,
-                provider_native_id=record.provider_native_id,
-                name=record.name,
-                enabled=record.enabled,
-                trigger_type=record.trigger_type,
-                source_registry=record.source_registry,
-                destination_registry=record.destination_registry,
-                destination_namespace=record.destination_namespace,
-                filters_json=record.filters,
-                provider_metadata=record.provider_metadata,
-                observed_at=observed_at,
-            )
-        )
+        policy = RegistryReplicationPolicy()
+        policy.integration_instance_id = identity.id
+        policy.provider_native_id = record.provider_native_id
+        policy.name = record.name
+        policy.enabled = record.enabled
+        policy.trigger_type = record.trigger_type
+        policy.source_registry = record.source_registry
+        policy.destination_registry = record.destination_registry
+        policy.destination_namespace = record.destination_namespace
+        policy.filters_json = record.filters
+        policy.provider_metadata = record.provider_metadata
+        policy.observed_at = observed_at
+        db.session.add(policy)
 
     state.status = 'ready'
     state.capability_states = evidence.capability_states
