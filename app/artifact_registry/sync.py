@@ -61,7 +61,8 @@ def _parse_datetime(value: Any) -> datetime | None:
 def _lock_collection_state(integration_instance_id: int) -> RegistryCollectionState:
     state = db.session.get(RegistryCollectionState, integration_instance_id)
     if state is None:
-        state = RegistryCollectionState(integration_instance_id=integration_instance_id)
+        state = RegistryCollectionState()
+        state.integration_instance_id = integration_instance_id
         db.session.add(state)
         db.session.flush()
     db.session.execute(
@@ -86,7 +87,8 @@ def _reconcile_tags(
             continue
         tag = existing.pop(tag_name, None)
         if tag is None:
-            tag = RegistryTag(name=tag_name)
+            tag = RegistryTag()
+            tag.name = tag_name
             artifact.tags.append(tag)
         tag.provider_native_id = str(raw_tag.get('id') or '') or None
         tag.push_time = _parse_datetime(raw_tag.get('push_time'))
@@ -114,10 +116,9 @@ def _reconcile_artifacts(
         artifact = existing.pop(record.digest, None)
         if artifact is None:
             digest_algorithm = record.digest.split(':', 1)[0] if ':' in record.digest else 'unknown'
-            artifact = RegistryArtifact(
-                digest=record.digest,
-                digest_algorithm=digest_algorithm,
-            )
+            artifact = RegistryArtifact()
+            artifact.digest = record.digest
+            artifact.digest_algorithm = digest_algorithm
             repository.artifacts.append(artifact)
         artifact.provider_native_id = record.provider_native_id
         artifact.digest_algorithm = record.digest.split(':', 1)[0] if ':' in record.digest else 'unknown'
@@ -155,7 +156,8 @@ def _reconcile_repositories(
     for record in records:
         repository = existing.pop(record.name, None)
         if repository is None:
-            repository = RegistryRepository(name=record.name)
+            repository = RegistryRepository()
+            repository.name = record.name
             project.repositories.append(repository)
         repository.provider_native_id = record.provider_native_id
         repository.artifact_count = record.artifact_count
@@ -209,10 +211,9 @@ def commit_registry_inventory(
     for record in projects:
         project = existing_projects.pop(record.name, None)
         if project is None:
-            project = RegistryProject(
-                integration_instance_id=integration_instance_id,
-                name=record.name,
-            )
+            project = RegistryProject()
+            project.integration_instance_id = integration_instance_id
+            project.name = record.name
             db.session.add(project)
         project.provider_native_id = record.provider_native_id
         project.public = record.public
