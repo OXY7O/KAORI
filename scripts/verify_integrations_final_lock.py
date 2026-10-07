@@ -804,7 +804,7 @@ def main() -> int:
     for marker in (
         "available_provider_count ~ ' Providers'",
         'integration_status(item.posture_state, item.posture_label',
-        'Operational Readiness',
+        'Ready Coverage',
         'progress_bar.bar(item.readiness_percent',
     ):
         require(marker in integration_overview, f'Integrations Overview provider catalog missing: {marker}', errors)
