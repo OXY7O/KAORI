@@ -81,7 +81,7 @@ def test_current_provider_shell_standard_includes_harbor() -> None:
         'Kubernetes, Metrics Source, Alertmanager, MinIO, and Harbor expose registered identity',
         'identical geometry across Kubernetes, Metrics Source, Alertmanager, MinIO, and Harbor',
         'Kubernetes, Metrics Source, Alertmanager, MinIO, and Harbor MUST NOT copy their own registration-posture panel',
-        'Orchestration, Observability, Storage, or Registry',
+        '`Orchestration`, `Observability`, `Storage`, and `Registry` use one shared domain landing pattern.',
     ):
         assert marker in standard
 
