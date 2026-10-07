@@ -21,7 +21,7 @@ domains:
   order: 30
 - key: registry
   label: Registry
-  description: Connect OCI Registry providers through governed readiness and evidence contracts.
+  description: Connect Registry providers through governed readiness and evidence.
   icon: package
   workspace_endpoint: integrations.registry
   order: 40
