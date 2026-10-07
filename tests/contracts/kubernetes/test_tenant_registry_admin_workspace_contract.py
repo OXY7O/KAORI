@@ -626,7 +626,10 @@ def test_tenant_registry_distinguishes_active_namespaces_from_retained_history()
     registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
 
     assert 'namespace_history_count_map' in registry_context
-    assert 'TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value' in registry_context
+    assert (
+        'TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value'
+        in registry_context
+    )
     assert "row['namespace_history_count'] = namespace_history_count_map.get(item.id, 0)" in registry_context
     assert 'historical namespace record' in registry
     assert 'Active managed namespaces' in registry
