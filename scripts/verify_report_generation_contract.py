@@ -31,7 +31,7 @@ AUDIT_PATH = ROOT / 'docs' / 'reviews' / 'report-generation-audit-2026-08-03.md'
 
 ANALYTICS_FORMATS = {'pdf', 'xlsx', 'csv'}
 INVENTORY_FORMATS = {'xlsx', 'csv'}
-SUPPORTED_SCOPE_ASSET_TYPES = {'kubernetes_cluster', 'object_storage_system'}
+SUPPORTED_SCOPE_ASSET_TYPES = {'kubernetes_cluster', 'object_storage_system', 'registry_integration'}
 FORBIDDEN_TOKENS = (
     'generate_report_pdf',
     'download_report_pdf',
@@ -113,6 +113,8 @@ def _check_catalog(errors: list[str]) -> tuple[set[str], set[str]]:
             errors.append(f'{report_type} is Kubernetes-scoped but does not require one selected cluster.')
         if scope_asset_type == 'object_storage_system' and spec['requires_cluster'] is not False:
             errors.append(f'{report_type} is Object Storage-scoped but still requires a Kubernetes cluster.')
+        if scope_asset_type == 'registry_integration' and spec['requires_cluster'] is not False:
+            errors.append(f'{report_type} is Artifact Registry-scoped but still requires a Kubernetes cluster.')
 
         if family == 'analytics':
             if allowed != ANALYTICS_FORMATS or default != 'pdf':
