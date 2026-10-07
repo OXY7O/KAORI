@@ -14,7 +14,7 @@ def test_provider_prerequisite_components_delegate_to_existing_shared_owners() -
     assert 'page_hero.blocked_context_body(' in hero
     assert 'provider_prerequisite_action_label|default(none)' in hero
     assert 'components/states/_blocked_state.html' in setup
-    assert "blocked_state_variant = 'section'" in setup
+    assert 'blocked_state_variant = "section"' in setup
 
 
 def test_kubernetes_and_object_storage_provider_wrappers_share_one_contract() -> None:
