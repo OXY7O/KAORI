@@ -5,7 +5,7 @@ ROOT = Path(__file__).resolve().parents[3]
 
 def test_registry_analytics_is_worker_materialized_and_page_reads_snapshot() -> None:
     analytics = (ROOT / 'app/artifact_registry/analytics.py').read_text()
-    presentation = (ROOT / 'app/artifact_registry/presentation.py').read_text()
+    presentation = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
     jobs = (ROOT / 'app/definitions/catalogs/platform_operations/jobs/registered_jobs.yaml').read_text()
 
@@ -111,7 +111,7 @@ def test_registry_analytics_materializes_operational_harbor_metric_profile() -> 
 def test_registry_analytics_workspace_is_reusable_and_intelligence_bounded() -> None:
     shell = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
     section = (ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html').read_text()
-    presentation = (ROOT / 'app/artifact_registry/presentation.py').read_text()
+    presentation = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
 
     assert 'components/framed_workspace_tabs.html' in shell
@@ -147,7 +147,7 @@ def test_registry_analytics_workspace_is_reusable_and_intelligence_bounded() -> 
 
 
 def test_registry_analytics_uses_fast_shell_and_bounded_fragments() -> None:
-    presentation = (ROOT / 'app/artifact_registry/presentation.py').read_text()
+    presentation = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
     template = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
 
@@ -164,7 +164,7 @@ def test_registry_analytics_uses_fast_shell_and_bounded_fragments() -> None:
 
 def test_registry_alert_source_is_worker_materialized_and_provider_neutral() -> None:
     analytics = (ROOT / 'app/artifact_registry/analytics.py').read_text()
-    presentation = (ROOT / 'app/artifact_registry/presentation.py').read_text()
+    presentation = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
     definition = (
         ROOT / 'app/definitions/catalogs/integrations/observability/alert_source/providers/alertmanager.yaml'
