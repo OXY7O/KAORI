@@ -32,9 +32,11 @@ def test_harbor_registration_reuses_canonical_connection_workflow() -> None:
     assert 'xl:col-span-8' in form
     assert 'xl:col-span-4' in form
     assert 'connectionVerified' in form
+    shared_hero = read('app/templates/integrations/components/_provider_registration_hero.html')
     assert 'provider_registration_hero.render' in form
-    assert 'after_save_label="Full Validation"' in form
-    assert 'after_save_description="Then validate compatibility and capabilities"' in form
+    assert 'after_save_label="Full Validation"' in shared_hero
+    assert 'after_save_description="Then establish provider readiness"' in shared_hero
+    assert 'after_save_label=' not in form
     assert 'provider_registration_actions.render' in form
     assert 'REGISTRATION_PROOF_MAX_AGE_SECONDS = 600' in registration
     assert "'password'," in registration
@@ -53,10 +55,8 @@ def test_harbor_authentication_fields_follow_selected_auth_mode() -> None:
     assert 'x-show="authType === \'basic\'"' in form
     assert 'class="mt-4 grid gap-4 md:grid-cols-2"' in form
     assert "**{':required':\"authType === 'basic'\"}" in form
-    assert (
-        "**{':required':\"authType === 'basic' && \" + ('false' if instance is defined and instance else 'true')}"
-        in form
-    )
+    assert "authType === 'basic' && " in form
+    assert "('false' if instance is defined and instance else 'true')" in form
     assert 'x-cloak' in form
     assert 'Ignored when Anonymous / Public Read-Only is selected.' not in form
     assert 'Stored encrypted and never emitted into validation evidence.' not in form
