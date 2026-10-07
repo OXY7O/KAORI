@@ -261,7 +261,7 @@ def test_signals_and_reporting_match_kubernetes_dashboard_composition() -> None:
     shared_alerts = read('app/templates/components/operational_alert_summary.html')
     shared_response = read('app/templates/components/operational_alert_response.html')
     shared_recommendations = read('app/templates/components/operational_recommendation_cards.html')
-    kubernetes_signals = read('app/templates/kubernetes/dashboard/partials/_content.html')
+    kubernetes_signals = read('app/templates/kubernetes/dashboard/partials/_signals.html')
     kubernetes_reporting = read('app/templates/kubernetes/dashboard/partials/_reporting_guidance.html')
     service = read('app/storage/object_storage/dashboard/service.py')
 
