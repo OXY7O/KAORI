@@ -643,7 +643,7 @@
                         ? 'Object Storage system scope'
                         : artifactRegistryScope
                           ? 'Artifact Registry scope'
-                          : 'Kubernetes cluster scope',
+                          : 'Kubernetes cluster scope'
                 )
             }
             if (!hasSelectedSections) {
@@ -693,7 +693,7 @@
                       ? 'Select Object Storage System'
                       : artifactRegistryScope
                         ? 'Select Artifact Registry'
-                        : 'Select Cluster',
+                        : 'Select Cluster'
             )
             if (readinessScopeDescription) {
                 readinessScopeDescription.textContent = objectStorageScope
