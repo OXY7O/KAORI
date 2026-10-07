@@ -42,7 +42,13 @@ def test_registry_inventory_keeps_committed_snapshot_ready_during_refresh_failur
 
 
 def test_registry_inventory_presentation_surfaces_failed_refresh_from_last_error() -> None:
-    presentation = (ROOT / 'app/artifact_registry/presentation.py').read_text()
+    presentation = (
+        (ROOT / 'app/artifact_registry/presentation_common.py').read_text()
+        + '\n'
+        + (ROOT / 'app/artifact_registry/presentation_inventory.py').read_text()
+        + '\n'
+        + (ROOT / 'app/artifact_registry/presentation_overview.py').read_text()
+    )
 
     assert 'refresh_failed = bool(state.last_error)' in presentation
     assert 'failed_refresh_count = sum(bool(state.last_error) for state in committed_states)' in presentation
