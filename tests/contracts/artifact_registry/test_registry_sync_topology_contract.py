@@ -20,7 +20,7 @@ def test_registry_security_is_incremental_and_independent() -> None:
 
     assert 'list_all_artifacts(' in harbor_security
     assert 'with_scan_overview=True' in harbor_security
-    assert 'if scan is not None and changed:' in harbor_security
+    assert 'if scan is not None and changed and registry_scan_evidence_ready(scan_status):' in harbor_security
     assert 'get_vulnerability_report(' in harbor_security
     assert 'reuse_existing_scan' in harbor_security
     assert 'artifact_registry.security.sync' in registered_jobs
