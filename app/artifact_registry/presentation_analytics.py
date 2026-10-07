@@ -151,15 +151,13 @@ def _accumulate_metrics(
 ) -> None:
     metrics_ready = metrics.get('status') == 'ready'
     aggregate['metrics_ready'] += int(metrics_ready)
+    provider_health_value = metrics.get('provider_health_value')
     aggregate['healthy_providers'] += int(
-        metrics_ready
-        and isinstance(metrics.get('provider_health_value'), (int, float))
-        and float(metrics.get('provider_health_value')) > 0
+        metrics_ready and isinstance(provider_health_value, (int, float)) and float(provider_health_value) > 0
     )
+    component_up_value = metrics.get('component_up_value')
     aggregate['component_up_providers'] += int(
-        metrics_ready
-        and isinstance(metrics.get('component_up_value'), (int, float))
-        and float(metrics.get('component_up_value')) > 0
+        metrics_ready and isinstance(component_up_value, (int, float)) and float(component_up_value) > 0
     )
     for aggregate_key, metric_key in (
         ('request_rate_per_second', 'request_rate_per_second'),
@@ -199,7 +197,8 @@ def _accumulate_alerts(
     alert_rows: list[dict[str, Any]],
     source_rows: list[dict[str, Any]],
 ) -> None:
-    evidence_rows = alerts.get('rows') if isinstance(alerts.get('rows'), list) else []
+    raw_evidence_rows = alerts.get('rows')
+    evidence_rows = raw_evidence_rows if isinstance(raw_evidence_rows, list) else []
     normalized_rows = [row for row in evidence_rows if isinstance(row, dict)]
     aggregate['active_alerts'] += len(normalized_rows)
     aggregate['critical_alerts'] += sum(row.get('severity') == 'critical' for row in normalized_rows)
