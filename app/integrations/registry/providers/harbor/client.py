@@ -9,7 +9,7 @@ import requests
 from requests import Response
 from requests.auth import HTTPBasicAuth
 
-from app.integrations.registry.providers.harbor.contracts import HarborRetryPolicy
+from app.integrations.registry.providers.harbor.contracts import HarborConnectionResult, HarborRetryPolicy
 from app.integrations.registry.providers.harbor.exceptions import (
     HarborAuthError,
     HarborConnectionError,
@@ -43,7 +43,7 @@ class HarborClient:
         self.transport_retries = max(0, min(int(retry_policy.transport_retries or 0), 3))
         self.retry_backoff_seconds = max(0.0, min(float(retry_policy.backoff_seconds or 0.0), 2.0))
 
-    def test_connection(self) -> dict[str, Any]:
+    def test_connection(self) -> HarborConnectionResult:
         started = perf_counter()
         system_info = self.get_system_info()
         elapsed_ms = int((perf_counter() - started) * 1000)
