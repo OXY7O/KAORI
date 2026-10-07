@@ -2,6 +2,7 @@
 {% block title %}Artifact Registry Analytics{% endblock title %}
 {% block dashboard_content %}
     {% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
+    {% import "components/operational_section_card.html" as section_card %}
     {% import "components/operational_section_loading.html" as section_loading %}
     {% import "components/page_hero.html" as page_hero %}
     <div class="space-y-6">
@@ -46,7 +47,7 @@
                                 'chart-column') }}
             </section>
             <section id="artifact-registry-analytics-workspace"
-                     class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+                     class="{{ section_card.shell_classes() }}">
                 <header class="border-b border-outline-subtle px-5 py-4">
                     <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Analytics Workspace</p>
                     <div class="mt-1 flex flex-col gap-1 lg:flex-row lg:items-end lg:justify-between">
