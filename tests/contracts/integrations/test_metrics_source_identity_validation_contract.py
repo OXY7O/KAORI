@@ -76,7 +76,7 @@ def test_provider_capability_registry_stays_core_only_and_binding_results_stay_w
     assert "'contract_scope': 'provider'" in presentation
     assert 'Provider Core Capability' in registry
     assert 'Consumer Contract Evidence' not in registry
-    assert 'Consumer contracts stay in Bindings & Consumers.' in validation
+    assert 'consumer contracts stay in Bindings & Consumers.' in validation
     assert 'Core APIs set readiness; bindings own consumer evidence.' in validation
     assert '_binding_validation_result.html' in binding_registry
     assert 'View More' in binding_registry
