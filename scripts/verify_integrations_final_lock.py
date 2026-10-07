@@ -864,7 +864,7 @@ def main() -> int:
     domain_service = read('app/integrations/domain_service.py')
     domain_page = read('app/templates/integrations/domain.html')
     domain_workspace = read('app/templates/integrations/partials/_domain_workspace.html')
-    registry_module = read('app/integrations/registry.py')
+    registry_module = read('app/integrations/kernel/registry.py')
     require(
         "is_workspace_partial = is_htmx_request() and htmx_target() == 'domain-workspace'" in domain_routes
         and "return render_template('integrations/partials/_domain_workspace.html', **context)" in domain_routes,
