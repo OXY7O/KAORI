@@ -17,7 +17,7 @@ def test_overview_final_lock_uses_fleet_posture_and_committed_snapshot_boundary(
     assert '_summary_cards.html' in index
     assert '_systems_snapshot.html' not in index
     assert 'Fleet Inventory Posture' in fleet
-    assert "variant='semantic'" in fleet
+    assert "variant='neutral'" in fleet
     assert '_overview_bucket_posture' in presentation
     assert '_overview_fleet_readings' in presentation
     assert '_overview_provider_distribution' in presentation
