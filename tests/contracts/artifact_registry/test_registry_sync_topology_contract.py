@@ -26,8 +26,8 @@ def test_registry_security_is_incremental_and_independent() -> None:
     assert 'artifact_registry.security.sync' in registered_jobs
     assert 'artifact-registry-security:global' in security_jobs
     assert 'require_registered_worker=True' in security_jobs
-    assert '_SECURITY_DISCOVERY_PAGE_SIZE = 50' in harbor_security
-    assert 'page_size=_SECURITY_DISCOVERY_PAGE_SIZE' in harbor_security
+    assert '_SECURITY_DISCOVERY_PAGE_SIZES = (20, 10)' in harbor_security
+    assert 'for attempt, page_size in enumerate(_SECURITY_DISCOVERY_PAGE_SIZES):' in harbor_security
     assert '_SECURITY_TRANSPORT_RETRIES = 2' in harbor_security
     assert 'transport_retries=_SECURITY_TRANSPORT_RETRIES' in harbor_security
 
@@ -52,7 +52,7 @@ def test_registry_inventory_presentation_surfaces_failed_refresh_from_last_error
 
     assert 'refresh_failed = bool(state.last_error)' in presentation
     assert 'failed_refresh_count = sum(bool(state.last_error) for state in committed_states)' in presentation
-    assert 'elif state is not None and state.last_error:' in presentation
+    assert 'if state is not None and state.last_error:' in presentation
     assert 'and selected_collection_state.last_error' in presentation
 
 
