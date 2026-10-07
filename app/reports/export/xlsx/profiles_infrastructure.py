@@ -18,7 +18,7 @@ INFRASTRUCTURE_INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] 
             'signing, SBOM, and evidence timestamps. No provider API call occurs during rendering.'
         ),
         row_source='inventory_assets',
-        identity_columns=('registry', 'project', 'repository', 'digest'),
+        identity_columns=('registry', 'environment', 'project', 'repository', 'digest'),
         record_label='artifacts',
         overview_metrics=(
             InventoryOverviewMetric('Artifacts', 'row_count'),
