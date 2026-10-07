@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
-from typing import Any, Protocol, overload
+from typing import Any, overload
 
 from sqlalchemy import or_
 
@@ -15,6 +15,7 @@ from app.models.registry import (
     RegistryAnalyticsSnapshot,
     RegistryArtifact,
     RegistryCollectionState,
+    RegistryGovernanceState,
     RegistryProject,
     RegistryRepository,
     RegistryTag,
@@ -82,21 +83,7 @@ def _freshness_value(value: datetime | None, *, missing: str) -> str:
     return f'Updated {_human_time(value)}' if value is not None else missing
 
 
-class _CommittedState(Protocol):
-    @property
-    def status(self) -> str: ...
-
-    @property
-    def last_observed_at(self) -> datetime | None: ...
-
-    @property
-    def last_committed_at(self) -> datetime | None: ...
-
-    @property
-    def last_error(self) -> str | None: ...
-
-
-def _state_view(state: _CommittedState | None) -> dict[str, Any]:
+def _state_view(state: RegistryCollectionState | RegistryGovernanceState | None) -> dict[str, Any]:
     if state is None or state.last_committed_at is None:
         return {
             'status': 'not_collected',
