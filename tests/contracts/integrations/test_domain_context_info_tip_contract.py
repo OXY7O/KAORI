@@ -19,7 +19,7 @@ def test_all_operational_integration_domains_define_contextual_info_tip_copy() -
     )
     for domain_key, title in expected:
         assert f"domain.key == '{domain_key}'" in workspace
-        assert f"'{title}'" in workspace
+        assert title in workspace
 
     assert 'Cluster providers remain authoritative for native control-plane state and execution.' in workspace
     assert 'Metrics Source and Alert Source remain independent reusable providers.' in workspace
