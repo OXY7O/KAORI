@@ -64,8 +64,8 @@ def test_provider_registration_heroes_share_one_canonical_contract() -> None:
         'Test Connection',
         'Registration reuses the verified payload',
         'After Save',
-        'Core Validation',
-        'Then assign consumer bindings',
+        'Full Validation',
+        'Then establish provider readiness',
         'Back to Registry',
     ):
         assert marker in shared
