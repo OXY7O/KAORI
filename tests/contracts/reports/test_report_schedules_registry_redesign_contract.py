@@ -27,7 +27,6 @@ def test_schedules_use_balanced_canonical_hero_actions() -> None:
 
 def test_schedule_registry_and_run_lifecycle_use_framed_canonical_workspaces() -> None:
     template = read(TEMPLATE)
-    service = read(SERVICE)
 
     assert 'components/framed_workspace_tabs.html' in template
     assert 'framed_workspace_tabs.render_navigation(' in template
