@@ -197,8 +197,7 @@ def test_object_storage_analytics_verifier_tracks_current_snapshot_contract() ->
     assert "assert 'Operational Metrics Contract' in readiness" in verifier
     assert "assert 'Readiness By Evidence Domain' in readiness" in verifier
     assert (
-        "assert 'Object Storage → Metrics Source → Alert Source → Analytics Snapshot' in dependency_blocker"
-        in verifier
+        "assert 'Object Storage → Metrics Source → Alert Source → Analytics Snapshot' in dependency_blocker" in verifier
     )
     assert "assert 'dependency_blocked_step = 4' in dependency_blocker" in verifier
     assert "assert 'page_hero.blocked_context_body(' in hero_blocked" in verifier
