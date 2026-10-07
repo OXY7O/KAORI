@@ -123,7 +123,10 @@ def test_minio_compatibility_is_product_specific_and_range_aware() -> None:
     assert "if 'astor' in normalized_header" in client
     assert 'evaluate_minio_release(instance.declared_release, product=result.product)' in adapter
     assert 'Supported Range · ' in configuration
-    assert 'Revalidate after MinIO release, credential, endpoint, TLS, region, addressing, or S3 API changes.' in validation
+    assert (
+        'Revalidate after MinIO release, credential, endpoint, TLS, region, addressing, or S3 API changes.'
+        in validation
+    )
     assert 'Profile · ' in validation
     assert 'Product · ' not in validation
 
