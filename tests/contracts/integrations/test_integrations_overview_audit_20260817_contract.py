@@ -78,8 +78,9 @@ def test_overview_ready_counts_require_enabled_targets_and_domain_zero_targets_a
     assert "if is_configured and is_enabled and readiness == 'ready'" in extension
     assert "if is_configured and (not is_enabled or readiness != 'ready')" in extension
     assert "'readiness_review': readiness_review" in extension
-    assert "item.integration_instance.enabled and _kubernetes_readiness(item) == 'ready'" in service
-    assert "item.enabled and item.readiness_status == 'ready'" in service
+    assert 'bool(connection.integration_instance.enabled)' in extension
+    assert 'bool(item.enabled)' in extension
+    assert "readiness == 'ready'" in extension
 
     coverage = service.split('def _coverage(', 1)[1].split('def _coverage_stats', 1)[0]
     posture = service.split('def _portfolio_posture(', 1)[1].split('def _provider_portfolio_counts', 1)[0]
