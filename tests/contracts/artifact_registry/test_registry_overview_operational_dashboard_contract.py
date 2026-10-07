@@ -42,7 +42,7 @@ def test_artifact_registry_overview_consumes_operational_dashboard_family() -> N
 
 def test_artifact_registry_overview_scope_is_committed_and_provider_neutral() -> None:
     routes = read('app/artifact_registry/routes.py')
-    presentation = read('app/artifact_registry/presentation.py')
+    presentation = read('app/artifact_registry/presentation_overview.py') + '\n' + read('app/artifact_registry/presentation_common.py')
     operations = read('app/templates/artifact_registry/partials/_overview_operations.html')
 
     assert "request.args.get('provider_id', type=int)" in routes
@@ -115,7 +115,7 @@ def test_artifact_registry_operations_overview_matches_reference_dashboard_gramm
     operations = read('app/templates/artifact_registry/partials/_overview_operations.html')
     health = read('app/templates/artifact_registry/partials/_overview_provider_health.html')
     signal = read('app/templates/artifact_registry/partials/_overview_signal_overview.html')
-    presentation = read('app/artifact_registry/presentation.py')
+    presentation = read('app/artifact_registry/presentation_overview.py') + '\n' + read('app/artifact_registry/presentation_common.py')
 
     assert 'artifact_registry/partials/_overview_provider_health.html' in operations
     assert 'Inventory Snapshot' in operations
@@ -168,7 +168,7 @@ def test_artifact_registry_overview_keeps_reference_information_hierarchy() -> N
     capacity = read('app/templates/artifact_registry/partials/_overview_capacity.html')
     signals = read('app/templates/artifact_registry/partials/_overview_signals.html')
     reporting = read('app/templates/artifact_registry/partials/_overview_reporting.html')
-    presentation = read('app/artifact_registry/presentation.py')
+    presentation = read('app/artifact_registry/presentation_overview.py') + '\n' + read('app/artifact_registry/presentation_common.py')
 
     assert "current_user.has_permission('artifact_registry.sync')" not in operations
     assert "url_for('artifact_registry.sync_inventory')" not in operations
@@ -214,7 +214,7 @@ def test_artifact_registry_overview_keeps_reference_information_hierarchy() -> N
 
 
 def test_artifact_registry_dashboard_state_semantics_and_jinja_mapping_safety() -> None:
-    presentation = read('app/artifact_registry/presentation.py')
+    presentation = read('app/artifact_registry/presentation_overview.py') + '\n' + read('app/artifact_registry/presentation_common.py')
     capacity_snapshot = read('app/templates/artifact_registry/partials/_overview_capacity_snapshot.html')
     forecast = read('app/templates/artifact_registry/partials/_overview_forecast_risk.html')
     consumers = read('app/templates/artifact_registry/partials/_overview_top_consumers.html')
@@ -274,7 +274,7 @@ def test_artifact_registry_dashboard_state_semantics_and_jinja_mapping_safety() 
 
 def test_artifact_registry_dashboard_uses_bounded_section_projections() -> None:
     routes = read('app/artifact_registry/routes.py')
-    presentation = read('app/artifact_registry/presentation.py')
+    presentation = read('app/artifact_registry/presentation_overview.py') + '\n' + read('app/artifact_registry/presentation_common.py')
     signal = read('app/templates/artifact_registry/partials/_overview_signal_overview.html')
 
     assert 'def _overview_scope_context(' in presentation
@@ -314,7 +314,7 @@ def test_artifact_registry_dashboard_uses_bounded_section_projections() -> None:
 
 
 def test_artifact_registry_data_freshness_uses_evidence_age_not_coverage_counts() -> None:
-    presentation = read('app/artifact_registry/presentation.py')
+    presentation = read('app/artifact_registry/presentation_overview.py') + '\n' + read('app/artifact_registry/presentation_common.py')
     projection = presentation.split('def _overview_operations_projection(', 1)[1].split(
         'def _overview_capacity_projection(', 1
     )[0]
@@ -352,7 +352,7 @@ def test_artifact_registry_signals_match_object_storage_scope_and_alert_logic() 
     object_signals = read('app/templates/storage/object_storage/dashboard/partials/_signals.html')
     object_alerts = read('app/templates/storage/object_storage/dashboard/partials/_alerts_summary.html')
     object_response = read('app/templates/storage/object_storage/dashboard/partials/_alert_response_guidance.html')
-    presentation = read('app/artifact_registry/presentation.py')
+    presentation = read('app/artifact_registry/presentation_overview.py') + '\n' + read('app/artifact_registry/presentation_common.py')
 
     assert '{% if not overview.selected_provider %}' in registry_signals
     assert '{% if not dashboard.selected_system %}' in object_signals
