@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from app.artifact_registry.eligibility import RegistryInventoryEligibility, registry_inventory_eligibility
-from app.artifact_registry.observability import registry_metrics_readiness
+from app.artifact_registry.observability import RegistryMetricsReadiness, registry_metrics_readiness
 from app.common.pagination import paginate_sequence
 from app.common.presentation import present_user_datetime
 from app.integrations.asset_owner_sources import build_bound_observability_source_rows
@@ -234,7 +234,7 @@ def _inventory_status(
     return {'status': 'unknown', 'label': 'No Committed Inventory', 'detail': 'No committed inventory snapshot'}
 
 
-def _metrics_status(metrics: dict[str, object]) -> dict[str, str]:
+def _metrics_status(metrics: RegistryMetricsReadiness) -> dict[str, str]:
     status = str(metrics.get('status') or 'not_bound')
     source = str(metrics.get('selected_source') or '').strip()
     if status == 'ready':
