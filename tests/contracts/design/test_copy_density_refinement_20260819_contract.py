@@ -40,9 +40,7 @@ def test_minio_copy_is_balanced_between_registration_detail_and_boundary_density
         'MinIO owns S3 state; observability sources stay independent. KAORI correlates binding evidence without copying credentials.'
         in configuration
     )
-    assert (
-        'Secret keys stay encrypted; registration and Full Validation use governed S3 discovery.' in configuration
-    )
+    assert 'Secret keys stay encrypted; registration and Full Validation use governed S3 discovery.' in configuration
     assert (
         'Full Validation owns S3 capabilities; Runtime Refresh owns live health; Inventory Sync owns committed assets; bindings own consumer evidence.'
         in validation
