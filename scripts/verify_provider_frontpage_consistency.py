@@ -166,7 +166,7 @@ def main() -> int:
         'Registration reuses the verified payload',
         'After Save',
         'Full Validation',
-        'Then assign consumer bindings',
+        'Then establish provider readiness',
         'Back to Registry',
     ):
         assert marker in shared_registration_hero
