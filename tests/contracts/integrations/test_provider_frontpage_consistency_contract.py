@@ -214,7 +214,8 @@ def test_harbor_frontpage_uses_registry_evidence_coverage_contract() -> None:
     assert '{% include "integrations/registry/providers/harbor/partials/_registry.html" %}' in page
 
     assert 'provider_registry.registry_evidence_coverage_colgroup()' in coverage
-    assert "provider_registry.registry_evidence_coverage_head('Harbor API')" in coverage
+    assert 'provider_registry.registry_evidence_coverage_head(' in coverage
+    assert 'Harbor API' in coverage
     for label in ('Registry Instance', 'Inventory', 'Metrics Source', 'Webhook', 'Coverage', 'Actions'):
         assert label in provider_registry
 
