@@ -28,7 +28,8 @@ def generate_webhook_token(integration_instance_id: int) -> str:
     token = secrets.token_urlsafe(32)
     endpoint = db.session.get(RegistryWebhookEndpoint, integration_instance_id)
     if endpoint is None:
-        endpoint = RegistryWebhookEndpoint(integration_instance_id=integration_instance_id)
+        endpoint = RegistryWebhookEndpoint()
+        endpoint.integration_instance_id = integration_instance_id
         db.session.add(endpoint)
     endpoint.enabled = True
     endpoint.token_digest = hashlib.sha256(token.encode()).hexdigest()
@@ -40,7 +41,8 @@ def generate_webhook_token(integration_instance_id: int) -> str:
 def disable_webhook(integration_instance_id: int) -> None:
     endpoint = db.session.get(RegistryWebhookEndpoint, integration_instance_id)
     if endpoint is None:
-        endpoint = RegistryWebhookEndpoint(integration_instance_id=integration_instance_id)
+        endpoint = RegistryWebhookEndpoint()
+        endpoint.integration_instance_id = integration_instance_id
         db.session.add(endpoint)
     endpoint.enabled = False
     endpoint.token_digest = None
@@ -54,9 +56,12 @@ def _authenticate(endpoint: RegistryWebhookEndpoint, token: str) -> None:
 
 
 def _resource_fields(payload: dict[str, Any]) -> dict[str, str | None]:
-    event_data = payload.get('event_data') if isinstance(payload.get('event_data'), dict) else {}
-    repository = event_data.get('repository') if isinstance(event_data.get('repository'), dict) else {}
-    resources = event_data.get('resources') if isinstance(event_data.get('resources'), list) else []
+    raw_event_data = payload.get('event_data')
+    event_data = raw_event_data if isinstance(raw_event_data, dict) else {}
+    raw_repository = event_data.get('repository')
+    repository = raw_repository if isinstance(raw_repository, dict) else {}
+    raw_resources = event_data.get('resources')
+    resources = raw_resources if isinstance(raw_resources, list) else []
     resource = next((item for item in resources if isinstance(item, dict)), {})
     repo_name = str(repository.get('repo_full_name') or repository.get('name') or '').strip()
     project_name = str(repository.get('namespace') or '').strip()
@@ -105,22 +110,21 @@ def ingest_webhook(
         return existing, False
 
     fields = _resource_fields(payload)
-    event = RegistryWebhookEvent(
-        integration_instance_id=integration_instance_id,
-        dedup_key=dedup_key,
-        provider_event_id=provider_event_id,
-        event_type=event_type[:120],
-        payload_digest=payload_digest,
-        project_name=fields['project_name'],
-        repository_name=fields['repository_name'],
-        artifact_digest=fields['artifact_digest'],
-        artifact_tag=fields['artifact_tag'],
-        status='received',
-        metadata_json={
-            'source': 'provider_webhook',
-            'payload_retained': False,
-        },
-    )
+    event = RegistryWebhookEvent()
+    event.integration_instance_id = integration_instance_id
+    event.dedup_key = dedup_key
+    event.provider_event_id = provider_event_id
+    event.event_type = event_type[:120]
+    event.payload_digest = payload_digest
+    event.project_name = fields['project_name']
+    event.repository_name = fields['repository_name']
+    event.artifact_digest = fields['artifact_digest']
+    event.artifact_tag = fields['artifact_tag']
+    event.status = 'received'
+    event.metadata_json = {
+        'source': 'provider_webhook',
+        'payload_retained': False,
+    }
     db.session.add(event)
     db.session.flush()
 
