@@ -11,7 +11,7 @@
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('chart-column', 'Artifact Registry', 'chart-no-axes-combined') %}
                         <h1 class="{{ page_hero.title_classes() }}">Analytics</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">Analyze Registry growth, risk, governance, alerts, and capacity from committed evidence.</p>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Review Registry growth, risk, governance, alerts, and capacity.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('database-backup', analytics.snapshot_count ~ '/' ~ analytics.provider_count ~ ' Analytics Snapshots') }}
                             {{ page_hero.meta_label('clock-3', analytics.latest_generated_at|user_datetime if analytics.latest_generated_at else 'Not Materialized') }}
