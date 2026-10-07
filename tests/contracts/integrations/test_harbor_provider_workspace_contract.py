@@ -298,7 +298,7 @@ def test_object_storage_analytics_dependency_path_keeps_metrics_and_alert_eviden
 def test_registry_domain_exposes_parent_context_guidance() -> None:
     workspace = read('app/templates/integrations/partials/_domain_workspace.html')
 
-    assert "'Registry Authority and Evidence'" in workspace
+    assert 'Registry Authority and Evidence' in workspace
     assert 'Registry providers remain authoritative for repositories, artifacts, native policies' in workspace
     assert 'Harbor is the first qualified Registry provider' in workspace
     assert 'provider-neutral Registry contracts' in workspace
