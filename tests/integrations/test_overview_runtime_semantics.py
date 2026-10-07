@@ -3,12 +3,12 @@ from types import SimpleNamespace
 from app.integrations.overview_extensions import (
     SPECIALIZED_OVERVIEW_TYPES,
     build_overview_stats,
+    build_provider_portfolio_counts,
+    portfolio_posture,
 )
 from app.integrations.service import (
     _capability_attention_display,
     _coverage_stats,
-    _portfolio_posture,
-    _provider_portfolio_counts,
     _runtime_scope_label,
     _runtime_stats,
 )
@@ -113,7 +113,7 @@ def test_coverage_stats_separate_available_and_planned_domains() -> None:
 
 
 def test_portfolio_posture_preserves_single_target_degraded_state() -> None:
-    state, label = _portfolio_posture(
+    state, label = portfolio_posture(
         {
             'total': 1,
             'configured': 1,
@@ -131,7 +131,7 @@ def test_portfolio_posture_preserves_single_target_degraded_state() -> None:
 
 
 def test_portfolio_posture_uses_needs_review_for_mixed_readiness() -> None:
-    state, label = _portfolio_posture(
+    state, label = portfolio_posture(
         {
             'total': 2,
             'configured': 2,
@@ -184,7 +184,7 @@ def test_generic_overview_aggregation_includes_object_storage_canonical_instance
 
 
 def test_provider_portfolio_counts_projects_generic_object_storage_readiness() -> None:
-    counts = _provider_portfolio_counts(
+    counts = build_provider_portfolio_counts(
         kubernetes_connections=[],
         metrics_sources=[],
         alertmanager_instances=[],
