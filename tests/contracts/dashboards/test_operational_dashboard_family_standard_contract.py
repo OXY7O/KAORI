@@ -63,12 +63,13 @@ def test_kubernetes_dashboard_blocked_onboarding_uses_shared_integration_contrac
     ):
         assert local_override not in content
 
-    assert 'blocked_state_steps = ["Open Cluster Integrations", "Register Cluster", "Run Sync"]' in onboarding
-    assert "blocked_state_action_url = url_for('integrations.kubernetes')" in onboarding
-    assert 'blocked_state_action_label = "Open Cluster Integrations"' in onboarding
-    assert 'blocked_state_action_icon = "plug-zap"' in onboarding
+    assert 'provider_prerequisite_steps = ["Open Cluster Integrations", "Register Cluster", "Run Sync"]' in onboarding
+    assert "provider_prerequisite_action_url = url_for('integrations.kubernetes')" in onboarding
+    assert 'provider_prerequisite_action_label = "Open Cluster Integrations"' in onboarding
+    assert 'provider_prerequisite_action_icon = "plug-zap"' in onboarding
+    assert 'components/provider_prerequisite/_setup_blocker.html' in onboarding
     assert "url_for('cluster.add_cluster')" not in onboarding
-    assert 'blocked_state_action_label = "Add Cluster"' not in onboarding
+    assert 'provider_prerequisite_action_label = "Add Cluster"' not in onboarding
 
 
 def test_operational_dashboards_share_peer_grid_and_reporting_proportions() -> None:
