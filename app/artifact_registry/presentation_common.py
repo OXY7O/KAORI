@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, Protocol, overload
 
 from sqlalchemy import or_
 
@@ -48,6 +48,14 @@ def _providers() -> list[IntegrationInstance]:
     )
 
 
+@overload
+def _aware_datetime(value: None) -> None: ...
+
+
+@overload
+def _aware_datetime(value: datetime) -> datetime: ...
+
+
 def _aware_datetime(value: datetime | None) -> datetime | None:
     if value is None:
         return None
@@ -74,7 +82,21 @@ def _freshness_value(value: datetime | None, *, missing: str) -> str:
     return f'Updated {_human_time(value)}' if value is not None else missing
 
 
-def _state_view(state: RegistryCollectionState | None) -> dict[str, Any]:
+class _CommittedState(Protocol):
+    @property
+    def status(self) -> str: ...
+
+    @property
+    def last_observed_at(self) -> datetime | None: ...
+
+    @property
+    def last_committed_at(self) -> datetime | None: ...
+
+    @property
+    def last_error(self) -> str | None: ...
+
+
+def _state_view(state: _CommittedState | None) -> dict[str, Any]:
     if state is None or state.last_committed_at is None:
         return {
             'status': 'not_collected',
