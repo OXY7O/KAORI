@@ -993,7 +993,7 @@ def verify() -> None:
     _require(
         object_alert_guidance,
         (
-            'Developing capacity, request-path, or availability risk. Investigate before escalation.',
+            'Emerging capacity or availability risk.',
             'Low-risk operational signal. Validate relevance, recurrence, and scope.',
         ),
         'Object Storage compact alert guidance',
