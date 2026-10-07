@@ -141,13 +141,10 @@ def test_optional_capability_gaps_are_separate_from_core_readiness() -> None:
     workspace = _source()
     registry = REGISTRY.read_text(encoding='utf-8')
 
-    assert "{% set capability_readiness_state = 'blocked' %}" in workspace
+    assert '{% set capability_readiness_state = "blocked" %}' in workspace
     assert '{% elif legacy_features %}' in workspace
-    assert "{% set capability_readiness_state = 'ready' %}" in workspace
-    assert (
-        'Core required API and RBAC evidence for Kubernetes workspaces; '
-        'optional Tenant contracts are tracked separately.' in workspace
-    )
+    assert '{% set capability_readiness_state = "ready" %}' in workspace
+    assert 'Core API/RBAC is validated; Tenant contracts remain optional.' in workspace
     assert 'Why Provider Validation Is {{ validation_state.readiness_label }}' in workspace
     assert "' required blocks'" in workspace
     assert "' optional gaps'" in workspace
