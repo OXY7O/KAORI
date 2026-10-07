@@ -271,7 +271,7 @@ def get_tenant_registry_context(
     namespace_history_count_map: dict[str, int] = {tenant_id: 0 for tenant_id in tenant_ids}
 
     if tenant_ids:
-        environment_rows = (
+        environment_rows: list[TenantEnvironment] = (
             TenantEnvironment.query.filter(TenantEnvironment.tenant_id.in_(tenant_ids))
             .order_by(TenantEnvironment.tenant_id.asc(), TenantEnvironment.environment.asc())
             .all()
