@@ -138,9 +138,9 @@ def test_observability_connection_copy_is_concise_and_binding_scoped():
         'One Alertmanager runtime can serve multiple integrations through independent bindings and selectors.'
         in alertmanager
     )
-    assert 'Update metrics connections while preserving validation, bindings, and consumer context.' in metrics
+    assert 'Update metrics access while preserving validation and bindings.' in metrics
     assert 'Maintain governed validation and consumer-binding context.' not in metrics
-    assert 'Update Alertmanager while preserving governed bindings.' in alertmanager
+    assert 'Update Alertmanager access while preserving consumer bindings.' in alertmanager
     assert 'Review Alertmanager coverage, readiness, and alert consumer bindings.' in alertmanager
     assert 'Maintain governed validation and consumer-binding context.' not in alertmanager
 
