@@ -260,7 +260,7 @@ def test_scope_filters_are_symmetric_and_use_guidance_instead_of_inline_warning(
     assert 'data-generate-scope-tip="true"' in source
     assert 'Scope Contract' in source
     assert (
-        'Kubernetes reports use one selected cluster; Object Storage reports use one registered Object Storage system.'
+        'Kubernetes reports use one cluster; Object Storage reports use one system; Artifact Registry reports use one Registry integration.'
         in source
     )
     assert 'All Namespaces' in runtime
