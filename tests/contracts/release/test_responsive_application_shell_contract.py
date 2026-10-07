@@ -57,7 +57,7 @@ def test_navbar_exposes_mobile_menu_without_reusing_desktop_collapse_control() -
     assert 'aria-label="Open quick actions"' in navbar
     assert 'id="theme-toggle"' in navbar
     assert 'aria-label="Open user menu"' in navbar
-    assert 'class="{{ surface_ui.block_classes() }} inline-flex h-10 min-w-0' in navbar
+    assert 'class="{{ surface_ui.block_classes(allow_overflow=true) }} inline-flex h-10 min-w-0' in navbar
 
 
 def test_shared_hero_keeps_phone_density_compact_without_forking_authority() -> None:
