@@ -94,7 +94,10 @@ def test_minio_readiness_keeps_range_readable_without_long_range_badge() -> None
     assert 'Product · ' not in metadata
     assert 'Profile · ' in metadata
     assert 'Supported Range · ' not in metadata
-    assert 'Revalidate after MinIO release, credential, endpoint, TLS, region, addressing, or S3 API changes.' in validation
+    assert (
+        'Revalidate after MinIO release, credential, endpoint, TLS, region, addressing, or S3 API changes.'
+        in validation
+    )
     assert 'sm:grid-cols-[minmax(12rem,1fr)_minmax(0,24rem)]' in shared
 
 
