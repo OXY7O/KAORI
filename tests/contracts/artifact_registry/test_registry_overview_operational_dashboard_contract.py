@@ -365,7 +365,7 @@ def test_artifact_registry_data_freshness_uses_evidence_age_not_coverage_counts(
     ):
         assert evidence_value in presentation
 
-    assert '_freshness_value(' in projection
+    assert '_freshness_value(' in presentation
     assert 'latest_security_at' in projection
     assert 'latest_analytics_at' in projection
 
