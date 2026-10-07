@@ -72,7 +72,7 @@ def test_edit_form_operator_language_uses_full_validation() -> None:
 def test_reviewed_minio_edit_copy_stays_compact() -> None:
     minio = read(PROVIDER_EDIT_FORMS['minio'])
 
-    assert 'Update S3 access while preserving storage assets, bindings, and validation context.' in minio
+    assert 'Update S3 access while preserving assets, bindings, and validation.' in minio
     assert 'How changes restore object-storage readiness.' in minio
     assert 'How connection changes return this object-storage provider to an operationally ready state.' not in minio
 
