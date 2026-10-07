@@ -53,7 +53,7 @@ def test_tenant_workspace_reads_committed_cross_child_state() -> None:
     ):
         assert model_name in workspace
 
-    assert "get_active_recommendation_findings(domain='kubernetes')" in workspace
+    assert 'get_active_tenant_governance_findings()' in workspace
     assert 'build_namespace_access_package' in workspace
     assert "startswith('kubernetes.tenant.')" in workspace
 
