@@ -16,7 +16,7 @@ def test_registry_inventory_is_provider_neutral_and_digest_oriented() -> None:
 
 
 def test_registry_operational_pages_read_committed_state() -> None:
-    presentation = (ROOT / 'app/artifact_registry/presentation.py').read_text()
+    presentation = (ROOT / 'app/artifact_registry/presentation_inventory.py').read_text()
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
     assert 'RegistryProject.query' in presentation
     assert 'RegistryArtifact.query' in presentation
@@ -138,7 +138,7 @@ def test_registry_inventory_reconciles_stable_rows_without_erasing_downstream_ev
 def test_registry_inventory_reuses_canonical_inventory_workspace_primitives() -> None:
     overview_template = (ROOT / 'app/templates/artifact_registry/partials/_inventory_overview.html').read_text()
     resource_template = (ROOT / 'app/templates/artifact_registry/partials/_inventory_workspace.html').read_text()
-    presentation = (ROOT / 'app/artifact_registry/presentation.py').read_text()
+    presentation = (ROOT / 'app/artifact_registry/presentation_inventory.py').read_text()
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
     navigation = (ROOT / 'app/common/workspace_navigation_catalog.py').read_text()
     navigation_service = (ROOT / 'app/common/workspace_navigation.py').read_text()
@@ -206,7 +206,7 @@ def test_registry_inventory_reuses_canonical_inventory_workspace_primitives() ->
 
 
 def test_registry_inventory_overview_restores_asset_counts_from_existing_kpis() -> None:
-    presentation = (ROOT / 'app/artifact_registry/presentation.py').read_text()
+    presentation = (ROOT / 'app/artifact_registry/presentation_inventory.py').read_text()
 
     inventory_base = presentation.split('def _inventory_base_context()', 1)[1].split(
         'def build_inventory_overview()',
@@ -219,7 +219,7 @@ def test_registry_inventory_overview_restores_asset_counts_from_existing_kpis() 
 
 
 def test_registry_project_inventory_reuses_canonical_filters_and_detail_modal() -> None:
-    presentation = (ROOT / 'app/artifact_registry/presentation.py').read_text()
+    presentation = (ROOT / 'app/artifact_registry/presentation_inventory.py').read_text()
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
     workspace = (ROOT / 'app/templates/artifact_registry/partials/_inventory_workspace.html').read_text()
     page = (ROOT / 'app/templates/artifact_registry/inventory_resource.html').read_text()
@@ -250,7 +250,7 @@ def test_registry_project_inventory_reuses_canonical_filters_and_detail_modal() 
 
 
 def test_registry_repository_and_artifact_inventory_reuse_full_workspace_detail_modal() -> None:
-    presentation = (ROOT / 'app/artifact_registry/presentation.py').read_text()
+    presentation = (ROOT / 'app/artifact_registry/presentation_inventory.py').read_text()
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
     workspace = (ROOT / 'app/templates/artifact_registry/partials/_inventory_workspace.html').read_text()
     page = (ROOT / 'app/templates/artifact_registry/inventory_resource.html').read_text()
