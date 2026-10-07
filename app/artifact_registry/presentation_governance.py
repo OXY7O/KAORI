@@ -127,9 +127,9 @@ def _governance_summary(
     )
     latest_committed_at = max(
         (
-            _aware_datetime(state.last_committed_at)
+            committed_at
             for state in governance_states.values()
-            if state.last_committed_at is not None
+            if (committed_at := _aware_datetime(state.last_committed_at)) is not None
         ),
         default=None,
     )
