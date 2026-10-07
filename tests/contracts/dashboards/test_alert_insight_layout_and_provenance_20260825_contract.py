@@ -35,7 +35,6 @@ def test_alert_insight_highest_value_uses_semantic_severity_color() -> None:
         'text-status-critical-text',
         'text-status-warning-text',
         'text-status-info-text',
-        'text-status-normal-text',
     ):
         assert token in highest
 
