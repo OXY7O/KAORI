@@ -221,7 +221,7 @@ def test_artifact_registry_overview_keeps_reference_information_hierarchy() -> N
     assert "'failed_refresh_count': failed_refresh_count" in presentation
     assert "'capacity': capacity" in presentation
     assert "'alerts': _registry_alerts(selected_provider)" in presentation
-    assert "'recommended_actions': recommended_actions" in presentation
+    assert "'recommended_actions': _registry_recommended_actions(selected_provider)" in presentation
     assert "'reporting': reporting" in presentation
 
 
@@ -346,7 +346,8 @@ def test_artifact_registry_data_freshness_uses_evidence_age_not_coverage_counts(
     assert 'from app.artifact_registry.security.contracts import SUCCESSFUL_REGISTRY_SCAN_STATUSES' in presentation
     assert 'func.lower(RegistryArtifact.scan_status).in_(' in presentation
     assert 'func.lower(RegistryArtifact.scan_status).in_(SUCCESSFUL_REGISTRY_SCAN_STATUSES)' in presentation
-    assert 'RegistryScanSnapshot.observed_at' in projection
+    assert 'RegistryScanSnapshot.observed_at' in presentation
+    assert 'latest_security_at' in projection
 
     for retired_value in (
         "f'{committed_count} / {len(scoped_providers)} providers'",
