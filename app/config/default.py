@@ -399,7 +399,9 @@ class Config:
                 'queue': REGISTRY_SECURITY_CELERY_QUEUE,
             },
             'app.artifact_registry.governance_tasks.sync_all_registry_governance': {'queue': 'inventory'},
-            'app.artifact_registry.correlation_tasks.materialize_registry_runtime_correlation': {'queue': 'inventory'},
+            'app.artifact_registry.correlation_tasks.materialize_registry_runtime_correlation': {
+                'queue': 'inventory',
+            },
             'app.kubernetes.governance.tls_certificates.tasks.sync_tls_certificates': {
                 'queue': 'inventory',
             },
