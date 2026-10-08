@@ -48,7 +48,8 @@ def test_runtime_audit_keeps_report_storage_outage_degraded_not_successful() -> 
 def test_runtime_audit_has_responsive_database_unavailable_evidence() -> None:
     browser_test = read('tests/ui/test_runtime_state_responsiveness.py')
 
-    assert "'database_unavailable': 'PostgreSQL Unavailable'" in browser_test
+    assert "'database_unavailable': 'Database Unavailable'" in browser_test
+    assert "get_by_label('Initialization readiness')" in browser_test
     assert 'assert response.status == 503' in browser_test
     assert "heading', name='Database Setup Required'" in browser_test
     assert "layout['scrollWidth'] <= layout['clientWidth'] + 1" in browser_test
