@@ -85,5 +85,3 @@ def get_registry_governance_collector(provider_key: str) -> RegistryGovernanceCo
 def registered_registry_governance_collectors() -> tuple[RegistryGovernanceCollector, ...]:
     get_integration('registry')
     return tuple(_COLLECTORS[key] for key in sorted(_COLLECTORS))
-
-

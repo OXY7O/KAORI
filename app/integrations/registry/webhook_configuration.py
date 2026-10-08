@@ -34,5 +34,3 @@ def disable_webhook(integration_instance_id: int) -> None:
     endpoint.enabled = False
     endpoint.token_digest = None
     db.session.commit()
-
-
