@@ -16,6 +16,8 @@ from app.integrations.registry.webhook_configuration import disable_webhook, gen
 from app.models.integration import IntegrationInstance
 from app.models.registry import RegistryWebhookEndpoint, RegistryWebhookEvent
 
+__all__ = ['disable_webhook', 'generate_webhook_token']
+
 
 class RegistryWebhookAuthError(PermissionError):
     pass

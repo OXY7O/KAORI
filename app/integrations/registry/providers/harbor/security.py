@@ -6,22 +6,22 @@ from datetime import datetime
 from typing import Any
 
 from app.integrations.registry.collectors import InventoryProgressCallback
-from app.integrations.registry.security_contracts import (
-    RegistryArtifactSecurityEvidence,
-    RegistrySecurityEvidence,
-    RegistrySecurityTarget,
-    registry_scan_evidence_ready,
-)
-from app.integrations.registry.security_collectors import (
-    RegistrySecurityCollector,
-    SecurityTargetCurrentPredicate,
-)
 from app.integrations.registry.providers.harbor.client_factory import build_client
 from app.integrations.registry.providers.harbor.exceptions import (
     HarborAuthError,
     HarborConnectionError,
     HarborError,
     HarborResponseError,
+)
+from app.integrations.registry.security_collectors import (
+    RegistrySecurityCollector,
+    SecurityTargetCurrentPredicate,
+)
+from app.integrations.registry.security_contracts import (
+    RegistryArtifactSecurityEvidence,
+    RegistrySecurityEvidence,
+    RegistrySecurityTarget,
+    registry_scan_evidence_ready,
 )
 from app.models.harbor import HarborInstance
 

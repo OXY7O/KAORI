@@ -9,7 +9,6 @@ from flask_login import current_user
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.rbac.decorators import permission_required
-from app.integrations.registry.webhook_configuration import disable_webhook, generate_webhook_token
 from app.integrations.deletion import DeletionBlocked
 from app.integrations.registry.providers.harbor.application.forms import HarborInstanceForm
 from app.integrations.registry.providers.harbor.application.presentation import (
@@ -34,6 +33,7 @@ from app.integrations.registry.providers.harbor.application.workspace_web import
     queue_runtime_refresh,
 )
 from app.integrations.registry.providers.harbor.exceptions import HarborError
+from app.integrations.registry.webhook_configuration import disable_webhook, generate_webhook_token
 from app.integrations.validation.state import build_validation_snapshot, get_active_validation_task_id
 from app.integrations.validation.web import (
     snapshot_feedback_for_user,

@@ -3,12 +3,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from app.integrations.registry.eligibility import RegistryInventoryEligibility, registry_inventory_eligibility
-from app.integrations.registry.observability import RegistryMetricsReadiness, registry_metrics_readiness
 from app.common.pagination import paginate_sequence
 from app.common.presentation import present_user_datetime
 from app.integrations.asset_owner_sources import build_bound_observability_source_rows
 from app.integrations.deletion import asset_owner_deletion_guard
+from app.integrations.registry.eligibility import RegistryInventoryEligibility, registry_inventory_eligibility
+from app.integrations.registry.observability import RegistryMetricsReadiness, registry_metrics_readiness
 from app.integrations.registry.providers.harbor.capabilities import CAPABILITIES, CAPABILITY_PROFILE
 from app.integrations.runtime.presentation import runtime_history_view, runtime_observation_state_view
 from app.integrations.runtime.repository import paginate_runtime_history

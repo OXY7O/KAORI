@@ -8,6 +8,7 @@ from typing import Any
 from app.integrations.kernel.registry import get_integration
 from app.integrations.registry.collectors import InventoryProgressCallback
 
+
 @dataclass(slots=True)
 class ProjectGovernanceRecord:
     project_name: str

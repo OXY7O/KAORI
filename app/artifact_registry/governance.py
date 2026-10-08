@@ -24,6 +24,17 @@ from app.models.registry import (
     RegistryReplicationPolicy,
 )
 
+__all__ = [
+    'ProjectGovernanceRecord',
+    'RegistryGovernanceCollector',
+    'RegistryGovernanceEvidence',
+    'ReplicationPolicyRecord',
+    'get_registry_governance_collector',
+    'register_registry_governance_collector',
+    'registered_registry_governance_collectors',
+]
+
+
 def sync_registry_governance(
     identity: IntegrationInstance,
     *,

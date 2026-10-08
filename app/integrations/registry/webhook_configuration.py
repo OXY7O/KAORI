@@ -7,6 +7,7 @@ from app.extensions.db import db
 from app.models.integration import IntegrationInstance
 from app.models.registry import RegistryWebhookEndpoint
 
+
 def generate_webhook_token(integration_instance_id: int) -> str:
     identity = db.session.get(IntegrationInstance, integration_instance_id)
     if identity is None or identity.integration_type != 'registry':
