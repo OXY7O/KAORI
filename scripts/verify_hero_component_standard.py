@@ -1052,7 +1052,7 @@ def _verify_registry_blocked_hero_actions() -> None:
         raise AssertionError('Registry Overview blocked Dashboard reference must remain unchanged')
 
     standard = _read(ROOT / 'docs/design/components/PROVIDER_PREREQUISITE.md')
-    if 'set \`blocked=true\`' not in standard:
+    if 'set `blocked=true`' not in standard:
         raise AssertionError('Provider prerequisite standard must lock blocked Hero CTA suppression')
 
 
