@@ -16,6 +16,13 @@ Artifact Registry
 
 Harbor remains the provider authority. KAORI normalizes, commits, correlates, governs, and presents evidence.
 
+The application dependency direction remains one-way: central Intelligence consumes committed Registry
+evidence through the canonical `app.integrations.registry.security_contracts` boundary; Registry
+presentation consumes report **definitions** through the existing `app.definitions.loader` rather than
+importing the Reports application catalog. Reports remain responsible for rendering their output from
+committed Registry state. This avoids circular domain imports without changing the accepted workspace
+or inventing a separate catalog, compatibility policy, or report ownership model.
+
 ## Synchronization Topology
 
 Large Registry estates must not run every Artifact Registry concern inside one provider synchronization.
