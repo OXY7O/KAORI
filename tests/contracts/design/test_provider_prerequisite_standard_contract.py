@@ -91,3 +91,57 @@ def test_provider_prerequisite_standard_is_locked_in_documentation() -> None:
     assert 'level-3 route navigation remains visible' in standard
     assert 'normal operational content is not rendered' in standard.lower()
     assert 'Registry / Harbor operational consumers must adopt this contract' in standard
+
+def test_registry_blocked_hero_contract_is_admitted_by_existing_hero_gate() -> None:
+    import runpy
+
+    verifier = runpy.run_path(str(ROOT / 'scripts/verify_hero_component_standard.py'))
+    verifier['_verify_registry_blocked_hero_actions']()
+
+
+def test_shared_context_card_renders_info_not_action_when_blocked() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    templates = ROOT / 'app/templates'
+    hero = Environment(loader=FileSystemLoader(str(templates)), autoescape=True).get_template(
+        'components/page_hero.html'
+    ).module
+    args = (
+        'Registry inventory posture',
+        'Committed State',
+        'Inventory Posture',
+        'Ready',
+        'normal',
+        [('database-backup', 'Committed Providers', '0/0', 'Retained snapshots')],
+        'Open Registry Integrations',
+        '/integrations/registry',
+    )
+    normal = str(hero.context_card(*args))
+    blocked = str(
+        hero.context_card(
+            *args,
+            blocked=True,
+            blocked_info='Register and validate a Registry provider.',
+        )
+    )
+
+    assert 'href="/integrations/registry"' in normal
+    assert 'Open Registry Integrations' in normal
+    assert 'href="/integrations/registry"' not in blocked
+    assert 'Open Registry Integrations' not in blocked
+    assert 'data-kaori-blocked-state' in blocked
+    assert 'Setup Required' in blocked
+    assert 'Register and validate a Registry provider.' in blocked
+    assert 'Committed Providers' in normal
+    assert 'Committed Providers' in blocked
+
+
+def test_registry_secondary_inventory_blocker_keeps_its_distinct_action_owner() -> None:
+    security = read('app/templates/artifact_registry/partials/_security_workspace.html')
+    runtime = read('app/templates/artifact_registry/partials/_runtime_workspace.html')
+
+    assert security.count('blocked=security.setup_blocked or security.inventory_required') == 2
+    assert security.count("'Inventory Required'") >= 2
+    assert 'components/states/_blocked_state.html' in security
+    assert 'blocked=runtime.setup.is_blocked' in runtime
+    assert 'components/states/_blocked_state.html' in runtime
