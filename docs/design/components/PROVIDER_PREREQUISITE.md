@@ -101,6 +101,10 @@ Examples:
 
 Do not place the same full setup action in both the Hero-right context and the below-Hero setup blocker.
 
+For Hero contexts that normally use `page_hero.context_card(...)`, set `blocked=true` whenever a below-Hero prerequisite blocker replaces the operational workspace. The shared context-card macro then delegates to `blocked_context_body(...)`: it retains the existing two evidence metrics, shows a warning status and concise setup information, and **never renders the normal Hero action**. Supply `blocked_info` and, when the prerequisite is not provider setup, a distinct `blocked_label`. Normal and merely degraded states retain their own allowed action paths. Do not implement conditional CTA geometry inside a domain-local template.
+
+Artifact Registry Overview is the existing blocked-Dashboard reference. The same rule applies to Inventory Overview, inventory resource views (Projects, Repositories, Artifacts), Security (Vulnerabilities and Supply Chain), Runtime Usage, Governance, and Analytics; the canonical below-Hero blocker remains the only setup/remediation CTA for each blocked prerequisite.
+
 ## Current consumers
 
 - Kubernetes Operations Dashboard
@@ -113,7 +117,7 @@ Do not place the same full setup action in both the Hero-right context and the b
 - Object Storage Inventory
 - Object Storage Analytics
 
-Registry / Harbor operational consumers must adopt this contract when provider-backed Registry pages are introduced. The Harbor integration configuration workspace itself is the setup destination and therefore is not blocked by its own prerequisite.
+Registry / Harbor operational consumers — Overview, Inventory and its resource views, Security, Runtime Usage, Governance, and Analytics — adopt the shared blocked-Hero and provider-prerequisite contract. Future provider-backed surfaces must do the same. The Harbor integration configuration workspace itself is the setup destination and therefore is not blocked by its own prerequisite.
 
 ## Review checklist
 
