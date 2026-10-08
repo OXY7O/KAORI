@@ -5,7 +5,6 @@ from pathlib import Path
 from celery.schedules import crontab
 from dotenv import dotenv_values
 
-from app.config.registry_celery import REGISTRY_CELERY_IMPORTS, registry_task_routes
 from app.integrations.delivery.notification_channels.config import build_notification_beat_schedule
 from app.intelligence.alert_signals.config import build_alert_signal_beat_schedule
 
@@ -352,7 +351,10 @@ class Config:
             'app.storage.object_storage.analytics.tasks',
             'app.kubernetes.cluster.tasks',
             'app.storage.object_storage.inventory.tasks',
-            *REGISTRY_CELERY_IMPORTS,
+            'app.artifact_registry.tasks',
+            'app.artifact_registry.security.tasks',
+            'app.artifact_registry.governance_tasks',
+            'app.artifact_registry.correlation_tasks',
             'app.kubernetes.governance.tls_certificates.tasks',
             'app.kubernetes.tenant.tasks',
             'app.platform_operations.data_lifecycle.retention.tasks',
@@ -386,7 +388,24 @@ class Config:
             'app.storage.object_storage.inventory.tasks.sync_all_object_storage': {
                 'queue': 'inventory',
             },
-            **registry_task_routes(REGISTRY_SECURITY_CELERY_QUEUE),
+            'app.artifact_registry.tasks.sync_all_registry': {
+                'queue': 'inventory',
+            },
+            'app.artifact_registry.security.tasks.sync_all_registry_security': {
+                'queue': REGISTRY_SECURITY_CELERY_QUEUE,
+            },
+            'app.artifact_registry.security.tasks.sync_registry_security_source': {
+                'queue': REGISTRY_SECURITY_CELERY_QUEUE,
+            },
+            'app.artifact_registry.security.tasks.finalize_registry_security_sync': {
+                'queue': REGISTRY_SECURITY_CELERY_QUEUE,
+            },
+            'app.artifact_registry.governance_tasks.sync_all_registry_governance': {
+                'queue': 'inventory',
+            },
+            'app.artifact_registry.correlation_tasks.materialize_registry_runtime_correlation': {
+                'queue': 'inventory',
+            },
             'app.kubernetes.governance.tls_certificates.tasks.sync_tls_certificates': {
                 'queue': 'inventory',
             },
