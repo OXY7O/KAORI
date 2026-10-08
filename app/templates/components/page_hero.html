@@ -50,16 +50,25 @@
         </a>
     </div>
 {%- endmacro %}
-{% macro context_card(aria_label, eyebrow_label, title, status_label, status_tone, metrics, action_label, action_href, action_icon='server-cog') -%}
+{% macro context_card(aria_label, eyebrow_label, title, status_label, status_tone, metrics, action_label, action_href, action_icon='server-cog', blocked=false, blocked_info='Complete provider setup to access this workspace.', blocked_label='Setup Required') -%}
     <aside class="{{ aside_classes() }}" aria-label="{{ aria_label }}">
-        {{ context_card_body(eyebrow_label,
-                title,
-                status_label,
-                status_tone,
-                metrics,
-                action_label,
-                action_href,
-                action_icon) }}
+        {% if blocked %}
+            {{ blocked_context_body(eyebrow_label,
+                    title,
+                    metrics,
+                    blocked_info,
+                    blocked_label,
+                    'warning') }}
+        {% else %}
+            {{ context_card_body(eyebrow_label,
+                    title,
+                    status_label,
+                    status_tone,
+                    metrics,
+                    action_label,
+                    action_href,
+                    action_icon) }}
+        {% endif %}
     </aside>
 {%- endmacro %}
 {% macro blocked_context_body(eyebrow_label, title, metrics, info_text, status_label=None, status_tone='warning', header_icon='lock-keyhole', info_icon='info', action_label=None, action_href=None, action_icon='server-cog') -%}
