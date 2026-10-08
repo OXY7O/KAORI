@@ -5,7 +5,7 @@ from typing import Any
 
 from sqlalchemy.orm import joinedload, selectinload
 
-from app.artifact_registry.security.contracts import registry_scan_evidence_ready
+from app.integrations.registry.security_contracts import registry_scan_evidence_ready
 from app.models.integration import IntegrationInstance
 from app.models.registry import (
     RegistryAnalyticsSnapshot,
