@@ -995,6 +995,67 @@ def _verify_dashboard_profile() -> None:
                 raise AssertionError(f'{relative}: dashboard profile must not assemble {local}')
 
 
+def _verify_registry_blocked_hero_actions() -> None:
+    """Keep Registry prerequisite remediation in the below-Hero blocker."""
+
+    hero = _read(HERO)
+    for token in (
+        'blocked=false, blocked_info=',
+        '{% if blocked %}',
+        'blocked_context_body(eyebrow_label,',
+        '{% else %}',
+        'context_card_body(eyebrow_label,',
+    ):
+        if token not in hero:
+            raise AssertionError(f'Shared Hero context-card blocked contract missing: {token}')
+
+    registry_contexts = {
+        'artifact_registry/partials/_inventory_overview.html': ('inventory.setup.is_blocked', 1),
+        'artifact_registry/partials/_inventory_workspace.html': ('inventory.setup.is_blocked', 1),
+        'artifact_registry/partials/_security_workspace.html': (
+            'security.setup_blocked or security.inventory_required',
+            2,
+        ),
+        'artifact_registry/partials/_runtime_workspace.html': ('runtime.setup.is_blocked', 1),
+        'artifact_registry/governance.html': ('governance.setup.is_blocked', 1),
+        'artifact_registry/analytics.html': ('analytics.setup.is_blocked', 1),
+    }
+    for relative, (predicate, expected_count) in registry_contexts.items():
+        source = _read(TEMPLATES / relative)
+        calls = re.findall(r'page_hero\.context_card\((.*?)\)\s*}}', source, re.DOTALL)
+        if len(calls) != expected_count:
+            raise AssertionError(
+                f'{relative}: expected {expected_count} Hero context-card calls, got {len(calls)}'
+            )
+        for call in calls:
+            if f'blocked={predicate}' not in call or 'blocked_info=' not in call:
+                raise AssertionError(
+                    f'{relative}: each Hero context must delegate blocked state to the shared renderer'
+                )
+
+    # Ensure an added Registry consumer cannot bypass this verifier.
+    for path in (TEMPLATES / 'artifact_registry').rglob('*.html'):
+        source = _read(path)
+        if (
+            'page_hero.context_card(' in source
+            and 'artifact_registry/components/_setup_blocker.html' in source
+            and str(path.relative_to(TEMPLATES)) not in registry_contexts
+        ):
+            raise AssertionError(f'{path.relative_to(ROOT)}: unregistered blocked Hero context')
+
+    blocker = _read(TEMPLATES / 'artifact_registry/components/_setup_blocker.html')
+    if 'components/provider_prerequisite/_setup_blocker.html' not in blocker:
+        raise AssertionError('Registry setup blocker must reuse canonical provider prerequisite')
+
+    overview = _read(TEMPLATES / 'artifact_registry/partials/_overview_hero.html')
+    if "dashboard_state = 'blocked' if overview.setup.is_blocked else 'normal'" not in overview:
+        raise AssertionError('Registry Overview blocked Dashboard reference must remain unchanged')
+
+    standard = _read(ROOT / 'docs/design/components/PROVIDER_PREREQUISITE.md')
+    if 'set \`blocked=true\`' not in standard:
+        raise AssertionError('Provider prerequisite standard must lock blocked Hero CTA suppression')
+
+
 def verify() -> None:
     hero = _read(HERO)
     standard = _read(STANDARD)
@@ -1114,6 +1175,7 @@ def verify() -> None:
     _verify_dynamic_hero_identity_authorities()
     _verify_dashboard_profile()
     _verify_blocked_context_ownership()
+    _verify_registry_blocked_hero_actions()
     _verify_analytics_metadata_ownership()
     _verify_operational_metadata_state_contract()
 
