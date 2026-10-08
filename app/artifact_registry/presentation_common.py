@@ -21,7 +21,7 @@ from app.models.registry import (
     RegistryTag,
 )
 from app.models.report import Report, ReportSchedule, ReportTemplate
-from app.reports.catalog import REPORT_TYPE_SPECS
+from app.definitions.loader import load_definition_document
 
 FRESHNESS_HOURS = 24
 
@@ -457,7 +457,12 @@ def _registry_reporting(selected_provider: IntegrationInstance | None) -> dict[s
             or_(ReportSchedule.scope_asset_id == str(selected_provider.id), ReportSchedule.scope_asset_id.is_(None))
         )
     recent = reports_query.order_by(Report.created_at.desc()).limit(4).all()
-    system_templates = sum(spec.domain == 'artifact_registry' for spec in REPORT_TYPE_SPECS)
+    # Report definitions are the source of truth; do not depend on the Reports application layer.
+    report_catalog = load_definition_document('reports/catalog.yaml', expected_kind='report_catalog')
+    system_templates = sum(
+        isinstance(spec, dict) and spec.get('domain', 'kubernetes') == 'artifact_registry'
+        for spec in report_catalog['report_types']
+    )
     custom_templates = ReportTemplate.query.filter(ReportTemplate.report_domain == 'artifact_registry').count()
     return {
         'source_status': 'Available',
