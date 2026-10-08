@@ -49,6 +49,12 @@ The inventory job is the correctness path and must stay bounded. Security, gover
 and analytics are independently registered Job Executions with their own deduplication, progress, scheduling,
 and failure evidence.
 
+Task registration and queue routing remain explicit string-literal entries in the canonical
+`app/config/default.py` Celery configuration so the existing Celery topology verifier can audit
+all registered task modules, routes, and consumed worker queues. Development and production
+worker shell commands use escaped Compose environment expansion (`${...}`) consistent with
+existing KAORI workers; Registry Security does not introduce a separate routing registry.
+
 Global **Sync All Inventory** dispatches inventory jobs only. It must not implicitly trigger Registry
 security, governance, correlation, or analytics work.
 
