@@ -30,7 +30,9 @@
                 ],
                 'Open Intelligence',
                 url_for('intelligence.recommendations', domain='registry'),
-                action_icon='brain-circuit'
+                action_icon='brain-circuit',
+                blocked=analytics.setup.is_blocked,
+                blocked_info='Register and validate a Registry provider to materialize analytics evidence.'
                 ) }}
             </div>
         </section>
