@@ -70,7 +70,10 @@
                 ],
                 'Open Registry Integrations',
                 url_for('integrations.registry'),
-                action_icon='blocks'
+                action_icon='blocks',
+                blocked=security.setup_blocked or security.inventory_required,
+                blocked_info='Register a Registry provider to access supply-chain evidence.' if security.setup_blocked else 'Collect committed inventory before reviewing supply-chain evidence.',
+                blocked_label='Setup Required' if security.setup_blocked else 'Inventory Required'
                 ) }}
             {% endif %}
         </div>
