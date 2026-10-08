@@ -33,4 +33,6 @@ The application runtime and release state remain under `/opt/kaori` and `/var/li
 
 The repository workflow in `.github/workflows/deploy-staging-host.yml` is the staging deployment authority. Do not deploy a mutable branch tag directly to the server. Every deployment uses an immutable digest, creates a pre-migration backup when state exists, verifies migrations and runtime health, and retains rollback evidence before public readiness is accepted.
 
+Every canonical production application worker, including `registry-security-worker`, must appear in `compose.server.yml` with `env_file: !override` for split `app.env`, `secrets.env`, and generated `release.env`. The server deploy, verification, and database-restore paths must account for the same workers; otherwise Docker Compose can fall back to the deprecated `.env.production` file. The existing UAT deployment contract tests enforce that parity.
+
 Persistent Docker volume names retain their established identities so renaming this repository boundary does not orphan existing staging data.
