@@ -4,8 +4,8 @@ from datetime import datetime
 from typing import Any
 from urllib.parse import urlparse
 
-from app.artifact_registry.collectors import InventoryProgressCallback, RegistryInventoryCollector
-from app.artifact_registry.contracts import (
+from app.integrations.registry.collectors import InventoryProgressCallback, RegistryInventoryCollector
+from app.integrations.registry.contracts import (
     ArtifactRecord,
     ProjectRecord,
     RegistryInventoryEvidence,

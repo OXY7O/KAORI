@@ -5,14 +5,14 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
-from app.artifact_registry.collectors import InventoryProgressCallback
-from app.artifact_registry.security.contracts import (
+from app.integrations.registry.collectors import InventoryProgressCallback
+from app.integrations.registry.security_contracts import (
     RegistryArtifactSecurityEvidence,
     RegistrySecurityEvidence,
     RegistrySecurityTarget,
     registry_scan_evidence_ready,
 )
-from app.artifact_registry.security.providers import (
+from app.integrations.registry.security_collectors import (
     RegistrySecurityCollector,
     SecurityTargetCurrentPredicate,
 )

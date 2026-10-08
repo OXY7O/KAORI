@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.artifact_registry.collectors import InventoryProgressCallback
-from app.artifact_registry.governance import (
+from app.integrations.registry.collectors import InventoryProgressCallback
+from app.integrations.registry.governance_contracts import (
     ProjectGovernanceRecord,
     RegistryGovernanceCollector,
     RegistryGovernanceEvidence,

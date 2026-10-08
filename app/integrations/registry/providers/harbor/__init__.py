@@ -1,8 +1,8 @@
 from datetime import UTC, datetime
 
-from app.artifact_registry.collectors import register_registry_collector
-from app.artifact_registry.governance import register_registry_governance_collector
-from app.artifact_registry.security.providers import register_registry_security_collector
+from app.integrations.registry.collectors import register_registry_collector
+from app.integrations.registry.governance_contracts import register_registry_governance_collector
+from app.integrations.registry.security_collectors import register_registry_security_collector
 from app.common.integration_errors import describe_integration_failure
 from app.integrations.kernel.registry import (
     IntegrationImplementation,

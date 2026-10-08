@@ -9,7 +9,7 @@ from flask_login import current_user
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.rbac.decorators import permission_required
-from app.artifact_registry.webhooks import disable_webhook, generate_webhook_token
+from app.integrations.registry.webhook_configuration import disable_webhook, generate_webhook_token
 from app.integrations.deletion import DeletionBlocked
 from app.integrations.registry.providers.harbor.application.forms import HarborInstanceForm
 from app.integrations.registry.providers.harbor.application.presentation import (
