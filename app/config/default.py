@@ -355,6 +355,7 @@ class Config:
             'app.artifact_registry.security.tasks',
             'app.artifact_registry.governance_tasks',
             'app.artifact_registry.correlation_tasks',
+            'app.artifact_registry.analytics_tasks',
             'app.kubernetes.governance.tls_certificates.tasks',
             'app.kubernetes.tenant.tasks',
             'app.platform_operations.data_lifecycle.retention.tasks',
@@ -389,6 +390,7 @@ class Config:
                 'queue': 'inventory',
             },
             'app.artifact_registry.tasks.sync_all_registry': {'queue': 'inventory'},
+            'app.artifact_registry.analytics_tasks.materialize_registry_analytics': {'queue': ANALYTICS_CELERY_QUEUE},
             'app.artifact_registry.security.tasks.sync_all_registry_security': {
                 'queue': REGISTRY_SECURITY_CELERY_QUEUE,
             },
