@@ -7,6 +7,7 @@ from sqlalchemy import or_
 
 from app.common.pagination import paginate_sequence
 from app.dashboards.common.operational import normalize_operational_tab
+from app.definitions.loader import load_definition_document
 from app.intelligence.alert_intelligence.dashboard_cases import active_recommendation_alert_cases
 from app.intelligence.catalog import INTELLIGENCE_CATALOG
 from app.intelligence.dashboard_recommendations import get_dashboard_recommendation_findings
@@ -21,7 +22,6 @@ from app.models.registry import (
     RegistryTag,
 )
 from app.models.report import Report, ReportSchedule, ReportTemplate
-from app.definitions.loader import load_definition_document
 
 FRESHNESS_HOURS = 24
 
