@@ -81,17 +81,18 @@ def test_global_sync_all_inventory_does_not_fan_out_registry_non_inventory_work(
 
 def test_registry_worker_task_registration_matches_separated_jobs() -> None:
     config = (ROOT / 'app/config/default.py').read_text()
-    registry_celery = (ROOT / 'app/config/registry_celery.py').read_text()
-
-    assert '*REGISTRY_CELERY_IMPORTS' in config
-    assert '**registry_task_routes(REGISTRY_SECURITY_CELERY_QUEUE)' in config
+    # The existing topology gate requires a statically discoverable Celery config.
+    assert '*REGISTRY_CELERY_IMPORTS' not in config
+    assert '**registry_task_routes(' not in config
+    assert "            'app.artifact_registry.security.tasks'," in config
+    assert "'queue': REGISTRY_SECURITY_CELERY_QUEUE" in config
     for task in (
         'app.artifact_registry.tasks.sync_all_registry',
         'app.artifact_registry.security.tasks.sync_all_registry_security',
         'app.artifact_registry.governance_tasks.sync_all_registry_governance',
         'app.artifact_registry.correlation_tasks.materialize_registry_runtime_correlation',
     ):
-        assert task in registry_celery
+        assert task in config
 
 
 def test_harbor_security_uses_scan_completion_as_primary_incremental_marker() -> None:
