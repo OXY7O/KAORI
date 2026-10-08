@@ -76,15 +76,14 @@ def test_global_sync_all_inventory_includes_artifact_registry() -> None:
 
 def test_registry_inventory_worker_registration_matches_dispatch_contract() -> None:
     config = (ROOT / 'app/config/default.py').read_text()
-    registry_celery = (ROOT / 'app/config/registry_celery.py').read_text()
     sync_jobs = (ROOT / 'app/artifact_registry/sync_jobs.py').read_text()
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
 
-    assert 'REGISTRY_CELERY_IMPORTS' in config
-    assert '*REGISTRY_CELERY_IMPORTS' in config
-    assert 'registry_task_routes' in config
-    assert "'app.artifact_registry.tasks'," in registry_celery
-    assert "'app.artifact_registry.tasks.sync_all_registry': {'queue': 'inventory'}" in registry_celery
+    # Worker registration and routes must be statically discoverable in the canonical config.
+    assert '*REGISTRY_CELERY_IMPORTS' not in config
+    assert '**registry_task_routes(' not in config
+    assert "'app.artifact_registry.tasks'," in config
+    assert "'app.artifact_registry.tasks.sync_all_registry': {'queue': 'inventory'}" in config
 
     assert 'JobDispatchOptions' in sync_jobs
     assert sync_jobs.count('require_registered_worker=True') >= 2
