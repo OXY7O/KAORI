@@ -3,6 +3,7 @@ from types import SimpleNamespace
 import pytest
 
 from app.artifact_registry import eligibility
+from app.integrations.registry import eligibility as provider_eligibility
 
 
 @pytest.mark.parametrize(
@@ -39,7 +40,7 @@ def test_extended_support_provider_is_inventory_eligible(monkeypatch) -> None:
         require_record_for_canonical=lambda _identity_id: object(),
         runtime_state=lambda _record: runtime_state,
     )
-    monkeypatch.setattr(eligibility, 'get_integration', lambda _integration_type: module)
+    monkeypatch.setattr(provider_eligibility, 'get_integration', lambda _integration_type: module)
 
     decision = eligibility.registry_inventory_eligibility(identity)
 
@@ -64,7 +65,7 @@ def test_unverified_degraded_provider_is_not_inventory_eligible(monkeypatch) -> 
         require_record_for_canonical=lambda _identity_id: object(),
         runtime_state=lambda _record: runtime_state,
     )
-    monkeypatch.setattr(eligibility, 'get_integration', lambda _integration_type: module)
+    monkeypatch.setattr(provider_eligibility, 'get_integration', lambda _integration_type: module)
 
     decision = eligibility.registry_inventory_eligibility(identity)
 
