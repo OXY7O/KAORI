@@ -110,7 +110,7 @@ services:
       - -c
       - >-
         exec celery --app celery_worker:celery_app worker
-        --queues="${REGISTRY_SECURITY_CELERY_QUEUE:-registry-security}"
+        --queues="$${REGISTRY_SECURITY_CELERY_QUEUE:-registry-security}"
         --loglevel="${CELERY_LOG_LEVEL:-INFO}"
         --concurrency="${REGISTRY_SECURITY_WORKER_CONCURRENCY:-2}"
         --prefetch-multiplier="${REGISTRY_SECURITY_WORKER_PREFETCH_MULTIPLIER:-1}"
