@@ -30,7 +30,8 @@ def test_dashboard_uses_canonical_hero_tabs_table_status_and_pagination_componen
     assert 'components/table.html' in cluster_health
     assert 'components/table_label.html' in cluster_health
     assert 'components/pagination.html' in cluster_health
-    assert '[5, 10, 25, 50]' in cluster_health
+    assert '{% for size in pagination.allowed_per_page %}' in cluster_health
+    assert 'name="cluster_health_per_page"' in cluster_health
 
 
 def test_shared_operational_signal_overview_renders_outer_call_body() -> None:
