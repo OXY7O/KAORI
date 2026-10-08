@@ -45,7 +45,7 @@ compose=(docker compose --env-file "$KAORI_DEPLOY_ENV_FILE" -f "$BASE_COMPOSE" -
 "${compose[@]}" config --quiet || fail 'Compose configuration is invalid'
 
 application_services=(
-  web worker maintenance-worker runtime-worker validation-worker analytics-worker
+  web worker registry-security-worker maintenance-worker runtime-worker validation-worker analytics-worker
   reports-worker forecasting-worker resolver-execution-worker resolver-maintenance-worker beat
 )
 services=(postgres redis "${application_services[@]}")
@@ -93,7 +93,7 @@ active_queues() {
   docker exec "$cid" sh -ec 'celery --app celery_worker:celery_app inspect active_queues --timeout=10' 2>/dev/null || return 1
 }
 
-for service in worker maintenance-worker runtime-worker validation-worker analytics-worker reports-worker forecasting-worker resolver-execution-worker resolver-maintenance-worker; do
+for service in worker registry-security-worker maintenance-worker runtime-worker validation-worker analytics-worker reports-worker forecasting-worker resolver-execution-worker resolver-maintenance-worker; do
   active_queues "$service" >/dev/null || fail "$service did not report active_queues"
 done
 printf '✅ Worker queues and Beat PASS\n'
