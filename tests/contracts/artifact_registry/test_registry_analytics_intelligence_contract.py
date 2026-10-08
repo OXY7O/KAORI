@@ -68,7 +68,7 @@ def test_registry_scan_gap_recommendation_uses_usable_scan_evidence_semantics() 
     evaluator = (ROOT / 'app/intelligence/registry_recommendations.py').read_text()
     rules = (ROOT / 'app/definitions/catalogs/intelligence/rules.yaml').read_text()
 
-    assert 'from app.artifact_registry.security.contracts import registry_scan_evidence_ready' in evaluator
+    assert 'from app.integrations.registry.security_contracts import registry_scan_evidence_ready' in evaluator
     assert 'if not registry_scan_evidence_ready(artifact.scan_status):' in evaluator
     assert 'Running Registry artifact has no usable scan evidence' in evaluator
     assert 'not a normalized ' in evaluator
