@@ -53,7 +53,10 @@
                 ],
                 'Open Runtime Usage',
                 url_for('artifact_registry.runtime'),
-                action_icon='waypoints'
+                action_icon='waypoints',
+                blocked=security.setup_blocked or security.inventory_required,
+                blocked_info='Register a Registry provider to access security evidence.' if security.setup_blocked else 'Collect committed inventory before reviewing security evidence.',
+                blocked_label='Setup Required' if security.setup_blocked else 'Inventory Required'
                 ) }}
             {% else %}
                 {{ page_hero.context_card('Artifact supply-chain context',
