@@ -133,3 +133,9 @@ def test_registry_reports_are_definition_driven_system_templates_and_visible_in_
     assert "domain_order = ['kubernetes', 'object_storage', 'artifact_registry', 'server', 'hci']" in overview
     assert "REPORT_DOMAIN_ARTIFACT_REGISTRY = 'artifact_registry'" in constants
     assert "REPORT_DOMAIN_ARTIFACT_REGISTRY: 'KAORI Artifact Registry Reports'" in constants
+
+    # Operational Registry cards read the canonical definition, not the Reports application.
+    registry_presentation = read('app/artifact_registry/presentation_common.py')
+    assert "load_definition_document('reports/catalog.yaml', expected_kind='report_catalog')" in registry_presentation
+    assert "for spec in report_catalog['report_types']" in registry_presentation
+    assert 'from app.reports.catalog import' not in registry_presentation
