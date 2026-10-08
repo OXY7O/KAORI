@@ -6,13 +6,15 @@ ROOT = Path(__file__).resolve().parents[3]
 def test_webhook_admission_hashes_credentials_and_payloads() -> None:
     models = (ROOT / 'app/models/registry.py').read_text()
     service = (ROOT / 'app/artifact_registry/webhooks.py').read_text()
+    configuration = (ROOT / 'app/integrations/registry/webhook_configuration.py').read_text()
 
     assert 'class RegistryWebhookEndpoint' in models
     assert 'token_digest' in models
     assert 'class RegistryWebhookEvent' in models
     assert 'payload_digest' in models
     assert 'raw_payload' not in models
-    assert 'hashlib.sha256(token.encode()).hexdigest()' in service
+    assert 'hashlib.sha256(token.encode()).hexdigest()' in configuration
+    assert 'hashlib.sha256(token.encode()).hexdigest()' not in service
     assert 'payload_retained' in service
     assert 'enqueue_registry_target_refresh' in service
 

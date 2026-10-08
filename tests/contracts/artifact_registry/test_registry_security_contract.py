@@ -95,7 +95,7 @@ def test_security_has_two_level_three_views_above_the_hero() -> None:
 
 
 def test_registry_security_capabilities_are_provider_declared() -> None:
-    providers = read('app/artifact_registry/security/providers.py')
+    providers = read('app/integrations/registry/security_collectors.py')
     harbor = read('app/integrations/registry/providers/harbor/security.py')
 
     assert 'capabilities: frozenset[str]' in providers
@@ -103,7 +103,7 @@ def test_registry_security_capabilities_are_provider_declared() -> None:
 
 
 def test_registry_scan_evidence_semantics_are_shared_by_dashboard_and_intelligence() -> None:
-    contracts = read('app/artifact_registry/security/contracts.py')
+    contracts = read('app/integrations/registry/security_contracts.py')
     presentation = read('app/artifact_registry/security/presentation.py')
     evaluator = read('app/intelligence/registry_recommendations.py')
 

@@ -43,7 +43,7 @@ def test_harbor_is_collector_not_operational_page_authority() -> None:
 
 
 def test_registry_inventory_sync_uses_operational_read_contract_eligibility() -> None:
-    eligibility = (ROOT / 'app/artifact_registry/eligibility.py').read_text()
+    eligibility = (ROOT / 'app/integrations/registry/eligibility.py').read_text()
     sync = (ROOT / 'app/artifact_registry/sync.py').read_text()
     sync_jobs = (ROOT / 'app/artifact_registry/sync_jobs.py').read_text()
 
@@ -101,7 +101,7 @@ def test_registry_inventory_worker_does_not_cross_into_other_registry_workstream
 
 
 def test_registry_inventory_reports_live_provider_progress() -> None:
-    collectors = (ROOT / 'app/artifact_registry/collectors.py').read_text()
+    collectors = (ROOT / 'app/integrations/registry/collectors.py').read_text()
     harbor = (ROOT / 'app/integrations/registry/providers/harbor/inventory.py').read_text()
     sync = (ROOT / 'app/artifact_registry/sync.py').read_text()
     task = (ROOT / 'app/artifact_registry/tasks.py').read_text()
