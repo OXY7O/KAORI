@@ -178,7 +178,7 @@ status '🗃️' 'Running database migrations'
 status '✅' 'Database migration PASS'
 
 application_services=(
-  web worker maintenance-worker runtime-worker validation-worker analytics-worker
+  web worker registry-security-worker maintenance-worker runtime-worker validation-worker analytics-worker
   reports-worker forecasting-worker resolver-execution-worker resolver-maintenance-worker beat
 )
 status '🚀' 'Starting KAORI application services'
