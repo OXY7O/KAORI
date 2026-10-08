@@ -46,7 +46,7 @@ esac
 
 compose=(docker compose --env-file "$KAORI_DEPLOY_ENV_FILE" -f "$BASE_COMPOSE" -f "$SERVER_COMPOSE")
 application_services=(
-  web worker maintenance-worker runtime-worker validation-worker analytics-worker
+  web worker registry-security-worker maintenance-worker runtime-worker validation-worker analytics-worker
   reports-worker forecasting-worker resolver-execution-worker resolver-maintenance-worker beat nginx certbot
 )
 
