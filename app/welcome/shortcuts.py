@@ -98,6 +98,18 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'targets': (('object_storage_inventory.view', 'object_storage_inventory.overview'),),
     },
     {
+        'title': 'Artifact Registry',
+        'label': 'Registry Visibility & Supply Chain',
+        'description': (
+            'Review committed Registry inventory, artifact security evidence, Kubernetes runtime usage, governance posture, '
+            'and materialized analytics across registered providers.'
+        ),
+        'icon': 'package',
+        'scope': 'Registry',
+        'group': 'visibility',
+        'targets': (('artifact_registry.view', 'artifact_registry.overview'),),
+    },
+    {
         'title': 'Kubernetes Analytics',
         'label': 'Operational Analytics',
         'description': (

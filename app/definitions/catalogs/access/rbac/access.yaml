@@ -19,6 +19,8 @@ control_modules:
   label: Object Storage Inventory
 - key: storage_analytics
   label: Object Storage Analytics
+- key: artifact_registry
+  label: Artifact Registry
 - key: integrations
   label: Integrations
 - key: platform_operations
@@ -124,6 +126,14 @@ permissions:
   module: storage_analytics
   action: view
   description: View Object Storage capacity, performance, forecast, consumer, and alert analytics.
+- key: artifact_registry.view
+  module: artifact_registry
+  action: view
+  description: View committed Artifact Registry inventory, security, governance, runtime correlation, and analytics evidence.
+- key: artifact_registry.sync
+  module: artifact_registry
+  action: sync
+  description: Run Artifact Registry reconciliation through canonical Job Execution.
 - key: governance.view
   module: governance
   action: view
@@ -288,6 +298,7 @@ permission_dependencies:
   clusters.manage: [clusters.view]
   clusters.sync: [clusters.view, jobs.execute]
   storage.sync: [object_storage_inventory.view, jobs.execute]
+  artifact_registry.sync: [artifact_registry.view, jobs.execute]
   kubernetes_configmaps.create: [kubernetes_configmaps.view]
   kubernetes_configmaps.update: [kubernetes_configmaps.view]
   kubernetes_configmaps.delete: [kubernetes_configmaps.view]
@@ -348,6 +359,7 @@ system_roles:
   - kubernetes_configmaps.view
   - object_storage_analytics.view
   - object_storage_inventory.view
+  - artifact_registry.view
   - reports.view
   - settings.view
   - tls_certificates.view
@@ -377,10 +389,12 @@ system_roles:
   - kubernetes_secrets.view
   - object_storage_analytics.view
   - object_storage_inventory.view
+  - artifact_registry.view
   - reports.generate
   - reports.view
   - settings.view
   - storage.sync
+  - artifact_registry.sync
   - tls_certificates.sync
   - tls_certificates.view
   - tenant.view
@@ -418,6 +432,7 @@ system_roles:
   - kubernetes_secrets.view
   - object_storage_analytics.view
   - object_storage_inventory.view
+  - artifact_registry.view
   - reports.generate
   - reports.manage_schedules
   - reports.manage_storage
@@ -426,6 +441,7 @@ system_roles:
   - integrations.manage
   - settings.view
   - storage.sync
+  - artifact_registry.sync
   - tls_certificates.sync
   - tls_certificates.view
   - tenant.manage
@@ -468,6 +484,7 @@ system_roles:
   - kubernetes_secrets.view
   - object_storage_analytics.view
   - object_storage_inventory.view
+  - artifact_registry.view
   - platform_operations.export_data_lifecycle
   - platform_operations.manage_data_lifecycle
   - platform_operations.view_data_lifecycle
@@ -485,6 +502,7 @@ system_roles:
   - settings.view
   - activity_audit.view
   - storage.sync
+  - artifact_registry.sync
   - system.manage
   - system.view
   - tls_certificates.sync
@@ -513,6 +531,7 @@ system_roles:
   - kubernetes_configmaps.view
   - object_storage_analytics.view
   - object_storage_inventory.view
+  - artifact_registry.view
   - platform_operations.export_data_lifecycle
   - platform_operations.view_data_lifecycle
   - reports.view

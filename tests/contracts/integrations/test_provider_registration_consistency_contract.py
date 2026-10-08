@@ -64,8 +64,8 @@ def test_provider_registration_heroes_share_one_canonical_contract() -> None:
         'Test Connection',
         'Registration reuses the verified payload',
         'After Save',
-        'Core Validation',
-        'Then assign consumer bindings',
+        'Full Validation',
+        'Then establish provider readiness',
         'Back to Registry',
     ):
         assert marker in shared
@@ -253,3 +253,48 @@ def test_metrics_source_and_alertmanager_detail_configuration_link_to_edit_pages
     assert 'url_for("alertmanager.edit_instance"' in alertmanager
     assert "@metrics_bp.route('/instances/<int:instance_id>/edit'" in prom_routes
     assert "@alertmanager_bp.route('/instances/<int:instance_id>/edit'" in am_routes
+
+
+def test_provider_registration_and_metrics_validation_guidance_stays_concise() -> None:
+    kubernetes_add = read('app/templates/kubernetes/cluster/add.html')
+    kubernetes_edit = read('app/templates/kubernetes/cluster/edit.html')
+    metrics_source = read('app/templates/integrations/observability/metrics_source/instance_form.html')
+    metrics_validation = read(
+        'app/templates/integrations/observability/metrics_source/partials/_detail_validation_content.html'
+    )
+
+    assert (
+        'Review Kubernetes integration coverage, API readiness, and governed consumer bindings before operational use.'
+        in kubernetes_add
+    )
+    assert (
+        'Kubernetes owns live cluster state. KAORI governs connection readiness, synchronized evidence, and consumer bindings.'
+        in kubernetes_add
+    )
+    assert (
+        'Review Kubernetes integration coverage, API readiness, and governed consumer bindings before operational use.'
+        in kubernetes_edit
+    )
+    assert (
+        'Kubernetes owns live resources and API authorization. KAORI governs provider readiness, normalized evidence, and consumer resolution.'
+        in kubernetes_edit
+    )
+
+    assert (
+        'Provider identity is immutable. Bindings use the global Metrics Source contract; adapter and query-language details remain provider-defined.'
+        in metrics_source
+    )
+    assert (
+        'One metrics source can serve multiple managed assets through independent bindings and horizon-aware routing.'
+        in metrics_source
+    )
+    assert (
+        'executes queries; the source owns collection and retention. KAORI governs readiness, bindings, and resolution.'
+        in metrics_source
+    )
+
+    assert (
+        'Validate compatibility and Prometheus/PromQL core; consumer contracts stay in Bindings & Consumers.'
+        in metrics_validation
+    )
+    assert 'Core APIs set readiness; bindings own consumer evidence.' in metrics_validation

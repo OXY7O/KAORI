@@ -339,6 +339,24 @@
                                         <p class="mt-1.5 text-xs leading-5 text-content-muted">Object Storage reports are bound to one registered system. Kubernetes cluster and namespace are not part of this scope contract.</p>
                                     </label>
                                 </div>
+                                <div id="artifact-registry-scope-fields"
+                                     class="{% if payload.selected_report_type.scope_asset_type != 'registry_integration' %}hidden{% endif %}"
+                                     data-report-scope-panel="registry_integration">
+                                    <label class="block">
+                                        <span class="text-sm font-semibold text-content-primary">Artifact Registry <span class="text-status-critical-text">*</span></span>
+                                        <select name="registry_integration_id"
+                                                id="artifact-registry-select"
+                                                class="{{ form_field.select_classes() }}">
+                                            <option value=""
+                                                    {% if not payload.form_state.registry_integration_id %}selected{% endif %}>Select Artifact Registry</option>
+                                            {% for registry in payload.artifact_registries %}
+                                                <option value="{{ registry.value }}"
+                                                        {% if payload.form_state.registry_integration_id == registry.value %}selected{% endif %}>{{ registry.label }} · {{ registry.environment }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <p class="mt-1.5 text-xs leading-5 text-content-muted">Artifact Registry reports bind to one active Registry integration and render only committed KAORI evidence.</p>
+                                    </label>
+                                </div>
                                 <div data-scope-filter="period">
                                     <div class="flex min-h-5 items-center justify-between gap-2">
                                         <label for="period-select"
@@ -376,7 +394,7 @@
                                        aria-hidden="true"></i>
                                     <h4 class="text-sm font-semibold leading-5 text-content-primary">Scope Contract</h4>
                                 </div>
-                                <p id="scope-tip-copy" class="mt-3 text-xs leading-5 text-content-muted">Kubernetes reports use one selected cluster; Object Storage reports use one registered Object Storage system.</p>
+                                <p id="scope-tip-copy" class="mt-3 text-xs leading-5 text-content-muted">Kubernetes reports use one cluster; Object Storage reports use one system; Artifact Registry reports use one Registry integration.</p>
                                 <div class="mt-4 space-y-3">
                                     <div class="flex items-start gap-2">
                                         <i data-lucide="database"
@@ -806,6 +824,7 @@
                 "namespace_options_by_cluster": {{ payload.namespace_options_by_cluster|tojson }},
                 "has_clusters": {{ payload.has_clusters|tojson }},
                 "has_object_storage_systems": {{ payload.has_object_storage_systems|tojson }},
+                "has_artifact_registries": {{ payload.has_artifact_registries|tojson }},
                 "initial_sections": {{ payload.form_state.sections|tojson }},
                 "initial_namespace": {{ payload.form_state.namespace|tojson }},
                 "generation_allowed": {{ payload.generation_allowed|tojson }},

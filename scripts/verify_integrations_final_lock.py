@@ -770,6 +770,7 @@ def main() -> int:
             'app/templates/integrations/observability/alert_source/providers/alertmanager/frontpage.html'
         ),
         'MinIO': read('app/templates/integrations/storage/object_storage/providers/minio/index.html'),
+        'Harbor': read('app/templates/integrations/registry/providers/harbor/index.html'),
     }
     for provider, source in provider_front_pages.items():
         require('Coverage Gaps' in source, f'{provider}: fourth overview metric must be Coverage Gaps', errors)
@@ -778,6 +779,11 @@ def main() -> int:
         require(
             'provider_front.hero(' in source and 'provider_front.overview(' in source,
             f'{provider}: provider front page must remain shared-component owned',
+            errors,
+        )
+        require(
+            'integration_tabs.render(' in source,
+            f'{provider}: provider front page must retain Integration Coverage / Connection Registry',
             errors,
         )
     alertmanager_front = provider_front_pages['Alertmanager']
@@ -798,7 +804,7 @@ def main() -> int:
     for marker in (
         "available_provider_count ~ ' Providers'",
         'integration_status(item.posture_state, item.posture_label',
-        'Operational Readiness',
+        'Ready Coverage',
         'progress_bar.bar(item.readiness_percent',
     ):
         require(marker in integration_overview, f'Integrations Overview provider catalog missing: {marker}', errors)
@@ -858,7 +864,7 @@ def main() -> int:
     domain_service = read('app/integrations/domain_service.py')
     domain_page = read('app/templates/integrations/domain.html')
     domain_workspace = read('app/templates/integrations/partials/_domain_workspace.html')
-    registry_module = read('app/integrations/registry.py')
+    registry_module = read('app/integrations/kernel/registry.py')
     require(
         "is_workspace_partial = is_htmx_request() and htmx_target() == 'domain-workspace'" in domain_routes
         and "return render_template('integrations/partials/_domain_workspace.html', **context)" in domain_routes,

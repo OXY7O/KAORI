@@ -9,9 +9,11 @@ from app.kubernetes.tenant.domain_exposure import normalize_domain_pattern
 from app.kubernetes.tenant.native_provider import NativeKubernetesTenantProvider
 from app.kubernetes.tenant.service_contracts import (
     _CONTROL_TRUE_VALUES,
+    _PROFILE_STORAGE_FIELDS,
     RESOURCE_PROFILE_ADVANCED_CONTROLS,
     _text,
 )
+from app.kubernetes.tenant.validation import validate_storage_policy
 from app.models import Cluster
 from app.models.tenant import Tenant, TenantResourceProfile
 from app.models.tenant_managed_resource import TenantManagedResourceMode
@@ -25,6 +27,15 @@ def _control_enabled(source: Mapping[str, Any], field: str) -> bool:
     if not _control_contract_present(source):
         return True
     return _text(source, f'control_{field}').lower() in _CONTROL_TRUE_VALUES
+
+
+def _storage_policy_values(source: Mapping[str, Any]) -> dict[str, str]:
+    policy = {
+        target: value
+        for field, target in _PROFILE_STORAGE_FIELDS.items()
+        if _control_enabled(source, field) and (value := _text(source, field))
+    }
+    return validate_storage_policy(policy)
 
 
 def _advanced_control_contract_present(source: Mapping[str, Any]) -> bool:

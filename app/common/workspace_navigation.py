@@ -32,6 +32,10 @@ def _capability_key(endpoint: str) -> str | None:
         return 'kubernetes_analytics'
     if endpoint.startswith('object_storage_inventory.'):
         return 'object_storage_inventory'
+    if endpoint.startswith('artifact_registry.inventory'):
+        return 'artifact_registry_inventory'
+    if endpoint.startswith('artifact_registry.security'):
+        return 'artifact_registry_security'
     return None
 
 
@@ -44,6 +48,8 @@ def _capability_label(capability_key: str) -> str:
         'kubernetes_analytics': 'Analytics',
         'object_storage_inventory': 'Inventory',
         'object_storage_analytics': 'Analytics',
+        'artifact_registry_inventory': 'Inventory',
+        'artifact_registry_security': 'Security',
     }[capability_key]
 
 
@@ -87,6 +93,15 @@ _CAPABILITY_ACTIVE_EXACT: dict[str, dict[str, str]] = {
         'object_storage_inventory.buckets': 'buckets',
         'object_storage_inventory.bucket_details': 'buckets',
     },
+    'artifact_registry_inventory': {
+        'artifact_registry.inventory_projects': 'projects',
+        'artifact_registry.inventory_repositories': 'repositories',
+        'artifact_registry.inventory_artifacts': 'artifacts',
+    },
+    'artifact_registry_security': {
+        'artifact_registry.security': 'vulnerabilities',
+        'artifact_registry.security_supply_chain': 'supply_chain',
+    },
     'object_storage_analytics': {
         'analytics.object_storage_capacity': 'capacity',
         'analytics.object_storage_performance': 'performance',
@@ -111,6 +126,7 @@ _CAPABILITY_ACTIVE_PREFIXES: dict[str, tuple[tuple[str, str], ...]] = {
 
 _CAPABILITY_ACTIVE_DEFAULTS = {
     'kubernetes_operations': 'secrets',
+    'artifact_registry_security': 'vulnerabilities',
 }
 
 
@@ -212,6 +228,8 @@ def _resolved_capability_endpoint(workspace_key: str, tab: WorkspaceCapabilityDe
 
 
 def _workspace_key(endpoint: str) -> str | None:
+    if endpoint.startswith('artifact_registry.'):
+        return 'artifact_registry'
     if endpoint.startswith('analytics.object_storage_'):
         return 'object_storage'
     if endpoint.startswith(('object_storage_dashboard.', 'object_storage_inventory.')):
@@ -227,7 +245,7 @@ def _workspace_key(endpoint: str) -> str | None:
     if endpoint.startswith(('jobs.', 'platform_operations.')):
         return 'operations_center'
     if endpoint.startswith(
-        ('integrations.', 'notification_channels.', 'metrics.', 'alertmanager.', 'minio.', 'cluster.')
+        ('integrations.', 'notification_channels.', 'metrics.', 'alertmanager.', 'minio.', 'harbor.', 'cluster.')
     ):
         return 'integrations'
     if endpoint.startswith(('access.', 'users.', 'identity_providers.')):
@@ -243,6 +261,7 @@ _WORKSPACE_ACTIVE_EXACT: dict[str, dict[str, str]] = {
         'integrations.observability': 'observability',
         'integrations.storage': 'storage',
         'integrations.orchestration': 'orchestration',
+        'integrations.registry': 'registry',
     },
 }
 
@@ -257,6 +276,13 @@ _WORKSPACE_ACTIVE_PREFIXES: dict[str, tuple[tuple[str, str], ...]] = {
     'object_storage': (
         ('object_storage_dashboard.', 'overview'),
         ('object_storage_inventory.', 'inventory'),
+    ),
+    'artifact_registry': (
+        ('artifact_registry.inventory', 'inventory'),
+        ('artifact_registry.security', 'security'),
+        ('artifact_registry.runtime', 'runtime'),
+        ('artifact_registry.governance', 'governance'),
+        ('artifact_registry.analytics', 'analytics'),
     ),
     'intelligence': (
         ('alert_intelligence.', 'alert_intelligence'),
@@ -294,6 +320,7 @@ _WORKSPACE_ACTIVE_PREFIXES: dict[str, tuple[tuple[str, str], ...]] = {
         ('metrics.', 'observability'),
         ('alertmanager.', 'observability'),
         ('minio.', 'storage'),
+        ('harbor.', 'registry'),
         ('cluster.', 'orchestration'),
         ('integrations.kubernetes', 'orchestration'),
     ),
@@ -309,6 +336,7 @@ _WORKSPACE_ACTIVE_PREFIXES: dict[str, tuple[tuple[str, str], ...]] = {
 _WORKSPACE_ACTIVE_DEFAULTS = {
     'kubernetes': 'analytics',
     'object_storage': 'analytics',
+    'artifact_registry': 'overview',
     'settings': 'general',
 }
 

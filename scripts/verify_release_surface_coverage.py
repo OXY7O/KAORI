@@ -66,8 +66,43 @@ def _intelligence_link_endpoints(source: str) -> set[str]:
     return set(re.findall(r"\(\s*['\"]([^'\"]+)['\"]\s*,", match.group(1)))
 
 
-def _navigation_source_endpoints(relative: str) -> set[str]:
+def _workspace_catalog_endpoints(source: str, workspace_key: str) -> set[str]:
+    tree = ast.parse(source)
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        if not isinstance(node.func, ast.Name) or node.func.id != 'WorkspaceDefinition':
+            continue
+
+        key_node = next((item.value for item in node.keywords if item.arg == 'key'), None)
+        if not isinstance(key_node, ast.Constant) or key_node.value != workspace_key:
+            continue
+
+        capabilities_node = next((item.value for item in node.keywords if item.arg == 'capabilities'), None)
+        if not isinstance(capabilities_node, (ast.Tuple, ast.List)):
+            raise AssertionError(f'{workspace_key}: WorkspaceDefinition capabilities must be a literal sequence')
+
+        endpoints: set[str] = set()
+        for capability in capabilities_node.elts:
+            if not isinstance(capability, ast.Call):
+                continue
+            if not isinstance(capability.func, ast.Name) or capability.func.id != 'WorkspaceCapabilityDefinition':
+                continue
+            endpoint_node = capability.args[3] if len(capability.args) > 3 else None
+            if endpoint_node is None:
+                endpoint_node = next((item.value for item in capability.keywords if item.arg == 'endpoint'), None)
+            if isinstance(endpoint_node, ast.Constant) and isinstance(endpoint_node.value, str):
+                endpoints.add(endpoint_node.value)
+        return endpoints
+
+    raise AssertionError(f'{workspace_key}: WorkspaceDefinition was not found in the navigation catalog')
+
+
+def _navigation_source_endpoints(relative: str, *, workspace_key: str) -> set[str]:
     source = _read(relative)
+    if relative.endswith('workspace_navigation_catalog.py'):
+        return _workspace_catalog_endpoints(source, workspace_key)
+
     endpoints = _literal_url_for_endpoints(source)
     if relative.endswith('intelligence_menu.html'):
         endpoints.update(_intelligence_link_endpoints(source))
@@ -123,7 +158,7 @@ def verify() -> None:
                 errors.append(f'{surface.title}: non-navigation surface unexpectedly declares sidebar endpoints')
             continue
 
-        actual = _navigation_source_endpoints(surface.navigation_source)
+        actual = _navigation_source_endpoints(surface.navigation_source, workspace_key=surface.key)
         expected = set(surface.navigation_endpoints)
         if actual != expected:
             missing = sorted(expected - actual)

@@ -120,6 +120,7 @@ def test_schedule_tables_and_actions_keep_kaori_contracts() -> None:
 def test_recent_schedule_runs_are_a_full_server_backed_lifecycle_registry() -> None:
     template = read(TEMPLATE)
     service = read(SERVICE)
+    support = read(ROOT / 'app/reports/schedules/support.py')
     presentation = read(PRESENTATION)
 
     for label in [
@@ -147,7 +148,7 @@ def test_recent_schedule_runs_are_a_full_server_backed_lifecycle_registry() -> N
     assert "'30d'" in service
     assert 'def _get_run_registry(' in service
     assert 'def _get_run_selected_filters(' in service
-    assert 'def _get_run_filter_options(' in service
+    assert 'def build_run_filter_options(' in support
     assert 'def format_run_duration(' in presentation
     assert '.limit(limit)' in service  # compact summary sampling remains separate from registry paging
     assert 'payload.recent_runs %}' not in template
@@ -188,7 +189,7 @@ def test_schedule_feedback_and_run_now_follow_reports_flow() -> None:
 
 def test_schedule_registry_uses_generic_infrastructure_asset_filter() -> None:
     template = read(TEMPLATE)
-    service = read(SERVICE)
+    support = read(ROOT / 'app/reports/schedules/support.py')
     registry = read(ROOT / 'app/reports/schedules/registry.py')
     presentation = read(PRESENTATION)
 
@@ -200,7 +201,7 @@ def test_schedule_registry_uses_generic_infrastructure_asset_filter() -> None:
     assert "legacy_cluster = str(query_args.get('cluster', '') or '').strip()" in registry
     assert "asset = f'{KUBERNETES_CLUSTER_ASSET_TYPE}:{legacy_cluster}'" in registry
     assert "schedule['scope_asset_filter_key'] != asset" in registry
-    assert 'f\'{OBJECT_STORAGE_SYSTEM_ASSET_TYPE}:{item["value"]}\'' in service
+    assert 'f\'{OBJECT_STORAGE_SYSTEM_ASSET_TYPE}:{item["value"]}\'' in support
     assert "'scope_asset_filter_key': f'{scope_asset_type}:{scope_asset_id}'" in presentation
 
 

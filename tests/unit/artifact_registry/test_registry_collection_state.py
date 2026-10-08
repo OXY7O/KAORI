@@ -1,0 +1,48 @@
+from datetime import UTC, datetime
+from types import SimpleNamespace
+
+from app.artifact_registry.sync import (
+    _mark_inventory_collection_failed,
+    _mark_inventory_collection_started,
+)
+
+
+def _state(*, committed: bool, error: str | None = None) -> SimpleNamespace:
+    return SimpleNamespace(
+        status='ready' if committed else 'not_collected',
+        last_committed_at=datetime(2026, 10, 5, tzinfo=UTC) if committed else None,
+        last_started_at=None,
+        last_error=error,
+    )
+
+
+def test_committed_inventory_stays_ready_while_refresh_is_in_flight() -> None:
+    state = _state(committed=True, error='previous attempt failed')
+    started_at = datetime(2026, 10, 5, 12, 0, tzinfo=UTC)
+
+    _mark_inventory_collection_started(state, started_at=started_at)
+
+    assert state.status == 'ready'
+    assert state.last_started_at == started_at
+    assert state.last_error == 'previous attempt failed'
+
+
+def test_committed_inventory_stays_ready_when_refresh_fails() -> None:
+    state = _state(committed=True)
+
+    _mark_inventory_collection_failed(state, RuntimeError('provider timeout'))
+
+    assert state.status == 'ready'
+    assert state.last_error == 'provider timeout'
+
+
+def test_initial_inventory_collection_has_no_ready_snapshot_until_commit() -> None:
+    state = _state(committed=False)
+    started_at = datetime(2026, 10, 5, 12, 0, tzinfo=UTC)
+
+    _mark_inventory_collection_started(state, started_at=started_at)
+    assert state.status == 'collecting'
+
+    _mark_inventory_collection_failed(state, RuntimeError('provider unavailable'))
+    assert state.status == 'failed'
+    assert state.last_error == 'provider unavailable'

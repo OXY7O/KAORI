@@ -28,6 +28,7 @@ def test_definition_registry_has_versioned_yaml_for_growing_system_catalogs():
         'integrations/observability/metrics_source/contract.yaml': 'integration_provider_contract',
         'integrations/observability/alert_source/providers/alertmanager.yaml': 'integration_provider_contract',
         'integrations/storage/object_storage/contract.yaml': 'integration_provider_contract',
+        'integrations/registry/contract.yaml': 'integration_provider_contract',
     }
     for relative, kind in expected.items():
         document = load(relative)
@@ -55,6 +56,7 @@ def test_runtime_modules_consume_registry_instead_of_embedding_catalog_growth():
         'app/integrations/observability/alert_source/providers/alertmanager/binding_profiles.py',
         'app/integrations/storage/object_storage/providers/minio/capabilities.py',
         'app/integrations/storage/object_storage/providers/minio/compatibility.py',
+        'app/integrations/registry/providers/harbor/capabilities.py',
     ]
     content = '\n'.join(Path(path).read_text() for path in modules)
     assert 'load_definition_document' in content
@@ -89,12 +91,14 @@ def test_integration_definitions_are_taxonomy_policy_contract_and_qualification_
     metrics_source = load('integrations/observability/metrics_source/contract.yaml')
     alertmanager = load('integrations/observability/alert_source/providers/alertmanager.yaml')
     object_storage = load('integrations/storage/object_storage/contract.yaml')
+    registry = load('integrations/registry/contract.yaml')
 
     domain_keys = {item['key'] for item in taxonomy['domains']}
-    assert domain_keys == {'orchestration', 'observability', 'storage'}
+    assert domain_keys == {'orchestration', 'observability', 'storage', 'registry'}
     assert {item['asset_type'] for item in taxonomy['consumer_assets']} >= {
         'kubernetes_cluster',
         'object_storage_system',
+        'registry_instance',
     }
 
     lifecycle = compatibility['lifecycle_policy']
@@ -111,10 +115,11 @@ def test_integration_definitions_are_taxonomy_policy_contract_and_qualification_
         'kubernetes-core-v1',
         'prometheus-http-core-v1',
         'alertmanager-api-v2-contract-v1',
+        'harbor-api-v2-core-v1',
     } <= set(contracts)
 
     products = {item['key']: item for item in compatibility['products']}
-    assert set(products) == {'kubernetes', 'prometheus', 'alertmanager', 'thanos'}
+    assert set(products) == {'kubernetes', 'prometheus', 'alertmanager', 'thanos', 'harbor'}
     assert all(item['selection_mode'] == 'automatic_detected_version' for item in products.values())
     assert all(item['version_source'] for item in products.values())
     assert all(item['contract_profile'] in contracts for item in products.values())
@@ -134,6 +139,7 @@ def test_integration_definitions_are_taxonomy_policy_contract_and_qualification_
     assert {item['profile_key'] for item in metrics_source['binding_profiles']} == {
         'kubernetes-metrics-v1',
         'object-storage-metrics-v1',
+        'registry-metrics-v1',
     }
     assert {item['profile_key'] for item in alertmanager['consumer_profiles']} >= {
         'kubernetes-alerts-v1',
@@ -151,6 +157,10 @@ def test_integration_definitions_are_taxonomy_policy_contract_and_qualification_
     assert {profile['key'] for profile in minio_profiles} == {'minio-community-policy-v1'}
     assert all(profile['contract_profile'] == object_storage['capability_profile'] for profile in minio_profiles)
     assert all(profile['support_level'] in posture_keys for profile in minio_profiles)
+
+    assert registry['capability_profile'] == 'registry-provider-read-v1'
+    assert set(registry['compatibility_profiles']) == {'harbor-api-v2-core-v1'}
+    assert {item['key'] for item in registry['products']} == {'harbor'}
 
 
 def test_integration_taxonomy_exposes_ordered_runtime_collections():

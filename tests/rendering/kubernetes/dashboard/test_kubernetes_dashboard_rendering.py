@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from jinja2 import Environment
+from jinja2 import Environment, FileSystemLoader
 
 ROOT = Path(__file__).resolve().parents[4]
 DASHBOARD_TEMPLATES = ROOT / 'app/templates/kubernetes/dashboard'
@@ -30,7 +30,38 @@ def test_dashboard_uses_canonical_hero_tabs_table_status_and_pagination_componen
     assert 'components/table.html' in cluster_health
     assert 'components/table_label.html' in cluster_health
     assert 'components/pagination.html' in cluster_health
-    assert '[5, 10, 25, 50]' in cluster_health
+    assert '{% for size in pagination.allowed_per_page %}' in cluster_health
+    assert 'name="cluster_health_per_page"' in cluster_health
+
+
+def test_shared_operational_signal_overview_renders_outer_call_body() -> None:
+    environment = Environment(
+        loader=FileSystemLoader(ROOT / 'app/templates'),
+        autoescape=True,
+    )
+    template = environment.from_string(
+        """
+        {% import "components/operational_signal_overview.html" as signal_overview %}
+        {% call signal_overview.render(
+            'Committed signal posture.',
+            '4 Indicators',
+            'All Systems',
+            'database',
+            'Ready',
+            'normal',
+            'Updated now',
+            '<select aria-label="Scope"><option>All</option></select>'
+        ) %}
+            <div data-test-operational-signal-body>Signal Body</div>
+        {% endcall %}
+        """
+    )
+
+    rendered = template.render()
+
+    assert 'Operational Signal Overview' in rendered
+    assert 'data-test-operational-signal-body' in rendered
+    assert 'Signal Body' in rendered
 
 
 def test_shared_operational_dashboard_framework_is_valid_jinja() -> None:

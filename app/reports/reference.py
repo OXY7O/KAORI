@@ -23,6 +23,8 @@ REPORT_TYPE_CODES = {
     'alerts_anomalies': 'ALA',
     'object_storage_analysis': 'OSA',
     'object_storage_inventory': 'OSI',
+    'artifact_registry_analysis': 'ARA',
+    'artifact_registry_inventory': 'ARI',
     'inventory_overview': 'IOV',
     'node_inventory': 'NOD',
     'namespace_inventory': 'NSP',

@@ -91,7 +91,7 @@ services:
       - >-
         exec celery --app celery_worker:celery_app worker
         --queues=inventory
-        --loglevel="$${CELERY_LOG_LEVEL:-INFO}"
+        --loglevel="${CELERY_LOG_LEVEL:-INFO}"
         --concurrency="$${INVENTORY_WORKER_CONCURRENCY:-2}"
         --prefetch-multiplier="$${INVENTORY_WORKER_PREFETCH_MULTIPLIER:-1}"
         --max-tasks-per-child="$${INVENTORY_MAX_TASKS_PER_CHILD:-50}"
@@ -99,6 +99,31 @@ services:
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=128m
     stop_grace_period: 45s
+
+  registry-security-worker:
+    <<: *kaori-image
+    environment:
+      <<: *kaori-environment
+      WAIT_FOR_DB: "true"
+    init: true
+    restart: unless-stopped
+    read_only: true
+    command:
+      - sh
+      - -c
+      - >-
+        exec celery --app celery_worker:celery_app worker
+        --queues="$${REGISTRY_SECURITY_CELERY_QUEUE:-registry-security}"
+        --loglevel="${CELERY_LOG_LEVEL:-INFO}"
+        --concurrency="${REGISTRY_SECURITY_WORKER_CONCURRENCY:-2}"
+        --prefetch-multiplier="${REGISTRY_SECURITY_WORKER_PREFETCH_MULTIPLIER:-1}"
+        --max-tasks-per-child="${REGISTRY_SECURITY_MAX_TASKS_PER_CHILD:-25}"
+        --hostname=registry-security@%h
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=256m
+    stop_grace_period: 300s
+    cpus: "${REGISTRY_SECURITY_WORKER_CPU_LIMIT:-1.0}"
+    mem_limit: "${REGISTRY_SECURITY_WORKER_MEMORY_LIMIT:-1g}"
 
   maintenance-worker:
     <<: *kaori-image

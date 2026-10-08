@@ -28,7 +28,7 @@ def test_sidebar_navigation_standard_is_enforced() -> None:
     assert 'KAORI sidebar navigation standard passed' in result.stdout
 
 
-def test_sidebar_v21_uses_two_real_levels_below_section_groups() -> None:
+def test_sidebar_v22_uses_two_real_levels_below_section_groups() -> None:
     sidebar = _read('app/templates/components/navigation/sidebar.html')
     model = _navigation_source()
 
@@ -63,6 +63,7 @@ def test_current_workspace_capabilities_are_sidebar_children() -> None:
     for workspace in (
         "key='kubernetes'",
         "key='object_storage'",
+        "key='artifact_registry'",
         "key='intelligence'",
         "key='reports'",
         "key='operations_center'",
@@ -149,6 +150,14 @@ def test_kubernetes_operations_workflows_keep_the_correct_active_detail_tab() ->
     assert "'kubernetes_operations': 'secrets'" in model
 
 
+def test_registry_domain_and_harbor_routes_keep_registry_sidebar_active() -> None:
+    model = _navigation_source()
+
+    assert "'integrations.registry': 'registry'" in model
+    assert "('harbor.', 'registry')" in model
+    assert "'harbor.'" in model
+
+
 def test_navigation_context_is_preserved_without_becoming_navigation_identity() -> None:
     model = _navigation_source()
     presentation = _read('app/bootstrap/presentation.py')
@@ -168,8 +177,7 @@ def test_analytics_overview_keeps_route_navigation_and_subordinate_summary_tabs(
     overview = _read('app/templates/kubernetes/analytics/overview/index.html')
 
     assert "capability_key == 'kubernetes_analytics' and resolved_endpoint == 'analytics.overview'" not in model
-    assert '{% block page_capability_navigation %}' in overview
-    assert '{% if dependency_blocker %}{{ super() }}{% endif %}' in overview
+    assert '{% block page_capability_navigation %}' not in overview
     assert "content_tabs.render_buttons('overview-content'" in overview
 
 
@@ -179,7 +187,7 @@ def test_navigation_documentation_registers_corrected_hierarchy() -> None:
     design_system = _read('docs/design/DESIGN_SYSTEM.md')
     ownership = _read('docs/design/components/REUSABLE_COMPONENT_OWNERSHIP.md')
 
-    assert 'KAORI Sidebar Navigation Standard v2.1' in sidebar_standard
+    assert 'KAORI Sidebar Navigation Standard v2.2' in sidebar_standard
     assert 'Level 1 — Workspace / Domain' in sidebar_standard
     assert 'Level 2 — Capability' in sidebar_standard
     assert 'KAORI Page Workspace Navigation Standard v1.1' in workspace_standard
@@ -195,6 +203,32 @@ def test_navbar_mobile_label_does_not_use_jinja_namespace_builtin() -> None:
     assert "mobile_page_candidates = breadcrumb_items | rejectattr('label', 'equalto', 'KAORI') | list" in navbar
     assert "mobile_page_label = mobile_page_candidates[-1].label if mobile_page_candidates else 'Welcome'" in navbar
     assert '{{ mobile_page_label }}' in navbar
+
+
+def test_navbar_breadcrumb_compacts_middle_path_without_changing_semantic_authority() -> None:
+    navbar = _read('app/templates/components/navigation/navbar.html')
+    navbar_js = _read('app/static/js/navbar.js')
+    standard = _read('docs/design/components/SIDEBAR_NAVIGATION.md')
+
+    assert "desktop_breadcrumb_items = breadcrumb_items | rejectattr('label', 'equalto', 'KAORI') | list" in navbar
+    assert 'breadcrumb_compacted = desktop_breadcrumb_items|length > 3' in navbar
+    assert 'breadcrumb_hidden_items = desktop_breadcrumb_items[1:-1] if breadcrumb_compacted else []' in navbar
+    assert 'max-w-[9rem]' in navbar
+    assert 'max-w-[12rem]' in navbar
+    assert 'data-breadcrumb-overflow-trigger' in navbar
+    assert 'aria-label="Show hidden breadcrumb path"' in navbar
+    assert 'aria-controls="breadcrumb-overflow-path"' in navbar
+    assert ':aria-expanded="breadcrumbOpen.toString()"' in navbar
+    assert '@click.outside="breadcrumbOpen = false"' in navbar
+
+    assert 'breadcrumbOpen: false' in navbar_js
+    assert 'toggleBreadcrumb()' in navbar_js
+    assert 'this.restoreFocus(breadcrumbReturnTarget)' in navbar_js
+
+    assert '5 levels including `KAORI`' in standard
+    assert '4 visible breadcrumb items' in standard
+    assert 'maximum width of **9rem**' in standard
+    assert 'maximum width of **12rem**' in standard
 
 
 def test_breadcrumb_hierarchy_matches_workspace_capability_detail_scope() -> None:
@@ -227,6 +261,5 @@ def test_kubernetes_analytics_overview_always_uses_layout_route_navigation() -> 
 
     assert '{% block page_capability_navigation %}' in layout
     assert "capability_key == 'kubernetes_analytics' and resolved_endpoint == 'analytics.overview'" not in model
-    assert '{% block page_capability_navigation %}' in overview
-    assert '{% if dependency_blocker %}{{ super() }}{% endif %}' in overview
+    assert '{% block page_capability_navigation %}' not in overview
     assert "content_tabs.render_buttons('overview-content'" in overview

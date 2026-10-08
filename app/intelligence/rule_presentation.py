@@ -8,12 +8,14 @@ DOMAIN_OPTIONS = [
     {'value': '', 'label': 'All Asset Domains'},
     {'value': 'kubernetes', 'label': 'Kubernetes'},
     {'value': 'object_storage', 'label': 'Object Storage'},
+    {'value': 'registry', 'label': 'Artifact Registry'},
     {'value': 'server', 'label': 'Server'},
     {'value': 'hci', 'label': 'HCI'},
 ]
 PROVIDER_OPTIONS = [
     {'value': '', 'label': 'All Provider Coverage'},
     {'value': 'minio', 'label': 'MinIO'},
+    {'value': 'harbor', 'label': 'Harbor'},
 ]
 CATEGORY_OPTIONS = [
     {'value': '', 'label': 'All Categories'},
@@ -47,6 +49,9 @@ SOURCE_KIND_OPTIONS = [
     {'value': 'tls_secret', 'label': 'TLS Secret'},
     {'value': 'object_storage_system', 'label': 'Object Storage System'},
     {'value': 'object_storage_bucket', 'label': 'Object Storage Bucket'},
+    {'value': 'registry_instance', 'label': 'Registry Instance'},
+    {'value': 'registry_project', 'label': 'Registry Project'},
+    {'value': 'registry_artifact', 'label': 'Registry Artifact'},
     {'value': 'vm', 'label': 'VM'},
     {'value': 'datastore', 'label': 'Datastore'},
     {'value': 'hci_cluster', 'label': 'HCI Cluster'},
@@ -66,6 +71,8 @@ SIGNAL_SOURCE_OPTIONS = [
     {'value': 'kaori_kubernetes_analysis', 'label': 'KAORI Kubernetes Analysis'},
     {'value': 'object_storage_inventory', 'label': 'Object Storage Inventory'},
     {'value': 'kaori_object_storage_analysis', 'label': 'KAORI Object Storage Analysis'},
+    {'value': 'registry_committed_evidence', 'label': 'Registry Committed Evidence'},
+    {'value': 'kaori_registry_analysis', 'label': 'KAORI Registry Analysis'},
     {'value': 'alertmanager', 'label': 'Alertmanager'},
     {'value': 'metrics_source_metrics', 'label': 'Metrics Source Metrics'},
     {'value': 'server_inventory', 'label': 'Server Node Exporter'},
@@ -92,6 +99,7 @@ def domain_label(value: str) -> str:
     return {
         'kubernetes': 'Kubernetes',
         'object_storage': 'Object Storage',
+        'registry': 'Artifact Registry',
         'server': 'Server',
         'hci': 'HCI',
     }.get(value, format_label(value))
@@ -111,6 +119,8 @@ def signal_label(value: str) -> str:
         'kaori_kubernetes_analysis': 'KAORI Kubernetes Analysis',
         'object_storage_inventory': 'Object Storage Inventory',
         'kaori_object_storage_analysis': 'KAORI Object Storage Analysis',
+        'registry_committed_evidence': 'Registry Committed Evidence',
+        'kaori_registry_analysis': 'KAORI Registry Analysis',
         'alertmanager': 'Alertmanager',
         'metrics_source_metrics': 'Metrics Source Metrics',
         'server_inventory': 'Server Node Exporter',
@@ -143,7 +153,7 @@ def provider_keys(rule: dict[str, Any]) -> list[str]:
 
 
 def provider_label(keys: list[str]) -> str:
-    labels = {'minio': 'MinIO'}
+    labels = {'minio': 'MinIO', 'harbor': 'Harbor'}
     if not keys:
         return 'Domain-owned'
     return ', '.join(labels.get(key, format_label(key)) for key in keys)

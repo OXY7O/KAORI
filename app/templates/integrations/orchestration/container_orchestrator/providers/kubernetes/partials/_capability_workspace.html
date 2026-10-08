@@ -21,8 +21,26 @@
     {% endif %}
 {% endfor %}
 {% set capability_total = feature_rows|length %}
+{% if blocked_features %}
+    {% set capability_readiness_state = "blocked" %}
+    {% set capability_readiness_label = "Blocked" %}
+    {% set capability_gate_title = "Remediation Required" %}
+    {% set capability_gate_description = "Resolve required API or RBAC gaps." %}
+    {% set capability_gate_tone = "critical" %}
+{% elif legacy_features %}
+    {% set capability_readiness_state = "degraded" %}
+    {% set capability_readiness_label = "Degraded" %}
+    {% set capability_gate_title = "Core Workspaces Eligible" %}
+    {% set capability_gate_description = "Required contracts remain usable through legacy API fallbacks; migrate before upstream removal." %}
+    {% set capability_gate_tone = "warning" %}
+{% else %}
+    {% set capability_readiness_state = "ready" %}
+    {% set capability_readiness_label = "Ready" %}
+    {% set capability_gate_title = "Core Workspaces Eligible" %}
+    {% set capability_gate_description = "Core API/RBAC is ready; Tenant access remains workflow-scoped." %}
+    {% set capability_gate_tone = "normal" %}
+{% endif %}
 {% set capability_readiness_percent = ((validated_feature_count * 100 / capability_total) if capability_total else 0) %}
-{% set required_usable_count = capability_counts.required - blocked_features|length %}
 {% set capability_metadata = [
     'Profile · ' ~ (runtime_state.compatibility_profile or 'Validation Required'),
     capability_counts.required ~ ' Required',
@@ -83,17 +101,17 @@
     {{ provider_job_status.render(validation_job, 'Kubernetes validation running in worker', 'Kubernetes') }}
     <div class="p-5 sm:p-6">
         {{ capability_readiness.render('Kubernetes Capability Readiness',
-                'Required API and RBAC evidence for Kubernetes workspaces.',
-                validation_state.readiness,
-                validation_state.readiness_label,
+                'Core API/RBAC is validated; Tenant contracts remain optional.',
+                capability_readiness_state,
+                capability_readiness_label,
                 'Validated Capabilities',
                 validated_feature_count ~ ' / ' ~ capability_total,
                 capability_readiness_percent,
                 capability_metadata,
                 capability_metrics,
-                'Core Workspaces Eligible' if validation_state.readiness == 'ready' else 'Remediation Required',
-                'Required API and RBAC contracts are usable.' if validation_state.readiness == 'ready' else 'Resolve required API or RBAC gaps.',
-                'normal' if validation_state.readiness == 'ready' else 'critical',
+                capability_gate_title,
+                capability_gate_description,
+                capability_gate_tone,
                 'Full Validation owns API and RBAC evidence; Runtime Refresh owns live API health.',
                 capability_next_action) }}
         {% if validation_state.readiness != 'ready' or optional_blocked_features %}
@@ -104,18 +122,18 @@
                         {{ integration_ui.palette_icon('circle-help', 'warning' if validation_state.readiness != 'ready' else 'info', size='md') }}
                         <div class="min-w-0">
                             {% if validation_state.readiness != 'ready' %}
-                                <p class="text-sm font-semibold text-content-primary">Why Readiness Is {{ validation_state.readiness_label }}</p>
+                                <p class="text-sm font-semibold text-content-primary">Why Provider Validation Is {{ validation_state.readiness_label }}</p>
                                 <p class="mt-1 text-sm leading-6 text-content-secondary">{{ validation_state.message }}</p>
                             {% else %}
                                 <p class="text-sm font-semibold text-content-primary">Optional Capability Access Is Limited</p>
-                                <p class="mt-1 text-sm leading-6 text-content-secondary">Core Kubernetes readiness remains independent from optional sensitive-resource workflows. Review {{ optional_blocked_features|join(", ") }}. Do not expand the baseline ClusterRole.</p>
+                                <p class="mt-1 text-sm leading-6 text-content-secondary">Optional gaps do not affect core readiness. Review {{ optional_blocked_features|join(", ") }} without broadening the baseline ClusterRole.</p>
                             {% endif %}
                         </div>
                     </div>
                     <div class="flex flex-wrap gap-2 lg:justify-end">
-                        {{ table_label.metadata_label((blocked_features|length) ~ ' blocked') }}
-                        {{ table_label.metadata_label((legacy_features|length) ~ ' legacy') }}
-                        {{ table_label.metadata_label((optional_blocked_features|length) ~ ' optional gap') }}
+                        {{ table_label.metadata_label((blocked_features|length) ~ ' required blocks') }}
+                        {{ table_label.metadata_label((legacy_features|length) ~ ' legacy fallbacks') }}
+                        {{ table_label.metadata_label((optional_blocked_features|length) ~ ' optional gaps') }}
                     </div>
                 </div>
             </section>

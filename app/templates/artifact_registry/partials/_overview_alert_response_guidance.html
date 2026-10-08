@@ -1,0 +1,36 @@
+{% import "components/operational_alert_response.html" as alert_response %}
+{% import "components/operational_section_card.html" as operational_section_card %}
+{% set alert_response_steps = [('scan-search', 'Validate', 'Confirm the selected Registry provider, committed snapshot freshness, and alert-source evidence before acting on the signal.'), ('list-filter', 'Triage', 'Rank severity and blast radius, identify the affected project, repository, artifact, or runtime workload, and establish an accountable owner.'), ('chart-no-axes-combined', 'Investigate', 'Correlate inventory, vulnerability, runtime, governance, capacity, and related alert evidence to test the suspected cause.'), ('shield-check', 'Respond', 'Run the approved Registry response for the confirmed scope within safety guardrails.'), ('circle-check-big', 'Verify', 'Confirm alert recovery and refresh committed Registry evidence so correlated security, runtime, governance, and capacity signals remain stable after the response.'), ('clipboard-check', 'Record', 'Capture the decision, action, verification result, and follow-up evidence so the operational outcome remains auditable.')] %}
+{% if overview.alerts.available and overview.alerts.total > 0 %}
+    {{ alert_response.render('Meaning, triage order, and controlled response flow for active Artifact Registry alerts.',
+        alert_response_steps,
+        'Controlled Artifact Registry Alert Response Flow',
+        'Potential runtime, supply-chain, or capacity impact. Start incident triage and establish ownership.',
+        'Developing governance, evidence, mutable-tag, or quota risk. Investigate before escalation.',
+        'Low-risk operational signal. Validate relevance, recurrence, and scope.') }}
+{% else %}
+    {% call operational_section_card.render(
+        'Alert Interpretation & Response',
+        'Meaning, triage order, and controlled response flow for active Artifact Registry alerts.',
+        'book-open-check',
+        body_classes='p-5',
+        extra_classes='h-full'
+        ) %}
+        {% if overview.alerts.available %}
+            {% set empty_state_icon = "circle-check" %}
+            {% set empty_state_label = "No Active Signals" %}
+            {% set empty_state_tone = "normal" %}
+            {% set empty_state_title = "Alert Response Not Required" %}
+            {% set empty_state_description = "No active Registry AlertCase requires controlled response for the selected provider." %}
+        {% else %}
+            {% set empty_state_icon = "wifi-off" %}
+            {% set empty_state_label = "Source Unavailable" %}
+            {% set empty_state_tone = "warning" %}
+            {% set empty_state_title = "Alert Response Evidence Unavailable" %}
+            {% set empty_state_description = "KAORI Alert Intelligence case evidence is temporarily unavailable for this Registry provider." %}
+        {% endif %}
+        {% set empty_state_variant = "panel" %}
+        {% set empty_state_min_height = "min-h-[220px]" %}
+        {% include 'components/states/_empty_state.html' %}
+    {% endcall %}
+{% endif %}

@@ -78,14 +78,16 @@ def test_overview_ready_counts_require_enabled_targets_and_domain_zero_targets_a
     assert "if is_configured and is_enabled and readiness == 'ready'" in extension
     assert "if is_configured and (not is_enabled or readiness != 'ready')" in extension
     assert "'readiness_review': readiness_review" in extension
-    assert "item.integration_instance.enabled and _kubernetes_readiness(item) == 'ready'" in service
-    assert "item.enabled and item.readiness_status == 'ready'" in service
+    assert 'bool(connection.integration_instance.enabled)' in extension
+    assert 'bool(item.enabled)' in extension
+    assert "readiness == 'ready'" in extension
 
     coverage = service.split('def _coverage(', 1)[1].split('def _coverage_stats', 1)[0]
-    assert 'elif total <= 0:' in coverage
-    assert "posture_state, posture_label = 'not_configured', 'Not Configured'" in coverage
-    assert "posture_state, posture_label = 'validation_required', 'Needs Review'" in coverage
-    assert "posture_state, posture_label = 'ready', 'Ready'" in coverage
+    posture = extension.split('def portfolio_posture(', 1)[1].split('def build_provider_portfolio_counts', 1)[0]
+    assert 'posture_state, posture_label = portfolio_posture(summary)' in coverage
+    assert "return 'not_configured', 'Not Configured'" in posture
+    assert "return 'ready', 'Ready'" in posture
+    assert "return 'attention', 'Needs Review'" in posture
     assert 'integration_status(item.posture_state, item.posture_label' in overview
     assert 'No targets registered' in overview
     assert 'Available Domains' in overview

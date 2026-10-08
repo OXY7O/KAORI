@@ -16,7 +16,7 @@ def compact_readiness_reason(value: object) -> str:
             return f'{subject} uses KAORI Extended support. Upgrade recommended.'
 
     if 'optional capability access is unavailable for:' in lowered:
-        return 'Optional capability access is limited; core Kubernetes readiness is unaffected.'
+        return 'Optional gaps do not affect core readiness.'
 
     if 'legacy lifecycle band' in lowered and lowered.startswith('kubernetes '):
         subject = text.split(' is ', 1)[0].strip()
@@ -27,4 +27,29 @@ def compact_readiness_reason(value: object) -> str:
 
 
 def compact_readiness_reasons(values: Iterable[object]) -> list[str]:
-    return [reason for item in values if (reason := compact_readiness_reason(item))]
+    reasons = [reason for item in values if (reason := compact_readiness_reason(item))]
+    optional_reason = 'Optional gaps do not affect core readiness.'
+    extended_suffix = ' uses KAORI Extended support. Upgrade recommended.'
+    extended_index = next(
+        (index for index, reason in enumerate(reasons) if extended_suffix in reason),
+        None,
+    )
+    if extended_index is None or optional_reason not in reasons:
+        return reasons
+
+    optional_index = reasons.index(optional_reason)
+    merged_index = min(extended_index, optional_index)
+    extended_reason = reasons[extended_index]
+    merged_reason = (
+        extended_reason.removesuffix(' Upgrade recommended.')
+        + ' Upgrade recommended; optional gaps do not affect core readiness.'
+    )
+
+    compacted: list[str] = []
+    for index, reason in enumerate(reasons):
+        if index == merged_index:
+            compacted.append(merged_reason)
+        if index in {extended_index, optional_index}:
+            continue
+        compacted.append(reason)
+    return compacted

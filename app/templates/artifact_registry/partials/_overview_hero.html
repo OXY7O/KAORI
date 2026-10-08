@@ -1,0 +1,20 @@
+{% import "components/page_hero.html" as page_hero %}
+{% set dashboard_state = 'blocked' if overview.setup.is_blocked else 'normal' %}
+{{ page_hero.operational_dashboard('Artifact Registry Operations',
+'package-search',
+'Overview',
+'Review committed Registry inventory, security, runtime, and signals.',
+[
+('database-backup', 'Inventory Snapshots') ,
+('chart-no-axes-combined', 'Registry Analytics'),
+('shield-check', 'Security Signals')
+],
+overview.scope_label,
+'Open Registry Integrations',
+url_for('integrations.registry'),
+'plug-zap',
+'Committed Snapshots',
+dashboard_state,
+'Registry Setup Required',
+'Register and validate a Registry provider to activate committed operational signals.'
+) }}

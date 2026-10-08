@@ -8,7 +8,7 @@ from typing import Any
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions.db import db
-from app.kubernetes.analytics.materialization.service import SnapshotResult, read_snapshot
+from app.kubernetes.analytics.materialization.service import SnapshotResult, read_snapshot, read_snapshots
 from app.kubernetes.tenant.capacity import (
     AllocationPreflightDecision,
     CapacityVector,
@@ -17,6 +17,12 @@ from app.kubernetes.tenant.capacity import (
     classify_capacity_state,
     evaluate_allocation_preflight,
     quota_request_vector,
+)
+from app.kubernetes.tenant.capacity_allocation_state import (
+    _aggregate_committed_allocation,
+    _canonical_shared_allocation_quota,
+    _committed_tenant_allocation,
+    _committed_tenant_allocations,
 )
 from app.kubernetes.tenant.capacity_governance_support import (
     _GIB,
@@ -51,10 +57,6 @@ from app.models.tenant import (
     TenantNamespace,
     TenantNamespaceProvisioningStatus,
     TenantResourceProfile,
-)
-from app.models.tenant_advanced import (
-    TenantAdvancedCapabilityIntent,
-    TenantAdvancedCapabilityStatus,
 )
 
 _ZERO = Decimal('0')
@@ -152,10 +154,14 @@ def upsert_capacity_policy_committed(source: Mapping[str, Any]) -> TenantCapacit
         ) from exc
 
 
-def build_capacity_governance_summary(cluster_id: str) -> dict[str, Any]:
-    policy = TenantCapacityPolicy.query.filter_by(cluster_id=cluster_id).first()
-    snapshot_result = _read_capacity_snapshot(cluster_id)
-    committed, committed_count, unbounded_namespaces = _committed_tenant_allocation(cluster_id)
+def _build_capacity_governance_summary_from_inputs(
+    cluster_id: str,
+    *,
+    policy: TenantCapacityPolicy | None,
+    snapshot_result: SnapshotResult,
+    committed_state: tuple[CapacityVector, int, list[str]],
+) -> dict[str, Any]:
+    committed, committed_count, unbounded_namespaces = committed_state
 
     if policy is None:
         return {
@@ -221,6 +227,39 @@ def build_capacity_governance_summary(cluster_id: str) -> dict[str, Any]:
             'budget': _vector_display(budget.available),
             'headroom': _vector_display(_headroom(budget.available, committed)),
         },
+    }
+
+
+def build_capacity_governance_summary(cluster_id: str) -> dict[str, Any]:
+    return _build_capacity_governance_summary_from_inputs(
+        cluster_id,
+        policy=TenantCapacityPolicy.query.filter_by(cluster_id=cluster_id).first(),
+        snapshot_result=_read_capacity_snapshot(cluster_id),
+        committed_state=_committed_tenant_allocation(cluster_id),
+    )
+
+
+def build_capacity_governance_summaries(cluster_ids: list[str]) -> dict[str, dict[str, Any]]:
+    """Build read-only fleet summaries while batching KAORI-owned committed evidence."""
+
+    normalized_ids = list(dict.fromkeys(str(cluster_id) for cluster_id in cluster_ids if str(cluster_id)))
+    if not normalized_ids:
+        return {}
+
+    policies = {
+        str(policy.cluster_id): policy
+        for policy in TenantCapacityPolicy.query.filter(TenantCapacityPolicy.cluster_id.in_(normalized_ids)).all()
+    }
+    committed_states = _committed_tenant_allocations(normalized_ids)
+    snapshots = _read_capacity_snapshots(normalized_ids)
+    return {
+        cluster_id: _build_capacity_governance_summary_from_inputs(
+            cluster_id,
+            policy=policies.get(cluster_id),
+            snapshot_result=snapshots[cluster_id],
+            committed_state=committed_states[cluster_id],
+        )
+        for cluster_id in normalized_ids
     }
 
 
@@ -584,6 +623,15 @@ def _read_capacity_snapshot(cluster_id: str) -> SnapshotResult:
     )
 
 
+def _read_capacity_snapshots(cluster_ids: list[str]) -> dict[str, SnapshotResult]:
+    return read_snapshots(
+        dataset_key='analytics.capacity',
+        parameters_by_cluster={
+            str(cluster_id): {'cluster_id': str(cluster_id), 'time_range': '24h'} for cluster_id in cluster_ids
+        },
+    )
+
+
 def _capacity_vector(result: SnapshotResult) -> tuple[CapacityVector | None, str]:
     if not result.available:
         return (
@@ -628,141 +676,3 @@ def _capacity_vector(result: SnapshotResult) -> tuple[CapacityVector | None, str
         pods=pods_value,
         storage_bytes=None,
     ), ''
-
-
-def _canonical_shared_allocation_quota(
-    cluster_id: str,
-) -> tuple[dict[str, Mapping[str, object]], list[str]]:
-    candidates = (
-        TenantAdvancedCapabilityIntent.query.join(
-            Tenant,
-            TenantAdvancedCapabilityIntent.tenant_id == Tenant.id,
-        )
-        .filter(
-            Tenant.cluster_id == cluster_id,
-            TenantAdvancedCapabilityIntent.resource_kind == 'global_resource_quota',
-            TenantAdvancedCapabilityIntent.status.in_(
-                (
-                    TenantAdvancedCapabilityStatus.READY.value,
-                    TenantAdvancedCapabilityStatus.DRIFTED.value,
-                )
-            ),
-        )
-        .order_by(
-            TenantAdvancedCapabilityIntent.tenant_id.asc(),
-            TenantAdvancedCapabilityIntent.updated_at.desc(),
-        )
-        .all()
-    )
-    selected: dict[str, Mapping[str, object]] = {}
-    ambiguous: set[str] = set()
-    for intent in candidates:
-        evidence = intent.reconciliation_evidence_json or {}
-        if evidence.get('allocation_governance_scope') != 'tenant_shared':
-            continue
-        tenant_id = str(intent.tenant_id)
-        if tenant_id in selected:
-            ambiguous.add(tenant_id)
-            continue
-        desired = intent.desired_spec_json or {}
-        quota = desired.get('quota') if isinstance(desired, Mapping) else None
-        hard = quota.get('hard') if isinstance(quota, Mapping) else None
-        selected[tenant_id] = dict(hard) if isinstance(hard, Mapping) else {}
-    for tenant_id in ambiguous:
-        selected.pop(tenant_id, None)
-
-    capsule_tenants = Tenant.query.filter(
-        Tenant.cluster_id == cluster_id,
-        Tenant.provider_key == 'capsule',
-    ).all()
-    for tenant in capsule_tenants:
-        governance = (tenant.provider_evidence_json or {}).get('allocation_governance')
-        if not isinstance(governance, Mapping):
-            continue
-        if governance.get('authority') != 'capsule_tenant_resource_quotas':
-            continue
-        if governance.get('control_state') not in {'kaori_managed', 'drifted'}:
-            continue
-        if governance.get('allocation_scope') != 'tenant_shared':
-            continue
-        tenant_id = str(tenant.id)
-        quota = governance.get('desired_quota')
-        if tenant_id in selected or not isinstance(quota, Mapping):
-            ambiguous.add(tenant_id)
-            selected.pop(tenant_id, None)
-            continue
-        selected[tenant_id] = dict(quota)
-
-    for tenant_id in ambiguous:
-        selected.pop(tenant_id, None)
-    return selected, sorted(ambiguous)
-
-
-def _aggregate_committed_allocation(
-    rows: list[TenantNamespace],
-    *,
-    shared_quota_by_tenant: Mapping[str, Mapping[str, object]],
-    ambiguous_shared_tenants: list[str] | None = None,
-) -> tuple[CapacityVector, list[str]]:
-    totals: list[Decimal | None] = [_ZERO, _ZERO, _ZERO, _ZERO]
-    unbounded: list[str] = []
-    shared_tenant_ids = set(shared_quota_by_tenant)
-
-    def add_vector(vector: CapacityVector, label: str) -> None:
-        values = (vector.cpu, vector.memory_bytes, vector.pods, vector.storage_bytes)
-        if any(value is None for value in values[:3]):
-            unbounded.append(label)
-        for index, value in enumerate(values):
-            current = totals[index]
-            if current is not None:
-                totals[index] = current + value if value is not None else None
-
-    for row in rows:
-        tenant_id = str(row.environment.tenant_id)
-        if tenant_id in shared_tenant_ids:
-            continue
-        add_vector(quota_request_vector(row.allocation_quota_json or {}), row.namespace)
-
-    for tenant_id, quota in shared_quota_by_tenant.items():
-        add_vector(
-            quota_request_vector(quota),
-            f'Tenant/{tenant_id} shared allocation',
-        )
-
-    for tenant_id in ambiguous_shared_tenants or []:
-        unbounded.append(f'Tenant/{tenant_id} ambiguous shared allocation')
-        totals = [None, None, None, None]
-
-    return CapacityVector(
-        cpu=totals[0],
-        memory_bytes=totals[1],
-        pods=totals[2],
-        storage_bytes=totals[3],
-    ), unbounded
-
-
-def _committed_tenant_allocation(
-    cluster_id: str,
-    *,
-    shared_overrides: Mapping[str, Mapping[str, object]] | None = None,
-) -> tuple[CapacityVector, int, list[str]]:
-    rows = (
-        TenantNamespace.query.filter(
-            TenantNamespace.cluster_id == cluster_id,
-            TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
-        )
-        .order_by(TenantNamespace.namespace.asc())
-        .all()
-    )
-    shared, ambiguous = _canonical_shared_allocation_quota(cluster_id)
-    for tenant_id, quota in dict(shared_overrides or {}).items():
-        shared[str(tenant_id)] = dict(quota)
-        if str(tenant_id) in ambiguous:
-            ambiguous.remove(str(tenant_id))
-
-    committed, unbounded = _aggregate_committed_allocation(
-        rows,
-        shared_quota_by_tenant=shared,
-        ambiguous_shared_tenants=ambiguous,
-    )
-    return committed, len(rows), unbounded

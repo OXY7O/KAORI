@@ -29,6 +29,7 @@ def test_risk_exception_is_definition_driven_and_visible_only_for_enabled_rules(
         'kubernetes.tls_secret.expired',
         'kubernetes.tls_secret.expiring_soon',
         'object_storage.bucket.encryption_not_configured',
+        'registry.security.critical_runtime_vulnerability',
     }
     assert 'risk_exception' not in catalog['kubernetes.tls_secret.invalid']
     assert 'risk_exception' not in catalog['kubernetes.workload.latest_image_tag']
@@ -52,6 +53,7 @@ def test_requested_exception_policies_are_iac_owned_in_rules_yaml() -> None:
         'kubernetes.tls_secret.expired',
         'kubernetes.tls_secret.expiring_soon',
         'object_storage.bucket.encryption_not_configured',
+        'registry.security.critical_runtime_vulnerability',
     ):
         policy = catalog[key]['risk_exception']
         assert policy['enabled'] is True

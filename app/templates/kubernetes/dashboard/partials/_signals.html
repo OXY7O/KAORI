@@ -1,0 +1,12 @@
+{% import "components/peer_content_grid.html" as peer_content_grid %}
+<div id="kubernetes-dashboard-section-signals" class="space-y-5">
+    <div class="{{ peer_content_grid.layout_classes() }}">
+        <div class="{{ peer_content_grid.column_classes('primary') }}">
+            {% include "kubernetes/dashboard/partials/_alerts_summary.html" %}
+        </div>
+        <div class="{{ peer_content_grid.column_classes('secondary') }}">
+            {% include "kubernetes/dashboard/partials/_alert_response_guidance.html" %}
+        </div>
+    </div>
+    {% include "kubernetes/dashboard/partials/_recommended_actions.html" %}
+</div>

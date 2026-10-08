@@ -7,6 +7,7 @@ from app.models.report import Report
 from app.reports.catalog import ANALYTICS_REPORT_TYPES, validate_report_instance
 from app.reports.export.payloads.alerts import get_report_alerts_anomalies_payload
 from app.reports.export.payloads.analytics import get_report_analytics_overview_payload
+from app.reports.export.payloads.artifact_registry_analysis import get_report_artifact_registry_analysis_payload
 from app.reports.export.payloads.capacity import get_report_capacity_analysis_payload
 from app.reports.export.payloads.forecast import get_report_resource_forecast_payload
 from app.reports.export.payloads.object_storage_analysis import get_report_object_storage_analysis_payload
@@ -29,6 +30,7 @@ _PAYLOAD_COLLECTORS: dict[str, PayloadCollector] = {
     'top_consumers': get_report_top_consumers_payload,
     'alerts_anomalies': get_report_alerts_anomalies_payload,
     'object_storage_analysis': get_report_object_storage_analysis_payload,
+    'artifact_registry_analysis': get_report_artifact_registry_analysis_payload,
 }
 
 

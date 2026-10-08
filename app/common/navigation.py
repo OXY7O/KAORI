@@ -37,6 +37,13 @@ _ENDPOINT_LABELS: dict[str, str] = {
     'object_storage_inventory.system_details': 'System Details',
     'object_storage_inventory.buckets': 'Buckets',
     'object_storage_inventory.bucket_details': 'Bucket Details',
+    # Artifact Registry
+    'artifact_registry.overview': 'Overview',
+    'artifact_registry.inventory': 'Inventory',
+    'artifact_registry.security': 'Security',
+    'artifact_registry.runtime': 'Runtime Usage',
+    'artifact_registry.governance': 'Governance',
+    'artifact_registry.analytics': 'Analytics',
     # Analytics
     'analytics.overview': 'Overview',
     'analytics.utilization': 'Utilization',
@@ -106,6 +113,8 @@ _WORKFLOW_LABELS: tuple[tuple[str, str], ...] = (
     ('alertmanager.instance_detail', 'Connection Details'),
     ('minio.new_instance', 'Register Connection'),
     ('minio.instance_detail', 'Connection Details'),
+    ('harbor.new_instance', 'Register Connection'),
+    ('harbor.instance_detail', 'Connection Details'),
     ('users.create', 'Add User'),
     ('users.edit', 'Edit User'),
     ('users.reset_password', 'Reset Password'),
@@ -167,6 +176,40 @@ def _platform_kubernetes_items(endpoint: str) -> list[BreadcrumbItem]:
     return items
 
 
+def _access_navigation_items(endpoint: str) -> list[BreadcrumbItem] | None:
+    if endpoint.startswith('access.overview.'):
+        return [BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('Overview')]
+    if endpoint in {
+        'identity_providers.index',
+        'identity_providers.create',
+        'identity_providers.edit',
+        'identity_providers.validate',
+    }:
+        return _append_workflow(
+            [BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('Identity Providers')],
+            endpoint,
+        )
+    if endpoint in {'identity_providers.directory_provisioning', 'identity_providers.provision_identity'}:
+        return [
+            BreadcrumbItem('Access', 'users-round'),
+            BreadcrumbItem('Identity Providers'),
+            BreadcrumbItem('Directory Provisioning'),
+        ]
+    if endpoint.startswith('users.'):
+        return _append_workflow([BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('Users')], endpoint)
+    if endpoint == 'notifications.center' or endpoint.startswith('notifications.'):
+        return [BreadcrumbItem('Notification Center', 'bell')]
+    if endpoint.startswith('access.activity_audit.'):
+        return [BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('Activity Audit')]
+    if endpoint.startswith('access.roles.'):
+        return _append_workflow([BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('Roles')], endpoint)
+    if endpoint.startswith('access.permissions.'):
+        return [BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('Permissions')]
+    if endpoint.startswith('settings.'):
+        return [BreadcrumbItem('Settings', 'settings-2'), BreadcrumbItem(_leaf(endpoint, 'General'))]
+    return None
+
+
 def build_navigation_breadcrumb(
     endpoint: str | None,
     path: str = '',
@@ -176,6 +219,7 @@ def build_navigation_breadcrumb(
     """Return breadcrumb items whose root matches the KAORI sidebar main menu."""
 
     endpoint = endpoint or ''
+    access_items = _access_navigation_items(endpoint)
 
     if endpoint == 'welcome.index':
         items = [BreadcrumbItem('Welcome', 'sparkles')]
@@ -196,6 +240,11 @@ def build_navigation_breadcrumb(
             BreadcrumbItem(integration_owner['provider_label']),
         ]
         items = _append_workflow(items, endpoint)
+    elif endpoint.startswith('artifact_registry.'):
+        items = [
+            BreadcrumbItem('Artifact Registry', 'package'),
+            BreadcrumbItem(_leaf(endpoint, 'Overview')),
+        ]
     elif endpoint.startswith('object_storage_inventory.'):
         items = [
             BreadcrumbItem('Object Storage', 'database'),
@@ -258,44 +307,15 @@ def build_navigation_breadcrumb(
             'integrations.orchestration': 'Orchestration',
             'integrations.observability': 'Observability',
             'integrations.storage': 'Storage',
+            'integrations.registry': 'Registry',
             'notification_channels.index': 'Notification Channels',
         }.get(endpoint, 'Overview')
         items = [
             BreadcrumbItem('Integrations', 'plug'),
             BreadcrumbItem(leaf),
         ]
-    elif endpoint.startswith('access.overview.'):
-        items = [BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('Overview')]
-    elif endpoint in {
-        'identity_providers.index',
-        'identity_providers.create',
-        'identity_providers.edit',
-        'identity_providers.validate',
-    }:
-        items = [BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('Identity Providers')]
-        items = _append_workflow(items, endpoint)
-    elif endpoint in {'identity_providers.directory_provisioning', 'identity_providers.provision_identity'}:
-        items = [
-            BreadcrumbItem('Access', 'users-round'),
-            BreadcrumbItem('Identity Providers'),
-            BreadcrumbItem('Directory Provisioning'),
-        ]
-    elif endpoint.startswith('users.'):
-        items = [BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('Users')]
-        items = _append_workflow(items, endpoint)
-    elif endpoint == 'notifications.center':
-        items = [BreadcrumbItem('Notification Center', 'bell')]
-    elif endpoint.startswith('access.activity_audit.'):
-        items = [BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('Activity Audit')]
-    elif endpoint.startswith('notifications.'):
-        items = [BreadcrumbItem('Notification Center', 'bell')]
-    elif endpoint.startswith('access.roles.'):
-        items = [BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('Roles')]
-        items = _append_workflow(items, endpoint)
-    elif endpoint.startswith('access.permissions.'):
-        items = [BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('Permissions')]
-    elif endpoint.startswith('settings.'):
-        items = [BreadcrumbItem('Settings', 'settings-2'), BreadcrumbItem(_leaf(endpoint, 'General'))]
+    elif access_items is not None:
+        items = access_items
     else:
         items = [BreadcrumbItem('KAORI', 'compass')]
 

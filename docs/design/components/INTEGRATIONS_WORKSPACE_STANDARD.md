@@ -41,7 +41,7 @@ Provider templates supply factual labels, icons, endpoint data, compatibility ev
 
 ## Domain Landing Workspace Contract
 
-`Orchestration`, `Observability`, and `Storage` use one shared domain landing pattern. Domain pages do not invent provider-specific cards or a Storage-only composition.
+`Orchestration`, `Observability`, `Storage`, and `Registry` use one shared domain landing pattern. Domain pages do not invent provider-specific cards or a Storage-only composition.
 
 ```text
 Hero / Domain Posture
@@ -89,6 +89,7 @@ Only the selected deep workspace is built for a request. The page may always loa
 Operational semantics are explicit:
 
 - `Ready for Use` requires a configured, enabled target with persisted readiness `ready`; a disabled target is never counted as ready for use.
+- Overview portfolio aggregation uses canonical `IntegrationInstance` rows for registered integration types unless that type has an explicit specialized overview projection. The specialized set is limited to Kubernetes / Container Orchestrator, Metrics Source, and Alert Source; Object Storage, Registry, and future generic providers must not be excluded from canonical aggregation merely because they have provider-specific runtime adapters.
 - an available Integration domain with zero registered targets is `Not Configured`, never `Ready`; workspace availability and target readiness are separate concepts.
 - the Domain Coverage workspace labels implemented domains as `Available Domains`; `Operational Readiness` is derived from their actual targets.
 - Runtime Overview uses the canonical shared Empty State contract: no targets is `Setup Required`, filtered zero is `No Results`.
@@ -98,7 +99,7 @@ Top-level workspace switching uses `framed_workspace_tabs.render_navigation(...)
 
 ## Provider Front Page Contract
 
-Kubernetes, Metrics Source, Alertmanager, and MinIO provider landing pages use one canonical front-page hierarchy. Provider-specific technical evidence may differ inside the workspace, but the navigation and visual grammar must not.
+Kubernetes, Metrics Source, Alertmanager, MinIO, and Harbor provider landing pages use one canonical front-page hierarchy. Provider-specific technical evidence may differ inside the workspace, but the navigation and visual grammar must not.
 
 ```text
 Operational Integration Hero
@@ -140,7 +141,7 @@ app/templates/integrations/components/_provider_registry.html
 
 Provider pages supply provider-specific copy, routes, evidence, and row data. They must not duplicate the shared Hero, overview metrics, registry headers, `colgroup`, or table-width contract.
 
-Canonical Connection Registry columns for Kubernetes, Metrics Source, Alertmanager, and MinIO are:
+Canonical Connection Registry columns for Kubernetes, Metrics Source, Alertmanager, MinIO, and Harbor are:
 
 ```text
 Connection | Endpoint / Scope | Core Readiness | Compatibility | Bindings | Actions
@@ -176,7 +177,7 @@ Rules:
 
 ## Provider Registration Action Footer Contract
 
-New Kubernetes, Metrics Source, Alertmanager, and MinIO connection forms use one embedded registration-gate footer owned by:
+New Kubernetes, Metrics Source, Alertmanager, MinIO, and Harbor connection forms use one embedded registration-gate footer owned by:
 
 ```text
 app/templates/integrations/components/_provider_registration_actions.html
@@ -582,7 +583,7 @@ Kubernetes, Metrics Source, Alertmanager, Runtime Observations, and Integration 
 
 Before final lock, Integrations use the following canonical composition rules:
 
-- **Configuration** — provider detail pages are read-only connection-contract workspaces. Kubernetes, Metrics Source, Alertmanager, and MinIO expose registered identity, endpoint/transport evidence, authority boundary, operational flow, and a canonical `Configure Connection` action. Editing occurs on the dedicated `Edit <Provider> Connection` page; provider detail tabs MUST NOT embed editable forms.
+- **Configuration** — provider detail pages are read-only connection-contract workspaces. Kubernetes, Metrics Source, Alertmanager, MinIO, and Harbor expose registered identity, endpoint/transport evidence, authority boundary, operational flow, and a canonical `Configure Connection` action. Editing occurs on the dedicated `Edit <Provider> Connection` page; provider detail tabs MUST NOT embed editable forms.
 - **Provider workspace tabs** — Metrics Source and Alertmanager use `integration_workspace_tabs.js` as the shared tab-state controller. Page-local copies of URL/hash synchronization, keyboard navigation, and `moveTab()` logic are prohibited.
 - **Runtime Observation modal** — the content macro must call `_record_detail_modal.html` with `size='standard'`; it must not own a second standalone `<dialog>` shell. Diagnostic detail is shown once under `Diagnostic Review`; only a non-duplicative `standalone_message` may appear above it. Lifecycle and capability evidence remain optional dedicated boundaries.
 - **Integration Runtime Overview** — runtime records use a full-width fixed-layout KAORI table and the shared native `View More` modal. Inline `View More / Hide Details` expansion is prohibited for runtime record detail.
@@ -590,7 +591,7 @@ Before final lock, Integrations use the following canonical composition rules:
 - **Hero metrics** — provider Hero context metrics use `page_hero.context_metric()` instead of copied metric-card markup.
 - **Style debt** — no new Integration verifier debt may be added. When an Integration file drops below its recorded debt ceiling, update the baseline in the same patch.
 
-- Provider detail Hero posture is owned by `integrations/components/_provider_detail_posture.html` so the right-side posture card has identical geometry across Kubernetes, Metrics Source, Alertmanager, and MinIO. Provider-specific text and evidence values may differ; card structure, metric density, and actions do not.
+- Provider detail Hero posture is owned by `integrations/components/_provider_detail_posture.html` so the right-side posture card has identical geometry across Kubernetes, Metrics Source, Alertmanager, MinIO, and Harbor. Provider-specific text and evidence values may differ; card structure, metric density, and actions do not.
 
 ## Domain workspace visual and runtime feedback contract
 
@@ -607,22 +608,24 @@ Validation and Runtime HTMX responses MUST refresh their framed-tab status badge
 - Provider front pages are already protected by `integrations.manage`; registry and coverage empty states MUST NOT repeat the same authorization decision inside the template. If the page is renderable, the canonical `Register Connection` action is renderable when no filters suppress it.
 - Cross-provider consumer coverage uses the asset-centric term **Consumer Asset** and pagination uses **Assets**, not provider-specific `Scopes`.
 - Registration workspaces share the same interaction hierarchy: Hero → `Connection Configuration` → `Connection Identity` → `Endpoint & Access` with operation-scoped `Test Connection` → compatibility/request controls → action bar.
-- Registration Hero ownership is shared by `integrations/components/_provider_registration_hero.html`. Kubernetes, Metrics Source, Alertmanager, and MinIO MUST NOT copy their own registration-posture panel. The shared right-side contract is `Registration Posture` / `Pre-save Requirements` / `Draft`, with `Before Save · Test Connection` and `After Save · Core Validation`, followed by `Back to Registry`.
+- Registration Hero ownership is shared by `integrations/components/_provider_registration_hero.html`. Kubernetes, Metrics Source, Alertmanager, MinIO, and Harbor MUST NOT copy their own registration-posture panel. The shared right-side contract is `Registration Posture` / `Pre-save Requirements` / `Draft`, with `Before Save · Test Connection` and `After Save · Full Validation`, followed by `Back to Registry`. `Core Validation` remains an internal architecture term and is not operator-facing registration guidance.
 - Registration naming uses **Register `<Provider>` Connection**. `Add Kubernetes Connection` and `Register Alertmanager Instance` are retired operator-facing labels.
 - Registration/configuration right-context ownership is shared by `integrations/components/_provider_registration_context.html`. Provider connection forms render exactly two context surfaces: the provider flow and one `Related Operational Workspace` card. Do not restore separate expandable `Connection Identity & Contract`, `Compatibility Guide`, `After Registration`, or lifecycle cards beside the connection form; those details belong to Configuration, Validation & Capabilities, Runtime & History, or the provider's final lifecycle/source workspace after registration.
-- The related workspace points to the provider domain (`Orchestration`, `Observability`, or `Storage`) and keeps the authority boundary concise. Any initial consumer binding created by a registration shortcut is described inside that related-workspace context instead of adding a third side card.
+- The related workspace points to the provider domain (`Orchestration`, `Observability`, `Storage`, or `Registry`) and keeps the authority boundary concise. Any initial consumer binding created by a registration shortcut is described inside that related-workspace context instead of adding a third side card.
 - `Test Connection` MUST be an HTMX operation with its own loading indicator and signed registration proof; it MUST NOT submit or refresh the entire registration workspace.
 - Registration action bars use the shared gated-footer contract: `Connection Test Required` / `Complete Test Connection before registration.` before verification, then `Connection Verified` / `Verified connection payload is ready to register.` after verification, with `Cancel` + `Register Connection`. Metrics Source and Alertmanager MUST NOT omit Cancel or use `Instance` terminology in operator-facing actions.
 - Registration identity fields use one wording contract: `Connection Name`, `Environment` when the provider persists environment context, and `Description`. Canonical placeholders are `<Provider> Production` and `Operational purpose and ownership context`. Endpoint placeholders use `https://<provider>.example.internal`; basic-auth usernames use `service-account`; secret fields use action wording such as `Enter password`, `Enter bearer token`, or `Enter secret key`.
 - Keep field-level helper text sparse. Section headers own the explanation for Connection Identity, Endpoint & Access, compatibility, and operational controls. Per-field helper text is reserved for controls whose behavior cannot be expressed by label/placeholder alone (for example kubeconfig replacement behavior). Do not add explanatory mini-cards under ordinary registration fields.
 - MinIO `Test Connection` proves S3 endpoint reachability, request signing, and the read-only discovery permission required by the provider. MinIO product identity and release compatibility are Core Validation evidence. Product identity may use MinIO deployment/server headers or the unauthenticated `/minio/health/live` probe so a reverse proxy that strips response headers does not create a false registration failure.
-- Provider-specific fields may differ, but MinIO, Metrics Source, Alertmanager, and Kubernetes must keep the same visual and interaction hierarchy.
+- Provider-specific fields may differ, but Kubernetes, Metrics Source, Alertmanager, MinIO, and Harbor must keep the same visual and interaction hierarchy.
 
 
 ### Asset-owner provider lifecycle
 
-Kubernetes and MinIO are asset-owning providers. Their detail workspaces use the same
-operator lifecycle model even though the technical evidence differs:
+Kubernetes, MinIO, and Registry / Harbor are asset-owning provider surfaces. Harbor uses
+the canonical provider-neutral `registry_instance` identity as its managed consumer asset;
+its detailed artifact inventory remains owned by Artifact Registry. Their detail workspaces
+use the same operator lifecycle model even though the technical evidence differs:
 
 ```text
 Configuration
@@ -646,36 +649,42 @@ block deletion.
 Shared ownership:
 
 - tab state and asset-owner destructive state are owned by `integration_workspace_tabs.js`;
-- Kubernetes and MinIO destructive dialogs use `integrations/components/_asset_owner_delete_modal.html`;
+- Kubernetes, MinIO, and Harbor destructive dialogs use `integrations/components/_asset_owner_delete_modal.html`;
 - provider-specific templates supply only the asset label and deletion consequence;
-- Kubernetes and MinIO use `Inventory & Lifecycle` as the fourth asset-owner workspace. It presents bound Metrics Source/Alertmanager sources as read-only operational inventory plus the asset deletion lifecycle; source-binding mutation stays in Observability.
+- Kubernetes, MinIO, and Harbor use `Inventory & Lifecycle` as the fourth asset-owner workspace. It presents committed asset/inventory posture plus bound Metrics Source/Alertmanager sources as read-only operational evidence and owns the KAORI-side deletion lifecycle; source-binding mutation stays in Observability.
+- Harbor's lifecycle workspace summarizes committed Registry collection counts/freshness and links to Artifact Registry for detailed Projects / Repositories / Artifacts. It must not duplicate Artifact Registry tables or issue request-time Harbor inventory calls.
+- Deleting a Harbor registration removes KAORI-owned provider-derived Registry state and bindings targeting that `registry_instance`; it never deletes Harbor-native projects, repositories, artifacts, policies, users, or robot accounts.
 
 
 ### Asset-owner detail workspace parity
 
-Kubernetes and MinIO are asset-owner providers. Their detail workspaces MUST share the same operational composition contract even when the provider-specific evidence differs:
+Kubernetes, MinIO, and Registry / Harbor are asset-owner provider surfaces. Their detail workspaces MUST share the same operational composition contract even when the provider-specific evidence differs:
 
 - `Configuration` owns the persisted connection contract.
 - `Validation & Capabilities` owns compatibility, provider capability readiness, an HTMX-filtered capability registry, and `5/10/25/50` pagination.
 - `Runtime & History` owns operation-scoped runtime refresh plus the canonical shared runtime-history table with HTMX filters and pagination.
-- the fourth asset-owner workspace is `Inventory & Lifecycle`. Kubernetes and MinIO render their bound Metrics Source/Alertmanager sources through the shared asset-owner source table with HTMX pagination; this workspace is read-only for binding mutation and owns only asset lifecycle actions such as governed deletion.
+- the fourth asset-owner workspace is `Inventory & Lifecycle`. Kubernetes, MinIO, and Harbor render bound Metrics Source/Alertmanager sources through the shared asset-owner source table with HTMX pagination; this workspace is read-only for binding mutation and owns KAORI-side asset lifecycle actions such as governed deletion. Harbor additionally summarizes its committed provider-neutral Registry snapshot; detailed inventory remains owned by Artifact Registry without a provider-local product CTA.
+- the fourth-domain header status MUST represent that domain's evidence plane. For asset-owner `Inventory & Lifecycle`, the badge reflects committed inventory state (for example `Committed Snapshot`, `No Committed Inventory`, collection-in-progress, or collection failure), never provider Full Validation readiness.
+- asset-owner lifecycle action areas MUST NOT add provider-local job-management or product-navigation shortcuts. The canonical cross-workspace handoff is the read-only binding-owner action to `Open Observability`; lifecycle mutation remains the governed asset-owner action.
 
 Provider-owned API identity MUST NOT be duplicated as a consumer binding. MinIO API ownership is represented by the MinIO/ObjectStorageSystem relationship; Kubernetes API ownership is represented by the Kubernetes connection/cluster relationship.
 
 ### Shared provider detail and observability coverage
 
 - Metrics Source and Alertmanager Configuration tabs use `integrations/components/_provider_configuration_contract.html` and expose `Configure Connection`; edit forms live on dedicated edit routes.
-- Edit connection pages for Kubernetes, Metrics Source, Alertmanager, and MinIO keep exactly two right-context surfaces through `_provider_registration_context.html`: the provider flow and `Related Operational Workspace`. Validation matrices, RBAC explainers, runtime history, and binding diagnostics belong to their detail workspaces, not the edit form rail.
+- Edit connection pages for Kubernetes, Metrics Source, Alertmanager, MinIO, and Harbor keep exactly two right-context surfaces through `_provider_registration_context.html`: the provider flow and `Related Operational Workspace`. Validation matrices, RBAC explainers, runtime history, and binding diagnostics belong to their detail workspaces, not the edit form rail.
+- **Provider edit-form parity.** Current provider edit pages reuse `integrations/components/_provider_edit_hero.html` for the Hero, `components/form_action_bar.html` with `embedded=true` for the in-card footer, and `components/action_button.html` for Cancel / Save actions. Provider-specific templates supply fields, API labels, Test Connection behavior, and copy only; they do not create provider-local edit Hero or footer geometry.
+- User-visible edit guidance uses **Full Validation** for the post-save readiness gate. `Core Validation` may remain an internal architecture term but is not the operator-facing edit action label.
 - **Observability binding mutation is source-owned.** Metrics Source owns metrics binding create/update/validate/remove actions; Alertmanager owns the equivalent alert-binding actions. Asset-owner workspaces never duplicate those mutation controls.
-- Observability coverage is asset-centric, not Kubernetes-only. Metrics Source and Alertmanager coverage enumerates every managed asset registered in `consumer_assets.py`, currently `kubernetes_cluster` and `object_storage_system`. Binding mutation is source-owned: operators create, validate, update, and remove Metrics Source bindings from Metrics Source and Alertmanager bindings from Alertmanager. Kubernetes/MinIO asset-owner pages expose bound-source evidence read-only and link back to Observability.
-- The `Bindings & Consumers` workspace on Metrics Source/Alertmanager uses one shared `Add Binding` modal. Asset type and asset identity are selected first; the Consumer Profile is resolved from the canonical asset registry plus the source provider's binding-profile registry. Provider-specific `Add Kubernetes Binding` or `Add MinIO Binding` forms are prohibited.
+- Observability coverage is asset-centric, not Kubernetes-only. Metrics Source and Alertmanager coverage enumerates every managed asset registered in `consumer_assets.py`, currently `kubernetes_cluster`, `object_storage_system`, and `registry_instance`. Binding mutation is source-owned: operators create, validate, update, and remove Metrics Source bindings from Metrics Source and Alertmanager bindings from Alertmanager. Kubernetes/MinIO/Harbor asset-owner pages expose bound-source evidence read-only and link back to Observability.
+- The `Bindings & Consumers` workspace on Metrics Source/Alertmanager uses one shared `Add Binding` modal. Asset type and asset identity are selected first; the Consumer Profile is resolved from the canonical asset registry plus the source provider's binding-profile registry. Provider-specific `Add Kubernetes Binding` or `Add MinIO Binding` forms are prohibited. The shared workflow uses the canonical responsive standard-detail width (`max-w-5xl`) so two-column preference/identity controls have adequate reading space without provider-specific width overrides.
 - **Bindings & Consumers final-lock contract (2026-08-13, refined 2026-08-19).** Metrics Source and Alertmanager use the same summary-first registry contract. The always-visible row keeps only Consumer Binding, Binding Validation, Effective Resolution, and Actions. Provider identity, Consumer Profile, Resolver Preference, and binding-owned validation evidence are secondary details exposed through `View More` and expanded beneath the owning row. `Primary → Secondary → Fallback` is preference only; lower priority wins within the same role. Source Readiness, Binding Validation, and Effective Resolution remain independent states. New bindings and selector edits enter `Validation Required`; only successful Binding Validation grants binding eligibility.
 - **Provider detail typography is shared across the entire Integration domain.** The hierarchy is fixed across Overview, Orchestration, Observability, Storage, registration forms, and provider detail tabs: **Primary workspace title** uses `text-base font-semibold text-content-primary`; its description uses `text-sm leading-6 text-content-secondary` with a bounded reading measure such as `max-w-3xl`. **Secondary section title** uses `text-sm font-semibold text-content-primary`; supporting section copy uses `text-xs leading-5 text-content-secondary`. **Evidence label / helper** uses `text-xs`; technical identifiers may add `font-mono` without changing hierarchy. Validation/Runtime must use the shared `connection_validation_header.html`, and page-local `text-xs` primary descriptions are prohibited.
 - **Bindings & Consumers final-lock contract (2026-08-13).** Source Readiness, Binding Validation, and Effective Resolution remain independent states. New or edited bindings enter `Validation Required`; successful Binding Validation is required before resolver eligibility. The current registry presentation is summary-first with `View More` disclosure, not the retired seven-column compression layout.
 - Consumer Binding Registry must prefer disclosure over compression. Do not force seven evidence dimensions into one horizontal row and do not shrink canonical controls to make them fit. Metrics Source and Alertmanager reuse `_binding_registry_layout.html`: the four-column summary is `30% / 18% / 18% / 34%`, reserving the widest region for canonical row actions. Secondary evidence expands below with three calm detail regions, and the table keeps a moderate `72rem` minimum width only as a constrained-viewport fallback. `View More` is a standard button in the Actions column—not inline Consumer Binding text—and validation result evidence is rendered inside the expanded row when present.
 - Binding Validation progress uses the shared child `_validation_poller.html` contract. The workspace root must not poll and replace itself. The child poller replaces the complete scope workspace while a canonical job is active and disappears on a terminal snapshot, so persisted binding status and effective resolution refresh automatically when the worker completes.
 
-- The shared Add Binding dialog explains the three-step workflow (`Consumer → Preference & Identity → Validation`) and the source-owned mutation boundary. Kubernetes and Object Storage asset-owner workspaces remain read-only for binding mutation. Loading bars stay header-owned and binding registries use canonical `5/10/25/50` pagination.
+- The shared Add Binding dialog explains the three-step workflow (`Consumer → Preference & Identity → Validation`) and the source-owned mutation boundary. Kubernetes, Object Storage / MinIO, and Registry / Harbor asset-owner workspaces remain read-only for binding mutation. Loading bars stay header-owned and binding registries use canonical `5/10/25/50` pagination.
 
 - Future managed assets such as Vault extend the same flow by registering a canonical asset definition (for example `vault_system`) and compatible source profiles such as `vault-metrics-v1` and/or `vault-alerts-v1`. Once registered, the asset becomes eligible in Observability coverage and the shared Add Binding modal without a new product-specific Metrics Source/Alertmanager form or binding table.
 - Metrics Source/Alertmanager Capability Registry tables use the same KAORI table hierarchy as domain Capability Registry: shared filter geometry, standard headers/cells, status inside the Status column, `View More` for detailed evidence, 5/10/25/50 pagination, and operation-scoped HTMX loading. Readiness labels must not float outside their canonical table/decision surface.
@@ -684,17 +693,19 @@ Provider-owned API identity MUST NOT be duplicated as a consumer binding. MinIO 
 
 ## Provider Detail Workspace Final Contract
 
-Kubernetes, Metrics Source, Alertmanager, and MinIO connection details share the same first three lifecycle domains:
+Kubernetes, Metrics Source, Alertmanager, MinIO, and Harbor connection details share the same first three lifecycle domains:
 
 1. **Configuration** — read-only `Connection Contract`; mutations happen in the dedicated edit workspace.
 2. **Validation & Capabilities** — operator-facing lifecycle name. The action is **Run Full Validation**. Provider Core Validation may remain an internal architecture term, but provider detail UI must not expose `Core Validation` as the tab or workspace title.
 3. **Runtime & History** — `Runtime Refresh` owns current reachability, latency, health, and diagnostics. It never substitutes for Full Validation.
 
-The fourth domain is authority-specific: Kubernetes and MinIO use **Inventory & Lifecycle**; Metrics Source and Alertmanager use **Bindings & Consumers**.
+The fourth domain is authority-specific: Kubernetes, MinIO, and Harbor use **Inventory & Lifecycle**; Metrics Source and Alertmanager use **Bindings & Consumers**.
 
-Provider detail Hero posture evidence is sourced as **Produced by Full Validation**. Capability counts use **Validated Capabilities** consistently. Metrics Source, Alertmanager, and MinIO runtime pages use the shared `integrations/components/_runtime_decision.html` decision surface; provider-specific technical evidence follows underneath. Kubernetes may retain additional lifecycle evidence, but its Runtime Decision semantics must remain equivalent.
+Provider detail Hero posture evidence is sourced as **Produced by Full Validation**. Capability counts use **Validated Capabilities** consistently. Metrics Source, Alertmanager, MinIO, and Harbor runtime pages use the shared `integrations/components/_runtime_decision.html` decision surface; provider-specific technical evidence follows underneath. Kubernetes may retain additional lifecycle evidence, but its Runtime Decision semantics must remain equivalent.
 
-Bindings remain source-owned mutations. Asset-owner workspaces expose observability binding evidence read-only. Object Storage Inventory remains committed-snapshot owned and must not be recomputed by opening the MinIO integration detail page.
+**Runtime Decision Primary Finding contract.** Primary Finding is one short, state-first operational point: provider/runtime identity plus the current health, readiness, lifecycle, or named diagnostic requiring attention. It must not repeat full diagnostic prose and must not expose an Info Tip / hover disclosure. Detailed lifecycle, compatibility, capability, diagnostic, and remediation evidence stays in Runtime Evidence and Recent Runtime Observations. This rule applies equally to Kubernetes, Prometheus/Thanos through Metrics Source, Alertmanager, MinIO, Harbor, and future provider runtimes.
+
+Bindings remain source-owned mutations. Asset-owner workspaces expose observability binding evidence read-only. Object Storage Inventory remains committed-snapshot owned and must not be recomputed by opening the MinIO integration detail page. Asset-owner fourth-domain status is inventory-owned, and provider-local job/product shortcuts are not part of the lifecycle action contract.
 
 
 ## Notification Channels
@@ -724,3 +735,22 @@ The Observability domain owns one canonical `metrics_source` integration categor
 Metrics bindings may coexist for one managed asset when their query-horizon roles differ. Canonical routing fields are `Query Horizon` (`Recent Preferred`, `Historical Preferred`, `Balanced`) and `Routing Weight` (`1..100`). The resolver must never select solely by weight: eligibility/runtime health precede horizon routing, source role remains the failover tier, weight ranks candidates inside a horizon/role, and priority is the final operator-defined tie-break.
 
 Metrics routing is horizon-aware and product-neutral. The configured `METRICS_RECENT_WINDOW_HOURS` boundary determines which horizon a time-aware query requests; each source advertises its default horizon through provider metadata and each binding owns its routing role/weight.
+
+
+## Compact Domain Guidance
+
+Contextual ownership, routing, and provider-boundary explanations that are useful during review but are not required operational state use the canonical `components/info_tip.html` pattern instead of permanent Violet guidance panels.
+
+For Integration domain registries:
+
+- every implemented Integration domain page uses one consolidated Info Tip beside the parent **Registry and Consumer Bindings** title, before the Provider Registry / Consumer Bindings tab row;
+- the parent placement keeps guidance available regardless of the active tab and prevents filter/table headers from owning architecture guidance;
+- Orchestration explains execution and control-plane authority;
+- Observability explains Metrics Source / Alert Source routing authority;
+- Storage explains native storage-state authority plus independent telemetry and alert sources;
+- Registry explains provider-native Registry authority plus KAORI committed evidence ownership;
+- keep the full explanation available on hover, keyboard focus, and touch through the shared Info Tip controller;
+- do not reserve permanent vertical space for routing or authority helper copy;
+- do not hide validation failures, readiness blockers, destructive warnings, or required workflow state in an Info Tip;
+- domain-specific guidance remains provider-neutral where the owning boundary is provider-neutral;
+- Integrations Overview is excluded because its portfolio and authority surfaces are first-class overview evidence rather than subordinate helper guidance.

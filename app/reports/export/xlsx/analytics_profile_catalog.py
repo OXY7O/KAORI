@@ -163,6 +163,19 @@ ANALYTICS_WORKBOOK_PROFILES: dict[str, AnalyticsWorkbookProfile] = {
         sheet_names=('Analysis', 'Top Consumers', 'Trends', 'Alerts & Anomalies'),
         primary_visual='ranked_bar',
     ),
+    'artifact_registry_analysis': AnalyticsWorkbookProfile(
+        report_type='artifact_registry_analysis',
+        title='Artifact Registry Analysis',
+        description='Committed Registry capacity, security, runtime correlation, governance, alert, and recommendation evidence.',
+        metric_specs=(
+            _metric('Projects', fmt='#,##0'),
+            _metric('Repositories', fmt='#,##0'),
+            _metric('Artifacts', fmt='#,##0'),
+            _metric('Storage'),
+        ),
+        sheet_names=('Analysis', 'Top Consumers', 'Alerts & Anomalies'),
+        primary_visual='ranked_bar',
+    ),
 }
 
 ANALYTICS_XLSX_REPORT_TYPES = frozenset(ANALYTICS_WORKBOOK_PROFILES)

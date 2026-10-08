@@ -1,0 +1,49 @@
+{% import "components/operational_section_loading.html" as section_loading %}
+{% import "components/operational_signal_overview.html" as signal_overview %}
+{% import "components/table.html" as table_ui %}
+{% set signal_updated = ('Updated ' ~ (overview.latest_committed_at|user_datetime)) if overview.latest_committed_at else 'Not Collected' %}
+{% set scope_selector %}
+    <label for="artifact-registry-dashboard-provider" class="sr-only">Registry Provider Scope</label>
+    <div class="relative min-w-0 flex-1 lg:w-72 lg:flex-none">
+        <i data-lucide="sliders-horizontal"
+           class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
+           aria-hidden="true"></i>
+        <select id="artifact-registry-dashboard-provider"
+                name="provider_id"
+                hx-get="{{ url_for('artifact_registry.overview') }}"
+                hx-target="#artifact-registry-dashboard-content"
+                hx-swap="innerHTML"
+                hx-push-url="true"
+                hx-trigger="change"
+                hx-disabled-elt="this"
+                hx-include="#artifact-registry-dashboard-active-tab"
+                class="{{ table_ui.filter_select_classes() }} pl-10">
+            <option value="">All Registry Providers</option>
+            {% for provider in overview.providers %}
+                <option value="{{ provider.id }}"
+                        {% if overview.selected_provider_id|string == provider.id|string %}selected{% endif %}>
+                    {{ provider.name }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+{% endset %}
+{% call signal_overview.render(
+    'Committed Registry inventory and evidence posture for the active provider scope.',
+    '4 Indicators',
+    overview.scope_label,
+    'package-search',
+    overview.posture.label,
+    overview.posture.tone,
+    signal_updated,
+    scope_selector
+    ) %}
+    <div id="artifact-registry-dashboard-kpis"
+         hx-get="{{ url_for('artifact_registry.overview_section', section='kpi_cards') }}?provider_id={{ overview.selected_provider_id or '' }}"
+         hx-trigger="load"
+         hx-target="this"
+         hx-swap="outerHTML">
+        {{ section_loading.kpis(item_count=4,
+                aria_label='Artifact Registry Operational Indicators Loading') }}
+    </div>
+{% endcall %}

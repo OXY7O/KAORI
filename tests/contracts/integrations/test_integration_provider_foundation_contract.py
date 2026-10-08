@@ -8,7 +8,7 @@ def read(relative: str) -> str:
 
 
 def test_registry_owns_domain_capability_and_provider_extension_metadata() -> None:
-    registry = read('app/integrations/registry.py')
+    registry = read('app/integrations/kernel/registry.py')
     taxonomy = read('app/integrations/taxonomy.py')
     taxonomy_catalog = read('app/definitions/catalogs/integrations/taxonomy.yaml')
 
@@ -24,7 +24,7 @@ def test_registry_owns_domain_capability_and_provider_extension_metadata() -> No
         assert field in registry
 
     assert 'integration_taxonomy_document()' in taxonomy
-    for domain in ('key: orchestration', 'key: observability', 'key: storage'):
+    for domain in ('key: orchestration', 'key: observability', 'key: storage', 'key: registry'):
         assert domain in taxonomy_catalog
     for capability in (
         'key: container_orchestrator',
@@ -33,6 +33,7 @@ def test_registry_owns_domain_capability_and_provider_extension_metadata() -> No
         'key: object_storage',
         'key: file_storage',
         'key: block_storage',
+        'key: registry',
     ):
         assert capability in taxonomy_catalog
 
@@ -54,6 +55,10 @@ def test_builtin_provider_registration_uses_canonical_taxonomy() -> None:
         'app/integrations/storage/object_storage/providers/minio/__init__.py': (
             "domain_key='storage'",
             "capability_key='object_storage'",
+        ),
+        'app/integrations/registry/providers/harbor/__init__.py': (
+            "domain_key='registry'",
+            "capability_key='registry'",
         ),
     }
     for path, expected in registrations.items():

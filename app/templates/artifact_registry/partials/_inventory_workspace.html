@@ -1,0 +1,366 @@
+{% import "components/page_hero.html" as page_hero %}
+{% import "components/table_registry.html" as registry %}
+{% import "components/inventory_asset_card.html" as inventory_asset_card %}
+{% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/resource_posture_grid.html" as posture_grid %}
+{% import "components/section_intro.html" as section_intro %}
+{% import "components/snapshot_context_bar.html" as snapshot_context_bar %}
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/resource_detail_modal.html" as resource_detail_modal %}
+<div id="artifact-registry-inventory-workspace" class="space-y-6">
+    <section class="{{ page_hero.shell_classes() }}">
+        <div class="{{ page_hero.layout_classes() }}">
+            <div class="{{ page_hero.content_classes() }}">
+                {% call page_hero.intro('boxes', 'Artifact Registry Inventory', 'package-open') %}
+                    <h1 class="{{ page_hero.title_classes() }}">{{ inventory.resource_label }}</h1>
+                    <p class="mt-2 {{ page_hero.description_classes() }}">Review committed Registry inventory and provider provenance.</p>
+                    <div class="{{ page_hero.metadata_row_classes() }}">
+                        {{ page_hero.meta_label('folder-kanban', inventory.overview.project_count ~ ' Projects') }}
+                        {{ page_hero.meta_label('package-open', inventory.overview.repository_count ~ ' Repositories') }}
+                        {{ page_hero.meta_label('fingerprint', inventory.overview.artifact_count ~ ' Artifacts') }}
+                    </div>
+                {% endcall %}
+            </div>
+            {{ page_hero.context_card('Registry inventory posture',
+                        'Committed State',
+                        'Inventory Posture',
+                        inventory.overview.posture.label,
+                        inventory.overview.posture.tone,
+                        [
+                        ('database-backup', 'Committed Providers', inventory.overview.snapshot_count ~ '/' ~ inventory.overview.provider_count, 'Retained snapshots') ,
+            ('scan-search', 'Snapshot Exceptions', inventory.snapshot_context.exception_count, 'Stale, pending, or failed')
+            ],
+            'Open Registry Integrations',
+            url_for('integrations.registry'),
+            action_icon='settings-2'
+            ) }}
+        </div>
+    </section>
+    {% if inventory.setup.is_blocked %}
+        {% include "artifact_registry/components/_setup_blocker.html" %}
+    {% else %}
+        {{ snapshot_context_bar.render(source_label=inventory.snapshot_context.source_label,
+                status=inventory.snapshot_context.status,
+                tone=inventory.snapshot_context.tone,
+                description=inventory.snapshot_context.description,
+                latest_collected=inventory.snapshot_context.latest_collected_at|user_datetime if inventory.snapshot_context.latest_collected_at else 'Not Collected',
+                scope_label=inventory.snapshot_context.scope_label,
+                coverage_label=inventory.snapshot_context.coverage_label,
+                exceptions_label=inventory.snapshot_context.exceptions_label,
+                latest_supporting='Latest committed inventory.',
+                scope_supporting='Provider-neutral Registry scope.',
+                coverage_supporting=inventory.snapshot_context.coverage_supporting,
+                exceptions_supporting=inventory.snapshot_context.exceptions_supporting,
+                coverage_tone=inventory.snapshot_context.coverage_tone,
+                exceptions_tone=inventory.snapshot_context.exceptions_tone,
+                metric_icon_palette='brand') }}
+        <section class="space-y-4" aria-labelledby="registry-resource-posture-heading">
+            {{ section_intro.render('Operational Posture',
+                        inventory.resource_posture_intro,
+                        'registry-resource-posture-heading') }}
+            {% call operational_section_card.render(
+                inventory.resource_posture_title,
+                inventory.resource_posture_description,
+                inventory.resource_icon,
+                body_classes='p-0'
+                ) %}
+                {{ posture_grid.render(inventory.resource_posture_metrics, columns=4) }}
+            {% endcall %}
+        </section>
+        <section class="space-y-4"
+                 aria-labelledby="registry-inventory-records-heading">
+            {{ section_intro.render('Registry Inventory',
+                        'Search the selected committed asset catalog with provider provenance preserved.',
+                        'registry-inventory-records-heading',
+                        supporting='Current view · ' ~ inventory.resource_label) }}
+            {% set result_badge %}
+                {{ table_label.metadata_label(inventory.total ~ (' Result' if inventory.total == 1 else ' Results') ,
+                icon='list-filter'
+                ) }}
+            {% endset %}
+            {% set inventory_header_actions = none %}
+            {% if inventory.has_filters %}
+                {% set inventory_header_actions %}
+                    {{ registry.clear_filters_action(url_for(inventory.resource_endpoint, page=1, per_page=inventory.pagination.per_page) ,
+                    table_ui.action_classes(),
+                    hx_get=url_for(inventory.resource_endpoint, page=1, per_page=inventory.pagination.per_page),
+                    target='#artifact-registry-inventory-table',
+                    indicator='#artifact-registry-inventory-loading',
+                    select='#artifact-registry-inventory-table',
+                    swap='outerHTML',
+                    push_url='true',
+                    sync='closest section:replace',
+                    marker='artifact-registry-inventory-table'
+                    ) }}
+                {% endset %}
+            {% endif %}
+            <section id="artifact-registry-inventory-table"
+                     class="{{ table_ui.block_classes() }}">
+                {{ table_ui.inventory_block_header(inventory.resource_icon,
+                                inventory.resource_label ~ ' Inventory',
+                                inventory.resource_description,
+                                'artifact-registry-inventory-loading',
+                                'Refreshing Registry Inventory',
+                                none,
+                                none,
+                                header_actions=inventory_header_actions,
+                                title_extra=result_badge) }}
+                <div id="artifact-registry-inventory-content">
+                    <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+                        {% call registry.filter_form(
+                            inventory.resource_endpoint,
+                            'artifact-registry-inventory-table',
+                            'artifact-registry-inventory-loading',
+                            inventory.pagination.per_page
+                            ) %}
+                            <div>
+                                <label for="artifact-registry-inventory-source"
+                                       class="{{ table_ui.filter_label_classes() }}">Registry Source</label>
+                                <select id="artifact-registry-inventory-source"
+                                        name="source_id"
+                                        class="{{ table_ui.filter_select_classes() }}">
+                                    <option value="">All Sources</option>
+                                    {% for source in inventory.source_options %}
+                                        <option value="{{ source.id }}"
+                                                {% if inventory.filters.source_id == source.id %}selected{% endif %}>{{ source.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label for="artifact-registry-inventory-environment"
+                                       class="{{ table_ui.filter_label_classes() }}">Environment</label>
+                                <select id="artifact-registry-inventory-environment"
+                                        name="environment"
+                                        class="{{ table_ui.filter_select_classes() }}">
+                                    <option value="">All Environments</option>
+                                    {% for environment in inventory.environment_options %}
+                                        <option value="{{ environment }}"
+                                                {% if inventory.filters.environment == environment %}selected{% endif %}>{{ environment|environment_name(empty='Not Set') }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            {% if inventory.resource == 'projects' %}
+                                <div>
+                                    <label for="artifact-registry-project-visibility"
+                                           class="{{ table_ui.filter_label_classes() }}">Visibility</label>
+                                    <select id="artifact-registry-project-visibility"
+                                            name="visibility"
+                                            class="{{ table_ui.filter_select_classes() }}">
+                                        <option value="">All Visibility</option>
+                                        {% for option in inventory.visibility_options %}
+                                            <option value="{{ option.value }}"
+                                                    {% if inventory.filters.visibility == option.value %}selected{% endif %}>{{ option.label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            {% endif %}
+                            <div class="min-w-0">
+                                <label for="artifact-registry-inventory-search"
+                                       class="{{ table_ui.filter_label_classes() }}">Search {{ inventory.resource_label }}</label>
+                                {{ table_ui.search_field('q',
+                                                                inventory.search,
+                                                                inventory.search_placeholder,
+                                                                'artifact-registry-inventory-search') }}
+                            </div>
+                        {% endcall %}
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="{{ table_ui.table_classes('min-w-[62rem]') }}">
+                            {% if inventory.resource == 'projects' %}
+                                <thead class="{{ table_ui.head_classes() }}">
+                                    <tr>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Project</th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Provider</th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Visibility</th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Repositories</th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Last Observed</th>
+                                        <th class="{{ table_ui.header_cell_classes(true) }}">Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="{{ table_ui.body_classes() }}">
+                                    {% for row in inventory.rows %}
+                                        <tr class="{{ table_ui.row_classes() }}">
+                                            <td class="{{ table_ui.cell_classes() }}">
+                                                {{ table_ui.title_cell(row.name, 'Registry project / namespace', 'folder-kanban') }}
+                                            </td>
+                                            <td class="{{ table_ui.cell_classes() }}">
+                                                {{ table_ui.title_cell(row.provider_name,
+                                                                                                row.provider_label ~ ' · ' ~ (row.provider_environment|environment_name(empty='Not Set') ),
+                                                'boxes'
+                                                ) }}
+                                            </td>
+                                            <td class="{{ table_ui.cell_classes() }}">
+                                                {% if row.public is sameas true %}
+                                                    {{ table_label.metadata_label('Public', icon='globe-2') }}
+                                                {% elif row.public is sameas false %}
+                                                    {{ table_label.metadata_label('Private', icon='lock-keyhole') }}
+                                                {% else %}
+                                                    {{ table_label.status_label('Not Observed', 'unknown') }}
+                                                {% endif %}
+                                            </td>
+                                            <td class="{{ table_ui.cell_classes() }}">
+                                                <span class="text-sm font-semibold text-content-primary">{{ row.repository_count }}</span>
+                                            </td>
+                                            <td class="{{ table_ui.cell_classes() }}">
+                                                <span class="text-xs font-medium text-content-secondary">{{ row.observed_at|user_datetime }}</span>
+                                            </td>
+                                            <td class="{{ table_ui.cell_classes(true) }}">
+                                                {{ resource_detail_modal.detail_button(row.id,
+                                                                                                url_for('artifact_registry.inventory_project_details', project_id=row.id) ,
+                                                row.name,
+                                                'Registry Project'
+                                                ) }}
+                                            </td>
+                                        </tr>
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="6" class="p-0">
+                                                {% set empty_state_icon = inventory.resource_icon %}
+                                                {% set empty_state_label = "Committed Inventory" %}
+                                                {% set empty_state_title = "No Projects Found" %}
+                                                {% set empty_state_description = inventory.empty_description %}
+                                                {% set empty_state_min_height = "min-h-[190px]" %}
+                                                {% include "components/states/_empty_state.html" %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            {% elif inventory.resource == 'repositories' %}
+                                <thead class="{{ table_ui.head_classes() }}">
+                                    <tr>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Repository</th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Provider</th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Artifacts</th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Pulls</th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Last Observed</th>
+                                        <th class="{{ table_ui.header_cell_classes(true) }}">Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="{{ table_ui.body_classes() }}">
+                                    {% for row in inventory.rows %}
+                                        <tr class="{{ table_ui.row_classes() }}">
+                                            <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(row.name, row.project, 'package-open') }}</td>
+                                            <td class="{{ table_ui.cell_classes() }}">
+                                                {{ table_ui.title_cell(row.provider_name,
+                                                                                                row.provider_label ~ ' · ' ~ (row.provider_environment|environment_name(empty='Not Set') ),
+                                                'boxes'
+                                                ) }}
+                                            </td>
+                                            <td class="{{ table_ui.cell_classes() }}">
+                                                <span class="text-sm font-semibold text-content-primary">{{ row.artifact_count }}</span>
+                                            </td>
+                                            <td class="{{ table_ui.cell_classes() }}">
+                                                <span class="text-sm text-content-secondary">{{ row.pull_count if row.pull_count is not none else 'Not Collected' }}</span>
+                                            </td>
+                                            <td class="{{ table_ui.cell_classes() }}">
+                                                <span class="text-xs font-medium text-content-secondary">{{ row.observed_at|user_datetime }}</span>
+                                            </td>
+                                            <td class="{{ table_ui.cell_classes(true) }}">
+                                                {{ resource_detail_modal.detail_button(row.id,
+                                                                                                url_for('artifact_registry.inventory_repository_details', repository_id=row.id) ,
+                                                row.name,
+                                                'Registry Repository',
+                                                label='View More'
+                                                ) }}
+                                            </td>
+                                        </tr>
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="6" class="p-0">
+                                                {% set empty_state_icon = inventory.resource_icon %}
+                                                {% set empty_state_label = "Committed Inventory" %}
+                                                {% set empty_state_title = "No Repositories Found" %}
+                                                {% set empty_state_description = inventory.empty_description %}
+                                                {% set empty_state_min_height = "min-h-[190px]" %}
+                                                {% include "components/states/_empty_state.html" %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            {% else %}
+                                <thead class="{{ table_ui.head_classes() }}">
+                                    <tr>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Digest</th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Repository</th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Provider</th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Tags</th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Type</th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Size</th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Last Observed</th>
+                                        <th class="{{ table_ui.header_cell_classes(true) }}">Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="{{ table_ui.body_classes() }}">
+                                    {% for row in inventory.rows %}
+                                        <tr class="{{ table_ui.row_classes() }}">
+                                            <td class="{{ table_ui.cell_classes() }}">
+                                                <span class="block max-w-48 truncate font-mono text-xs font-semibold text-content-primary"
+                                                      title="{{ row.digest }}">{{ row.digest_short }}</span>
+                                            </td>
+                                            <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(row.repository, row.project, 'package-open') }}</td>
+                                            <td class="{{ table_ui.cell_classes() }}">
+                                                {{ table_ui.title_cell(row.provider_name,
+                                                                                                row.provider_label ~ ' · ' ~ (row.provider_environment|environment_name(empty='Not Set') ),
+                                                'boxes'
+                                                ) }}
+                                            </td>
+                                            <td class="{{ table_ui.cell_classes() }}">
+                                                <div class="flex max-w-xs flex-wrap gap-1.5">
+                                                    {% for tag in row.tags[:2] %}
+                                                        {{ table_label.metadata_label(tag) }}
+                                                    {% else %}
+                                                        <span class="text-xs text-content-muted">Untagged</span>
+                                                    {% endfor %}
+                                                    {% if row.tags|length > 2 %}
+                                                        {{ table_label.metadata_label('+' ~ (row.tags|length - 2) ~ ' more') }}
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                            <td class="{{ table_ui.cell_classes() }}">
+                                                <span class="text-sm text-content-secondary">{{ row.type }}</span>
+                                            </td>
+                                            <td class="{{ table_ui.cell_classes() }}">
+                                                <span class="whitespace-nowrap text-sm text-content-secondary">{{ row.size }}</span>
+                                            </td>
+                                            <td class="{{ table_ui.cell_classes() }}">
+                                                <span class="text-xs font-medium text-content-secondary">{{ row.observed_at|user_datetime }}</span>
+                                            </td>
+                                            <td class="{{ table_ui.cell_classes(true) }}">
+                                                {{ resource_detail_modal.detail_button(row.id,
+                                                                                                url_for('artifact_registry.inventory_artifact_details', artifact_id=row.id) ,
+                                                row.digest_short,
+                                                'Registry Artifact',
+                                                label='View More'
+                                                ) }}
+                                            </td>
+                                        </tr>
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="8" class="p-0">
+                                                {% set empty_state_icon = inventory.resource_icon %}
+                                                {% set empty_state_label = "Committed Inventory" %}
+                                                {% set empty_state_title = "No Artifacts Found" %}
+                                                {% set empty_state_description = inventory.empty_description %}
+                                                {% set empty_state_min_height = "min-h-[190px]" %}
+                                                {% include "components/states/_empty_state.html" %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            {% endif %}
+                        </table>
+                    </div>
+                    {{ registry.footer(inventory.resource_endpoint,
+                                        'artifact-registry-inventory-table',
+                                        'artifact-registry-inventory-loading',
+                                        inventory.pagination,
+                                        inventory.filter_query,
+                                        [5, 10, 25, 50],
+                                        resource_label=inventory.resource_label,
+                                        control_name='artifact-registry-inventory') }}
+                </div>
+            </section>
+        </section>
+    {% endif %}
+</div>

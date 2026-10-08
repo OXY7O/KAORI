@@ -3,6 +3,11 @@ from __future__ import annotations
 from flask import Blueprint, abort, render_template, request
 
 from app.access.rbac.decorators import permission_required
+from app.dashboards.common.operational import (
+    is_htmx_request,
+    normalize_dashboard_page_size,
+    normalize_operational_tab,
+)
 from app.kubernetes.cluster.onboarding import has_registered_clusters
 from app.kubernetes.dashboard.service import get_dashboard_overview, get_dashboard_section
 
@@ -12,28 +17,19 @@ kubernetes_dashboard_bp = Blueprint(
     url_prefix='/dashboards/kubernetes',
 )
 
-DASHBOARD_TABS = {'overview', 'capacity', 'signals', 'reporting'}
-CLUSTER_HEALTH_PAGE_SIZES = {5, 10, 25, 50}
-
-
-def _active_tab() -> str:
-    value = str(request.args.get('tab') or 'overview').strip().lower()
-    return value if value in DASHBOARD_TABS else 'overview'
-
-
-def _cluster_health_per_page() -> int:
-    try:
-        value = int(request.args.get('cluster_health_per_page', '5'))
-    except (TypeError, ValueError):
-        return 5
-    return value if value in CLUSTER_HEALTH_PAGE_SIZES else 5
-
 
 SECTION_TEMPLATES = {
+    'overview': 'kubernetes/dashboard/partials/_overview.html',
+    'capacity': 'kubernetes/dashboard/partials/_capacity.html',
+    'signals': 'kubernetes/dashboard/partials/_signals.html',
+    'reporting': 'kubernetes/dashboard/partials/_reporting.html',
     'kpi_cards': 'kubernetes/dashboard/partials/_kpi_cards.html',
+    'inventory_summary': 'kubernetes/dashboard/partials/_inventory_summary.html',
+    'reporting_summary': 'kubernetes/dashboard/partials/_reporting_summary.html',
     'cluster_health': 'kubernetes/dashboard/partials/_cluster_health.html',
     'capacity_snapshot': 'kubernetes/dashboard/partials/_capacity_snapshot.html',
     'alerts_summary': 'kubernetes/dashboard/partials/_alerts_summary.html',
+    'alert_response_guidance': 'kubernetes/dashboard/partials/_alert_response_guidance.html',
     'top_consumers': 'kubernetes/dashboard/partials/_top_consumers.html',
     'forecast_risk': 'kubernetes/dashboard/partials/_forecast_risk.html',
     'data_freshness': 'kubernetes/dashboard/partials/_data_freshness.html',
@@ -50,12 +46,12 @@ def index():
     dashboard = get_dashboard_overview(
         selected_cluster_id=selected_cluster_id,
         cluster_health_page=cluster_health_page,
-        cluster_health_per_page=_cluster_health_per_page(),
-        active_tab=_active_tab(),
+        cluster_health_per_page=normalize_dashboard_page_size(request.args.get('cluster_health_per_page')),
+        active_tab=normalize_operational_tab(request.args.get('tab')),
     )
     template_name = (
         'kubernetes/dashboard/partials/_content.html'
-        if request.headers.get('HX-Request')
+        if is_htmx_request(request.headers)
         else 'kubernetes/dashboard/index.html'
     )
     return render_template(template_name, dashboard=dashboard)
@@ -78,6 +74,6 @@ def section(section: str):
         section,
         selected_cluster_id=request.args.get('cluster_id') or None,
         cluster_health_page=request.args.get('cluster_health_page', '1'),
-        cluster_health_per_page=_cluster_health_per_page(),
+        cluster_health_per_page=normalize_dashboard_page_size(request.args.get('cluster_health_per_page')),
     )
     return render_template(template_name, dashboard=dashboard)

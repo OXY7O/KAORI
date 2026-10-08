@@ -505,7 +505,7 @@ def _base_context(page_key: str, query_args: Any) -> tuple[dict[str, Any], Objec
         'forecast_history_windows': FORECAST_HISTORY_WINDOWS,
         'analytics_materialization': {
             'state': 'missing',
-            'label': 'Worker Data Required',
+            'label': 'Worker Data',
             'tone': 'warning',
             'usable': False,
             'stale': False,
@@ -517,7 +517,7 @@ def _base_context(page_key: str, query_args: Any) -> tuple[dict[str, Any], Objec
         },
         'forecast_materialization': {
             'state': 'missing',
-            'label': 'Worker Data Required',
+            'label': 'Worker Data',
             'tone': 'warning',
             'usable': False,
             'history_window': history_window,
@@ -634,7 +634,7 @@ def _attach_committed_analytics_snapshot(
         context['dependency_blocker'] = analytics_snapshot_blocker(
             system,
             time_range=time_range,
-            label=str(state.get('label') or 'Worker Data Required'),
+            label=str(state.get('label') or 'Worker Data'),
             detail=str(state.get('last_error') or state.get('dispatch_error') or '').strip() or None,
         )
         return None

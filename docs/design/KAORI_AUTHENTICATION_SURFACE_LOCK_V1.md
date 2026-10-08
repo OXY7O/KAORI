@@ -71,28 +71,46 @@ Real-device UAT may add evidence, but physical device names do not become CSS co
 
 ### Canonical Database Setup Workspace Composition
 
-The approved Database Setup Required surface is a non-Hero operational readiness workspace. It uses the global **Major Page Title outside Hero** typography authority: 24 px (`text-2xl`), semibold, compact line height, with no Hero minimum-height or promotional title treatment.
+The approved Database Setup Required surface is a non-Hero, console-first readiness workspace optimized for the canonical 1280×800 and 1024×768 laptop targets. The setup surface intentionally does **not** use the authenticated application page-title scale because this is a short, one-time pre-authentication operator workflow.
 
-The composition is:
+Compact setup typography:
+
+- page title: 18 px (`text-lg`), semibold;
+- operator section title: 14 px (`text-sm`), semibold;
+- explanatory and helper copy: 12 px (`text-xs`) with 20 px line height;
+- technical command text remains 12 px monospace;
+- semantic state labels remain owned by the shared label component.
+
+This exception is limited to Database Setup Required and must not be copied to ordinary authenticated application pages.
+
+The setup page uses **no giant outer workspace card and no permanent right-side setup rail**. The page is composed as a short operator console:
 
 ```text
-Compact Page Identity + Shared Readiness Labels
-→ Development Bootstrap
-→ Shared Initialization Info Flow
-→ Security / Readiness Supporting Evidence
-→ Progressive Setup Details
-→ Retry Setup Check
+Compact Page Identity
+↓
+Readiness Strip: Database | Application Schema | Normal Sign-In
+↓
+Bootstrap Console (2/3) | Encryption Boundary (1/3)
+↓
+Horizontal Initialization Path
+↓
+Advanced Setup (collapsed by default)
+↓
+Read-only Boundary + Retry Setup Check
 ```
+
+The primary path must fit within the first laptop viewport under normal browser zoom whenever ordinary browser chrome allows it. Secondary manual recovery commands and missing-schema evidence stay behind the shared expandable-content component so they do not permanently inflate the page.
 
 Shared ownership is mandatory:
 
-- `components/table_label.html` owns PostgreSQL/schema semantic labels;
-- `components/operational_section_card.html` owns primary operational surfaces;
-- `components/info_flow.html` owns the initialization sequence;
-- `components/terminal_command.html` owns copyable bootstrap/check commands;
-- `components/operational_callout.html` owns semantic security/recovery callouts.
+- `components/table_label.html` owns installation, PostgreSQL, schema, and sign-in semantic labels;
+- `components/terminal_command.html` owns copyable bootstrap/check commands and uses `compact=true` on this setup surface;
+- `components/operational_callout.html` owns the encryption and connectivity semantic boundaries;
+- `components/operational_flow_steps.html` owns the visible three-stage initialization sequence;
+- `components/view_more_content.html` owns the collapsed Advanced Setup disclosure;
+- `components/section_link_button.html` owns Retry Setup Check.
 
-The setup page must not introduce authenticated Hero geometry, page-local semantic badge styling, a copied timeline implementation, arbitrary typography, or database mutation from presentation code.
+The setup page must not introduce authenticated Hero geometry, a giant parent card, a permanent troubleshooting rail, a vertical timeline that consumes most of the viewport, duplicate readiness summaries, page-local terminal chrome, arbitrary typography, custom CSS, provider calls, or database mutation from presentation code.
 
 ## Locked Security Contract
 

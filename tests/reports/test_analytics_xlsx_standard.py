@@ -36,6 +36,7 @@ ANALYTICS_TYPES = {
     'alerts_anomalies',
     'object_storage_analysis',
     'tenant_governance',
+    'artifact_registry_analysis',
 }
 
 

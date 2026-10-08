@@ -19,9 +19,13 @@ def test_integration_kernel_follows_domain_type_provider_adapter_hierarchy() -> 
         'app/integrations/storage/object_storage/providers/minio',
         'app/integrations/storage/file_storage',
         'app/integrations/storage/block_storage',
+        'app/integrations/registry/providers/harbor',
     )
     for relative in required:
         assert (ROOT / relative).exists(), relative
+
+    assert (ROOT / 'app/integrations/kernel/registry.py').exists()
+    assert not (ROOT / 'app/integrations/registry.py').exists()
 
     forbidden = (
         'app/integrations/kubernetes',
@@ -46,6 +50,7 @@ def test_application_templates_and_definitions_mirror_integration_hierarchy() ->
         'app/definitions/catalogs/integrations/observability/metrics_source/contract.yaml',
         'app/definitions/catalogs/integrations/observability/alert_source/providers/alertmanager.yaml',
         'app/definitions/catalogs/integrations/storage/object_storage/contract.yaml',
+        'app/definitions/catalogs/integrations/registry/contract.yaml',
     )
     for relative in required:
         assert (ROOT / relative).exists(), relative
@@ -80,6 +85,7 @@ def test_product_directories_and_imports_stay_below_canonical_provider_boundarie
         'aws_s3',
         'azure_blob',
         'garage',
+        'harbor',
         'hpe_alletra',
         'kubernetes',
         'minio',
@@ -94,6 +100,7 @@ def test_product_directories_and_imports_stay_below_canonical_provider_boundarie
         'app.integrations.kubernetes',
         'app.integrations.metrics',
         'app.integrations.alertmanager',
+        'app.integrations.harbor',
         'app.integrations.minio',
         'app.metrics',
         'app.alertmanager',

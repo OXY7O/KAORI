@@ -19,18 +19,19 @@ The Kubernetes Operations Dashboard is a read-only operational projection over c
 
 Protected lazy-section requests enforce `dashboard.view` before resolving the clusterless onboarding state. The clusterless blocker is owned by the permission-protected `section()` view, not a Blueprint `before_request`, because a pre-view response would bypass the view decorator. Unknown section keys return `404` before cluster readiness or dashboard data access.
 
-The initial page request builds only the dashboard shell, inventory aggregate, reporting summary, scope selector, and loading placeholders. Each HTMX section calls `get_dashboard_section()` and loads only the records and committed snapshots needed by that section.
+The initial page request builds only the dashboard Fast Shell: scope options, selected scope, active tab, minimal update context, pagination metadata, and shared loading placeholders. Initial tab content follows the family default of one bounded HTMX projection per canonical tab: `overview`, `capacity`, `signals`, or `reporting`.
 
 Examples:
 
-- Capacity reads one capacity snapshot and no alert, top-consumer, forecast, or inventory table.
-- Top Consumers reads one top-consumer snapshot only.
-- Forecast reads one forecast snapshot only.
-- Cluster Health uses two set-based inventory queries for the visible clusters, then reads capacity and alert snapshots for those rows.
+- Operations Overview loads Cluster Health, Inventory Snapshot, and Data Freshness in one bounded projection instead of launching three competing initial HTMX requests.
+- Data Freshness reads committed snapshot state directly; it does not build Capacity, Alerts, Top Consumers, Forecast, or full Reporting presentation objects merely to determine availability.
+- Capacity & Demand reads only capacity, forecast, and top-consumer evidence for the selected cluster.
+- Signals & Actions reads KAORI AlertCase and Intelligence recommendation evidence only.
+- Reporting reads the bounded report summary only.
+- Cluster Health pagination remains an independent bounded endpoint because it is an interactive sub-resource of Operations Overview.
+- Cluster Health uses two set-based inventory queries for the visible clusters, then reads capacity and AlertCase evidence for those rows.
 - Cluster Health reads the API endpoint from the canonical `Cluster.kubernetes_connection.server` relationship; it never reads the removed legacy `Cluster.server` field. Missing binding metadata is presented as `Endpoint unavailable` and does not independently mark the cluster unhealthy.
 - KPI cards use database count aggregates rather than hydrating full inventory tables.
-- Data Freshness reads database timestamps and snapshot state; it does not execute a health query against an integration.
-- Recommended Actions does not hydrate analytics snapshots.
 
 ## Technical ownership
 
@@ -65,6 +66,7 @@ The Kubernetes Operations Dashboard is the reference implementation for `docs/de
 - KPI cards: `components/operational_metric_card.html`.
 - Dashboard workspace: `components/operational_dashboard_workspace.html` owns the canonical four tabs, URL-backed active state, keyboard navigation, and tab-panel geometry; it renders **Tab Style 1 — Integrated Workspace Tabs** through `components/workspace_tabs.html`.
 - Repeated blocks: `components/operational_section_card.html`.
+- Fast Shell loading placeholders: `components/operational_section_loading.html`; KPI uses the shared KPI variant and bounded sections use the shared section-card variant.
 - Peer main-content layout: `components/peer_content_grid.html`; both boxes stretch to the tallest peer in the row.
 - Static action and response flows: `components/operational_flow_steps.html`.
 - Visible supporting tips and interpretation: `components/operational_callout.html`.

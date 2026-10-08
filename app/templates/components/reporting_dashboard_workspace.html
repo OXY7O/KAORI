@@ -122,7 +122,7 @@
 {% macro guidance(scope_label, evidence_label, narrow_scope_label) -%}
     {% set reporting_steps = [
             ('01', 'scan-search', 'Validate', 'Confirm scope, period, freshness, and source coverage.'),
-            ('02', 'layout-template', 'Select', 'Choose the approved report and narrowest ' ~ narrow_scope_label ~ '.'),
+            ('02', 'layout-template', 'Select', 'Choose the report and narrowest scope.'),
             ('03', 'file-cog', 'Create', 'Save a traceable request with scope, period, and ownership.'),
             ('04', 'file-check-2', 'Generate', 'Render from ' ~ evidence_label ~ ' and review the result.'),
             ('05', 'calendar-clock', 'Schedule', 'Set cadence and delivery after the output is reviewed.'),
@@ -206,7 +206,7 @@
                            class="h-3.5 w-3.5 shrink-0 text-kaori-primary"
                            aria-hidden="true"></i>
                         <p class="text-xs text-content-secondary">
-                            <span class="font-semibold text-content-primary">One-time</span> · Generate manually
+                            <span class="font-semibold text-content-primary">One-time</span> · Manual
                         </p>
                     </div>
                     <div class="flex min-w-0 items-center gap-2 rounded-lg bg-surface-card px-3 py-2.5">

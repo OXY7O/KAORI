@@ -9,6 +9,7 @@ from app.common.celery_queue_health import get_queue_readiness
 from app.common.inventory_generation import filter_current_generation
 from app.extensions.db import db
 from app.models.cluster import Cluster
+from app.models.integration import IntegrationInstance
 from app.models.inventory import NamespaceInventory
 from app.models.object_storage import ObjectStorageSystem
 from app.models.report import Report
@@ -27,8 +28,10 @@ from app.reports.catalog import (
 from app.reports.generate.form_options import PERIOD_OPTIONS, SECTION_OPTIONS
 from app.reports.jobs.queue import get_reports_queue_name
 from app.reports.scope import (
+    ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE,
     KUBERNETES_CLUSTER_ASSET_TYPE,
     OBJECT_STORAGE_SYSTEM_ASSET_TYPE,
+    get_active_registry_options,
     get_report_namespace_options_by_cluster,
 )
 from app.reports.storage.service import get_configured_storage_backend_name, get_report_storage_backend_status
@@ -120,6 +123,7 @@ def get_generate_report_payload(
     )
     cluster_options = _get_cluster_options()
     object_storage_system_options = _get_object_storage_system_options()
+    artifact_registry_options = get_active_registry_options()
     namespace_options_by_cluster = _get_namespace_options_by_cluster()
     scope_ready = _scope_is_ready(form_state, selected_report_type)
 
@@ -130,6 +134,8 @@ def get_generate_report_payload(
         'has_clusters': bool(cluster_options),
         'object_storage_systems': object_storage_system_options,
         'has_object_storage_systems': bool(object_storage_system_options),
+        'artifact_registries': artifact_registry_options,
+        'has_artifact_registries': bool(artifact_registry_options),
         'scope_ready': scope_ready,
         'namespace_options_by_cluster': namespace_options_by_cluster,
         'selected_namespace_options': namespace_options_by_cluster.get(
@@ -188,6 +194,7 @@ def create_report_request(
     report_spec = get_report_type_spec(form_state['report_type'])
     cluster_id = _parse_cluster_id(form_state['cluster_id']) if report_spec.requires_cluster else None
     object_storage_system_id = (form_state.get('object_storage_system_id') or '').strip()
+    registry_integration_id = (form_state.get('registry_integration_id') or '').strip()
 
     report_name = form_state['name'].strip()
 
@@ -210,6 +217,14 @@ def create_report_request(
         system = db.session.get(ObjectStorageSystem, object_storage_system_id)
         report.scope_asset_id = object_storage_system_id
         report.scope_asset_label_snapshot = system.name if system is not None else object_storage_system_id
+    elif report_spec.scope_asset_type == ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE:
+        instance = (
+            db.session.get(IntegrationInstance, int(registry_integration_id))
+            if registry_integration_id.isdigit()
+            else None
+        )
+        report.scope_asset_id = registry_integration_id
+        report.scope_asset_label_snapshot = instance.name if instance is not None else registry_integration_id
     else:
         cluster = db.session.get(Cluster, cluster_id) if cluster_id else None
         report.scope_asset_id = cluster_id
@@ -256,6 +271,7 @@ def build_default_form_state(
         'cluster_id': '',
         'namespace': '',
         'object_storage_system_id': '',
+        'registry_integration_id': '',
         'report_type': normalized_report_type,
         'period': _get_default_period(normalized_report_type),
         'output_format': get_report_primary_output_format(normalized_report_type),
@@ -283,6 +299,7 @@ def _get_report_type_groups() -> list[dict[str, Any]]:
     domain_labels = {
         'kubernetes': 'Kubernetes',
         'object_storage': 'Object Storage',
+        'artifact_registry': 'Artifact Registry',
     }
     family_labels = {
         'analytics': 'Analytics',
@@ -340,12 +357,20 @@ def _get_report_type_context(
                 'scope_label': (
                     'Object Storage System'
                     if item.get('scope_asset_type') == OBJECT_STORAGE_SYSTEM_ASSET_TYPE
-                    else 'Kubernetes Cluster'
+                    else (
+                        'Artifact Registry'
+                        if item.get('scope_asset_type') == ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE
+                        else 'Kubernetes Cluster'
+                    )
                 ),
                 'cluster_scope_label': (
                     'Object Storage System Required'
                     if item.get('scope_asset_type') == OBJECT_STORAGE_SYSTEM_ASSET_TYPE
-                    else 'Selected Cluster Required'
+                    else (
+                        'Artifact Registry Required'
+                        if item.get('scope_asset_type') == ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE
+                        else 'Selected Cluster Required'
+                    )
                 ),
             }
 
@@ -369,12 +394,20 @@ def _get_report_type_context(
         'scope_label': (
             'Object Storage System'
             if fallback.get('scope_asset_type') == OBJECT_STORAGE_SYSTEM_ASSET_TYPE
-            else 'Kubernetes Cluster'
+            else (
+                'Artifact Registry'
+                if fallback.get('scope_asset_type') == ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE
+                else 'Kubernetes Cluster'
+            )
         ),
         'cluster_scope_label': (
             'Object Storage System Required'
             if fallback.get('scope_asset_type') == OBJECT_STORAGE_SYSTEM_ASSET_TYPE
-            else 'Selected Cluster Required'
+            else (
+                'Artifact Registry Required'
+                if fallback.get('scope_asset_type') == ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE
+                else 'Selected Cluster Required'
+            )
         ),
     }
 
@@ -471,6 +504,10 @@ def get_form_state_from_form(
             'object_storage_system_id',
             '',
         ),
+        'registry_integration_id': form.get(
+            'registry_integration_id',
+            '',
+        ),
         'report_type': report_type,
         'period': period,
         'output_format': str(
@@ -499,6 +536,7 @@ def validate_form_state(
     errors.extend(_validate_sections(form_state, report_type))
     errors.extend(_validate_namespace_scope(form_state, report_spec, cluster_exists))
     errors.extend(_validate_object_storage_scope_reference(form_state, report_spec))
+    errors.extend(_validate_artifact_registry_scope_reference(form_state, report_spec))
     return errors
 
 
@@ -528,6 +566,23 @@ def _validate_primary_scope(
             errors.append('Add at least one Object Storage system before creating Object Storage reports or schedules.')
         if not str(form_state.get('object_storage_system_id') or '').strip():
             errors.append('A selected Object Storage system is required for this report artifact.')
+
+    if report_spec.scope_asset_type == ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE:
+        registry_count = (
+            db.session.scalar(
+                select(func.count(IntegrationInstance.id)).where(
+                    IntegrationInstance.integration_type == 'registry',
+                    IntegrationInstance.lifecycle_status == 'active',
+                )
+            )
+            or 0
+        )
+        if registry_count == 0:
+            errors.append(
+                'Add at least one active Artifact Registry integration before creating Registry reports or schedules.'
+            )
+        if not str(form_state.get('registry_integration_id') or '').strip():
+            errors.append('A selected Artifact Registry integration is required for this report artifact.')
 
     return errors, cluster_exists
 
@@ -604,6 +659,20 @@ def _validate_object_storage_scope_reference(form_state: dict[str, Any], report_
     return []
 
 
+def _validate_artifact_registry_scope_reference(form_state: dict[str, Any], report_spec: Any) -> list[str]:
+    if report_spec.scope_asset_type != ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE:
+        return []
+    instance_id = str(form_state.get('registry_integration_id') or '').strip()
+    if not instance_id:
+        return []
+    if not instance_id.isdigit():
+        return ['Please select a valid Artifact Registry integration.']
+    instance = db.session.get(IntegrationInstance, int(instance_id))
+    if instance is None or instance.integration_type != 'registry' or instance.lifecycle_status != 'active':
+        return ['Please select a valid active Artifact Registry integration.']
+    return []
+
+
 def _get_default_period(report_type: str) -> str:
     return 'snapshot' if get_report_type_spec(report_type).period_mode == 'snapshot' else '30d'
 
@@ -668,6 +737,8 @@ def _get_object_storage_system_options() -> list[dict[str, str]]:
 def _scope_is_ready(form_state: dict[str, Any], report_context: dict[str, Any]) -> bool:
     if report_context.get('scope_asset_type') == OBJECT_STORAGE_SYSTEM_ASSET_TYPE:
         return bool(str(form_state.get('object_storage_system_id') or '').strip())
+    if report_context.get('scope_asset_type') == ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE:
+        return bool(str(form_state.get('registry_integration_id') or '').strip())
     if not bool(report_context.get('requires_cluster', True)):
         return True
     return bool(str(form_state.get('cluster_id') or '').strip())

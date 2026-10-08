@@ -116,6 +116,9 @@ def test_kubernetes_dashboard_uses_canonical_cluster_integration_action() -> Non
 
 def test_blocked_hero_context_has_one_shared_renderer() -> None:
     component = (ROOT / 'app' / 'templates' / 'components' / 'page_hero.html').read_text(encoding='utf-8')
+    shared_context = (
+        ROOT / 'app' / 'templates' / 'components' / 'provider_prerequisite' / '_hero_context.html'
+    ).read_text(encoding='utf-8')
     kubernetes = (ROOT / 'app' / 'templates' / 'components' / 'cluster' / '_hero_blocked_context.html').read_text(
         encoding='utf-8'
     )
@@ -131,8 +134,10 @@ def test_blocked_hero_context_has_one_shared_renderer() -> None:
     ).read_text(encoding='utf-8')
 
     assert 'macro blocked_context_body(' in component
-    assert 'page_hero.blocked_context_body(' in kubernetes
-    assert 'page_hero.blocked_context_body(' in object_storage
+    assert 'page_hero.blocked_context_body(' in shared_context
+    for wrapper in (kubernetes, object_storage):
+        assert 'components/provider_prerequisite/_hero_context.html' in wrapper
+        assert 'page_hero.blocked_context_body(' not in wrapper
 
 
 def test_kubernetes_analytics_heroes_use_three_stable_metadata_slots_in_all_states() -> None:
@@ -242,12 +247,14 @@ def test_kubernetes_blocker_families_are_locked_to_general_and_analytics() -> No
     analytics = (ROOT / 'app' / 'templates' / 'kubernetes' / 'analytics' / 'overview' / 'index.html').read_text(
         encoding='utf-8'
     )
+    app_layout = (ROOT / 'app' / 'templates' / 'layouts' / 'app.html').read_text(encoding='utf-8')
 
     assert 'Kubernetes has exactly two prerequisite blocker families' in standard
     assert 'components/cluster/_hero_blocked_context.html' in tenant
     assert 'components/cluster/_onboarding_banner.html' in tenant
     assert 'components/states/_blocked_state.html' not in tenant
-    assert '{% block page_capability_navigation %}' in analytics
+    assert '{% block page_capability_navigation %}' in app_layout
+    assert '{% block page_capability_navigation %}' not in analytics
     assert '{% if dependency_blocker %}' in analytics
 
 

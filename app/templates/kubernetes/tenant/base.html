@@ -49,9 +49,6 @@
                         {% else %}
                             {% set cluster_blocked_title = "Cluster Setup Required" %}
                             {% set cluster_blocked_info = "Add a Kubernetes cluster to enable provider-backed Tenant workflows." %}
-                            {% set cluster_blocked_action_label = "Open Cluster Integrations" %}
-                            {% set cluster_blocked_action_href = url_for('integrations.kubernetes') %}
-                            {% set cluster_blocked_action_icon = "server-cog" %}
                         {% endif %}
                         {% include 'components/cluster/_hero_blocked_context.html' %}
                     </aside>
@@ -73,17 +70,18 @@
                 {% endif %}
             </div>
         </section>
-        {% if tenant_page != 'overview' and tenant_collection_snapshot is defined %}
-            {% include "kubernetes/tenant/partials/_collection_snapshot_context.html" %}
-        {% endif %}
-        {% if tenant_page != 'overview' and registered_cluster_count > 0 %}
-            {% include "kubernetes/tenant/partials/_live_connection_loader.html" %}
-        {% endif %}
         {% if registered_cluster_count == 0 %}
             {% include "components/cluster/_onboarding_banner.html" %}
+        {% else %}
+            {% if tenant_page != 'overview' and tenant_collection_snapshot is defined %}
+                {% include "kubernetes/tenant/partials/_collection_snapshot_context.html" %}
+            {% endif %}
+            {% if tenant_page != 'overview' %}
+                {% include "kubernetes/tenant/partials/_live_connection_loader.html" %}
+            {% endif %}
+            {% block tenant_content %}
+            {% endblock tenant_content %}
         {% endif %}
-        {% block tenant_content %}
-        {% endblock tenant_content %}
     </div>
 {% endblock dashboard_content %}
 {% block scripts %}

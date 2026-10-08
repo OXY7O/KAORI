@@ -1,6 +1,9 @@
 {% import "components/navigation/_global_search.html" as global_search %}
 {% import "components/table_primitives.html" as surface_ui %}
 {% set breadcrumb_items = navigation_breadcrumb|default([], true) %}
+{% set desktop_breadcrumb_items = breadcrumb_items | rejectattr('label', 'equalto', 'KAORI') | list %}
+{% set breadcrumb_compacted = desktop_breadcrumb_items|length > 3 %}
+{% set breadcrumb_hidden_items = desktop_breadcrumb_items[1:-1] if breadcrumb_compacted else [] %}
 {% set current_user_role = current_user.role_name|default('Viewer', true)|replace('_', ' ')|title %}
 {% set mobile_page_candidates = breadcrumb_items | rejectattr('label', 'equalto', 'KAORI') | list %}
 {% set mobile_page_label = mobile_page_candidates[-1].label if mobile_page_candidates else 'Welcome' %}
@@ -45,18 +48,61 @@
                 <p class="truncate text-sm font-semibold text-content-primary">{{ mobile_page_label }}</p>
             </div>
             <div class="hidden min-w-0 lg:block">
-                <nav class="{{ surface_ui.block_classes() }} inline-flex h-10 min-w-0 max-w-[min(42rem,calc(100vw-8rem))] items-center gap-1.5 px-3 py-2 text-xs font-semibold transition"
+                <nav class="{{ surface_ui.block_classes(allow_overflow=true) }} inline-flex h-10 min-w-0 max-w-[min(42rem,calc(100vw-8rem))] items-center gap-1.5 px-3 py-2 text-xs font-semibold transition"
                      aria-label="Breadcrumb">
                     <span class="flex-shrink-0 uppercase tracking-wider text-content-muted">KAORI</span>
-                    {% for item in breadcrumb_items %}
-                        {% if item.label != 'KAORI' %}
+                    {% if breadcrumb_compacted %}
+                        {% set breadcrumb_owner = desktop_breadcrumb_items[0] %}
+                        {% set breadcrumb_current = desktop_breadcrumb_items[-1] %}
+                        <i data-lucide="chevron-right"
+                           class="h-3.5 w-3.5 flex-shrink-0 text-content-disabled"
+                           aria-hidden="true"></i>
+                        <span class="max-w-[9rem] truncate text-content-secondary"
+                              title="{{ breadcrumb_owner.label }}">{{ breadcrumb_owner.label }}</span>
+                        <i data-lucide="chevron-right"
+                           class="h-3.5 w-3.5 flex-shrink-0 text-content-disabled"
+                           aria-hidden="true"></i>
+                        <span class="relative inline-flex shrink-0"
+                              @click.outside="breadcrumbOpen = false">
+                            <button type="button"
+                                    x-ref="breadcrumbTrigger"
+                                    @click.stop="toggleBreadcrumb()"
+                                    data-breadcrumb-overflow-trigger
+                                    aria-label="Show hidden breadcrumb path"
+                                    aria-controls="breadcrumb-overflow-path"
+                                    :aria-expanded="breadcrumbOpen.toString()"
+                                    class="inline-flex h-7 min-w-7 items-center justify-center rounded-md px-1.5 text-content-muted transition hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                <span aria-hidden="true">…</span>
+                            </button>
+                            <span id="breadcrumb-overflow-path"
+                                  x-cloak
+                                  x-show="breadcrumbOpen"
+                                  x-transition.origin.top.left
+                                  role="group"
+                                  aria-label="Hidden breadcrumb path"
+                                  class="absolute left-0 top-full z-50 mt-2 w-56 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-outline-default bg-surface-elevated py-1.5 shadow-xl shadow-black/10">
+                                {% for item in breadcrumb_hidden_items %}
+                                    <span class="block max-w-full truncate px-3 py-2 text-xs font-medium text-content-secondary"
+                                          title="{{ item.label }}">{{ item.label }}</span>
+                                {% endfor %}
+                            </span>
+                        </span>
+                        <i data-lucide="chevron-right"
+                           class="h-3.5 w-3.5 flex-shrink-0 text-content-disabled"
+                           aria-hidden="true"></i>
+                        <span class="max-w-[12rem] truncate text-kaori-primary"
+                              title="{{ breadcrumb_current.label }}"
+                              aria-current="page">{{ breadcrumb_current.label }}</span>
+                    {% else %}
+                        {% for item in desktop_breadcrumb_items %}
                             <i data-lucide="chevron-right"
                                class="h-3.5 w-3.5 flex-shrink-0 text-content-disabled"
                                aria-hidden="true"></i>
-                            <span class="truncate {{ 'text-kaori-primary' if loop.last else 'text-content-secondary' }}"
+                            <span class="{{ 'max-w-[12rem] text-kaori-primary' if loop.last else 'max-w-[9rem] text-content-secondary' }} truncate"
+                                  title="{{ item.label }}"
                                   {% if loop.last %}aria-current="page"{% endif %}>{{ item.label }}</span>
-                        {% endif %}
-                    {% endfor %}
+                        {% endfor %}
+                    {% endif %}
                 </nav>
             </div>
         </div>
@@ -104,7 +150,8 @@
                     <div class="space-y-2 p-2.5">
                         {% set can_sync_kubernetes_inventory = current_user.has_permission('clusters.sync') %}
                         {% set can_sync_object_storage_inventory = current_user.has_permission('storage.sync') %}
-                        {% if current_user.has_permission('jobs.execute') and (can_sync_kubernetes_inventory or can_sync_object_storage_inventory) %}
+                        {% set can_sync_artifact_registry_inventory = current_user.has_permission('artifact_registry.sync') %}
+                        {% if current_user.has_permission('jobs.execute') and (can_sync_kubernetes_inventory or can_sync_object_storage_inventory or can_sync_artifact_registry_inventory) %}
                             <form id="quick-sync-form"
                                   method="POST"
                                   action="{{ url_for('jobs.quick_sync_all_inventory') }}">

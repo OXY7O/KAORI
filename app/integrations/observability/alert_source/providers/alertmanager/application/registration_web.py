@@ -50,7 +50,7 @@ def new_instance_response() -> ResponseReturnValue:
     if request.method == 'POST':
         form = parse_alertmanager_instance_form(request.form)
         if not form.name and initial_cluster is not None:
-            form = replace(form, name=f'{initial_cluster.name} Alertmanager', deployment_type='cluster_managed')
+            form = replace(form, name=f'{initial_cluster.name} Alertmanager')
         draft_form = form
 
         submitted_proof = str(request.form.get('connection_test_proof') or '').strip()

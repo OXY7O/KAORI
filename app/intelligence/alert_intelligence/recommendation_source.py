@@ -37,9 +37,14 @@ from app.intelligence.rule_exceptions import active_rule_exceptions, matching_ru
 from app.intelligence.service import get_active_recommendation_findings
 from app.models.alert_ops import AlertCase, RecommendationAlertState, RuleException
 from app.models.cluster import Cluster
+from app.models.integration import IntegrationInstance
 from app.models.object_storage import ObjectStorageSystem
 
-_GROUPED_ASSET_TYPES = {'kubernetes': 'kubernetes_cluster', 'object_storage': 'object_storage_system'}
+_GROUPED_ASSET_TYPES = {
+    'kubernetes': 'kubernetes_cluster',
+    'object_storage': 'object_storage_system',
+    'registry': 'registry_instance',
+}
 
 
 def reconcile_recommendation_alert_cases() -> dict[str, int]:
@@ -700,7 +705,11 @@ def _refresh_grouped_case(case: AlertCase, *, grouping_mode: str, now: datetime)
 def _source_evidence_posture_for_finding(finding: dict[str, Any]) -> tuple[bool, str]:
     evidence = _finding_evidence(finding)
     asset_key = str(
-        evidence.get('asset_key') or evidence.get('cluster_id') or evidence.get('object_storage_system_id') or ''
+        evidence.get('asset_key')
+        or evidence.get('cluster_id')
+        or evidence.get('object_storage_system_id')
+        or evidence.get('registry_instance_id')
+        or ''
     ).strip()
     return _source_evidence_posture(
         domain=str(finding.get('domain') or ''),
@@ -757,4 +766,16 @@ def _source_evidence_posture(
         if signal == 'alertmanager':
             return _binding_posture('alert_source', 'object_storage_system', normalized_asset)
         return (True, '') if str(asset.status or '').lower() == 'connected' else (False, 'source_unavailable')
+    if normalized_domain == 'registry':
+        try:
+            identity = db.session.get(IntegrationInstance, int(normalized_asset))
+        except (TypeError, ValueError):
+            identity = None
+        if identity is None or identity.integration_type != 'registry':
+            return False, 'source_deleted'
+        if not identity.enabled or str(identity.lifecycle_status or '').lower() != 'active':
+            return False, 'source_unavailable'
+        if str(identity.readiness_status or '').lower() == 'blocked':
+            return False, 'source_unavailable'
+        return True, ''
     return True, ''

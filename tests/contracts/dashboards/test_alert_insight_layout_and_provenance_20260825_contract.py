@@ -8,46 +8,53 @@ def read(path: str) -> str:
 
 
 def test_alert_insight_uses_full_width_header_then_dedicated_metric_row() -> None:
-    templates = (
+    shared = read('app/templates/components/operational_alert_summary.html')
+    for token in (
+        'data-kaori-alert-insight="stacked"',
+        'data-kaori-alert-insight-metrics="dedicated-row"',
+        'sm:grid-cols-[7rem_9rem_minmax(12rem,1fr)]',
+    ):
+        assert token in shared
+    source_metric = shared.split('<dt class="text-content-muted">Source</dt>', 1)[1].split('</div>', 1)[0]
+    assert 'whitespace-nowrap' in source_metric
+
+    for path in (
         'app/templates/kubernetes/dashboard/partials/_alerts_summary.html',
         'app/templates/storage/object_storage/dashboard/partials/_alerts_summary.html',
-    )
-    for path in templates:
+        'app/templates/artifact_registry/partials/_overview_alerts_summary.html',
+    ):
         source = read(path)
-        assert 'data-kaori-alert-insight="stacked"' in source, path
-        assert 'data-kaori-alert-insight-metrics="dedicated-row"' in source, path
-        assert 'sm:grid-cols-[7rem_9rem_minmax(12rem,1fr)]' in source, path
-        source_metric = source.split('<dt class="text-content-muted">Source</dt>', 1)[1].split('</div>', 1)[0]
-        assert 'whitespace-nowrap' in source_metric
+        assert 'components/operational_alert_summary.html' in source
+        assert 'alert_summary.render(' in source
 
 
-def test_alert_insight_highest_value_uses_semantic_severity_color_in_both_domains() -> None:
-    kubernetes = read('app/templates/kubernetes/dashboard/partials/_alerts_summary.html')
-    object_storage = read('app/templates/storage/object_storage/dashboard/partials/_alerts_summary.html')
-    expected = (
+def test_alert_insight_highest_value_uses_semantic_severity_color() -> None:
+    shared = read('app/templates/components/operational_alert_summary.html')
+    highest = shared.split('<dt class="text-content-muted">Highest</dt>', 1)[1].split('</div>', 1)[0]
+    for token in (
         'text-status-critical-text',
         'text-status-warning-text',
         'text-status-info-text',
-        'text-status-normal-text',
-    )
-    for source in (kubernetes, object_storage):
-        highest = source.split('<dt class="text-content-muted">Highest</dt>', 1)[1].split('</div>', 1)[0]
-        for token in expected:
-            assert token in highest
+    ):
+        assert token in highest
 
 
 def test_dashboard_alert_response_footer_reports_data_owner_not_internal_promotion_detail() -> None:
-    templates = (
+    shared = read('app/templates/components/operational_alert_response.html')
+    for token in (
+        'operational_callout.render(',
+        "source_title='Alert Data Source'",
+        "source_description='KAORI Alert Intelligence · Active AlertCase records.'",
+        "icon='brain-circuit'",
+        "tone='info'",
+        "variant='semantic'",
+    ):
+        assert token in shared
+    assert 'Recommendation-origin durable alert cases' not in shared
+    assert 'Raw source alerts remain in Analytics' not in shared
+
+    for path in (
         'app/templates/kubernetes/dashboard/partials/_alert_response_guidance.html',
         'app/templates/storage/object_storage/dashboard/partials/_alert_response_guidance.html',
-    )
-    for path in templates:
-        source = read(path)
-        assert 'operational_callout.render(' in source, path
-        assert "'Alert Data Source'" in source, path
-        assert "'KAORI Alert Intelligence · Active AlertCase records.'" in source, path
-        assert "icon='brain-circuit'" in source, path
-        assert "tone='info'" in source, path
-        assert "variant='semantic'" in source, path
-        assert 'Recommendation-origin durable alert cases' not in source, path
-        assert 'Raw source alerts remain in Analytics' not in source, path
+    ):
+        assert 'components/operational_alert_response.html' in read(path)

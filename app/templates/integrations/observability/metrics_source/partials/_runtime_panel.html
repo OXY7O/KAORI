@@ -18,19 +18,27 @@
 {% set runtime_observed = runtime_state.observed_at is not none %}
 {% set health_tone = 'ready' if runtime_observed and runtime_state.health_status == 'healthy' else ('degraded' if runtime_observed and runtime_state.health_status in ['degraded', 'warning'] else ('blocked' if runtime_observed and runtime_state.health_status in ['unhealthy', 'failed'] else 'not_observed')) %}
 {% set runtime_gate_label = 'Observation Required' if not runtime_observed else ('Runtime Healthy' if runtime_state.health_status == 'healthy' else ('Runtime Blocked' if runtime_state.health_status in ['unhealthy', 'failed'] else 'Runtime Attention Required')) %}
-{% if runtime_state.diagnostics %}
-    {% set runtime_primary_finding = runtime_state.diagnostics[0].summary %}
-{% elif runtime_state.health_summary %}
-    {% set runtime_primary_finding = runtime_state.health_summary %}
-{% elif runtime_state.message %}
-    {% set runtime_primary_finding = runtime_state.message %}
+{% set runtime_identity = runtime_product|replace('_', ' ')|title %}
+{% if runtime_version and runtime_version != 'Not Detected' %}
+    {% set runtime_identity = runtime_identity ~ ' ' ~ runtime_version %}
+{% endif %}
+{% if not runtime_observed %}
+    {% set runtime_primary_finding = runtime_identity ~ ' · Runtime not observed.' %}
+{% elif runtime_state.health_status in ['unhealthy', 'failed'] %}
+    {% set runtime_primary_finding = runtime_identity ~ ' · Runtime ' ~ runtime_state.health_status_label ~ '; readiness ' ~ runtime_state.readiness_label ~ '.' %}
+{% elif runtime_state.readiness != 'ready' %}
+    {% set runtime_primary_finding = runtime_identity ~ ' · Readiness ' ~ runtime_state.readiness_label ~ '.' %}
+{% elif runtime_attention and runtime_state.diagnostics %}
+    {% set runtime_primary_finding = runtime_identity ~ ' · ' ~ runtime_state.diagnostics[0].label ~ ' requires attention.' %}
 {% else %}
-    {% set runtime_primary_finding = "No current runtime finding requires operator attention." %}
+    {% set runtime_primary_finding = runtime_identity ~ ' · Healthy · Ready.' %}
 {% endif %}
 {% if not runtime_observed %}
     {% set runtime_next_action = "Run Runtime Refresh to establish persisted provider-health evidence." %}
 {% elif runtime_state.health_status in ['unhealthy', 'failed'] %}
     {% set runtime_next_action = "Restore metrics-source endpoint reachability, refresh runtime evidence, and rerun Full Validation when the provider compatibility or core API contract changed." %}
+{% elif runtime_state.readiness == 'degraded' %}
+    {% set runtime_next_action = "Source is usable with degraded compatibility. Upgrade or qualify the detected release, then rerun Full Validation." %}
 {% elif runtime_state.readiness != 'ready' %}
     {% set runtime_next_action = "Resolve provider-level Full Validation blockers before using this runtime as a metrics source." %}
 {% elif runtime_attention %}

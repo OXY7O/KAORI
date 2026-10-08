@@ -43,7 +43,12 @@ def _scope_identity(finding: dict[str, Any]) -> str:
 
 def _asset_key(finding: dict[str, Any]) -> str:
     evidence = _finding_evidence(finding)
-    value = evidence.get('asset_key') or evidence.get('cluster_id') or evidence.get('object_storage_system_id')
+    value = (
+        evidence.get('asset_key')
+        or evidence.get('cluster_id')
+        or evidence.get('object_storage_system_id')
+        or evidence.get('registry_instance_id')
+    )
     return str(value or 'unknown')
 
 
@@ -61,7 +66,7 @@ def _case_asset_type(
 
 def _asset_name(finding: dict[str, Any], *, domain: str, asset_key: str) -> str:
     evidence = _finding_evidence(finding)
-    explicit = evidence.get('system_name') or evidence.get('cluster_name')
+    explicit = evidence.get('system_name') or evidence.get('cluster_name') or evidence.get('registry_instance_name')
     if explicit:
         return str(explicit)
     if domain == 'kubernetes' and asset_key != 'unknown':
@@ -75,6 +80,13 @@ def _asset_name(finding: dict[str, Any], *, domain: str, asset_key: str) -> str:
             system = None
         if system is not None:
             return str(system.name)
+    if domain == 'registry' and asset_key != 'unknown':
+        try:
+            identity = db.session.get(IntegrationInstance, int(asset_key))
+        except (TypeError, ValueError):
+            identity = None
+        if identity is not None and identity.integration_type == 'registry':
+            return str(identity.name)
     return str(finding.get('domain_label') or domain.replace('_', ' ').title())
 
 

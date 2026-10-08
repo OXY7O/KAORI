@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from app.extensions.db import db
-from app.integrations.registry import get_integration
+from app.integrations.kernel.registry import get_integration
 from app.integrations.repository import get_integration_record
 
 

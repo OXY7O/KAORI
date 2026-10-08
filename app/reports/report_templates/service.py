@@ -623,12 +623,12 @@ def count_active_filters(selected_filters: dict[str, str]) -> int:
 def get_report_architecture_context() -> dict[str, Any]:
     return {
         'current_domain_label': 'KAORI Published Reports',
-        'current_source_label': 'Kubernetes + Object Storage',
+        'current_source_label': 'Kubernetes + Object Storage + Artifact Registry',
         'server_label': REPORT_DOMAIN_LABELS.get('server', 'KAORI Server Reports'),
         'hci_label': REPORT_DOMAIN_LABELS.get('hci', 'KAORI HCI Reports'),
         'server_description': REPORT_DOMAIN_DESCRIPTIONS.get('server', ''),
         'hci_description': REPORT_DOMAIN_DESCRIPTIONS.get('hci', ''),
-        'status': 'Kubernetes and Object Storage report contracts ready · Server and HCI coverage remains planned',
+        'status': 'Kubernetes, Object Storage, and Artifact Registry report contracts ready · Server and HCI coverage remains planned',
     }
 
 
@@ -645,7 +645,7 @@ def get_renderer_readiness() -> list[dict[str, str]]:
     return [
         {
             'label': 'System template catalog',
-            'description': 'Default templates are available for published Kubernetes and Object Storage report contracts.',
+            'description': 'Default templates are available for published Kubernetes, Object Storage, and Artifact Registry report contracts.',
             'status': 'Ready',
             'tone': 'green',
             'icon': 'check-circle-2',

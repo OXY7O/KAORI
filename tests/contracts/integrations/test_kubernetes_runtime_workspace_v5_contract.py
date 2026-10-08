@@ -24,11 +24,11 @@ def test_runtime_workspace_uses_horizontal_decision_summary():
     assert 'lg:grid-cols-[minmax(0,1fr)_23rem]' not in source
     assert 'lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]' not in source
     assert 'grid gap-px bg-outline-subtle lg:grid-cols-2' in source
-    assert '<p class="text-xs font-semibold text-content-muted">Primary Finding</p>' in source
+    assert '<p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Primary Finding</p>' in source
     assert 'class="text-xs font-semibold text-content-muted">Next Operational Action</h4>' in source
-    assert 'uppercase tracking-wide' not in source
+    assert 'uppercase tracking-wide text-content-muted">Primary Finding</p>' in source
     assert (
-        'min-w-0 text-sm font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ runtime_state.summary }}'
+        'min-w-0 text-sm font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ runtime_primary_finding }}'
         in source
     )
 
@@ -69,7 +69,8 @@ def test_runtime_observation_boundary_remains_explicit_without_duplicate_error_c
     source = _source()
     assert 'data-kaori-runtime-observation-boundary' in source
     assert (
-        'Runtime Refresh owns reachability, latency, and current health; Full Validation owns API discovery' in source
+        'Runtime Refresh owns live health; Full Validation owns API, compatibility, capabilities, and RBAC evidence.'
+        in source
     )
-    assert 'Full Validation owns API discovery, compatibility, capability contracts, and effective RBAC.' in source
+    assert 'Detailed diagnostics stay in Runtime Observations.' in source
     assert 'runtime_state.message' not in source

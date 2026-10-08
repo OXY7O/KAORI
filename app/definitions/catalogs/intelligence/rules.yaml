@@ -1419,3 +1419,156 @@ rules:
   - Recommendations
   - Catalog
   - Reports
+- rule_key: registry.security.critical_runtime_vulnerability
+  title: Critical Registry Vulnerability Is Running
+  domain: registry
+  provider_keys:
+  - harbor
+  source_kind: registry_artifact
+  category: reliability
+  severity: critical
+  priority: P1
+  status: available
+  logic_type: recommendation
+  signal_source: registry_committed_evidence
+  risk_exception:
+    enabled: true
+    default_scope_mode: finding_keys
+    allowed_scope_modes:
+    - finding_keys
+    - rule_asset
+    guidance: Accept risk only with explicit owner, expiry, and change or risk reference for the affected Registry scope.
+  alert_escalation:
+    eligible: true
+    mode: manual
+    minimum_severity: critical
+    grouping_mode: finding
+  catalog_summary: Correlates critical artifact vulnerability evidence with committed Kubernetes runtime usage.
+  summary: Identifies a Registry artifact with critical vulnerability evidence that is also referenced by committed Kubernetes runtime inventory.
+  condition_summary: The latest committed Registry artifact has one or more critical findings and at least one committed runtime binding.
+  recommended_action: Validate exploitability and workload exposure, confirm whether a fixed artifact is available, then use the approved deployment and Automation Control path for remediation.
+  impact: Prioritizes supply-chain findings with demonstrated runtime blast radius without turning raw CVEs into direct alerts.
+  evidence_boundary: Artifact Registry owns vulnerability and runtime-correlation facts. Intelligence owns recommendation and alert-escalation semantics.
+  supported_sources:
+  - Artifact Registry committed security evidence
+  - Kubernetes committed Pod inventory
+  visible_in:
+  - Recommendations
+  - Artifact Registry Analytics
+  - Alert Intelligence
+- rule_key: registry.security.scan_evidence_missing
+  title: Running Registry Artifact Has No Usable Scan Evidence
+  domain: registry
+  provider_keys:
+  - harbor
+  source_kind: registry_artifact
+  category: governance
+  severity: warning
+  priority: P2
+  status: available
+  logic_type: governance_check
+  signal_source: registry_committed_evidence
+  summary: Identifies runtime-referenced artifacts without a normalized successful committed vulnerability scan state.
+  condition_summary: An artifact has at least one runtime binding while scan status is not success, finished, or completed.
+  recommended_action: Restore the provider scanner or artifact scan evidence path, then reconcile Registry inventory before making risk decisions.
+  impact: Prevents runtime exposure from being assessed against an unknown vulnerability posture.
+  evidence_boundary: This rule consumes committed Registry security and runtime-correlation evidence; it does not trigger scans itself.
+  supported_sources:
+  - Artifact Registry committed security evidence
+  - Kubernetes committed Pod inventory
+  visible_in:
+  - Recommendations
+  - Artifact Registry Analytics
+- rule_key: registry.governance.public_project_without_immutability
+  title: Public Registry Project Has No Immutability Rule
+  domain: registry
+  provider_keys:
+  - harbor
+  source_kind: registry_project
+  category: governance
+  severity: warning
+  priority: P2
+  status: available
+  logic_type: governance_check
+  signal_source: registry_committed_evidence
+  summary: Identifies public Registry projects whose committed governance evidence has no configured immutability rule.
+  condition_summary: Project visibility is public and immutability posture is not_configured in the latest committed governance snapshot.
+  recommended_action: Confirm whether mutable tags are intentionally permitted. If not, apply the approved provider-native immutability policy through the governed change path and reconcile evidence.
+  impact: Reduces accidental mutable-tag risk for publicly visible artifact namespaces.
+  evidence_boundary: Registry governance is read-only in KAORI; Harbor or the authoritative provider remains the policy execution authority.
+  supported_sources:
+  - Artifact Registry committed inventory
+  - Registry governance snapshot
+  visible_in:
+  - Recommendations
+  - Artifact Registry Governance
+- rule_key: registry.runtime.tag_only_correlation
+  title: Runtime Artifact Correlation Uses Mutable Tag
+  domain: registry
+  provider_keys:
+  - harbor
+  source_kind: registry_artifact
+  category: governance
+  severity: warning
+  priority: P3
+  status: available
+  logic_type: operational_hygiene
+  signal_source: registry_committed_evidence
+  summary: Identifies Kubernetes runtime correlation that can only be resolved through a mutable tag rather than an immutable digest.
+  condition_summary: The committed RegistryWorkloadBinding match type is tag with medium confidence.
+  recommended_action: Prefer digest-pinned image references or collect authoritative imageID digest evidence, then refresh Kubernetes inventory and Registry correlation.
+  impact: Improves deployment provenance and reduces ambiguity when tags move between artifact digests.
+  evidence_boundary: The Registry domain owns match confidence; Intelligence owns the recommendation lifecycle.
+  supported_sources:
+  - Artifact Registry committed inventory
+  - Kubernetes committed Pod inventory
+  visible_in:
+  - Recommendations
+  - Artifact Registry Runtime Usage
+- rule_key: registry.capacity.quota_exhaustion_review
+  title: Registry Project Quota Exhaustion Inside 90 Days
+  domain: registry
+  provider_keys:
+  - harbor
+  source_kind: registry_project
+  category: capacity
+  severity: warning
+  priority: P2
+  status: available
+  logic_type: forecast_insight
+  signal_source: kaori_registry_analysis
+  summary: Raises a planning recommendation when worker-materialized Registry analytics projects project quota exhaustion within 90 days.
+  condition_summary: Current project quota forecast has positive growth and days_to_quota is greater than 30 and at most 90.
+  recommended_action: Review artifact growth, retention policy, stale candidates, and project ownership before changing quota or deleting artifacts.
+  impact: Provides time to plan retention, cleanup, or quota changes before project headroom becomes critical.
+  evidence_boundary: Intelligence consumes committed Registry Analytics snapshots and does not issue live Metrics Source or Registry provider queries.
+  supported_sources:
+  - Artifact Registry Analytics Snapshot
+  - Metrics Source history through Registry analytics worker
+  visible_in:
+  - Recommendations
+  - Artifact Registry Analytics
+- rule_key: registry.capacity.quota_exhaustion_critical
+  title: Registry Project Quota Exhaustion Inside 30 Days
+  domain: registry
+  provider_keys:
+  - harbor
+  source_kind: registry_project
+  category: capacity
+  severity: critical
+  priority: P1
+  status: available
+  logic_type: forecast_insight
+  signal_source: kaori_registry_analysis
+  summary: Raises a critical planning recommendation when worker-materialized Registry analytics projects project quota exhaustion within 30 days.
+  condition_summary: Current project quota forecast has positive growth and days_to_quota is 30 or less.
+  recommended_action: Validate the forecast immediately, review retention and stale artifacts, and prepare an approved quota or cleanup change before pushes are constrained.
+  impact: Reduces the risk of project-level quota exhaustion interrupting artifact publication.
+  evidence_boundary: Intelligence consumes committed Registry Analytics snapshots; provider mutation remains outside the recommendation evaluator.
+  supported_sources:
+  - Artifact Registry Analytics Snapshot
+  - Metrics Source history through Registry analytics worker
+  visible_in:
+  - Recommendations
+  - Artifact Registry Analytics
+

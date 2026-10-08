@@ -30,7 +30,7 @@ def test_minio_persistence_uses_provider_neutral_object_storage_asset() -> None:
 
 def test_minio_registry_contract_is_storage_object_storage() -> None:
     registration = read('app/integrations/storage/object_storage/providers/minio/__init__.py')
-    registry = read('app/integrations/registry.py')
+    registry = read('app/integrations/kernel/registry.py')
     compatibility = read('app/integrations/storage/object_storage/providers/minio/compatibility.py')
     capabilities = read('app/integrations/storage/object_storage/providers/minio/capabilities.py')
     provider_catalog = read('app/definitions/catalogs/integrations/storage/object_storage/contract.yaml')
@@ -197,3 +197,55 @@ def test_minio_asset_owner_lifecycle_preserves_observability_sources() -> None:
     assert 'asset_owner_deletion_guard(' in service
     assert 'reusable Metrics Source or Alertmanager connections remain retained' in scope
     assert 'Inventory & Lifecycle' in detail
+
+
+def test_minio_review_copy_keeps_secret_and_revalidation_guidance_concise() -> None:
+    form = read('app/templates/integrations/storage/object_storage/providers/minio/instance_form.html')
+    configuration = read(
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_configuration.html'
+    )
+    validation = read(
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_validation.html'
+    )
+    access_reference = read(
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_minimum_validation_access.html'
+    )
+
+    assert 'Configure MinIO S3 credentials, then test the S3 API endpoint—not the Console URL.' in form
+    assert (
+        'MinIO provides the storage API; Metrics Source and Alertmanager remain separate bindings to the same asset.'
+        in form
+    )
+    assert (
+        'MinIO remains the storage authority. KAORI keeps provider readiness and binding evidence without storing '
+        'observability credentials here.'
+    ) in form
+    assert 'Secret keys stay encrypted; registration and Full Validation use governed S3 discovery.' in configuration
+    assert 'Persistent provider, asset, validation, binding, and audit identity.' in configuration
+    assert 'Environment context for coverage, policy, ownership, and consumer resolution.' in configuration
+    assert 'Product family resolved by Full Validation for compatibility and capability selection.' in configuration
+    assert 'Canonical S3-compatible API base endpoint KAORI uses for identity checks' in configuration
+    assert (
+        'MinIO owns S3 state; observability sources stay independent. KAORI correlates binding evidence without copying credentials.'
+        in configuration
+    )
+    assert (
+        'setup_reference_template="integrations/storage/object_storage/providers/minio/partials/'
+        '_minimum_validation_access.html"'
+    ) in configuration
+    assert 'Minimum S3 Access Example' in access_reference
+    assert 'Open Access Examples' in access_reference
+    assert 'setTab(tab) { this.activeTab = tab; }' in access_reference
+    assert "const tabs = ['baseline', 'inventory'];" in access_reference
+    assert 's3:ListAllMyBuckets' in access_reference
+    assert 'Optional Inventory Enrichment Reader' in access_reference
+    assert 'MinIO Admin API quota or provider-aggregated usage evidence requires separate' in access_reference
+    assert (
+        'Revalidate after MinIO release, credential, endpoint, TLS, region, addressing, or S3 API changes.'
+        in validation
+    )
+    assert (
+        'Resolve MinIO API, credential, TLS, compatibility, or capability gaps, then rerun Full Validation.'
+        in validation
+    )
+    assert 'to refresh governed readiness evidence.' not in validation

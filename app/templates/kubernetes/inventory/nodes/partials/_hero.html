@@ -8,14 +8,9 @@
                     Review node readiness, capacity, scheduling, and platform posture.
                 </p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
-                    {% if cluster_onboarding.is_blocked %}
-                        {{ page_hero.meta_label('database', 'Committed Inventory') }}
-                        {{ page_hero.meta_label('lock-keyhole', 'Cluster Setup Required') }}
-                    {% else %}
-                        {{ page_hero.meta_label('server', inventory.total_nodes ~ ' Nodes in Scope') }}
-                        {{ page_hero.meta_label('scan-search', inventory.scope_label) }}
-                        {{ page_hero.meta_label('activity', inventory.active_signal_nodes ~ ' Active Signals') }}
-                    {% endif %}
+                    {{ page_hero.meta_label('server', inventory.total_nodes ~ ' Nodes in Scope') }}
+                    {{ page_hero.meta_label('scan-search', inventory.scope_label) }}
+                    {{ page_hero.meta_label('activity', inventory.active_signal_nodes ~ ' Active Signals') }}
                 </div>
             {% endcall %}
         </div>

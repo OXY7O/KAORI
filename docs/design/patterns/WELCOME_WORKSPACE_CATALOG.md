@@ -111,8 +111,9 @@ Inventory and Analytics cards are permission-owned by their asset domain. Kubern
 ```text
 Kubernetes Inventory      → inventory.view
 Object Storage Inventory  → object_storage_inventory.view
+Artifact Registry         → artifact_registry.view
 Kubernetes Analytics      → analytics.view
 Object Storage Analytics  → object_storage_analytics.view
 ```
 
-Object Storage Inventory and Analytics use the `Storage` scope and live in `Understand / Visibility & Operational Insight`. They remain separate workspaces because committed inventory and operational analytics have different evidence boundaries and authorization contracts.
+Object Storage Inventory and Analytics use the `Storage` scope and live in `Understand / Visibility & Operational Insight`. Artifact Registry uses the `Registry` scope in the same capability group and is discoverable only through `artifact_registry.view`; its card remains provider-neutral and routes to committed Registry inventory, security, runtime, governance, and analytics evidence rather than to a Harbor-specific page. These workspaces remain separate because their evidence boundaries and authorization contracts are independent.

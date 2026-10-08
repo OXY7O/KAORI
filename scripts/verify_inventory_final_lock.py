@@ -180,15 +180,16 @@ def main() -> int:
     topology_hero = read('app/templates/kubernetes/inventory/topology/partials/_hero.html')
     blocked_hero = read('app/templates/components/cluster/_hero_blocked_context.html')
     require(
-        'page_hero.blocked_context_body(' in blocked_hero
-        and "cluster_blocked_cluster_label|default('Connected Clusters')" in blocked_hero
-        and "cluster_blocked_cluster_value|default('0')" in blocked_hero
-        and "cluster_blocked_cluster_supporting|default('No Kubernetes connection available')" in blocked_hero
-        and "cluster_blocked_state_value|default('Blocked')" in blocked_hero
-        and "cluster_blocked_state_supporting|default('Cluster access is required')" in blocked_hero
-        and "('boxes', blocked_cluster_label, blocked_cluster_value, blocked_cluster_supporting)" in blocked_hero
-        and "('circle-dot-dashed', blocked_state_label, blocked_state_value, blocked_state_supporting" in blocked_hero,
-        'Inventory must inherit the canonical Kubernetes setup-blocked Hero context.',
+        'components/provider_prerequisite/_hero_context.html' in blocked_hero
+        and "provider_prerequisite_scope = cluster_blocked_scope|default('Workspace Readiness')" in blocked_hero
+        and "provider_prerequisite_title = cluster_blocked_title|default('Cluster Setup Required')" in blocked_hero
+        and "provider_prerequisite_resource_label = cluster_blocked_cluster_label|default('Connected Clusters')"
+        in blocked_hero
+        and "provider_prerequisite_resource_value = cluster_blocked_cluster_value|default('0')" in blocked_hero
+        and "provider_prerequisite_state_value = cluster_blocked_state_value|default('Blocked')" in blocked_hero
+        and "provider_prerequisite_state_supporting = cluster_blocked_state_supporting|default('Cluster access is required')"
+        in blocked_hero,
+        'Inventory must inherit the canonical Kubernetes provider-prerequisite Hero context.',
         errors,
     )
     require(
@@ -207,9 +208,11 @@ def main() -> int:
             f'{page_name} Hero must use the shared Kubernetes setup-blocked context.',
             errors,
         )
+        metadata_index = hero_source.find('page_hero.metadata_row_classes()')
+        blocker_index = hero_source.find('{% if cluster_onboarding.is_blocked %}')
         require(
-            'Committed Inventory' in hero_source and 'Cluster Setup Required' in hero_source,
-            f'{page_name} Hero must replace blocked numeric metadata with setup-safe inventory metadata.',
+            metadata_index >= 0 and metadata_index < blocker_index,
+            f'{page_name} Hero metadata roles must remain stable before provider-prerequisite readiness context.',
             errors,
         )
     overview_page = read('app/templates/kubernetes/inventory/overview/index.html')
@@ -298,6 +301,20 @@ def main() -> int:
         'Shared Inventory resource-sheet bands must align the description rail to the four-column summary header.',
         errors,
     )
+    inspector_summary = detail_primitives.split('{% macro inspector_summary_strip', 1)[-1].split(
+        '{%- endmacro %}',
+        1,
+    )[0]
+    require(
+        'data-kaori-inventory-summary-alignment="full-width-band"' in inspector_summary
+        and 'grid min-w-0 w-full overflow-hidden bg-surface-card' in inspector_summary
+        and 'mx-4' not in inspector_summary
+        and 'sm:mx-5' not in inspector_summary
+        and 'lg:mx-6' not in inspector_summary
+        and 'rounded-2xl' not in inspector_summary,
+        'Shared Inventory modal summary must remain one flush full-width band without inset card framing.',
+        errors,
+    )
     require(
         'macro inventory_copy_button(label)' in detail_primitives
         and 'data-kaori-copy-button' in detail_primitives
@@ -367,9 +384,11 @@ def main() -> int:
             f'{resource} Hero must use the shared Kubernetes setup-blocked context.',
             errors,
         )
+        metadata_index = hero.find('page_hero.metadata_row_classes()')
+        blocker_index = hero.find('{% if cluster_onboarding.is_blocked %}')
         require(
-            'Committed Inventory' in hero and 'Cluster Setup Required' in hero,
-            f'{resource} Hero must replace blocked numeric metadata with setup-safe inventory metadata.',
+            metadata_index >= 0 and metadata_index < blocker_index,
+            f'{resource} Hero metadata roles must remain stable before provider-prerequisite readiness context.',
             errors,
         )
         require('components/table.html' in table, f'{resource} must use the shared table component.', errors)

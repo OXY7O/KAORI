@@ -32,7 +32,9 @@ def test_dashboard_route_and_service_are_snapshot_only() -> None:
 
     assert "url_prefix='/dashboards/object-storage'" in routes
     assert routes.count("@permission_required('dashboard.view')") == 2
-    assert "DASHBOARD_TABS = {'overview', 'capacity', 'signals', 'reporting'}" in routes
+    assert 'normalize_operational_tab' in routes
+    assert 'normalize_dashboard_page_size' in routes
+    assert 'is_htmx_request(request.headers)' in routes
     assert "'kpi_cards': 'storage/object_storage/dashboard/partials/_kpi_cards.html'" in routes
     assert "'overview': 'storage/object_storage/dashboard/partials/_overview.html'" in routes
     assert "'system_health': 'storage/object_storage/dashboard/partials/_system_health.html'" in routes
@@ -119,8 +121,8 @@ def test_dashboard_sections_are_object_storage_specific_and_committed_evidence_o
     assert 'Forecast & Growth Risk' in forecast
     assert 'Top Bucket Consumers' in consumers
     assert 'storage/object_storage/dashboard/partials/_alerts_summary.html' in signals
-    assert 'Alert Interpretation & Response' in response
-    assert 'Recommended Actions' in actions
+    assert 'components/operational_alert_response.html' in response
+    assert 'components/operational_recommendation_cards.html' in actions
     assert 'storage/object_storage/dashboard/partials/_reporting_summary.html' in reporting
     assert 'reporting_workspace.summary(' in reporting_summary
     assert 'reporting_workspace.guidance(' in reporting_guidance
@@ -154,9 +156,12 @@ def test_system_health_summary_matches_kubernetes_pagination_contract() -> None:
     health = read('app/templates/storage/object_storage/dashboard/partials/_system_health.html')
     kubernetes_health = read('app/templates/kubernetes/dashboard/partials/_cluster_health.html')
 
-    assert 'SYSTEM_HEALTH_PAGE_SIZES = {5, 10, 25, 50}' in routes
+    application_contract = read('app/dashboards/common/operational.py')
+    pagination = read('app/common/pagination.py')
+    assert 'DASHBOARD_PAGE_SIZES = PER_PAGE_OPTIONS' in application_contract
+    assert 'PER_PAGE_OPTIONS: tuple[int, ...] = (5, 10, 25, 50)' in pagination
     assert "request.args.get('system_health_page', '1')" in routes
-    assert "request.args.get('system_health_per_page', '5')" in routes
+    assert "normalize_dashboard_page_size(request.args.get('system_health_per_page'))" in routes
     assert "'system_health': 'storage/object_storage/dashboard/partials/_system_health.html'" in routes
     assert 'from app.common.pagination import paginate_sequence' in service
     assert "'empty_observed_systems': len(empty_observed_systems)" in service
@@ -179,8 +184,8 @@ def test_system_health_summary_matches_kubernetes_pagination_contract() -> None:
     ):
         assert token in health
 
-    for size in ('5', '10', '25', '50'):
-        assert size in health
+    assert 'for size in pagination.allowed_per_page' in health
+    assert '[5, 10, 25, 50]' not in health
     assert 'components/pagination.html' in kubernetes_health
     assert 'cluster_health_per_page' in kubernetes_health
     assert 'pagination_ui.numeric_pages' in kubernetes_health
@@ -191,7 +196,10 @@ def test_object_storage_analytics_verifier_tracks_current_snapshot_contract() ->
 
     assert "assert 'Operational Metrics Contract' in readiness" in verifier
     assert "assert 'Readiness By Evidence Domain' in readiness" in verifier
-    assert "assert 'Object Storage → Metrics → Analytics Snapshot' in dependency_blocker" in verifier
+    assert (
+        "assert 'Object Storage → Metrics Source → Alert Source → Analytics Snapshot' in dependency_blocker" in verifier
+    )
+    assert "assert 'dependency_blocked_step = 4' in dependency_blocker" in verifier
     assert "assert 'page_hero.blocked_context_body(' in hero_blocked" in verifier
     assert (
         "for label in ('Forecast Outlook', 'Usage Trend', 'Bucket Forecasts', 'Worker & Method', 'Evidence')"
@@ -253,7 +261,11 @@ def test_signals_and_reporting_match_kubernetes_dashboard_composition() -> None:
     reporting_summary = read('app/templates/storage/object_storage/dashboard/partials/_reporting_summary.html')
     reporting_guidance = read('app/templates/storage/object_storage/dashboard/partials/_reporting_guidance.html')
     reporting_workspace = read('app/templates/components/reporting_dashboard_workspace.html')
-    kubernetes_signals = read('app/templates/kubernetes/dashboard/partials/_content.html')
+    shared_alerts = read('app/templates/components/operational_alert_summary.html')
+    shared_response = read('app/templates/components/operational_alert_response.html')
+    shared_recommendations = read('app/templates/components/operational_recommendation_cards.html')
+    kubernetes_signals = read('app/templates/kubernetes/dashboard/partials/_signals.html')
+    kubernetes_actions = read('app/templates/kubernetes/dashboard/partials/_recommended_actions.html')
     kubernetes_reporting = read('app/templates/kubernetes/dashboard/partials/_reporting_guidance.html')
     service = read('app/storage/object_storage/dashboard/service.py')
 
@@ -263,15 +275,19 @@ def test_signals_and_reporting_match_kubernetes_dashboard_composition() -> None:
         'storage/object_storage/dashboard/partials/_recommended_actions.html',
     ):
         assert token in signals
-    assert 'Alerts Summary' in alerts
+    assert 'components/operational_alert_summary.html' in alerts
+    assert 'Alerts Summary' in shared_alerts
     assert 'def _alerts(selected: ObjectStorageSystem | None)' in service
     assert "for case in posture['cases'][:5]" in service
-    assert 'Alert Interpretation & Response' in response
-    assert 'Controlled Response Flow' in response
-    assert 'components/numbered_governance_steps.html' in response
+    assert 'components/operational_alert_response.html' in response
+    assert 'Alert Interpretation & Response' in shared_response
+    assert 'Controlled Response Flow' in shared_response
+    assert 'components/numbered_governance_steps.html' in shared_response
     assert 'components/operational_flow_steps.html' not in response
-    assert 'Recommended Actions' in actions
-    assert 'dashboard-recommended-actions' in kubernetes_signals
+    assert 'components/operational_recommendation_cards.html' in actions
+    assert 'Recommended Actions' in shared_recommendations
+    assert 'kubernetes/dashboard/partials/_recommended_actions.html' in kubernetes_signals
+    assert 'dashboard-recommended-actions' in kubernetes_actions
     assert "dashboard['recommended_actions'] = _recommended_actions(selected)" in service
     assert 'get_dashboard_recommendation_findings' in service
 
@@ -297,3 +313,30 @@ def test_signals_and_reporting_match_kubernetes_dashboard_composition() -> None:
     assert 'components/operational_flow_steps.html' not in reporting_workspace
     assert 'components/reporting_dashboard_workspace.html' in kubernetes_reporting
     assert 'reporting_workspace.guidance(' in kubernetes_reporting
+
+
+def test_object_storage_dashboard_uses_fast_shell_without_rebuilding_overview_per_section() -> None:
+    service = read('app/storage/object_storage/dashboard/service.py')
+
+    assert 'def _dashboard_shell_context(' in service
+    overview = service.split('def get_dashboard_overview(', 1)[1].split('def get_dashboard_section(', 1)[0]
+    section = service.split('def get_dashboard_section(', 1)[1]
+
+    assert '_inventory_summary(' not in overview
+    assert 'return _dashboard_shell_context(' in overview
+    assert 'dashboard = get_dashboard_overview(' not in section
+    assert 'dashboard = _dashboard_shell_context(' in section
+
+    assert "if section in {'overview', 'system_health'}:" in section
+    assert "elif section == 'kpi_cards':" in section
+    assert "elif section == 'capacity':" in section
+    assert "elif section == 'signals':" in section
+    assert "elif section == 'reporting':" in section
+
+    signals_branch = section.split("elif section == 'signals':", 1)[1].split("elif section == 'reporting':", 1)[0]
+    assert '_forecast(selected)' not in signals_branch
+    assert '_capacity(selected)' not in signals_branch
+    assert '_top_consumers(selected)' not in signals_branch
+
+    reporting_branch = section.split("elif section == 'reporting':", 1)[1]
+    assert '_freshness(selected, systems)' not in reporting_branch

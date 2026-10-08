@@ -35,6 +35,10 @@ Operational Content
 
 A page with no peer detailed views renders no level-3 navigation.
 
+Provider absence, setup-required state, validation-required state, and degraded provider readiness do **not**
+remove level-3 navigation. Route navigation expresses information architecture, not evidence availability.
+A blocked route may render only its Hero plus canonical setup blocker after the navigation row.
+
 There is **no global Domain Workspace horizontal strip** between breadcrumb and page content.
 
 ## Shared Component Ownership
@@ -93,6 +97,20 @@ Kubernetes Analytics Overview always keeps the route-level Integrated Workspace 
 ```text
 Overview · Systems · Buckets & Containers
 ```
+
+### Artifact Registry / Inventory
+
+```text
+Overview · Projects · Repositories · Artifacts
+```
+
+### Artifact Registry / Security
+
+```text
+Vulnerabilities · Supply Chain
+```
+
+Security detailed views remain route-level navigation above the Hero. Vulnerabilities owns committed scanner findings and runtime exposure context. Supply Chain owns provider-observed signature and SBOM evidence plus explicit provider capability gaps. Both views read committed KAORI security evidence and must not issue live provider requests during normal page rendering.
 
 ### Object Storage / Analytics
 

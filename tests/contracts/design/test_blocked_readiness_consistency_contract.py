@@ -38,33 +38,36 @@ def test_dashboard_blocked_state_is_family_consistent() -> None:
 def test_operational_workspace_blocked_contexts_share_one_renderer() -> None:
     kubernetes = read('app/templates/components/cluster/_hero_blocked_context.html')
     object_storage = read('app/templates/storage/object_storage/inventory/components/_hero_blocked_context.html')
+    provider = read('app/templates/components/provider_prerequisite/_hero_context.html')
 
     for source in (kubernetes, object_storage):
-        assert 'page_hero.blocked_context_body(' in source
+        assert 'components/provider_prerequisite/_hero_context.html' in source
         assert '<div class="{{ page_hero.context_panel_classes() }}">' not in source
         assert 'page_hero.context_panel_metrics_classes()' not in source
 
+    assert 'page_hero.blocked_context_body(' in provider
     assert 'Connected Clusters' in kubernetes
     assert 'Workspace State' in kubernetes
     assert 'Registered Systems' in object_storage
     assert 'Workspace State' in object_storage
 
 
-def test_analytics_blocked_heroes_prioritize_scope_and_missing_evidence() -> None:
+def test_analytics_blocked_heroes_split_provider_prerequisite_from_secondary_dependencies() -> None:
     kubernetes = read('app/templates/kubernetes/analytics/components/_blocked_posture.html')
     object_storage = read('app/templates/storage/object_storage/analytics/partials/_hero_blocked_posture.html')
 
     for source in (kubernetes, object_storage):
+        assert 'components/provider_prerequisite/_hero_context.html' in source
         assert 'page_hero.blocked_context_body(' in source
         assert "'Active Scope'" in source
         assert "'Missing Evidence'" in source
         assert "'Current Step'" not in source
         assert "'Progress'" not in source
 
+    assert "blocker_kind == 'cluster_required'" in kubernetes
     assert 'Operational Metrics' in kubernetes
-    assert 'Cluster Context' in kubernetes
     assert 'Alert Evidence' in kubernetes
-    assert 'System Context' in object_storage
+    assert "blocker_kind == 'system_required'" in object_storage
     assert 'Inventory Snapshot' in object_storage
     assert 'Analytics Snapshot' in object_storage
 
@@ -87,6 +90,7 @@ def test_blocked_readiness_contract_is_documented_by_profile() -> None:
     hero = read('docs/design/components/HERO.md')
     dashboard = read('docs/design/patterns/OPERATIONAL_DASHBOARD.md')
     analytics = read('docs/design/components/ANALYTICS_HERO.md')
+    provider = read('docs/design/components/PROVIDER_PREREQUISITE.md')
 
     assert 'Blocked readiness grammar' in hero
     assert 'Operational workspace blocked context' in hero
@@ -96,3 +100,4 @@ def test_blocked_readiness_contract_is_documented_by_profile() -> None:
     assert 'Object Storage Setup Required' in dashboard
     assert 'Analytics Readiness' in analytics
     assert 'Missing Evidence' in analytics
+    assert 'Provider Prerequisite Blocking Standard v1.0' in provider

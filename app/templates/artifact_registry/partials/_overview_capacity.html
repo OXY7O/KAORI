@@ -1,0 +1,12 @@
+{% import "components/peer_content_grid.html" as peer_content_grid %}
+<div id="artifact-registry-dashboard-section-capacity" class="space-y-5">
+    <div class="{{ peer_content_grid.layout_classes() }}">
+        <div class="{{ peer_content_grid.column_classes('primary') }}">
+            {% include "artifact_registry/partials/_overview_capacity_snapshot.html" %}
+        </div>
+        <div class="{{ peer_content_grid.column_classes('secondary') }}">
+            {% include "artifact_registry/partials/_overview_forecast_risk.html" %}
+        </div>
+    </div>
+    {% include "artifact_registry/partials/_overview_top_consumers.html" %}
+</div>

@@ -16,6 +16,23 @@ Compact Cluster Inventory Table
 └── View Details → Full Workspace Modal · Unified Resource Sheet V10
 ```
 
+## Cross-domain Inventory Overview reuse
+
+Kubernetes remains the reference implementation for committed Inventory Overview semantics. Other inventory domains reuse the same hierarchy primitives without cloning Kubernetes data semantics.
+
+Where a domain has meaningful committed fleet-level posture beyond freshness, the approved extension is:
+
+```text
+Canonical Hero
+Inventory Data Snapshot
+Fleet Inventory Posture
+<Domain> Asset Catalog
+```
+
+`Fleet Inventory Posture` and `<Domain> Asset Catalog` use `components/section_intro.html` for title/description outside the content blocks. Posture callouts and asset cards sit directly beneath that hierarchy; they are not wrapped in another `operational_section_card`. Fleet posture uses the existing neutral `operational_callout` variant so the block surface stays standard white/elevated while semantic state remains visible through icon/status treatment. Object Storage and Artifact Registry use this extension. Kubernetes intentionally continues with Snapshot → Asset Catalog → Cluster Inventory Table because its fleet comparison is owned by the cluster table rather than a duplicate posture section.
+
+Consistency applies to reading order and shared primitives, not to forcing identical metrics or equal card counts across domains.
+
 ## Ownership
 
 ### Hero

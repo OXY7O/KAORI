@@ -34,15 +34,18 @@ def test_dashboard_family_explains_kaori_alert_intelligence_as_primary_alert_sou
     object_storage_guidance = read(
         'app/templates/storage/object_storage/dashboard/partials/_alert_response_guidance.html'
     )
+    shared_response = read('app/templates/components/operational_alert_response.html')
 
     for content in (kubernetes, object_storage):
+        assert 'components/operational_alert_summary.html' in content
         assert 'KAORI Alert Intelligence' in content
         assert 'Active KAORI AlertCase posture and up to five recent cases.' in content
 
     for content in (kubernetes_guidance, object_storage_guidance):
-        assert 'Alert Data Source' in content
-        assert 'KAORI Alert Intelligence · Active AlertCase records' in content
+        assert 'components/operational_alert_response.html' in content
 
+    assert 'Alert Data Source' in shared_response
+    assert 'KAORI Alert Intelligence · Active AlertCase records' in shared_response
     assert 'Active Alertmanager and Metrics Source alert signals.' not in kubernetes
     assert "action_href=url_for('alert_intelligence.index'" in kubernetes
     assert "action_href=url_for('alert_intelligence.index'" in object_storage
@@ -53,6 +56,8 @@ def test_dashboard_freshness_keeps_raw_alert_source_readiness_separate() -> None
     object_storage = read('app/storage/object_storage/dashboard/service.py')
 
     assert "if section == 'data_freshness':" in kubernetes
-    assert 'dashboard.alerts_snapshot, alerts_result = _alerts_signal(selected)' in kubernetes
+    assert 'def _populate_data_freshness(' in kubernetes
+    assert 'dataset_key=DASHBOARD_ALERTS_DATASET_KEY' in kubernetes
+    assert 'has_alertmanager_data = alerts_result is not None and alerts_result.available' in kubernetes
     assert "'label': 'Alert Evidence'" in object_storage
     assert 'Alertmanager preferred with Metrics Source fallback' in object_storage

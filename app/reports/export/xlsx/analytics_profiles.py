@@ -4,6 +4,7 @@ from collections.abc import Callable, Mapping
 from typing import Any
 
 from app.reports.export.xlsx.analytics_preparation.alerts import prepare_alerts
+from app.reports.export.xlsx.analytics_preparation.artifact_registry import prepare_artifact_registry
 from app.reports.export.xlsx.analytics_preparation.capacity import prepare_capacity
 from app.reports.export.xlsx.analytics_preparation.forecast import prepare_forecast
 from app.reports.export.xlsx.analytics_preparation.object_storage import prepare_object_storage
@@ -44,6 +45,7 @@ _PREPARERS: dict[str, _Preparer] = {
     'alerts_anomalies': prepare_alerts,
     'tenant_governance': prepare_tenant_governance,
     'object_storage_analysis': prepare_object_storage,
+    'artifact_registry_analysis': prepare_artifact_registry,
 }
 
 

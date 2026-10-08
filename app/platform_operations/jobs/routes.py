@@ -372,6 +372,8 @@ def quick_sync_all_inventory() -> ResponseReturnValue:
         job_keys.append('kubernetes.tenant.sync')
     if current_user.has_permission('storage.sync'):
         job_keys.append('object_storage.inventory.sync')
+    if current_user.has_permission('artifact_registry.sync'):
+        job_keys.append('artifact_registry.inventory.sync')
     if not job_keys:
         abort(403)
 

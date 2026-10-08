@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 FILES = (
     'app/integrations/taxonomy.py',
-    'app/integrations/registry.py',
+    'app/integrations/kernel/registry.py',
     'app/integrations/binding_service.py',
     'app/integrations/resolver.py',
     'app/integrations/validation/tasks.py',
@@ -41,7 +41,7 @@ def main() -> None:
         source = read(relative)
         ast.parse(source, filename=relative)
 
-    registry = read('app/integrations/registry.py')
+    registry = read('app/integrations/kernel/registry.py')
     require('domain_key: str' in registry, 'registry must own integration domain metadata')
     require('capability_key: str' in registry, 'registry must own integration capability metadata')
     require('canonical_record_loader' in registry, 'registry must own canonical reverse loading')

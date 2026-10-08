@@ -31,7 +31,7 @@
                         "Alerting Integration",
                         "server-cog",
                         "Edit Alertmanager Connection",
-                        "Update alerting connections while preserving governed bindings.",
+                        "Update Alertmanager access while preserving consumer bindings.",
                         "bell-ring",
                         "Alertmanager API v2",
                         "Connection",
@@ -96,30 +96,18 @@
                                     <p class="mt-0.5 text-xs leading-5 text-content-muted">Stable identity used by validation, consumer bindings, runtime history, notifications, and audit records.</p>
                                 </div>
                             </div>
-                            <div class="grid gap-4 lg:grid-cols-2">
-                                <div>
-                                    <label for="alertmanager-name"
-                                           class="mb-1.5 block text-sm font-semibold text-content-primary">Connection Name</label>
-                                    <input id="alertmanager-name"
-                                           name="name"
-                                           required
-                                           value="{{ instance.name if instance else (submitted_form.name if submitted_form else (initial_cluster.name ~ ' Alertmanager' if initial_cluster else '')) }}"
-                                           placeholder="Alertmanager Production"
-                                           class="{{ field_classes }}">
-                                </div>
-                                <div>
-                                    <label for="alertmanager-deployment-type"
-                                           class="mb-1.5 block text-sm font-semibold text-content-primary">Connection Type</label>
-                                    <select id="alertmanager-deployment-type"
-                                            name="deployment_type"
-                                            class="{{ field_classes }}">
-                                        {% set selected_deployment = instance.deployment_type if instance else (submitted_form.deployment_type if submitted_form else ('cluster_managed' if initial_cluster else 'external_managed')) %}
-                                        {% for value, label in [('external_managed','Externally managed'),('standalone','Standalone'),('shared','Shared service'),('cluster_managed','Managed for a specific scope')] %}
-                                            <option value="{{ value }}"
-                                                    {% if selected_deployment == value %}selected{% endif %}>{{ label }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
+                            <div>
+                                <label for="alertmanager-name"
+                                       class="mb-1.5 block text-sm font-semibold text-content-primary">Connection Name</label>
+                                <input id="alertmanager-name"
+                                       name="name"
+                                       required
+                                       value="{{ instance.name if instance else (submitted_form.name if submitted_form else (initial_cluster.name ~ ' Alertmanager' if initial_cluster else '')) }}"
+                                       placeholder="Alertmanager Production"
+                                       class="{{ field_classes }}">
+                                <input type="hidden"
+                                       name="deployment_type"
+                                       value="{{ instance.deployment_type if instance else (submitted_form.deployment_type if submitted_form else 'external_managed') }}">
                             </div>
                             <div class="mt-4">
                                 <label for="alertmanager-description"
@@ -271,7 +259,7 @@
                         {% endif %}
                     </div>
                     {% if instance %}
-                        {% call form_action_bar.render('Save changes, then run Full Validation.', aria_label='Alertmanager Connection Actions') %}
+                        {% call form_action_bar.render('Save changes, then run Full Validation.', aria_label='Alertmanager Configuration Actions', embedded=true) %}
                             <a href="{{ url_for('integrations.alertmanager') }}"
                                class="{{ action_button.classes('secondary') }}">Cancel</a>
                             <button type="submit"
@@ -293,21 +281,21 @@
             </form>
             <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">
                 {% if instance %}
-                    {% set alertmanager_flow_items = [('Save Changes', 'Update the reusable connection contract and return readiness to Validation Required.'), ('Test Connection', 'Confirm the saved endpoint remains reachable with the selected authentication and TLS settings.'), ('Run Core Validation', 'Rebuild Alertmanager API compatibility and provider readiness evidence.'), ('Review Consumer Bindings', 'Confirm Kubernetes, Object Storage, and future consumers retain independent alert bindings and selectors.')] %}
+                    {% set alertmanager_flow_items = [('Save Changes', 'Update the reusable connection contract and return readiness to Validation Required.'), ('Test Connection', 'Confirm the saved endpoint remains reachable with the selected authentication and TLS settings.'), ('Run Full Validation', 'Rebuild Alertmanager API compatibility and provider readiness evidence.'), ('Review Consumer Bindings', 'Confirm Kubernetes, Object Storage, and future consumers retain independent alert bindings and selectors.')] %}
                     {{ provider_registration_context.render("Alertmanager Configuration Flow",
-                                        "How saved connection changes return to governed operational use.",
+                                        "How saved changes return to governed use.",
                                         alertmanager_flow_items,
                                         "Observability Integrations",
-                                        "Review Alertmanager provider coverage, connection readiness, and alert consumer bindings from the observability workspace.",
+                                        "Review Alertmanager coverage, readiness, and alert consumer bindings.",
                                         url_for("integrations.observability") ,
                     "Open Observability Integrations",
                     flow_icon="workflow",
-                    flow_note="Saving changes does not establish readiness until Core Validation succeeds.",
+                    flow_note="Saving changes does not establish readiness until Full Validation succeeds.",
                     related_icon="waypoints",
-                    authority_boundary="Alertmanager remains authoritative for routing, grouping, inhibition, silences, and notification delivery. KAORI owns provider readiness and governed consumer-binding evidence.") }}
+                    authority_boundary="Alertmanager owns routing, grouping, inhibition, silences, and delivery. KAORI governs readiness and consumer-binding evidence.") }}
                 {% else %}
-                    {% set alertmanager_flow_items = [('Define Connection Identity', 'Create one reusable Alertmanager connection for the endpoint and its ownership context.'), ('Configure Endpoint Access', 'Set authentication, TLS behavior, request timeout, and the supported Alertmanager API contract.'), ('Test Connection', 'Verify endpoint reachability and API access before KAORI enables registration.'), ('Register Connection', 'Create the reusable connection identity before Core Validation and consumer binding.')] %}
-                    {% set alertmanager_related_description = "A single Alertmanager runtime can serve Kubernetes, Object Storage, and future integrations through independent consumer bindings and selectors." %}
+                    {% set alertmanager_flow_items = [('Define Connection Identity', 'Create one reusable Alertmanager connection for the endpoint and its ownership context.'), ('Configure Endpoint Access', 'Set authentication, TLS behavior, request timeout, and the supported Alertmanager API contract.'), ('Test Connection', 'Verify endpoint reachability and API access before KAORI enables registration.'), ('Register Connection', 'Create the reusable connection identity before Full Validation and consumer binding.')] %}
+                    {% set alertmanager_related_description = "One Alertmanager runtime can serve multiple integrations through independent bindings and selectors." %}
                     {% if initial_cluster %}
                         {% set alertmanager_related_description = alertmanager_related_description ~ " This registration will also create the initial alert binding for " ~ initial_cluster.name ~ "." %}
                     {% endif %}
@@ -319,9 +307,9 @@
                                         url_for("integrations.observability") ,
                     "Open Observability Integrations",
                     flow_icon="waypoints",
-                    flow_note="Registration creates the reusable connection identity only; Core Validation and consumer eligibility remain separate gates.",
+                    flow_note="Registration creates the reusable connection identity only; Full Validation and consumer eligibility remain separate gates.",
                     related_icon="waypoints",
-                    authority_boundary="Alertmanager remains authoritative for routing, grouping, inhibition, silences, and notification delivery. KAORI owns provider readiness and governed consumer-binding evidence.") }}
+                    authority_boundary="Alertmanager owns routing, grouping, inhibition, silences, and delivery. KAORI governs readiness and consumer-binding evidence.") }}
                 {% endif %}
             </aside>
         </div>

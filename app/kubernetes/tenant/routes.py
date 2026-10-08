@@ -55,10 +55,13 @@ from app.kubernetes.tenant.live_connection import get_live_tenant_connection_con
 from app.kubernetes.tenant.overview import dispatch_tenant_inventory_sync
 from app.kubernetes.tenant.route_common import (
     _csrf,
+    _operations_active_tab,
+    _operations_provisioning_context,
     _record,
     _required_int,
     _tenant_active_section_context,
     _tenant_admin_section,
+    _tenant_admin_support_context,
     _tenant_section_redirect,
     _tenant_workspace_context,
     tenant_bp,
@@ -71,8 +74,10 @@ from app.kubernetes.tenant.service import (
     cutover_adopted_namespace_allocation_committed,
     delete_resource_profile_committed,
     get_capacity_decision_registry_context,
+    get_namespace_provisioning_support_context,
     get_namespace_registry_context,
     get_resource_profile_registry_context,
+    get_resource_profile_workspace_context,
     get_tenant_registry_context,
     provision_native_namespace_committed,
     reconcile_managed_native_namespace_committed,
@@ -82,6 +87,7 @@ from app.kubernetes.tenant.service import (
 from app.kubernetes.tenant.workspace import (
     get_tenant_cluster_estate_context,
     get_tenant_operations_evidence_context,
+    get_tenant_operations_summary_context,
     get_tenant_overview_context,
     get_tenant_sync_workspace_context,
 )
@@ -92,13 +98,10 @@ from app.platform_operations.notifications.service import queue_transient_feedba
 @tenant_bp.get('/')
 @any_permission_required('tenant.view', 'tenant.manage')
 def index():
-    context = _tenant_workspace_context()
-    context.update(
-        get_tenant_overview_context(
-            cluster_page=request.args.get('cluster_page', 1, type=int) or 1,
-            cluster_per_page=request.args.get('cluster_per_page', 5, type=int) or 5,
-        )
-    )
+    context = _tenant_workspace_context(include_sync=False)
+    context.update(get_tenant_overview_context())
+    context['tenant_cluster_page'] = request.args.get('cluster_page', 1, type=int) or 1
+    context['tenant_cluster_per_page'] = request.args.get('cluster_per_page', 5, type=int) or 5
     return render_template(
         'kubernetes/tenant/overview.html',
         tenant_page='overview',
@@ -278,6 +281,7 @@ def tenants():
     active_section = _tenant_admin_section(request.args.get('section'))
     context = _tenant_workspace_context()
     context.update(get_tenant_summary_context())
+    context.update(_tenant_admin_support_context(active_section))
     context.update(_tenant_active_section_context(active_section))
     return render_template(
         'kubernetes/tenant/tenants.html',
@@ -297,6 +301,7 @@ def resource_profiles():
         active_view = 'profiles'
 
     context = _tenant_workspace_context()
+    context.update(get_resource_profile_workspace_context())
     context.update(
         get_resource_profile_registry_context(
             page=request.args.get('page', 1, type=int) or 1,
@@ -343,6 +348,7 @@ def namespace_provisioning():
         active_view = 'provision'
 
     context = _tenant_workspace_context()
+    context.update(get_namespace_provisioning_support_context())
     context.update(get_capsule_shared_allocation_context())
     context.update(get_capsule_tenant_quota_context())
     context.update(
@@ -374,32 +380,6 @@ def namespace_provisioning():
     )
 
 
-def _operations_active_tab() -> str:
-    active_tab = str(request.args.get('tab') or 'provisioning')
-    if active_tab not in {'provisioning', 'runs-evidence', 'drift-reconcile', 'activity'}:
-        return 'provisioning'
-    return active_tab
-
-
-def _operations_provisioning_context() -> dict[str, Any]:
-    namespace_context = get_namespace_registry_context(
-        page=request.args.get('ops_namespace_page', 1, type=int) or 1,
-        per_page=request.args.get('ops_namespace_per_page', 5, type=int) or 5,
-        search=str(request.args.get('ops_namespace_search') or ''),
-        tenant_id=str(request.args.get('ops_namespace_tenant_id') or ''),
-        environment=str(request.args.get('ops_namespace_environment') or ''),
-        status=str(request.args.get('ops_namespace_status') or ''),
-    )
-    return {
-        'operations_namespace_rows': namespace_context['namespaces'],
-        'operations_namespace_pagination': namespace_context['namespace_pagination'],
-        'operations_namespace_filters': namespace_context['namespace_registry_filters'],
-        'operations_namespace_tenant_options': namespace_context['namespace_registry_tenant_options'],
-        'operations_namespace_environment_options': namespace_context['namespace_environment_filter_options'],
-        'operations_namespace_status_options': namespace_context['namespace_status_filter_options'],
-    }
-
-
 def _operations_drift_context() -> dict[str, Any]:
     drift_context = get_namespace_registry_context(
         page=request.args.get('ops_drift_page', 1, type=int) or 1,
@@ -408,6 +388,7 @@ def _operations_drift_context() -> dict[str, Any]:
         tenant_id=str(request.args.get('ops_drift_tenant_id') or ''),
         environment=str(request.args.get('ops_drift_environment') or ''),
         status='drifted',
+        include_workflow_support=False,
     )
     provider_context = get_tenant_registry_context(
         page=request.args.get('ops_provider_page', 1, type=int) or 1,
@@ -416,6 +397,7 @@ def _operations_drift_context() -> dict[str, Any]:
         cluster_id=str(request.args.get('ops_provider_cluster_id') or ''),
         environment=str(request.args.get('ops_provider_environment') or ''),
         lifecycle_status=str(request.args.get('ops_provider_lifecycle') or ''),
+        include_decommission_preflight=False,
     )
     access_context = get_access_grant_registry_context(
         page=request.args.get('ops_access_page', 1, type=int) or 1,
@@ -469,6 +451,7 @@ def _operations_drift_context() -> dict[str, Any]:
 def operations():
     active_tab = _operations_active_tab()
     context = _tenant_workspace_context()
+    context.update(get_tenant_operations_summary_context())
     if active_tab == 'provisioning':
         context.update(_operations_provisioning_context())
     elif active_tab == 'runs-evidence':

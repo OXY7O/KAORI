@@ -33,7 +33,12 @@ def test_inventory_lifecycle_keeps_kaori_table_standard_for_bound_sources():
     shared = (ROOT / 'app/templates/integrations/components/_asset_owner_observability_sources.html').read_text(
         encoding='utf-8'
     )
-    assert 'asset_owner_sources.render(' in text
+    binding_registry = (
+        ROOT
+        / 'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_binding_registry.html'
+    ).read_text(encoding='utf-8')
+    assert '_binding_registry.html' in text
+    assert 'asset_owner_sources.render(' in binding_registry
     assert 'table_ui.table_classes(' in shared
     assert 'table_ui.head_classes()' in shared
     assert 'table_ui.row_classes()' in shared

@@ -10,6 +10,7 @@ from app.integrations.binding_selectors import selector_form_values, selector_is
 from app.integrations.consumer_assets import build_consumer_asset_groups
 from app.integrations.coverage import build_provider_coverage
 from app.integrations.deletion import provider_deletion_guard
+from app.integrations.kernel.registry import get_integration
 from app.integrations.observability.alert_source.providers.alertmanager.application.repository import (
     count_bindings_by_scope_type,
     list_bindings_for_instance,
@@ -29,7 +30,6 @@ from app.integrations.observability.alert_source.providers.alertmanager.capabili
 )
 from app.integrations.observability.alert_source.providers.alertmanager.requirements import evaluate_module_readiness
 from app.integrations.readiness import resolve_binding_operational_status
-from app.integrations.registry import get_integration
 from app.integrations.runtime.presentation import runtime_history_view, runtime_state_view
 from app.integrations.runtime.repository import paginate_runtime_history
 from app.models.alertmanager import AlertmanagerInstance
@@ -43,7 +43,6 @@ def build_inventory_context(
     query: str = '',
     compatibility: str = '',
     readiness: str = '',
-    deployment_type: str = '',
     tab: str = 'coverage',
     page: int = 1,
     per_page: int = 5,
@@ -63,8 +62,6 @@ def build_inventory_context(
         filtered = [row for row in filtered if row['readiness'] == readiness]
     if compatibility:
         filtered = [row for row in filtered if row['compatibility'] == compatibility]
-    if deployment_type:
-        filtered = [row for row in filtered if row['deployment_type'] == deployment_type]
 
     page_rows, pagination = _paginate(filtered, page=page, per_page=per_page)
     stats = {
@@ -90,10 +87,8 @@ def build_inventory_context(
         'selected_query': query,
         'selected_compatibility': compatibility,
         'selected_readiness': readiness,
-        'selected_deployment_type': deployment_type,
         'readiness_options': sorted({row['readiness'] for row in rows}),
         'compatibility_options': sorted({row['compatibility'] for row in rows}),
-        'deployment_type_options': sorted({row['deployment_type'] for row in rows}),
         'binding_scope_counts': count_bindings_by_scope_type(),
         **coverage_context,
     }
@@ -245,7 +240,6 @@ def _instance_row(instance: AlertmanagerInstance) -> dict[str, Any]:
         'compatibility': instance.compatibility_status or 'validation_required',
         'readiness': readiness,
         'profile': instance.compatibility_profile,
-        'deployment_type': instance.deployment_type,
         'validated_at': present_user_datetime(instance.last_validated_at, empty='Not validated'),
         'binding_count': len(list_bindings_for_instance(instance.id)),
         'scope_types': sorted(
@@ -258,7 +252,6 @@ def _instance_row(instance: AlertmanagerInstance) -> dict[str, Any]:
                     instance.name.lower(),
                     (instance.description or '').lower(),
                     (instance.endpoint or '').lower(),
-                    (instance.deployment_type or '').lower(),
                     (instance.detected_version or '').lower(),
                     (instance.compatibility_profile or '').lower(),
                 ],

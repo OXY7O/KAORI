@@ -18,10 +18,10 @@ def test_inventory_resource_sheet_bands_align_with_four_column_summary_header() 
     assert 'class="{{ detail.inventory_band_grid_classes() }}"' in metadata
     assert 'class="{{ detail.inventory_band_grid_classes() }}"' in related
     assert 'xl:grid-cols-[20rem_minmax(0,1fr)]' not in shared
-    assert 'data-kaori-inventory-summary-alignment="shared-gutter"' in shared
-    assert 'mx-4 mt-5' in shared
-    assert 'sm:mx-5' in shared
-    assert 'lg:mx-6' in shared
+    assert 'data-kaori-inventory-section-layout="resource-sheet-band"' in shared
+    assert 'bg-surface-elevated/35 px-6 py-5' in shared
+    assert 'sm:px-7' in shared
+    assert 'xl:px-8 xl:py-6' in shared
 
     detail_files = {
         'overview': '_cluster_detail_content.html',

@@ -1,14 +1,14 @@
-from app.integrations.observability.alert_source.providers.alertmanager.adapter import runtime_adapter
-from app.integrations.observability.alert_source.providers.alertmanager.capabilities import (
-    COMPATIBILITY_PROFILES,
-    CORE_CAPABILITY_KEYS,
-)
-from app.integrations.registry import (
+from app.integrations.kernel.registry import (
     IntegrationImplementation,
     IntegrationModule,
     canonical_model_loader,
     model_loader,
     registry,
+)
+from app.integrations.observability.alert_source.providers.alertmanager.adapter import runtime_adapter
+from app.integrations.observability.alert_source.providers.alertmanager.capabilities import (
+    COMPATIBILITY_PROFILES,
+    CORE_CAPABILITY_KEYS,
 )
 from app.models.alertmanager import AlertmanagerInstance
 

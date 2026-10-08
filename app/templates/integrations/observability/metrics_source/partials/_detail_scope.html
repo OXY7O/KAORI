@@ -83,7 +83,7 @@
         description='Source readiness, binding validation, resolver preference, metrics identity, and operational eligibility remain independent evidence dimensions.',
         marker='data-kaori-binding-decision-horizontal',
         identity_title='Consumer Identity Boundary',
-        identity_copy='Stable metrics selectors separate Kubernetes, Object Storage, and future consumer evidence.') }}
+        identity_copy='Stable selectors isolate consumer evidence.') }}
     <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
              aria-labelledby="metrics-source-consumer-resolution-title"
              data-kaori-consumer-resolution-full-width>
@@ -114,7 +114,8 @@
                     </div>
                     <div class="mt-4 overflow-hidden rounded-lg border border-outline-subtle">
                         {% for consumer in scope.consumers.values() %}
-                            {% set consumer_status = 'ready' if consumer.selected_instance_id else 'blocked' %}
+                            {% set consumer_status = consumer.selected_status %}
+                            {% set consumer_status_label = consumer.selected_status_label %}
                             <details class="group border-b border-outline-subtle last:border-b-0">
                                 <summary class="grid cursor-pointer list-none gap-3 px-4 py-3.5 transition hover:bg-kaori-mist sm:grid-cols-[minmax(0,1fr)_minmax(12rem,0.7fr)_auto] sm:items-center [&::-webkit-details-marker]:hidden">
                                     <div class="flex min-w-0 items-start gap-3">
@@ -127,7 +128,7 @@
                                     <p class="min-w-0 truncate text-xs font-medium text-content-secondary"
                                        title="{{ consumer.selected_instance_name or 'No eligible metrics source selected' }}">{{ consumer.selected_instance_name or 'No eligible metrics source selected' }}</p>
                                     <div class="flex shrink-0 items-center justify-end gap-2">
-                                        {{ integration_status(consumer_status, 'Operational' if consumer.selected_instance_id else 'Unavailable', display='indicator') }}
+                                        {{ integration_status(consumer_status, consumer_status_label, display='indicator') }}
                                         <i data-lucide="chevron-down"
                                            class="h-4 w-4 text-content-muted transition group-open:rotate-180"
                                            aria-hidden="true"></i>
@@ -147,7 +148,7 @@
                                                             <p class="text-xs font-semibold text-content-primary">{{ candidate.instance_name }}</p>
                                                             <p class="mt-1 text-xs text-content-muted">{{ candidate.binding_role|title }} · Priority {{ candidate.priority }}</p>
                                                         </div>
-                                                        {{ integration_status('ready' if candidate.is_selected else ('degraded' if candidate.eligible else 'blocked') , 'Selected' if candidate.is_selected else ('Eligible' if candidate.eligible else 'Skipped'), display='indicator') }}
+                                                        {{ integration_status('ready' if candidate.is_selected and candidate.operational_state == 'healthy' else ('degraded' if candidate.eligible else 'blocked') , 'Selected' if candidate.is_selected else ('Eligible' if candidate.eligible else 'Skipped'), display='indicator') }}
                                                     </div>
                                                     <p class="mt-2 text-xs leading-5 text-content-secondary">{{ candidate.decision_reason }}</p>
                                                     {% if candidate.missing_capability_labels or candidate.missing_binding_capabilities %}

@@ -1,0 +1,13 @@
+{% set definition = selected_job.definition %}
+{% set policy = selected_job.policy %}
+{% set overview_metrics = [
+    ('calendar-clock', 'Automatic Policy', selected_job.interval_label, 'Saved analytics cadence'),
+    ('package-search', 'Registry Readiness', selected_job.eligible_system_count ~ ' of ' ~ selected_job.registered_system_count, 'Ready Registry providers'),
+    ('clock-3', 'Next Automatic Run', policy.next_run_at|user_datetime if policy.next_run_at else 'Not Scheduled', 'Next policy dispatch'),
+    ('history', 'Latest Execution', selected_job.latest_job.status_label if selected_job.latest_job else 'No History', selected_job.latest_job.queued_at if selected_job.latest_job else 'No execution recorded')
+] %}
+{% set overview_notice = "Analytics runs on the analytics worker and commits reusable snapshots. Normal Artifact Registry pages never issue live provider or Prometheus queries." %}
+<div class="space-y-5">
+    {% include "platform_operations/jobs/configuration/_job_overview.html" %}
+    {% include "platform_operations/jobs/configuration/_execution_activity.html" %}
+</div>

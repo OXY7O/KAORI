@@ -40,7 +40,11 @@ from app.reports.export.html_pdf.storage_analysis import build_storage_analysis_
 from app.reports.export.html_pdf.top_consumers_analysis import build_top_consumers_analysis_presentation
 from app.reports.export.html_pdf.workload_analysis import build_workload_analysis_presentation
 from app.reports.reference import build_report_reference
-from app.reports.scope import OBJECT_STORAGE_SYSTEM_ASSET_TYPE, resolve_report_scope
+from app.reports.scope import (
+    ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE,
+    OBJECT_STORAGE_SYSTEM_ASSET_TYPE,
+    resolve_report_scope,
+)
 
 _SECTION_SOURCE_PATHS: dict[str, tuple[str, ...]] = {
     # Analytics Overview publication sections map to committed payload evidence.
@@ -119,6 +123,11 @@ _SECTION_SOURCE_PATHS: dict[str, tuple[str, ...]] = {
         'operational_posture',
         'alert_posture',
     ),
+    'artifact_registry_capacity_usage': ('artifact_registry_capacity_usage',),
+    'artifact_registry_security_posture': ('artifact_registry_security_posture',),
+    'artifact_registry_runtime_usage': ('artifact_registry_runtime_usage',),
+    'artifact_registry_governance_posture': ('artifact_registry_governance_posture',),
+    'artifact_registry_alerts_actions': ('artifact_registry_alerts_actions',),
     'methodology_evidence_boundary': ('evidence_boundary',),
 }
 
@@ -147,6 +156,11 @@ _SECTION_DESCRIPTIONS: dict[str, str] = {
     'object_storage_forecast': 'Worker-materialized Object Storage forecast evidence and its current publication readiness.',
     'object_storage_top_consumers': 'Highest retained Object Storage consumers in the selected committed inventory boundary.',
     'object_storage_risk_findings': 'Operational signals, alert posture, and risk conditions requiring accountable review.',
+    'artifact_registry_capacity_usage': 'Committed Registry storage demand, growth, forecast, and consumer concentration evidence.',
+    'artifact_registry_security_posture': 'Committed scan coverage, vulnerability severity, signature, and SBOM posture.',
+    'artifact_registry_runtime_usage': 'Registry artifact correlation with committed runtime workload evidence.',
+    'artifact_registry_governance_posture': 'Retention, immutability, replication, webhook, and governance collection posture.',
+    'artifact_registry_alerts_actions': 'KAORI Alert Intelligence cases plus central Intelligence recommendations for accountable follow-up.',
     'methodology_evidence_boundary': 'Authoritative source ownership, data cut-off, and limitations used to build this governed publication.',
 }
 
@@ -358,6 +372,8 @@ def build_report_document(
         )
     elif report.report_type == 'tenant_governance':
         template_name = 'reports/pdf/tenant_governance.html'
+    elif report.report_type == 'artifact_registry_analysis':
+        template_name = 'reports/pdf/artifact_registry_analysis.html'
 
     return finalize_report_document(
         report,
@@ -624,6 +640,8 @@ def _secondary_scope(report: Any) -> str:
     scope_asset_type = str(getattr(report, 'scope_asset_type', '') or '')
     if scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE:
         return 'System Scope'
+    if scope_asset_type == ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE:
+        return 'Integration Scope'
     return sanitize_text(getattr(report, 'namespace', None), fallback='All Namespaces')
 
 

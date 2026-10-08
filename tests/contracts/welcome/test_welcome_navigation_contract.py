@@ -105,6 +105,7 @@ def test_welcome_catalog_matches_current_primary_navigation_domains() -> None:
         'Dashboards',
         'Kubernetes Inventory',
         'Object Storage Inventory',
+        'Artifact Registry',
         'Kubernetes Analytics',
         'Object Storage Analytics',
         'Intelligence',
@@ -157,3 +158,17 @@ def test_welcome_tenant_and_access_cards_track_current_capabilities() -> None:
     assert "('identity_providers.view', 'access.overview.index')" in access_block
     assert 'identity providers' in access_block.lower()
     assert 'directory-projected external identities' in access_block.lower()
+
+
+def test_welcome_artifact_registry_card_uses_dedicated_permission() -> None:
+    shortcuts = (ROOT / 'app/welcome/shortcuts.py').read_text(encoding='utf-8')
+
+    assert "'title': 'Artifact Registry'" in shortcuts
+    assert "'label': 'Registry Visibility & Supply Chain'" in shortcuts
+    assert "'scope': 'Registry'" in shortcuts
+    assert "('artifact_registry.view', 'artifact_registry.overview')" in shortcuts
+    block = shortcuts.split("'title': 'Artifact Registry'", 1)[1].split(
+        "'title': 'Kubernetes Analytics'",
+        1,
+    )[0]
+    assert 'Harbor' not in block

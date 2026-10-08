@@ -76,15 +76,12 @@ def test_tenant_sync_matches_tls_background_behavior() -> None:
 def test_tenant_sync_workspace_context_is_constructed_from_sync_state() -> None:
     workspace = (ROOT / 'app/kubernetes/tenant/workspace.py').read_text(encoding='utf-8')
 
-    assert 'def get_tenant_sync_workspace_context() -> dict[str, Any]:' in workspace
-    assert "'tenant_collection_snapshot': _tenant_collection_snapshot(sync_state)" in workspace
-    assert "'tenant_sync_state': sync_state" in workspace
-    broken_helper = """def get_tenant_sync_workspace_context() -> dict[str, Any]:
-    sync_state = build_tenant_sync_state()
-    return {
-        **sync_context,
-    }"""
-    assert broken_helper not in workspace
+    assert 'def get_tenant_sync_workspace_context(*, sync_state: dict[str, Any] | None = None)' in workspace
+    assert 'resolved_sync_state = sync_state if sync_state is not None else build_tenant_sync_state()' in workspace
+    assert "'tenant_collection_snapshot': _tenant_collection_snapshot(resolved_sync_state)" in workspace
+    assert "'tenant_sync_state': resolved_sync_state" in workspace
+    assert 'get_tenant_sync_workspace_context(sync_state=sync_state)' in workspace
+    assert 'sync_state=sync_state' in workspace
 
 
 def test_tenant_overview_uses_tls_style_collection_snapshot_and_contextual_sync_actions() -> None:
@@ -144,7 +141,9 @@ def test_tenant_overview_keeps_multicluster_posture_compact_and_canonical() -> N
     assert 'hx-get="{{ url_for(\'tenant.cluster_estate\') }}"' in cluster_estate
     assert "endpoint='tenant.cluster_estate'" in cluster_estate
     assert "href_endpoint='tenant.index'" in cluster_estate
-    assert 'def get_tenant_cluster_estate_context(*, page: int = 1, per_page: int = 5)' in workspace
+    assert 'def get_tenant_cluster_estate_context(' in workspace
+    assert 'build_capacity_governance_summaries([str(cluster.id) for cluster in clusters])' in workspace
+    assert 'build_capacity_governance_summary(cluster.id)' not in workspace
     assert 'paginate_sequence(' in workspace
     assert "@tenant_bp.get('/overview/cluster-estate')" in routes
     assert 'Committed Allocation' not in cluster_estate

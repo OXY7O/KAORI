@@ -17,7 +17,11 @@ from app.kubernetes.tenant.admin_workspace import (
     get_tenant_summary_context,
 )
 from app.kubernetes.tenant.discovery_service import get_tenant_discovery_context
-from app.kubernetes.tenant.service import get_tenant_context, get_tenant_registry_context
+from app.kubernetes.tenant.service import (
+    get_namespace_registry_context,
+    get_tenant_registry_context,
+    get_tenant_shell_context,
+)
 from app.kubernetes.tenant.workspace import (
     get_tenant_sync_workspace_context,
     get_tenant_workspace_context,
@@ -62,12 +66,48 @@ def _record(
     return feedback
 
 
-def _tenant_workspace_context() -> dict[str, Any]:
+def _tenant_workspace_context(*, include_sync: bool = True) -> dict[str, Any]:
+    context = get_tenant_shell_context()
+    if include_sync:
+        context.update(get_tenant_sync_workspace_context())
+    return context
+
+
+def _tenant_admin_support_context(section: str) -> dict[str, Any]:
+    if section in {'memberships', 'access-grants'}:
+        return get_tenant_access_context()
+    if section == 'credentials':
+        return {
+            **get_tenant_access_context(),
+            **get_tenant_workspace_context(),
+        }
+    return {}
+
+
+def _operations_active_tab() -> str:
+    active_tab = str(request.args.get('tab') or 'provisioning')
+    if active_tab not in {'provisioning', 'runs-evidence', 'drift-reconcile', 'activity'}:
+        return 'provisioning'
+    return active_tab
+
+
+def _operations_provisioning_context() -> dict[str, Any]:
+    namespace_context = get_namespace_registry_context(
+        page=request.args.get('ops_namespace_page', 1, type=int) or 1,
+        per_page=request.args.get('ops_namespace_per_page', 5, type=int) or 5,
+        search=str(request.args.get('ops_namespace_search') or ''),
+        tenant_id=str(request.args.get('ops_namespace_tenant_id') or ''),
+        environment=str(request.args.get('ops_namespace_environment') or ''),
+        status=str(request.args.get('ops_namespace_status') or ''),
+        include_workflow_support=False,
+    )
     return {
-        **get_tenant_context(),
-        **get_tenant_access_context(),
-        **get_tenant_workspace_context(),
-        **get_tenant_sync_workspace_context(),
+        'operations_namespace_rows': namespace_context['namespaces'],
+        'operations_namespace_pagination': namespace_context['namespace_pagination'],
+        'operations_namespace_filters': namespace_context['namespace_registry_filters'],
+        'operations_namespace_tenant_options': namespace_context['namespace_registry_tenant_options'],
+        'operations_namespace_environment_options': namespace_context['namespace_environment_filter_options'],
+        'operations_namespace_status_options': namespace_context['namespace_status_filter_options'],
     }
 
 
@@ -92,8 +132,9 @@ def _tenant_section_redirect(section: str):
     if request.headers.get('HX-Request') != 'true':
         return redirect(url_for('tenant.tenants', section=resolved_section))
 
-    context = _tenant_workspace_context()
+    context = _tenant_workspace_context(include_sync=False)
     context.update(get_tenant_summary_context())
+    context.update(_tenant_admin_support_context(resolved_section))
     context.update(_tenant_active_section_context(resolved_section))
     rendered = render_template(
         'kubernetes/tenant/partials/_tenant_admin_workspace.html',

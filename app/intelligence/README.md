@@ -19,6 +19,12 @@ Rules must identify source, domain, impacted assets, evidence, and remediation.
 Imported and internal rules share one catalog contract. Do not embed page-specific
 recommendation rules directly in analytics routes or templates.
 
+Cross-domain domain/Intelligence ownership is governed by
+`docs/architecture/domain-intelligence-ownership-standard.md`. Operational domains own
+facts, lifecycle, analytics, forecasts, anomalies, and committed evidence; Intelligence
+owns recommendation semantics, Rule Catalog, Accepted Risk, Alert Intelligence escalation,
+and decision state. Automation Control remains the governed execution bridge.
+
 ## Cross-domain automation orchestration
 
 The **Automation Control Center** is intentionally owned by the application layer

@@ -27,11 +27,16 @@ def test_object_storage_overview_is_high_level_fleet_composition() -> None:
     assert 'Manage Storage' in hero
     assert "url_for('integrations.storage')" in hero
     assert 'object_storage_snapshot.render(overview.snapshot)' in snapshot
+    assert 'components/section_intro.html' in fleet
     assert 'Fleet Inventory Posture' in fleet
     assert 'operational_callout.render' in fleet
-    assert 'Explore Object Storage Inventory' in navigation
-    assert 'Overview stops at fleet posture.' in navigation
+    assert "variant='neutral'" in fleet
+    assert 'operational_section_card' not in fleet
+    assert 'components/section_intro.html' in navigation
+    assert 'Object Storage Asset Catalog' in navigation
+    assert 'Open committed Object Storage inventory views' in navigation
     assert 'inventory_asset_card.render' in navigation
+    assert 'operational_section_card' not in navigation
 
 
 def test_resource_level_system_detail_is_owned_by_systems_workspace() -> None:
@@ -103,3 +108,13 @@ def test_object_storage_system_detail_uses_compact_release_and_profile_labels() 
     assert "'compatibility_profile_label': _compatibility_profile_display" in presentation
     assert "detail.inventory_row('Release', system.release_label, nowrap=true)" in detail
     assert "detail.inventory_row('Compatibility Profile', system.compatibility_profile_label, nowrap=true)" in detail
+
+
+def test_public_exposure_clean_state_names_committed_inventory_evidence() -> None:
+    presentation = read('app/storage/object_storage/inventory/presentation.py')
+
+    assert (
+        'No committed asset is currently classified as public in the latest Object Storage inventory evidence.'
+        in presentation
+    )
+    assert 'No committed asset is currently classified as public.' not in presentation

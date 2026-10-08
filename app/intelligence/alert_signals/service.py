@@ -8,11 +8,11 @@ from kubernetes.config.config_exception import ConfigException
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions.db import db
+from app.integrations.kernel.registry import get_integration
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver import (
     connection_for_cluster,
 )
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls import weak_tls_context
-from app.integrations.registry import get_integration
 from app.intelligence.alert_signals.config import alert_signal_freshness_minutes
 from app.models import AlertSignalSnapshot, Cluster
 

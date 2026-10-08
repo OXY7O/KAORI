@@ -9,6 +9,7 @@ from flask import current_app, has_app_context
 
 from app.common.provider_query_runtime import record_provider_query, record_provider_retry
 from app.integrations.consumer.contracts import ConsumerDiagnostic, ConsumerResult, ConsumerSource
+from app.integrations.kernel.registry import get_integration
 from app.integrations.observability.metrics_source.application.resolver import (
     ResolvedMetricsSource,
     resolve_metrics_sources,
@@ -20,7 +21,6 @@ from app.integrations.observability.metrics_source.exceptions import (
 )
 from app.integrations.observability.metrics_source.query_profiles import resolve_query_reference
 from app.integrations.observability.metrics_source.routing import query_horizon_for_range, query_horizon_for_timestamp
-from app.integrations.registry import get_integration
 from app.models import Cluster
 
 DEFAULT_QUERY_CAPABILITIES = ('instant_query',)

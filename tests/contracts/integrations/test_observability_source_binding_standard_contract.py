@@ -42,6 +42,14 @@ def test_metrics_source_and_alertmanager_own_binding_mutation_through_one_shared
     assert 'Consumer Type' in modal
     assert 'Resolved Consumer Profile' in modal
     assert 'Create Binding' in modal
+    assert 'max-w-5xl' in modal
+    assert 'Choose the consumer, set preference and identity, then validate binding eligibility.' in modal
+    assert (
+        'This binding is asset-scoped. Role and priority set preference without bypassing readiness or validation.'
+        in modal
+    )
+    assert 'Saving creates Validation Required evidence. Validate the binding before it becomes eligible.' in modal
+    assert 'w-[min(46rem,calc(100vw-2rem))]' not in modal
 
     for source in (prom_scope, alert_scope):
         assert 'Add Binding' in source
@@ -75,8 +83,15 @@ def test_asset_owner_pages_inventory_bound_sources_without_owning_binding_mutati
     for marker in ('Source', 'Source Readiness', 'Binding Validation', 'Effective Resolution'):
         assert marker in shared_inventory
 
-    assert '_asset_owner_observability_sources.html' in kubernetes_lifecycle
-    assert 'asset_owner_sources.render(' in kubernetes_lifecycle
+    kubernetes_binding_registry = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_binding_registry.html'
+    )
+    assert (
+        'integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_binding_registry.html'
+        in kubernetes_lifecycle
+    )
+    assert '_asset_owner_observability_sources.html' in kubernetes_binding_registry
+    assert 'asset_owner_sources.render(' in kubernetes_binding_registry
     assert '_asset_owner_observability_sources.html' in minio_binding_registry
     assert 'asset_owner_sources.render(' in minio_binding_registry
     assert 'integrations/storage/object_storage/providers/minio/partials/_binding_registry.html' in minio_lifecycle

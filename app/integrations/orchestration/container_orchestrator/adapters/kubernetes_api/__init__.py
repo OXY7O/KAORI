@@ -1,14 +1,14 @@
-from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
-from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.capabilities import (
-    CAPABILITY_KEYS,
-    COMPATIBILITY_PROFILES,
-)
-from app.integrations.registry import (
+from app.integrations.kernel.registry import (
     IntegrationImplementation,
     IntegrationModule,
     canonical_model_loader,
     model_loader,
     registry,
+)
+from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
+from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.capabilities import (
+    CAPABILITY_KEYS,
+    COMPATIBILITY_PROFILES,
 )
 from app.models.kubernetes import KubernetesConnection
 

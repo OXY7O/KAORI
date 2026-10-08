@@ -22,6 +22,7 @@ SHORT_LABELS = {
     'Operational Dashboards': 'Dashboards',
     'Kubernetes Inventory': 'Inventory',
     'Object Storage Inventory': 'Object Storage',
+    'Artifact Registry': 'Artifact Registry',
     'Kubernetes Operations': 'Kubernetes Ops',
     'Kubernetes Governance': 'Governance',
     'Tenant': 'Tenant',

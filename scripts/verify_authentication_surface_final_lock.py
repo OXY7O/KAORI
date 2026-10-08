@@ -133,21 +133,45 @@ def main() -> int:
         require(required in setup, f'Setup Required Title Case contract missing: {required}', errors)
 
     for required in (
-        'data-kaori-setup-workspace="release-v2"',
+        'data-kaori-setup-workspace="release-v4"',
+        'data-kaori-setup-readiness-strip',
+        'data-kaori-setup-console',
+        'data-kaori-setup-flow',
         'Initialization Path',
-        'PostgreSQL Reachable',
-        'Schema Missing',
+        'Advanced Setup',
         'components/terminal_command.html',
-        'components/info_flow.html',
-        'components/operational_section_card.html',
+        'components/operational_callout.html',
+        'components/operational_flow_steps.html',
+        'components/view_more_content.html',
+        'components/section_link_button.html',
         'components/table_label.html',
         'table_label.status_indicator_label',
-        'info_flow.render',
-        'operational_section_card.render',
+        'operational_flow_steps.render',
+        'view_more_content.render',
+        'compact=true',
+        'section_link_button.render',
         'Copy Command',
-        'This readiness check is read-only.',
+        'This readiness workspace is read-only.',
     ):
         require(required in setup, f'Setup Required release workspace contract missing: {required}', errors)
+
+    require(
+        'class="text-lg font-semibold leading-6 text-content-primary"' in setup,
+        'Setup Required compact title contract drifted',
+        errors,
+    )
+    require('lg:grid-cols-3' in setup and 'lg:col-span-2' in setup, 'Setup Required console split drifted', errors)
+    require('Readiness Summary' not in setup, 'Setup Required must not duplicate readiness in a summary panel', errors)
+    require(
+        'components/info_flow.html' not in setup,
+        'Setup Required must not return to the vertical Info Flow layout',
+        errors,
+    )
+    require(
+        'components/operational_section_card.html' not in setup,
+        'Setup Required must not return to the giant outer operational card',
+        errors,
+    )
 
     for required in (
         'data-kaori-terminal-command',

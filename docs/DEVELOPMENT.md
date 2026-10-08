@@ -120,6 +120,26 @@ Delete the Windows or macOS `.venv` only after the Dev Container can start Flask
 run migrations and build Tailwind successfully. The canonical
 Python interpreter is `/usr/local/bin/python` inside the container.
 
+## Artifact Registry security worker
+
+Artifact Registry Security uses a dedicated `registry-security-worker` so long-running provider security
+collection cannot consume inventory-worker capacity. The worker consumes
+`REGISTRY_SECURITY_CELERY_QUEUE` (default `registry-security`) with bounded source-level concurrency.
+The fleet job may run multiple Registry instances concurrently, but repository/artifact work remains inside
+the provider collector; KAORI does not create one Celery task per artifact.
+
+After pulling a change that adds or modifies this worker, rebuild/reopen the Dev Container. Useful checks:
+
+```bash
+docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml ps registry-security-worker
+docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml logs --tail=100 registry-security-worker
+celery --app celery_worker:celery_app inspect active_queues
+celery --app celery_worker:celery_app inspect registered
+```
+
+Expected evidence includes `registry-security@...` consuming `registry-security` (or the configured queue)
+and advertising all Artifact Registry Security orchestration/source/finalization tasks.
+
 ## Reports worker
 
 The Dev Container starts a dedicated `reports-worker` service automatically. It consumes the queue configured by `REPORTS_CELERY_QUEUE` and identifies itself as `reports@<container-hostname>`. Manual generation, scheduled report dispatch, and generated artifact delivery all use this same queue contract.

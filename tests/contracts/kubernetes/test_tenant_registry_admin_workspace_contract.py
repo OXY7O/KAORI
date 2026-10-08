@@ -622,12 +622,15 @@ def test_governed_tenant_decommission_is_async_provider_verified_and_fail_closed
 
 
 def test_tenant_registry_distinguishes_active_namespaces_from_retained_history() -> None:
-    service = tenant_service_source()
+    registry_context = read('app/kubernetes/tenant/registry_context.py')
     registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
 
-    assert 'namespace_history_count_map' in service
-    assert 'TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value' in service
-    assert "'namespace_history_count': namespace_history_count_map.get(item.id, 0)" in service
+    assert 'namespace_history_count_map' in registry_context
+    assert (
+        'TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value'
+        in registry_context
+    )
+    assert "row['namespace_history_count'] = namespace_history_count_map.get(item.id, 0)" in registry_context
     assert 'historical namespace record' in registry
     assert 'Active managed namespaces' in registry
 
@@ -741,7 +744,52 @@ def test_resource_profile_editability_allocation_change_and_capacity_decisions_f
     assert namespace_page.index('_allocation_change.html') < namespace_page.index('_allocation_cutover.html')
 
 
-def test_committed_tenant_snapshot_is_separate_from_lazy_live_provider_connectivity() -> None:
+def test_tenant_routine_routes_use_bounded_context_composition() -> None:
+    routes = tenant_routes_source()
+    route_common = read('app/kubernetes/tenant/route_common.py')
+    registry = read('app/kubernetes/tenant/registry_context.py')
+    workspace = read('app/kubernetes/tenant/workspace.py')
+
+    assert 'def get_tenant_shell_context() -> dict[str, Any]:' in registry
+    assert 'def get_resource_profile_workspace_context() -> dict[str, Any]:' in registry
+    assert 'def get_namespace_provisioning_support_context() -> dict[str, Any]:' in registry
+    assert 'def _tenant_workspace_context(*, include_sync: bool = True)' in route_common
+    bounded_context = route_common.split('def _tenant_workspace_context', 1)[1].split(
+        '_TENANT_ADMIN_SECTIONS',
+        1,
+    )[0]
+    routine_context = bounded_context.split('def _tenant_admin_support_context', 1)[0]
+    assert 'get_tenant_context()' not in routine_context
+    assert 'get_tenant_access_context()' not in routine_context
+    assert 'get_tenant_workspace_context()' not in routine_context
+
+    assert 'context = _tenant_workspace_context(include_sync=False)' in routes
+    assert 'context.update(get_resource_profile_workspace_context())' in routes
+    assert 'context.update(get_namespace_provisioning_support_context())' in routes
+    assert 'context.update(get_tenant_operations_summary_context())' in routes
+    assert 'namespace_context = get_namespace_registry_context(' in routes
+    assert 'drift_context = get_namespace_registry_context(' in routes
+    assert 'provider_context = get_tenant_registry_context(' in routes
+    assert 'include_workflow_support=False' in routes
+    assert 'include_decommission_preflight=False' in routes
+    assert 'include_decommission_preflight: bool = True' in registry
+    assert 'include_workflow_support: bool = True' in registry
+    assert 'def get_operations_namespace_registry_context(' not in registry
+    assert 'def get_operations_tenant_registry_context(' not in registry
+    assert 'get_operations_namespace_registry_context' not in routes
+    assert 'get_operations_tenant_registry_context' not in routes
+
+    overview = workspace.split('def get_tenant_overview_context', 1)[1].split(
+        'def get_tenant_operations_summary_context',
+        1,
+    )[0]
+    assert overview.count('build_tenant_sync_state()') == 1
+    assert 'get_tenant_sync_workspace_context(sync_state=sync_state)' in overview
+    assert 'sync_state=sync_state' in overview
+    assert 'get_active_tenant_governance_findings()' in overview
+
+
+def test_committed_tenant_snapshot_is_separate_from_on_demand_live_provider_connectivity() -> None:
     routes = tenant_routes_source()
     live_service = read('app/kubernetes/tenant/live_connection.py')
     live_partial = read('app/templates/kubernetes/tenant/partials/_live_connection_snapshot.html')
@@ -762,9 +810,12 @@ def test_committed_tenant_snapshot_is_separate_from_lazy_live_provider_connectiv
     assert 'tenant-live-provider-connectivity' in live_partial
 
     assert 'hx-get="{{ url_for(\'tenant.live_provider_connectivity\') }}"' in live_loader
-    assert 'hx-trigger="load"' in live_loader
-    assert 'Committed KAORI Tenant state is already loaded.' in live_loader
+    assert 'hx-trigger="load"' not in live_loader
+    assert 'Check Live Connectivity' in live_loader
+    assert 'Routine page load performs no provider request' in live_loader
+    assert 'Committed Tenant state is loaded. Check live reachability only when required.' in live_loader
     assert "title='Live Provider Connectivity'" in live_loader
+    assert 'Refresh Live Connectivity' in live_partial
 
     assert "title='Tenant Collection Snapshot'" in committed_partial
     assert 'Committed Tenant snapshot evidence' in committed_partial
@@ -1553,6 +1604,7 @@ def test_capsule_global_resource_quota_joins_canonical_allocation_governance() -
     governance = read('app/kubernetes/tenant/capsule_allocation_governance.py')
     advanced = read('app/kubernetes/tenant/capsule_advanced.py')
     capacity = read('app/kubernetes/tenant/capacity_governance.py')
+    allocation_state = read('app/kubernetes/tenant/capacity_allocation_state.py')
     tasks = read('app/kubernetes/tenant/tasks.py')
     routes = tenant_routes_source()
     namespace_page = read('app/templates/kubernetes/tenant/namespace_provisioning.html')
@@ -1589,8 +1641,9 @@ def test_capsule_global_resource_quota_joins_canonical_allocation_governance() -
     assert 'Capsule provider resource UID changed' in advanced
     assert 'Capsule provider resourceVersion changed' in advanced
 
-    assert 'def _canonical_shared_allocation_quota' in capacity
-    assert "evidence.get('allocation_governance_scope') != 'tenant_shared'" in capacity
+    assert 'def _canonical_shared_allocation_quota' in allocation_state
+    assert '_canonical_shared_allocation_quota,' in capacity
+    assert "evidence.get('allocation_governance_scope') != 'tenant_shared'" in allocation_state
     assert 'def enforce_shared_tenant_allocation_preflight' in capacity
     assert "allocation_scope='tenant_shared'" in capacity
     assert 'shared_quota_by_tenant=shared' in capacity

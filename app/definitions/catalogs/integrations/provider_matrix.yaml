@@ -84,3 +84,36 @@ integration_types:
     adapter_key: hpe_storage_rest
     lifecycle: planned
     protocol: hpe_storage_rest
+- key: registry
+  domain_key: registry
+  providers:
+  - key: harbor
+    label: Harbor
+    adapter_key: harbor_api_v2
+    lifecycle: available
+    protocol: harbor_api_v2
+  - key: aws_ecr
+    label: AWS Elastic Container Registry
+    adapter_key: aws_ecr_api
+    lifecycle: planned
+    protocol: aws_ecr_api
+  - key: google_artifact_registry
+    label: Google Artifact Registry
+    adapter_key: google_artifact_registry_api
+    lifecycle: planned
+    protocol: google_artifact_registry_api
+  - key: azure_container_registry
+    label: Azure Container Registry
+    adapter_key: azure_container_registry_api
+    lifecycle: planned
+    protocol: azure_container_registry_api
+  - key: github_container_registry
+    label: GitHub Container Registry
+    adapter_key: ghcr_api
+    lifecycle: planned
+    protocol: ghcr_api
+  - key: oci_distribution
+    label: OCI Distribution Registry
+    adapter_key: oci_distribution_api
+    lifecycle: planned
+    protocol: oci_distribution_api

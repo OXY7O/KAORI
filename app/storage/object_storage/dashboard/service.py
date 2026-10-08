@@ -202,7 +202,7 @@ def _health_rows(systems: list[ObjectStorageSystem]) -> list[dict[str, Any]]:
                 'bucket_count': len(buckets),
                 'stored_display': format_bytes(stored_bytes),
                 'usage_source': usage_source,
-                'snapshot_label': str(snapshot_state.get('label') or 'Worker Data Required'),
+                'snapshot_label': str(snapshot_state.get('label') or 'Worker Data'),
                 'snapshot_tone': str(snapshot_state.get('tone') or 'unknown'),
                 'snapshot_ready': analytics_usable,
                 'utilization_display': str(overview.get('utilization_display') or 'N/A'),
@@ -396,12 +396,15 @@ def _alerts(selected: ObjectStorageSystem | None) -> dict[str, Any]:
     posture = _kaori_alert_posture(selected)
     rows = [
         {
-            'name': case.alert_name,
-            'severity': case.severity,
-            'summary': case.summary or case.target or 'KAORI recommendation alert case.',
+            'title': str(case.alert_name or 'KAORI Alert Case'),
+            'description': str(case.summary or case.target or 'KAORI recommendation alert case.'),
+            'severity': str(case.severity or 'info'),
             'state': (
-                'Source Unknown' if case.source_state == 'unknown' else case.workflow_state.replace('_', ' ').title()
+                'Source Unknown'
+                if case.source_state == 'unknown'
+                else str(case.workflow_state or 'active').replace('_', ' ').title()
             ),
+            'age': _human_time(case.first_seen_at),
             'case_id': case.public_id,
         }
         for case in posture['cases'][:5]
@@ -482,16 +485,16 @@ def _reporting(selected: ObjectStorageSystem | None) -> dict[str, Any]:
     }
 
 
-def get_dashboard_overview(
+def _dashboard_shell_context(
     *,
-    selected_system_id: str | None = None,
-    system_health_page: str | int | None = 1,
-    system_health_per_page: int = 5,
+    systems: list[ObjectStorageSystem],
+    selected: ObjectStorageSystem | None,
+    system_health_page: str | int | None,
+    system_health_per_page: int,
     active_tab: str = 'overview',
 ) -> dict[str, Any]:
-    systems = _systems()
-    selected = _selected_system(systems, selected_system_id)
-    inventory = _inventory_summary([selected] if selected is not None else systems)
+    """Build only the Object Storage Fast Shell context."""
+
     health_scope = [selected] if selected is not None else systems
     _visible_systems, health_pagination = paginate_sequence(
         health_scope,
@@ -508,9 +511,26 @@ def get_dashboard_overview(
             if selected is not None
             else max(_inventory_observation_times(systems), default=None)
         ),
-        'inventory': inventory,
         'system_health_pagination': health_pagination,
     }
+
+
+def get_dashboard_overview(
+    *,
+    selected_system_id: str | None = None,
+    system_health_page: str | int | None = 1,
+    system_health_per_page: int = 5,
+    active_tab: str = 'overview',
+) -> dict[str, Any]:
+    systems = _systems()
+    selected = _selected_system(systems, selected_system_id)
+    return _dashboard_shell_context(
+        systems=systems,
+        selected=selected,
+        system_health_page=system_health_page,
+        system_health_per_page=system_health_per_page,
+        active_tab=active_tab,
+    )
 
 
 def get_dashboard_section(
@@ -522,8 +542,9 @@ def get_dashboard_section(
 ) -> dict[str, Any]:
     systems = _systems()
     selected = _selected_system(systems, selected_system_id)
-    dashboard = get_dashboard_overview(
-        selected_system_id=selected_system_id,
+    dashboard = _dashboard_shell_context(
+        systems=systems,
+        selected=selected,
         system_health_page=system_health_page,
         system_health_per_page=system_health_per_page,
     )
@@ -548,11 +569,7 @@ def get_dashboard_section(
         dashboard['top_consumers'] = _top_consumers(selected)
     elif section == 'signals':
         dashboard['alerts'] = _alerts(selected)
-        dashboard['forecast'] = _forecast(selected)
-        dashboard['capacity'] = _capacity(selected)
-        dashboard['top_consumers'] = _top_consumers(selected)
         dashboard['recommended_actions'] = _recommended_actions(selected)
     elif section == 'reporting':
         dashboard['reporting'] = _reporting(selected)
-        dashboard['freshness'] = _freshness(selected, systems)
     return dashboard

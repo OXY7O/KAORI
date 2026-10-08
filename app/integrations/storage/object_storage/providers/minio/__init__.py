@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from app.integrations.registry import (
+from app.integrations.kernel.registry import (
     IntegrationImplementation,
     IntegrationModule,
     canonical_model_loader,

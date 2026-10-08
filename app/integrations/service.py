@@ -16,6 +16,7 @@ from app.integrations.coverage import (
     build_provider_coverage,
 )
 from app.integrations.deletion import kubernetes_deletion_guard
+from app.integrations.kernel.registry import get_integration, registry
 from app.integrations.observability.metrics_source.providers import provider_definition, provider_options
 from app.integrations.observability.metrics_source.scope import cluster_bindings_for_instance
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.compatibility import (
@@ -24,9 +25,12 @@ from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_a
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.messages import (
     compact_readiness_reasons,
 )
-from app.integrations.overview_extensions import sort_runtime_rows
+from app.integrations.overview_extensions import (
+    build_provider_portfolio_counts,
+    portfolio_posture,
+    sort_runtime_rows,
+)
 from app.integrations.provider_matrix import provider_kind
-from app.integrations.registry import get_integration, registry
 from app.integrations.taxonomy import (
     capability_definitions_for_domain,
     ordered_domain_definitions,
@@ -133,7 +137,12 @@ def build_kubernetes_capability_registry(
     }
 
 
-def build_kubernetes_detail(cluster_id: str) -> dict[str, Any] | None:
+def build_kubernetes_detail(
+    cluster_id: str,
+    *,
+    binding_page: int = 1,
+    binding_per_page: int = 5,
+) -> dict[str, Any] | None:
     from app.integrations.runtime.presentation import runtime_observation_state_view
     from app.integrations.runtime.repository import list_runtime_history
 
@@ -218,9 +227,14 @@ def build_kubernetes_detail(cluster_id: str) -> dict[str, Any] | None:
         integration_instance_id=connection.integration_instance_id,
         cluster_id=cluster.id,
     )
-    source_bindings = build_bound_observability_source_rows(
+    all_source_bindings = build_bound_observability_source_rows(
         asset_type='kubernetes_cluster',
         asset_key=cluster.id,
+    )
+    source_bindings, source_binding_pagination = _paginate(
+        all_source_bindings,
+        page=binding_page,
+        per_page=binding_per_page,
     )
     return {
         'connection': connection,
@@ -242,6 +256,8 @@ def build_kubernetes_detail(cluster_id: str) -> dict[str, Any] | None:
         'selected_adapters': selected_adapters,
         'capability_scope': capability_scope,
         'source_bindings': source_bindings,
+        'source_binding_total': len(all_source_bindings),
+        'source_binding_pagination': source_binding_pagination,
         'deletion_guard': deletion_guard,
         'validated_feature_count': len(selected_adapters),
         'operational_domain_count': len(capability_scope),
@@ -249,7 +265,7 @@ def build_kubernetes_detail(cluster_id: str) -> dict[str, Any] | None:
             'node_count': int(cluster.node_count or 0),
             'validated_feature_count': len(selected_adapters),
             'operational_domain_count': len(capability_scope),
-            'binding_count': sum(1 for row in source_bindings if row['binding_validation'] != 'not_bound'),
+            'binding_count': len(all_source_bindings),
             'report_count': report_count,
             'schedule_count': schedule_count,
             'inventory_status': 'committed' if latest_inventory else 'not_collected',
@@ -411,7 +427,6 @@ def build_alertmanager_page(
     query: str = '',
     compatibility: str = '',
     readiness: str = '',
-    deployment_type: str = '',
     tab: str = 'coverage',
     page: int = 1,
     per_page: int = 5,
@@ -429,7 +444,6 @@ def build_alertmanager_page(
         query=query,
         compatibility=compatibility,
         readiness=readiness,
-        deployment_type=deployment_type,
         tab=tab,
         page=page,
         per_page=per_page,
@@ -441,44 +455,6 @@ def build_alertmanager_page(
     )
 
 
-def _provider_portfolio_counts(
-    *,
-    kubernetes_connections: list[KubernetesConnection],
-    metrics_sources: list[MetricsSource],
-    alertmanager_instances: list[AlertmanagerInstance],
-    extension_instances: list[IntegrationInstance],
-) -> dict[str, dict[str, int]]:
-    counts = {
-        'container_orchestrator': {
-            'configured': len(kubernetes_connections),
-            'ready': sum(
-                1
-                for item in kubernetes_connections
-                if item.integration_instance.enabled and _kubernetes_readiness(item) == 'ready'
-            ),
-            'total': len(kubernetes_connections),
-        },
-        'metrics_source': {
-            'configured': sum(1 for item in metrics_sources if item.endpoint),
-            'ready': sum(1 for item in metrics_sources if item.enabled and item.readiness_status == 'ready'),
-            'total': len(metrics_sources),
-        },
-        'alert_source': {
-            'configured': sum(1 for item in alertmanager_instances if item.endpoint),
-            'ready': sum(1 for item in alertmanager_instances if item.enabled and item.readiness_status == 'ready'),
-            'total': len(alertmanager_instances),
-        },
-    }
-    for integration_type in {item.integration_type for item in extension_instances}:
-        targets = [item for item in extension_instances if item.integration_type == integration_type]
-        counts[integration_type] = {
-            'configured': len(targets),
-            'ready': sum(1 for item in targets if item.enabled and item.readiness_status == 'ready'),
-            'total': len(targets),
-        }
-    return counts
-
-
 def _coverage(
     *,
     kubernetes_connections: list[KubernetesConnection],
@@ -486,7 +462,7 @@ def _coverage(
     alertmanager_instances: list[AlertmanagerInstance],
     extension_instances: list[IntegrationInstance],
 ) -> list[dict[str, Any]]:
-    provider_counts = _provider_portfolio_counts(
+    provider_counts = build_provider_portfolio_counts(
         kubernetes_connections=kubernetes_connections,
         metrics_sources=metrics_sources,
         alertmanager_instances=alertmanager_instances,
@@ -498,22 +474,32 @@ def _coverage(
         domain_modules = [module for module in modules if module.domain_key == domain.key]
         lifecycle = 'available' if domain_modules else 'planned'
         counts = [provider_counts.get(module.integration_type, {}) for module in domain_modules]
-        configured = sum(int(item.get('configured') or 0) for item in counts)
-        ready = sum(int(item.get('ready') or 0) for item in counts)
-        total = sum(int(item.get('total') or 0) for item in counts)
+        summary = {
+            key: sum(int(item.get(key) or 0) for item in counts)
+            for key in (
+                'configured',
+                'ready',
+                'degraded',
+                'blocked',
+                'validation_required',
+                'disabled',
+                'not_configured',
+                'total',
+                'attention',
+            )
+        }
+        configured = summary['configured']
+        ready = summary['ready']
+        total = summary['total']
         if domain_modules:
             providers = ' · '.join(module.label for module in domain_modules)
         else:
             providers = ' · '.join(capability.label for capability in capability_definitions_for_domain(domain.key))
-        attention = max(total - ready, 0) if lifecycle == 'available' else 0
+        attention = summary['attention'] if lifecycle == 'available' else 0
         if lifecycle != 'available':
             posture_state, posture_label = 'planned', 'Planned'
-        elif total <= 0:
-            posture_state, posture_label = 'not_configured', 'Not Configured'
-        elif attention > 0:
-            posture_state, posture_label = 'validation_required', 'Needs Review'
         else:
-            posture_state, posture_label = 'ready', 'Ready'
+            posture_state, posture_label = portfolio_posture(summary)
         rows.append(
             {
                 'key': domain.key,
@@ -526,6 +512,11 @@ def _coverage(
                 'total': total,
                 'lifecycle': lifecycle,
                 'attention': attention,
+                'degraded': summary['degraded'],
+                'blocked': summary['blocked'],
+                'validation_required': summary['validation_required'],
+                'disabled': summary['disabled'],
+                'not_configured': summary['not_configured'],
                 'readiness_percent': round((ready / total) * 100, 1) if total else 0.0,
                 'posture_state': posture_state,
                 'posture_label': posture_label,
@@ -552,7 +543,7 @@ def _catalog(
     alertmanager_instances: list[AlertmanagerInstance],
     extension_instances: list[IntegrationInstance],
 ) -> list[dict[str, Any]]:
-    provider_counts = _provider_portfolio_counts(
+    provider_counts = build_provider_portfolio_counts(
         kubernetes_connections=kubernetes_connections,
         metrics_sources=metrics_sources,
         alertmanager_instances=alertmanager_instances,
@@ -564,16 +555,8 @@ def _catalog(
         configured = int(counts.get('configured') or 0)
         ready = int(counts.get('ready') or 0)
         total = int(counts.get('total') or 0)
-        attention = max(total - ready, 0)
-        if total <= 0:
-            posture_state = 'not_configured'
-            posture_label = 'Not Configured'
-        elif attention > 0:
-            posture_state = 'validation_required'
-            posture_label = 'Needs Review'
-        else:
-            posture_state = 'ready'
-            posture_label = 'Ready'
+        attention = int(counts.get('attention') or 0)
+        posture_state, posture_label = portfolio_posture(counts)
         rows.append(
             {
                 'key': module.integration_type,
@@ -586,6 +569,11 @@ def _catalog(
                 'ready': ready,
                 'total': total,
                 'attention': attention,
+                'degraded': int(counts.get('degraded') or 0),
+                'blocked': int(counts.get('blocked') or 0),
+                'validation_required': int(counts.get('validation_required') or 0),
+                'disabled': int(counts.get('disabled') or 0),
+                'not_configured': int(counts.get('not_configured') or 0),
                 'readiness_percent': round((ready / total) * 100, 1) if total else 0.0,
                 'posture_state': posture_state,
                 'posture_label': posture_label,

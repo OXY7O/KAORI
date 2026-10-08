@@ -2,7 +2,7 @@
 
 **Status:** Default and mandatory
 **Effective date:** 2026-08-03
-**Scope:** Kubernetes and Object Storage Analytics/Inventory report generation
+**Scope:** Kubernetes, Object Storage, and Artifact Registry Analytics/Inventory report generation
 
 This document is the canonical implementation contract for KAORI report artifacts. A report type, output format, source boundary, metadata rule, and renderer must conform to this standard before it can be exposed in Generate Report, Templates, Schedules, Generated Reports, or worker execution.
 
@@ -10,8 +10,8 @@ This document is the canonical implementation contract for KAORI report artifact
 
 | Report family | Default format | Additional format | Disallowed formats |
 |---|---|---|---|
-| Analytics (Kubernetes and Object Storage) | PDF | XLSX, CSV | — |
-| Inventory (Kubernetes and Object Storage) | XLSX | CSV | PDF |
+| Analytics (Kubernetes, Object Storage, and Artifact Registry) | PDF | XLSX, CSV | — |
+| Inventory (Kubernetes, Object Storage, and Artifact Registry) | XLSX | CSV | PDF |
 
 The authoritative matrix is defined in `app/reports/catalog.py`. UI code, routes, schedules, templates, artifact naming, and workers must consume that catalog. They must not maintain separate hard-coded format lists.
 
@@ -21,30 +21,32 @@ Every report requires exactly one canonical infrastructure asset scope.
 
 - Kubernetes report types require one explicit selected Kubernetes cluster. Cross-cluster generation is prohibited.
 - Object Storage report types require one explicit selected Object Storage system and do not require a Kubernetes `cluster_id`.
+- Artifact Registry report types require one explicit selected Registry integration instance and do not require a Kubernetes `cluster_id`.
 - The Generate Report, Templates, and Schedules surfaces must expose only scope types declared by the Definition Registry.
 - Validation must reject an empty, unknown, or mismatched asset scope before a report record is created.
 - Collectors must resolve exactly the asset stored on the report and must never select a first/default cluster, system, or provider binding.
 - Kubernetes Inventory queries use the selected cluster and latest committed inventory generation.
 - Kubernetes Analytics evidence uses the same selected-cluster boundary across materialized analytics, metrics, alerts, and supporting inventory.
 - Object Storage Inventory and Analytics use the selected Object Storage system boundary across committed inventory, analytics snapshots, metrics evidence, and alerts.
+- Artifact Registry Inventory and Analytics use the selected Registry integration boundary across committed inventory, security, runtime correlation, governance, analytics, alerts, and recommendation evidence.
 - Storage naming must include the canonical asset scope and must reject an unscoped report.
 - A schedule whose asset scope is missing or whose report contract is invalid must record a failed run and must not create an artifact.
 
-Namespace is optional only for Kubernetes-scoped reports. An empty namespace means all namespaces **inside the selected cluster only**. Object Storage uses system scope and records namespace as `Not Applicable`.
+Namespace is optional only for Kubernetes-scoped reports. An empty namespace means all namespaces **inside the selected cluster only**. Object Storage and Artifact Registry use non-Kubernetes asset scope and record namespace as `Not Applicable`.
 
 ## 3. Canonical generation pipeline
 
 All formats use the same high-level pipeline:
 
-1. `app/reports/catalog.py` validates the report type, family, selected cluster, and allowed output format.
-2. The family collector builds one canonical payload for the selected cluster.
+1. `app/reports/catalog.py` validates the report type, family, selected asset scope, and allowed output format.
+2. The family collector builds one canonical payload for the selected asset scope.
 3. A reusable document/export model normalizes metadata, rows, status, missing values, and field order.
 4. `app/reports/export/artifacts.py` resolves the renderer from the output format registry.
 5. The renderer writes a staging artifact and performs format-specific validity checks.
 6. Storage persists the artifact using `app/reports/storage/naming.py`.
 7. The report record is updated to `ready`; a failed regeneration retains an already-ready artifact.
 
-Renderers must not silently substitute another format, report type, cluster, or source.
+Renderers must not silently substitute another format, report type, asset scope, or source.
 
 ## 4. Source-of-truth rules
 
@@ -60,6 +62,7 @@ Canonical sources include:
 - selected-system Object Storage analytics/materialized evidence;
 - selected-system Object Storage metrics and alert evidence when configured;
 - selected-system committed Object Storage inventory used as supporting evidence;
+- selected-Registry committed Artifact Registry inventory, security, runtime correlation, governance, analytics, alert, and recommendation evidence;
 - report and schedule activity filtered to the same canonical asset boundary.
 
 A renderer must not perform an independent source query that would make PDF and CSV disagree. Source failures must be represented as an explicit failed generation or an explicit evidence limitation supported by the report-specific presentation contract.
@@ -72,6 +75,7 @@ Canonical sources:
 
 - Kubernetes Inventory: the latest committed Kubernetes inventory generation for the exact selected cluster, optionally filtered by namespace when supported;
 - Object Storage Inventory: the latest committed Object Storage inventory generation for the exact selected system;
+- Artifact Registry Inventory: committed provider-neutral Registry projects, repositories, artifacts/digests, tags, and collection freshness for the exact selected Registry integration;
 - TLS Inventory: committed certificate metadata and usage evidence inside the selected Kubernetes cluster/namespace boundary.
 
 Artifact generation must not call the live Kubernetes API. Generated inventory is an auditable snapshot. Live operational actions must be verified separately against current cluster state.
@@ -96,7 +100,7 @@ Labels, period names, cluster names, namespace semantics, and data cutoff must n
 
 ## 6. PDF default style — Analytics
 
-Analytics PDF is the only PDF family. Kubernetes and Object Storage Analytics share the same publication family and reference profile.
+Analytics PDF is the only PDF family. Kubernetes, Object Storage, and Artifact Registry Analytics share the same publication family and reference profile.
 
 - Engine: WeasyPrint.
 - Shared publication component: `app/templates/reports/pdf/components/analytics_publication.html`.
@@ -224,7 +228,7 @@ The report portfolio is considered aligned only when all three artifact contract
 
 Do not introduce:
 
-- a cross-cluster, cross-system, default-cluster, or default-system fallback;
+- a cross-cluster, cross-system, cross-registry, default-cluster, default-system, or default-registry fallback;
 - a global `pdf` or `xlsx` default applied to every family;
 - format-specific duplicate collectors;
 - PDF rendering for Inventory;

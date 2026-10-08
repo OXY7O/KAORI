@@ -4,13 +4,13 @@ from typing import Any
 
 from sqlalchemy.orm import contains_eager, selectinload
 
+from app.integrations.kernel.registry import registry
 from app.integrations.overview_extensions import (
     build_extension_runtime_rows,
     build_overview_stats,
     load_extension_integration_instances,
     sort_runtime_rows,
 )
-from app.integrations.registry import registry
 from app.integrations.service import (
     _catalog,
     _coverage,

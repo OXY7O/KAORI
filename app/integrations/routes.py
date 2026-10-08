@@ -118,6 +118,12 @@ def storage() -> ResponseReturnValue:
     return _render_domain_page('storage')
 
 
+@integrations_bp.get('/registry')
+@permission_required('integrations.manage')
+def registry() -> ResponseReturnValue:
+    return _render_domain_page('registry')
+
+
 @integrations_bp.get('/runtime/<string:detail_key>/details')
 @permission_required('integrations.manage')
 def runtime_overview_details(detail_key: str) -> ResponseReturnValue:
@@ -181,7 +187,11 @@ def _kubernetes_detail_context(
     history_page: int | None = None,
     history_per_page: int | None = None,
 ) -> dict[str, object]:
-    context = build_kubernetes_detail(cluster_id)
+    context = build_kubernetes_detail(
+        cluster_id,
+        binding_page=request.args.get('binding_page', 1, type=int) or 1,
+        binding_per_page=request.args.get('binding_per_page', 5, type=int) or 5,
+    )
     if context is None:
         abort(404)
     connection = context['connection']
@@ -221,6 +231,16 @@ def _kubernetes_detail_context(
         )
         context['history'] = runtime_history_view(rows, pagination=pagination)
     return context
+
+
+@integrations_bp.get('/kubernetes/<string:cluster_id>/bindings/registry')
+@permission_required('clusters.view')
+def kubernetes_binding_registry(cluster_id: str) -> ResponseReturnValue:
+    context = _kubernetes_detail_context(cluster_id)
+    return render_template(
+        'integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_binding_registry.html',
+        **context,
+    )
 
 
 @integrations_bp.get('/kubernetes/<string:cluster_id>/registry-details')
@@ -559,7 +579,6 @@ def alertmanager() -> ResponseReturnValue:
         query=request.args.get('q', '').strip(),
         compatibility=request.args.get('compatibility', '').strip(),
         readiness=request.args.get('readiness', '').strip(),
-        deployment_type=request.args.get('deployment_type', '').strip(),
         tab=request.args.get('tab', 'coverage').strip(),
         page=request.args.get('page', 1, type=int) or 1,
         per_page=request.args.get('per_page', 5, type=int) or 5,

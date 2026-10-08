@@ -15,6 +15,7 @@ from app.models.archive import ArchiveArtifact
 from app.models.audit import AuditEvent
 from app.models.cluster import Cluster, ClusterStatus
 from app.models.governance import TLSCertificateCollectionState, TLSCertificateInventory, TLSCertificateUpdateEvent
+from app.models.harbor import HarborInstance
 from app.models.identity import ExternalIdentityLink, IdentityProvider
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.intelligence import (
@@ -46,6 +47,22 @@ from app.models.notification_channel import NotificationChannel, NotificationDel
 from app.models.object_storage import ObjectStorageBucket, ObjectStorageSystem
 from app.models.object_storage_analytics import ObjectStorageAnalyticsSnapshot, ObjectStorageForecastSnapshot
 from app.models.rbac import Permission, Role, RolePermission
+from app.models.registry import (
+    RegistryAnalyticsSnapshot,
+    RegistryArtifact,
+    RegistryCollectionState,
+    RegistryGovernanceState,
+    RegistryProject,
+    RegistryProjectGovernance,
+    RegistryReplicationPolicy,
+    RegistryRepository,
+    RegistryScanSnapshot,
+    RegistryTag,
+    RegistryVulnerability,
+    RegistryWebhookEndpoint,
+    RegistryWebhookEvent,
+    RegistryWorkloadBinding,
+)
 from app.models.report import Report, ReportSchedule, ReportScheduleRun, ReportTemplate
 from app.models.resolver import (
     ResolverDeploymentPolicy,
@@ -115,6 +132,7 @@ __all__ = [
     'ArchiveArtifact',
     'AuditEvent',
     'IdentityProvider',
+    'HarborInstance',
     'IntegrationRuntimeObservation',
     'JobExecution',
     'JobExecutionSubscriber',
@@ -211,6 +229,20 @@ __all__ = [
     'RecommendationAlertPolicy',
     'RecommendationAlertState',
     'RuleException',
+    'RegistryCollectionState',
+    'RegistryProject',
+    'RegistryRepository',
+    'RegistryArtifact',
+    'RegistryTag',
+    'RegistryScanSnapshot',
+    'RegistryVulnerability',
+    'RegistryWorkloadBinding',
+    'RegistryGovernanceState',
+    'RegistryProjectGovernance',
+    'RegistryReplicationPolicy',
+    'RegistryWebhookEndpoint',
+    'RegistryWebhookEvent',
+    'RegistryAnalyticsSnapshot',
     'Report',
     'ReportTemplate',
     'ReportSchedule',

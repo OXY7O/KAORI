@@ -1,14 +1,14 @@
 from datetime import UTC, datetime
 
-from app.integrations.observability.metrics_source.adapter import runtime_adapter
-from app.integrations.observability.metrics_source.capabilities import CAPABILITY_KEYS, COMPATIBILITY_PROFILES
-from app.integrations.registry import (
+from app.integrations.kernel.registry import (
     IntegrationImplementation,
     IntegrationModule,
     canonical_model_loader,
     model_loader,
     registry,
 )
+from app.integrations.observability.metrics_source.adapter import runtime_adapter
+from app.integrations.observability.metrics_source.capabilities import CAPABILITY_KEYS, COMPATIBILITY_PROFILES
 from app.models.metrics_source import MetricsSource
 
 

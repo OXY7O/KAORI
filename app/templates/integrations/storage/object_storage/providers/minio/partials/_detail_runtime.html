@@ -8,8 +8,23 @@
 {% set runtime_observed = runtime_state.has_observation|default(runtime_state.observed_at is not none) %}
 {% set runtime_tone = "ready" if runtime_observed and runtime_state.health_status == "healthy" else ("degraded" if runtime_observed and runtime_state.health_status in ["degraded", "warning"] else ("blocked" if runtime_observed and runtime_state.health_status in ["unhealthy", "failed"] else "not_observed")) %}
 {% set runtime_gate_label = "Observation Required" if not runtime_observed else ("Runtime Healthy" if runtime_state.health_status == "healthy" else ("Runtime Blocked" if runtime_state.health_status in ["unhealthy", "failed"] else "Runtime Attention Required")) %}
-{% set runtime_primary_finding = runtime_state.summary or runtime_state.message or "No current runtime finding requires operator attention." %}
 {% set runtime_attention = runtime_state.attention_factors|default([], true) %}
+{% set runtime_identity = "MinIO" %}
+{% set runtime_version = instance.declared_release or instance.detected_version %}
+{% if runtime_version %}
+    {% set runtime_identity = runtime_identity ~ " " ~ runtime_version %}
+{% endif %}
+{% if not runtime_observed %}
+    {% set runtime_primary_finding = runtime_identity ~ " · Runtime not observed." %}
+{% elif runtime_state.health_status in ["unhealthy", "failed"] %}
+    {% set runtime_primary_finding = runtime_identity ~ " · Runtime " ~ runtime_state.health_status_label ~ "; readiness " ~ runtime_state.readiness_label ~ "." %}
+{% elif runtime_state.readiness != "ready" %}
+    {% set runtime_primary_finding = runtime_identity ~ " · Readiness " ~ runtime_state.readiness_label ~ "." %}
+{% elif runtime_attention and runtime_state.diagnostics %}
+    {% set runtime_primary_finding = runtime_identity ~ " · " ~ runtime_state.diagnostics[0].label ~ " requires attention." %}
+{% else %}
+    {% set runtime_primary_finding = runtime_identity ~ " · Healthy · Ready." %}
+{% endif %}
 {% if not runtime_observed %}
     {% set runtime_next_action = "Run Runtime Refresh to establish persisted MinIO health evidence." %}
 {% elif runtime_state.health_status in ["unhealthy", "failed"] %}
@@ -19,7 +34,7 @@
 {% elif runtime_attention %}
     {% set runtime_next_action = "Review the active runtime finding, remediate it, then refresh persisted runtime evidence." %}
 {% else %}
-    {% set runtime_next_action = "No immediate remediation is required. Refresh runtime evidence after endpoint or infrastructure changes." %}
+    {% set runtime_next_action = "No remediation required. Refresh runtime evidence after endpoint or infrastructure changes." %}
 {% endif %}
 {% set observation_rows = [
     ("Observed", runtime_state.observed_at_display),

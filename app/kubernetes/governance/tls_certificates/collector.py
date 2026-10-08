@@ -7,12 +7,12 @@ from typing import Any
 
 from kubernetes.client import V1Ingress, V1Secret
 
+from app.integrations.kernel.registry import get_integration
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver import (
     connection_for_cluster,
     tls_policy_for_cluster,
 )
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls import weak_tls_context
-from app.integrations.registry import get_integration
 from app.kubernetes.governance.tls_certificates.certificate import (
     TLSValidityPolicy,
     decode_secret_data,

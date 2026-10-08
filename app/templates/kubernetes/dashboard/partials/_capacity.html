@@ -1,0 +1,12 @@
+{% import "components/peer_content_grid.html" as peer_content_grid %}
+<div id="kubernetes-dashboard-section-capacity" class="space-y-5">
+    <div class="{{ peer_content_grid.layout_classes() }}">
+        <div class="{{ peer_content_grid.column_classes('primary') }}">
+            {% include "kubernetes/dashboard/partials/_capacity_snapshot.html" %}
+        </div>
+        <div class="{{ peer_content_grid.column_classes('secondary') }}">
+            {% include "kubernetes/dashboard/partials/_forecast_risk.html" %}
+        </div>
+    </div>
+    {% include "kubernetes/dashboard/partials/_top_consumers.html" %}
+</div>

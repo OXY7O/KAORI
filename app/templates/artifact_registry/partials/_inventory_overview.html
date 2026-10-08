@@ -1,0 +1,87 @@
+{% import "components/page_hero.html" as page_hero %}
+{% import "components/inventory_asset_card.html" as inventory_asset_card %}
+{% import "components/operational_callout.html" as operational_callout %}
+{% import "components/section_intro.html" as section_intro %}
+{% import "components/snapshot_context_bar.html" as snapshot_context_bar %}
+<div id="artifact-registry-inventory-workspace" class="space-y-6">
+    <section class="{{ page_hero.shell_classes() }}">
+        <div class="{{ page_hero.layout_classes() }}">
+            <div class="{{ page_hero.content_classes() }}">
+                {% call page_hero.intro('boxes', 'Artifact Registry', 'package-open') %}
+                    <h1 class="{{ page_hero.title_classes() }}">Inventory</h1>
+                    <p class="mt-2 {{ page_hero.description_classes() }}">
+                        Review committed Registry projects, repositories, and artifacts.
+                    </p>
+                    <div class="{{ page_hero.metadata_row_classes() }}">
+                        {{ page_hero.meta_label('folder-kanban', inventory.overview.project_count ~ ' Projects') }}
+                        {{ page_hero.meta_label('package-open', inventory.overview.repository_count ~ ' Repositories') }}
+                        {{ page_hero.meta_label('fingerprint', inventory.overview.artifact_count ~ ' Artifacts') }}
+                    </div>
+                {% endcall %}
+            </div>
+            {{ page_hero.context_card('Registry inventory posture',
+                        'Committed State',
+                        'Inventory Posture',
+                        inventory.overview.posture.label,
+                        inventory.overview.posture.tone,
+                        [
+                        ('database-backup', 'Committed Providers', inventory.overview.snapshot_count ~ '/' ~ inventory.overview.provider_count, 'Retained snapshots') ,
+            ('scan-search', 'Snapshot Exceptions', inventory.snapshot_context.exception_count, 'Stale, pending, or failed')
+            ],
+            'Open Registry Integrations',
+            url_for('integrations.registry'),
+            action_icon='settings-2'
+            ) }}
+        </div>
+    </section>
+    {% if inventory.setup.is_blocked %}
+        {% include "artifact_registry/components/_setup_blocker.html" %}
+    {% else %}
+        {{ snapshot_context_bar.render(source_label=inventory.snapshot_context.source_label,
+                status=inventory.snapshot_context.status,
+                tone=inventory.snapshot_context.tone,
+                description=inventory.snapshot_context.description,
+                latest_collected=inventory.snapshot_context.latest_collected_at|user_datetime if inventory.snapshot_context.latest_collected_at else 'Not Collected',
+                scope_label=inventory.snapshot_context.scope_label,
+                coverage_label=inventory.snapshot_context.coverage_label,
+                exceptions_label=inventory.snapshot_context.exceptions_label,
+                latest_supporting='Latest committed inventory.',
+                scope_supporting='Provider-neutral Registry scope.',
+                coverage_supporting=inventory.snapshot_context.coverage_supporting,
+                exceptions_supporting=inventory.snapshot_context.exceptions_supporting,
+                coverage_tone=inventory.snapshot_context.coverage_tone,
+                exceptions_tone=inventory.snapshot_context.exceptions_tone,
+                metric_icon_palette='brand') }}
+        <section class="space-y-4" aria-labelledby="registry-fleet-posture-heading">
+            {{ section_intro.render('Fleet Inventory Posture',
+                        'Review committed provider coverage, snapshot exceptions, and project visibility across Registry inventory.',
+                        'registry-fleet-posture-heading') }}
+            <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {% for reading in inventory.fleet_readings %}
+                    {{ operational_callout.render(reading.title,
+                                        reading.description,
+                                        icon=reading.icon,
+                                        tone=reading.tone,
+                                        variant='neutral',
+                                        extra_classes='w-full') }}
+                {% endfor %}
+            </div>
+        </section>
+        <section class="space-y-4" aria-labelledby="registry-asset-catalog-heading">
+            {{ section_intro.render('Registry Asset Catalog',
+                        'Open committed Projects, Repositories, and Artifacts from provider-neutral Registry snapshots.',
+                        'registry-asset-catalog-heading') }}
+            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {% for asset in inventory.asset_catalog %}
+                    {{ inventory_asset_card.render(asset.title,
+                                        asset.count,
+                                        asset.description,
+                                        url_for(asset.endpoint) ,
+                    asset.icon,
+                    action_label=asset.action_label
+                    ) }}
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+</div>

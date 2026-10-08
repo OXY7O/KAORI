@@ -74,6 +74,142 @@ jobs:
   execution_summary: Run an object-storage inventory refresh and monitor the canonical execution without leaving this page.
   recent_execution_summary: Latest scheduled and manual object-storage inventory synchronizations.
   legacy_module: object_storage_inventory_sync
+- key: artifact_registry.inventory.sync
+  name: Artifact Registry Inventory Sync
+  domain: Artifact Registry
+  description: Refresh committed provider-neutral Registry projects, repositories, artifacts, and tags.
+  icon: package-search
+  queue_name: inventory
+  workload_class: standard
+  job_type: artifact_registry_inventory
+  operation: sync_artifact_registry_inventory
+  scope_type: registry_fleet
+  scope_key: all
+  configure_permission: jobs.configure
+  execute_permission: jobs.execute
+  domain_execute_permission: artifact_registry.sync
+  dispatcher_path: app.artifact_registry.job_adapter:dispatch_registry_inventory_sync
+  context_builder_path: app.artifact_registry.job_adapter:build_registry_inventory_sync_context
+  configuration_template: platform_operations/jobs/configuration/definitions/artifact_registry_inventory_sync.html
+  default_enabled: true
+  default_interval_minutes: 60
+  minimum_interval_minutes: 15
+  maximum_interval_minutes: 1440
+  safety_summary: Each Registry provider replaces its committed snapshot only after provider collection succeeds.
+  execution_summary: >-
+    Run Registry reconciliation and monitor the canonical execution without querying providers from
+    operational pages.
+  recent_execution_summary: Latest scheduled and manual Artifact Registry reconciliation runs.
+  legacy_module: artifact_registry_inventory_sync
+- key: artifact_registry.security.sync
+  name: Artifact Registry Security Sync
+  domain: Artifact Registry
+  description: Refresh committed vulnerability, signature, and SBOM evidence incrementally from Registry providers.
+  icon: shield-check
+  queue_name: registry-security
+  workload_class: standard
+  job_type: artifact_registry_security
+  operation: sync_artifact_registry_security
+  scope_type: registry_security_fleet
+  scope_key: all
+  configure_permission: jobs.configure
+  execute_permission: jobs.execute
+  domain_execute_permission: artifact_registry.sync
+  dispatcher_path: app.artifact_registry.security.job_adapter:dispatch_registry_security_sync
+  context_builder_path: app.artifact_registry.security.job_adapter:build_registry_security_sync_context
+  configuration_template: platform_operations/jobs/configuration/definitions/artifact_registry_security_sync.html
+  default_enabled: true
+  default_interval_minutes: 60
+  minimum_interval_minutes: 15
+  maximum_interval_minutes: 1440
+  safety_summary: Security refresh is read-only, reuses unchanged scan evidence, and never triggers provider scans.
+  execution_summary: Refresh scanner and supply-chain evidence independently from the inventory correctness path.
+  recent_execution_summary: Latest scheduled and manual Artifact Registry security evidence synchronizations.
+  legacy_module: artifact_registry_security_sync
+- key: artifact_registry.governance.sync
+  name: Artifact Registry Governance Sync
+  domain: Artifact Registry
+  description: Refresh committed retention, immutability, webhook, and replication evidence from Registry providers.
+  icon: scale
+  queue_name: inventory
+  workload_class: standard
+  job_type: artifact_registry_governance
+  operation: sync_artifact_registry_governance
+  scope_type: registry_governance_fleet
+  scope_key: all
+  configure_permission: jobs.configure
+  execute_permission: jobs.execute
+  domain_execute_permission: artifact_registry.sync
+  dispatcher_path: app.artifact_registry.governance_job_adapter:dispatch_registry_governance_sync
+  context_builder_path: app.artifact_registry.governance_job_adapter:build_registry_governance_sync_context
+  configuration_template: platform_operations/jobs/configuration/definitions/artifact_registry_governance_sync.html
+  default_enabled: true
+  default_interval_minutes: 360
+  minimum_interval_minutes: 30
+  maximum_interval_minutes: 1440
+  safety_summary: >-
+    Governance collection is read-only and never mutates Registry retention, immutability, webhook, or
+    replication policy.
+  execution_summary: Refresh provider governance evidence independently from inventory reconciliation.
+  recent_execution_summary: Latest scheduled and manual Artifact Registry governance synchronizations.
+  legacy_module: artifact_registry_governance_sync
+- key: artifact_registry.runtime_correlation.materialize
+  name: Artifact Registry Runtime Correlation
+  domain: Artifact Registry
+  description: Materialize committed Registry artifact to Kubernetes runtime image usage correlation.
+  icon: waypoints
+  queue_name: inventory
+  workload_class: standard
+  job_type: artifact_registry_runtime_correlation
+  operation: materialize_artifact_registry_runtime_correlation
+  scope_type: registry_kubernetes_correlation
+  scope_key: all
+  configure_permission: jobs.configure
+  execute_permission: jobs.execute
+  domain_execute_permission: artifact_registry.sync
+  dispatcher_path: app.artifact_registry.correlation_job_adapter:dispatch_registry_runtime_correlation
+  context_builder_path: app.artifact_registry.correlation_job_adapter:build_registry_runtime_correlation_context
+  configuration_template: platform_operations/jobs/configuration/definitions/artifact_registry_runtime_correlation.html
+  default_enabled: true
+  default_interval_minutes: 60
+  minimum_interval_minutes: 15
+  maximum_interval_minutes: 1440
+  safety_summary: Correlation reads committed Registry and current Kubernetes inventory only; no provider transport is used.
+  execution_summary: Rebuild digest-first runtime blast-radius evidence independently from Registry collection.
+  recent_execution_summary: Latest scheduled and manual Registry to Kubernetes runtime correlation materializations.
+  legacy_module: artifact_registry_runtime_correlation
+- key: artifact_registry.analytics.materialize
+  name: Artifact Registry Analytics Data Refresh
+  domain: Artifact Registry
+  description: >-
+    Materialize Registry analytics from committed inventory, security, governance, runtime, and optional
+    metrics evidence.
+  icon: chart-column
+  queue_name: analytics-batch
+  workload_class: analytics
+  job_type: artifact_registry_analytics
+  operation: materialize_artifact_registry_analytics
+  scope_type: registry_analytics_fleet
+  scope_key: all
+  configure_permission: jobs.configure
+  execute_permission: jobs.execute
+  domain_execute_permission: artifact_registry.view
+  dispatcher_path: app.artifact_registry.analytics_job_adapter:dispatch_registry_analytics_materialization
+  context_builder_path: app.artifact_registry.analytics_job_adapter:build_registry_analytics_context
+  configuration_template: platform_operations/jobs/configuration/definitions/artifact_registry_analytics_refresh.html
+  default_enabled: true
+  default_interval_minutes: 15
+  minimum_interval_minutes: 5
+  maximum_interval_minutes: 1440
+  safety_summary: >-
+    Analytics reads committed Registry evidence and qualified Metrics Source bindings, then commits reusable
+    snapshots before pages can consume them.
+  execution_summary: Refresh Artifact Registry analytics without issuing provider queries from user page requests.
+  recent_execution_summary: Latest scheduled and manual Artifact Registry analytics materialization runs.
+  default_configuration:
+    freshness_minutes: 15
+    stale_grace_minutes: 1440
+  legacy_module: artifact_registry_analytics_refresh
 - key: object_storage.analytics.materialize
   name: Object Storage Analytics Data Refresh
   domain: Object Storage Analytics

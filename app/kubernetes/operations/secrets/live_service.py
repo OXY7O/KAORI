@@ -18,12 +18,12 @@ from urllib3.exceptions import HTTPError as Urllib3HTTPError
 
 from app.common.inventory_generation import filter_current_generation
 from app.common.kubernetes_secrets import scrub_secret_payload
+from app.integrations.kernel.registry import get_integration
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver import (
     connection_for_cluster,
     tls_policy_for_cluster,
 )
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls import weak_tls_context
-from app.integrations.registry import get_integration
 from app.models import Cluster, ConfigurationInventory
 
 _DNS_LABEL = re.compile(r'^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?$')

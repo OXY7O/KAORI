@@ -154,6 +154,6 @@ def test_reports_overview_promotes_object_storage_to_published_without_losing_re
         'Object Storage Alerts & Anomalies Report',
     }
     assert 'published_by_domain' in service
-    assert "domain_order = ['kubernetes', 'object_storage', 'server', 'hci']" in service
+    assert "domain_order = ['kubernetes', 'object_storage', 'artifact_registry', 'server', 'hci']" in service
     assert "'published_count': len(published_items)" in service
     assert 'Object Storage report coverage must be Published' in verifier

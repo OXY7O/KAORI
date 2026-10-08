@@ -37,6 +37,7 @@ from app.intelligence.recommendation_builders import (
 from app.intelligence.recommendation_builders import (
     build_workload_resource_governance_findings as _build_workload_resource_governance_findings_impl,
 )
+from app.intelligence.registry_recommendations import build_registry_recommendation_findings
 from app.intelligence.rule_exceptions import build_rule_exception_view
 from app.intelligence.rule_presentation import (
     CATEGORY_OPTIONS,
@@ -226,6 +227,18 @@ def _build_workload_resource_governance_findings(
     return _build_workload_resource_governance_findings_impl(rules, rule_specs=_WORKLOAD_RESOURCE_RULE_SPECS)
 
 
+def _finalize_recommendation_findings(findings: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    normalized = [normalize_rule(finding) for finding in findings]
+    for finding in normalized:
+        finding.setdefault('affected_summary', format_affected_summary(finding))
+        finding.setdefault('affected_items', build_affected_items(finding))
+        finding.setdefault('affected_assets', build_affected_assets(finding))
+        finding.setdefault('evidence_details', build_evidence_details(finding))
+        finding.setdefault('fix_steps', build_fix_steps(finding))
+    normalized.sort(key=lambda item: (_severity_rank(str(item.get('severity'))), str(item.get('title', ''))))
+    return normalized
+
+
 def _build_recommendation_findings(catalog: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Evaluate currently available catalog rules into actionable findings.
 
@@ -244,16 +257,20 @@ def _build_recommendation_findings(catalog: list[dict[str, Any]]) -> list[dict[s
     findings.extend(_build_storage_binding_findings(rules))
     findings.extend(_build_tls_certificate_findings(rules))
     findings.extend(build_object_storage_recommendation_findings(rules))
+    findings.extend(build_registry_recommendation_findings(rules))
     findings.extend(build_tenant_governance_recommendation_findings(rules))
 
-    findings = [normalize_rule(finding) for finding in findings]
-    for finding in findings:
-        finding.setdefault('affected_summary', format_affected_summary(finding))
-        finding.setdefault('affected_items', build_affected_items(finding))
-        finding.setdefault('affected_assets', build_affected_assets(finding))
-        finding.setdefault('evidence_details', build_evidence_details(finding))
-        finding.setdefault('fix_steps', build_fix_steps(finding))
-    findings.sort(key=lambda item: (_severity_rank(str(item.get('severity'))), str(item.get('title', ''))))
+    return _finalize_recommendation_findings(findings)
+
+
+def get_active_tenant_governance_findings(*, limit: int | None = None) -> list[dict[str, Any]]:
+    """Evaluate only Tenant Governance rules for embedded Tenant surfaces."""
+
+    catalog = [normalize_rule(rule) for rule in INTELLIGENCE_CATALOG]
+    rules = {str(rule.get('rule_key')): rule for rule in catalog}
+    findings = _finalize_recommendation_findings(build_tenant_governance_recommendation_findings(rules))
+    if limit is not None:
+        return findings[: max(int(limit), 0)]
     return findings
 
 
@@ -271,11 +288,11 @@ def get_active_recommendation_findings(
     """
 
     catalog = [normalize_rule(rule) for rule in INTELLIGENCE_CATALOG]
-    findings = _build_recommendation_findings(catalog)
-
     selected_domain = clean(domain)
     if selected_domain:
-        findings = [finding for finding in findings if clean(str(finding.get('domain'))) == selected_domain]
+        catalog = [rule for rule in catalog if clean(str(rule.get('domain'))) == selected_domain]
+
+    findings = _build_recommendation_findings(catalog)
 
     selected_asset = clean(asset_key)
     if selected_asset:
@@ -292,7 +309,13 @@ def _finding_asset_key(finding: dict[str, Any]) -> str:
     if not isinstance(evidence, dict):
         return ''
     return clean(
-        str(evidence.get('asset_key') or evidence.get('cluster_id') or evidence.get('object_storage_system_id') or '')
+        str(
+            evidence.get('asset_key')
+            or evidence.get('cluster_id')
+            or evidence.get('object_storage_system_id')
+            or evidence.get('registry_instance_id')
+            or ''
+        )
     )
 
 
@@ -301,6 +324,7 @@ def _cluster_name_map(cluster_ids: set[str]) -> dict[str, str]:
         return {}
     try:
         from app.models import Cluster
+
     except ImportError:
         return {}
     try:
@@ -319,6 +343,7 @@ def _build_tls_certificate_findings(rules: dict[str, dict[str, Any]]) -> list[di
 
     try:
         from app.models import TLSCertificateInventory
+
     except ImportError:
         return []
 

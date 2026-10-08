@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.integrations.registry import registry
+from app.integrations.kernel.registry import registry
 from app.integrations.taxonomy import ordered_domain_definitions
 
 

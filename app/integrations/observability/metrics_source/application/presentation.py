@@ -8,8 +8,13 @@ from app.common.pagination import paginate_sequence
 from app.common.presentation import present_user_datetime
 from app.extensions.db import db
 from app.integrations.binding_selectors import selector_form_values, selector_is_configured, selector_summary
-from app.integrations.consumer_assets import build_consumer_asset_groups
+from app.integrations.consumer_assets import (
+    build_consumer_asset_groups,
+    get_consumer_asset_definition,
+    resolve_consumer_asset,
+)
 from app.integrations.deletion import provider_deletion_guard
+from app.integrations.kernel.registry import get_integration
 from app.integrations.observability.metrics_source.application.resolver import (
     MetricsSourceResolution,
     resolve_metrics_sources,
@@ -21,11 +26,10 @@ from app.integrations.observability.metrics_source.providers import provider_def
 from app.integrations.observability.metrics_source.routing import normalize_routing_policy, recent_window_hours
 from app.integrations.observability.metrics_source.scope import KUBERNETES_CLUSTER_SCOPE, bindings_for_instance
 from app.integrations.readiness import resolve_binding_operational_status
-from app.integrations.registry import get_integration
 from app.integrations.runtime.presentation import runtime_history_view, runtime_state_view
 from app.integrations.runtime.repository import paginate_runtime_history
 from app.models import Cluster, MetricsSource, ObjectStorageSystem
-from app.models.integration import IntegrationBinding
+from app.models.integration import IntegrationBinding, IntegrationInstance
 
 _CORE_CAPABILITIES = set(PROVIDER_CAPABILITY_KEYS)
 
@@ -424,6 +428,11 @@ def _binding_row(binding: IntegrationBinding, source: MetricsSource) -> dict[str
         if binding.asset_type == 'object_storage_system'
         else None
     )
+    registry_instance = (
+        db.session.get(IntegrationInstance, int(binding.asset_key))
+        if binding.asset_type == 'registry_instance' and str(binding.asset_key).isdigit()
+        else None
+    )
     profile = get_binding_validation_profile(source.adapter_key, binding.asset_type)
     selector_values = selector_form_values(binding.selector_json)
     source_readiness = source.readiness_status or 'validation_required'
@@ -436,7 +445,11 @@ def _binding_row(binding: IntegrationBinding, source: MetricsSource) -> dict[str
     scope_label = (
         cluster.name
         if cluster is not None
-        else (object_storage.name if object_storage is not None else binding.asset_key)
+        else (
+            object_storage.name
+            if object_storage is not None
+            else (registry_instance.name if registry_instance is not None else binding.asset_key)
+        )
     )
     scope_type_label = (
         'Kubernetes Cluster'
@@ -444,7 +457,11 @@ def _binding_row(binding: IntegrationBinding, source: MetricsSource) -> dict[str
         else (
             'Object Storage System'
             if binding.asset_type == 'object_storage_system'
-            else binding.asset_type.replace('_', ' ').title()
+            else (
+                'Registry Instance'
+                if binding.asset_type == 'registry_instance'
+                else binding.asset_type.replace('_', ' ').title()
+            )
         )
     )
     routing_policy = normalize_routing_policy(binding.routing_policy)
@@ -474,21 +491,51 @@ def _binding_row(binding: IntegrationBinding, source: MetricsSource) -> dict[str
     }
 
 
+def _resolution_consumers_for_binding(
+    current_instance: MetricsSource,
+    binding: IntegrationBinding,
+) -> tuple[dict[str, Any], ...]:
+    if binding.asset_type == KUBERNETES_CLUSTER_SCOPE:
+        return _RESOLUTION_CONSUMERS
+
+    asset_definition = get_consumer_asset_definition(binding.asset_type)
+    profile = get_binding_validation_profile(current_instance.adapter_key, binding.asset_type)
+    if asset_definition is None or profile is None:
+        return ()
+
+    return (
+        {
+            'key': 'metrics',
+            'label': profile.label,
+            'icon': asset_definition.icon,
+            'binding_capabilities': ('metrics',),
+            'technical_capabilities': (),
+        },
+    )
+
+
 def _source_resolution_rows(
     current_instance: MetricsSource,
     bindings: list[IntegrationBinding],
 ) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
-    seen: set[str] = set()
+    seen: set[tuple[str, str]] = set()
     for binding in bindings:
-        if binding.asset_type != KUBERNETES_CLUSTER_SCOPE or binding.asset_key in seen:
+        scope = (binding.asset_type, str(binding.asset_key))
+        if scope in seen:
             continue
-        seen.add(binding.asset_key)
-        cluster = db.session.get(Cluster, binding.asset_key)
+
+        definitions = _resolution_consumers_for_binding(current_instance, binding)
+        if not definitions:
+            continue
+
+        seen.add(scope)
+        asset_definition = get_consumer_asset_definition(binding.asset_type)
+        asset = resolve_consumer_asset(binding.asset_type, binding.asset_key)
         consumers = {
             definition['key']: _resolution_view(
                 resolve_metrics_sources(
-                    scope_type=KUBERNETES_CLUSTER_SCOPE,
+                    scope_type=binding.asset_type,
                     scope_key=binding.asset_key,
                     required_binding_capabilities=definition['binding_capabilities'],
                     required_technical_capabilities=definition['technical_capabilities'],
@@ -497,14 +544,18 @@ def _source_resolution_rows(
                 label=definition['label'],
                 icon=definition['icon'],
             )
-            for definition in _RESOLUTION_CONSUMERS
+            for definition in definitions
         }
         rows.append(
             {
                 'scope_type': binding.asset_type,
-                'scope_type_label': 'Managed Cluster',
+                'scope_type_label': (
+                    asset_definition.label
+                    if asset_definition is not None
+                    else binding.asset_type.replace('_', ' ').title()
+                ),
                 'scope_key': binding.asset_key,
-                'scope_label': cluster.name if cluster is not None else binding.asset_key,
+                'scope_label': str(getattr(asset, 'name', '') or binding.asset_key),
                 'consumers': consumers,
             }
         )
@@ -543,14 +594,37 @@ def _resolution_view(
             ),
         }
         candidates.append(row)
+    required_capability_keys = (
+        resolution.required_technical_capabilities
+        if resolution.required_technical_capabilities
+        else resolution.required_binding_capabilities
+    )
+    if selected is None:
+        selected_status = 'blocked'
+        selected_status_label = 'Unavailable'
+    elif selected.operational_state == 'healthy':
+        selected_status = 'ready'
+        selected_status_label = 'Operational'
+    elif selected.operational_state in {'degraded', 'degraded_not_connected'}:
+        selected_status = 'degraded'
+        selected_status_label = 'Degraded'
+    elif selected.operational_state == 'unhealthy':
+        selected_status = 'blocked'
+        selected_status_label = 'Unhealthy'
+    else:
+        selected_status = 'degraded'
+        selected_status_label = 'Attention'
+
     return {
         'label': label,
         'icon': icon,
-        'required_capabilities': [_capability_label(key) for key in resolution.required_technical_capabilities],
+        'required_capabilities': [_capability_label(key) for key in required_capability_keys],
         'selected_instance_id': selected.instance.id if selected else None,
         'selected_instance_name': selected.instance.name if selected else None,
         'selected_role': selected.binding.binding_role if selected else None,
         'selected_operational_state': selected.operational_state if selected else 'unavailable',
+        'selected_status': selected_status,
+        'selected_status_label': selected_status_label,
         'current_instance_selected': bool(selected and selected.instance.id == current_instance_id),
         'candidates': candidates,
     }

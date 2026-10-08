@@ -50,3 +50,13 @@ See `REUSABLE_COMPONENT_OWNERSHIP.md` for the global adapter rule.
 Use Tab Style 2 when a visible parent workspace shell is part of the information architecture. Use Tab Style 1 when peer navigation should attach through only a divider without a framed parent card.
 
 Do not use Tab Style 2 for two or three local visualization modes. Those use Tab Style 3 — Compact Segmented Tabs.
+
+
+## Responsive overflow contract
+
+- horizontal overflow belongs to the shared framed navigation container, never to the page;
+- the shared navigation exposes horizontal overflow only when tab width requires it; it does not depend on a separate vertical-overflow utility;
+- active tabs must not use negative vertical offsets such as `-mb-px`, because those offsets can make the horizontal scroller acquire a native vertical scrollbar on Chromium/Windows;
+- the inner tab row keeps max-content width with a full-width minimum and owns the bottom divider; active-tab surface and border treatment provide the connected visual without leaving the scroll box;
+- provider/page adapters must not add page-local overflow wrappers around the shared tab owner;
+- keyboard focus remains visible through the existing inset focus treatment while the tab strip stays locally scrollable.

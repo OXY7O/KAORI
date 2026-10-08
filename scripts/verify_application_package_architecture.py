@@ -14,6 +14,7 @@ BASELINE = ROOT / 'docs/architecture/mvc-debt-baseline.json'
 ALLOWED_APP_ROOT_DIRS = {
     'access',
     'analytics',
+    'artifact_registry',
     'artifact_storage',
     'bootstrap',
     'commands',

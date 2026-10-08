@@ -289,9 +289,12 @@ def main() -> int:
     assert 'object-storage-bucket-table-loading-indicator' in bucket_table_template
     assert 'components/analytics/_table_label_primitives.html' not in bucket_table_template
     assert 'components/dependencies/_blocker.html' in dependency_blocker
-    assert 'Object Storage → Metrics → Analytics Snapshot' in dependency_blocker
+    assert 'Object Storage → Metrics Source → Alert Source → Analytics Snapshot' in dependency_blocker
+    assert 'Object Storage → Metrics Source → Alert Source' in dependency_blocker
     assert 'Alert Evidence' not in dependency_blocker
+    assert 'dependency_grid_classes = "lg:grid-cols-4"' in dependency_blocker
     assert 'dependency_grid_classes = "lg:grid-cols-3"' in dependency_blocker
+    assert 'dependency_blocked_step = 4' in dependency_blocker
     assert 'Analytics Setup Path' in shared_dependency_blocker
     assert 'Current Blocker' in shared_dependency_blocker
     assert 'dependency_route_summary' in shared_dependency_blocker
@@ -310,7 +313,9 @@ def main() -> int:
     assert "'Current Step'" not in hero_blocked
     assert "'Progress'" not in hero_blocked
     assert "'Analytics Readiness'" in hero_blocked
-    for evidence_label in ('System Context', 'Inventory Snapshot', 'Operational Metrics', 'Analytics Snapshot'):
+    assert 'components/provider_prerequisite/_hero_context.html' in hero_blocked
+    assert 'Object Storage Setup Required' in hero_blocked
+    for evidence_label in ('Inventory Snapshot', 'Operational Metrics', 'Analytics Snapshot'):
         assert evidence_label in hero_blocked
     assert "'Overview'" in pages
     assert "'Analytics Overview'" not in pages

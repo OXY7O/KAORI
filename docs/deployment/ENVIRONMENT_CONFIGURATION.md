@@ -33,6 +33,7 @@ Environment-specific prefixes are not used for application settings. The same ca
 - `REPORT_*` controls report storage, staging, delivery, and report worker behavior.
 - `ARCHIVE_*` controls reusable archive storage and lifecycle behavior.
 - `KAORI_PUBLIC_BASE_URL` is the canonical externally reachable KAORI URL used by generated links and outbound notifications.
+- `REGISTRY_SECURITY_*` controls the provider-neutral Artifact Registry Security queue and bounded worker capacity; it is not Harbor-specific.
 
 Legacy `DEV_REPORT_*`, `DEV_ARCHIVE_*`, `PROD_REPORT_*`, `PROD_ARCHIVE_*`, and `REPORT_PUBLIC_BASE_URL` keys are not supported.
 
@@ -45,7 +46,7 @@ The environment templates document these runtime groups:
 - Kubernetes Secret reveal and TLS certificate governance windows;
 - report/archive storage and data-retention policy;
 - integration runtime monitoring and validation workers;
-- analytics, forecasting, report, maintenance, and resolver workers;
+- Artifact Registry security, analytics, forecasting, report, maintenance, and resolver workers;
 - Object Storage inventory usage-statistics policy;
 - Alert Intelligence notification-dispatch scheduling and delivery retry/timeout controls.
 

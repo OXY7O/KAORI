@@ -31,6 +31,7 @@ def test_application_root_is_bounded_and_legacy_capability_roots_are_removed() -
     allowed = {
         'access',
         'analytics',
+        'artifact_registry',
         'artifact_storage',
         'bootstrap',
         'commands',

@@ -5,6 +5,11 @@ from app.definitions.validation import require_list, require_mapping, require_st
 
 KUBERNETES_INVENTORY_SYNC_OPERATION = 'sync_kubernetes_inventory'
 OBJECT_STORAGE_INVENTORY_SYNC_OPERATION = 'sync_object_storage_inventory'
+ARTIFACT_REGISTRY_INVENTORY_SYNC_OPERATION = 'sync_artifact_registry_inventory'
+ARTIFACT_REGISTRY_SECURITY_SYNC_OPERATION = 'sync_artifact_registry_security'
+ARTIFACT_REGISTRY_RUNTIME_CORRELATION_OPERATION = 'materialize_artifact_registry_runtime_correlation'
+ARTIFACT_REGISTRY_GOVERNANCE_SYNC_OPERATION = 'sync_artifact_registry_governance'
+ARTIFACT_REGISTRY_ANALYTICS_MATERIALIZE_OPERATION = 'materialize_artifact_registry_analytics'
 OBJECT_STORAGE_ANALYTICS_MATERIALIZE_OPERATION = 'materialize_object_storage_analytics'
 OBJECT_STORAGE_FORECAST_MATERIALIZE_OPERATION = 'materialize_object_storage_forecast'
 SYNC_ALL_INVENTORY_ACTION = 'sync_all_inventory'

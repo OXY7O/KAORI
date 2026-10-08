@@ -18,7 +18,7 @@
                         "Object Storage Integration",
                         "settings-2",
                         "Edit MinIO Connection",
-                        "Update S3 connections while preserving storage assets and bindings.",
+                        "Update S3 access while preserving assets, bindings, and validation.",
                         "database-zap",
                         "MinIO-Compatible S3 API",
                         "Managed Asset",
@@ -57,7 +57,7 @@
                         </span>
                         <div>
                             <h2 class="text-base font-semibold text-content-primary">{{ "MinIO Connection Configuration" if instance is defined and instance else "Connection Configuration" }}</h2>
-                            <p class="mt-1 text-sm leading-6 text-content-secondary">{{ "Modify identity, credentials, transport trust, and request controls. Connection-sensitive changes reset readiness until Core Validation completes." if instance is defined and instance else "Define connection identity, MinIO S3 API access, compatibility contract, and operational controls." }}</p>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary">{{ "Modify identity, credentials, transport trust, and request controls. Connection-sensitive changes reset readiness until Full Validation completes." if instance is defined and instance else "Define connection identity, MinIO S3 API access, compatibility contract, and operational controls." }}</p>
                         </div>
                     </div>
                 </header>
@@ -93,7 +93,7 @@
                     <section class="relative overflow-hidden rounded-lg border border-outline-subtle bg-surface-elevated">
                         {% call connection_validation_header.render(
                             "Endpoint & Access",
-                            "Define MinIO S3 API access and credentials, verify reachability, then save. Use the S3 API URL, not the Console URL.",
+                            "Configure MinIO S3 credentials, then test the S3 API endpoint—not the Console URL.",
                             icon="network",
                             loading_id="minio-connection-test-loading",
                             loading_label="Testing MinIO connection"
@@ -171,18 +171,17 @@
                             {% call operational_toggle.render("Verify TLS Certificate", "Reject untrusted or mismatched MinIO certificates.") %}
                                 {{ form.verify_ssl(class_="h-4 w-4 rounded border-outline-strong text-kaori-primary focus:ring-outline-focus") }}
                             {% endcall %}
-                            {% call operational_toggle.render("Allow KAORI to Use This Connection", "Disabled connections stay registered but are excluded from provider resolution.") %}
+                            {% call operational_toggle.render("Allow KAORI to Use This Connection", "Disabled connections remain registered but are not resolved for use.") %}
                                 {{ form.enabled(class_="h-4 w-4 rounded border-outline-strong text-kaori-primary focus:ring-outline-focus") }}
                             {% endcall %}
                         </div>
                     </section>
                 </div>
                 {% if instance is defined and instance %}
-                    {% call form_action_bar.render("Save changes, then run Core Validation before interpreting provider readiness.", aria_label="MinIO Configuration Actions", embedded=true) %}
+                    {% call form_action_bar.render("Save changes, then run Full Validation.", aria_label="MinIO Configuration Actions", embedded=true) %}
                         <a href="{{ url_for('minio.index', tab='registry') }}"
-                           class="inline-flex h-10 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary">Cancel</a>
-                        <button type="submit"
-                                class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover">
+                           class="{{ action_button.classes('secondary') }}">Cancel</a>
+                        <button type="submit" class="{{ action_button.classes('primary') }}">
                             <i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i>
                             Save Changes
                         </button>
@@ -199,27 +198,27 @@
             </section>
             <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">
                 {% if instance is defined and instance %}
-                    {% set minio_flow_items = [('Review Identity & Environment', 'Keep the canonical object-storage asset stable while updating its connection metadata.'), ('Adjust Endpoint Access', 'Rotate credentials or transport settings only when operationally required.'), ('Test Configuration', 'Verify the submitted S3 transport contract using the effective secret key.'), ('Run Core Validation', 'Rebuild MinIO compatibility and provider capability evidence after saving.')] %}
+                    {% set minio_flow_items = [('Review Identity & Environment', 'Keep the canonical object-storage asset stable while updating its connection metadata.'), ('Adjust Endpoint Access', 'Rotate credentials or transport settings only when operationally required.'), ('Test Configuration', 'Verify the submitted S3 transport contract using the effective secret key.'), ('Run Full Validation', 'Rebuild MinIO compatibility and provider capability evidence after saving.')] %}
                     {% set flow_title = "MinIO Configuration Flow" %}
-                    {% set flow_description = "How connection changes return this object-storage provider to an operationally ready state." %}
+                    {% set flow_description = "How changes restore object-storage readiness." %}
                     {% set flow_note = "Consumer bindings remain attached to the canonical object-storage asset; only provider readiness is reset when connection-sensitive settings change." %}
                 {% else %}
-                    {% set minio_flow_items = [('Define Connection Identity', 'Create the reusable KAORI identity for this MinIO endpoint and object-storage asset.'), ('Configure Endpoint Access', 'Set the S3 API endpoint, credentials, TLS behavior, and supported release contract.'), ('Test Connection', 'Verify S3 API reachability, credential access, and read-only bucket discovery before registration is enabled.'), ('Register Connection', 'Create the provider identity before Core Validation and consumer binding.')] %}
+                    {% set minio_flow_items = [('Define Connection Identity', 'Create the reusable KAORI identity for this MinIO endpoint and object-storage asset.'), ('Configure Endpoint Access', 'Set the S3 API endpoint, credentials, TLS behavior, and supported release contract.'), ('Test Connection', 'Verify S3 API reachability, credential access, and read-only bucket discovery before registration is enabled.'), ('Register Connection', 'Create the provider identity before Full Validation and consumer binding.')] %}
                     {% set flow_title = "MinIO Registration Flow" %}
-                    {% set flow_description = "How a reusable object-storage connection is registered in KAORI." %}
+                    {% set flow_description = "How KAORI registers a reusable object-storage connection." %}
                     {% set flow_note = "Registration proves only the MinIO connection contract; metrics and alerts remain independent consumer bindings." %}
                 {% endif %}
                 {{ provider_registration_context.render(flow_title,
                                 flow_description,
                                 minio_flow_items,
                                 "Storage Integrations",
-                                "MinIO supplies the object-storage API plane while Metrics Source data and Alertmanager alerts remain independent consumer bindings on the same managed asset.",
+                                "MinIO provides the storage API; Metrics Source and Alertmanager remain separate bindings to the same asset.",
                                 url_for("integrations.storage") ,
                 "Open Storage Integrations",
                 flow_icon="workflow",
                 flow_note=flow_note,
                 related_icon="waypoints",
-                authority_boundary="MinIO remains authoritative for storage state. KAORI owns provider readiness and consumer-binding evidence without copying observability credentials into this connection.") }}
+                authority_boundary="MinIO remains the storage authority. KAORI keeps provider readiness and binding evidence without storing observability credentials here.") }}
             </aside>
         </form>
         {% include "components/operation_feedback_oob.html" %}

@@ -18,6 +18,7 @@ from app.common.celery_queue_health import get_queue_readiness
 from app.common.pagination import PER_PAGE_OPTIONS, paginate_select, paginate_sequence
 from app.extensions.db import db
 from app.models.cluster import Cluster
+from app.models.integration import IntegrationInstance
 from app.models.object_storage import ObjectStorageSystem
 from app.models.report import Report, ReportSchedule, ReportScheduleRun
 from app.models.user import User
@@ -46,6 +47,8 @@ from app.reports.schedules.presentation import serialize_schedule as _serialize_
 from app.reports.schedules.presentation import title_case_period_options as _title_case_period_options
 from app.reports.schedules.registry import filter_schedule_rows as _filter_schedule_rows
 from app.reports.schedules.registry import get_selected_filters as _get_selected_filters
+from app.reports.schedules.support import build_run_filter_options as _build_run_filter_options
+from app.reports.schedules.support import build_schedule_asset_filter_options as _build_schedule_asset_filter_options
 from app.reports.schedules.support import build_schedule_evidence_snapshot as _build_schedule_evidence_snapshot
 from app.reports.schedules.support import ensure_utc as _ensure_utc
 from app.reports.schedules.support import get_cluster_map as _get_cluster_map
@@ -66,9 +69,11 @@ from app.reports.schedules.support import is_valid_timezone as _is_valid_timezon
 from app.reports.schedules.support import parse_optional_int as _parse_optional_int
 from app.reports.schedules.support import parse_run_time as _parse_run_time
 from app.reports.scope import (
+    ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE,
     KUBERNETES_CLUSTER_ASSET_TYPE,
     OBJECT_STORAGE_SYSTEM_ASSET_TYPE,
 )
+from app.reports.scope import get_active_registry_options as _get_artifact_registry_options
 from app.reports.storage.service import get_configured_storage_backend_name, get_report_storage_backend_status
 
 CADENCE_OPTIONS: list[dict[str, str]] = [
@@ -123,6 +128,7 @@ def get_report_schedules_payload(
     )
     cluster_options = _get_cluster_options()
     object_storage_system_options = _get_object_storage_system_options()
+    artifact_registry_options = _get_artifact_registry_options()
     storage_context = _get_storage_context()
     worker_context = get_queue_readiness(get_reports_queue_name())
     selected_filters = _get_selected_filters(query_args)
@@ -174,7 +180,7 @@ def get_report_schedules_payload(
         'run_rows': run_rows,
         'run_pagination': run_pagination,
         'run_selected_filters': run_selected_filters,
-        'run_filter_options': _get_run_filter_options(all_schedules),
+        'run_filter_options': _build_run_filter_options(all_schedules, RUN_PERIOD_OPTIONS),
         'run_registry_query_params': {
             'workspace': 'runs',
             **{key: value for key, value in run_selected_filters.items() if value},
@@ -185,6 +191,7 @@ def get_report_schedules_payload(
         'clusters': cluster_options,
         'namespace_options_by_cluster': _get_namespace_options_by_cluster(),
         'object_storage_systems': object_storage_system_options,
+        'artifact_registries': artifact_registry_options,
         'report_type_options': REPORT_TYPE_OPTIONS,
         'period_options': _title_case_period_options(),
         'output_format_options': OUTPUT_FORMAT_OPTIONS,
@@ -213,6 +220,7 @@ def get_report_schedules_payload(
             all_schedules,
             cluster_options,
             object_storage_system_options,
+            artifact_registry_options,
         ),
         'selected_filters': selected_filters,
         'pagination': pagination,
@@ -277,6 +285,7 @@ def build_default_schedule_form_state() -> dict[str, Any]:
         'cluster_id': '',
         'namespace': '',
         'object_storage_system_id': '',
+        'registry_integration_id': '',
         'report_type': report_type,
         'period': '30d',
         'output_format': get_report_primary_output_format(report_type),
@@ -675,6 +684,13 @@ def _apply_form_state_to_schedule(schedule: ReportSchedule, form_state: dict[str
         schedule.scope_asset_label_snapshot = system.name if system is not None else None
         schedule.cluster_id = None
         schedule.namespace = None
+    elif spec.scope_asset_type == ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE:
+        instance_id = str(form_state.get('registry_integration_id') or '').strip()
+        instance = db.session.get(IntegrationInstance, int(instance_id)) if instance_id.isdigit() else None
+        schedule.scope_asset_id = instance_id or None
+        schedule.scope_asset_label_snapshot = instance.name if instance is not None else None
+        schedule.cluster_id = None
+        schedule.namespace = None
     else:
         cluster_id = str(form_state.get('cluster_id') or '').strip()
         cluster = db.session.get(Cluster, cluster_id) if cluster_id else None
@@ -806,52 +822,19 @@ def _get_run_selected_filters(query_args: Mapping[str, str]) -> dict[str, str]:
     }
 
 
-def _get_run_filter_options(
-    schedules: list[dict[str, Any]],
-) -> dict[str, list[dict[str, str]]]:
-    return {
-        'schedules': [
-            {'value': '', 'label': 'All Schedules'},
-            *[
-                {'value': str(item['id']), 'label': str(item['name'])}
-                for item in sorted(schedules, key=lambda row: str(row['name']).casefold())
-            ],
-        ],
-        'triggers': [
-            {'value': '', 'label': 'All Triggers'},
-            {'value': 'scheduler', 'label': 'Scheduler'},
-            {'value': 'manual', 'label': 'Manual'},
-        ],
-        'statuses': [
-            {'value': '', 'label': 'All Results'},
-            {'value': 'queued', 'label': 'Queued'},
-            {'value': 'started', 'label': 'Started'},
-            {'value': 'success', 'label': 'Success'},
-            {'value': 'failed', 'label': 'Failed'},
-        ],
-        'periods': list(RUN_PERIOD_OPTIONS),
-    }
-
-
 def _get_schedule_filter_options(
     schedules: list[dict[str, Any]],
     cluster_options: list[dict[str, str]],
     object_storage_system_options: list[dict[str, str]],
+    artifact_registry_options: list[dict[str, str]],
 ) -> dict[str, list[dict[str, str]]]:
     delivery_catalog = _get_delivery_channel_options()
-    asset_options: dict[str, str] = {
-        f'{KUBERNETES_CLUSTER_ASSET_TYPE}:{item["value"]}': f'Kubernetes · {item["label"]}' for item in cluster_options
-    }
-    asset_options.update(
-        {
-            f'{OBJECT_STORAGE_SYSTEM_ASSET_TYPE}:{item["value"]}': f'Object Storage · {item["label"]}'
-            for item in object_storage_system_options
-        }
+    asset_filter_options = _build_schedule_asset_filter_options(
+        schedules,
+        cluster_options,
+        object_storage_system_options,
+        artifact_registry_options,
     )
-    for schedule in schedules:
-        key = str(schedule.get('scope_asset_filter_key') or '')
-        if key and key not in asset_options:
-            asset_options[key] = f'{schedule["scope_label"]} · {schedule["scope"]}'
     return {
         'statuses': [
             {'value': '', 'label': 'All Statuses'},
@@ -866,13 +849,7 @@ def _get_schedule_filter_options(
             {'value': '', 'label': 'All Report Types'},
             *[{'value': item['value'], 'label': item['label']} for item in REPORT_TYPE_OPTIONS],
         ],
-        'assets': [
-            {'value': '', 'label': 'All Infrastructure Assets'},
-            *[
-                {'value': value, 'label': label}
-                for value, label in sorted(asset_options.items(), key=lambda item: item[1].casefold())
-            ],
-        ],
+        'assets': asset_filter_options,
         'deliveries': [
             {'value': '', 'label': 'All Delivery'},
             {'value': 'none', 'label': 'No Notification'},

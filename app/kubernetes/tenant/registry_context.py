@@ -9,7 +9,10 @@ from app.common.pagination import paginate_query
 from app.common.presentation import present_user_datetime
 from app.extensions.db import db
 from app.kubernetes.tenant.allocation_cutover import allocation_control_state, build_allocation_cutover_state
-from app.kubernetes.tenant.capacity_governance import build_capacity_governance_summary
+from app.kubernetes.tenant.capacity_governance import (
+    build_capacity_governance_summaries,
+    build_capacity_governance_summary,
+)
 from app.kubernetes.tenant.native_provider import tenant_workspace_connection_available
 from app.kubernetes.tenant.resource_profile_controls import (
     _tenant_capability_statuses,
@@ -46,6 +49,93 @@ def get_ready_native_clusters() -> list[Cluster]:
         .all()
     )
     return [cluster for cluster in clusters if tenant_workspace_connection_available(cluster.kubernetes_connection)]
+
+
+def _ready_tenant_environment_options() -> list[TenantEnvironment]:
+    return (
+        TenantEnvironment.query.join(Tenant, Tenant.id == TenantEnvironment.tenant_id)
+        .filter(Tenant.lifecycle_status == TenantLifecycleStatus.READY.value)
+        .order_by(Tenant.name.asc(), TenantEnvironment.environment.asc())
+        .all()
+    )
+
+
+def get_tenant_shell_context() -> dict[str, Any]:
+    """Return only page-shell Tenant state required by every Tenant route."""
+
+    ready_clusters = get_ready_native_clusters()
+    return {
+        'ready_clusters': ready_clusters,
+        'tenant_count': Tenant.query.filter(
+            Tenant.lifecycle_status != TenantLifecycleStatus.DECOMMISSIONED.value
+        ).count(),
+        'profile_count': TenantResourceProfile.query.count(),
+        'namespace_count': TenantNamespace.query.filter(
+            TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value
+        ).count(),
+        'ready_namespace_count': TenantNamespace.query.filter_by(
+            provisioning_status=TenantNamespaceProvisioningStatus.READY.value
+        ).count(),
+        'native_available': bool(ready_clusters),
+    }
+
+
+def get_resource_profile_workspace_context() -> dict[str, Any]:
+    """Return Resource Profiles-only capacity and profile summary context."""
+
+    registered_clusters = (
+        Cluster.query.join(KubernetesConnection, KubernetesConnection.cluster_id == Cluster.id)
+        .order_by(Cluster.name.asc(), Cluster.id.asc())
+        .all()
+    )
+    capacity_by_cluster = build_capacity_governance_summaries([str(cluster.id) for cluster in registered_clusters])
+    capacity_governance = [
+        {'cluster': cluster, **capacity_by_cluster[str(cluster.id)]} for cluster in registered_clusters
+    ]
+    profile_count = TenantResourceProfile.query.count()
+    return {
+        'registered_clusters': registered_clusters,
+        'capacity_governance': capacity_governance,
+        'capacity_policy_state': {
+            str(item['cluster'].id): item['policy'] for item in capacity_governance if item.get('policy') is not None
+        },
+        'resource_profile_stats': {
+            'total': profile_count,
+            'enabled': TenantResourceProfile.query.filter_by(enabled=True).count(),
+            'custom': TenantResourceProfile.query.filter_by(
+                profile_class=TenantResourceProfileClass.CUSTOM.value
+            ).count(),
+            'active_allocations': TenantNamespace.query.filter(
+                TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+                TenantNamespace.resource_profile_id.isnot(None),
+            ).count(),
+        },
+        'resource_profile_advanced_controls': RESOURCE_PROFILE_ADVANCED_CONTROLS,
+    }
+
+
+def get_namespace_provisioning_support_context() -> dict[str, Any]:
+    """Return form support state required only by Namespace Provisioning."""
+
+    environment_options = _ready_tenant_environment_options()
+    return {
+        'environment_options': environment_options,
+        'resource_profile_presets': RESOURCE_PROFILE_PRESETS,
+        'resource_profile_advanced_controls': RESOURCE_PROFILE_ADVANCED_CONTROLS,
+        'tenant_environment_advanced_control_state': {
+            str(environment.id): {
+                'tenant_id': environment.tenant_id,
+                'provider_key': environment.tenant.provider_key,
+                'provider_state': environment.tenant.provider_state,
+                'controls': evaluate_resource_profile_advanced_controls(
+                    {key: True for key in RESOURCE_PROFILE_ADVANCED_CONTROLS},
+                    provider_key=environment.tenant.provider_key,
+                    capability_statuses=_tenant_capability_statuses(environment.tenant),
+                ),
+            }
+            for environment in environment_options
+        },
+    }
 
 
 def _resource_profile_rollout_targets(profile_ids: list[int]) -> dict[int, list[dict[str, Any]]]:
@@ -141,6 +231,7 @@ def get_tenant_registry_context(
     cluster_id: str = '',
     environment: str = '',
     lifecycle_status: str = '',
+    include_decommission_preflight: bool = True,
 ) -> dict[str, Any]:
     normalized_search = search.strip()
     normalized_cluster_id = cluster_id.strip()
@@ -180,22 +271,25 @@ def get_tenant_registry_context(
     namespace_history_count_map: dict[str, int] = {tenant_id: 0 for tenant_id in tenant_ids}
 
     if tenant_ids:
-        environment_rows = (
+        environment_rows: list[TenantEnvironment] = (
             TenantEnvironment.query.filter(TenantEnvironment.tenant_id.in_(tenant_ids))
             .order_by(TenantEnvironment.tenant_id.asc(), TenantEnvironment.environment.asc())
             .all()
         )
-        for row in environment_rows:
-            environment_map.setdefault(row.tenant_id, []).append(row.environment)
+        for environment_row in environment_rows:
+            environment_map.setdefault(environment_row.tenant_id, []).append(environment_row.environment)
 
-        namespace_history_rows = (
-            db.session.query(TenantEnvironment.tenant_id, func.count(TenantNamespace.id))
-            .join(TenantNamespace, TenantNamespace.tenant_environment_id == TenantEnvironment.id)
-            .filter(TenantEnvironment.tenant_id.in_(tenant_ids))
-            .group_by(TenantEnvironment.tenant_id)
-            .all()
-        )
-        namespace_history_count_map.update({str(tenant_id): int(count) for tenant_id, count in namespace_history_rows})
+        if include_decommission_preflight:
+            namespace_history_rows = (
+                db.session.query(TenantEnvironment.tenant_id, func.count(TenantNamespace.id))
+                .join(TenantNamespace, TenantNamespace.tenant_environment_id == TenantEnvironment.id)
+                .filter(TenantEnvironment.tenant_id.in_(tenant_ids))
+                .group_by(TenantEnvironment.tenant_id)
+                .all()
+            )
+            namespace_history_count_map.update(
+                {str(tenant_id): int(count) for tenant_id, count in namespace_history_rows}
+            )
 
         namespace_rows = (
             db.session.query(TenantEnvironment.tenant_id, func.count(TenantNamespace.id))
@@ -216,19 +310,21 @@ def get_tenant_registry_context(
         else {}
     )
 
-    from app.kubernetes.tenant.decommission_service import build_tenant_decommission_preflight
+    if include_decommission_preflight:
+        from app.kubernetes.tenant.decommission_service import build_tenant_decommission_preflight
 
-    tenant_rows = [
-        {
+    tenant_rows: list[dict[str, Any]] = []
+    for item in items:
+        row: dict[str, Any] = {
             'tenant': item,
             'cluster': cluster_map.get(str(item.cluster_id)),
             'environments': environment_map.get(item.id, []),
             'namespace_count': namespace_count_map.get(item.id, 0),
-            'namespace_history_count': namespace_history_count_map.get(item.id, 0),
-            'decommission_preflight': build_tenant_decommission_preflight(item.id),
         }
-        for item in items
-    ]
+        if include_decommission_preflight:
+            row['namespace_history_count'] = namespace_history_count_map.get(item.id, 0)
+            row['decommission_preflight'] = build_tenant_decommission_preflight(item.id)
+        tenant_rows.append(row)
 
     return {
         'tenants': items,
@@ -486,6 +582,7 @@ def get_namespace_registry_context(
     tenant_id: str = '',
     environment: str = '',
     status: str = '',
+    include_workflow_support: bool = True,
 ) -> dict[str, Any]:
     query, filters = _namespace_registry_query(
         search=search,
@@ -498,6 +595,21 @@ def get_namespace_registry_context(
         page=page,
         per_page=per_page,
     )
+
+    base_context = {
+        'namespaces': items,
+        'namespace_pagination': pagination,
+        'namespace_registry_filters': filters,
+        'namespace_registry_tenant_options': (
+            Tenant.query.filter(Tenant.lifecycle_status != TenantLifecycleStatus.DECOMMISSIONED.value)
+            .order_by(Tenant.name.asc())
+            .all()
+        ),
+        'namespace_status_filter_options': [item.value for item in TenantNamespaceProvisioningStatus],
+        'namespace_environment_filter_options': sorted(_ALLOWED_ENVIRONMENTS),
+    }
+    if not include_workflow_support:
+        return base_context
 
     namespace_options = TenantNamespace.query.order_by(TenantNamespace.created_at.desc()).all()
     namespace_allocation_options = [
@@ -519,24 +631,14 @@ def get_namespace_registry_context(
     profile_options = (
         TenantResourceProfile.query.filter_by(enabled=True).order_by(TenantResourceProfile.name.asc()).all()
     )
-    tenant_options = (
-        Tenant.query.filter(Tenant.lifecycle_status != TenantLifecycleStatus.DECOMMISSIONED.value)
-        .order_by(Tenant.name.asc())
-        .all()
-    )
     return {
-        'namespaces': items,
+        **base_context,
         'namespace_options': namespace_options,
         'namespace_allocation_options': namespace_allocation_options,
         'namespace_cutover_options': namespace_cutover_options,
         'namespace_cutover_state': namespace_cutover_state,
         'namespace_cutover_supported': any(item['supported'] for item in namespace_cutover_state.values()),
         'profiles': profile_options,
-        'namespace_pagination': pagination,
-        'namespace_registry_filters': filters,
-        'namespace_registry_tenant_options': tenant_options,
-        'namespace_status_filter_options': [item.value for item in TenantNamespaceProvisioningStatus],
-        'namespace_environment_filter_options': sorted(_ALLOWED_ENVIRONMENTS),
         'namespace_allocation_state': _namespace_allocation_state(namespace_options),
         'namespace_allocation_profiles': {
             str(profile.id): {
@@ -556,12 +658,7 @@ def get_tenant_context() -> dict[str, Any]:
     tenants = Tenant.query.order_by(Tenant.created_at.desc()).limit(5).all()
     profiles = TenantResourceProfile.query.order_by(TenantResourceProfile.created_at.desc()).limit(5).all()
     namespaces = TenantNamespace.query.order_by(TenantNamespace.created_at.desc()).limit(5).all()
-    environment_options = (
-        TenantEnvironment.query.join(Tenant, Tenant.id == TenantEnvironment.tenant_id)
-        .filter(Tenant.lifecycle_status == TenantLifecycleStatus.READY.value)
-        .order_by(Tenant.name.asc(), TenantEnvironment.environment.asc())
-        .all()
-    )
+    environment_options = _ready_tenant_environment_options()
     ready_clusters = get_ready_native_clusters()
     registered_clusters = (
         Cluster.query.join(KubernetesConnection, KubernetesConnection.cluster_id == Cluster.id)

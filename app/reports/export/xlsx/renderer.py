@@ -26,7 +26,11 @@ from app.reports.export.xlsx.analytics_schema import AnalyticsExportContext
 from app.reports.export.xlsx.builder import build_inventory_workbook
 from app.reports.export.xlsx.standard import INVENTORY_XLSX_REPORT_TYPES
 from app.reports.reference import build_report_reference
-from app.reports.scope import OBJECT_STORAGE_SYSTEM_ASSET_TYPE, resolve_report_scope
+from app.reports.scope import (
+    ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE,
+    OBJECT_STORAGE_SYSTEM_ASSET_TYPE,
+    resolve_report_scope,
+)
 
 
 def render_report_xlsx(report: Report, output_path: Path) -> None:
@@ -95,7 +99,10 @@ def _build_analytics_export_context(
         raise ValueError('The selected report asset no longer exists or cannot be resolved.')
 
     generated_at = generated_at or datetime.now(UTC)
-    object_storage_scope = scope.asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE
+    non_namespace_scope = scope.asset_type in {
+        OBJECT_STORAGE_SYSTEM_ASSET_TYPE,
+        ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE,
+    }
     return AnalyticsExportContext(
         report_id=build_report_reference(report, generated_at=generated_at),
         report_name=report.name,
@@ -104,7 +111,7 @@ def _build_analytics_export_context(
         generated_by=generated_by_label(report),
         scope_label=scope.scope_label,
         scope_value=scope.label,
-        namespace_scope='Not Applicable' if object_storage_scope else (report.namespace or 'All Namespaces'),
+        namespace_scope='Not Applicable' if non_namespace_scope else (report.namespace or 'All Namespaces'),
         period_label=format_period(report.period or ''),
         data_cutoff=_analytics_data_cutoff(payload, generated_at),
         classification=str(current_app.config.get('REPORT_PDF_CLASSIFICATION', 'Internal')),

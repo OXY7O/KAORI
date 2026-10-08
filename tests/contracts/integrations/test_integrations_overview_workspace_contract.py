@@ -112,7 +112,7 @@ def test_portfolio_and_domain_coverage_use_neutral_card_semantics() -> None:
     assert 'Available Domains' in overview
     assert 'Planned Domains' in overview
     assert 'Provider Workspaces' in overview
-    assert 'Operational Readiness' in overview
+    assert 'Ready Coverage' in overview
     assert 'Planned Provider Ownership' in overview
     assert 'Coverage Boundary' in overview
     assert "coverage|selectattr('lifecycle', 'equalto', 'available')|list" in overview
@@ -129,6 +129,8 @@ def test_portfolio_and_domain_coverage_use_neutral_card_semantics() -> None:
     assert 'Compute & Infrastructure' not in service
     assert 'Vault · OpenBao' not in service
     assert "'readiness_percent'" in service
+    assert "'degraded': summary['degraded']" in service
+    assert "'blocked': summary['blocked']" in service
     assert "'attention_targets'" in service
 
 
@@ -206,3 +208,28 @@ def test_integration_overview_uses_canonical_label_roles() -> None:
     assert "display == 'indicator'" in adapter
     assert "display == 'text'" in adapter
     assert "display == 'special'" in adapter
+
+
+def test_integration_overview_readiness_copy_is_explicit_and_actionable() -> None:
+    overview = read('app/templates/integrations/overview.html')
+
+    assert 'Validated targets eligible for governed use.' in overview
+    assert (
+        'Registered targets that still lack a complete, usable connection configuration and cannot enter readiness validation.'
+        in overview
+    )
+    assert 'Validated targets eligible for governed use' in overview
+
+
+def test_overview_generic_instance_loader_does_not_drop_object_storage() -> None:
+    extensions = read('app/integrations/overview_extensions.py')
+    workspace = read('app/integrations/overview_workspace.py')
+
+    assert (
+        "SPECIALIZED_OVERVIEW_TYPES = frozenset({'container_orchestrator', 'metrics_source', 'alert_source'})"
+        in extensions
+    )
+    assert "'object_storage'" not in extensions.split('SPECIALIZED_OVERVIEW_TYPES =', 1)[1].split('\n\n', 1)[0]
+    assert 'IntegrationInstance.integration_type.in_(integration_types)' in extensions
+    assert 'extension_instances = load_extension_integration_instances()' in workspace
+    assert 'extension_instances=extension_instances' in workspace

@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.integrations.kernel.registry import get_integration
 from app.integrations.observability.metrics_source.providers import provider_definition
 from app.integrations.readiness import resolve_binding_operational_status
-from app.integrations.registry import get_integration
 from app.models.integration import IntegrationBinding, IntegrationInstance
 
 _OBSERVABILITY_PROVIDER_TYPES = ('metrics_source', 'alert_source')

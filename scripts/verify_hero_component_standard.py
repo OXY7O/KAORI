@@ -562,7 +562,7 @@ def _dashboard_descriptions(paths: list[Path]) -> dict[str, str]:
 def _provider_component_descriptions() -> dict[str, str]:
     _require_tokens(
         _read(PROVIDER_EDIT_HERO),
-        (PROVIDER_EDIT_SHORT_DESCRIPTION_SUFFIX, 'description.split()|length < 11'),
+        (PROVIDER_EDIT_SHORT_DESCRIPTION_SUFFIX, 'description.split()|length < 7'),
         'Integration provider edit Hero description normalization',
     )
     descriptions: dict[str, str] = {}
@@ -879,17 +879,36 @@ def _verify_primitive_shell(path: Path) -> None:
 
 
 def _verify_blocked_context_ownership() -> None:
-    wrappers = (
+    prerequisite_wrappers = (
         TEMPLATES / 'components' / 'cluster' / '_hero_blocked_context.html',
         TEMPLATES / 'storage' / 'object_storage' / 'inventory' / 'components' / '_hero_blocked_context.html',
+    )
+    analytics_wrappers = (
         TEMPLATES / 'kubernetes' / 'analytics' / 'components' / '_blocked_posture.html',
         TEMPLATES / 'storage' / 'object_storage' / 'analytics' / 'partials' / '_hero_blocked_posture.html',
     )
-    for path in wrappers:
+    shared_context = _read(TEMPLATES / 'components' / 'provider_prerequisite' / '_hero_context.html')
+    if 'page_hero.blocked_context_body(' not in shared_context:
+        raise AssertionError('Shared provider prerequisite Hero context must use blocked_context_body()')
+
+    for path in prerequisite_wrappers:
         source = _read(path)
         relative = path.relative_to(ROOT)
-        if 'page_hero.blocked_context_body(' not in source:
-            raise AssertionError(f'{relative}: blocked Hero must use blocked_context_body()')
+        if 'components/provider_prerequisite/_hero_context.html' not in source:
+            raise AssertionError(f'{relative}: provider prerequisite Hero must delegate to the shared context owner')
+        if 'page_hero.blocked_context_body(' in source:
+            raise AssertionError(f'{relative}: provider prerequisite wrapper must not own blocked Hero geometry')
+        if 'page_hero.context_panel_classes()' in source:
+            raise AssertionError(f'{relative}: blocked wrapper must not own context geometry')
+
+    for path in analytics_wrappers:
+        source = _read(path)
+        relative = path.relative_to(ROOT)
+        if (
+            'page_hero.blocked_context_body(' not in source
+            and 'components/provider_prerequisite/_hero_context.html' not in source
+        ):
+            raise AssertionError(f'{relative}: Analytics blocked Hero must use a canonical blocked context owner')
         if 'page_hero.context_panel_classes()' in source:
             raise AssertionError(f'{relative}: blocked wrapper must not own context geometry')
 
@@ -1083,10 +1102,13 @@ def verify() -> None:
         _verify_primitive_shell(path)
 
     profile_templates = _profile_templates()
-    if len(profile_templates) != 2:
+    if len(profile_templates) != 3:
         raise AssertionError(
-            f'Operational Dashboard profile must have exactly two consumers; found {len(profile_templates)}'
+            f'Operational Dashboard profile must have exactly three current consumers; found {len(profile_templates)}'
         )
+    artifact_registry_dashboard = ROOT / 'app/templates/artifact_registry/partials/_overview_hero.html'
+    if artifact_registry_dashboard not in profile_templates:
+        raise AssertionError('Artifact Registry Overview must consume the Operational Dashboard Hero profile')
 
     identity_pairs = _verify_non_redundant_hero_identity()
     _verify_dynamic_hero_identity_authorities()

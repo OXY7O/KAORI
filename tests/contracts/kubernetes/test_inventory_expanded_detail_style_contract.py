@@ -65,6 +65,25 @@ def test_all_inventory_detail_workspaces_use_modal_extractable_header_and_summar
         assert 'detail.expanded_workspace_shell_classes()' in source, resource
 
 
+def test_shared_inspector_summary_uses_full_width_modal_band() -> None:
+    shared = read('app/templates/components/details/_detail_content.html')
+    summary = shared.split('{% macro inspector_summary_strip', 1)[1].split(
+        '{%- endmacro %}',
+        1,
+    )[0]
+
+    assert 'data-kaori-inventory-summary-alignment="full-width-band"' in summary
+    assert 'grid min-w-0 w-full overflow-hidden bg-surface-card' in summary
+    assert 'sm:grid-cols-2' in summary
+    assert 'xl:grid-cols-4' in summary
+    for retired in ('mx-4', 'sm:mx-5', 'lg:mx-6', 'rounded-2xl', 'border border-outline-subtle bg-surface-card'):
+        assert retired not in summary
+
+    article = summary.split('<article', 1)[1].split('>', 1)[0]
+    assert 'border-r' not in article
+    assert 'border-b' not in article
+
+
 def test_full_workspace_modal_headers_share_grouped_identity_state_geometry() -> None:
     templates = (
         'app/templates/access/activity_audit/partials/_activity_detail.html',

@@ -94,8 +94,11 @@ def main() -> int:
     assert 'integration_taxonomy_document()' in consumer_assets
     assert 'asset_type: kubernetes_cluster' in taxonomy_catalog
     assert 'asset_type: object_storage_system' in taxonomy_catalog
-    assert 'Consumer contracts stay in Bindings & Consumers.' in validation_template
-    assert 'consumer evidence stays binding-scoped.' in validation_template
+    assert (
+        'Validate compatibility and Prometheus/PromQL core; consumer contracts stay in Bindings & Consumers.'
+        in validation_template
+    )
+    assert 'Core APIs set readiness; bindings own consumer evidence.' in validation_template
     assert 'View More' in binding_template
     assert 'data-kaori-binding-view-more' in binding_template
     assert 'data-kaori-binding-actions' in binding_template

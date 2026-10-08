@@ -2,12 +2,14 @@ from __future__ import annotations
 
 REPORT_DOMAIN_KUBERNETES = 'kubernetes'
 REPORT_DOMAIN_OBJECT_STORAGE = 'object_storage'
+REPORT_DOMAIN_ARTIFACT_REGISTRY = 'artifact_registry'
 REPORT_DOMAIN_SERVER = 'server'
 REPORT_DOMAIN_HCI = 'hci'
 
 SOURCE_KIND_KUBERNETES = 'kubernetes'
 SOURCE_KIND_TENANT_MANAGEMENT = 'tenant_management'
 SOURCE_KIND_OBJECT_STORAGE = 'object_storage'
+SOURCE_KIND_ARTIFACT_REGISTRY = 'artifact_registry'
 SOURCE_KIND_SERVER = 'server'
 SOURCE_KIND_VM = 'vm'
 SOURCE_KIND_HCI = 'hci'
@@ -15,6 +17,7 @@ SOURCE_KIND_HCI = 'hci'
 REPORT_DOMAIN_LABELS = {
     REPORT_DOMAIN_KUBERNETES: 'KAORI Kubernetes Reports',
     REPORT_DOMAIN_OBJECT_STORAGE: 'KAORI Object Storage Reports',
+    REPORT_DOMAIN_ARTIFACT_REGISTRY: 'KAORI Artifact Registry Reports',
     REPORT_DOMAIN_SERVER: 'KAORI Server Reports',
     REPORT_DOMAIN_HCI: 'KAORI HCI Reports',
 }
@@ -22,6 +25,7 @@ REPORT_DOMAIN_LABELS = {
 REPORT_DOMAIN_DESCRIPTIONS = {
     REPORT_DOMAIN_KUBERNETES: 'Kubernetes inventory, Metrics Source/Alertmanager analytics, governance, and operational reports.',
     REPORT_DOMAIN_OBJECT_STORAGE: 'Object Storage committed inventory, metrics analytics, forecast, and operational evidence reports.',
+    REPORT_DOMAIN_ARTIFACT_REGISTRY: 'Artifact Registry committed inventory, security, runtime correlation, governance, alert, and Intelligence reports.',
     REPORT_DOMAIN_SERVER: 'Server and VM infrastructure reports using server inventory plus Node Exporter metrics.',
     REPORT_DOMAIN_HCI: 'HCI cluster, host, datastore, and VM placement reports using HCI API integration.',
 }
@@ -30,6 +34,7 @@ SOURCE_KIND_LABELS = {
     SOURCE_KIND_KUBERNETES: 'Kubernetes',
     SOURCE_KIND_TENANT_MANAGEMENT: 'Tenant Management Committed Evidence',
     SOURCE_KIND_OBJECT_STORAGE: 'Object Storage',
+    SOURCE_KIND_ARTIFACT_REGISTRY: 'Artifact Registry',
     SOURCE_KIND_SERVER: 'Server',
     SOURCE_KIND_VM: 'Virtual Machine',
     SOURCE_KIND_HCI: 'HCI',
@@ -38,6 +43,7 @@ SOURCE_KIND_LABELS = {
 REPORT_DOMAIN_SOURCE_KINDS = {
     REPORT_DOMAIN_KUBERNETES: [SOURCE_KIND_KUBERNETES, SOURCE_KIND_TENANT_MANAGEMENT],
     REPORT_DOMAIN_OBJECT_STORAGE: [SOURCE_KIND_OBJECT_STORAGE],
+    REPORT_DOMAIN_ARTIFACT_REGISTRY: [SOURCE_KIND_ARTIFACT_REGISTRY],
     REPORT_DOMAIN_SERVER: [SOURCE_KIND_SERVER, SOURCE_KIND_VM],
     REPORT_DOMAIN_HCI: [SOURCE_KIND_HCI],
 }
@@ -135,6 +141,14 @@ SECTION_LABELS = {
     'object_storage_inventory_assets': 'Object Storage Inventory Data',
     'object_storage_inventory_metadata': 'Workbook Metadata',
     'object_storage_inventory_field_dictionary': 'Field Dictionary',
+    'artifact_registry_capacity_usage': 'Capacity & Demand',
+    'artifact_registry_security_posture': 'Security Posture',
+    'artifact_registry_runtime_usage': 'Runtime Correlation',
+    'artifact_registry_governance_posture': 'Governance Posture',
+    'artifact_registry_alerts_actions': 'Alerts & Recommended Actions',
+    'artifact_registry_inventory_assets': 'Artifact Registry Inventory Data',
+    'artifact_registry_inventory_metadata': 'Workbook Metadata',
+    'artifact_registry_inventory_field_dictionary': 'Field Dictionary',
     'inventory_assets': 'Inventory Data',
     'inventory_metadata': 'Workbook Metadata',
     'inventory_field_dictionary': 'Field Dictionary',
@@ -272,6 +286,11 @@ ANALYTICS_REPORT_RECOMMENDATIONS = {
         'Review capacity headroom and quota pressure before storage demand reaches operational limits.',
         'Investigate concentrated bucket or container usage and confirm accountable ownership for high consumers.',
         'Validate forecast, request-error, and offline-node signals before changing Object Storage capacity or topology.',
+    ],
+    'artifact_registry_analysis': [
+        'Review Registry growth, scan coverage, and critical findings before changing retention or capacity.',
+        'Correlate risky artifacts with runtime usage before prioritizing remediation or exception handling.',
+        'Use KAORI Alert Intelligence and Intelligence recommendations to assign accountable follow-up actions.',
     ],
 }
 

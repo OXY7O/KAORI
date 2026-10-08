@@ -360,9 +360,10 @@ def test_object_storage_analytics_uses_explicit_runtime_states_and_blocking() ->
     assert 'object-storage-analytics-refresh-indicator' in controls
     shared_blocker = read('app/templates/components/dependencies/_blocker.html')
     assert 'components/dependencies/_blocker.html' in blocker
-    assert 'Object Storage → Metrics → Analytics Snapshot' in blocker
+    assert 'Object Storage → Metrics Source → Alert Source → Analytics Snapshot' in blocker
     assert 'Alert Evidence' not in blocker
-    assert blocker.count('dependency_grid_classes = "lg:grid-cols-3"') == 2
+    assert blocker.count('dependency_grid_classes = "lg:grid-cols-3"') == 1
+    assert blocker.count('dependency_grid_classes = "lg:grid-cols-4"') == 1
     assert 'Analytics Setup Path' in shared_blocker
     assert 'Current Blocker' in shared_blocker
     assert 'Missing dependency:' in shared_blocker
@@ -665,3 +666,13 @@ def test_object_storage_alerts_use_independent_alert_and_metric_evidence_paths()
     assert 'Metrics Source Fallback' in evidence
     assert "validation_profile = 'object-storage-alerts-v1'" in migration
     assert "validation_status = 'validation_required'" in migration
+
+
+def test_object_storage_analytics_snapshot_blocker_targets_current_jobs_workspace() -> None:
+    dependencies = read('app/storage/object_storage/analytics/dependencies.py')
+    jobs_routes = read('app/platform_operations/jobs/routes.py')
+
+    assert "'action_endpoint': 'jobs.configuration'" in dependencies
+    assert "'action_endpoint': 'jobs.overview'" not in dependencies
+    assert 'def configuration() -> ResponseReturnValue:' in jobs_routes
+    assert "@bp.get('/configuration')" in jobs_routes

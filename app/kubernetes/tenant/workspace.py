@@ -7,8 +7,8 @@ from sqlalchemy import func, or_
 
 from app.common.pagination import paginate_query, paginate_sequence
 from app.common.presentation import present_user_datetime
-from app.intelligence.service import get_active_recommendation_findings
-from app.kubernetes.tenant.capacity_governance import build_capacity_governance_summary
+from app.intelligence.service import get_active_tenant_governance_findings
+from app.kubernetes.tenant.capacity_governance import build_capacity_governance_summaries
 from app.kubernetes.tenant.credential import build_namespace_access_package, credential_target_namespaces
 from app.kubernetes.tenant.job_adapter import build_tenant_sync_state
 from app.models import Cluster
@@ -293,11 +293,11 @@ def _tenant_recent_activity(*, limit: int = 3) -> list[dict[str, str]]:
     return [row for _updated_at, row in rows[:limit]]
 
 
-def get_tenant_sync_workspace_context() -> dict[str, Any]:
-    sync_state = build_tenant_sync_state()
+def get_tenant_sync_workspace_context(*, sync_state: dict[str, Any] | None = None) -> dict[str, Any]:
+    resolved_sync_state = sync_state if sync_state is not None else build_tenant_sync_state()
     return {
-        'tenant_collection_snapshot': _tenant_collection_snapshot(sync_state),
-        'tenant_sync_state': sync_state,
+        'tenant_collection_snapshot': _tenant_collection_snapshot(resolved_sync_state),
+        'tenant_sync_state': resolved_sync_state,
     }
 
 
@@ -307,12 +307,13 @@ def _build_tenant_cluster_rows(sync_state: dict[str, Any]) -> list[dict[str, Any
     namespace_counts = _cluster_namespace_counts()
     total_tenants = sum(tenant_counts.values())
     snapshot_clusters = _snapshot_cluster_rows(dict(sync_state.get('snapshot') or {}))
+    capacity_by_cluster = build_capacity_governance_summaries([str(cluster.id) for cluster in clusters])
 
     cluster_rows: list[dict[str, Any]] = []
     for cluster in clusters:
         cluster_id = str(cluster.id)
         tenant_count = tenant_counts.get(cluster_id, 0)
-        capacity = build_capacity_governance_summary(cluster.id)
+        capacity = capacity_by_cluster[cluster_id]
         snapshot_cluster = snapshot_clusters.get(cluster_id, {})
         capacity_available = capacity.get('budget') is not None and capacity.get('headroom') is not None
         cluster_rows.append(
@@ -355,9 +356,14 @@ def _build_tenant_cluster_rows(sync_state: dict[str, Any]) -> list[dict[str, Any
     return cluster_rows
 
 
-def get_tenant_cluster_estate_context(*, page: int = 1, per_page: int = 5) -> dict[str, Any]:
-    sync_state = build_tenant_sync_state()
-    rows = _build_tenant_cluster_rows(sync_state)
+def get_tenant_cluster_estate_context(
+    *,
+    page: int = 1,
+    per_page: int = 5,
+    sync_state: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    resolved_sync_state = sync_state if sync_state is not None else build_tenant_sync_state()
+    rows = _build_tenant_cluster_rows(resolved_sync_state)
     visible_rows, pagination = paginate_sequence(
         rows,
         page=page,
@@ -373,23 +379,32 @@ def get_tenant_cluster_estate_context(*, page: int = 1, per_page: int = 5) -> di
 def get_tenant_overview_context(*, cluster_page: int = 1, cluster_per_page: int = 5) -> dict[str, Any]:
     """Compose Overview-only cross-cluster posture from committed KAORI evidence."""
 
-    sync_context = get_tenant_sync_workspace_context()
+    sync_state = build_tenant_sync_state()
+    sync_context = get_tenant_sync_workspace_context(sync_state=sync_state)
     cluster_context = get_tenant_cluster_estate_context(
         page=cluster_page,
         per_page=cluster_per_page,
+        sync_state=sync_state,
     )
 
     return {
         **cluster_context,
         **sync_context,
-        'tenant_attention_rows': _tenant_attention_rows(
-            [
-                finding
-                for finding in get_active_recommendation_findings(domain='kubernetes')
-                if str(finding.get('rule_key') or '').startswith('kubernetes.tenant.')
-            ]
-        ),
+        'tenant_attention_rows': _tenant_attention_rows(get_active_tenant_governance_findings()),
         'tenant_recent_activity_rows': _tenant_recent_activity(),
+    }
+
+
+def get_tenant_operations_summary_context() -> dict[str, int]:
+    """Return bounded Operations headline counters without materializing activity feeds."""
+
+    findings = get_active_tenant_governance_findings()
+    namespace_attention_count = TenantNamespace.query.filter(
+        TenantNamespace.provisioning_status.notin_(('ready', 'deprovisioned'))
+    ).count()
+    return {
+        'tenant_governance_finding_count': len(findings),
+        'namespace_attention_count': namespace_attention_count,
     }
 
 
@@ -400,11 +415,7 @@ def get_tenant_workspace_context(*, limit: int = 20) -> dict[str, Any]:
     mutations and live discovery stay in their owning services/adapters.
     """
 
-    findings = [
-        finding
-        for finding in get_active_recommendation_findings(domain='kubernetes')
-        if str(finding.get('rule_key') or '').startswith('kubernetes.tenant.')
-    ]
+    findings = get_active_tenant_governance_findings()
     recent_credentials = _recent(TenantCredential, limit=limit)
     namespace_access_rows: list[dict[str, object]] = []
     for credential in recent_credentials:

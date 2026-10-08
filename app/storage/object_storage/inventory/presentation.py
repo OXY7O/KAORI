@@ -465,7 +465,7 @@ def _overview_fleet_readings(posture: dict[str, Any]) -> list[dict[str, str]]:
             'description': (
                 'Review provider access policy evidence for publicly exposed assets.'
                 if public_exposure
-                else 'No committed asset is currently classified as public.'
+                else 'No committed asset is currently classified as public in the latest Object Storage inventory evidence.'
             ),
             'icon': 'key-round',
             'tone': 'critical' if public_exposure else 'normal',

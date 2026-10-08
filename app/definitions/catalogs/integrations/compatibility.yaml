@@ -57,6 +57,17 @@ contract_profiles:
   - silences_v2
   notes: Stable Alertmanager API v2 provider contract; payload and consumer evidence remain binding-scoped.
   query_profile: null
+- key: harbor-api-v2-core-v1
+  products:
+  - harbor
+  adapter_key: harbor_api_v2
+  required_capabilities:
+  - provider_health
+  - system_identity
+  - project_discovery
+  - repository_discovery
+  notes: Stable Harbor API v2.0 read contract; inventory and supply-chain evidence remain capability-driven.
+  query_profile: null
 
 products:
 - key: kubernetes
@@ -148,6 +159,29 @@ products:
   capability_summary: Alertmanager API v2 status, alerts, and silences provider contract.
   validation_basis: Mandatory API probes establish provider readiness; consumer alert evidence remains binding-scoped.
 
+- key: harbor
+  label: Harbor
+  icon: package
+  version_scheme: semver
+  selection_mode: automatic_detected_version
+  version_source: harbor_system_info
+  contract_profile: harbor-api-v2-core-v1
+  qualification_floor: '2.4.1'
+  qualification_ceiling_exclusive: '2.16'
+  minimum_label: v2.4.1
+  recommended_label: v2.15.2
+  qualified_version_label: v2.4.1–v2.15.x
+  current_version_label: v2.13–v2.15
+  upstream_supported_version_label: v2.13–v2.15
+  supported_version_label: 'v2.4.1–v2.15.x · KAORI policy v1 (2026)'
+  anchor_release_label: 'v2.4.1 · latest stable release in 2021'
+  upper_release_label: 'v2.15.2 · latest stable release at 2026 policy snapshot'
+  upstream_lifecycle_label: 'Three most recent upstream minor lines at the policy snapshot: v2.13–v2.15'
+  support_label: Current + Extended
+  support_tone: info
+  capability_summary: Harbor API v2.0 read access and Registry provider readiness evidence.
+  validation_basis: Live Harbor identity, version, health, and read capability probes decide operational readiness.
+
 qualifications:
 - key: kubernetes-extended
   product: kubernetes
@@ -215,3 +249,19 @@ qualifications:
   required_capabilities:
   - prometheus_api_v1
   notes: Current Thanos Query v0.42 line using the shared Prometheus HTTP API contract.
+- key: harbor-extended
+  product: harbor
+  version_constraint: '>=2.4.1,<2.13'
+  contract_profile: harbor-api-v2-core-v1
+  support_level: extended_supported
+  upstream_lifecycle: historical
+  required_capabilities: []
+  notes: Harbor releases inside the KAORI five-year lifecycle window but outside the three most recent upstream-maintained minor lines.
+- key: harbor-current
+  product: harbor
+  version_constraint: '>=2.13,<2.16'
+  contract_profile: harbor-api-v2-core-v1
+  support_level: current
+  upstream_lifecycle: current
+  required_capabilities: []
+  notes: Harbor v2.13–v2.15 are current at the 2026-09-19 KAORI policy snapshot; live API evidence remains authoritative.

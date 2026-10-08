@@ -15,6 +15,7 @@ def test_dashboard_uses_shared_workspace_tabs_and_persists_url_state() -> None:
     source = read('app/templates/kubernetes/dashboard/partials/_content.html')
     selector = read('app/templates/kubernetes/dashboard/partials/_signal_overview.html')
     routes = read('app/kubernetes/dashboard/routes.py')
+    application_contract = read('app/dashboards/common/operational.py')
     schema = read('app/kubernetes/dashboard/schema.py')
 
     framework = read('app/templates/components/operational_dashboard_workspace.html')
@@ -22,13 +23,17 @@ def test_dashboard_uses_shared_workspace_tabs_and_persists_url_state() -> None:
     assert 'components/operational_dashboard_workspace.html' in source
     assert 'dashboard_workspace.controller(' in source
     assert 'dashboard_workspace.navigation(' in source
-    assert source.count('dashboard_workspace.panel(') == 4
+    assert '{% for tab_key, tab_label, tab_icon in dashboard_workspace.standard_tabs %}' in source
+    assert source.count('dashboard_workspace.panel(') == 1
     assert 'workspace_tabs.render(standard_tabs' in framework
     assert "url.searchParams.set('tab', tab)" in framework
     assert "window.history.replaceState({}, '', url)" in framework
     assert 'id="{{ input_id }}"' in framework
     assert 'hx-include="#dashboard-active-tab"' in selector
-    assert "DASHBOARD_TABS = {'overview', 'capacity', 'signals', 'reporting'}" in routes
+    assert 'normalize_operational_tab' in routes
+    assert 'OPERATIONAL_DASHBOARD_TABS: tuple[str, ...] = (' in application_contract
+    for tab in ("'overview'", "'capacity'", "'signals'", "'reporting'"):
+        assert tab in application_contract
     assert "active_tab: str = 'overview'" in schema
 
 
@@ -39,12 +44,19 @@ def test_dashboard_uses_integrated_tabs_and_equal_height_peer_content() -> None:
     framework = read('app/templates/components/operational_dashboard_workspace.html')
     integrated_tabs = tabs.split('{% macro render(', 1)[1].split('{%- endmacro %}', 1)[0]
 
-    assert '{% import "components/peer_content_grid.html" as peer_content_grid %}' in source
+    overview = read('app/templates/kubernetes/dashboard/partials/_overview.html')
+    capacity = read('app/templates/kubernetes/dashboard/partials/_capacity.html')
+    signals = read('app/templates/kubernetes/dashboard/partials/_signals.html')
+    reporting = read('app/templates/kubernetes/dashboard/partials/_reporting.html')
+    sections = (overview, capacity, signals, reporting)
+
     assert 'components/operational_dashboard_workspace.html' in source
     assert 'data-kaori-dashboard-framework="operational-v1"' in framework
-    assert source.count('peer_content_grid.layout_classes()') == 4
-    assert "column_classes('primary', 'seven-five')" in source
-    assert "column_classes('secondary', 'seven-five')" in source
+    for section in sections:
+        assert '{% import "components/peer_content_grid.html" as peer_content_grid %}' in section
+        assert 'peer_content_grid.layout_classes()' in section
+    assert "column_classes('primary', 'seven-five')" in reporting
+    assert "column_classes('secondary', 'seven-five')" in reporting
     assert 'components/context_rail.html' not in source
     assert 'components/related_page_card.html' not in source
     assert 'xl:grid-cols-12' in grid
@@ -57,9 +69,10 @@ def test_dashboard_uses_integrated_tabs_and_equal_height_peer_content() -> None:
     assert 'shadow-sm' not in integrated_tabs
     assert 'border-b border-outline-subtle' in integrated_tabs
     assert 'data-kaori-tab-variant="integrated-workspace"' in integrated_tabs
-    assert "dashboard_workspace.panel('capacity'" in source
-    assert "dashboard_workspace.panel('signals'" in source
-    assert "'reporting'," in source
+    assert 'dashboard_workspace.standard_tabs' in source
+    assert "('capacity', 'Capacity & Demand', 'gauge')" in framework
+    assert "('signals', 'Signals & Actions', 'bell-ring')" in framework
+    assert "('reporting', 'Reporting', 'file-text')" in framework
 
 
 def test_dashboard_sections_use_the_canonical_operational_section_card() -> None:
@@ -74,13 +87,25 @@ def test_dashboard_sections_use_the_canonical_operational_section_card() -> None
         '_alerts_summary.html',
         '_recommended_actions.html',
         '_alert_response_guidance.html',
-        '_section_loading.html',
     ]
 
+    shared_owners = {
+        '_signal_overview.html': 'components/operational_signal_overview.html',
+        '_alerts_summary.html': 'components/operational_alert_summary.html',
+        '_recommended_actions.html': 'components/operational_recommendation_cards.html',
+        '_alert_response_guidance.html': 'components/operational_alert_response.html',
+    }
     for name in partials:
         source = (DASHBOARD_TEMPLATES / 'partials' / name).read_text(encoding='utf-8')
-        assert 'components/operational_section_card.html' in source, name
-        assert 'operational_section_card.render(' in source, name
+        if name in shared_owners:
+            assert shared_owners[name] in source, name
+        else:
+            assert 'components/operational_section_card.html' in source, name
+            assert 'operational_section_card.render(' in source, name
+
+    loading = read('app/templates/components/operational_section_loading.html')
+    assert 'components/operational_section_card.html' in loading
+    assert 'operational_section_card.render(' in loading
 
     reporting_summary = read('app/templates/kubernetes/dashboard/partials/_reporting_summary.html')
     reporting_guidance = read('app/templates/kubernetes/dashboard/partials/_reporting_guidance.html')
@@ -100,6 +125,7 @@ def test_primary_and_peer_operational_flows_are_static_and_controlled_flows_reus
     info_flow = read('app/templates/components/info_flow.html')
     flow_steps = read('app/templates/components/operational_flow_steps.html')
     numbered_steps = read('app/templates/components/numbered_governance_steps.html')
+    alert_response = read('app/templates/components/operational_alert_response.html')
     alert_guidance = read('app/templates/kubernetes/dashboard/partials/_alert_response_guidance.html')
     reporting_guidance = read('app/templates/kubernetes/dashboard/partials/_reporting_guidance.html')
     reporting_workspace = read('app/templates/components/reporting_dashboard_workspace.html')
@@ -112,7 +138,8 @@ def test_primary_and_peer_operational_flows_are_static_and_controlled_flows_reus
     assert '<details' not in flow_steps
     assert '<details' not in numbered_steps
     assert 'divide-y divide-outline-subtle' in numbered_steps
-    assert 'components/numbered_governance_steps.html' in alert_guidance
+    assert 'components/operational_alert_response.html' in alert_guidance
+    assert 'components/numbered_governance_steps.html' in alert_response
     assert 'components/operational_flow_steps.html' not in alert_guidance
     assert 'components/reporting_dashboard_workspace.html' in reporting_guidance
     assert 'components/numbered_governance_steps.html' not in reporting_workspace
@@ -146,10 +173,13 @@ def test_dashboard_and_analytics_share_the_forecast_projection_chart() -> None:
 def test_cluster_health_uses_canonical_table_and_pagination_contract() -> None:
     source = read('app/templates/kubernetes/dashboard/partials/_cluster_health.html')
     routes = read('app/kubernetes/dashboard/routes.py')
+    application_contract = read('app/dashboards/common/operational.py')
+    pagination = read('app/common/pagination.py')
 
     assert '{% import "components/table.html" as table_ui %}' in source
     assert '{% import "components/pagination.html" as pagination_ui %}' in source
-    assert 'for size in [5, 10, 25, 50]' in source
+    assert 'for size in pagination.allowed_per_page' in source
+    assert '[5, 10, 25, 50]' not in source
     assert 'pagination_ui.numeric_pages(' in source
     assert 'pagination_ui.navigation_classes()' in source
     assert 'pagination_ui.navigation_classes(disabled=true)' in source
@@ -162,8 +192,9 @@ def test_cluster_health_uses_canonical_table_and_pagination_contract() -> None:
     assert 'of {{ pagination.total_items }} clusters' not in source
     assert "url_for('integrations.kubernetes')" in source
     assert "url_for('cluster.list_clusters')" not in source
-    assert 'CLUSTER_HEALTH_PAGE_SIZES = {5, 10, 25, 50}' in routes
-    assert "request.args.get('cluster_health_per_page', '5')" in routes
+    assert 'normalize_dashboard_page_size' in routes
+    assert 'DASHBOARD_PAGE_SIZES = PER_PAGE_OPTIONS' in application_contract
+    assert 'PER_PAGE_OPTIONS: tuple[int, ...] = (5, 10, 25, 50)' in pagination
 
 
 def test_dashboard_page_templates_have_no_local_typography_or_shell_drift() -> None:
@@ -205,13 +236,15 @@ def test_dashboard_copy_uses_canonical_casing() -> None:
 def test_dashboard_uses_local_skeletons_and_section_owned_loading_bar() -> None:
     content = read('app/templates/kubernetes/dashboard/partials/_content.html')
     selector = read('app/templates/kubernetes/dashboard/partials/_signal_overview.html')
-    loading = read('app/templates/kubernetes/dashboard/partials/_section_loading.html')
+    loading = read('app/templates/components/operational_section_loading.html')
     cluster_health = read('app/templates/kubernetes/dashboard/partials/_cluster_health.html')
     section_card = read('app/templates/components/operational_section_card.html')
     contract = read('docs/design/components/LOADING.md')
 
     assert 'dashboard-loading-bar' not in content
     assert 'dashboard-loading-bar' not in selector
+    assert 'components/operational_section_loading.html' in content
+    assert 'section_loading.section(' in content
     assert 'animate-pulse' in loading
     assert 'loading_bar_active=loading_bar_id is not none' in loading
     assert 'components/loading_bar.html' in section_card
@@ -227,11 +260,15 @@ def test_dashboard_restores_card_grid_freshness_and_visible_action_flows() -> No
     alert = read('app/templates/kubernetes/dashboard/partials/_alert_response_guidance.html')
     reporting = read('app/templates/kubernetes/dashboard/partials/_reporting_guidance.html')
     reporting_workspace = read('app/templates/components/reporting_dashboard_workspace.html')
+    evidence_tile = read('app/templates/components/operational_evidence_tile.html')
+    alert_response = read('app/templates/components/operational_alert_response.html')
 
     assert "body_classes='grid gap-3 p-5 sm:grid-cols-2'" in freshness
-    assert 'bg-surface-elevated p-3.5' in freshness
+    assert 'components/operational_evidence_tile.html' in freshness
+    assert 'bg-surface-elevated p-3.5' in evidence_tile
     assert 'Recommended Capacity Action Flow' in capacity
     assert 'Controlled Alert Response Flow' in alert
+    assert 'Alert Interpretation & Response' in alert_response
     assert 'components/reporting_dashboard_workspace.html' in reporting
     assert 'Reporting Workflow' in reporting_workspace
     assert 'Scope Bound' in reporting_workspace
@@ -247,7 +284,7 @@ def test_dashboard_restores_card_grid_freshness_and_visible_action_flows() -> No
     assert '<details' not in reporting_workspace
     assert "extra_classes='h-full'" in freshness
     assert "extra_classes='h-full'" in capacity
-    assert "extra_classes='h-full'" in alert
+    assert "extra_classes='h-full'" in alert_response
 
 
 def test_dashboard_tabs_support_canonical_keyboard_navigation() -> None:
