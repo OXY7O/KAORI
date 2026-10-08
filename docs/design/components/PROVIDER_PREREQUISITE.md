@@ -117,7 +117,7 @@ Artifact Registry Overview is the existing blocked-Dashboard reference. The same
 - Object Storage Inventory
 - Object Storage Analytics
 
-Registry / Harbor operational consumers — Overview, Inventory and its resource views, Security, Runtime Usage, Governance, and Analytics — adopt the shared blocked-Hero and provider-prerequisite contract. Future provider-backed surfaces must do the same. The Harbor integration configuration workspace itself is the setup destination and therefore is not blocked by its own prerequisite.
+Registry / Harbor operational consumers must adopt this contract when provider-backed Registry pages are introduced. The audited consumers are Overview, Inventory and its resource views, Security, Runtime Usage, Governance, and Analytics. Future provider-backed surfaces must follow the same blocked-Hero and prerequisite action boundary. The Harbor integration configuration workspace itself is the setup destination and therefore is not blocked by its own prerequisite.
 
 ## Review checklist
 
