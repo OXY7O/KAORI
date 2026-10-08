@@ -388,9 +388,7 @@ class Config:
             'app.storage.object_storage.inventory.tasks.sync_all_object_storage': {
                 'queue': 'inventory',
             },
-            'app.artifact_registry.tasks.sync_all_registry': {
-                'queue': 'inventory',
-            },
+            'app.artifact_registry.tasks.sync_all_registry': {'queue': 'inventory'},
             'app.artifact_registry.security.tasks.sync_all_registry_security': {
                 'queue': REGISTRY_SECURITY_CELERY_QUEUE,
             },
@@ -400,12 +398,8 @@ class Config:
             'app.artifact_registry.security.tasks.finalize_registry_security_sync': {
                 'queue': REGISTRY_SECURITY_CELERY_QUEUE,
             },
-            'app.artifact_registry.governance_tasks.sync_all_registry_governance': {
-                'queue': 'inventory',
-            },
-            'app.artifact_registry.correlation_tasks.materialize_registry_runtime_correlation': {
-                'queue': 'inventory',
-            },
+            'app.artifact_registry.governance_tasks.sync_all_registry_governance': {'queue': 'inventory'},
+            'app.artifact_registry.correlation_tasks.materialize_registry_runtime_correlation': {'queue': 'inventory'},
             'app.kubernetes.governance.tls_certificates.tasks.sync_tls_certificates': {
                 'queue': 'inventory',
             },
