@@ -380,9 +380,7 @@ class Config:
             'app.storage.object_storage.analytics.tasks.materialize_object_storage_forecasts': {
                 'queue': FORECASTING_CELERY_QUEUE,
             },
-            'app.kubernetes.cluster.tasks.sync_all_clusters': {
-                'queue': 'inventory',
-            },
+            'app.kubernetes.cluster.tasks.sync_all_clusters': {'queue': 'inventory'},
             'app.kubernetes.cluster.tasks.sync_single_cluster': {
                 'queue': 'inventory',
             },
