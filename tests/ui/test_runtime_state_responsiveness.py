@@ -6,8 +6,8 @@ from playwright.sync_api import Page, expect
 
 EVIDENCE_ROOT = Path('tmp/ci-artifacts/test-output/ui-browser')
 STATE_MARKERS = {
-    'setup_required': 'Schema Missing',
-    'database_unavailable': 'PostgreSQL Unavailable',
+    'setup_required': 'Initialization Required',
+    'database_unavailable': 'Database Unavailable',
 }
 
 
@@ -37,13 +37,8 @@ def test_authentication_readiness_state_is_responsive_and_traceable(
         assert response is not None
         assert response.status == 503
         expect(page.get_by_role('heading', name='Database Setup Required')).to_be_visible()
-        state_marker = page.get_by_text(STATE_MARKERS[state], exact=True)
-        if state == 'database_unavailable':
-            state_marker = page.get_by_label('Database recovery context').get_by_text(
-                STATE_MARKERS[state],
-                exact=True,
-            )
-        expect(state_marker).to_be_visible()
+        expect(page.get_by_text(STATE_MARKERS[state], exact=True)).to_be_visible()
+        expect(page.get_by_text('Blocked', exact=True)).to_be_visible()
 
         layout = page.evaluate(
             """() => ({
