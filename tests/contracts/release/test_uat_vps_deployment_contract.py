@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -124,6 +125,31 @@ def test_server_dependencies_are_private_persistent_and_immutable() -> None:
     assert '  certbot:' not in source
 
 
+def test_server_overlay_covers_every_canonical_app_worker_environment() -> None:
+    base = _read(BASE_COMPOSE)
+    overlay = _read(SERVER_COMPOSE)
+    base_service_block = base.split('services:\n', maxsplit=1)[1].split('\nvolumes:', maxsplit=1)[0]
+    canonical_services = re.findall(r'^  ([a-z][a-z0-9-]*):$', base_service_block, re.MULTILINE)
+    application_services = [
+        service for service in canonical_services if service not in {'postgres', 'redis', 'validate', 'migrate'}
+    ]
+
+    assert 'registry-security-worker' in application_services
+    for service in application_services:
+        pattern = rf'^  {re.escape(service)}:\n(.*?)(?=^  [a-z][a-z0-9-]*:\n|^volumes:|\Z)'
+        match = re.search(pattern, overlay, re.MULTILINE | re.DOTALL)
+        assert match is not None, f'missing production server overlay for {service}'
+        block = match.group(1)
+        assert 'env_file: !override' in block, f'{service} must replace legacy .env.production'
+        for authority in ('KAORI_APP_ENV_FILE', 'KAORI_SECRETS_ENV_FILE', 'KAORI_RELEASE_ENV_FILE'):
+            assert authority in block, f'{service} is missing {authority}'
+
+    for script in (DEPLOY, VERIFY, RESTORE):
+        contents = _read(script)
+        for service in application_services:
+            assert service in contents, f'{script.name} omits application service {service}'
+
+
 def test_uat_workflow_requires_intentional_rc_and_pinned_ssh_trust() -> None:
     source = _read(WORKFLOW)
 
@@ -228,6 +254,7 @@ def test_verifier_checks_full_runtime_and_single_beat() -> None:
     for service in (
         'web',
         'worker',
+        'registry-security-worker',
         'maintenance-worker',
         'runtime-worker',
         'validation-worker',

@@ -73,6 +73,12 @@ services:
       - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
       - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
 
+  registry-security-worker:
+    env_file: !override
+      - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
+      - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
+      - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+
   maintenance-worker:
     env_file: !override
       - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
