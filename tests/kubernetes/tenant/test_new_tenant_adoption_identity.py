@@ -36,3 +36,57 @@ def test_new_tenant_adoption_rejects_missing_or_changed_provider_identity(
             expected_resource_version=expected_version,
             observed_resource_version=observed_version,
         )
+
+
+def test_new_tenant_adoption_rolls_back_pending_governance_after_provider_error(monkeypatch):
+    from types import SimpleNamespace
+
+    from app.kubernetes.tenant import discovery_adoption as module
+
+    events = []
+    session = SimpleNamespace(
+        commit=lambda: events.append('commit'),
+        rollback=lambda: events.append('rollback'),
+    )
+    monkeypatch.setattr(module, 'db', SimpleNamespace(session=session))
+    monkeypatch.setattr(
+        module, '_prepare_adoption',
+        lambda _source: SimpleNamespace(provider_key='native_kubernetes'),
+    )
+
+    def provider_failure(_context):
+        raise ValueError('Provider read-back failed after potential mutation.')
+
+    monkeypatch.setattr(module, '_adopt_native', provider_failure)
+    with pytest.raises(ValueError, match='Provider read-back failed'):
+        module.adopt_discovered_tenant_committed({'provider_key': 'native_kubernetes'})
+    assert events == ['rollback']
+
+
+def test_new_tenant_adoption_rolls_back_when_database_commit_fails(monkeypatch):
+    from types import SimpleNamespace
+
+    from sqlalchemy.exc import IntegrityError
+
+    from app.kubernetes.tenant import discovery_adoption as module
+
+    calls = []
+
+    def failed_commit():
+        calls.append('commit')
+        raise IntegrityError('INSERT', {}, Exception('conflicting generation'))
+
+    session = SimpleNamespace(
+        commit=failed_commit,
+        rollback=lambda: calls.append('rollback'),
+    )
+    monkeypatch.setattr(module, 'db', SimpleNamespace(session=session))
+    context = SimpleNamespace(provider_key='capsule', tenant=SimpleNamespace())
+    monkeypatch.setattr(module, '_prepare_adoption', lambda _source: context)
+    monkeypatch.setattr(
+        module, '_adopt_capsule',
+        lambda _context: (SimpleNamespace(), None),
+    )
+    with pytest.raises(ValueError, match='conflicted with committed KAORI state'):
+        module.adopt_discovered_tenant_committed({'provider_key': 'capsule'})
+    assert calls == ['commit', 'rollback']
