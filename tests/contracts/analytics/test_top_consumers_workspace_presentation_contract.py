@@ -29,6 +29,41 @@ def test_top_consumers_uses_canonical_tabs_and_native_hidden_fallback() -> None:
     assert 'x-bind:hidden="activeTab' not in section
 
 
+def test_ranking_resource_tabs_use_one_embedded_evidence_surface() -> None:
+    section = read('app/templates/kubernetes/analytics/top_consumers/partials/_top_consumers_section.html')
+    ranked = read('app/templates/kubernetes/analytics/components/_ranked_evidence_panel.html')
+    rows = read('app/kubernetes/analytics/top_consumers/rows.py')
+
+    assert "('cpu', 'CPU', 'cpu'), ('memory', 'Memory', 'memory-stick'), ('pods', 'Pods', 'boxes'), ('pvc', 'PVC', 'database')" in section
+    assert "content_tabs.render_buttons('consumer-ranking-resource'" in section
+    assert "data-analytics-update-query=\"false\"" in section
+    assert "ranked_evidence.render(selected_panel.value, embedded=true)" in section
+    assert 'class="min-w-0"' in section
+
+    assert 'macro render(panel, embedded=false)' in ranked
+    assert "data-kaori-consumer-ranking=" in ranked
+    assert "Selected-Scope Total" in ranked
+    assert "panel.capacity_label" in ranked
+    for heading in ('Consumer Identity', 'Consumption', 'Contribution to Scope', 'Status / Configuration', 'Pressure'):
+        assert heading in ranked
+    assert 'row.request_state.label' in ranked
+    assert 'row.limit_state.label' in ranked
+    assert 'row.denominator_evidence_available' in ranked
+    assert 'row.risk.label' in ranked
+    assert 'row.pressure_basis' in ranked
+    assert 'title="{{ row.identity.primary }}"' in ranked
+    assert "fill_classes='h-full rounded-full bg-kaori-primary'" in ranked
+    assert "progress_bar.semantic_bar" not in ranked
+    assert "'contribution_percent': rounded_percent(contribution)" in rows
+
+
+def test_small_cpu_formatting_does_not_round_nonzero_evidence_to_zero() -> None:
+    rows = read('app/kubernetes/analytics/top_consumers/rows.py')
+    assert "if 0 < abs(value) < 0.01:" in rows
+    assert "return f'{value:.3g} cores'" in rows
+    assert "return f'{safe_round(value, 2)} cores'" in rows
+
+
 def test_top_consumers_controls_own_only_snapshot_scope() -> None:
     controls = read('app/templates/kubernetes/analytics/top_consumers/partials/_controls_readiness.html')
     records = read('app/templates/kubernetes/analytics/top_consumers/partials/_consumer_detail_section.html')
