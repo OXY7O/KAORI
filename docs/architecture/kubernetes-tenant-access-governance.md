@@ -282,7 +282,17 @@ effective-evidence hashes.
    `ClusterRole/kaori-tenant-tenant-admin-v1`, and
    `ClusterRole/kaori-tenant-deployer-v1` as needed. **Do not** reuse Kubernetes's
    broader built-in `admin`, `edit`, or `view` roles by name.
-To generate a reviewable ClusterRole manifest from the canonical KAORI permission
+KAORI provides a read-only manifest preparation dialog in
+**Tenant Management → Access Grants → Grant Context → Prepare Roles**.
+The dialog offers Copy/Download for each of the four approved versioned
+ClusterRoles and for a complete multi-document YAML bundle, derived from the same
+`ACCESS_PROFILE_CATALOG` used by the provider reconciliation adapter. Its
+generation does **not** query Kubernetes, apply RBAC, or authorize Capsule to
+bind roles. A cluster administrator must review and apply the YAML to the
+approved Kubernetes context, then explicitly Reconcile and Inspect the Access
+Grant.
+
+To generate the same reviewable ClusterRole manifest from the canonical KAORI permission
 catalog (without changing Kubernetes), run this inside the KAORI devcontainer:
 
 ```bash
