@@ -586,8 +586,10 @@ def adopt_discovered_tenant_route():
                 'tenant_generation': tenant.generation,
                 'namespace_id': namespace.id if namespace is not None else None,
                 'operation': 'attach_existing_tenant_namespace' if attach_existing else 'adopt_discovered_tenant',
-                'provider_mutation_performed': bool(
-                    (tenant.provider_evidence_json or {}).get('provider_mutation_performed')
+                'provider_mutation_performed': (
+                    (namespace.provisioning_evidence_json or {}).get('provider_mutation_performed')
+                    if attach_existing and namespace is not None
+                    else (tenant.provider_evidence_json or {}).get('provider_mutation_performed')
                 ),
             },
         )
