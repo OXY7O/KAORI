@@ -30,9 +30,11 @@ def _capsule_namespace_correlation(
     core_api: Any,
     tenant_name: str,
     tenant_item: Mapping[str, Any],
+    namespace_items: list[Any] | None = None,
 ) -> tuple[list[dict[str, Any]], list[str]]:
-    payload = core_api.list_namespace(_request_timeout=5)
-    namespace_items = list(_value(payload, 'items', []) or [])
+    if namespace_items is None:
+        payload = core_api.list_namespace(_request_timeout=5)
+        namespace_items = list(_value(payload, 'items', []) or [])
     status_names = _capsule_status_namespace_names(tenant_item)
     correlated: list[dict[str, Any]] = []
     ambiguities: list[str] = []

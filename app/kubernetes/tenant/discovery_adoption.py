@@ -13,7 +13,13 @@ from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_a
 from app.kubernetes.tenant.allocation_cutover import reconcile_adopted_native_allocation
 from app.kubernetes.tenant.allocation_observation import observe_native_namespace_allocation
 from app.kubernetes.tenant.capacity_governance import enforce_existing_namespace_allocation_preflight
-from app.kubernetes.tenant.capsule_allocation_observation import observe_capsule_tenant_allocation
+from app.kubernetes.tenant.capsule_allocation_observation import (
+    _capsule_status_namespace_names,
+    observe_capsule_tenant_allocation,
+)
+from app.kubernetes.tenant.capsule_namespace_attachment_authority import (
+    validate_capsule_namespace_attachment,
+)
 from app.kubernetes.tenant.capsule_tenant import qualify_capsule_tenant_adoption
 from app.kubernetes.tenant.discovery_service import (
     _adoption_environment,
@@ -27,6 +33,7 @@ from app.kubernetes.tenant.discovery_service import (
     _next_namespace_generation,
     _next_tenant_generation,
     _read_capsule_tenant,
+    select_capsule_namespace_attachment_candidate,
     _take_over_capsule_allocation,
 )
 from app.kubernetes.tenant.native_provider import tenant_workspace_connection_available
@@ -603,6 +610,155 @@ def attach_discovered_native_namespace_committed(
     except IntegrityError as exc:
         db.session.rollback()
         raise ValueError('Namespace attachment conflicted with committed governance state.') from exc
+    except Exception:
+        db.session.rollback()
+        raise
+
+
+def attach_discovered_capsule_namespace_committed(
+    source: Mapping[str, Any],
+) -> tuple[Tenant, TenantEnvironment, TenantNamespace]:
+    """Attach a provider-correlated Capsule Namespace to an existing Capsule Tenant.
+
+    Does not create a new Tenant, rewrite the Capsule Tenant CR, or grant access.
+    Provider UID, namespace membership and policies are checked live on submit.
+    """
+    if str(source.get('provider_key') or '') != 'capsule':
+        raise ValueError('Capsule Namespace attachment requires Capsule provider authority.')
+    environment_id = str(source.get('attach_environment_id') or '').strip()
+    if not environment_id.isdecimal():
+        raise ValueError('Select an existing Capsule Tenant environment.')
+    environment = db.session.get(TenantEnvironment, int(environment_id))
+    if environment is None:
+        raise ValueError('The selected Capsule Tenant environment is missing.')
+    tenant = environment.tenant
+    # Discovery includes provider scope; Registry derives it from the committed
+    # destination Environment. Never trust an arbitrary cross-cluster reparent.
+    cluster_id = str(source.get('cluster_id') or tenant.cluster_id).strip()
+    namespace = str(source.get('resource_name') or '').strip()
+    capsule_name = str(source.get('capsule_tenant_name') or tenant.provider_reference or '').strip()
+    if (
+        not namespace or namespace in {'default', 'kube-system', 'kube-public', 'kube-node-lease'}
+        or str(tenant.cluster_id) != cluster_id
+        or tenant.lifecycle_status != TenantLifecycleStatus.READY.value
+        or tenant.provider_key != 'capsule'
+        or tenant.provider_state != 'capsule'
+        or tenant.reconciliation_authority != 'capsule'
+        or not capsule_name or capsule_name != str(tenant.provider_reference or '')
+    ):
+        raise ValueError('Capsule Namespace attachment does not match a healthy governed Tenant.')
+
+    cluster = (
+        Cluster.query.join(KubernetesConnection, KubernetesConnection.cluster_id == Cluster.id)
+        .filter(Cluster.id == cluster_id, Cluster.status == ClusterStatus.CONNECTED.value)
+        .first()
+    )
+    if cluster is None or not tenant_workspace_connection_available(cluster.kubernetes_connection):
+        raise ValueError('Capsule cluster connection is unavailable.')
+    if _managed_namespace_map([cluster_id]).get((cluster_id, namespace)) is not None:
+        raise ValueError('Namespace already has a committed KAORI governance owner.')
+
+    client = runtime_adapter.build_client(cluster)
+    _version, tenant_cr = _read_capsule_tenant(client, capsule_name)
+    if _capsule_phase(tenant_cr) == 'Terminating':
+        raise ValueError('Capsule Tenant is terminating; attachment is blocked.')
+    cr_metadata = tenant_cr.get('metadata') or {}
+    expected_tenant_uid = str((tenant.provider_evidence_json or {}).get('provider_uid') or '')
+    if (
+        not expected_tenant_uid
+        or str(cr_metadata.get('uid') or '') != expected_tenant_uid
+        or not cr_metadata.get('resourceVersion')
+    ):
+        raise ValueError('Capsule Tenant CR identity differs from committed KAORI authority.')
+
+    allocation = observe_capsule_tenant_allocation(
+        client, tenant_name=capsule_name, tenant_item=tenant_cr,
+    )
+    selected = select_capsule_namespace_attachment_candidate(
+        allocation, namespace=namespace, capsule_tenant_name=capsule_name,
+        expected_uid=str(source.get('provider_uid') or '').strip(),
+        expected_resource_version=str(source.get('provider_resource_version') or '').strip(),
+    )
+    # Both immutable UID and preflight resourceVersion are mandatory for
+    # attachment; empty request fields must never skip correlation checks.
+    if not str(source.get('provider_uid') or '').strip() or not str(
+        source.get('provider_resource_version') or ''
+    ).strip():
+        raise ValueError('Capsule attachment requires fresh Namespace UID/resourceVersion evidence.')
+
+    # Provider listing/candidate selection is not a final authority proof.
+    # Independently re-read the exact Namespace object and its Capsule CR,
+    # including ownerReferences (and owner UID), before any KAORI DB commit.
+    observed_namespace = client.core_api().read_namespace(
+        namespace, _request_timeout=5
+    )
+    proof = validate_capsule_namespace_attachment(
+        tenant=tenant, cluster_id=cluster_id, capsule_item=tenant_cr,
+        namespace=observed_namespace,
+        expected_namespace_uid=str(source['provider_uid']).strip(),
+        status_namespace_names=_capsule_status_namespace_names(tenant_cr),
+    )
+    if (
+        proof['namespace'] != namespace
+        or proof['namespace_uid'] != selected['uid']
+        or proof['namespace_resource_version'] != selected['resource_version']
+    ):
+        raise ValueError('Capsule Namespace changed after Discovery review.')
+
+    _, verified_tenant_cr = _read_capsule_tenant(client, capsule_name)
+    verified_metadata = verified_tenant_cr.get('metadata') or {}
+    if (
+        str(verified_metadata.get('uid') or '') != proof['capsule_tenant_uid']
+        or str(verified_metadata.get('resourceVersion') or '')
+        != proof['capsule_tenant_resource_version']
+    ):
+        raise ValueError('Capsule Tenant CR changed during attachment; repeat Discovery.')
+    verified_namespace = client.core_api().read_namespace(namespace, _request_timeout=5)
+    verified_namespace_meta = getattr(verified_namespace, 'metadata', None)
+    if (
+        str(getattr(verified_namespace_meta, 'uid', '') or '') != proof['namespace_uid']
+        or str(getattr(verified_namespace_meta, 'resource_version', '') or '')
+        != proof['namespace_resource_version']
+    ):
+        raise ValueError('Capsule Namespace changed during attachment; repeat Discovery.')
+
+    context = _AdoptionContext(
+        cluster=cluster, client=client, provider_key='capsule',
+        resource_name=namespace, environment_name=environment.environment,
+        tenant=tenant, now=datetime.now(UTC),
+    )
+    previous_evidence = dict(tenant.provider_evidence_json or {})
+    try:
+        scoped = {**allocation, 'correlated_namespaces': [selected]}
+        records = _capsule_namespace_records(context, environment, scoped)
+        if len(records) != 1:
+            raise ValueError('Capsule Namespace attachment did not yield one canonical record.')
+        _mirror_capsule_namespace_policies(tenant, records)
+        record = records[0]
+        evidence = dict(record.provisioning_evidence_json or {})
+        evidence['attachment'] = {
+            'tenant_id': tenant.id,
+            'tenant_generation': tenant.generation,
+            'environment': environment.environment,
+            'capsule_tenant': capsule_name,
+            'capsule_uid': expected_tenant_uid,
+            'capsule_authority': proof,
+            'provider_uid': selected['uid'],
+            'provider_resource_version': selected['resource_version'],
+            'source': 'governed_capsule_existing_tenant_attachment',
+            'attached_at': context.now.isoformat(),
+            'provider_mutation_performed': False,
+            'grants_expanded_automatically': False,
+        }
+        record.provisioning_evidence_json = evidence
+        # Capsule CR remains authoritative; attaching one Namespace does not
+        # reconfigure Tenant-wide quota, ownership, or existing membership.
+        tenant.provider_evidence_json = previous_evidence
+        db.session.commit()
+        return tenant, environment, record
+    except IntegrityError as exc:
+        db.session.rollback()
+        raise ValueError('Capsule Namespace already has a committed governance generation.') from exc
     except Exception:
         db.session.rollback()
         raise
