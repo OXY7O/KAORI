@@ -14,7 +14,8 @@
     back_url,
     primary_action_label="Review Validation",
     primary_action_tab="validation",
-    show_primary_action=true) -%}
+    show_primary_action=true,
+    posture_key=none) -%}
     <aside class="{{ page_hero.aside_classes() }}" aria-label="{{ aria_label }}">
         <div class="{{ page_hero.context_panel_classes() }}"
              data-kaori-provider-detail-posture>
@@ -23,11 +24,11 @@
                     <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Connection Posture</p>
                     <h2 class="{{ page_hero.context_panel_title_classes() }}">{{ title }}</h2>
                 </div>
-                {{ integration_status("ready" if source_posture == "Ready" else ("degraded" if source_posture == "Attention" else "validation_required") , source_posture, display="text") }}
+                <span {% if posture_key %}id="{{ posture_key }}-posture-status"{% endif %}>{{ integration_status("ready" if source_posture == "Ready" else ("degraded" if source_posture == "Attention" else "validation_required") , source_posture, display="text") }}</span>
             </div>
             <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                {{ page_hero.context_metric(metric_one_icon, metric_one_label, metric_one_value, metric_one_description, value_classes="truncate text-sm font-semibold leading-5") }}
-                {{ page_hero.context_metric(metric_two_icon, metric_two_label, metric_two_value, metric_two_description) }}
+                {{ page_hero.context_metric(metric_one_icon, metric_one_label, metric_one_value, metric_one_description, value_classes="truncate text-sm font-semibold leading-5", value_id=(posture_key ~ '-posture-readiness') if posture_key else none) }}
+                {{ page_hero.context_metric(metric_two_icon, metric_two_label, metric_two_value, metric_two_description, value_id=(posture_key ~ '-posture-capabilities') if posture_key else none) }}
             </div>
             <div class="{{ page_hero.context_actions_classes(2 if show_primary_action else 1) }}">
                 {% if show_primary_action %}
@@ -48,4 +49,18 @@
             </div>
         </div>
     </aside>
+{%- endmacro %}
+
+{# Refresh only external Hero state. Normal provider pages keep committed state;
+   binding and validation/runtime HTMX responses update it without reloading. #}
+{% macro state_oob(posture_key, readiness, capability_count) -%}
+    {% if request.headers.get('HX-Request') == 'true' %}
+        {% set readiness_value = readiness or 'validation_required' %}
+        {% set source_posture = 'Ready' if readiness_value == 'ready' else ('Attention' if readiness_value in ['degraded', 'blocked'] else 'Configured') %}
+        <span id="{{ posture_key }}-hero-readiness" hx-swap-oob="innerHTML" class="hidden">{{ readiness_value|replace('_', ' ')|title }}</span>
+        <span id="{{ posture_key }}-hero-capabilities" hx-swap-oob="innerHTML" class="hidden">{{ capability_count }} Validated Capabilities</span>
+        <span id="{{ posture_key }}-posture-status" hx-swap-oob="innerHTML" class="hidden">{{ integration_status('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else 'validation_required'), source_posture, display='text') }}</span>
+        <span id="{{ posture_key }}-posture-readiness" hx-swap-oob="innerHTML" class="hidden">{{ readiness_value|replace('_', ' ')|title }}</span>
+        <span id="{{ posture_key }}-posture-capabilities" hx-swap-oob="innerHTML" class="hidden">{{ capability_count }}</span>
+    {% endif %}
 {%- endmacro %}
