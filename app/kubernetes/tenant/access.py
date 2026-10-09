@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from app.models.tenant import TenantAccessProfileKey, TenantAccessScope, TenantMembershipPrincipalType
 
@@ -152,7 +152,7 @@ def capsule_cluster_role_name(profile: TenantAccessProfile) -> str:
     return f'kaori-tenant-{profile.key.value.replace("_", "-")}-v{profile.version}'
 
 
-def capsule_cluster_role_manifest(profile: TenantAccessProfile) -> dict[str, object]:
+def capsule_cluster_role_manifest(profile: TenantAccessProfile) -> dict[str, Any]:
     """Return a read-only ClusterRole manifest derived from the canonical permissions."""
     validate_access_profile(profile)
     return {
