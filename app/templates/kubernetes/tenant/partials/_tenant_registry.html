@@ -165,9 +165,108 @@
                             </div>
                         </td>
                         <td class="{{ table_ui.cell_classes(action=true) }} align-middle">
-                            <div class="ml-auto flex w-fit flex-wrap items-center justify-end gap-2">
-                                {% if can_manage and tenant.provider_key == 'capsule' and tenant.provider_state == 'capsule' and tenant.lifecycle_status == 'ready' and row.capsule_environment_options %}
-                                    <details class="group max-w-64 rounded-lg border border-outline-subtle bg-surface-elevated p-2"
+                            <div class="flex justify-end">
+                                <button type="button"
+                                        data-kaori-dialog-open
+                                        data-dialog-target="tenant-registry-actions-{{ tenant.id }}"
+                                        aria-haspopup="dialog"
+                                        aria-controls="tenant-registry-actions-{{ tenant.id }}"
+                                        aria-label="{{ 'Manage' if can_manage else 'View actions for' }} {{ tenant.name }}"
+                                        class="{{ table_ui.action_classes() }} shrink-0">
+                                    <i data-lucide="{{ 'settings-2' if can_manage else 'eye' }}" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                    {{ 'Manage' if can_manage else 'View' }}
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="p-0">
+                            {% set empty_state_icon = "building-2" %}
+                            {% set empty_state_title = "No Tenants Found" %}
+                            {% set empty_state_description = "Adjust filters or open Tenant Setup to create the first governed Tenant." %}
+                            {% include 'components/states/_empty_state.html' %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {{ registry_ui.footer('tenant.tenants',
+            registry_id,
+            loading_id,
+            tenant_pagination,
+            query_params,
+            tenant_pagination.allowed_per_page,
+            resource_label='Tenants',
+            rows_aria_label='Tenant rows per page',
+            control_name='tenant-registry') }}
+</section>
+
+{# Native top-layer dialog follows the canonical Credential Lifecycle More pattern (#964).
+   Keep the dialog outside the scrolling table to avoid clipping/wrapped row actions. #}
+{% for row in tenant_rows %}
+    {% set tenant = row.tenant %}
+    <dialog id="tenant-registry-actions-{{ tenant.id }}"
+            data-kaori-native-dialog
+            data-tenant-registry-actions-dialog
+            aria-labelledby="tenant-registry-actions-{{ tenant.id }}-title"
+            aria-describedby="tenant-registry-actions-{{ tenant.id }}-description"
+            class="kaori-native-dialog m-auto w-[calc(100vw-1.5rem)] max-w-4xl overflow-hidden rounded-2xl border border-outline-default bg-surface-card p-0 shadow-2xl sm:w-[calc(100vw-3rem)]">
+        <section class="flex max-h-[calc(100dvh-2rem)] min-h-0 flex-col overflow-hidden"
+                 role="document">
+            <header class="shrink-0 border-b border-outline-subtle bg-surface-card px-5 py-4 sm:px-6">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true">
+                            <i data-lucide="building-2" class="h-5 w-5"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold text-kaori-primary">Tenant Management</p>
+                            <h2 id="tenant-registry-actions-{{ tenant.id }}-title"
+                                class="mt-1 break-words text-lg font-semibold leading-6 text-content-primary">{{ tenant.name }}</h2>
+                            <p id="tenant-registry-actions-{{ tenant.id }}-description"
+                               class="mt-1 break-words text-xs leading-5 text-content-secondary">
+                                {{ row.cluster.name if row.cluster else 'Cluster unavailable' }} ·
+                                {{ tenant.provider_key|replace('_', ' ')|title }} ·
+                                Gen {{ tenant.generation }} · {{ tenant.ownership_status|title }}
+                            </p>
+                        </div>
+                    </div>
+                    <button type="button"
+                            data-kaori-dialog-close
+                            aria-label="Close actions for {{ tenant.name }}"
+                            class="{{ table_ui.action_classes() }} shrink-0">
+                        <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </header>
+            <div class="min-h-0 space-y-4 overflow-y-auto bg-surface-page px-5 py-5 sm:px-6">
+                <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-outline-subtle bg-surface-card px-4 py-3">
+                    <div>
+                        <p class="text-xs font-semibold text-content-primary">Committed Lifecycle</p>
+                        <p class="mt-1 text-xs text-content-muted">
+                            {{ row.namespace_count }} active namespace{{ '' if row.namespace_count == 1 else 's' }}
+                            · {{ row.environments|length }} environment{{ '' if row.environments|length == 1 else 's' }}
+                        </p>
+                    </div>
+                    {{ table_label.status_label(
+                        tenant.lifecycle_status|replace('_', ' ')|title,
+                        'normal' if tenant.lifecycle_status == 'ready'
+                        else ('critical' if tenant.lifecycle_status in ['degraded', 'decommissioning'] else 'unknown')
+                    ) }}
+                </div>
+                {% if can_manage and tenant.provider_key == 'capsule' and tenant.provider_state == 'capsule'
+                      and tenant.lifecycle_status == 'ready' and row.capsule_environment_options %}
+                    <section class="rounded-xl border border-outline-subtle bg-surface-card p-4"
+                             aria-label="Namespace attachment">
+                        <h3 class="text-sm font-semibold text-content-primary">Namespace Attachment</h3>
+                        <p class="mt-1 mb-3 text-xs leading-5 text-content-secondary">
+                            Attach a discovered Capsule Namespace to an existing environment.
+                            Provider ownership, UID and resourceVersion must match.
+                        </p>
+                                    <details class="group w-full rounded-lg border border-outline-subtle bg-surface-elevated p-2"
                                              data-capsule-namespace-attach>
                                         <summary class="inline-flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                                             <i data-lucide="link" class="h-3.5 w-3.5" aria-hidden="true"></i>
@@ -221,8 +320,16 @@
                                             </button>
                                         </form>
                                     </details>
-                                {% endif %}
-                                {% if can_manage and tenant.ownership_status == 'adopted' and tenant.lifecycle_status == 'ready' %}
+                    </section>
+                {% endif %}
+                {% if can_manage and tenant.ownership_status == 'adopted' and tenant.lifecycle_status == 'ready' %}
+                    <section class="rounded-xl border border-outline-subtle bg-surface-card p-4"
+                             aria-label="Release governance">
+                        <h3 class="text-sm font-semibold text-content-primary">Release Governance</h3>
+                        <p class="mt-1 mb-3 text-xs leading-5 text-content-secondary">
+                            Review dependency evidence before considering provider-preserving Release.
+                            An internal handoff plan or external reference never proves successor acceptance.
+                        </p>
                                     <form method="post"
                                           action="{{ url_for('tenant.review_tenant_release_route', tenant_id=tenant.id) }}"
                                           hx-post="{{ url_for('tenant.review_tenant_release_route', tenant_id=tenant.id) }}"
@@ -238,16 +345,37 @@
                                         </button>
                                     </form>
                                     {% if row.release_preflight %}
-                                        {{ info_tip.render(
-                                            'tenant-release-review-' ~ tenant.id,
-                                            'Release Governance · ' ~ (row.release_preflight.status|replace('_', ' ')|title),
-                                            (row.release_preflight.blockers or [])|join(' · ')
-                                            or 'No active dependency blockers; explicit Release requires a fresh provider read and human acknowledgement.',
-                                            placement='left'
-                                        ) }}
+                                        <div class="mt-4 rounded-xl border border-outline-subtle bg-surface-elevated p-3.5"
+                                             aria-label="Committed Release readiness">
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                <p class="text-xs font-semibold text-content-primary">Last Review</p>
+                                                {{ table_label.status_label(
+                                                    row.release_preflight.status|replace('_', ' ')|title,
+                                                    'warning' if row.release_preflight.blockers else 'info'
+                                                ) }}
+                                            </div>
+                                            {% if row.release_preflight.blockers %}
+                                                <p class="mt-2 text-xs font-semibold text-status-warning-text">Release blockers</p>
+                                                <ul class="mt-1.5 list-disc space-y-1 pl-5 text-xs leading-5 text-content-secondary">
+                                                    {% for blocker in row.release_preflight.blockers %}
+                                                        <li class="break-words">{{ blocker }}</li>
+                                                    {% endfor %}
+                                                </ul>
+                                            {% else %}
+                                                <p class="mt-2 text-xs leading-5 text-content-secondary">
+                                                    No current dependency blockers, but Release execution is not yet admitted.
+                                                    A fresh provider read and explicit authorization are still required.
+                                                </p>
+                                            {% endif %}
+                                        </div>
+                                    {% else %}
+                                        <p class="mt-3 text-xs leading-5 text-content-secondary">
+                                            Run Review Release to inspect committed dependencies and provider readiness.
+                                            No Release execution is implied.
+                                        </p>
                                     {% endif %}
                                     {% if row.release_preflight and row.release_preflight.handoff_components %}
-                                        <details class="group max-w-64 rounded-lg border border-outline-subtle bg-surface-elevated p-2">
+                                        <details class="group w-full rounded-lg border border-outline-subtle bg-surface-elevated p-2">
                                             <summary class="inline-flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                                                 <i data-lucide="file-search" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                                 Handoff inventory
@@ -288,7 +416,7 @@
                                         {% set handoff_plan = row.release_handoff_plan %}
                                         {% set handoff_approval = row.release_handoff_approval %}
                                         {% set plan_accepted = handoff_plan and handoff_approval and handoff_approval.plan_sha256 == handoff_plan.plan_sha256 %}
-                                        <details class="group max-w-72 rounded-lg border border-outline-subtle bg-surface-elevated p-2"
+                                        <details class="group w-full rounded-lg border border-outline-subtle bg-surface-elevated p-2"
                                                  data-release-handoff-approval>
                                             <summary class="inline-flex cursor-pointer items-center gap-1.5 rounded-md py-1 text-xs font-semibold text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                                                 <i data-lucide="handshake" class="h-3.5 w-3.5" aria-hidden="true"></i>
@@ -514,7 +642,7 @@
                                               hx-select="#tenant-admin-workspace"
                                               hx-swap="outerHTML show:none focus-scroll:false"
                                               hx-indicator="#tenant-admin-loading"
-                                              class="flex max-w-64 flex-col gap-2 rounded-lg border border-outline-subtle bg-surface-elevated p-2">
+                                              class="flex w-full flex-col gap-2 rounded-lg border border-outline-subtle bg-surface-elevated p-2">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
                                                 <input type="checkbox" name="confirm_release_governance"
@@ -529,7 +657,19 @@
                                             </button>
                                         </form>
                                     {% endif %}
-                                {% endif %}
+                    </section>
+                {% endif %}
+                <section class="rounded-xl border border-outline-subtle bg-surface-card p-4"
+                         aria-label="Tenant lifecycle actions">
+                    <h3 class="text-sm font-semibold text-content-primary">Lifecycle Actions</h3>
+                    <p class="mt-1 mb-3 text-xs leading-5 text-content-secondary">
+                        Decommission is a separate provider-aware teardown. Release preserves provider resources.
+                    </p>
+                    {% if not can_manage %}
+                        <p class="mb-3 text-xs leading-5 text-content-muted">
+                            Read-only access. Tenant management permission is required for changes.
+                        </p>
+                    {% endif %}
                                 {% set decommission = row.decommission_preflight %}
                                 {% if can_manage and decommission.executable %}
                                     <form method="post"
@@ -547,6 +687,7 @@
                                                 aria-hidden="true"
                                                 tabindex="-1">Submit Tenant decommission</button>
                                         <button type="button"
+                                                data-kaori-dialog-close
                                                 data-destructive-modal-open
                                                 data-destructive-modal-id="tenant-decommission-modal"
                                                 data-destructive-submit-button-id="tenant-decommission-submit-{{ tenant.id }}"
@@ -566,32 +707,31 @@
                                 {% else %}
                                     {{ table_label.special_label('Unavailable', 'unknown', 'circle-slash-2') }}
                                 {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                {% else %}
-                    <tr>
-                        <td colspan="7" class="p-0">
-                            {% set empty_state_icon = "building-2" %}
-                            {% set empty_state_title = "No Tenants Found" %}
-                            {% set empty_state_description = "Adjust filters or open Tenant Setup to create the first governed Tenant." %}
-                            {% include 'components/states/_empty_state.html' %}
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {{ registry_ui.footer('tenant.tenants',
-            registry_id,
-            loading_id,
-            tenant_pagination,
-            query_params,
-            tenant_pagination.allowed_per_page,
-            resource_label='Tenants',
-            rows_aria_label='Tenant rows per page',
-            control_name='tenant-registry') }}
-</section>
+                    {% if decommission.blockers %}
+                        <div class="mt-3 rounded-lg border border-status-warning-border bg-status-warning-soft p-3"
+                             aria-label="Decommission blockers">
+                            <p class="text-xs font-semibold text-status-warning-text">Decommission blocked</p>
+                            <ul class="mt-1.5 list-disc space-y-1 pl-5 text-xs leading-5 text-content-secondary">
+                                {% for blocker in decommission.blockers %}
+                                    <li class="break-words">{{ blocker }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+                </section>
+            </div>
+            <footer class="flex shrink-0 items-center justify-between gap-3 border-t border-outline-subtle bg-surface-card px-5 py-3 sm:px-6">
+                <p class="hidden text-xs leading-5 text-content-muted sm:block">
+                    Actions retain KAORI approval, evidence and provider safeguards.
+                </p>
+                <button type="button" data-kaori-dialog-close
+                        class="{{ table_ui.action_classes() }} ml-auto">
+                    Close
+                </button>
+            </footer>
+        </section>
+    </dialog>
+{% endfor %}
 {{ destructive_modal.render('tenant-decommission-modal',
 'Decommission Tenant',
 'Selected Tenant',
