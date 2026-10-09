@@ -42,6 +42,9 @@ def test_released_generation_is_not_decommissioned_or_deleted_in_provider() -> N
     assert "TenantLifecycleStatus.RELEASED.value" in discovery
     assert "TenantNamespaceProvisioningStatus.RELEASED.value" in discovery
     assert 'def _released_predecessor_evidence(' in adoption
+    assert 'def _verify_released_namespace_lineage(' in adoption
+    assert 'Released Namespace belongs to another Tenant lineage' in adoption
+    assert 'Released Namespace UID changed' in adoption
     assert "provider_uid != str(evidence.get('provider_uid')" in adoption
     assert "'re_adoption_lineage'" in adoption
 
