@@ -129,6 +129,23 @@ def _released_predecessor_evidence(tenant: Tenant, *, provider_uid: str) -> dict
     }
 
 
+def _verify_released_namespace_lineage(
+    *, cluster_id: str, namespace: str, provider_uid: str, tenant_slug: str
+) -> None:
+    """Refuse ambiguous Tenant reassignment or provider name reuse across Released history."""
+    previous = (
+        TenantNamespace.query.filter_by(cluster_id=cluster_id, namespace=namespace)
+        .filter(TenantNamespace.provisioning_status == TenantNamespaceProvisioningStatus.RELEASED.value)
+        .order_by(TenantNamespace.generation.desc()).first()
+    )
+    if previous is None:
+        return
+    if previous.environment.tenant.slug != tenant_slug:
+        raise ValueError('Released Namespace belongs to another Tenant lineage; ownership review is required.')
+    if not provider_uid or provider_uid != previous.provider_reference:
+        raise ValueError('Released Namespace UID changed; refuse silent Namespace Re-adopt.')
+
+
 def _native_namespace_record(
     context: _AdoptionContext,
     environment: TenantEnvironment,
@@ -138,6 +155,10 @@ def _native_namespace_record(
 ) -> TenantNamespace:
     provider_uid = str(getattr(metadata, 'uid', None) or context.resource_name)
     resource_version = str(getattr(metadata, 'resource_version', None) or '')
+    _verify_released_namespace_lineage(
+        cluster_id=str(context.cluster.id), namespace=context.resource_name,
+        provider_uid=provider_uid, tenant_slug=context.tenant.slug,
+    )
     record = TenantNamespace()
     record.environment = environment
     record.cluster_id = context.cluster.id
@@ -298,6 +319,10 @@ def _capsule_namespace_records(
         if not namespace_name:
             continue
         namespace_allocation = dict(correlated.get('allocation') or {})
+        _verify_released_namespace_lineage(
+            cluster_id=str(context.cluster.id), namespace=namespace_name,
+            provider_uid=str(correlated.get('uid') or ''), tenant_slug=context.tenant.slug,
+        )
         record = TenantNamespace()
         record.environment = environment
         record.cluster_id = context.cluster.id
