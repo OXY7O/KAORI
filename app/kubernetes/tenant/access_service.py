@@ -984,6 +984,10 @@ def get_tenant_access_context() -> dict[str, object]:
             and tenant.provider_state == 'native'
             and tenant.reconciliation_authority == 'native_kubernetes'
         ],
+        'recent_external_access_profile_reviews': (
+            AuditEvent.query.filter_by(target_type='kubernetes_tenant_external_role_profile_review')
+            .order_by(AuditEvent.id.desc()).limit(5).all()
+        ),
         'recent_external_native_access': (
             AuditEvent.query.filter_by(target_type='kubernetes_tenant_native_external_access_inventory')
             .order_by(AuditEvent.id.desc()).limit(5).all()

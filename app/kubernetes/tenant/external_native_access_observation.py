@@ -62,6 +62,7 @@ def normalize_native_role_binding(
     marker = str(labels.get(_GRANT_LABEL) or '').strip()
     manager = str(labels.get(_MANAGER_LABEL) or '').strip()
     marked = manager == 'kaori' and bool(marker)
+    ambiguous_marker = bool(manager == 'kaori' or marker) and not marked
     correlated = marked and marker in grant_ids
     return {
         'namespace': namespace,
@@ -72,10 +73,10 @@ def normalize_native_role_binding(
         'subjects': [_subject(subject) for subject in subjects],
         'ownership': (
             'kaori_correlated' if correlated else
-            'kaori_marker_unverified' if marked else 'external_observed'
+            'kaori_marker_unverified' if (marked or ambiguous_marker) else 'external_observed'
         ),
         'kaori_grant_id': marker if correlated else None,
-        'claimed_grant_marker': marker if marked and not correlated else None,
+        'claimed_grant_marker': marker if marker and not correlated else None,
         'effective_permissions_verified': False,
     }
 

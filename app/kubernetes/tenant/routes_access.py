@@ -27,6 +27,10 @@ from app.kubernetes.tenant.access_drift_analysis import (
 )
 from app.kubernetes.tenant.access_remediation_plan import prepare_tenant_access_remediation_plan_committed
 from app.kubernetes.tenant.external_access_observation import observe_external_capsule_access_committed
+from app.kubernetes.tenant.external_access_profile_equivalence import (
+    review_capsule_external_role_profile_committed,
+    review_native_external_role_profile_committed,
+)
 from app.kubernetes.tenant.external_native_access_observation import observe_external_native_access_committed
 from app.kubernetes.tenant.route_common import (
     _csrf,
@@ -191,6 +195,72 @@ def observe_native_external_access_route():
             ),
             detail='Observation only; external access ownership requires separate human review.',
             metadata={'tenant_id': result['tenant_id'], 'operation': 'observe_external_native_access'},
+        )
+    return _tenant_section_redirect('access-grants')
+
+
+@tenant_bp.post('/external-access/review-native-profile')
+@permission_required('tenant.manage')
+def review_external_native_profile_route():
+    """Bounded explicit live Role permission review; never import a principal."""
+    try:
+        _csrf()
+        result = review_native_external_role_profile_committed(
+            tenant_id=str(request.form.get('tenant_id') or '').strip(),
+            namespace=str(request.form.get('namespace') or '').strip(),
+            binding_uid=str(request.form.get('binding_uid') or '').strip(),
+            actor_user_id=int(current_user.id),
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_external_profile_review_blocked',
+            status='warning', title='External Role Profile Review Blocked',
+            message=str(exc), detail='No Identity, Grant or Kubernetes RBAC was changed.',
+            metadata={'tenant_id': request.form.get('tenant_id'),
+                      'operation': 'review_external_native_profile'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_external_profile_review_recorded',
+            status='info', title='External Role Profile Evidence Recorded',
+            message=(
+                f"{result['role_kind']}/{result['role_name']} · "
+                f"{result['equivalent_profile'] or 'no exact profile'}"
+            ),
+            detail='Even exact role equivalence does not authorize identity import or RBAC change.',
+            metadata={'tenant_id': result['tenant_id'],
+                      'operation': 'review_external_native_profile'},
+        )
+    return _tenant_section_redirect('access-grants')
+
+
+@tenant_bp.post('/external-access/review-capsule-profile')
+@permission_required('tenant.manage')
+def review_external_capsule_profile_route():
+    """Read back provider-owned Capsule rule signature without RBAC takeover."""
+    try:
+        _csrf()
+        result = review_capsule_external_role_profile_committed(
+            tenant_id=str(request.form.get('tenant_id') or '').strip(),
+            binding_index=_required_int('binding_index'),
+            actor_user_id=int(current_user.id),
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_capsule_profile_review_blocked',
+            status='warning', title='Capsule Profile Review Blocked',
+            message=str(exc), detail='No provider RBAC or KAORI grant was changed.',
+            metadata={'tenant_id': request.form.get('tenant_id'),
+                      'operation': 'review_external_capsule_profile'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_capsule_profile_review_recorded',
+            status='info', title='Capsule External Profile Evidence Recorded',
+            message=f"{result['role_name']} · {result['equivalent_profile'] or 'no exact profile'}",
+            detail='External identity/scope confirmation and explicit import are still required.',
+            metadata={'tenant_id': result['tenant_id'],
+                      'operation': 'review_external_capsule_profile'},
         )
     return _tenant_section_redirect('access-grants')
 
