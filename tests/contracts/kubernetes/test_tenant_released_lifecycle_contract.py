@@ -68,3 +68,16 @@ def test_released_history_is_excluded_from_active_counters_and_discovery() -> No
     assert "'deprovisioned', 'released'" in summary
     assert "('deprovisioned', 'released')" in discovery
     assert "('decommissioned', 'released')" in discovery
+
+
+def test_released_history_is_excluded_from_capacity_and_inventory_sync() -> None:
+    capacity = read('app/kubernetes/tenant/capacity_governance.py')
+    sync = read('app/kubernetes/tenant/sync_service.py')
+
+    assert 'TenantNamespaceProvisioningStatus.RELEASED.value' in capacity
+    assert 'Tenant.lifecycle_status.notin_(' in sync
+    assert sync.count('TenantLifecycleStatus.RELEASED.value') >= 2
+    assert 'TenantNamespace.provisioning_status.notin_(' in sync
+    assert 'TenantNamespaceProvisioningStatus.RELEASED.value' in sync
+    assert 'build_tenant_inventory_snapshot' in sync
+    assert 'sync_native_tenant' in sync or 'mark_missing' in sync
