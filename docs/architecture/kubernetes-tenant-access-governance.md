@@ -295,6 +295,14 @@ deleted/recreated or foreign-governed Namespace generation.
 The Kubernetes provider remains authoritative; this does not permit external
 owner handoff or silently import identities.
 
+The Adoption Preflight UI must distinguish two different effects:
+**New Tenant Adopt / native or Capsule managed allocation** performs admitted
+provider allocation writes with read-back while preserving equivalent effective
+values; **Capsule Namespace Attach to an existing Tenant** commits governance
+evidence and mirrors provider-owned policy without provider mutation or access
+grant expansion. Neither screen may advertise New Tenant adoption as
+"observation-only" or Capsule attachment as a managed provider takeover.
+
 ### Provider-preserving Release Governance preflight (#990)
 
 **Review Release** in Tenant Registry is an explicit, **read-only preflight** for
