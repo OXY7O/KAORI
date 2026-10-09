@@ -15,7 +15,6 @@ def test_generated_token_and_kubeconfig_use_existing_shared_ui_ownership() -> No
         'components/one_time_secret.html',
         'components/operational_callout.html',
         'components/operational_section_card.html',
-        'components/resource_posture_grid.html',
         'data-kaori-credential-material-result',
         '{% block dashboard_content %}',
         'Access Material',
@@ -40,7 +39,33 @@ def test_generated_token_and_kubeconfig_use_existing_shared_ui_ownership() -> No
     assert template.index('aria-label="Generated secret material"') < template.index("'Delivery Workflow'")
     assert template.index("'Delivery Workflow'") < template.index("'Workflow Example'")
     assert template.index("'Workflow Example'") < template.index('Entitlement until')
-    assert template.count('resource_posture_grid.render(delivery_metrics, columns=4)') == 1
+    assert 'components/resource_posture_grid.html' not in template
+    assert 'resource_posture_grid.render' not in template
+    assert 'data-kaori-credential-context-strip' in template
+    assert 'sm:grid-cols-2 xl:grid-cols-4' in template
+    assert '<dl class="grid gap-px bg-outline-subtle' in template
+    assert template.count('<dt class="text-xs font-semibold leading-5 text-content-muted">') == 4
+    assert 'text-xl' not in template
+    assert 'min-h-32' not in template
+    assert 'material_access_package.tenant_name' in template
+    assert 'material_namespace' in template
+    assert 'material_access_package.cluster_name' in template
+    assert 'material_access_package.environment' in template
+    assert 'material_access_package.service_account_name' in template
+    assert 'material_access_package.access_profile' in template
+    assert '{{ requested_label }}' in template
+    # Truncation is only visual: the full ServiceAccount string remains the copy source.
+    assert 'data-kaori-copy-root' in template
+    assert 'data-kaori-copy-source' in template
+    assert 'data-kaori-copy-button' in template
+    assert 'data-kaori-copy-label' in template
+    assert 'title="{{ material_access_package.service_account_name }}"' in template
+    assert 'Copy full ServiceAccount identifier' in template
+    assert 'class="block min-w-0 flex-1 truncate text-sm' in template
+    shared_clipboard = read('app/static/js/clipboard.js')
+    assert "button.closest('[data-kaori-copy-root]')" in shared_clipboard
+    assert "root?.querySelector('[data-kaori-copy-source]')" in shared_clipboard
+    assert "src=\"{{ url_for('static', filename='js/clipboard.js') }}\"" in read('app/templates/layouts/app.html')
     assert template.count('data-kaori-sensitive-material') == 0
     assert template.count('one_time_secret.material_block(') == 3
     assert template.count('material_value,') == 2
