@@ -13,7 +13,11 @@ from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_a
 from app.kubernetes.tenant.allocation_observation import observe_native_namespace_allocation
 from app.kubernetes.tenant.capsule_allocation_observation import (
     _capsule_namespace_correlation,
+    _capsule_status_namespace_names,
     observe_capsule_tenant_allocation,
+)
+from app.kubernetes.tenant.capsule_namespace_attachment_authority import (
+    validate_capsule_namespace_attachment,
 )
 from app.kubernetes.tenant.capsule_provider import discover_capsule
 from app.models import Cluster
@@ -385,12 +389,23 @@ def get_tenant_discovery_context(
                     and (not label_claims or label_claims == {capsule_name})
                     and (not owner_claims or owner_claims == {capsule_name})
                 )
+                authority_error = ''
+                try:
+                    validate_capsule_namespace_attachment(
+                        tenant=capsule_tenant, cluster_id=cluster_key,
+                        capsule_item=capsule_item, namespace=obj,
+                        expected_namespace_uid=str(observed.get('uid') or ''),
+                        status_namespace_names=_capsule_status_namespace_names(capsule_item),
+                    )
+                except ValueError as exc:
+                    authority_error = str(exc)
                 blocked = bool(
-                    ambiguities or not correlation_proven
+                    authority_error or ambiguities or not correlation_proven
                     or namespace_status == 'Terminating'
                     or not observed.get('uid') or not observed.get('resource_version')
                 )
                 eligibility = (
+                    authority_error if authority_error else
                     '; '.join(ambiguities[:3]) if ambiguities else
                     'Capsule Namespace is terminating.' if namespace_status == 'Terminating' else
                     'Explicit Capsule label/owner-ref correlation is missing.' if not correlation_proven else
@@ -730,6 +745,13 @@ def _capsule_namespace_attachment_preflight(
     )
     observed = client.core_api().read_namespace(namespace, _request_timeout=5)
     provider_status = _namespace_phase(observed)
+    proof = validate_capsule_namespace_attachment(
+        tenant=tenant, cluster_id=cluster_id, capsule_item=item,
+        namespace=observed, expected_namespace_uid=str(correlated['uid']),
+        status_namespace_names=_capsule_status_namespace_names(item),
+    )
+    if proof['namespace_resource_version'] != str(correlated['resource_version']):
+        raise ValueError('Capsule Namespace changed since Discovery; review provider authority again.')
     meta = getattr(observed, 'metadata', None)
     if (
         provider_status == 'Terminating'
