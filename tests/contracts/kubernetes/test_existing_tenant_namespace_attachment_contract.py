@@ -20,12 +20,15 @@ def test_native_namespace_can_attach_to_existing_tenant_without_duplicate_tenant
 
     assert 'name="attach_environment_id"' in ui
     assert 'name="provider_uid"' in ui
+    assert 'name="provider_resource_version"' in ui
     assert 'Attach to {{ option.tenant_name }}' in ui
     assert 'not expanded automatically' in ui
 
     assert 'def attach_discovered_native_namespace_committed(' in adoption
     assert "provider_key') or '') != 'native_kubernetes'" in adoption
     assert 'validate_namespace_attachment_uid(' in adoption
+    assert 'validate_adoption_provider_identity(' in adoption
+    assert "expected_resource_version=str(source.get('provider_resource_version')" in adoption
     assert '_native_management(' in adoption
     assert '_managed_namespace_map([cluster_id])' in adoption
     assert '_native_namespace_record(context, environment' in adoption
