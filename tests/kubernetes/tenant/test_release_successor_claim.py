@@ -111,7 +111,8 @@ def _mock_context(monkeypatch, *, change_provider=False, previous=None):
     monkeypatch.setattr(module, 'AuditEvent', lambda **kwargs: SimpleNamespace(**kwargs))
     monkeypatch.setattr(module, 'latest_release_handoff_plan', lambda _: plan)
     monkeypatch.setattr(module, 'latest_release_handoff_approval', lambda _: approval)
-    monkeypatch.setattr(module, 'latest_release_successor_claim', lambda _: previous)
+    prior = {'plan_sha256': plan['plan_sha256']} if previous == 'same_plan' else previous
+    monkeypatch.setattr(module, 'latest_release_successor_claim', lambda _: prior)
     if change_provider:
         snapshot['live_provider_identity'] = [{
             'kind': 'Namespace', 'name': 'dev', 'uid': 'replaced', 'resource_version': '9',
@@ -143,9 +144,7 @@ def test_successor_reference_rejects_stale_provider_and_duplicate(monkeypatch):
             plan_sha256=plan['plan_sha256'], successor_reference='EXT-ACK-2026-123',
         )
     assert session.commits == 0
-    plan, session = _mock_context(
-        monkeypatch, previous={'plan_sha256': plan['plan_sha256']},
-    )
+    plan, session = _mock_context(monkeypatch, previous='same_plan')
     with pytest.raises(ValueError, match='already recorded'):
         module.record_release_successor_claim_committed(
             tenant_id='tenant-1', actor_user_id=3,
