@@ -340,11 +340,13 @@ def get_tenant_registry_context(
     handoff_plans: dict[str, dict[str, Any]] = {}
     handoff_approvals: dict[str, dict[str, Any]] = {}
     handoff_dry_runs: dict[str, dict[str, Any]] = {}
+    successor_claims: dict[str, dict[str, Any]] = {}
     if tenant_ids and include_decommission_preflight:
         for target_type, destination in (
             ('kubernetes_tenant_release_handoff_plan', handoff_plans),
             ('kubernetes_tenant_release_handoff_approval', handoff_approvals),
             ('kubernetes_tenant_release_native_handoff_dry_run', handoff_dry_runs),
+            ('kubernetes_tenant_release_successor_claim', successor_claims),
         ):
             latest_ids = (
                 db.session.query(func.max(AuditEvent.id).label('id'))
@@ -378,6 +380,7 @@ def get_tenant_registry_context(
             row['release_handoff_plan'] = handoff_plans.get(item.id)
             row['release_handoff_approval'] = handoff_approvals.get(item.id)
             row['release_native_handoff_dry_run'] = handoff_dry_runs.get(item.id)
+            row['release_successor_claim'] = successor_claims.get(item.id)
         tenant_rows.append(row)
 
     return {

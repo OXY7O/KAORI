@@ -293,6 +293,45 @@
                                                             Independently acknowledged. External owner acceptance,
                                                             provider handoff and read-back remain outstanding.
                                                         </p>
+                                                        {% set successor_claim = row.release_successor_claim %}
+                                                        {% if successor_claim and successor_claim.plan_sha256 == handoff_plan.plan_sha256 %}
+                                                            <p class="text-xs leading-5 text-content-secondary">
+                                                                {{ table_label.status_label('External Reference Unverified', 'warning') }}
+                                                                {{ successor_claim.successor_reference }} · Recorded for review.
+                                                                Provider ownership is unchanged.
+                                                            </p>
+                                                        {% else %}
+                                                            <form method="post"
+                                                                  action="{{ url_for('tenant.record_tenant_release_successor_reference_route', tenant_id=tenant.id) }}"
+                                                                  hx-post="{{ url_for('tenant.record_tenant_release_successor_reference_route', tenant_id=tenant.id) }}"
+                                                                  hx-target="#tenant-admin-workspace"
+                                                                  hx-select="#tenant-admin-workspace"
+                                                                  hx-swap="outerHTML show:none focus-scroll:false"
+                                                                  hx-indicator="#tenant-admin-loading"
+                                                                  class="mt-2 space-y-2 rounded-lg border border-outline-subtle bg-surface-card p-2">
+                                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                                <input type="hidden" name="plan_sha256" value="{{ handoff_plan.plan_sha256 }}">
+                                                                <label class="block text-xs font-medium text-content-secondary">
+                                                                    External successor reference (unverified)
+                                                                    <input name="successor_reference" type="text"
+                                                                           minlength="3" maxlength="120" required
+                                                                           autocomplete="off"
+                                                                           pattern="[A-Za-z0-9][A-Za-z0-9_.@:/-]{2,119}"
+                                                                           placeholder="EXT-ACK-2026-123"
+                                                                           class="mt-1 block h-9 w-full rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs text-content-primary">
+                                                                </label>
+                                                                <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                                                                    <input name="confirm_successor_reference" type="checkbox" value="record" required
+                                                                           class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
+                                                                    <span>Record a reference for external verification only.
+                                                                        This is not proof of acceptance or authorization to transfer.</span>
+                                                                </label>
+                                                                <button type="submit"
+                                                                        class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                                    Record External Reference
+                                                                </button>
+                                                            </form>
+                                                        {% endif %}
                                                         {% if tenant.provider_key == 'native_kubernetes' and handoff_approval.approved_by != current_user.id %}
                                                             <form method="post"
                                                                   action="{{ url_for('tenant.dry_run_native_release_handoff_route', tenant_id=tenant.id) }}"

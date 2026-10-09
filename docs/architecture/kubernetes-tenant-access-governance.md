@@ -290,6 +290,24 @@ Registry reads only the latest committed observation on normal requests.
 A preflight result alone remains **handoff review required** with
 `release_execution_available=false`: it is evidence, not a Release operation.
 
+### External successor acceptance reference intake (#991, draft)
+
+An authorized operator may record a bounded **external successor reference**
+against the latest independently acknowledged, fingerprint-bound Handoff Plan.
+The server rechecks the current adopted Tenant generation, fresh provider
+UID/resourceVersion/ownership evidence and zero active dependencies before
+committing an AuditEvent. The recorded status is
+`external_reference_unverified` — a ticket or self-declared receipt is
+**not** independently verifiable external consent. It cannot be promoted to
+verified acceptance by form input, two KAORI operators or a reference alone.
+
+This checkpoint does not change Kubernetes, provider-owned resources, release
+state, grant state or effective RBAC. Neither the Native server-side dry-run
+nor this receipt authorizes the live executor. A separate admitted, trusted
+successor-attestation verification mechanism, matching provider read-back,
+partial-write containment, recovery and security UAT must precede any real
+ownership-transfer or Release of KAORI-mutated allocations.
+
 ### Guarded Released lifecycle and Re-adopt generation (#991)
 
 `Released` is a **separate terminal governance state** for Tenant and Namespace
