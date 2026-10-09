@@ -27,7 +27,9 @@ Issue #966 adds independent Capsule Access Grant capability detection:
 `access_grants_tenant` requires `Tenant.spec.additionalRoleBindings`, while
 `access_grants_scoped` requires supported `Tenant.spec.rules[].namespaceSelector`
 and `permissions.bindings` in the served v1beta2 CRD schema. Both remain
-unavailable or degraded when version/schema evidence is missing.
+unavailable or degraded when version/schema evidence is missing. KAORI executes
+all grant scopes through the scoped capability; unbounded
+`additionalRoleBindings` automatic future-Namespace inheritance is **not** admitted.
 
 KAORI keeps identity, scope, versioned Access Profile, audit, and desired/effective
 evidence in the common Tenant domain. Capsule remains the authoritative controller
