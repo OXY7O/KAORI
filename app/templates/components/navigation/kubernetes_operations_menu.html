@@ -26,6 +26,13 @@ or current_user.has_permission('kubernetes_secrets.bulk_rotate_tls') %}
                class="sidebar-expanded-only sidebar-menu-chevron h-4 w-4 {{ 'text-kaori-accent' if operations_active else 'text-white/[0.35]' }}"></i>
         </summary>
         <div class="sidebar-expanded-only sidebar-submenu ml-6 mt-1 space-y-1 border-l border-white/10 pl-3">
+            <a href="{{ url_for('kubernetes_operations.overview') }}"
+               class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'kubernetes_operations.overview' else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition"
+               {% if request.endpoint == 'kubernetes_operations.overview' %}aria-current="page"{% endif %}>
+                <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint == 'kubernetes_operations.overview' else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
+                <i data-lucide="layout-dashboard" class="h-3.5 w-3.5"></i>
+                <span class="truncate whitespace-nowrap">Overview</span>
+            </a>
             {% if configmap_operations_visible %}
                 <a href="{{ url_for('kubernetes_operations.configmap_management') }}"
                    class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint and request.endpoint.startswith('kubernetes_operations.configmap') else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
