@@ -228,6 +228,105 @@
                                             </div>
                                         </details>
                                     {% endif %}
+                                    {% if row.release_preflight and row.release_preflight.handoff_required_count and current_user.has_permission('integrations.manage') %}
+                                        {% set handoff_plan = row.release_handoff_plan %}
+                                        {% set handoff_approval = row.release_handoff_approval %}
+                                        {% set plan_accepted = handoff_plan and handoff_approval and handoff_approval.plan_sha256 == handoff_plan.plan_sha256 %}
+                                        <details class="group max-w-72 rounded-lg border border-outline-subtle bg-surface-elevated p-2"
+                                                 data-release-handoff-approval>
+                                            <summary class="inline-flex cursor-pointer items-center gap-1.5 rounded-md py-1 text-xs font-semibold text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                <i data-lucide="handshake" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                Governed Handoff
+                                                {% if plan_accepted %}
+                                                    {{ table_label.status_label('Transfer Pending', 'warning') }}
+                                                {% elif handoff_plan %}
+                                                    {{ table_label.status_label('Approval Pending', 'warning') }}
+                                                {% endif %}
+                                            </summary>
+                                            <div class="mt-2 space-y-3 border-t border-outline-subtle pt-3">
+                                                <p class="text-xs leading-5 text-content-secondary">
+                                                    Record the proposed successor and change record. An independent
+                                                    KAORI operator must acknowledge the same committed provider
+                                                    snapshot. This does not transfer ownership or unlock Release.
+                                                </p>
+                                                <form method="post"
+                                                      action="{{ url_for('tenant.prepare_tenant_release_handoff_route', tenant_id=tenant.id) }}"
+                                                      hx-post="{{ url_for('tenant.prepare_tenant_release_handoff_route', tenant_id=tenant.id) }}"
+                                                      hx-target="#tenant-admin-workspace"
+                                                      hx-select="#tenant-admin-workspace"
+                                                      hx-swap="outerHTML show:none focus-scroll:false"
+                                                      hx-indicator="#tenant-admin-loading"
+                                                      class="space-y-2">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                    <label class="block text-xs font-medium text-content-secondary">
+                                                        Successor owner reference
+                                                        <input name="successor_owner" type="text"
+                                                               minlength="3" maxlength="120"
+                                                               pattern="[A-Za-z0-9][A-Za-z0-9_.@:/-]{2,119}"
+                                                               value="{{ handoff_plan.successor_owner if handoff_plan else '' }}"
+                                                               placeholder="platform-team" required
+                                                               autocomplete="off"
+                                                               class="mt-1 block h-9 w-full rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs text-content-primary">
+                                                    </label>
+                                                    <label class="block text-xs font-medium text-content-secondary">
+                                                        Approved change reference
+                                                        <input name="change_reference" type="text"
+                                                               minlength="3" maxlength="120"
+                                                               pattern="[A-Za-z0-9][A-Za-z0-9_.@:/-]{2,119}"
+                                                               value="{{ handoff_plan.change_reference if handoff_plan else '' }}"
+                                                               placeholder="CHG-2026-001" required
+                                                               autocomplete="off"
+                                                               class="mt-1 block h-9 w-full rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs text-content-primary">
+                                                    </label>
+                                                    <button type="submit"
+                                                            class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                        <i data-lucide="clipboard-list" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                        Prepare Handoff
+                                                    </button>
+                                                </form>
+                                                {% if handoff_plan %}
+                                                    <p class="break-all font-mono text-xs text-content-muted">
+                                                        Plan SHA-256: {{ handoff_plan.plan_sha256 }}
+                                                    </p>
+                                                    {% if plan_accepted %}
+                                                        <p class="text-xs leading-5 text-content-secondary">
+                                                            Independently acknowledged. External owner acceptance,
+                                                            provider handoff and read-back remain outstanding.
+                                                        </p>
+                                                    {% elif handoff_plan.requested_by != current_user.id %}
+                                                        <form method="post"
+                                                              action="{{ url_for('tenant.approve_tenant_release_handoff_route', tenant_id=tenant.id) }}"
+                                                              hx-post="{{ url_for('tenant.approve_tenant_release_handoff_route', tenant_id=tenant.id) }}"
+                                                              hx-target="#tenant-admin-workspace"
+                                                              hx-select="#tenant-admin-workspace"
+                                                              hx-swap="outerHTML show:none focus-scroll:false"
+                                                              hx-indicator="#tenant-admin-loading"
+                                                              class="space-y-2 border-t border-outline-subtle pt-3">
+                                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                            <input type="hidden" name="plan_sha256"
+                                                                   value="{{ handoff_plan.plan_sha256 }}">
+                                                            <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                                                                <input type="checkbox" name="confirm_handoff_approval"
+                                                                       value="approved" required
+                                                                       class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
+                                                                <span>I reviewed the successor, change record and provider evidence.
+                                                                    No ownership transfer has been performed.</span>
+                                                            </label>
+                                                            <button type="submit"
+                                                                    class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                                <i data-lucide="user-check" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                                Acknowledge Handoff
+                                                            </button>
+                                                        </form>
+                                                    {% else %}
+                                                        <p class="text-xs leading-5 text-content-muted">
+                                                            A different authorized operator must review this plan.
+                                                        </p>
+                                                    {% endif %}
+                                                {% endif %}
+                                            </div>
+                                        </details>
+                                    {% endif %}
                                     {% if row.release_preflight and row.release_preflight.status == 'handoff_review_required' and current_user.has_permission('integrations.manage') %}
                                         <form method="post"
                                               action="{{ url_for('tenant.release_tenant_governance_route', tenant_id=tenant.id) }}"
