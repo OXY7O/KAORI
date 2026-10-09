@@ -69,6 +69,7 @@
         modal.classList.add('hidden')
         modal.classList.remove('flex')
         modal.setAttribute('aria-hidden', 'true')
+        delete modal.dataset.tenantAdoptionActivated
         document.documentElement.classList.remove('overflow-hidden')
         opener?.focus()
         opener = null
@@ -91,7 +92,12 @@
         if (!slot) return false
         const modal = slot.querySelector('[data-tenant-adoption-modal]')
         if (!(modal instanceof HTMLElement)) return false
-        if (modal.classList.contains('hidden')) openModal(modal)
+        // Preflight HTML is intentionally visible as soon as HTMX inserts it.
+        // JS enhances focus/body scrolling once per response, not visibility.
+        if (modal.dataset.tenantAdoptionActivated !== 'true') {
+            modal.dataset.tenantAdoptionActivated = 'true'
+            openModal(modal)
+        }
         preflightPending = false
         return true
     }
