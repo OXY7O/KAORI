@@ -150,7 +150,7 @@ def test_kubernetes_operations_workflows_keep_the_correct_active_detail_tab() ->
     assert "'kubernetes_operations': 'secrets'" in model
     assert "'kubernetes_operations.overview': 'overview'" in model
     assert "CapabilityViewDefinition(\n            'overview',\n            'Overview',\n            'layout-dashboard',\n            'kubernetes_operations.overview'" in model
-    assert "'kubernetes_operations.overview',\n                _KUBERNETES_OPERATION_PERMISSIONS" in model
+    assert "'kubernetes_operations.overview',\n            _KUBERNETES_OPERATION_PERMISSIONS" in model
 
 
 def test_registry_domain_and_harbor_routes_keep_registry_sidebar_active() -> None:
