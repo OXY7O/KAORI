@@ -34,6 +34,7 @@ from app.kubernetes.tenant.discovery_service import (
     _next_tenant_generation,
     _read_capsule_tenant,
     _take_over_capsule_allocation,
+    _unclaimed_provider_ownership_reason,
     select_capsule_namespace_attachment_candidate,
 )
 from app.kubernetes.tenant.native_provider import tenant_workspace_connection_available
@@ -504,6 +505,14 @@ def _adopt_capsule(context: _AdoptionContext) -> tuple[TenantEnvironment, Tenant
         raise ValueError('This Capsule Tenant is already governed by KAORI.')
 
     metadata = item.get('metadata') or {}
+    provider_labels = metadata.get('labels') or {}
+    if not isinstance(provider_labels, Mapping):
+        raise ValueError('Capsule Tenant ownership labels are malformed.')
+    ownership_reason = _unclaimed_provider_ownership_reason(
+        labels=provider_labels, resource_kind='Capsule Tenant',
+    )
+    if ownership_reason:
+        raise ValueError(ownership_reason)
     provider_uid = str(metadata.get('uid') or '').strip()
     resource_version = str(metadata.get('resourceVersion') or '').strip()
     validate_adoption_provider_identity(
