@@ -138,8 +138,11 @@ def capsule_tenant_handoff_evidence(
     component['resource_quotas_present'] = str('resourceQuotas' in spec).lower()
     existing = tenant.provider_evidence_json or {}
     blockers = []
-    if existing.get('provider_mutation_performed') is not False:
+    if existing.get('provider_mutation_performed') is True:
+        component['handoff'] = 'external_acceptance_required'
         blockers.append('Capsule allocation was modified by KAORI; explicit provider authority handoff is required.')
+    elif existing.get('provider_mutation_performed') is not False:
+        blockers.append('Capsule allocation mutation history is unknown; provider handoff is not admissible.')
     if component['ownership'] == 'marker_conflict':
         blockers.append('Capsule Tenant ownership metadata is conflicting.')
     return [component], blockers
