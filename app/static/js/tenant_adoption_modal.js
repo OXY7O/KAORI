@@ -148,6 +148,14 @@
         if (close) closeModal(close.closest('[data-tenant-adoption-modal]'))
     })
 
+    document.addEventListener('htmx:beforeRequest', (event) => {
+        const requestElement = event.detail?.elt || event.target
+        if (!(requestElement instanceof HTMLElement) || !requestElement.matches('[data-tenant-adoption-load]'))
+            return
+        opener = requestElement
+        preflightPending = true
+    })
+
     document.addEventListener('htmx:afterSwap', (event) => {
         revealPreflight(event)
     })
@@ -161,18 +169,15 @@
     document.addEventListener('htmx:responseError', (event) => {
         const load = event.detail?.elt?.closest?.('[data-tenant-adoption-load]') ||
             event.target?.closest?.('[data-tenant-adoption-load]')
-        if (load && preflightPending) reportPreflightFailure()
+        if (load) reportPreflightFailure()
     })
 
     document.addEventListener('htmx:afterRequest', (event) => {
         const requestElement = event.detail?.elt || event.target
         if (requestElement?.matches?.('[data-tenant-adoption-load]')) {
-            if (!preflightPending) return
-            if (event.detail?.successful === false) {
-                reportPreflightFailure()
-                return
-            }
-            if (!revealPreflight(event)) reportPreflightFailure()
+            if (event.detail?.successful === false) reportPreflightFailure()
+            // A successful afterRequest may precede the HTML swap. Wait for
+            // afterSwap/afterSettle instead of showing a false error.
             return
         }
         const form = event.target instanceof HTMLFormElement ? event.target : event.target?.closest?.('form')
