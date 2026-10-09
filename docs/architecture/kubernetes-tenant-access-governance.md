@@ -290,8 +290,6 @@ Registry reads only the latest committed observation on normal requests.
 A preflight result alone remains **handoff review required** with
 `release_execution_available=false`: it is evidence, not a Release operation.
 
-The canonical Capsule Discovery attachment now re-reads Capsule Tenant CR and the selected Namespace twice, checks immutable Tenant/Namespace UID and resourceVersion against the submitted Discovery snapshot, and rejects mismatched Capsule ownerReference generation UIDs (including missing owner UIDs). The Registry entry point proposed separately in Draft PR #1013 must reuse this canonical service rather than create a second attachment mutation path; both remain unadmitted pending combined tests.
-
 ### Guarded Released lifecycle and Re-adopt generation (#991)
 
 `Released` is a **separate terminal governance state** for Tenant and Namespace
@@ -503,6 +501,29 @@ Read-only observation requires `tenant.manage` and CSRF. Provider read
 failure, UID replacement or unbounded evidence fails closed, without
 claiming an inventory is complete.
 
+### Capsule Namespace attach to existing governed Tenant (#983)
+
+**Discovery** and **Tenant Registry** share one authoritative
+`attach_discovered_capsule_namespace_committed` service, not two Kubernetes
+mutation paths. Registry derives the connected cluster and Capsule Tenant
+from the committed destination Environment; both entry points require
+the exact Namespace UID and resourceVersion observed during Discovery.
+
+Before KAORI commits a new Adopted Namespace generation, the service
+rereads the Capsule Tenant CR and selected Namespace, validates immutable
+Tenant/Namespace UID and resourceVersion, Capsule Tenant labels,
+ownerReference name **and UID**, active ownership and Released lineage,
+and then rereads both provider resources to detect concurrent replacement.
+Missing ownerReference generation UID is treated as ambiguous ownership.
+Unsupported/mixed Namespace allocation and cross-Tenant reparenting
+fail closed. Existing provider-mirrored Namespace policy normalization
+and canonical audit/evidence are reused.
+
+No Namespace, Capsule Tenant, quota, RoleBinding or external group is
+mutated by attachment; no KAORI grant is automatically imported or expanded.
+Normal Registry rendering reads committed state; only explicit attach POST
+performs fresh provider reads. Both UI entry points remain Draft pending
+Developer Check, Full Admission, Visual QA and live Capsule UAT.
 ### Native Access Drift declaration correlation (#999)
 
 After **Inspect Native RBAC** has committed a scoped, bounded namespaced
