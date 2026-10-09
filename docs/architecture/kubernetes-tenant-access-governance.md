@@ -314,6 +314,27 @@ annotations, ownerReferences, finalizers, generation, and deletion state;
 provider reread must verify all of these remain unchanged. This is not
 permission to execute a real transfer or to mark a Tenant Released.
 
+### Native external provider handoff read-back (#991)
+
+A separately approved Native Release Handoff Plan and successful Kubernetes
+server-side dry-run commit each selected component's immutable UID, provider
+resourceVersion, spec fingerprint, and fingerprint of preserved foreign labels,
+annotations, finalizers and ownership/lifecycle metadata. After an external
+operator has performed its own provider-side handoff, an explicit KAORI action
+can reread those exact Native objects and require: same UID/name, a changed
+resourceVersion, manager label equal to the planned successor, all KAORI
+ownership markers absent, and unchanged spec/foreign-metadata fingerprints.
+
+This **observation only** may record
+`provider_handoff_observed_acceptance_unverified` but remains
+`external_successor_verified=false`, `provider_handoff_verified=false`,
+and `release_authorized=false`. A Kubernetes label can be forged by an actor
+with patch rights; it is not cryptographic evidence of consent by the intended
+successor. Until trusted identity/acceptance and full dual-provider handoff
+mutation contracts are admitted, the existing Released operation continues to
+refuse KAORI-mutated provider resources. No auto-transfer or database-only
+abandonment is introduced.
+
 ### Guarded Released lifecycle and Re-adopt generation (#991)
 
 `Released` is a **separate terminal governance state** for Tenant and Namespace

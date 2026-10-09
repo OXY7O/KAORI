@@ -6,6 +6,8 @@ continues to own actual state. This module has NO non-dry-run mutating path.
 
 from __future__ import annotations
 
+import hashlib
+import json
 from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import Any
@@ -152,6 +154,22 @@ def _immutable_metadata(resource: Any) -> tuple[Any, ...]:
     return tuple(values)
 
 
+def _stable_sha256(value: Any) -> str:
+    return hashlib.sha256(
+        json.dumps(value, sort_keys=True, separators=(',', ':'), default=str).encode()
+    ).hexdigest()
+
+
+def _retained_provider_metadata(resource: Any) -> dict[str, Any]:
+    """Only owner-neutral metadata is retained as a cross-party invariant."""
+    labels = _resource_metadata(resource)[3]
+    return {
+        'foreign_labels': {key: value for key, value in labels.items() if key not in _MARKER_KEYS},
+        'annotations': _read(_metadata(resource), 'annotations') or {},
+        'immutable_metadata': _immutable_metadata(resource),
+    }
+
+
 def dry_run_native_handoff_component(
     core: Any, component: Mapping[str, str], *, tenant_id: str,
 ) -> dict[str, Any]:
@@ -198,6 +216,8 @@ def dry_run_native_handoff_component(
         'dry_run': True,
         'spec_unchanged': True,
         'live_provider_unchanged': True,
+        'spec_sha256': _stable_sha256(_spec(before)),
+        'retained_metadata_sha256': _stable_sha256(_retained_provider_metadata(before)),
         'label_keys_to_release': [
             key for key in _MARKER_KEYS if key in before_identity[3]
         ],

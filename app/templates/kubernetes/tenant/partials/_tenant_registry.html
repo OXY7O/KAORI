@@ -357,6 +357,44 @@
                                                                 </button>
                                                             </form>
                                                         {% endif %}
+                                                        {% if tenant.provider_key == 'native_kubernetes'
+                                                              and successor_claim
+                                                              and successor_claim.plan_sha256 == handoff_plan.plan_sha256
+                                                              and row.release_native_handoff_dry_run
+                                                              and row.release_native_handoff_dry_run.status == 'dry_run_passed'
+                                                              and row.release_native_handoff_dry_run.plan_sha256 == handoff_plan.plan_sha256 %}
+                                                            <form method="post"
+                                                                  action="{{ url_for('tenant.inspect_native_external_handoff_route', tenant_id=tenant.id) }}"
+                                                                  hx-post="{{ url_for('tenant.inspect_native_external_handoff_route', tenant_id=tenant.id) }}"
+                                                                  hx-target="#tenant-admin-workspace"
+                                                                  hx-select="#tenant-admin-workspace"
+                                                                  hx-swap="outerHTML show:none focus-scroll:false"
+                                                                  hx-indicator="#tenant-admin-loading"
+                                                                  class="mt-2 space-y-2 rounded-lg border border-outline-subtle bg-surface-card p-2">
+                                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                                <input type="hidden" name="plan_sha256" value="{{ handoff_plan.plan_sha256 }}">
+                                                                <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                                                                    <input type="checkbox" name="confirm_native_handoff_readback"
+                                                                           value="inspect" required
+                                                                           class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
+                                                                    <span>Read provider ownership after an external operator handoff.
+                                                                        This does not prove successor consent or authorize Release.</span>
+                                                                </label>
+                                                                <button type="submit"
+                                                                        class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                                    <i data-lucide="scan-eye" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                                    Verify Provider Read-Back
+                                                                </button>
+                                                            </form>
+                                                        {% endif %}
+                                                        {% set handoff_readback = row.release_native_handoff_readback %}
+                                                        {% if handoff_readback and handoff_readback.plan_sha256 == handoff_plan.plan_sha256 %}
+                                                            <p class="text-xs leading-5 text-content-secondary">
+                                                                {{ table_label.status_label('Acceptance Unverified', 'warning') }}
+                                                                {{ handoff_readback.observed_count }} provider resources read back.
+                                                                External acceptance and governance Release remain blocked.
+                                                            </p>
+                                                        {% endif %}
                                                         {% set dry_run = row.release_native_handoff_dry_run %}
                                                         {% if dry_run and dry_run.plan_sha256 == handoff_plan.plan_sha256 %}
                                                             <details class="mt-2 rounded-lg border border-outline-subtle bg-surface-card p-2">

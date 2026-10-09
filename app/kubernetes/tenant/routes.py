@@ -58,6 +58,9 @@ from app.kubernetes.tenant.live_connection import get_live_tenant_connection_con
 from app.kubernetes.tenant.native_handoff_dry_run import (
     dry_run_native_release_handoff_committed,
 )
+from app.kubernetes.tenant.native_handoff_readback import (
+    observe_external_native_handoff_committed,
+)
 from app.kubernetes.tenant.overview import dispatch_tenant_inventory_sync
 from app.kubernetes.tenant.release_handoff_approval import (
     approve_release_handoff_plan_committed,
@@ -788,6 +791,37 @@ def dry_run_native_release_handoff_route(tenant_id: str):
             ),
             detail='This was a Kubernetes server-side dry-run only. Release remains blocked.',
             metadata={'tenant_id': tenant_id, 'operation': 'native_handoff_dry_run'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/native-readback')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+def inspect_native_external_handoff_route(tenant_id: str):
+    """Explicit provider read-back after external owner actions, no Release."""
+    try:
+        _csrf()
+        if request.form.get('confirm_native_handoff_readback') != 'inspect':
+            raise ValueError('Explicit provider read-back confirmation is required.')
+        result = observe_external_native_handoff_committed(
+            tenant_id=tenant_id, actor_user_id=int(current_user.id),
+            plan_sha256=str(request.form.get('plan_sha256') or ''),
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_native_handoff_readback_blocked',
+            status='warning', title='Native External Handoff Read-Back Blocked',
+            message=str(exc), detail='Governance remains Ready and provider resources are untouched.',
+            metadata={'tenant_id': tenant_id, 'operation': 'native_external_handoff_readback'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_native_handoff_readback_observed',
+            status='info', title='Native Provider Handoff Observed',
+            message=f"{result['observed_count']} provider components retained.",
+            detail='External successor consent remains unverified. Release remains blocked.',
+            metadata={'tenant_id': tenant_id, 'operation': 'native_external_handoff_readback'},
         )
     return _tenant_section_redirect('registry')
 
