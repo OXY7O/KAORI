@@ -62,7 +62,7 @@
                                 {% for label, value, helper, icon in [
                                     ('Latest Daily Average', item.latest_daily_average_display, (('Latest daily average: ' ~ item.latest_daily_average_percent ~ '% of ' ~ item.capacity_display ~ ' · ' ~ item.capacity_label ~ '.') if item.latest_daily_average_percent is not none else item.empty_reason), 'gauge'),
                                     ('Projected Horizon Value', item.projected_display, (('At ' ~ selected_forecast_horizon ~ ', projected demand reaches ' ~ item.projected_percent ~ '% of the capacity baseline.') if item.projected_percent is not none else item.empty_reason), 'scan-line'),
-                                    ('Weekly Trend', item.weekly_trend_display, 'Trend direction is derived from the selected forecast model and committed daily history for this resource.', 'trending-up'),
+                                    ('Weekly Trend', item.weekly_trend_display, 'Trend follows the selected model and committed daily history.', 'trending-up'),
                                     ('Historical Signal Quality', item.signal_quality, item.signal_quality_reason, 'shield-check')
                                     ] %}
                                     <div class="{{ analysis_surface.metric_cell_classes() }}">
