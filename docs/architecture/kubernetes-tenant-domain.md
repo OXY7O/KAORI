@@ -64,3 +64,34 @@ Local human acceptance must exercise all five primary tabs, both drift
 workflows with empty and populated datasets, browser refresh/back/forward,
 per-registry filters/Rows/HTMX, light/dark and mobile views. This is not
 staging UAT or production acceptance evidence.
+
+## Tenant Registry — contextual lifecycle actions (#1022)
+
+Tenant Registry keeps the canonical committed-state table, filters and
+pagination while limiting each row's **Actions** cell to one labelled
+**Manage** control (read-only **View** for users without `tenant.manage`).
+The control opens the existing KAORI native dialog in the browser top layer,
+**outside the horizontal table scrolling container**. This avoids wrapped
+inline forms, clipped popovers and inconsistent row heights.
+
+The dialog preserves the exact Tenant/cluster/provider/generation identity and
+committed lifecycle snapshot. Eligible controls are grouped under **Namespace
+Attachment**, **Release Governance**, and **Lifecycle Actions**. Capsule
+attachment still verifies authoritative UID/resourceVersion and does not
+automatically grant RBAC. Release preflight status and dependency blockers
+are displayed as **persistent in-dialog evidence**, not a hover-only Info Tip.
+Governed Handoff remains approval-gated; an internal acknowledgment,
+unverified external reference or dry-run is **not** proof of a successor's
+acceptance or authority to mark provider-mutated resources Released.
+Decommission remains separate and uses the existing destructive confirmation
+modal after leaving the native actions dialog.
+
+This is a **presentation composition only**. No provider mutations, endpoint
+changes, permissions, HTMX targets, committed-evidence contracts or automatic
+Release/decommission eligibility changes are introduced. Native-dialog
+keyboard/focus/ESC handling reuses `app/static/js/native_dialogs.js`; table
+styles reuse `components/table.html`. Local DevContainer review must verify
+small-screen, light/dark, focus/close, state transitions, blocked evidence and
+HTMX replacement. Developer Check, Full Admission, and live-provider UAT
+remain separate acceptance gates.
+
