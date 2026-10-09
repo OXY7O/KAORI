@@ -195,19 +195,17 @@
                 </tbody>
             </table>
         </div>
-        {% if payload.channel_pagination.total_items > 0 %}
-            {{ table_registry.footer('notification_channels.index',
-                        'notification-channel-registry',
-                        'notification-channel-loading',
-                        payload.channel_pagination,
-                        {'tab': 'channels'},
-                        payload.channel_pagination.allowed_per_page,
-                        resource_label='Channels',
-                        rows_aria_label='Notification channels per page',
-                        control_name='notification-channels',
-                        page_param='channel_page',
-                        per_page_param='channel_per_page') }}
-        {% endif %}
+        {{ table_registry.footer('notification_channels.index',
+                    'notification-channel-registry',
+                    'notification-channel-loading',
+                    payload.channel_pagination,
+                    {'tab': 'channels'},
+                    payload.channel_pagination.allowed_per_page,
+                    resource_label='Channels',
+                    rows_aria_label='Notification channels per page',
+                    control_name='notification-channels',
+                    page_param='channel_page',
+                    per_page_param='channel_per_page') }}
     </section>
     <section class="grid gap-4 lg:grid-cols-3">
         <article class="rounded-xl border border-outline-subtle bg-surface-card p-4 shadow-sm">
