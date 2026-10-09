@@ -386,11 +386,14 @@ def get_tenant_overview_context(*, cluster_page: int = 1, cluster_per_page: int 
         per_page=cluster_per_page,
         sync_state=sync_state,
     )
+    findings = get_active_tenant_governance_findings()
 
     return {
         **cluster_context,
         **sync_context,
-        'tenant_attention_rows': _tenant_attention_rows(get_active_tenant_governance_findings()),
+        'tenant_credential_count': TenantCredential.query.count(),
+        'tenant_governance_finding_count': len(findings),
+        'tenant_attention_rows': _tenant_attention_rows(findings),
         'tenant_recent_activity_rows': _tenant_recent_activity(),
     }
 
