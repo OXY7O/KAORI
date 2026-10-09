@@ -42,3 +42,6 @@ def test_native_namespace_can_attach_to_existing_tenant_without_duplicate_tenant
     assert "'Native Namespace Attached · Managed Allocation'" in routes
     assert "(namespace.provisioning_evidence_json or {}).get('provider_mutation_performed')" in routes
     assert "'operation': 'attach_existing_tenant_namespace' if attach_existing" in routes
+    assert "'provider_mutation_may_have_started': not (" in routes
+    assert 'KAORI database rollback' in routes
+    assert "'attach_existing_tenant_namespace'" in routes
