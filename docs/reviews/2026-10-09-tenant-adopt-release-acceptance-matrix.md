@@ -3,9 +3,13 @@
 **Review snapshot:** 2026-10-09 · **Not a UAT result**  
 **Authority:** #736/#983, #982/#991, #996/#690, #999, #1000 and
 `docs/engineering/KAORI_DELIVERY_WORKFLOW.md`.  
-**Base under evaluation:** `kaori/review/staging-uat` plus issue branches
-#1009, #1010, #1011, #1012 and #1014. These proposed changes are not yet
-a single admitted DevContainer/staging candidate.
+**Base under evaluation:** `kaori/review/staging-uat` with integrated
+Draft PR #1016 (issue #1015), incorporating issue-branch authorities #1009,
+#1010, #1011, #1012 and #1014. The integration is one reviewable source
+candidate, but it is **not merged into the review branch**, not exact-head
+Developer Check/Full Admission approved, and not accepted for DevContainer UAT.
+The native handoff, Capsule attachment, Intelligence and remediation portions
+remain governed by their original implementation issues.
 
 ## Capability-first lifecycle
 

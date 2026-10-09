@@ -33,8 +33,8 @@ from app.kubernetes.tenant.discovery_service import (
     _next_namespace_generation,
     _next_tenant_generation,
     _read_capsule_tenant,
-    select_capsule_namespace_attachment_candidate,
     _take_over_capsule_allocation,
+    select_capsule_namespace_attachment_candidate,
 )
 from app.kubernetes.tenant.native_provider import tenant_workspace_connection_available
 from app.kubernetes.tenant.service import (
