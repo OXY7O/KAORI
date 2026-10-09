@@ -3,12 +3,16 @@ set -Eeuo pipefail
 
 cd /workspace/kaori
 
-git config --global --add safe.directory /workspace/kaori
+# Register the bind-mounted workspace without duplicating safe.directory entries.
+if ! git config --global --get-all safe.directory | grep -Fxq /workspace/kaori; then
+    git config --global --add safe.directory /workspace/kaori
+fi
 
-sudo npm install --global npm@10.9.9
+# The Node Dev Container feature supplies npm. Avoid a network-dependent
+# global npm upgrade on every container creation; npm ci uses the lockfile.
+node --version
 npm --version
-
-bash .devcontainer/ensure-frontend.sh --install-always
+bash .devcontainer/ensure-frontend.sh
 
 python --version
 python -m pip --version
