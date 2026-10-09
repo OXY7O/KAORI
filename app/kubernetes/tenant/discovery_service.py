@@ -325,8 +325,15 @@ def get_tenant_discovery_context(
             observed_capsule_names.add(name)
             tenant = managed_capsule.get((cluster_key, name))
             status = _capsule_phase(item)
+            provider_labels = metadata.get('labels') or {}
+            ownership_reason = (
+                _unclaimed_provider_ownership_reason(labels=provider_labels, resource_kind='Capsule Tenant')
+                if isinstance(provider_labels, Mapping) else 'Capsule Tenant ownership labels are malformed.'
+            )
             management_status = (
-                'Managed' if tenant is not None else ('Blocked' if status == 'Terminating' else 'Discovered')
+                'Managed' if tenant is not None
+                else 'Blocked' if status == 'Terminating' or ownership_reason
+                else 'Discovered'
             )
             rows.append(
                 {
@@ -351,8 +358,8 @@ def get_tenant_discovery_context(
                         if tenant is not None
                         else (
                             'Capsule Tenant is terminating and cannot be adopted.'
-                            if management_status == 'Blocked'
-                            else 'Candidate for governed Capsule adoption preflight; provider authority remains Capsule.'
+                            if status == 'Terminating'
+                            else ownership_reason or 'Candidate for governed Capsule adoption preflight; provider authority remains Capsule.'
                         )
                     ),
                     'provider_reference': str(metadata.get('uid') or name),
@@ -601,17 +608,23 @@ def get_tenant_adoption_preflight_context(
         capsule_version, item = _read_capsule_tenant(client, normalized_resource)
         tenant = _managed_capsule_map([normalized_cluster]).get((normalized_cluster, normalized_resource))
         provider_status = _capsule_phase(item)
+        provider_meta = item.get('metadata') or {}
+        provider_labels = provider_meta.get('labels') or {}
+        ownership_reason = (
+            _unclaimed_provider_ownership_reason(labels=provider_labels, resource_kind='Capsule Tenant')
+            if isinstance(provider_labels, Mapping) else 'Capsule Tenant ownership labels are malformed.'
+        )
         management_status = (
-            'Managed' if tenant is not None else ('Blocked' if provider_status == 'Terminating' else 'Discovered')
+            'Managed' if tenant is not None
+            else 'Blocked' if provider_status == 'Terminating' or ownership_reason
+            else 'Discovered'
         )
         eligibility = (
             'Already governed by KAORI.'
             if tenant is not None
-            else (
-                'Capsule Tenant is terminating and cannot be adopted.'
-                if management_status == 'Blocked'
-                else 'Candidate for governed Capsule adoption preflight; provider authority remains Capsule.'
-            )
+            else 'Capsule Tenant is terminating and cannot be adopted.'
+            if provider_status == 'Terminating'
+            else ownership_reason or 'Candidate for governed Capsule adoption preflight; provider authority remains Capsule.'
         )
         if management_status != 'Discovered':
             raise ValueError(eligibility)
