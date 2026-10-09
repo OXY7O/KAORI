@@ -300,6 +300,7 @@ def _adopt_native(context: _AdoptionContext) -> tuple[TenantEnvironment, TenantN
         managed_record=_managed_namespace_map([str(context.cluster.id)]).get(
             (str(context.cluster.id), context.resource_name)
         ),
+        owner_references=getattr(metadata, 'owner_references', None),
     )
     if provider_status == 'Terminating':
         raise ValueError('The discovered namespace is terminating and cannot be adopted.')
@@ -662,6 +663,7 @@ def attach_discovered_native_namespace_committed(
         namespace=namespace,
         labels=dict(getattr(metadata, 'labels', None) or {}),
         managed_record=_managed_namespace_map([cluster_id]).get((cluster_id, namespace)),
+        owner_references=getattr(metadata, 'owner_references', None),
     )
     if _namespace_phase(item) == 'Terminating' or status != 'Discovered':
         raise ValueError('Namespace attachment is blocked: ' + reason)

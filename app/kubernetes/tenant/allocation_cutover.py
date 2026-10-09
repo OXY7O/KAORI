@@ -20,7 +20,10 @@ from kubernetes.utils.quantity import parse_quantity
 
 from app.extensions.db import db
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
-from app.kubernetes.tenant.allocation_observation import observe_native_namespace_allocation
+from app.kubernetes.tenant.allocation_observation import (
+    capsule_namespace_authority_present,
+    observe_native_namespace_allocation,
+)
 from app.kubernetes.tenant.validation import COUNT_QUOTA_KEYS, validate_profile_spec, validate_storage_policy
 from app.models import Cluster
 from app.models.tenant import TenantNamespace, TenantOwnershipStatus, TenantResourceProfile
@@ -234,6 +237,10 @@ def _mutate_namespace_ownership(
                 'refresh provider observation before initial takeover.'
             )
     labels = dict(getattr(metadata, 'labels', None) or {})
+    if capsule_namespace_authority_present(
+        labels=labels, owner_references=getattr(metadata, 'owner_references', None),
+    ):
+        raise ValueError('Namespace has Capsule Tenant authority; Native ownership takeover is prohibited.')
     owner = str(labels.get(_MANAGED_BY_KEY) or '')
     if owner and owner != _MANAGED_BY_VALUE:
         raise ValueError(f'Namespace is managed by {owner}; governance takeover fails closed.')
