@@ -39,3 +39,6 @@ def test_native_namespace_can_attach_to_existing_tenant_without_duplicate_tenant
 
     assert 'attach_discovered_native_namespace_committed(request.form)' in routes
     assert 'adopt_discovered_tenant_committed(request.form)' in routes
+    assert "'Native Namespace Attached · Managed Allocation'" in routes
+    assert "(namespace.provisioning_evidence_json or {}).get('provider_mutation_performed')" in routes
+    assert "'operation': 'attach_existing_tenant_namespace' if attach_existing" in routes
