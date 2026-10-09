@@ -66,8 +66,10 @@ authoritative for native RoleBindings and authenticated principals.
    after mutation. Capsule New Tenant adoption must reject missing Namespace
    UID/resourceVersion, duplicate correlated Namespaces and Namespace names
    already governed by another KAORI Tenant before records/provider cutover.
-   Native Discovery must block orphaned `managed-by=kaori` or reserved
-   `kaori.io/*` allocation ownership markers until recovery review.
+   Native Namespace and Capsule Tenant CR Discovery/Preflight/Submit must
+   block orphaned `managed-by=kaori` and supported `kaori.io/*` ownership
+   markers (including tenant generation) or an externally claimed manager,
+   until provider recovery and identity authority review.
    Every invalid Attach must leave provider and KAORI state unchanged;
    post-patch read-back failures must never claim success.
 2. **Non-destructive Release:** active credentials, Access Grants, memberships,
