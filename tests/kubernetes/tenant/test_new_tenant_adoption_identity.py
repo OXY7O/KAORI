@@ -153,3 +153,29 @@ def test_capsule_new_tenant_adoption_rejects_namespace_owned_by_another_tenant(m
 
     with pytest.raises(ValueError, match='already belongs to a governed KAORI Tenant'):
         module._adopt_capsule(context)
+
+
+@pytest.mark.parametrize(
+    ('labels', 'reason'),
+    [
+        ({'app.kubernetes.io/managed-by': 'kaori'}, 'ownership markers'),
+        ({'app.kubernetes.io/managed-by': 'KAORI', 'kaori.io/tenant-id': 'old'}, 'ownership markers'),
+        ({'kaori.io/tenant-id': 'orphaned-tenant'}, 'ownership markers'),
+        ({'app.kubernetes.io/managed-by': 'external-controller'}, 'external manager'),
+    ],
+)
+def test_native_discovery_blocks_orphaned_or_foreign_ownership_before_adoption(labels, reason):
+    from app.kubernetes.tenant.discovery_service import _native_management
+
+    state, explanation = _native_management(
+        namespace='sandbox', labels=labels, managed_record=None,
+    )
+    assert state == 'Blocked'
+    assert reason in explanation
+
+
+def test_native_discovery_without_claims_remains_a_review_candidate():
+    from app.kubernetes.tenant.discovery_service import _native_management
+
+    state, _ = _native_management(namespace='sandbox', labels={}, managed_record=None)
+    assert state == 'Discovered'
