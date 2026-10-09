@@ -62,7 +62,7 @@
                                             pathLength="100"
                                             stroke-dasharray="{{ incident_readiness.score if has_checks else 0 }} 100"
                                             transform="rotate(-90 60 60)"
-                                            class="{{ table_label.tone_icon_classes(readiness_tone) }}"></circle>
+                                            class="text-kaori-primary"></circle>
                                 </svg>
                                 <div class="absolute inset-0 flex flex-col items-center justify-center">
                                     <span class="text-3xl font-semibold tabular-nums text-content-primary">{{ incident_readiness.score if has_checks else 'N/A' }}</span>
@@ -93,7 +93,7 @@
                                     <div class="min-w-0 flex-1">
                                         <dt class="text-sm font-semibold text-content-primary">{{ title }}</dt>
                                         <dd class="mt-0.5 text-xs text-content-muted">{{ description }}</dd>
-                                        {{ progress_bar.semantic_bar(score if has_checks else 0, tone, track_classes='mt-2 h-1.5 overflow-hidden rounded-full bg-surface-hover', label=title ~ ' score') }}
+                                        {{ progress_bar.bar(score if has_checks else 0, track_classes='mt-2 h-1.5 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label=title ~ ' score') }}
                                     </div>
                                     {{ table_label.status_label(score ~ '/100' if has_checks else 'N/A', tone, size='compact') }}
                                 </div>
@@ -222,8 +222,8 @@
                     <h3 id="incident-decision-title" class="{{ analysis_surface.section_title_classes() }}">Incident Decision</h3>
                 </header>
                 <div class="p-4">
-                    <div class="rounded-lg border {{ table_label.tone_border_classes(readiness_tone) }} {{ table_label.tone_surface_classes(readiness_tone) }} p-4">
-                        <p class="text-xs font-semibold uppercase tracking-wide">{{ incident_readiness.label }}</p>
+                    <div class="rounded-lg border border-outline-subtle bg-surface-hover p-4">
+                        <p class="text-xs font-semibold uppercase tracking-wide {{ table_label.tone_icon_classes(readiness_tone) }}">{{ incident_readiness.label }}</p>
                         <p class="mt-2 text-base font-semibold leading-6 text-content-primary">{{ incident_readiness.recommended_action }}</p>
                         <p class="mt-2 text-xs leading-5 text-content-secondary">Review active signals and response-control evidence before escalating or suppressing.</p>
                     </div>
