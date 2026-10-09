@@ -88,6 +88,12 @@ def evaluate_tenant_access_drift_committed(*, tenant_id: str, actor_user_id: int
     if age < 0 or age > 3600:
         raise ValueError('External access evidence is stale; inspect Capsule again.')
     grants = TenantAccessGrant.query.filter_by(tenant_id=tenant_id).all()
+    for grant in grants:
+        updated = grant.updated_at
+        if updated is not None:
+            updated_utc = updated.replace(tzinfo=UTC) if updated.tzinfo is None else updated
+            if updated_utc > checked_at:
+                raise ValueError('Access Grants changed since Capsule observation; inspect Capsule again.')
     findings = classify_tenant_access_observation(snapshot, grants)
     result = {
         'tenant_id': tenant_id,
