@@ -466,6 +466,32 @@ Read-only observation requires `tenant.manage` and CSRF. Provider read
 failure, UID replacement or unbounded evidence fails closed, without
 claiming an inventory is complete.
 
+### Committed Access Drift → canonical Intelligence Recommendations (#999)
+
+The existing Tenant Governance Intelligence recommendation builder now
+projects **only** current, grant-correlated declaration mismatches from the
+latest committed Native and Capsule Access Drift AuditEvent into the
+approved rule `kubernetes.tenant.access.grant_drift`. No new rule taxonomy
+or parallel alert engine is introduced. This integration reuses the
+normal Intelligence recommendation, exception and case workflow.
+
+Included declaration evidence: an active Grant missing its provider
+declaration, a revoked Grant still declared, or an exact Native
+Namespace/scope/Role reference mismatch. The evidence carries Tenant,
+cluster, provider, original AuditEvent, observed snapshot timestamp and
+the crucial `effective_rbac_verified=false` boundary. Entries are accepted
+only for currently Ready Tenant generations, same cluster/provider and
+evaluations no older than one hour. A new clean observation supersedes
+older drift and stale findings do not persist as fresh recommendations.
+
+**Foreign RoleBindings, Capsule owners, orphan marker labels and unknown
+principals are *not* projected as `unmanaged_principal` automatically.**
+That rule refers to actual normalized Kubernetes audit activity and
+requires independent identity correlation. External access inventory
+findings remain review-only under the Tenant Access Grants workspace
+until a specific approved Intelligence rule or audited principal
+identity is established.
+
 ### Native Access Drift declaration correlation (#999)
 
 After **Inspect Native RBAC** has committed a scoped, bounded namespaced
