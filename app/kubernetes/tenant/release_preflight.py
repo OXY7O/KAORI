@@ -13,9 +13,11 @@ from app.kubernetes.tenant.decommission_service import (
     _active_membership_count,
 )
 from app.kubernetes.tenant.allocation_observation import observe_native_namespace_allocation
+from app.kubernetes.tenant.capsule_allocation_observation import _capsule_status_namespace_names
 from app.kubernetes.tenant.external_access_observation import latest_external_capsule_access_evidence
 from app.kubernetes.tenant.release_handoff_inventory import (
     capsule_tenant_handoff_evidence,
+    capsule_namespace_handoff_evidence,
     handoff_fingerprint,
     native_namespace_handoff_evidence,
 )
@@ -143,6 +145,35 @@ def review_tenant_release_preflight_committed(*, tenant_id: str, actor_user_id: 
                     )
                     handoff_components.extend(items)
                     blockers.extend(handoff_blockers)
+                    status_names = _capsule_status_namespace_names(obj)
+                    for record in rows[:30]:
+                        if record.provisioning_status in {'deprovisioned', 'released'}:
+                            continue
+                        try:
+                            namespace = client.core_api().read_namespace(
+                                record.namespace, _request_timeout=5
+                            )
+                            component, issues = capsule_namespace_handoff_evidence(
+                                record=record, namespace=namespace,
+                                tenant_name=str(tenant.provider_reference),
+                                tenant_id=tenant.id,
+                                status_namespace_names=status_names,
+                            )
+                            handoff_components.append({
+                                **component, 'namespace': record.namespace
+                            })
+                            blockers.extend(issues)
+                            provider.append({
+                                'kind': 'Namespace',
+                                'name': record.namespace,
+                                'uid': component['uid'],
+                                'resource_version': component['resource_version'],
+                            })
+                        except (ApiException, ValueError, TypeError, AttributeError):
+                            blockers.append(
+                                f'Capsule Namespace/{record.namespace} identity or ownership '
+                                'could not be verified for Release.'
+                            )
             except (ApiException, ValueError, AttributeError):
                 blockers.append('Capsule Tenant live read failed; release remains blocked.')
             external = latest_external_capsule_access_evidence(tenant_id)
@@ -166,7 +197,7 @@ def review_tenant_release_preflight_committed(*, tenant_id: str, actor_user_id: 
                 if age_seconds < 0 or age_seconds > 3600:
                     blockers.append('External Capsule ownership evidence must be inspected again.')
         elif tenant.provider_key == 'native_kubernetes':
-            for record in rows:
+            for record in rows[:30]:
                 if record.provisioning_status in {'deprovisioned', 'released'}:
                     continue
                 try:
