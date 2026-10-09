@@ -214,6 +214,15 @@ def _mutate_namespace_ownership(
 ) -> None:
     existing = api.read_namespace(record.namespace)
     metadata = getattr(existing, 'metadata', None)
+    observed_uid = _metadata_value(metadata, 'uid')
+    observed_version = _metadata_value(metadata, 'resource_version')
+    expected_uid = str(getattr(record, 'provider_reference', None) or '').strip()
+    if record.ownership_status == 'adopted' and (
+        not expected_uid or not observed_uid or observed_uid != expected_uid
+    ):
+        raise ValueError('Adopted Namespace UID differs from committed provider identity; inspect before mutation.')
+    if not observed_version:
+        raise ValueError('Namespace resourceVersion is unavailable; refusing ownership mutation.')
     labels = dict(getattr(metadata, 'labels', None) or {})
     owner = str(labels.get(_MANAGED_BY_KEY) or '')
     if owner and owner != _MANAGED_BY_VALUE:
@@ -223,13 +232,21 @@ def _mutate_namespace_ownership(
     body = {
         'metadata': {
             'name': record.namespace,
-            'resourceVersion': _metadata_value(metadata, 'resource_version') or None,
+            'resourceVersion': observed_version,
             'labels': desired_labels,
         }
     }
     api.patch_namespace(name=record.namespace, body=body)
     verified = api.read_namespace(record.namespace)
-    verified_labels = dict(getattr(getattr(verified, 'metadata', None), 'labels', None) or {})
+    verified_metadata = getattr(verified, 'metadata', None)
+    verified_uid = _metadata_value(verified_metadata, 'uid')
+    verified_labels = dict(getattr(verified_metadata, 'labels', None) or {})
+    if (
+        (observed_uid and verified_uid != observed_uid)
+        or (record.ownership_status == 'adopted' and verified_uid != expected_uid)
+        or not _metadata_value(verified_metadata, 'resource_version')
+    ):
+        raise ValueError('Namespace UID/resourceVersion changed during ownership read-back.')
     if (
         verified_labels.get(_MANAGED_BY_KEY) != _MANAGED_BY_VALUE
         or verified_labels.get(_TENANT_ID_KEY) != record.environment.tenant.id
