@@ -241,6 +241,13 @@ def _mutate_namespace_ownership(
         labels=labels, owner_references=getattr(metadata, 'owner_references', None),
     ):
         raise ValueError('Namespace has Capsule Tenant authority; Native ownership takeover is prohibited.')
+    if allocation_control_state(record) == 'adopted_observed' and any(
+        key in labels for key in (
+            _TENANT_ID_KEY, _ENVIRONMENT_KEY, _PROFILE_ID_KEY,
+            'kaori.io/tenant-generation',
+        )
+    ):
+        raise ValueError('Native Namespace has residual KAORI ownership labels; inspect before initial takeover.')
     owner = str(labels.get(_MANAGED_BY_KEY) or '')
     if owner and owner != _MANAGED_BY_VALUE:
         raise ValueError(f'Namespace is managed by {owner}; governance takeover fails closed.')
@@ -264,6 +271,11 @@ def _mutate_namespace_ownership(
     verified_metadata = getattr(verified, 'metadata', None)
     verified_uid = _metadata_value(verified_metadata, 'uid')
     verified_labels = dict(getattr(verified_metadata, 'labels', None) or {})
+    if capsule_namespace_authority_present(
+        labels=verified_labels,
+        owner_references=getattr(verified_metadata, 'owner_references', None),
+    ):
+        raise ValueError('Capsule authority appeared during Native ownership read-back.')
     if (
         (observed_uid and verified_uid != observed_uid)
         or (record.ownership_status == 'adopted' and verified_uid != expected_uid)
