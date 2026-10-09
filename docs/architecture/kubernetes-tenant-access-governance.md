@@ -271,6 +271,43 @@ failed cleanup never claims that access was revoked. Drift/inspect/reconcile use
 committed grant lineage and store non-secret provider UID, resourceVersion, target, and
 effective-evidence hashes.
 
+### Kubernetes Integration · Capsule Cluster RBAC Bootstrap (#974)
+
+ClusterRole prerequisites belong to the **Kubernetes cluster**, not to a specific
+newly created or adopted Tenant. Before the first Capsule Access Grant, open
+**Integrations → Kubernetes → [Cluster] → Validation & Capabilities →
+Capsule Cluster RBAC Bootstrap** and run **Check RBAC**.
+
+- Check RBAC performs a read-only, explicit live comparison of Viewer, Operator,
+  Tenant Admin and Deployer ClusterRoles against `ACCESS_PROFILE_CATALOG`.
+  The latest role name, version, expected permission hash, UID/resourceVersion,
+  Ready/Missing/Conflict state and execution actor are committed as non-secret
+  `AuditEvent` evidence. Normal page visits read this evidence without calling
+  Kubernetes.
+- **Bootstrap Missing Roles** is enabled only after a recent explicit Check
+  reports Missing and no Conflicts. It requires `clusters.manage` and
+  `integrations.manage`, a valid CSRF token and explicit acknowledgement of
+  a cluster-scoped mutation. The backend repeats live preflight, checks Capsule
+  v1beta2 discovery, dry-runs every missing role, creates only missing roles and
+  reads back exact permissions, UID and resourceVersion.
+- Existing exact ClusterRoles are **reused untouched**, regardless of which
+  external administrator first created them. Existing mismatched, aggregated,
+  or differently owned RBAC is never patched or replaced. Concurrent conflicts,
+  insufficient Kubernetes `create`/RBAC escalation authority, partial mutations
+  and read-back gaps fail closed with committed audit status.
+- Kubernetes RBAC may reject creation if the KAORI connection identity lacks
+  permission to create ClusterRoles with the specified resource verbs; grant
+  only narrowly approved cluster provisioning access under cluster-admin
+  governance. Capsule controller `bind` authority is a **separate** requirement.
+- Re-run Check after bootstrap before reconciling any previously failed Capsule
+  Access Grant. Second Check detects existing exact roles and Bootstrap becomes
+  disabled; do not provision per Tenant.
+
+**Tenant discovery/adoption never triggers bootstrap automatically.**
+No ClusterRoleBinding or implicit Tenant grant is created. Manual YAML
+Copy/Download from Grant Context → Prepare Roles remains a fallback for clusters
+where KAORI is not authorized to perform this approved cluster mutation.
+
 ### Operator preparation and Capsule UAT
 
 1. Confirm the adopted Capsule Tenant is healthy and its Namespace inventory is committed,

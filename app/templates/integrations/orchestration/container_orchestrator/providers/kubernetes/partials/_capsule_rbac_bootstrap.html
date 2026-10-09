@@ -1,0 +1,109 @@
+{% import "components/table_label.html" as table_label %}
+{% import "components/action_button.html" as action_button %}
+{% set snapshot = capsule_rbac_bootstrap %}
+{% set roles = snapshot.roles if snapshot and snapshot.roles else [] %}
+<section class="mt-5 overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+         aria-labelledby="capsule-rbac-bootstrap-heading"
+         data-capsule-rbac-bootstrap>
+    <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                  aria-hidden="true">
+                <i data-lucide="shield-check" class="h-5 w-5"></i>
+            </span>
+            <div class="min-w-0">
+                <h3 id="capsule-rbac-bootstrap-heading"
+                    class="text-base font-semibold text-content-primary">Capsule Cluster RBAC Bootstrap</h3>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">
+                    Reuse approved ClusterRoles or explicitly provision missing ones once per Kubernetes cluster.
+                    This operation is independent of Tenant adoption.
+                </p>
+                {% if snapshot %}
+                    <div class="mt-2 flex flex-wrap items-center gap-2">
+                        {{ table_label.status_label(snapshot.status|title, 'normal' if snapshot.status == 'ready' else 'critical' if snapshot.status in ['failed', 'conflict'] else 'warning') }}
+                        <span class="text-xs text-content-muted">Latest committed {{ snapshot.operation|title }} evidence</span>
+                    </div>
+                {% else %}
+                    <p class="mt-2 text-xs font-medium text-content-muted">Not checked · no committed RBAC bootstrap evidence.</p>
+                {% endif %}
+            </div>
+        </div>
+        {% if current_user.has_permission('clusters.sync') %}
+            <form method="post"
+                  action="{{ url_for('integrations.kubernetes_capsule_rbac_check', cluster_id=cluster.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="{{ action_button.classes('secondary') }} whitespace-nowrap">
+                    <i data-lucide="scan-search" class="h-4 w-4" aria-hidden="true"></i>
+                    Check RBAC
+                </button>
+            </form>
+        {% endif %}
+    </header>
+    <div class="space-y-4 px-5 py-4">
+        {% if roles %}
+            <div class="grid gap-2 sm:grid-cols-2">
+                {% for role in roles %}
+                    <div class="flex min-w-0 items-start justify-between gap-2 rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold text-content-primary">{{ role.profile }} · v{{ role.version }}</p>
+                            <p class="mt-1 break-all font-mono text-[11px] text-content-muted">{{ role.name }}</p>
+                            {% if role.reason %}
+                                <p class="mt-1 text-xs leading-5 text-status-critical-text">{{ role.reason }}</p>
+                            {% endif %}
+                        </div>
+                        {{ table_label.status_label(role.status|title, 'normal' if role.status == 'ready' else 'critical' if role.status == 'conflict' else 'warning') }}
+                    </div>
+                {% endfor %}
+            </div>
+            <p class="text-xs leading-5 text-content-muted">
+                {{ snapshot.ready }} Ready · {{ snapshot.missing }} Missing · {{ snapshot.conflict }} Conflicting.
+                Existing exact roles are reused without writes; conflicting roles are never overwritten.
+            </p>
+        {% elif snapshot and snapshot.error %}
+            <p class="rounded-lg border border-status-critical-border bg-status-critical-soft px-4 py-3 text-xs leading-5 text-status-critical-text">
+                Cluster RBAC inspection or bootstrap failed ({{ snapshot.error }}). Check Kubernetes connectivity, effective cluster-scoped permissions and Audit evidence.
+            </p>
+        {% else %}
+            <p class="text-xs leading-5 text-content-muted">
+                Run Check RBAC to inspect the four code-owned ClusterRole definitions and commit non-secret evidence.
+                This page reads committed evidence rather than querying the cluster on each visit.
+            </p>
+        {% endif %}
+        {% if snapshot and snapshot.created %}
+            <p class="text-xs leading-5 text-content-secondary">
+                Created during last bootstrap: {{ snapshot.created|join(', ') }}.
+            </p>
+        {% endif %}
+    </div>
+    {% if current_user.has_permission('clusters.manage') and current_user.has_permission('integrations.manage') %}
+        <footer class="space-y-3 border-t border-outline-subtle bg-surface-hover px-5 py-4">
+            <p class="text-xs leading-5 text-content-secondary">
+                Bootstrap is an explicit, cluster-scoped RBAC mutation. KAORI performs a new server-side preflight,
+                creates only missing versioned roles and verifies the result. It does not modify Capsule Tenants,
+                grant ClusterRoleBindings, or replace conflicting roles.
+            </p>
+            <form method="post"
+                  action="{{ url_for('integrations.kubernetes_capsule_rbac_bootstrap', cluster_id=cluster.id) }}"
+                  class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <label class="flex min-w-0 items-start gap-2 text-xs leading-5 text-content-secondary">
+                    <input type="checkbox" name="confirm_cluster_rbac" value="approved" required
+                           class="mt-1 h-4 w-4 shrink-0 accent-kaori-primary">
+                    <span>I approve creating only missing code-owned ClusterRoles on
+                        <strong class="text-content-primary">{{ cluster.name }}</strong>.
+                        I understand this requires cluster-admin RBAC and is recorded in Audit evidence.</span>
+                </label>
+                <button type="submit"
+                        {% if not snapshot or snapshot.status != 'missing' or snapshot.conflict %}disabled{% endif %}
+                        class="{{ action_button.classes('primary') }} shrink-0 whitespace-nowrap">
+                    <i data-lucide="shield-plus" class="h-4 w-4" aria-hidden="true"></i>
+                    Bootstrap Missing Roles
+                </button>
+            </form>
+            <p class="text-xs leading-5 text-content-muted">
+                Capsule's controller must independently be authorized to bind these roles.
+                After bootstrap, return to Access Grants and explicitly Reconcile the grant.
+            </p>
+        </footer>
+    {% endif %}
+</section>
