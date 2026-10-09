@@ -46,6 +46,21 @@ def test_release_preflight_rejects_destructive_or_foreign_ownership_and_live_dep
         assert _release_blockers(tenant, namespaces, counts=counts)
 
 
+def test_mutated_and_unknown_namespace_provenance_have_distinct_handoff_authority():
+    changed = _release_blockers(
+        _tenant(), [
+            _namespace(provisioning_evidence_json={'provider_mutation_performed': True})
+        ], counts={},
+    )
+    assert any('KAORI-mutated Namespace provider controls' in reason for reason in changed)
+
+    unknown = _release_blockers(
+        _tenant(), [_namespace(provisioning_evidence_json={})], counts={},
+    )
+    assert any('missing or unverified provider mutation provenance' in reason for reason in unknown)
+    assert all('independently approved external handoff is required' not in reason for reason in unknown)
+
+
 def test_external_adoption_without_active_dependencies_is_preflight_review_candidate_only():
     assert _release_blockers(
         _tenant(), [_namespace()], counts={

@@ -30,6 +30,7 @@ _EXPECTED_HANDOFF_PREFIXES = (
 )
 _EXPECTED_HANDOFF_FRAGMENTS = (
     'has KAORI-managed allocation; explicit provider handoff is required.',
+    'has KAORI-mutated Namespace provider controls; independently approved external handoff is required.',
     'KAORI-linked allocation ownership requires independently approved external handoff',
 )
 _REQUIRED_DEPENDENCIES = frozenset({
