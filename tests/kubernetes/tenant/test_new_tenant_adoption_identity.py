@@ -161,6 +161,9 @@ def test_capsule_new_tenant_adoption_rejects_namespace_owned_by_another_tenant(m
         ({'app.kubernetes.io/managed-by': 'kaori'}, 'ownership markers'),
         ({'app.kubernetes.io/managed-by': 'KAORI', 'kaori.io/tenant-id': 'old'}, 'ownership markers'),
         ({'kaori.io/tenant-id': 'orphaned-tenant'}, 'ownership markers'),
+        ({'kaori.io/environment': 'production'}, 'ownership markers'),
+        ({'kaori.io/resource-profile': 'profile-standard'}, 'ownership markers'),
+        ({'kaori.io/tenant-id': ''}, 'ownership markers'),
         ({'app.kubernetes.io/managed-by': 'external-controller'}, 'external manager'),
     ],
 )
