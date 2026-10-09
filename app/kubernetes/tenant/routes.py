@@ -54,7 +54,10 @@ from app.kubernetes.tenant.job_adapter import (
     dispatch_tenant_decommission,
     get_visible_tenant_sync_job,
 )
-from app.kubernetes.tenant.release_preflight import review_tenant_release_preflight_committed
+from app.kubernetes.tenant.release_preflight import (
+    release_adopted_tenant_committed,
+    review_tenant_release_preflight_committed,
+)
 from app.kubernetes.tenant.live_connection import get_live_tenant_connection_context
 from app.kubernetes.tenant.overview import dispatch_tenant_inventory_sync
 from app.kubernetes.tenant.route_common import (
@@ -637,6 +640,40 @@ def review_tenant_release_route(tenant_id: str):
             message=f"{len(result['blockers'])} blocker(s); no provider resource was modified.",
             detail='Release is not yet admitted. Review the committed dependency and provider handoff evidence.',
             metadata={'tenant_id': tenant_id, 'operation': 'review_tenant_release'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-governance')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+def release_tenant_governance_route(tenant_id: str):
+    try:
+        _csrf()
+        if request.form.get('confirm_release_governance') != 'approved':
+            raise ValueError('Explicit provider-preserving governance Release approval is required.')
+        result = release_adopted_tenant_committed(
+            tenant_id=tenant_id,
+            actor_user_id=int(current_user.id),
+            approved=True,
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_release_governance_blocked',
+            status='warning',
+            title='Release Governance Blocked',
+            message=str(exc),
+            detail='Existing Kubernetes Namespace/Capsule resources were not deleted or changed.',
+            metadata={'tenant_id': tenant_id, 'operation': 'release_tenant_governance'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_release_governance_completed',
+            status='success',
+            title='Tenant Governance Released',
+            message=f"Generation {result['generation']} released; {result['released_namespace_count']} namespaces retained.",
+            detail='Provider resources remain externally managed. Re-adopt requires fresh provider discovery.',
+            metadata={'tenant_id': tenant_id, 'operation': 'release_tenant_governance'},
         )
     return _tenant_section_redirect('registry')
 

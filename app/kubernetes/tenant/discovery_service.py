@@ -88,7 +88,7 @@ def _managed_namespace_map(cluster_ids: list[str]) -> dict[tuple[str, str], Tena
     rows = (
         TenantNamespace.query.filter(
             TenantNamespace.cluster_id.in_(cluster_ids),
-            TenantNamespace.provisioning_status != 'deprovisioned',
+            TenantNamespace.provisioning_status.notin_(('deprovisioned', 'released')),
         )
         .join(TenantEnvironment, TenantNamespace.tenant_environment_id == TenantEnvironment.id)
         .join(Tenant, TenantEnvironment.tenant_id == Tenant.id)
@@ -103,7 +103,7 @@ def _managed_capsule_map(cluster_ids: list[str]) -> dict[tuple[str, str], Tenant
     rows = Tenant.query.filter(
         Tenant.cluster_id.in_(cluster_ids),
         Tenant.provider_key == 'capsule',
-        Tenant.lifecycle_status != 'decommissioned',
+        Tenant.lifecycle_status.notin_(('decommissioned', 'released')),
     ).all()
     result: dict[tuple[str, str], Tenant] = {}
     for tenant in rows:
@@ -583,7 +583,8 @@ def _next_tenant_generation(*, cluster_id: str, slug: str) -> int:
         .order_by(Tenant.generation.desc(), Tenant.created_at.desc())
         .all()
     )
-    if any(item.lifecycle_status != TenantLifecycleStatus.DECOMMISSIONED.value for item in prior):
+    terminal = {TenantLifecycleStatus.DECOMMISSIONED.value, TenantLifecycleStatus.RELEASED.value}
+    if any(item.lifecycle_status not in terminal for item in prior):
         raise ValueError('An active KAORI Tenant with this name/slug already exists on the selected cluster.')
     return max((int(item.generation or 1) for item in prior), default=0) + 1
 
@@ -594,7 +595,8 @@ def _next_namespace_generation(*, cluster_id: str, namespace: str) -> int:
         .order_by(TenantNamespace.generation.desc(), TenantNamespace.created_at.desc())
         .all()
     )
-    if any(item.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value for item in prior):
+    terminal = {TenantNamespaceProvisioningStatus.DEPROVISIONED.value, TenantNamespaceProvisioningStatus.RELEASED.value}
+    if any(item.provisioning_status not in terminal for item in prior):
         raise ValueError('This namespace is already represented by an active KAORI Tenant record.')
     return max((int(item.generation or 1) for item in prior), default=0) + 1
 

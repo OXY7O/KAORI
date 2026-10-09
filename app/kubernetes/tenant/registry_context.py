@@ -67,11 +67,11 @@ def get_tenant_shell_context() -> dict[str, Any]:
     return {
         'ready_clusters': ready_clusters,
         'tenant_count': Tenant.query.filter(
-            Tenant.lifecycle_status != TenantLifecycleStatus.DECOMMISSIONED.value
+            Tenant.lifecycle_status.notin_((TenantLifecycleStatus.DECOMMISSIONED.value, TenantLifecycleStatus.RELEASED.value))
         ).count(),
         'profile_count': TenantResourceProfile.query.count(),
         'namespace_count': TenantNamespace.query.filter(
-            TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value
+            TenantNamespace.provisioning_status.notin_((TenantNamespaceProvisioningStatus.DEPROVISIONED.value, TenantNamespaceProvisioningStatus.RELEASED.value))
         ).count(),
         'ready_namespace_count': TenantNamespace.query.filter_by(
             provisioning_status=TenantNamespaceProvisioningStatus.READY.value
@@ -106,7 +106,9 @@ def get_resource_profile_workspace_context() -> dict[str, Any]:
                 profile_class=TenantResourceProfileClass.CUSTOM.value
             ).count(),
             'active_allocations': TenantNamespace.query.filter(
-                TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+                TenantNamespace.provisioning_status.notin_(
+                    (TenantNamespaceProvisioningStatus.DEPROVISIONED.value, TenantNamespaceProvisioningStatus.RELEASED.value)
+                ),
                 TenantNamespace.resource_profile_id.isnot(None),
             ).count(),
         },
@@ -167,7 +169,9 @@ def _resource_profile_rollout_targets(profile_ids: list[int]) -> dict[int, list[
         .join(TenantResourceProfile, TenantResourceProfile.id == TenantNamespace.resource_profile_id)
         .filter(
             TenantNamespace.resource_profile_id.in_(profile_ids),
-            TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+            TenantNamespace.provisioning_status.notin_(
+                    (TenantNamespaceProvisioningStatus.DEPROVISIONED.value, TenantNamespaceProvisioningStatus.RELEASED.value)
+                ),
         )
         .group_by(
             TenantNamespace.resource_profile_id,
@@ -296,7 +300,9 @@ def get_tenant_registry_context(
             .join(TenantNamespace, TenantNamespace.tenant_environment_id == TenantEnvironment.id)
             .filter(
                 TenantEnvironment.tenant_id.in_(tenant_ids),
-                TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+                TenantNamespace.provisioning_status.notin_(
+                    (TenantNamespaceProvisioningStatus.DEPROVISIONED.value, TenantNamespaceProvisioningStatus.RELEASED.value)
+                ),
             )
             .group_by(TenantEnvironment.tenant_id)
             .all()
@@ -695,7 +701,9 @@ def get_tenant_context() -> dict[str, Any]:
         profile_class=TenantResourceProfileClass.CUSTOM.value
     ).count()
     active_profile_allocation_count = TenantNamespace.query.filter(
-        TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+        TenantNamespace.provisioning_status.notin_(
+                    (TenantNamespaceProvisioningStatus.DEPROVISIONED.value, TenantNamespaceProvisioningStatus.RELEASED.value)
+                ),
         TenantNamespace.resource_profile_id.isnot(None),
     ).count()
     return {

@@ -103,6 +103,49 @@ def _prepare_adoption(source: Mapping[str, Any]) -> _AdoptionContext:
     )
 
 
+def _released_predecessor_evidence(tenant: Tenant, *, provider_uid: str) -> dict[str, Any] | None:
+    """Correlate an adopted resource to exactly one prior Released generation."""
+    previous = (
+        Tenant.query.filter_by(cluster_id=tenant.cluster_id, slug=tenant.slug)
+        .filter(Tenant.lifecycle_status == TenantLifecycleStatus.RELEASED.value)
+        .order_by(Tenant.generation.desc()).first()
+    )
+    if previous is None:
+        return None
+    evidence = previous.provider_evidence_json or {}
+    if previous.provider_key != tenant.provider_key:
+        raise ValueError('Released Tenant provider differs; new adoption requires an independent identity.')
+    if not provider_uid or provider_uid != str(evidence.get('provider_uid') or ''):
+        raise ValueError('Released provider UID changed; refuse silent Re-adopt identity reuse.')
+    release = evidence.get('release_governance') or {}
+    if release.get('status') != 'released':
+        raise ValueError('Released generation has no verifiable handoff evidence.')
+    return {
+        'predecessor_tenant_id': previous.id,
+        'predecessor_generation': previous.generation,
+        'predecessor_correlation_id': previous.correlation_id,
+        'previous_released_at': release.get('released_at'),
+        'provider_uid_verified': True,
+    }
+
+
+def _verify_released_namespace_lineage(
+    *, cluster_id: str, namespace: str, provider_uid: str, tenant_slug: str
+) -> None:
+    """Refuse ambiguous Tenant reassignment or provider name reuse across Released history."""
+    previous = (
+        TenantNamespace.query.filter_by(cluster_id=cluster_id, namespace=namespace)
+        .filter(TenantNamespace.provisioning_status == TenantNamespaceProvisioningStatus.RELEASED.value)
+        .order_by(TenantNamespace.generation.desc()).first()
+    )
+    if previous is None:
+        return
+    if previous.environment.tenant.slug != tenant_slug:
+        raise ValueError('Released Namespace belongs to another Tenant lineage; ownership review is required.')
+    if not provider_uid or provider_uid != previous.provider_reference:
+        raise ValueError('Released Namespace UID changed; refuse silent Namespace Re-adopt.')
+
+
 def _native_namespace_record(
     context: _AdoptionContext,
     environment: TenantEnvironment,
@@ -112,6 +155,10 @@ def _native_namespace_record(
 ) -> TenantNamespace:
     provider_uid = str(getattr(metadata, 'uid', None) or context.resource_name)
     resource_version = str(getattr(metadata, 'resource_version', None) or '')
+    _verify_released_namespace_lineage(
+        cluster_id=str(context.cluster.id), namespace=context.resource_name,
+        provider_uid=provider_uid, tenant_slug=context.tenant.slug,
+    )
     record = TenantNamespace()
     record.environment = environment
     record.cluster_id = context.cluster.id
@@ -246,6 +293,9 @@ def _adopt_native(context: _AdoptionContext) -> tuple[TenantEnvironment, TenantN
         'provider_mutation_performed': False,
         'secret_material_persisted': False,
     }
+    lineage = _released_predecessor_evidence(tenant, provider_uid=provider_uid)
+    if lineage is not None:
+        tenant.provider_evidence_json['re_adoption_lineage'] = lineage
     db.session.add(tenant)
 
     environment = TenantEnvironment()
@@ -269,6 +319,10 @@ def _capsule_namespace_records(
         if not namespace_name:
             continue
         namespace_allocation = dict(correlated.get('allocation') or {})
+        _verify_released_namespace_lineage(
+            cluster_id=str(context.cluster.id), namespace=namespace_name,
+            provider_uid=str(correlated.get('uid') or ''), tenant_slug=context.tenant.slug,
+        )
         record = TenantNamespace()
         record.environment = environment
         record.cluster_id = context.cluster.id
@@ -434,6 +488,9 @@ def _adopt_capsule(context: _AdoptionContext) -> tuple[TenantEnvironment, Tenant
         'provider_mutation_performed': False,
         'secret_material_persisted': False,
     }
+    lineage = _released_predecessor_evidence(tenant, provider_uid=provider_uid)
+    if lineage is not None:
+        tenant.provider_evidence_json['re_adoption_lineage'] = lineage
     db.session.add(tenant)
     environment = TenantEnvironment()
     environment.tenant = tenant
