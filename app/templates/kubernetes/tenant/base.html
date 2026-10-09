@@ -74,7 +74,7 @@
             {% include "components/cluster/_onboarding_banner.html" %}
         {% else %}
             {% if tenant_page != 'overview' and tenant_collection_snapshot is defined %}
-                {% include "kubernetes/tenant/partials/_collection_snapshot_compact.html" %}
+                {% include "kubernetes/tenant/partials/_collection_snapshot_context.html" %}
             {% endif %}
             {% block tenant_content %}
             {% endblock tenant_content %}
