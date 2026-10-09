@@ -86,7 +86,16 @@ def _tenant_admin_support_context(section: str) -> dict[str, Any]:
 
 def _operations_active_tab() -> str:
     active_tab = str(request.args.get('tab') or 'provisioning')
-    if active_tab not in {'provisioning', 'runs-evidence', 'drift-reconcile', 'activity'}:
+    if active_tab == 'drift-reconcile':
+        # Support existing bookmarked URLs until consumers adopt primary tabs.
+        return 'operational-reconcile' if request.args.get('drift_view') == 'operations' else 'allocation-drift'
+    if active_tab not in {
+        'provisioning',
+        'runs-evidence',
+        'allocation-drift',
+        'operational-reconcile',
+        'activity',
+    }:
         return 'provisioning'
     return active_tab
 
