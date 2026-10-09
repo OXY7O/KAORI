@@ -59,9 +59,12 @@ authoritative for native RoleBindings and authenticated principals.
    conflict. Capsule Discovery and Adoption Preflight use the same immutable
    Capsule owner UID check as final Attach Submit. New Native/Capsule Tenant
    adoption submits the exact UID/resourceVersion from its explicit Preflight,
-   rejecting replaced objects and changed versions; Native ownership PATCH
-   rechecks the adopted Namespace UID and verifies UID after provider mutation.
-   Every invalid attach must leave provider and KAORI state unchanged.
+   rejecting replaced objects and changed versions; Native Attach to an
+   Existing Tenant uses the same preflight UID/resourceVersion binding.
+   Native ownership PATCH rechecks adopted Namespace UID, requires provider
+   resourceVersion, rejects foreign KAORI Tenant claims, and verifies UID
+   after mutation. Every invalid Attach must leave provider and KAORI state
+   unchanged; post-patch read-back failures must never claim success.
 2. **Non-destructive Release:** active credentials, Access Grants, memberships,
    managed profiles, managed resources and policies must block. All active
    Namespace records require explicitly `provider_mutation_performed=false`
