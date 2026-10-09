@@ -483,6 +483,29 @@ The `ClusterRole` and Capsule controller `bind` preparation are cluster-admin ch
 outside KAORI's automatically executed reconciliation. A missing prerequisite produces a
 specific operator error; it is not silently installed.
 
+## External RBAC inventory and governed import workstream (#996)
+
+External Kubernetes/Capsule authorization must be treated first as **provider
+observation**, not as a KAORI-managed grant. The new
+`external_access_inventory.py` normalization contract records Capsule
+`spec.owners`, `additionalRoleBindings`, and
+`spec.rules[].permissions.bindings` with their exact provider ownership marker,
+subject identity, selector and non-secret evidence hash.
+
+This first implementation slice is an observation-only **foundation**, and
+does not yet read live provider data into a persisted inventory, expose an
+operator UI, or perform external grant import. In particular, observing an
+owner or a Group subject is not proof of any current IdP/KAORI membership.
+Any future import must verify immutable provider UID, exact effective
+permissions, scope and subject authenticity, external role ownership,
+human approval and read-back. Foreign RBAC remains provider-authoritative
+and cannot be revoked by KAORI merely because it appeared in inventory.
+
+Release Governance / Re-adopt (#997), attach-to-existing Tenant (#998),
+Access Drift findings (#999), and low-risk remediation (#1000) must
+reuse this exact ownership/evidence discipline and be admitted as
+separate workstreams after their prerequisites pass.
+
 ## Revocation and re-authorization
 
 Access Grant revocation and Tenant Membership revocation are different operations.
