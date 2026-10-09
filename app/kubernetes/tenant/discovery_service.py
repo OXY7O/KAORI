@@ -73,6 +73,20 @@ def _tone(status: str) -> str:
     return 'warning'
 
 
+def _unclaimed_provider_ownership_reason(*, labels: Mapping[str, Any], resource_kind: str) -> str | None:
+    """Reject orphaned KAORI labels and foreign managers before any provider takeover."""
+    manager = str(labels.get('app.kubernetes.io/managed-by') or '').strip()
+    reserved_claims = ('kaori.io/tenant-id', 'kaori.io/environment', 'kaori.io/resource-profile')
+    if manager.lower() == 'kaori' or any(key in labels for key in reserved_claims):
+        return (
+            f'{resource_kind} has KAORI ownership markers without active governance; '
+            'inspect provider residue and recover the prior Tenant before adoption.'
+        )
+    if manager:
+        return f'{resource_kind} declares external manager {manager}.'
+    return None
+
+
 def _native_management(
     *,
     namespace: str,
@@ -83,18 +97,9 @@ def _native_management(
         return 'Managed', 'Already governed by KAORI.'
     if namespace in _SYSTEM_NAMESPACES:
         return 'Blocked', 'Kubernetes system namespaces are not Tenant adoption candidates.'
-    external_manager = str(labels.get('app.kubernetes.io/managed-by') or '').strip()
-    # A partial or orphaned KAORI allocation label is still ownership
-    # evidence; absence of a tenant-id does not make a takeover safe.
-    reserved_claims = ('kaori.io/tenant-id', 'kaori.io/environment', 'kaori.io/resource-profile')
-    if external_manager.lower() == 'kaori' or any(key in labels for key in reserved_claims):
-        return (
-            'Blocked',
-            'Namespace has KAORI ownership markers without active governance; '
-            'inspect provider residue and recover the prior Tenant before adoption.',
-        )
-    if external_manager:
-        return 'Blocked', f'Provider resource declares external manager {external_manager}.'
+    ownership_reason = _unclaimed_provider_ownership_reason(labels=labels, resource_kind='Namespace')
+    if ownership_reason:
+        return 'Blocked', ownership_reason
     return 'Discovered', 'Candidate for governed adoption preflight; no provider mutation has occurred.'
 
 
