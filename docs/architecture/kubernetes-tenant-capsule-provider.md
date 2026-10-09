@@ -21,6 +21,22 @@ Capsule is not modeled as a boolean. The provider reports capability evidence fo
 
 Only `available` capabilities may authorize security-sensitive mutations. Degraded or unavailable capabilities fail closed.
 
+## Access Grant reconciliation
+
+Issue #966 adds independent Capsule Access Grant capability detection:
+`access_grants_tenant` requires `Tenant.spec.additionalRoleBindings`, while
+`access_grants_scoped` requires supported `Tenant.spec.rules[].namespaceSelector`
+and `permissions.bindings` in the served v1beta2 CRD schema. Both remain
+unavailable or degraded when version/schema evidence is missing.
+
+KAORI keeps identity, scope, versioned Access Profile, audit, and desired/effective
+evidence in the common Tenant domain. Capsule remains the authoritative controller
+for the distributed namespaced RoleBindings, backed by exact pre-approved ClusterRoles.
+No Native fallback, implicit provider takeover, ClusterRole creation, or
+ClusterRoleBinding creation is admitted. See
+`docs/architecture/kubernetes-tenant-access-governance.md` for scope restrictions,
+role preparation, read-back, revocation, and UAT evidence.
+
 ## Authority and degradation
 
 KAORI preserves a single reconciliation authority for every Tenant capability. A Tenant using Capsule remains Capsule-owned while healthy and enters **Capsule Degraded** when required capability evidence is incomplete or unhealthy.
