@@ -62,26 +62,9 @@ def _release_blockers(tenant: Tenant, namespace_rows: list[TenantNamespace], *, 
     return blockers
 
 
-def latest_tenant_release_preflight(tenant_id: str) -> dict[str, Any] | None:
-    row = (
-        AuditEvent.query.filter_by(target_type=_TARGET, target_id=tenant_id)
-        .order_by(AuditEvent.id.desc()).first()
-    )
-    return dict(row.metadata_json or {}) if row else None
-
-
-def review_tenant_release_preflight_committed(*, tenant_id: str, actor_user_id: int) -> dict[str, Any]:
-    """Explicit, read-only provider identity proof; NEVER release or decommission."""
-    tenant = db.session.get(Tenant, tenant_id)
-    if tenant is None:
-        raise ValueError('Selected Tenant is unavailable.')
-    rows = (
-        TenantNamespace.query.join(TenantEnvironment, TenantNamespace.tenant_environment_id == TenantEnvironment.id)
-        .filter(TenantEnvironment.tenant_id == tenant_id)
-        .order_by(TenantNamespace.id.asc())
-        .all()
-    )
-    counts = {
+def _release_dependency_counts(tenant_id: str) -> dict[str, int]:
+    """Single dependency authority shared by preflight and guarded Release."""
+    return {
         'credentials': _active_credential_count(tenant_id),
         'Access Grants': _active_grant_count(tenant_id),
         'Memberships': _active_membership_count(tenant_id),
@@ -101,6 +84,28 @@ def review_tenant_release_preflight_committed(*, tenant_id: str, actor_user_id: 
             tenant_id=tenant_id, status=TenantExposurePolicyStatus.ACTIVE.value
         ).count(),
     }
+
+
+def latest_tenant_release_preflight(tenant_id: str) -> dict[str, Any] | None:
+    row = (
+        AuditEvent.query.filter_by(target_type=_TARGET, target_id=tenant_id)
+        .order_by(AuditEvent.id.desc()).first()
+    )
+    return dict(row.metadata_json or {}) if row else None
+
+
+def review_tenant_release_preflight_committed(*, tenant_id: str, actor_user_id: int) -> dict[str, Any]:
+    """Explicit, read-only provider identity proof; NEVER release or decommission."""
+    tenant = db.session.get(Tenant, tenant_id)
+    if tenant is None:
+        raise ValueError('Selected Tenant is unavailable.')
+    rows = (
+        TenantNamespace.query.join(TenantEnvironment, TenantNamespace.tenant_environment_id == TenantEnvironment.id)
+        .filter(TenantEnvironment.tenant_id == tenant_id)
+        .order_by(TenantNamespace.id.asc())
+        .all()
+    )
+    counts = _release_dependency_counts(tenant_id)
     blockers = _release_blockers(tenant, rows, counts=counts)
     provider: list[dict[str, str]] = []
     cluster = db.session.get(Cluster, tenant.cluster_id)
@@ -253,8 +258,10 @@ def release_adopted_tenant_committed(
         for row in records
     ):
         raise ValueError('A Namespace has active KAORI allocation or an unsafe lifecycle.')
+    if _release_blockers(tenant, records, counts=_release_dependency_counts(tenant_id)):
+        raise ValueError('Tenant dependencies changed after preflight; Release remains blocked.')
     provider_evidence = dict(tenant.provider_evidence_json or {})
-    if provider_evidence.get('provider_mutation_performed'):
+    if provider_evidence.get('provider_mutation_performed') is not False:
         raise ValueError('KAORI-owned provider controls remain; Release requires independent handoff proof.')
 
     now = datetime.now(UTC)
