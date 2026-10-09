@@ -12,7 +12,12 @@ def test_top_consumers_uses_canonical_tabs_and_native_hidden_fallback() -> None:
 
     for tab in ('rankings', 'records', 'recommendations'):
         assert f'data-analytics-tab-panel="{tab}"' in section
-    assert 'data-analytics-tabset-id="top-consumers-content"' in section
+    assert "analytics_workspace.tabbed(" in section
+    assert "'top-consumers-content'," in section
+    assert "detached=true" in section
+    assert "data-top-consumers-tabset" in section
+    assert "content_tabs.render_buttons('top-consumers-content'" not in section
+    assert "content_tabs.render_buttons('consumer-ranking-resource'" in section
     assert 'x-show="activeTab' not in section
     assert 'x-bind:hidden="activeTab' not in section
 
