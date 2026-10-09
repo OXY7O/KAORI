@@ -13,6 +13,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from app.extensions.db import db
+from app.kubernetes.tenant.release_handoff_inventory import handoff_fingerprint
 from app.kubernetes.tenant.release_preflight import (
     review_tenant_release_preflight_committed,
 )
@@ -31,6 +32,18 @@ _EXPECTED_HANDOFF_FRAGMENTS = (
     'has KAORI-managed allocation; explicit provider handoff is required.',
     'KAORI-linked allocation ownership requires independently approved external handoff',
 )
+_PLAN_HASH_FIELDS = (
+    'tenant_id', 'cluster_id', 'generation', 'provider', 'handoff_fingerprint',
+    'provider_identity', 'successor_owner', 'change_reference',
+    'requested_by', 'requested_at',
+)
+
+
+def _plan_hash(contract: dict[str, Any]) -> str:
+    payload = {key: contract.get(key) for key in _PLAN_HASH_FIELDS}
+    return hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(',', ':')).encode()
+    ).hexdigest()
 
 
 def _valid_reference(value: str, *, name: str) -> str:
@@ -68,6 +81,8 @@ def _complete_provider_snapshot(evidence: dict[str, Any]) -> None:
         for item in identities + components
     ):
         raise ValueError('Provider handoff identity evidence is incomplete.')
+    if handoff_fingerprint(components) != evidence['handoff_fingerprint']:
+        raise ValueError('Committed provider handoff fingerprint does not match its components.')
     namespace_identities = {
         (row['name'], row['uid']) for row in identities if row['kind'] == 'Namespace'
     }
@@ -152,9 +167,7 @@ def prepare_release_handoff_plan_committed(
         'requested_by': actor_user_id,
         'requested_at': planned_at,
     }
-    plan_hash = hashlib.sha256(
-        json.dumps(contract, sort_keys=True, separators=(',', ':')).encode()
-    ).hexdigest()
+    plan_hash = _plan_hash(contract)
     evidence = {
         **contract,
         'plan_sha256': plan_hash,
@@ -186,7 +199,11 @@ def approve_release_handoff_plan_committed(
     plan = latest_release_handoff_plan(tenant_id)
     if not plan or plan.get('status') != 'pending_independent_approval':
         raise ValueError('Prepare a Release handoff plan before acknowledgement.')
-    if plan_sha256 != plan.get('plan_sha256') or len(plan_sha256) != 64:
+    if (
+        plan_sha256 != plan.get('plan_sha256')
+        or len(plan_sha256) != 64
+        or _plan_hash(plan) != plan_sha256
+    ):
         raise ValueError('Handoff plan changed; review the latest evidence.')
     if actor_user_id == plan.get('requested_by'):
         raise ValueError('Handoff requires an independent approver, not the requesting operator.')
