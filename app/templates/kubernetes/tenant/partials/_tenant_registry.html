@@ -212,7 +212,7 @@
             data-tenant-registry-actions-dialog
             aria-labelledby="tenant-registry-actions-{{ tenant.id }}-title"
             aria-describedby="tenant-registry-actions-{{ tenant.id }}-description"
-            class="kaori-native-dialog m-auto w-[calc(100vw-1.5rem)] max-w-4xl overflow-hidden rounded-2xl border border-outline-default bg-surface-card p-0 shadow-2xl sm:w-[calc(100vw-3rem)]">
+            class="kaori-native-dialog m-auto w-[calc(100vw-1.5rem)] max-w-5xl overflow-hidden rounded-2xl border border-outline-default bg-surface-card p-0 shadow-2xl sm:w-[calc(100vw-3rem)]">
         <section class="flex max-h-[calc(100dvh-2rem)] min-h-0 flex-col overflow-hidden"
                  role="document">
             <header class="shrink-0 border-b border-outline-subtle bg-surface-card px-5 py-4 sm:px-6">
@@ -234,6 +234,13 @@
                             </p>
                         </div>
                     </div>
+                    <div class="flex shrink-0 items-center gap-2">
+                        {{ table_label.status_label(
+                            tenant.lifecycle_status|replace('_', ' ')|title,
+                            'normal' if tenant.lifecycle_status == 'ready'
+                            else ('critical' if tenant.lifecycle_status in ['degraded', 'decommissioning'] else 'unknown')
+                        ) }}
+                    </div>
                     <button type="button"
                             data-kaori-dialog-close
                             aria-label="Close actions for {{ tenant.name }}"
@@ -242,94 +249,37 @@
                     </button>
                 </div>
             </header>
-            <div class="min-h-0 space-y-4 overflow-y-auto bg-surface-page px-5 py-5 sm:px-6">
-                <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-outline-subtle bg-surface-card px-4 py-3">
-                    <div>
-                        <p class="text-xs font-semibold text-content-primary">Committed Lifecycle</p>
-                        <p class="mt-1 text-xs text-content-muted">
-                            {{ row.namespace_count }} active namespace{{ '' if row.namespace_count == 1 else 's' }}
-                            · {{ row.environments|length }} environment{{ '' if row.environments|length == 1 else 's' }}
-                        </p>
+            <div class="min-h-0 flex-1 overflow-y-auto bg-surface-page">
+                <div class="grid grid-cols-3 divide-x divide-outline-subtle border-b border-outline-subtle bg-surface-card">
+                    <div class="min-w-0 px-3 py-3.5 sm:px-5">
+                        <p class="text-[11px] font-medium text-content-muted">Namespaces</p>
+                        <p class="mt-1 text-sm font-semibold text-content-primary">{{ row.namespace_count }} active</p>
                     </div>
-                    {{ table_label.status_label(
-                        tenant.lifecycle_status|replace('_', ' ')|title,
-                        'normal' if tenant.lifecycle_status == 'ready'
-                        else ('critical' if tenant.lifecycle_status in ['degraded', 'decommissioning'] else 'unknown')
-                    ) }}
+                    <div class="min-w-0 px-3 py-3.5 sm:px-5">
+                        <p class="text-[11px] font-medium text-content-muted">Environments</p>
+                        <p class="mt-1 text-sm font-semibold text-content-primary">{{ row.environments|length }}</p>
+                    </div>
+                    <div class="min-w-0 px-3 py-3.5 sm:px-5">
+                        <p class="text-[11px] font-medium text-content-muted">Lifecycle</p>
+                        <p class="mt-1 truncate text-sm font-semibold text-content-primary">{{ tenant.lifecycle_status|replace('_', ' ')|title }}</p>
+                    </div>
                 </div>
-                {% if can_manage and tenant.provider_key == 'capsule' and tenant.provider_state == 'capsule'
-                      and tenant.lifecycle_status == 'ready' and row.capsule_environment_options %}
-                    <section class="rounded-xl border border-outline-subtle bg-surface-card p-4"
-                             aria-label="Namespace attachment">
-                        <h3 class="text-sm font-semibold text-content-primary">Namespace Attachment</h3>
-                        <p class="mt-1 mb-3 text-xs leading-5 text-content-secondary">
-                            Attach a discovered Capsule Namespace to an existing environment.
-                            Provider ownership, UID and resourceVersion must match.
-                        </p>
-                                    <details class="group w-full rounded-lg border border-outline-subtle bg-surface-elevated p-2"
-                                             data-capsule-namespace-attach>
-                                        <summary class="inline-flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                                            <i data-lucide="link" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                            Attach Capsule Namespace
-                                        </summary>
-                                        <form method="post"
-                                              action="{{ url_for('tenant.attach_existing_capsule_namespace_route') }}"
-                                              hx-post="{{ url_for('tenant.attach_existing_capsule_namespace_route') }}"
-                                              hx-target="#tenant-admin-workspace"
-                                              hx-select="#tenant-admin-workspace"
-                                              hx-swap="outerHTML show:none focus-scroll:false"
-                                              hx-indicator="#tenant-admin-loading"
-                                              class="mt-2 space-y-2 border-t border-outline-subtle pt-3">
-                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                            <label class="block text-xs font-medium text-content-secondary">
-                                                Destination environment
-                                                <select name="environment_id" required
-                                                        class="mt-1 h-9 w-full rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs text-content-primary">
-                                                    {% for environment in row.capsule_environment_options %}
-                                                        <option value="{{ environment.id }}">{{ environment.environment|title }}</option>
-                                                    {% endfor %}
-                                                </select>
-                                            </label>
-                                            <label class="block text-xs font-medium text-content-secondary">
-                                                Existing Capsule Namespace
-                                                <input type="text" name="namespace" required maxlength="253"
-                                                       placeholder="team-a-dev" autocomplete="off"
-                                                       class="mt-1 h-9 w-full rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs text-content-primary">
-                                            </label>
-                                            <label class="block text-xs font-medium text-content-secondary">
-                                                Namespace UID from Discovery
-                                                <input type="text" name="namespace_uid" required maxlength="128"
-                                                       placeholder="Provider namespace UID" autocomplete="off"
-                                                       class="mt-1 h-9 w-full rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs text-content-primary">
-                                            </label>
-                                            <label class="block text-xs font-medium text-content-secondary">
-                                                Namespace resourceVersion from Discovery
-                                                <input type="text" name="namespace_resource_version" required maxlength="128"
-                                                       placeholder="Provider resourceVersion" autocomplete="off"
-                                                       class="mt-1 h-9 w-full rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs text-content-primary">
-                                            </label>
-                                            <p class="text-xs leading-5 text-content-muted">
-                                                Both provider UID and resourceVersion must match fresh Discovery.
-                                                The canonical attachment service verifies Capsule ownership,
-                                                quota and RBAC boundaries without provider mutation.
-                                            </p>
-                                            <button type="submit"
-                                                    class="inline-flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                                                <i data-lucide="link-2" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                                Attach Observed Namespace
-                                            </button>
-                                        </form>
-                                    </details>
-                    </section>
-                {% endif %}
+                <div class="grid min-w-0 items-start gap-5 p-4 sm:p-6 lg:grid-cols-3">
+                    <div class="min-w-0 space-y-5 lg:col-span-2">
                 {% if can_manage and tenant.ownership_status == 'adopted' and tenant.lifecycle_status == 'ready' %}
-                    <section class="rounded-xl border border-outline-subtle bg-surface-card p-4"
-                             aria-label="Release governance">
-                        <h3 class="text-sm font-semibold text-content-primary">Release Governance</h3>
-                        <p class="mt-1 mb-3 text-xs leading-5 text-content-secondary">
-                            Review dependency evidence before considering provider-preserving Release.
-                            An internal handoff plan or external reference never proves successor acceptance.
-                        </p>
+                    <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5" aria-label="Release governance">
+                        <div class="flex items-start gap-3">
+                            <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                                <i data-lucide="clipboard-check" class="h-4 w-4"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <h3 class="text-sm font-semibold text-content-primary">Release Governance</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                    Review dependencies and provider handoff evidence before releasing governance.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex flex-wrap items-start gap-2" aria-label="Release review actions">
                                     <form method="post"
                                           action="{{ url_for('tenant.review_tenant_release_route', tenant_id=tenant.id) }}"
                                           hx-post="{{ url_for('tenant.review_tenant_release_route', tenant_id=tenant.id) }}"
@@ -344,44 +294,14 @@
                                             Review Release
                                         </button>
                                     </form>
-                                    {% if row.release_preflight %}
-                                        <div class="mt-4 rounded-xl border border-outline-subtle bg-surface-elevated p-3.5"
-                                             aria-label="Committed Release readiness">
-                                            <div class="flex flex-wrap items-center gap-2">
-                                                <p class="text-xs font-semibold text-content-primary">Last Review</p>
-                                                {{ table_label.status_label(
-                                                    row.release_preflight.status|replace('_', ' ')|title,
-                                                    'warning' if row.release_preflight.blockers else 'info'
-                                                ) }}
-                                            </div>
-                                            {% if row.release_preflight.blockers %}
-                                                <p class="mt-2 text-xs font-semibold text-status-warning-text">Release blockers</p>
-                                                <ul class="mt-1.5 list-disc space-y-1 pl-5 text-xs leading-5 text-content-secondary">
-                                                    {% for blocker in row.release_preflight.blockers %}
-                                                        <li class="break-words">{{ blocker }}</li>
-                                                    {% endfor %}
-                                                </ul>
-                                            {% else %}
-                                                <p class="mt-2 text-xs leading-5 text-content-secondary">
-                                                    No current dependency blockers, but Release execution is not yet admitted.
-                                                    A fresh provider read and explicit authorization are still required.
-                                                </p>
-                                            {% endif %}
-                                        </div>
-                                    {% else %}
-                                        <p class="mt-3 text-xs leading-5 text-content-secondary">
-                                            Run Review Release to inspect committed dependencies and provider readiness.
-                                            No Release execution is implied.
-                                        </p>
-                                    {% endif %}
                                     {% if row.release_preflight and row.release_preflight.handoff_components %}
-                                        <details class="group w-full rounded-lg border border-outline-subtle bg-surface-elevated p-2">
-                                            <summary class="inline-flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                        <details class="group min-w-0 max-w-full rounded-lg border border-transparent bg-transparent open:w-full open:border-outline-subtle open:bg-surface-elevated open:p-3">
+                                            <summary class="inline-flex min-h-9 max-w-full cursor-pointer items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold text-kaori-primary transition hover:border-brand-outline hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                                                 <i data-lucide="file-search" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                                 Handoff inventory
                                                 ({{ row.release_preflight.handoff_required_count }} to review)
                                             </summary>
-                                            <div class="mt-2 max-h-60 space-y-2 overflow-y-auto border-t border-outline-subtle pt-2">
+                                            <div class="mt-3 max-h-72 space-y-3 overflow-y-auto border-t border-outline-subtle pt-3">
                                                 {% for item in row.release_preflight.handoff_components %}
                                                     <div class="space-y-1 rounded-lg border border-outline-subtle bg-surface-card p-2">
                                                         <div class="flex flex-wrap items-start gap-1.5">
@@ -416,9 +336,9 @@
                                         {% set handoff_plan = row.release_handoff_plan %}
                                         {% set handoff_approval = row.release_handoff_approval %}
                                         {% set plan_accepted = handoff_plan and handoff_approval and handoff_approval.plan_sha256 == handoff_plan.plan_sha256 %}
-                                        <details class="group w-full rounded-lg border border-outline-subtle bg-surface-elevated p-2"
+                                        <details class="group min-w-0 max-w-full rounded-lg border border-transparent bg-transparent open:w-full open:border-outline-subtle open:bg-surface-elevated open:p-3"
                                                  data-release-handoff-approval>
-                                            <summary class="inline-flex cursor-pointer items-center gap-1.5 rounded-md py-1 text-xs font-semibold text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                            <summary class="inline-flex min-h-9 max-w-full cursor-pointer flex-wrap items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold text-kaori-primary transition hover:border-brand-outline hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                                                 <i data-lucide="handshake" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                                 Governed Handoff
                                                 {% if plan_accepted %}
@@ -427,7 +347,7 @@
                                                     {{ table_label.status_label('Approval Pending', 'warning') }}
                                                 {% endif %}
                                             </summary>
-                                            <div class="mt-2 space-y-3 border-t border-outline-subtle pt-3">
+                                            <div class="mt-3 space-y-4 border-t border-outline-subtle pt-4">
                                                 <p class="text-xs leading-5 text-content-secondary">
                                                     Record the proposed successor and change record. An independent
                                                     KAORI operator must acknowledge the same committed provider
@@ -634,6 +554,58 @@
                                             </div>
                                         </details>
                                     {% endif %}
+
+                        </div>
+                                    {% if row.release_preflight %}
+                                        <div class="mt-5 space-y-3" aria-label="Committed Release readiness">
+                                            <div class="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-outline-subtle bg-surface-elevated p-4">
+                                                <div class="min-w-0 flex-1">
+                                                    <p class="text-xs font-semibold text-content-primary">Latest Release Review</p>
+                                                    <p class="mt-1.5 text-xs leading-5 text-content-secondary">
+                                                        {% if row.release_preflight.blockers %}
+                                                            Release requires {{ row.release_preflight.blockers|length }} governance condition{{ '' if row.release_preflight.blockers|length == 1 else 's' }} to be resolved.
+                                                        {% else %}
+                                                            No dependency blockers recorded; provider validation and approval are still required.
+                                                        {% endif %}
+                                                    </p>
+                                                </div>
+                                                {{ table_label.status_label(
+                                                    row.release_preflight.status|replace('_', ' ')|title,
+                                                    'warning' if row.release_preflight.blockers else 'info'
+                                                ) }}
+                                            </div>
+                                            {% if row.release_preflight.blockers %}
+                                                <div class="rounded-xl border border-status-warning-border bg-status-warning-soft p-4"
+                                                     aria-label="Release blockers">
+                                                    <div class="flex flex-wrap items-center justify-between gap-3">
+                                                        <p class="flex min-w-0 items-center gap-2 text-xs font-semibold text-status-warning-text">
+                                                            <i data-lucide="shield-alert" class="h-4 w-4 shrink-0" aria-hidden="true"></i>
+                                                            Release blockers
+                                                        </p>
+                                                        <span class="text-xs font-semibold text-status-warning-text">{{ row.release_preflight.blockers|length }} conditions</span>
+                                                    </div>
+                                                    <ul class="mt-3 list-disc space-y-2 pl-5 text-xs leading-5 text-content-secondary">
+                                                        {% for blocker in row.release_preflight.blockers %}
+                                                            <li class="break-words pl-0.5">{{ blocker }}</li>
+                                                        {% endfor %}
+                                                    </ul>
+                                                </div>
+                                            {% else %}
+                                                <p class="text-xs leading-5 text-content-secondary">
+                                                    No current dependency blockers, but Release execution is not yet admitted.
+                                                    A fresh provider read and explicit authorization are still required.
+                                                </p>
+                                            {% endif %}
+                                        </div>
+                                    {% else %}
+                                        <div class="mt-5 rounded-xl border border-outline-subtle bg-surface-elevated p-4">
+                                            <p class="text-xs font-semibold text-content-primary">Latest Release Review</p>
+                                            <p class="mt-1.5 text-xs leading-5 text-content-secondary">
+                                                Run Review Release to inspect committed dependencies and provider readiness.
+                                                No Release execution is implied.
+                                            </p>
+                                        </div>
+                                    {% endif %}
                                     {% if row.release_preflight and row.release_preflight.status == 'handoff_review_required' and current_user.has_permission('integrations.manage') %}
                                         <form method="post"
                                               action="{{ url_for('tenant.release_tenant_governance_route', tenant_id=tenant.id) }}"
@@ -642,7 +614,7 @@
                                               hx-select="#tenant-admin-workspace"
                                               hx-swap="outerHTML show:none focus-scroll:false"
                                               hx-indicator="#tenant-admin-loading"
-                                              class="flex w-full flex-col gap-2 rounded-lg border border-outline-subtle bg-surface-elevated p-2">
+                                              class="mt-4 flex min-w-0 flex-col gap-3 rounded-xl border border-outline-subtle bg-surface-elevated p-4">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
                                                 <input type="checkbox" name="confirm_release_governance"
@@ -657,20 +629,39 @@
                                             </button>
                                         </form>
                                     {% endif %}
+
+                        <p class="mt-4 flex items-start gap-2 border-t border-outline-subtle pt-4 text-xs leading-5 text-content-muted">
+                            <i data-lucide="shield-check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                            Internal approval or an external reference does not prove successor acceptance.
+                            Provider ownership remains authoritative.
+                        </p>
                     </section>
                 {% endif %}
-                <section class="rounded-xl border border-outline-subtle bg-surface-card p-4"
-                         aria-label="Tenant lifecycle actions">
-                    <h3 class="text-sm font-semibold text-content-primary">Lifecycle Actions</h3>
-                    <p class="mt-1 mb-3 text-xs leading-5 text-content-secondary">
-                        Decommission is a separate provider-aware teardown. Release preserves provider resources.
-                    </p>
+                {% set decommission = row.decommission_preflight %}
+                <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5" aria-label="Tenant lifecycle actions">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                        <div class="flex min-w-0 flex-1 items-start gap-3">
+                            <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-status-warning-soft text-status-warning-text" aria-hidden="true">
+                                <i data-lucide="shield-alert" class="h-4 w-4"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <h3 class="text-sm font-semibold text-content-primary">Lifecycle Actions</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                    Decommission is destructive. Release preserves provider resources.
+                                </p>
+                            </div>
+                        </div>
+                        {% if decommission.blockers %}
+                            {{ table_label.status_label('Blocked', 'warning') }}
+                        {% endif %}
+                    </div>
                     {% if not can_manage %}
-                        <p class="mb-3 text-xs leading-5 text-content-muted">
+                        <p class="mt-3 rounded-lg bg-surface-elevated p-3 text-xs leading-5 text-content-muted">
                             Read-only access. Tenant management permission is required for changes.
                         </p>
                     {% endif %}
-                                {% set decommission = row.decommission_preflight %}
+                    {% if can_manage and decommission.executable or tenant.lifecycle_status in ['decommissioned', 'released'] or not decommission.blockers %}
+                        <div class="mt-4">
                                 {% if can_manage and decommission.executable %}
                                     <form method="post"
                                           action="{{ url_for('tenant.decommission_tenant_route', tenant_id=tenant.id) }}"
@@ -703,22 +694,109 @@
                                 {% elif tenant.lifecycle_status in ['decommissioned', 'released'] %}
                                     {{ table_label.special_label('Released · Provider Retained' if tenant.lifecycle_status == 'released' else 'History Retained', 'unknown', 'archive') }}
                                 {% elif decommission.blockers %}
-                                    {{ table_label.special_label('Blocked', 'critical', 'shield-alert') }}
+                                    {# Blockers appear together in the warning panel below. #}
                                 {% else %}
                                     {{ table_label.special_label('Unavailable', 'unknown', 'circle-slash-2') }}
                                 {% endif %}
+
+                        </div>
+                    {% endif %}
                     {% if decommission.blockers %}
-                        <div class="mt-3 rounded-lg border border-status-warning-border bg-status-warning-soft p-3"
+                        <div class="mt-4 rounded-xl border border-status-warning-border bg-status-warning-soft p-4"
                              aria-label="Decommission blockers">
-                            <p class="text-xs font-semibold text-status-warning-text">Decommission blocked</p>
-                            <ul class="mt-1.5 list-disc space-y-1 pl-5 text-xs leading-5 text-content-secondary">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <p class="flex items-center gap-2 text-xs font-semibold text-status-warning-text">
+                                    <i data-lucide="triangle-alert" class="h-4 w-4" aria-hidden="true"></i>
+                                    Decommission blocked
+                                </p>
+                                <span class="text-xs font-semibold text-status-warning-text">{{ decommission.blockers|length }} conditions</span>
+                            </div>
+                            <ul class="mt-3 list-disc space-y-2 pl-5 text-xs leading-5 text-content-secondary">
                                 {% for blocker in decommission.blockers %}
-                                    <li class="break-words">{{ blocker }}</li>
+                                    <li class="break-words pl-0.5">{{ blocker }}</li>
                                 {% endfor %}
                             </ul>
                         </div>
                     {% endif %}
                 </section>
+                    </div>
+                    <aside class="min-w-0 space-y-5 lg:col-span-1" aria-label="Tenant context">
+                {% if can_manage and tenant.provider_key == 'capsule' and tenant.provider_state == 'capsule'
+                      and tenant.lifecycle_status == 'ready' and row.capsule_environment_options %}
+                    <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4" aria-label="Namespace attachment">
+                        <div class="flex items-start gap-3">
+                            <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                                <i data-lucide="link-2" class="h-4 w-4"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <h3 class="text-sm font-semibold text-content-primary">Namespace Attachment</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">Attach an existing Capsule Namespace to this Tenant.</p>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                                    <details class="group min-w-0"
+                                             data-capsule-namespace-attach>
+                                        <summary class="inline-flex min-h-9 max-w-full cursor-pointer items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold text-kaori-primary transition hover:border-brand-outline hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                            <i data-lucide="link" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                            Attach Capsule Namespace
+                                        </summary>
+                                        <form method="post"
+                                              action="{{ url_for('tenant.attach_existing_capsule_namespace_route') }}"
+                                              hx-post="{{ url_for('tenant.attach_existing_capsule_namespace_route') }}"
+                                              hx-target="#tenant-admin-workspace"
+                                              hx-select="#tenant-admin-workspace"
+                                              hx-swap="outerHTML show:none focus-scroll:false"
+                                              hx-indicator="#tenant-admin-loading"
+                                              class="mt-4 min-w-0 space-y-3 rounded-xl border border-outline-subtle bg-surface-elevated p-3.5">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <label class="block text-xs font-medium text-content-secondary">
+                                                Destination environment
+                                                <select name="environment_id" required
+                                                        class="mt-1 h-9 w-full rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs text-content-primary">
+                                                    {% for environment in row.capsule_environment_options %}
+                                                        <option value="{{ environment.id }}">{{ environment.environment|title }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </label>
+                                            <label class="block text-xs font-medium text-content-secondary">
+                                                Existing Capsule Namespace
+                                                <input type="text" name="namespace" required maxlength="253"
+                                                       placeholder="team-a-dev" autocomplete="off"
+                                                       class="mt-1 h-9 w-full rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs text-content-primary">
+                                            </label>
+                                            <label class="block text-xs font-medium text-content-secondary">
+                                                Namespace UID from Discovery
+                                                <input type="text" name="namespace_uid" required maxlength="128"
+                                                       placeholder="Provider namespace UID" autocomplete="off"
+                                                       class="mt-1 h-9 w-full rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs text-content-primary">
+                                            </label>
+                                            <label class="block text-xs font-medium text-content-secondary">
+                                                Namespace resourceVersion from Discovery
+                                                <input type="text" name="namespace_resource_version" required maxlength="128"
+                                                       placeholder="Provider resourceVersion" autocomplete="off"
+                                                       class="mt-1 h-9 w-full rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs text-content-primary">
+                                            </label>
+                                            <p class="text-xs leading-5 text-content-muted">
+                                                Both provider UID and resourceVersion must match fresh Discovery.
+                                                The canonical attachment service verifies Capsule ownership,
+                                                quota and RBAC boundaries without provider mutation.
+                                            </p>
+                                            <button type="submit"
+                                                    class="inline-flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                <i data-lucide="link-2" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                Attach Observed Namespace
+                                            </button>
+                                        </form>
+                                    </details>
+
+                        </div>
+                        <p class="mt-3 text-xs leading-5 text-content-muted">
+                            Requires matching provider UID and resourceVersion.
+                        </p>
+                    </section>
+                {% endif %}
+                    </aside>
+                </div>
             </div>
             <footer class="flex shrink-0 items-center justify-between gap-3 border-t border-outline-subtle bg-surface-card px-5 py-3 sm:px-6">
                 <p class="hidden text-xs leading-5 text-content-muted sm:block">
