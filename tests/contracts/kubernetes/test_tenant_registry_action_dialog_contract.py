@@ -44,9 +44,12 @@ def test_native_modal_is_outside_table_overflow_and_has_accessible_controls() ->
     assert "aria-describedby=" in source
     assert modal.count("data-kaori-dialog-close") >= 2
     assert "grid grid-cols-3 divide-x" in modal
-    assert "lg:grid-cols-3" in modal
-    assert "order-2 min-w-0 space-y-5 lg:order-1 lg:col-span-2" in modal
-    assert "order-1 min-w-0 space-y-5 lg:order-2 lg:col-span-1" in modal
+    assert 'aria-label="Tenant management sections"' in modal
+    assert 'space-y-5 px-4 py-5 sm:px-6 sm:py-6' in modal
+    assert "lg:grid-cols-3" not in modal
+    assert "lg:col-span-2" not in modal
+    assert "lg:col-span-1" not in modal
+    assert '<aside ' not in modal
     assert "Namespaces" in modal
     assert "Environments" in modal
     assert "Lifecycle" in modal
@@ -121,3 +124,27 @@ def test_disclosure_actions_remain_grouped_without_cramped_full_width_rows() -> 
     # Decommission and destructive confirmation are distinct from the Release toolbar.
     assert 'decommission_tenant_route' not in action_group
     assert 'data-destructive-modal-open' not in action_group
+
+
+def test_management_sections_use_full_width_cards_in_workflow_order() -> None:
+    modal = _template().split('data-tenant-registry-actions-dialog', 1)[1]
+    sections = (
+        'aria-label="Release governance"',
+        'aria-label="Namespace attachment"',
+        'aria-label="Provider authority"',
+        'aria-label="Tenant lifecycle actions"',
+    )
+
+    assert all(section in modal for section in sections)
+    indices = [modal.index(section) for section in sections]
+    assert indices == sorted(indices)
+    assert modal.count('aria-label="Tenant management sections"') == 1
+    assert 'lg:grid-cols-3' not in modal
+    assert 'lg:order-' not in modal
+    assert '<aside ' not in modal
+
+    # The attached Namespace form and provider facts may use their own internal
+    # responsive columns without compressing the parent management cards.
+    assert 'bg-surface-elevated p-3.5 sm:grid-cols-2' in modal
+    assert '<dl class="mt-4 grid min-w-0 gap-4 sm:grid-cols-2">' in modal
+    assert 'sm:col-span-2' in modal
