@@ -134,14 +134,15 @@ rendered **visible by default** when inserted into the HTMX-owned slot; their
 visibility does not depend on post-swap callbacks, JavaScript timing or browser
 caching. The existing delegated controller enhances focus and document scroll
 locking once per response via swap/settle/request events, while preserving
-close/ESC behavior. Failed preflight loads surface an accessible warning in the
-slot; neither view submits Adoption automatically. The failure panel shows
-the **HTTP status only**, with safe guidance for auth (401/403), missing route
-(404), server-side preflight read/render failures (5xx), or transport/swap
-errors. It must not render raw HTML response bodies or sensitive Kubernetes
-details. Browser validation must confirm the GET /discovery/preflight status
-and whether the response entered the slot; a failed server request cannot be
-solved by changing from a modal to another presentation layout. In particular,
+close/ESC behavior. Failed preflight loads surface a concise, accessible
+**Adoption Review Unavailable** operational warning with a safe retry or
+permission action and confirmation that no Adoption was performed. Neither view
+submits Adoption automatically. HTTP status, internal endpoint names, browser
+debug instructions and server log locations are not shown in the normal UI;
+support personnel can inspect the browser Network response and corresponding
+server logs when troubleshooting. Raw HTML response bodies and Kubernetes
+secrets must never be echoed into the UI. A failed preflight request cannot
+be fixed by changing modal layout. In particular,
 a Flask 500 with `jinja2.exceptions.TemplateSyntaxError` during
 `render_template()` is a **template compilation failure**, not a Kubernetes
 provider, authorization, or interactive-modal failure. The existing
