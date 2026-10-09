@@ -102,17 +102,41 @@
         return true
     }
 
-    const reportPreflightFailure = () => {
+    // Report request evidence, not a generic "modal did not load" guess.
+    // Do not echo responseText (may contain internal Flask/Ingress error details).
+    const reportPreflightFailure = (event, kind = 'response') => {
         const slot = document.getElementById('tenant-adoption-preflight-slot')
+        const status = Number(event.detail?.xhr?.status || 0)
         if (slot && !slot.querySelector('[data-tenant-adoption-modal]')) {
-            const notice = document.createElement('p')
-            notice.setAttribute('role', 'alert')
-            notice.className =
+            const message = document.createElement('div')
+            message.setAttribute('role', 'alert')
+            message.setAttribute('data-tenant-adoption-request-error', '')
+            message.className =
                 'rounded-xl border border-status-warning-border bg-status-warning-soft p-4 text-sm text-status-warning-text'
-            notice.textContent =
-                'Adoption preflight could not be loaded. Check the request and refresh Discovery before retrying.'
-            slot.replaceChildren(notice)
-            notice.scrollIntoView?.({ block: 'nearest' })
+
+            const title = document.createElement('p')
+            title.className = 'font-semibold'
+            title.textContent = status ? `Adoption preflight request failed (HTTP ${status}).` :
+                'Adoption preflight request could not complete.'
+
+            const guidance = document.createElement('p')
+            guidance.className = 'mt-2 text-xs leading-5'
+            if (status === 401 || status === 403) {
+                guidance.textContent = 'Authentication or Tenant management permission was rejected. Review your session and permissions before retrying.'
+            } else if (status === 404) {
+                guidance.textContent = 'The preflight endpoint was not found. Verify the running DevContainer app and its route.'
+            } else if (status >= 500) {
+                guidance.textContent = 'The server failed while preparing read-only provider evidence. Check the DevContainer application logs for GET /discovery/preflight; do not submit Adoption.'
+            } else if (kind === 'target') {
+                guidance.textContent = 'The Discovery preflight response target is missing. Refresh Discovery before retrying.'
+            } else if (kind === 'swap') {
+                guidance.textContent = 'The preflight response could not be rendered. Inspect the browser Console and Network response.'
+            } else {
+                guidance.textContent = 'Inspect the GET /discovery/preflight request in browser Network for its status and response; retry after resolving the failure.'
+            }
+            message.append(title, guidance)
+            slot.replaceChildren(message)
+            message.scrollIntoView?.({ block: 'nearest' })
         }
         preflightPending = false
         opener = null
@@ -166,16 +190,24 @@
         if (preflightPending) revealPreflight(event)
     })
 
+    const isPreflightRequest = (event) =>
+        Boolean(event.detail?.elt?.closest?.('[data-tenant-adoption-load]') ||
+            event.target?.closest?.('[data-tenant-adoption-load]'))
+
     document.addEventListener('htmx:responseError', (event) => {
-        const load = event.detail?.elt?.closest?.('[data-tenant-adoption-load]') ||
-            event.target?.closest?.('[data-tenant-adoption-load]')
-        if (load) reportPreflightFailure()
+        if (isPreflightRequest(event)) reportPreflightFailure(event)
     })
+    for (const kind of ['sendError', 'timeout', 'abort', 'targetError', 'swapError']) {
+        document.addEventListener(`htmx:${kind}`, (event) => {
+            if (isPreflightRequest(event) || (preflightPending && kind === 'targetError'))
+                reportPreflightFailure(event, kind === 'targetError' ? 'target' : 'swap')
+        })
+    }
 
     document.addEventListener('htmx:afterRequest', (event) => {
         const requestElement = event.detail?.elt || event.target
         if (requestElement?.matches?.('[data-tenant-adoption-load]')) {
-            if (event.detail?.successful === false) reportPreflightFailure()
+            if (event.detail?.successful === false) reportPreflightFailure(event)
             // A successful afterRequest may precede the HTML swap. Wait for
             // afterSwap/afterSettle instead of showing a false error.
             return
