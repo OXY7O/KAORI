@@ -226,7 +226,7 @@ def create_human_credential_committed(
         TenantCredentialDeliveryMethod.JUMPSERVER,
         TenantCredentialDeliveryMethod.EXCEPTIONAL_KUBECONFIG,
     }:
-        raise ValueError('Human Tenant credentials require JumpServer or governed exceptional kubeconfig delivery.')
+        raise ValueError('Human Tenant credentials require the approved human access delivery method or an explicitly governed kubeconfig exception.')
 
     approver = (
         db.session.get(User, request.exception_authorized_by_user_id)
@@ -664,12 +664,12 @@ def issue_jumpserver_token_committed(
     if credential is None:
         raise ValueError('Selected Tenant credential no longer exists.')
     if credential.credential_type != TenantCredentialType.HUMAN_SERVICE_ACCOUNT.value:
-        raise ValueError('JumpServer token delivery is available only for human Tenant credentials.')
+        raise ValueError('Human access token delivery is available only for human Tenant credentials.')
     if credential.delivery_method not in {
         TenantCredentialDeliveryMethod.JUMPSERVER.value,
         TenantCredentialDeliveryMethod.EXCEPTIONAL_KUBECONFIG.value,
     }:
-        raise ValueError('This Tenant credential is not approved for JumpServer delivery.')
+        raise ValueError('This Tenant credential is not approved for the human access token delivery method.')
 
     namespace = _target_namespace(credential, namespace_id)
     token, expires_at = _request_short_lived_token(
