@@ -90,3 +90,34 @@ def test_new_tenant_adoption_rolls_back_when_database_commit_fails(monkeypatch):
     with pytest.raises(ValueError, match='conflicted with committed KAORI state'):
         module.adopt_discovered_tenant_committed({'provider_key': 'capsule'})
     assert calls == ['commit', 'rollback']
+
+
+@pytest.mark.parametrize(
+    ('correlations', 'reason'),
+    [
+        (None, 'missing or malformed'),
+        ([None], 'malformed entries'),
+        ([{'name': 'sandbox', 'uid': '', 'resource_version': '7'}], 'name/UID/resourceVersion'),
+        ([{'name': 'sandbox', 'uid': 'uid-1', 'resource_version': ''}], 'name/UID/resourceVersion'),
+        ([
+            {'name': 'sandbox', 'uid': 'uid-1', 'resource_version': '7'},
+            {'name': 'sandbox', 'uid': 'uid-2', 'resource_version': '8'},
+        ], 'duplicate Namespace correlation'),
+    ],
+)
+def test_capsule_new_tenant_adoption_rejects_incomplete_inventory_before_db_records(
+    monkeypatch, correlations, reason,
+):
+    from types import SimpleNamespace
+
+    from app.kubernetes.tenant import discovery_adoption as module
+
+    def unexpected_creation():
+        pytest.fail('Malformed Capsule inventory must fail before constructing any governance record.')
+
+    monkeypatch.setattr(module, 'TenantNamespace', unexpected_creation)
+    with pytest.raises(ValueError, match=reason):
+        module._capsule_namespace_records(
+            SimpleNamespace(), SimpleNamespace(),
+            {'correlated_namespaces': correlations},
+        )
