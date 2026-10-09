@@ -154,7 +154,11 @@ def dry_run_native_handoff_component(
         raise ValueError('Dry-run changed provider annotations; ownership handoff is blocked.')
 
     live = _read_resource(core, component)
-    if _resource_metadata(live) != before_identity or _spec(live) != _spec(before):
+    if (
+        _resource_metadata(live) != before_identity
+        or _spec(live) != _spec(before)
+        or (_read(_metadata(live), 'annotations') or {}) != before_annotations
+    ):
         raise ValueError('Kubernetes live state changed during dry-run verification.')
     return {
         'namespace': component.get('namespace'),
@@ -240,6 +244,7 @@ def dry_run_native_release_handoff_committed(
         'errors': errors, 'checked_at': datetime.now(UTC).isoformat(),
         'provider_mutation_performed': False, 'provider_handoff_verified': False,
         'release_authorized': False, 'dry_run_only': True,
+        'secret_material_persisted': False,
     }
     db.session.add(AuditEvent(
         actor_user_id=actor_user_id, target_type=_TARGET, target_id=tenant_id,
