@@ -151,16 +151,14 @@
             </tbody>
         </table>
     </div>
-    {% if profile_pagination.total_items > 0 %}
-        {{ registry_ui.footer('tenant.resource_profiles',
-                registry_id,
-                loading_id,
-                profile_pagination,
-                query_params,
-                profile_pagination.allowed_per_page,
-                resource_label='Resource Profiles',
-                rows_aria_label='Resource Profile rows per page',
-                control_name='resource-profile') }}
-    {% endif %}
+    {{ registry_ui.footer('tenant.resource_profiles',
+            registry_id,
+            loading_id,
+            profile_pagination,
+            query_params,
+            profile_pagination.allowed_per_page,
+            resource_label='Resource Profiles',
+            rows_aria_label='Resource Profile rows per page',
+            control_name='resource-profile') }}
     {% include "kubernetes/tenant/partials/_resource_profile_management_dialogs.html" %}
 </section>
