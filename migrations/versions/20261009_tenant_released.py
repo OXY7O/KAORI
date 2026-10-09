@@ -29,13 +29,13 @@ def upgrade() -> None:
 def downgrade() -> None:
     # Never collapse provider-preserving Released into destructive Decommissioned.
     # Administrators must first reconcile/rollback released generations explicitly.
-    op.execute(
-        "DO $$ BEGIN "
-        "IF EXISTS (SELECT 1 FROM tenants WHERE lifecycle_status = 'released') "
-        "OR EXISTS (SELECT 1 FROM tenant_namespaces WHERE provisioning_status = 'released') "
-        "THEN RAISE EXCEPTION 'Cannot downgrade with Released Tenant/Namespace history'; "
-        "END IF; END $$;"
-    )
+    connection = op.get_bind()
+    if connection.exec_driver_sql(
+        "SELECT 1 FROM tenants WHERE lifecycle_status = 'released' LIMIT 1"
+    ).first() or connection.exec_driver_sql(
+        "SELECT 1 FROM tenant_namespaces WHERE provisioning_status = 'released' LIMIT 1"
+    ).first():
+        raise RuntimeError('Cannot downgrade while Released Tenant/Namespace history exists.')
     op.drop_constraint('ck_tenant_namespaces_provisioning_status', 'tenant_namespaces', type_='check')
     op.create_check_constraint(
         'ck_tenant_namespaces_provisioning_status', 'tenant_namespaces',
