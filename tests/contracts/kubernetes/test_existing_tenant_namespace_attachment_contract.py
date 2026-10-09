@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from jinja2 import Environment
+
 ROOT = Path(__file__).resolve().parents[3]
 
 
@@ -173,3 +175,16 @@ def test_review_adoption_preflight_modal_survives_htmx_swap_target_variants():
     assert "document.addEventListener('click'" in js
     assert "document.addEventListener('change'" in js
     assert "syncAdoptionDestination(modal)" in js
+
+
+def test_adoption_preflight_templates_parse_as_valid_jinja() -> None:
+    # Parse with Jinja itself, not only delimiter counts. This catches
+    # malformed tags such as '{% endif %>' before the preflight GET reaches UAT.
+    environment = Environment(autoescape=True)
+    for template in (
+        'app/templates/kubernetes/tenant/partials/_tenant_adoption_preflight.html',
+        'app/templates/kubernetes/tenant/partials/_tenant_adoption_preflight_error.html',
+    ):
+        source = read(template)
+        assert '%>' not in source
+        environment.parse(source)
