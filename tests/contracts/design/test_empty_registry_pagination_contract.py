@@ -142,7 +142,7 @@ def test_capsule_drift_empty_tables_render_canonical_footer_and_htmx_targets() -
         assert f'hx-target="#{registry_id}"' in rendered
         assert f'hx-select="#{registry_id}"' in rendered
         assert f'hx-indicator="#{loading_id}"' in rendered
-        assert re.search(rf'Showing\\s+0–0\\s+of\\s+0\\s+{resource}', rendered)
+        assert re.search(rf'Showing\s+0–0\s+of\s+0\s+{resource}', rendered)
         assert rendered.count('aria-disabled="true"') >= 2
         assert 'aria-current="page">1</span>' in rendered
         assert 'No Capsule' in rendered
