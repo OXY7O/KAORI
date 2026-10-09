@@ -24,6 +24,7 @@ def _namespace(**changes):
         'ownership_status': 'adopted',
         'provisioning_status': 'ready',
         'resource_profile_id': None,
+        'provisioning_evidence_json': {'provider_mutation_performed': False},
     }
     values.update(changes)
     return SimpleNamespace(**values)
@@ -37,6 +38,8 @@ def test_release_preflight_rejects_destructive_or_foreign_ownership_and_live_dep
         (_tenant(reconciliation_authority='capsule'), [_namespace()], {}),
         (_tenant(), [_namespace(ownership_status='managed')], {}),
         (_tenant(), [_namespace(resource_profile_id=1)], {}),
+        (_tenant(), [_namespace(provisioning_evidence_json={'provider_mutation_performed': True})], {}),
+        (_tenant(), [_namespace(provisioning_evidence_json={})], {}),
         (_tenant(), [_namespace()], {'Access Grants': 2, 'credentials': 1}),
     ]
     for tenant, namespaces, counts in cases:
