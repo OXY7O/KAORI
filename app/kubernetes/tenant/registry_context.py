@@ -337,6 +337,30 @@ def get_tenant_registry_context(
             str(event.target_id): dict(event.metadata_json or {}) for event in recent_rows
         }
 
+    handoff_plans: dict[str, dict[str, Any]] = {}
+    handoff_approvals: dict[str, dict[str, Any]] = {}
+    if tenant_ids and include_decommission_preflight:
+        for target_type, destination in (
+            ('kubernetes_tenant_release_handoff_plan', handoff_plans),
+            ('kubernetes_tenant_release_handoff_approval', handoff_approvals),
+        ):
+            latest_ids = (
+                db.session.query(func.max(AuditEvent.id).label('id'))
+                .filter(
+                    AuditEvent.target_type == target_type,
+                    AuditEvent.target_id.in_(tenant_ids),
+                )
+                .group_by(AuditEvent.target_id)
+                .subquery()
+            )
+            rows = db.session.query(AuditEvent).join(
+                latest_ids, AuditEvent.id == latest_ids.c.id
+            ).all()
+            destination.update({
+                str(event.target_id): dict(event.metadata_json or {})
+                for event in rows
+            })
+
     tenant_rows: list[dict[str, Any]] = []
     for item in items:
         row: dict[str, Any] = {
@@ -349,6 +373,8 @@ def get_tenant_registry_context(
             row['namespace_history_count'] = namespace_history_count_map.get(item.id, 0)
             row['decommission_preflight'] = build_tenant_decommission_preflight(item.id)
             row['release_preflight'] = release_evidence.get(item.id)
+            row['release_handoff_plan'] = handoff_plans.get(item.id)
+            row['release_handoff_approval'] = handoff_approvals.get(item.id)
         tenant_rows.append(row)
 
     return {
