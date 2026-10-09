@@ -41,6 +41,11 @@ def test_generated_token_and_kubeconfig_use_existing_shared_ui_ownership() -> No
     assert 'page_hero.description_classes()' in template
     assert 'page_hero.persistent_metadata(' in template
     assert 'page_hero.context_panel_classes()' in template
+    assert 'page_hero.context_single_action_classes()' in template
+    assert template.count('Back to Credentials') == 1
+    assert template.index('Back to Credentials') < template.index('Credential Context')
+    assert "url_for('tenant.tenants', section='credentials')" in template
+    assert template.index('Back to Credentials') < template.index('<footer')
     assert 'page_hero.context_header_status(' in template
     assert 'page_hero.context_metric(' in template
     assert 'data-kaori-hero-profile="transactional-admin"' in template
