@@ -117,8 +117,23 @@ def review_tenant_release_preflight_committed(*, tenant_id: str, actor_user_id: 
             external = latest_external_capsule_access_evidence(tenant_id)
             if not external:
                 blockers.append('Inspect external Capsule owners and RBAC before Release Governance.')
-            elif external.get('provider_uid') != (provider[0]['uid'] if provider else None):
-                blockers.append('External Capsule access observation does not match current Tenant identity.')
+            elif (
+                external.get('provider_uid') != (provider[0]['uid'] if provider else None)
+                or external.get('resource_version')
+                != (provider[0]['resource_version'] if provider else None)
+            ):
+                blockers.append('External Capsule access observation is stale or does not match current Tenant.')
+            else:
+                try:
+                    observed_at = datetime.fromisoformat(str(external.get('observed_at') or ''))
+                except ValueError:
+                    observed_at = None
+                age_seconds = (
+                    (datetime.now(UTC) - observed_at).total_seconds()
+                    if observed_at and observed_at.tzinfo else -1
+                )
+                if age_seconds < 0 or age_seconds > 3600:
+                    blockers.append('External Capsule ownership evidence must be inspected again.')
         elif tenant.provider_key == 'native_kubernetes':
             for record in rows:
                 if record.provisioning_status == 'deprovisioned':
