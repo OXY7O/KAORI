@@ -133,7 +133,16 @@ def test_review_adoption_preflight_modal_survives_htmx_swap_target_variants():
     assert "document.addEventListener('htmx:afterSwap'" in js
     assert "document.addEventListener('htmx:afterSettle'" in js
     assert "document.addEventListener('htmx:afterRequest'" in js
-    assert "if (modal.classList.contains('hidden')) openModal(modal)" in js
+    # The HTML response must be visible without waiting for any HTMX callback.
+    for fragment in (preflight, unavailable):
+        assert 'data-tenant-adoption-modal' in fragment
+        assert 'class="fixed inset-0 z-[90] flex items-center justify-center' in fragment
+        assert 'aria-hidden="false"' in fragment
+        assert 'class="fixed inset-0 z-[90] hidden items-center' not in fragment
+
+    assert "modal.dataset.tenantAdoptionActivated !== 'true'" in js
+    assert "modal.dataset.tenantAdoptionActivated = 'true'" in js
+    assert "delete modal.dataset.tenantAdoptionActivated" in js
     # Form-specific sync cannot prevent the modal itself becoming visible.
     open_modal = js.split('const openModal = (modal, button = opener) => {', 1)[1]
     open_modal = open_modal.split('const closeModal = (modal) => {', 1)[0]
