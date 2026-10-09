@@ -56,12 +56,13 @@ def test_capsule_binding_uses_exact_profile_and_immutable_namespace_selector():
     assert capsule._update_spec(spec, grant, binding, ['payments-dev']) == spec
 
 
-def test_capsule_tenant_scope_stays_in_additional_rolebindings():
+def test_capsule_tenant_scope_is_explicitly_limited_to_committed_namespaces():
     grant = _grant(scope='tenant')
     binding = capsule._binding(grant, 'kaori-tenant-viewer-v1', ['payments-dev'])
     spec = capsule._update_spec({'owners': [{'name': 'root'}]}, grant, binding, ['payments-dev'])
-    assert spec['additionalRoleBindings'] == [binding]
-    assert spec['rules'] == []
+    assert spec['additionalRoleBindings'] == []
+    assert spec['rules'][0]['permissions']['bindings'] == [binding]
+    assert spec['rules'][0]['namespaceSelector']['matchExpressions'][0]['values'] == ['payments-dev']
 
 
 def test_capsule_revocation_only_removes_kaori_owned_entry_and_retains_foreign_rules():
