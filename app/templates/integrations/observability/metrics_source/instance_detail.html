@@ -19,9 +19,9 @@
                         <h1 class="{{ page_hero.title_classes() }}">{{ instance.name }}</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">Review connection, capabilities, health, bindings, and resolution.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label('shield-check', readiness|replace('_', ' ') |title) }}
+                            {{ page_hero.meta_label('shield-check', readiness|replace('_', ' ') |title, value_id='metrics-source-hero-readiness') }}
                             {{ page_hero.meta_label('link-2', (bindings|length|string) ~ ' Bindings', value_id='metrics-source-hero-binding-count') }}
-                            {{ page_hero.meta_label('layers-3', (capability_summary.observed|default(0) |string) ~ ' Validated Capabilities') }}
+                            {{ page_hero.meta_label('layers-3', (capability_summary.observed|default(0) |string) ~ ' Validated Capabilities', value_id='metrics-source-hero-capabilities') }}
                         </div>
                     {% endcall %}
                 </div>
@@ -37,7 +37,7 @@
                 capability_summary.observed|default(0),
                 "Provider-neutral core capabilities",
                 url_for("integrations.metrics_sources", provider_key=provider.key)
-                ) }}
+                , posture_key='metrics-source') }}
             </div>
         </section>
         <section id="metrics-source-detail-tabs"
