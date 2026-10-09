@@ -732,7 +732,7 @@ def dry_run_native_release_handoff_route(tenant_id: str):
             actor_user_id=int(current_user.id),
             plan_sha256=str(request.form.get('plan_sha256') or ''),
         )
-    except ValueError as exc:
+    except (ApiException, ValueError) as exc:
         _record(
             event_type='kubernetes_tenant_native_handoff_dry_run_blocked',
             status='warning',
