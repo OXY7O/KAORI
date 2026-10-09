@@ -68,7 +68,7 @@
             </header>
             <div class="divide-y divide-outline-subtle">
                 {% for metric in presentation.resource_rows|default([]) %}
-                    {{ pressure_lane.render(metric.label, metric.icon, metric.value if metric.available else none, metric.detail, 'Node-scoped pressure against allocatable capacity.', tone=metric.tone, reason=metric.reason, available=metric.available) }}
+                    {{ pressure_lane.render(metric.label, metric.icon, metric.value if metric.available else none, metric.detail, 'Node pressure relative to allocatable capacity.', tone=metric.tone, reason=metric.reason, available=metric.available) }}
                 {% endfor %}
             </div>
         </section>
@@ -94,7 +94,7 @@
                 {% endif %}
                 <div class="mt-4 {{ analysis_surface.nested_evidence_card_classes('px-3 py-3') }}">
                     <p class="text-xs font-semibold text-content-primary">{{ presentation.filesystem_scope|default("Canonical node filesystems") }}</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Filesystem signals use the canonical Kubernetes node label and validated mountpoint identity.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Filesystem evidence uses canonical node and validated mountpoint labels.</p>
                 </div>
             </div>
         </aside>
