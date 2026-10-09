@@ -9,6 +9,7 @@ from app.kubernetes.tenant.access import (
 )
 from app.kubernetes.tenant.external_access_profile_equivalence import (
     _require_committed_capsule_binding,
+    _require_stable_role_review,
     classify_external_role_profile,
 )
 
@@ -112,3 +113,16 @@ def test_capsule_profile_review_fails_on_managed_or_ambiguous_binding(bad):
         _require_committed_capsule_binding(
             observation, tenant=tenant, binding_index=0, now=datetime.now(UTC)
         )
+
+
+def test_role_reread_rejects_permission_or_resourceversion_race():
+    original = classify_external_role_profile(_provider_role('viewer'))
+    updated = dict(original)
+    _require_stable_role_review(original, dict(original))
+    updated['role_resource_version'] = '8'
+    with pytest.raises(ValueError, match='Role changed'):
+        _require_stable_role_review(original, updated)
+    updated = dict(original)
+    updated['permission_sha256'] = 'different'
+    with pytest.raises(ValueError, match='Role changed'):
+        _require_stable_role_review(original, updated)
