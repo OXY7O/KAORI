@@ -47,6 +47,11 @@ def test_generated_token_and_kubeconfig_use_existing_shared_ui_ownership() -> No
     ):
         assert title in route, title
     assert "'GitHub Actions / Helm'" not in route
+    assert "material.access_package.get('credential_type') == 'deployer_service_account'" in route
+    assert "material_title = 'Approved Access Kubeconfig'" in route
+    assert "delivery_label = 'Governed Individual Access'" in route
+    assert "material_credential_valid_until=material.access_package.get('valid_until')" in route
+    assert "material_credential_valid_until=material.expires_at" not in route
     assert 'data-kaori-copy-source' not in template
 
 
@@ -66,6 +71,10 @@ def test_secret_delivery_guidance_preserves_manual_and_pipeline_contracts() -> N
         'mktemp',
         "trap 'rm -f",
         'kubectl auth can-i create deployments',
+        "material_access_package.credential_type == 'deployer_service_account'",
+        '{% if deployment_material %}',
+        'Use approved individual access',
+        'Remove temporary material',
         'Back to Credentials',
     ):
         assert text in template, text
