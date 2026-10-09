@@ -60,7 +60,7 @@
                             {{ capacity_posture.reason }}
                             {% if capacity_headroom_available %} The lowest known Ready-worker margin is <span class="font-semibold">{{ lowest_headroom_metric_display }}</span>.{% endif %}
                         {% elif capacity_scheduling_evidence_complete %}
-                            The tightest Ready-worker scheduling margin is <span class="font-semibold">{{ lowest_headroom_metric_display }}</span>. Node filesystem evidence is shown separately and does not determine Kubernetes scheduling posture.
+                            Tightest Ready-worker margin: <span class="font-semibold">{{ lowest_headroom_metric_display }}</span>. Filesystem is separate from scheduling posture.
                         {% elif capacity_headroom_available %}
                             Partial Ready-worker evidence identifies <span class="font-semibold">{{ lowest_headroom_metric_display }}</span> as the lowest known margin. Restore missing allocation or usage signals before approving placement growth.
                         {% else %}
@@ -73,7 +73,7 @@
         <div class="{{ analysis_surface.guidance_card_classes() }}">
             {{ analysis_surface.interpretation_callout('Measurement Standard',
                         'Ready Worker Allocatable Capacity',
-                        'CPU: Cores · Memory: GiB · Pods: whole counts. Filesystem GiB is operational only.',
+                        'CPU cores · Memory GiB · Pod counts; filesystem GiB is operational only.',
                         icon='ruler',
                         role='insight') }}
         </div>
