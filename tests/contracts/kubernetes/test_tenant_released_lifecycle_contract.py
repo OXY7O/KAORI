@@ -80,4 +80,4 @@ def test_released_history_is_excluded_from_capacity_and_inventory_sync() -> None
     assert 'TenantNamespace.provisioning_status.notin_(' in sync
     assert 'TenantNamespaceProvisioningStatus.RELEASED.value' in sync
     assert 'build_tenant_inventory_snapshot' in sync
-    assert 'sync_native_tenant' in sync or 'mark_missing' in sync
+    assert 'apply_missing_namespace_drift_from_inventory' in sync
