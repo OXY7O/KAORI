@@ -220,11 +220,12 @@
                     </div>
                 </aside>
             </div>
-            <footer class="flex justify-end rounded-b-xl border-t border-outline-subtle bg-surface-hover px-5 py-4">
+            <footer class="grid min-h-[4.5rem] grid-cols-1 items-center gap-3 rounded-b-xl border-t border-outline-subtle bg-surface-hover px-5 py-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+                <p class="min-w-0 text-xs leading-5 text-content-muted">Effective access requires successful provider reconciliation.</p>
                 <button type="submit"
                         data-access-submit
                         {% if not can_manage or not access_membership_options %}disabled aria-disabled="true"{% endif %}
-                        class="{{ action_button.classes('primary') }}">
+                        class="{{ action_button.classes('primary') }} justify-self-end">
                     <i data-lucide="shield-check" class="h-4 w-4"></i>
                     Apply Grant
                 </button>
@@ -297,14 +298,14 @@
                         </div>
                     {% endfor %}
                 </div>
-                <div class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-t border-outline-subtle bg-surface-hover px-4 py-3">
+                <footer class="grid min-h-[4.5rem] grid-cols-1 items-center gap-3 rounded-b-xl border-t border-outline-subtle bg-surface-hover px-5 py-3 sm:grid-cols-[minmax(0,1fr)_auto]">
                     <p class="text-xs leading-5 text-content-muted">Environment/Tenant may stay Pending until namespaces exist. Namespace scope needs one target.</p>
                     <a href="{{ url_for('tenant.namespace_provisioning') }}"
-                       class="{{ action_button.classes('secondary') }}">
+                       class="{{ action_button.classes('secondary') }} justify-self-end">
                         <i data-lucide="boxes" class="h-4 w-4" aria-hidden="true"></i>
                         Create Namespace
                     </a>
-                </div>
+                </footer>
             </section>
         </div>
     </div>
