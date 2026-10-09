@@ -33,6 +33,10 @@ def test_capsule_attachment_reuses_canonical_profile_mirror_and_live_ownership_g
 
     assert 'def attach_capsule_namespace_to_existing_tenant_committed(' in adoption
     assert 'validate_capsule_namespace_attachment(' in adoption
+    assert '_capsule_status_namespace_names(capsule_item)' in adoption
+    assert 'reread_capsule = _read_capsule_tenant(' in adoption
+    assert "Capsule Tenant CR changed during attachment" in adoption
+    assert "Capsule Namespace changed during attachment" in adoption
     assert 'observe_capsule_tenant_allocation(' in adoption
     assert '_managed_namespace_map([str(cluster.id)])' in adoption
     assert '_verify_released_namespace_lineage(' in adoption
