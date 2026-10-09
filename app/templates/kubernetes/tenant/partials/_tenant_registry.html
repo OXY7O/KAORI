@@ -218,17 +218,15 @@
             </tbody>
         </table>
     </div>
-    {% if tenant_pagination.total_items > 0 %}
-        {{ registry_ui.footer('tenant.tenants',
-                registry_id,
-                loading_id,
-                tenant_pagination,
-                query_params,
-                tenant_pagination.allowed_per_page,
-                resource_label='Tenants',
-                rows_aria_label='Tenant rows per page',
-                control_name='tenant-registry') }}
-    {% endif %}
+    {{ registry_ui.footer('tenant.tenants',
+            registry_id,
+            loading_id,
+            tenant_pagination,
+            query_params,
+            tenant_pagination.allowed_per_page,
+            resource_label='Tenants',
+            rows_aria_label='Tenant rows per page',
+            control_name='tenant-registry') }}
 </section>
 {{ destructive_modal.render('tenant-decommission-modal',
 'Decommission Tenant',
