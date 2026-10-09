@@ -494,6 +494,15 @@ identity is established.
 
 ### Native Access Drift declaration correlation (#999)
 
+Intelligence freshness is evaluated against both the latest committed
+declaration analysis time and its authoritative Native/Capsule provider
+observation timestamp (maximum one hour each). An invalid or wrong-cluster
+newest snapshot suppresses older findings for that Tenant/provider; no stale
+prior condition may silently resurface as a current finding. Future-dated,
+missing, or observation-after-analysis timestamps fail closed. Existing
+Governance Rule Catalog/Recommendation identity remains authoritative.
+
+
 After **Inspect Native RBAC** has committed a scoped, bounded namespaced
 RoleBinding inventory (#996), **Analyze Native Access Drift** compares that
 observation with KAORI's committed Access Grant declarations. It requires

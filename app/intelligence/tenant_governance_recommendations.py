@@ -247,7 +247,7 @@ def _access_declaration_findings(rules: dict[str, dict[str, Any]]) -> list[dict[
         metadata = event.metadata_json or {}
         tenant_id = str(metadata.get('tenant_id') or '')
         tenant = current_tenants.get(tenant_id)
-        if tenant is None or tenant.cluster_id != metadata.get('cluster_id'):
+        if tenant is None:
             continue
         provider = (
             'native_kubernetes'
@@ -259,7 +259,11 @@ def _access_declaration_findings(rules: dict[str, dict[str, Any]]) -> list[dict[
         key = (tenant_id, provider)
         if key in seen:
             continue
+        # The latest Tenant/provider evidence wins even if its cluster
+        # correlation is invalid. Never resurrect an older 'valid' finding.
         seen.add(key)
+        if tenant.cluster_id != metadata.get('cluster_id'):
+            continue
         if str(metadata.get('status') or '') != 'review_required':
             continue
         if metadata.get('effective_rbac_verified') is not False:
@@ -272,6 +276,24 @@ def _access_declaration_findings(rules: dict[str, dict[str, Any]]) -> list[dict[
             continue
         age = (now - evaluated.astimezone(UTC)).total_seconds()
         if age < 0 or age > _ACCESS_DECLARATION_MAX_AGE_SECONDS:
+            continue
+        source_observed_at = (
+            metadata.get('source_observed_at')
+            or metadata.get('observation_checked_at')
+        )
+        try:
+            source_observed = datetime.fromisoformat(str(source_observed_at or ''))
+        except ValueError:
+            continue
+        if source_observed.tzinfo is None:
+            continue
+        source_observed = source_observed.astimezone(UTC)
+        source_age = (now - source_observed).total_seconds()
+        if (
+            source_age < 0
+            or source_age > _ACCESS_DECLARATION_MAX_AGE_SECONDS
+            or source_observed > evaluated.astimezone(UTC)
+        ):
             continue
 
         recorded = metadata.get('findings') or []

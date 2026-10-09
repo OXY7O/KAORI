@@ -59,17 +59,22 @@ class _Column:
         return self
 
 
-def _event(*, status='review_required', code='revoked_grant_still_declared', age=0, event_id=14):
+def _event(
+    *, status='review_required', code='revoked_grant_still_declared',
+    age=0, event_id=14, source_age=0, cluster_id='cluster-a',
+):
     return SimpleNamespace(
         id=event_id,
         target_type='kubernetes_tenant_native_access_drift_evidence',
         metadata_json={
             'tenant_id': 'tenant-a',
-            'cluster_id': 'cluster-a',
+            'cluster_id': cluster_id,
             'status': status,
             'effective_rbac_verified': False,
             'evaluated_at': (datetime.now(UTC) - timedelta(seconds=age)).isoformat(),
-            'source_observed_at': datetime.now(UTC).isoformat(),
+            'source_observed_at': (
+                datetime.now(UTC) - timedelta(seconds=source_age)
+            ).isoformat(),
             'source_evidence_sha256': 'a' * 64,
             'findings': [
                 {'code': code, 'severity': 'critical', 'subject': 'grant-1'},
@@ -127,4 +132,30 @@ def test_stale_declaration_does_not_claim_current_risk(monkeypatch):
 
 def test_only_foreign_binding_does_not_generate_fabricated_grant_drift(monkeypatch):
     _setup(monkeypatch, [_event(code='external_native_rolebinding')])
+    assert recommendations._access_declaration_findings(_rules()) == []
+
+def test_latest_mismatched_cluster_evidence_suppresses_old_findings(monkeypatch):
+    _setup(monkeypatch, [
+        _event(event_id=15, cluster_id='replaced-cluster'),
+        _event(event_id=14),
+    ])
+    assert recommendations._access_declaration_findings(_rules()) == []
+
+
+@pytest.mark.parametrize('source_age', [7200, -300])
+def test_source_observation_staleness_or_future_timestamp_fails_closed(monkeypatch, source_age):
+    _setup(monkeypatch, [_event(source_age=source_age)])
+    assert recommendations._access_declaration_findings(_rules()) == []
+
+
+def test_source_observation_after_evaluation_is_not_accepted(monkeypatch):
+    # Source timestamps must not postdate committed analysis.
+    _setup(monkeypatch, [_event(age=600, source_age=0)])
+    assert recommendations._access_declaration_findings(_rules()) == []
+
+
+def test_latest_missing_source_timestamp_does_not_revive_prior_findings(monkeypatch):
+    newest = _event(event_id=15)
+    newest.metadata_json.pop('source_observed_at')
+    _setup(monkeypatch, [newest, _event(event_id=14)])
     assert recommendations._access_declaration_findings(_rules()) == []
