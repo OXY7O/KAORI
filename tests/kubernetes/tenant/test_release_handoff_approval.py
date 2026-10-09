@@ -7,8 +7,8 @@ import pytest
 
 from app.kubernetes.tenant.release_handoff_inventory import handoff_fingerprint
 from app.kubernetes.tenant.release_handoff_approval import (
-    _plan_hash,
     _can_confirm_plan,
+    _plan_hash,
     _complete_provider_snapshot,
     _valid_reference,
     approve_release_handoff_plan_committed,
@@ -44,6 +44,8 @@ def _snapshot(*, status: str = 'blocked', blockers: list[str] | None = None) -> 
         'dependency_counts': {
             'Access Grants': 0, 'credentials': 0, 'Memberships': 0,
             'enabled Groups': 0, 'advanced capabilities': 0,
+            'managed resources': 0, 'domain reservations': 0,
+            'exposure policies': 0,
         },
         'blockers': blockers if blockers is not None else [
             'Adoption performed KAORI-owned provider mutations. '
@@ -100,10 +102,13 @@ def test_handoff_approval_rejects_active_dependencies():
 def test_handoff_approval_rejects_foreign_or_unverified_ownership():
     snapshot = _snapshot()
     snapshot['handoff_components'][0]['handoff'] = 'owner_review_required'
+    snapshot['handoff_fingerprint'] = handoff_fingerprint(snapshot['handoff_components'])
     with pytest.raises(ValueError, match='Conflicting provider ownership'):
         _can_confirm_plan(snapshot)
 
     snapshot['handoff_components'][0]['handoff'] = 'observe_only'
+    snapshot['handoff_fingerprint'] = handoff_fingerprint(snapshot['handoff_components'])
+    snapshot['handoff_required_count'] = 0
     with pytest.raises(ValueError, match='No verified KAORI-linked resource'):
         _can_confirm_plan(snapshot)
 
@@ -262,3 +267,28 @@ def test_independent_handoff_approval_commits_pending_provider_state(monkeypatch
     assert result['release_authorized'] is False
     assert session.commits == 1
     assert session.events[0].action == 'tenant.release.handoff_acknowledged'
+
+
+def test_handoff_approval_rejects_partial_dependency_ledger_and_forged_count():
+    snapshot = _snapshot()
+    snapshot['dependency_counts'].pop('exposure policies')
+    with pytest.raises(ValueError, match='every active Tenant dependency'):
+        _can_confirm_plan(snapshot)
+
+    snapshot = _snapshot()
+    snapshot['handoff_required_count'] = 0
+    with pytest.raises(ValueError, match='count is inconsistent'):
+        _can_confirm_plan(snapshot)
+
+
+def test_handoff_approval_rejects_changed_component_fingerprint_and_unknown_ownership():
+    snapshot = _snapshot()
+    snapshot['handoff_components'][0]['resource_version'] = '6'
+    with pytest.raises(ValueError, match='fingerprint'):
+        _can_confirm_plan(snapshot)
+
+    snapshot['handoff_fingerprint'] = handoff_fingerprint(snapshot['handoff_components'])
+    snapshot['handoff_components'][0]['handoff'] = 'unknown'
+    snapshot['handoff_fingerprint'] = handoff_fingerprint(snapshot['handoff_components'])
+    with pytest.raises(ValueError, match='Unsupported or missing ownership'):
+        _can_confirm_plan(snapshot)
