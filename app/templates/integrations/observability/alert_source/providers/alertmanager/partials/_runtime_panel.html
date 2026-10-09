@@ -1,3 +1,4 @@
+{% import "integrations/components/_provider_detail_posture.html" as provider_detail_posture %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
@@ -149,4 +150,7 @@
         </section>
     </div>
 </section>
-{{ framed_workspace_tabs.badge_oob("alertmanager", "runtime", runtime_state.health_status_label|default("Not Observed") ) }}
+{% if request.headers.get('HX-Request') == 'true' %}
+    {{ framed_workspace_tabs.badge_oob("alertmanager", "runtime", runtime_state.health_status_label|default("Not Observed") ) }}
+{% endif %}
+{{ provider_detail_posture.state_oob('alertmanager', instance.readiness_status, capability_rows|selectattr('available')|list|length) }}
