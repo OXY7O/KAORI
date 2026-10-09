@@ -7,7 +7,7 @@
 {% import "integrations/components/_readiness_explanation.html" as readiness_explanation %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% set readiness = instance.readiness_status or "validation_required" %}
-{% set readiness_label = "Ready" if readiness == "ready" else ("Blocked" if readiness == "blocked" else "Validation Required") %}
+{% set readiness_label = readiness|replace("_", " ")|title %}
 {% set capability_ready = capability_registry.ready_count %}
 {% set capability_total = capability_registry.total_contracts %}
 {% set capability_blocked = capability_total - capability_ready %}
