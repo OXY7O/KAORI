@@ -28,7 +28,7 @@ This local standalone Compose stack is not an editable source-code development e
 Run from `example/kaori` after creating and reviewing `.env`. These Compose commands are an alternative to the Bash `run.sh` wrapper; the wrapper additionally validates the admitted SHA/image reference before start, so retain that approval check when using Compose directly.
 
 ```powershell
-Copy-Item .env.example .env
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 # Set the admitted KAORI_IMAGE, APP_VERSION, APP_BUILD_SHA, APP_BUILD_DATE in .env first.
 docker compose --env-file .env -f compose.yml config --quiet
 docker compose --env-file .env -f compose.yml pull
