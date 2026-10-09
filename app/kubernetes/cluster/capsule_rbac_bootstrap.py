@@ -11,11 +11,12 @@ from kubernetes.client.rest import ApiException
 from app.extensions.db import db
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
 from app.kubernetes.tenant.access import (
-    ACCESS_PROFILE_CATALOG,
+    LATEST_ACCESS_PROFILE_VERSION,
     capsule_cluster_role_manifest,
     capsule_cluster_role_name,
     get_access_profile,
 )
+from app.kubernetes.tenant.capsule_provider import discover_capsule
 from app.models.audit import AuditEvent
 from app.models.kubernetes import KubernetesConnection
 
@@ -27,7 +28,7 @@ _PROFILE_VERSION = 'kaori.io/access-profile-version'
 
 def _catalog() -> list[Any]:
     order = ('viewer', 'operator', 'tenant_admin', 'deployer')
-    return [get_access_profile(key, version) for key in order for (candidate, version) in ACCESS_PROFILE_CATALOG if candidate == key]
+    return [get_access_profile(key, LATEST_ACCESS_PROFILE_VERSION[key]) for key in order]
 
 
 def _normalized(rules: Any) -> list[tuple[tuple[str, ...], tuple[str, ...], tuple[str, ...]]]:
@@ -91,6 +92,9 @@ def _connection(cluster_id: str) -> KubernetesConnection:
 def _read_roles(cluster_id: str) -> tuple[Any, list[dict[str, Any]]]:
     connection = _connection(cluster_id)
     client = runtime_adapter.build_client(connection)
+    capsule = discover_capsule(client.custom_objects_api().api_client)
+    if not capsule.installed or 'v1beta2' not in capsule.tenant_api_versions:
+        raise ValueError('Healthy Capsule v1beta2 Tenant CRD discovery is required before RBAC bootstrap.')
     api = client.rbac_authorization_api()
     rows = [_role_status(api, profile) for profile in _catalog()]
     return api, rows
@@ -178,6 +182,12 @@ def bootstrap_missing_capsule_roles(
         raise ValueError('Explicit cluster-scoped RBAC approval is required.')
     created: list[str] = []
     try:
+        last_check = latest_capsule_role_bootstrap_evidence(cluster_id)
+        if not last_check or last_check.get('operation') != 'check' or last_check.get('status') != 'missing':
+            raise ValueError('A prior Check RBAC with missing roles is required before bootstrap.')
+        checked_at = datetime.fromisoformat(str(last_check.get('checked_at') or ''))
+        if checked_at.tzinfo is None or (datetime.now(UTC) - checked_at).total_seconds() > 900:
+            raise ValueError('RBAC check evidence is stale; rerun Check RBAC before bootstrap.')
         api, rows = _read_roles(cluster_id)
         if any(row['status'] == 'conflict' for row in rows):
             raise ValueError('ClusterRole conflict detected; resolve it before bootstrap. Existing roles are never overwritten.')
@@ -200,7 +210,15 @@ def bootstrap_missing_capsule_roles(
         return _audit(cluster_id, actor_user_id, 'bootstrap', 'ready', {**state, 'created': created})
     except (ApiException, ValueError) as exc:
         # Preserve partial side effects and never report success for an incomplete bootstrap.
+        try:
+            observed = _summary(_read_roles(cluster_id)[1])
+        except (ApiException, ValueError):
+            observed = {}
         return _audit(
             cluster_id, actor_user_id, 'bootstrap', 'failed',
-            {'created': created, 'error': type(exc).__name__, 'partial': bool(created)},
+            {
+                **observed, 'created': created, 'error': type(exc).__name__,
+                'reason': str(exc)[:240] if isinstance(exc, ValueError) else 'Kubernetes API rejected RBAC mutation.',
+                'partial': bool(created),
+            },
         )
