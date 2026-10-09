@@ -667,7 +667,7 @@ def attach_discovered_capsule_namespace_committed(
         client, tenant_name=capsule_name, tenant_item=tenant_cr,
     )
     selected = select_capsule_namespace_attachment_candidate(
-        allocation, namespace=namespace,
+        allocation, namespace=namespace, capsule_tenant_name=capsule_name,
         expected_uid=str(source.get('provider_uid') or '').strip(),
         expected_resource_version=str(source.get('provider_resource_version') or '').strip(),
     )
