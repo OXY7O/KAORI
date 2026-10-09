@@ -352,9 +352,15 @@ def _capsule_namespace_records(
     environment: TenantEnvironment,
     allocation: Mapping[str, Any],
 ) -> list[TenantNamespace]:
-    records: list[TenantNamespace] = []
+    correlated_rows = allocation.get('correlated_namespaces')
+    if not isinstance(correlated_rows, list):
+        raise ValueError('Capsule Namespace correlation inventory is missing or malformed.')
+    # Validate the whole provider inventory before constructing any governance
+    # record: a late duplicate or missing UID must not allow partial adoption.
     seen_names: set[str] = set()
-    for correlated in allocation['correlated_namespaces']:
+    for correlated in correlated_rows:
+        if not isinstance(correlated, Mapping):
+            raise ValueError('Capsule Namespace correlation inventory contains malformed entries.')
         namespace_name = str(correlated.get('name') or '').strip()
         provider_uid = str(correlated.get('uid') or '').strip()
         resource_version = str(correlated.get('resource_version') or '').strip()
@@ -363,6 +369,12 @@ def _capsule_namespace_records(
         if namespace_name in seen_names:
             raise ValueError('Capsule Namespace adoption has ambiguous duplicate Namespace correlation.')
         seen_names.add(namespace_name)
+
+    records: list[TenantNamespace] = []
+    for correlated in correlated_rows:
+        namespace_name = str(correlated['name']).strip()
+        provider_uid = str(correlated['uid']).strip()
+        resource_version = str(correlated['resource_version']).strip()
         namespace_allocation = dict(correlated.get('allocation') or {})
         _verify_released_namespace_lineage(
             cluster_id=str(context.cluster.id), namespace=namespace_name,
