@@ -51,13 +51,15 @@
         if (!(modal instanceof HTMLElement)) return
 
         if (button instanceof HTMLElement) opener = button
-        syncAdoptionDestination(modal)
+        // Make the dialog visible before adjusting mode-specific fields, so
+        // presentation synchronization cannot suppress the entire preflight.
         modal.classList.remove('hidden')
         modal.classList.add('flex')
         modal.setAttribute('aria-hidden', 'false')
         document.documentElement.classList.add('overflow-hidden')
 
         const dialog = modal.querySelector('[role="dialog"]')
+        syncAdoptionDestination(modal)
         const firstFocusable = dialog?.querySelector(focusableSelector)
         ;(firstFocusable || dialog)?.focus()
     }
