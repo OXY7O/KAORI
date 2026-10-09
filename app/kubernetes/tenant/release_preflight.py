@@ -12,7 +12,15 @@ from app.kubernetes.tenant.decommission_service import (
     _active_grant_count,
     _active_membership_count,
 )
+from app.kubernetes.tenant.allocation_observation import observe_native_namespace_allocation
+from app.kubernetes.tenant.capsule_allocation_observation import _capsule_status_namespace_names
 from app.kubernetes.tenant.external_access_observation import latest_external_capsule_access_evidence
+from app.kubernetes.tenant.release_handoff_inventory import (
+    capsule_tenant_handoff_evidence,
+    capsule_namespace_handoff_evidence,
+    handoff_fingerprint,
+    native_namespace_handoff_evidence,
+)
 from app.models import AuditEvent, Cluster
 from app.models.tenant import (
     Tenant, TenantEnvironment, TenantGroup, TenantLifecycleStatus, TenantNamespace,
@@ -108,6 +116,9 @@ def review_tenant_release_preflight_committed(*, tenant_id: str, actor_user_id: 
     counts = _release_dependency_counts(tenant_id)
     blockers = _release_blockers(tenant, rows, counts=counts)
     provider: list[dict[str, str]] = []
+    handoff_components: list[dict[str, str]] = []
+    if len(rows) > 30:
+        blockers.append('Release handoff inventory exceeds 30 namespaces; review scope before Release.')
     cluster = db.session.get(Cluster, tenant.cluster_id)
     if cluster is None:
         blockers.append('Kubernetes cluster is not available for live handoff verification.')
@@ -129,6 +140,40 @@ def review_tenant_release_preflight_committed(*, tenant_id: str, actor_user_id: 
                         'kind': 'CapsuleTenant', 'name': str(tenant.provider_reference),
                         'uid': uid, 'resource_version': str(metadata['resourceVersion']),
                     })
+                    items, handoff_blockers = capsule_tenant_handoff_evidence(
+                        tenant=tenant, tenant_item=obj
+                    )
+                    handoff_components.extend(items)
+                    blockers.extend(handoff_blockers)
+                    status_names = _capsule_status_namespace_names(obj)
+                    for record in rows[:30]:
+                        if record.provisioning_status in {'deprovisioned', 'released'}:
+                            continue
+                        try:
+                            namespace = client.core_api().read_namespace(
+                                record.namespace, _request_timeout=5
+                            )
+                            component, issues = capsule_namespace_handoff_evidence(
+                                record=record, namespace=namespace,
+                                tenant_name=str(tenant.provider_reference),
+                                tenant_id=tenant.id,
+                                status_namespace_names=status_names,
+                            )
+                            handoff_components.append({
+                                **component, 'namespace': record.namespace
+                            })
+                            blockers.extend(issues)
+                            provider.append({
+                                'kind': 'Namespace',
+                                'name': record.namespace,
+                                'uid': component['uid'],
+                                'resource_version': component['resource_version'],
+                            })
+                        except (ApiException, ValueError, TypeError, AttributeError):
+                            blockers.append(
+                                f'Capsule Namespace/{record.namespace} identity or ownership '
+                                'could not be verified for Release.'
+                            )
             except (ApiException, ValueError, AttributeError):
                 blockers.append('Capsule Tenant live read failed; release remains blocked.')
             external = latest_external_capsule_access_evidence(tenant_id)
@@ -152,8 +197,8 @@ def review_tenant_release_preflight_committed(*, tenant_id: str, actor_user_id: 
                 if age_seconds < 0 or age_seconds > 3600:
                     blockers.append('External Capsule ownership evidence must be inspected again.')
         elif tenant.provider_key == 'native_kubernetes':
-            for record in rows:
-                if record.provisioning_status == 'deprovisioned':
+            for record in rows[:30]:
+                if record.provisioning_status in {'deprovisioned', 'released'}:
                     continue
                 try:
                     obj = client.core_api().read_namespace(record.namespace, _request_timeout=5)
@@ -170,6 +215,23 @@ def review_tenant_release_preflight_committed(*, tenant_id: str, actor_user_id: 
                         'kind': 'Namespace', 'name': record.namespace,
                         'uid': uid, 'resource_version': version,
                     })
+                    try:
+                        observation = observe_native_namespace_allocation(
+                            client.core_api(), record.namespace
+                        )
+                        items, handoff_blockers = native_namespace_handoff_evidence(
+                            record=record, namespace=obj, observation=observation,
+                            tenant_id=tenant.id,
+                        )
+                        handoff_components.extend([
+                            {**component, 'namespace': record.namespace}
+                            for component in items
+                        ])
+                        blockers.extend(handoff_blockers)
+                    except (ApiException, ValueError, TypeError, AttributeError):
+                        blockers.append(
+                            f'{record.namespace} allocation handoff inventory could not be read.'
+                        )
 
     evidence = {
         'tenant_id': tenant.id,
@@ -181,6 +243,11 @@ def review_tenant_release_preflight_committed(*, tenant_id: str, actor_user_id: 
         'blockers': blockers,
         'dependency_counts': counts,
         'live_provider_identity': provider,
+        'handoff_components': handoff_components,
+        'handoff_fingerprint': handoff_fingerprint(handoff_components),
+        'handoff_required_count': sum(
+            item['handoff'] != 'observe_only' for item in handoff_components
+        ),
         'checked_at': datetime.now(UTC).isoformat(),
         'provider_resource_deleted': False,
         'provider_rbac_modified': False,
@@ -240,6 +307,11 @@ def release_adopted_tenant_committed(
     )
     if not old_objects or new_objects != old_objects:
         raise ValueError('Provider UID/resourceVersion changed; repeat Release preflight.')
+    if (
+        not previous.get('handoff_components')
+        or previous.get('handoff_fingerprint') != latest.get('handoff_fingerprint')
+    ):
+        raise ValueError('Provider allocation or ownership handoff evidence changed; repeat preflight.')
 
     tenant = Tenant.query.filter_by(id=tenant_id).with_for_update().one_or_none()
     if tenant is None or tenant.lifecycle_status != TenantLifecycleStatus.READY.value:

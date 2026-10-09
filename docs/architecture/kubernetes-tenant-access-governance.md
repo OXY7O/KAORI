@@ -314,6 +314,37 @@ remains a separate destructive lifecycle. Downgrade is refused while Released
 records exist. Native/Capsule live UAT and provider ownership handoff gates
 remain pending before formal admission.
 
+### Release Handoff Inventory and provider ownership proof (#991)
+
+**Review Release** now gathers a *bounded, read-only* handoff inventory in its
+existing committed Release preflight event. For Native Kubernetes, the
+normalizer inspects the live Namespace and its ResourceQuota/LimitRange
+declarations through the canonical allocation observer, recording only kind,
+name, UID, resourceVersion, KAORI/external ownership-marker correlation and
+the effective allocation hash. The Capsule path observes Tenant CR identity, correlated Namespace
+UID/resourceVersion and exact Tenant label/status correlation, along with
+Capsule quota presence and ownership provenance; Capsule remains the sole
+source authority for its Tenant resource. No unreviewed provider mutation
+is attempted.
+
+The existing Tenant Registry shows these handoff components under a
+progressive **Handoff inventory** disclosure. An operator can see exactly
+which components still need external-owner acknowledgement, which provider
+markers conflict, and which objects are merely observed. A correlated
+`app.kubernetes.io/managed-by=kaori` marker is *not* proof that an external
+owner has accepted the resource; it is an explicit handoff blocker, not a
+license to strip labels or delete provider resources.
+
+Before executing the limited Release path, KAORI recomputes the live
+provider handoff inventory and compares its deterministic SHA-256 fingerprint
+with the previously committed approved preflight. A changed Namespace,
+ResourceQuota, LimitRange or Capsule resourceVersion (or identity) blocks
+release. Existing KAORI-managed allocation and all unresolved credentials,
+Access Grants, Groups and provider-owned controls remain **Blocked**.
+A future separately admitted executor must transfer ownership only after
+explicit successor approval, provider read-back and audit; this inventory
+deliberately does not assert that those conditions are already met.
+
 ### Governed Access Remediation Decisions (#985)
 
 An operator may prepare a **Remediation Decision** after fresh committed

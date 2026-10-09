@@ -124,3 +124,32 @@ def test_release_does_not_commit_after_preflight_blocks_new_dependencies(monkeyp
     )
     with pytest.raises(ValueError, match='newly observed provider'):
         release_adopted_tenant_committed(tenant_id='tenant-a', actor_user_id=1, approved=True)
+
+
+def test_release_detects_changed_handoff_inventory_even_when_namespace_uid_is_stable(monkeypatch):
+    from app.kubernetes.tenant import release_preflight
+
+    timestamp = datetime.now(UTC).isoformat()
+    provider = [
+        {'kind': 'Namespace', 'name': 'sandbox', 'uid': 'uid',
+         'resource_version': '12'}
+    ]
+    snapshot = {
+        'status': 'handoff_review_required',
+        'tenant_id': 'tenant-a', 'cluster_id': 'cluster-a',
+        'generation': 1, 'provider': 'native_kubernetes',
+        'ownership': 'adopted', 'checked_at': timestamp,
+        'live_provider_identity': provider,
+        'handoff_components': [
+            {'kind': 'Namespace', 'name': 'sandbox', 'uid': 'uid',
+             'resource_version': '12'}
+        ],
+        'handoff_fingerprint': 'old-fingerprint',
+    }
+    monkeypatch.setattr(release_preflight, 'latest_tenant_release_preflight', lambda _: snapshot)
+    monkeypatch.setattr(
+        release_preflight, 'review_tenant_release_preflight_committed',
+        lambda **_: {**snapshot, 'blockers': [], 'handoff_fingerprint': 'new-fingerprint'},
+    )
+    with pytest.raises(ValueError, match='handoff evidence changed'):
+        release_adopted_tenant_committed(tenant_id='tenant-a', actor_user_id=1, approved=True)
