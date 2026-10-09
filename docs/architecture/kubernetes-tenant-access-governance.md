@@ -466,6 +466,51 @@ Read-only observation requires `tenant.manage` and CSRF. Provider read
 failure, UID replacement or unbounded evidence fails closed, without
 claiming an inventory is complete.
 
+### Provider-agnostic governed Access Remediation planning (#1000)
+
+The canonical `kubernetes_tenant_access_remediation_plan` workflow now
+consumes the latest **Native or Capsule** Access Drift AuditEvent and
+produces the same committed, non-mutating decision contract. A candidate
+is eligible for the existing **Access Grant Inspect/Reconcile** action
+only when a same-Tenant active KAORI Grant is already `drifted` or
+`failed`, the exact provider is Ready, evidence is no older than
+15 minutes, the Grant has not changed since analysis, and the finding
+is precisely `active_grant_missing_native_declaration` or
+`active_grant_missing_capsule_declaration` for the matching provider.
+
+All foreign/unverified RoleBindings, revoked Grants, mismatched Scope,
+and unexpected role reference changes remain **manual_review**.
+The resulting decisions appear together in the existing Access Grants
+workspace and retain provider identity. `auto_execute=false` and
+`auto_mutation_performed=false` are mandatory: this workstream does
+not create a second reconciler, run Kubernetes patches in the
+background or mistake declaration drift for effective RBAC proof.
+
+A future policy-gated auto-executor requires a separately accepted
+policy and dry-run admission, current provider UID/resourceVersion,
+concurrency/idempotency controls, a kill switch, explicit permission
+boundary and post-mutation read-back. This Native extension does not
+claim that executor or Full Admission is completed.
+
+### Access Remediation plan freshness (#1000)
+
+The latest committed Native/Capsule RBAC inventory must also equal the
+original inventory consumed by Access Drift analysis. Native uses the exact
+source SHA-256 fingerprint and observation time; Capsule uses the exact
+Capsule Tenant UID/resourceVersion and observation time. A new observation
+invalidates planning until a new Analyze action commits a replacement.
+This remains a committed-evidence comparison; routine UI never performs a
+new live provider request.
+
+
+Preparing Native/Capsule remediation decisions uses existing committed Access
+Drift records but does not execute any mutation. Evidence must remain bound
+to the same Tenant/cluster/provider. Both analysis time (15-minute maximum)
+and original provider RBAC observation time (one-hour maximum) must be fresh,
+ordered and timezone-aware. Unknown/stale source evidence cannot produce an
+apparently actionable explicit-reconcile proposal. The existing Access Grant
+Inspect/Reconcile flow remains the sole admitted mutation authority, with
+separate operator action; all automatic execution flags remain false.
 ### Native Access Drift declaration correlation (#999)
 
 After **Inspect Native RBAC** has committed a scoped, bounded namespaced

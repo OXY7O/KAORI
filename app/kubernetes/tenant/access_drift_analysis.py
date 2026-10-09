@@ -126,6 +126,14 @@ def evaluate_tenant_access_drift_committed(*, tenant_id: str, actor_user_id: int
 _NATIVE_TARGET = 'kubernetes_tenant_native_access_drift_evidence'
 
 
+def latest_native_access_drift_evidence(tenant_id: str) -> dict[str, Any] | None:
+    event = (
+        AuditEvent.query.filter_by(target_type=_NATIVE_TARGET, target_id=tenant_id)
+        .order_by(AuditEvent.id.desc()).first()
+    )
+    return dict(event.metadata_json or {}) if event else None
+
+
 def classify_native_access_observation(
     evidence: dict[str, Any], grants: list[TenantAccessGrant]
 ) -> list[dict[str, str]]:
