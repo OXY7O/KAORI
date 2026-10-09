@@ -26,6 +26,9 @@ def _resource(kind: str = 'Namespace', *, uid: str = 'uid-7', rv: str = '19'):
         metadata=SimpleNamespace(
             name='sandbox' if kind == 'Namespace' else 'limits',
             uid=uid, resource_version=rv,
+            owner_references=[], finalizers=['example.com/keep'],
+            generation=5, deletion_timestamp=None,
+            deletion_grace_period_seconds=None,
             labels={
                 'app.kubernetes.io/managed-by': 'kaori',
                 'kaori.io/tenant-id': 'tenant-1',
@@ -41,11 +44,14 @@ def _resource(kind: str = 'Namespace', *, uid: str = 'uid-7', rv: str = '19'):
 
 class _CoreApi:
     def __init__(self, kind='Namespace', *, tamper_spec=False, tamper_labels=False,
-                 tamper_annotations=False, persist=False):
+                 tamper_annotations=False, tamper_owner=False,
+                 tamper_finalizers=False, persist=False):
         self.obj = _resource(kind)
         self.tamper_spec = tamper_spec
         self.tamper_labels = tamper_labels
         self.tamper_annotations = tamper_annotations
+        self.tamper_owner = tamper_owner
+        self.tamper_finalizers = tamper_finalizers
         self.persist = persist
         self.calls = []
 
@@ -69,6 +75,10 @@ class _CoreApi:
             patched.metadata.labels['example.com/other'] = 'modified'
         if self.tamper_annotations:
             patched.metadata.annotations = {'example.com/source': 'unexpected'}
+        if self.tamper_owner:
+            patched.metadata.owner_references = [{'kind': 'Namespace', 'name': 'foreign'}]
+        if self.tamper_finalizers:
+            patched.metadata.finalizers = []
         if self.persist:
             self.obj = deepcopy(patched)
         return patched
@@ -163,6 +173,12 @@ def test_dry_run_rejects_mutating_admission_or_live_provider_side_effect():
         dry_run_native_handoff_component(
             core, _component(), tenant_id='tenant-1'
         )
+    core = _CoreApi('Namespace', tamper_owner=True)
+    with pytest.raises(ValueError, match='ownerReferences'):
+        dry_run_native_handoff_component(core, _component(), tenant_id='tenant-1')
+    core = _CoreApi('Namespace', tamper_finalizers=True)
+    with pytest.raises(ValueError, match='finalizers'):
+        dry_run_native_handoff_component(core, _component(), tenant_id='tenant-1')
     core = _CoreApi('Namespace', persist=True)
     with pytest.raises(ValueError, match='live state changed'):
         dry_run_native_handoff_component(

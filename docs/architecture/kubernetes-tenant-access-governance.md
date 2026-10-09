@@ -308,6 +308,12 @@ successor-attestation verification mechanism, matching provider read-back,
 partial-write containment, recovery and security UAT must precede any real
 ownership-transfer or Release of KAORI-mutated allocations.
 
+Native server-side ownership transfer previews are strictly metadata-only:
+the Kubernetes dry-run response must preserve source spec, foreign labels,
+annotations, ownerReferences, finalizers, generation, and deletion state;
+provider reread must verify all of these remain unchanged. This is not
+permission to execute a real transfer or to mark a Tenant Released.
+
 ### Guarded Released lifecycle and Re-adopt generation (#991)
 
 `Released` is a **separate terminal governance state** for Tenant and Namespace

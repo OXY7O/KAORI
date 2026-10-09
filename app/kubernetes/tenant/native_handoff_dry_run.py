@@ -127,6 +127,31 @@ def _spec(resource: Any) -> Any:
     return value.to_dict() if hasattr(value, 'to_dict') else value
 
 
+def _immutable_metadata(resource: Any) -> tuple[Any, ...]:
+    """Fields that a metadata-only handoff must preserve exactly.
+
+    Managed fields are deliberately excluded: apiserver admission may update
+    their bookkeeping during JSON PATCH. Ownership, finalizers, generation and
+    deletion state are never part of the approved patch.
+    """
+    meta = _metadata(resource)
+    values = []
+    for key in (
+        'owner_references', 'finalizers', 'generation',
+        'deletion_timestamp', 'deletion_grace_period_seconds',
+    ):
+        value = _read(meta, key)
+        if hasattr(value, 'to_dict'):
+            value = value.to_dict()
+        elif isinstance(value, list):
+            value = [
+                item.to_dict() if hasattr(item, 'to_dict') else item
+                for item in value
+            ]
+        values.append(value)
+    return tuple(values)
+
+
 def dry_run_native_handoff_component(
     core: Any, component: Mapping[str, str], *, tenant_id: str,
 ) -> dict[str, Any]:
@@ -144,6 +169,8 @@ def dry_run_native_handoff_component(
         raise ValueError('Dry-run unexpectedly marked provider resource for deletion.')
     if _spec(before) != _spec(preview):
         raise ValueError('Dry-run changed Kubernetes spec; ownership handoff is blocked.')
+    if _immutable_metadata(before) != _immutable_metadata(preview):
+        raise ValueError('Dry-run changed provider ownerReferences, finalizers or lifecycle metadata.')
     expected_labels = {
         key: value for key, value in before_identity[3].items()
         if key not in _MARKER_KEYS
@@ -160,6 +187,7 @@ def dry_run_native_handoff_component(
         _resource_metadata(live) != before_identity
         or _spec(live) != _spec(before)
         or (_read(_metadata(live), 'annotations') or {}) != before_annotations
+        or _immutable_metadata(live) != _immutable_metadata(before)
     ):
         raise ValueError('Kubernetes live state changed during dry-run verification.')
     return {
