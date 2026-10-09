@@ -76,7 +76,10 @@ def _tone(status: str) -> str:
 def _unclaimed_provider_ownership_reason(*, labels: Mapping[str, Any], resource_kind: str) -> str | None:
     """Reject orphaned KAORI labels and foreign managers before any provider takeover."""
     manager = str(labels.get('app.kubernetes.io/managed-by') or '').strip()
-    reserved_claims = ('kaori.io/tenant-id', 'kaori.io/environment', 'kaori.io/resource-profile')
+    reserved_claims = (
+        'kaori.io/tenant-id', 'kaori.io/tenant-generation',
+        'kaori.io/environment', 'kaori.io/resource-profile',
+    )
     if manager.lower() == 'kaori' or any(key in labels for key in reserved_claims):
         return (
             f'{resource_kind} has KAORI ownership markers without active governance; '
