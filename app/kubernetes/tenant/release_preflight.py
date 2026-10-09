@@ -15,7 +15,7 @@ from app.kubernetes.tenant.decommission_service import (
 from app.kubernetes.tenant.external_access_observation import latest_external_capsule_access_evidence
 from app.models import AuditEvent, Cluster
 from app.models.tenant import (
-    Tenant, TenantEnvironment, TenantLifecycleStatus, TenantNamespace,
+    Tenant, TenantEnvironment, TenantGroup, TenantLifecycleStatus, TenantNamespace,
     TenantNamespaceProvisioningStatus,
 )
 from app.models.tenant_advanced import TenantAdvancedCapabilityIntent, TenantAdvancedCapabilityStatus
@@ -85,6 +85,7 @@ def review_tenant_release_preflight_committed(*, tenant_id: str, actor_user_id: 
         'credentials': _active_credential_count(tenant_id),
         'Access Grants': _active_grant_count(tenant_id),
         'Memberships': _active_membership_count(tenant_id),
+        'enabled Groups': TenantGroup.query.filter_by(tenant_id=tenant_id, enabled=True).count(),
         'managed resources': TenantManagedResourceIntent.query.filter(
             TenantManagedResourceIntent.tenant_id == tenant_id,
             TenantManagedResourceIntent.status != TenantManagedResourceStatus.DISABLED.value,
