@@ -271,6 +271,32 @@ failed cleanup never claims that access was revoked. Drift/inspect/reconcile use
 committed grant lineage and store non-secret provider UID, resourceVersion, target, and
 effective-evidence hashes.
 
+### Provider-preserving Release Governance preflight (#990)
+
+**Review Release** in Tenant Registry is an explicit, **read-only preflight** for
+externally Adopted Native/Capsule Tenants. It is not Decommission and never
+performs a Kubernetes/Capsule delete, revocation, allocation write or
+ownership-state transition. The action checks:
+
+- Active KAORI Credentials, Access Grants, Memberships, managed resources,
+  advanced capabilities, reservation/exposure policy.
+- Namespace adoption/ownership and whether allocation remains under
+  KAORI-managed Resource Profile control.
+- Live provider Namespace or Capsule Tenant UID/resourceVersion, plus current
+  Capsule RBAC/owner observation provenance and freshness.
+
+It commits blocked/handoff-review evidence as an `AuditEvent`, and Tenant
+Registry reads only the latest committed observation on normal requests.
+Even a zero-blocker result remains **handoff review required** with
+`release_execution_available=false`. This prevents a database-only
+'Released' flag from hiding active provider resources.
+
+A dedicated follow-on lifecycle/identity migration child (#991) must be
+accepted before release execution is exposed. It must preserve foreign
+provider-owned objects, clean only KAORI-owned access/controls with read-back
+proof, mark the canonical Tenant and Namespace release boundary consistently
+across all readers/sync, and permit Re-adopt only with a new audit generation.
+
 ### Governed Access Remediation Decisions (#985)
 
 An operator may prepare a **Remediation Decision** after fresh committed
