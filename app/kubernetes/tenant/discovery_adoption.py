@@ -13,7 +13,10 @@ from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_a
 from app.kubernetes.tenant.allocation_cutover import reconcile_adopted_native_allocation
 from app.kubernetes.tenant.allocation_observation import observe_native_namespace_allocation
 from app.kubernetes.tenant.capacity_governance import enforce_existing_namespace_allocation_preflight
-from app.kubernetes.tenant.capsule_allocation_observation import observe_capsule_tenant_allocation
+from app.kubernetes.tenant.capsule_allocation_observation import (
+    _capsule_status_namespace_names,
+    observe_capsule_tenant_allocation,
+)
 from app.kubernetes.tenant.capsule_namespace_attachment_authority import validate_capsule_namespace_attachment
 from app.kubernetes.tenant.capsule_tenant import qualify_capsule_tenant_adoption
 from app.kubernetes.tenant.discovery_service import (
@@ -652,14 +655,28 @@ def attach_capsule_namespace_to_existing_tenant_committed(
         tenant=tenant, cluster_id=str(cluster.id),
         capsule_item=capsule_item, namespace=observed,
         expected_namespace_uid=namespace_uid,
-        status_namespace_names={
-            str(value) for value in (capsule_item.get('status') or {}).get('namespaces', [])
-        },
+        status_namespace_names=_capsule_status_namespace_names(capsule_item),
     )
     if str(correlated[0].get('uid') or '') != proof['namespace_uid']:
         raise ValueError('Capsule Namespace correlation changed during live review.')
     if str(correlated[0].get('resource_version') or '') != proof['namespace_resource_version']:
         raise ValueError('Capsule Namespace resourceVersion changed during attachment preflight.')
+    _, reread_capsule = _read_capsule_tenant(client, str(tenant.provider_reference))
+    new_metadata = reread_capsule.get('metadata') or {}
+    if (
+        str(new_metadata.get('uid') or '') != proof['capsule_tenant_uid']
+        or str(new_metadata.get('resourceVersion') or '')
+        != proof['capsule_tenant_resource_version']
+    ):
+        raise ValueError('Capsule Tenant CR changed during attachment; retry Discovery.')
+    confirmed = client.core_api().read_namespace(namespace_name, _request_timeout=5)
+    confirmed_meta = getattr(confirmed, 'metadata', None)
+    if (
+        str(getattr(confirmed_meta, 'uid', '') or '') != proof['namespace_uid']
+        or str(getattr(confirmed_meta, 'resource_version', '') or '')
+        != proof['namespace_resource_version']
+    ):
+        raise ValueError('Capsule Namespace changed during attachment; retry Discovery.')
     current = _managed_namespace_map([str(cluster.id)]).get((str(cluster.id), namespace_name))
     if current is not None:
         raise ValueError('Namespace already has active KAORI governance; attachment refused.')
