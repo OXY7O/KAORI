@@ -91,6 +91,16 @@ def validate_capsule_namespace_attachment(
         raise ValueError('Namespace Capsule label belongs to another Tenant.')
     if owners and owners != {capsule_name}:
         raise ValueError('Namespace Capsule ownerReference belongs to another Tenant.')
+    capsule_owners = [
+        owner for owner in references
+        if _text(owner, 'kind') == 'Tenant'
+        and _text(owner, 'api_version', alt='apiVersion').startswith('capsule.clastix.io/')
+    ]
+    if any(
+        _text(owner, 'uid') and _text(owner, 'uid') != capsule_uid
+        for owner in capsule_owners
+    ):
+        raise ValueError('Namespace Capsule ownerReference UID belongs to another generation.')
     if not (capsule_name in claims or capsule_name in owners or name in status_namespace_names):
         raise ValueError('Namespace has no authoritative Capsule Tenant correlation.')
     return {
