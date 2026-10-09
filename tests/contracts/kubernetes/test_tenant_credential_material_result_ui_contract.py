@@ -17,6 +17,7 @@ def test_generated_token_and_kubeconfig_use_existing_shared_ui_ownership() -> No
         'components/operational_section_card.html',
         'data-kaori-credential-material-result',
         '{% block dashboard_content %}',
+        'components/page_hero.html',
         'Access Material',
         'id="credential-material-heading"',
         'One-time result',
@@ -30,7 +31,26 @@ def test_generated_token_and_kubeconfig_use_existing_shared_ui_ownership() -> No
         assert token in template, token
 
     assert '{% block tenant_content %}' not in template
-    assert 'page_hero' not in template
+    # The one-time result owns its page content to avoid the Tenant onboarding gate,
+    # but must still render the approved Violet Hero instead of a plain white header.
+    assert 'page_hero.shell_classes()' in template
+    assert 'page_hero.layout_classes()' in template
+    assert 'page_hero.content_classes()' in template
+    assert 'page_hero.intro(' in template
+    assert 'page_hero.title_classes()' in template
+    assert 'page_hero.description_classes()' in template
+    assert 'page_hero.persistent_metadata(' in template
+    assert 'page_hero.context_panel_classes()' in template
+    assert 'page_hero.context_header_status(' in template
+    assert 'page_hero.context_metric(' in template
+    assert 'data-kaori-hero-profile="transactional-admin"' in template
+    assert 'data-kaori-hero-state="normal"' in template
+    assert 'Copy the generated credential before leaving this one-time view.' in template
+    assert "('shield-alert', 'One-time result')" in template
+    assert "requested_label ~ ' requested'" in template
+    assert template.index('page_hero.shell_classes()') < template.index('Credential Context')
+    assert template.index('Credential Context') < template.index('One-time view — copy before leaving')
+    assert 'registered_cluster_count' not in template
     assert 'xl:grid-cols-[minmax(0,3fr)_minmax(17rem,2fr)]' not in template
     assert template.count('<h1') == 1
     assert template.count('operational_section_card.render(') == 3
@@ -45,8 +65,9 @@ def test_generated_token_and_kubeconfig_use_existing_shared_ui_ownership() -> No
     assert 'sm:grid-cols-2 xl:grid-cols-4' in template
     assert '<dl class="grid gap-px bg-outline-subtle' in template
     assert template.count('<dt class="text-xs font-semibold leading-5 text-content-muted">') == 4
-    # Only the compact page heading uses text-xl; context facts use text-sm.
-    assert template.count('text-xl') == 1
+    # Heading typography is owned by the shared Hero macro, not a page-local size.
+    assert 'page_hero.title_classes()' in template
+    assert 'text-xl' not in template
     assert template.count('truncate text-sm font-semibold leading-5 text-content-primary') >= 3
     assert 'min-h-32' not in template
     assert 'material_access_package.tenant_name' in template
