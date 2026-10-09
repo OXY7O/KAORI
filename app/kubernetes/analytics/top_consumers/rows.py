@@ -536,6 +536,9 @@ def bar_percent(value: float | None) -> float:
 
 
 def format_cpu(value: float) -> str:
+    """Keep tiny nonzero consumption visible without implying zero use."""
+    if 0 < abs(value) < 0.01:
+        return f'{value:.3g} cores'
     return f'{safe_round(value, 2)} cores'
 
 
