@@ -271,6 +271,28 @@ failed cleanup never claims that access was revoked. Drift/inspect/reconcile use
 committed grant lineage and store non-secret provider UID, resourceVersion, target, and
 effective-evidence hashes.
 
+### Existing-Tenant Namespace attachment (#983)
+
+In **Tenant → Discovery → Review Adoption**, a newly discovered Native
+Kubernetes Namespace may be attached to a *Ready Native Tenant* in the same
+cluster, selecting an existing Environment. This preserves the Tenant's
+existing identity and generation and uses the same adopted provider UID,
+ResourceQuota/LimitRange observation, capacity admission and equivalent
+allocation write/read-back as standalone Native adoption.
+
+The backend revalidates cluster, provider authority, Namespace ownership,
+Kubernetes manager label, live Namespace UID, and availability before committing
+the additional Namespace record. Stale/replaced, system, terminating, already
+governed or cross-cluster Namespace candidates fail closed. Capsule namespaces
+cannot be reassigned to an arbitrary Tenant: Capsule remains authoritative for
+Tenant/Namespace ownership.
+
+**Access safety:** Attaching a Namespace never implicitly extends existing
+Tenant/Environment Access Grants. The operator must inspect and explicitly
+reconcile the newly admitted scope after successful attachment. Existing Tenant
+provider provenance is preserved; the new Namespace records its own attachment
+lineage and effective allocation verification.
+
 ### Kubernetes Integration · Capsule Cluster RBAC Bootstrap (#974)
 
 ClusterRole prerequisites belong to the **Kubernetes cluster**, not to a specific
