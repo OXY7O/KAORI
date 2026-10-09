@@ -51,7 +51,7 @@ def test_matching_capsule_namespace_correlation_preserves_existing_provider_auth
     assert evidence['namespace_uid'] == 'ns-uid'
     assert evidence['capsule_tenant_uid'] == 'capsule-uid'
     assert evidence['authority'] == 'capsule'
-    assert evidence['provider_mutation_performed'] == 'false'
+    assert evidence['provider_mutation_performed'] is False
 
 
 @pytest.mark.parametrize('override', [
