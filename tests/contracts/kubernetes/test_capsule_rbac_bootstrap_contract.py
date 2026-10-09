@@ -153,7 +153,12 @@ def test_capsule_rbac_ready_state_uses_completion_action_not_mutation_approval()
 
 
 def test_capsule_rbac_missing_state_shows_approved_mutation_only_to_operator() -> None:
-    snapshot = _snapshot('missing', [_role('missing')])
+    role_names = ('viewer', 'operator', 'tenant-admin', 'deployer')
+    roles = [
+        _role('missing' if profile == 'operator' else 'ready', name=f'kaori-tenant-{profile}-v1')
+        for profile in role_names
+    ]
+    snapshot = _snapshot('missing', roles)
     html = _render_capsule_rbac_panel(snapshot)
 
     assert 'Missing ClusterRoles can be prepared' in html
@@ -201,3 +206,13 @@ def test_capsule_rbac_empty_and_untrusted_evidence_are_safe() -> None:
     html = _render_capsule_rbac_panel(snapshot)
     assert '<script>alert(1)</script>' not in html
     assert '&lt;script&gt;alert(1)&lt;/script&gt;' in html
+
+
+def test_capsule_rbac_incomplete_role_evidence_never_claims_ready_or_offers_bootstrap() -> None:
+    ready_incomplete = _render_capsule_rbac_panel(_snapshot('ready', [_role('ready')]))
+    assert 'Cluster RBAC prerequisites ready' not in ready_incomplete
+    assert 'Bootstrap Missing Roles' not in ready_incomplete
+
+    missing_incomplete = _render_capsule_rbac_panel(_snapshot('missing', [_role('missing')]))
+    assert 'Bootstrap Missing Roles' not in missing_incomplete
+    assert 'name="confirm_cluster_rbac"' not in missing_incomplete
