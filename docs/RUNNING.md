@@ -107,21 +107,6 @@ that `active_queues` shows `registry-security@...` consuming the configured
 
 If a worker definition or Python dependency changed, rebuild the Dev Container instead of manually drifting an individual service.
 
-## Mode 3 — Local standalone Docker Compose (no Dev Container)
-
-Use [`example/kaori/README.md`](../example/kaori/README.md) for an isolated laptop deployment of an **already admitted RC image**. This does not mount local source and does not run Flask/Tailwind development watchers.
-
-```bash
-cd example/kaori
-cp .env.example .env
-# Replace the immutable KAORI_IMAGE and the matching APP_VERSION, APP_BUILD_SHA,
-# APP_BUILD_DATE with exact admitted release evidence. Use disposable local credentials.
-bash ./run.sh start
-bash ./run.sh status
-```
-
-The service port is published only on `127.0.0.1:5000` by default; PostgreSQL and Redis remain Docker-network private. The compact worker consumes the canonical queues (including `registry-security`). For Windows PowerShell commands, see the standalone example README. The `reset` command **deletes standalone data volumes** and is never part of routine startup.
-
 ## Mode 2 — Governed server Docker Compose (UAT and production)
 
 The deprecated `.env.production.example` is **not** an active environment template and must not be copied into a runtime file. Production uses three independent, host-owned configuration authorities plus generated release identity:
@@ -142,6 +127,21 @@ bash deploy/server/verify.sh
 ```
 
 See [`deploy/server/README.md`](../deploy/server/README.md) for bootstrap, delivery, verification, and rollback. Public HTTPS reverse-proxy publication is a separate operator boundary.
+
+## Mode 3 — Local standalone Docker Compose (no Dev Container)
+
+Use [`example/kaori/README.md`](../example/kaori/README.md) for an isolated laptop deployment of an **already admitted RC image**. This does not mount local source and does not run Flask/Tailwind development watchers.
+
+```bash
+cd example/kaori
+cp .env.example .env
+# Replace the immutable KAORI_IMAGE and the matching APP_VERSION, APP_BUILD_SHA,
+# APP_BUILD_DATE with exact admitted release evidence. Use disposable local credentials.
+bash ./run.sh start
+bash ./run.sh status
+```
+
+The service port is published only on `127.0.0.1:5000` by default; PostgreSQL and Redis remain Docker-network private. The compact worker consumes the canonical queues (including `registry-security`). For Windows PowerShell commands, see the standalone example README. The `reset` command **deletes standalone data volumes** and is never part of routine startup.
 
 ## Release verification
 
