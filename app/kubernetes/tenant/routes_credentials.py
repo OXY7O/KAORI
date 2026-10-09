@@ -63,7 +63,7 @@ def create_human_credential_route():
             event_type='kubernetes_tenant_credential_issued',
             status='success',
             title='Tenant Human Credential Issued',
-            message=f'{credential.service_account_name} is ready for governed JumpServer delivery.',
+            message=f'{credential.service_account_name} is ready for approved human access delivery.',
             metadata={
                 'credential_id': credential.id,
                 'credential_public_id': credential.public_id,
@@ -100,7 +100,7 @@ def create_deployer_credential_route():
             event_type='kubernetes_tenant_deployer_credential_issued',
             status='success',
             title='Tenant Deployer Credential Issued',
-            message=f'{credential.service_account_name} is ready for governed CI/CD delivery.',
+            message=f'{credential.service_account_name} is ready for approved deployment delivery.',
             metadata={
                 'credential_id': credential.id,
                 'credential_public_id': credential.public_id,
@@ -166,19 +166,19 @@ def generate_credential_material_route(credential_id: int):
     context = _tenant_workspace_context()
     if isinstance(material, GeneratedTokenMaterial):
         material_kind = 'token'
-        material_title = 'JumpServer ServiceAccount Token'
+        material_title = 'Human Access Token'
         material_value = material.token
         material_base64 = None
-        delivery_label = 'Manual JumpServer delivery'
-        page_title = 'One-Time Human Token'
+        delivery_label = 'Manual Human Access Delivery'
+        page_title = 'One-Time Human Access Token'
         page_icon = 'user-key'
     elif isinstance(material, GeneratedKubeconfigMaterial):
         material_kind = 'kubeconfig'
-        material_title = 'CI/CD Kubeconfig'
+        material_title = 'Deployment Kubeconfig'
         material_value = material.kubeconfig
         material_base64 = base64.b64encode(material.kubeconfig.encode('utf-8')).decode('ascii')
-        delivery_label = 'GitHub Actions / Helm'
-        page_title = 'One-Time CI/CD Kubeconfig'
+        delivery_label = 'Automated Deployment'
+        page_title = 'One-Time Deployment Kubeconfig'
         page_icon = 'git-branch'
     else:
         abort(500)
