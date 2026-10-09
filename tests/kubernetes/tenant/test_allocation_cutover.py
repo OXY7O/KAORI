@@ -222,6 +222,37 @@ def test_native_takeover_rejects_namespace_uid_replacement_before_provider_patch
     assert api.patched_namespaces == []
 
 
+@pytest.mark.parametrize('ownership_labels', [
+    {
+        'app.kubernetes.io/managed-by': 'kaori',
+        'kaori.io/tenant-id': 'another-tenant',
+    },
+    {
+        'kaori.io/tenant-id': 'another-tenant',
+    },
+    {
+        'app.kubernetes.io/managed-by': 'kaori',
+    },
+])
+def test_native_takeover_rejects_ambiguous_or_foreign_kaori_claims(
+    ownership_labels,
+):
+    api = _FakeCoreApi()
+    original_read = api.read_namespace
+
+    def conflicting_namespace(name):
+        resource = original_read(name)
+        resource.metadata.labels = ownership_labels
+        return resource
+
+    api.read_namespace = conflicting_namespace
+    with pytest.raises(ValueError, match='foreign KAORI Tenant ownership claim'):
+        allocation_cutover._mutate_namespace_ownership(
+            api, _reconcile_record(), profile=_profile()
+        )
+    assert api.patched_namespaces == []
+
+
 def test_native_takeover_requires_provider_resource_version_before_patch():
     api = _FakeCoreApi()
     original_read = api.read_namespace
