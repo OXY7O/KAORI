@@ -121,3 +121,35 @@ def test_capsule_new_tenant_adoption_rejects_incomplete_inventory_before_db_reco
             SimpleNamespace(), SimpleNamespace(),
             {'correlated_namespaces': correlations},
         )
+
+
+def test_capsule_new_tenant_adoption_rejects_namespace_owned_by_another_tenant(monkeypatch):
+    from types import SimpleNamespace
+
+    from app.kubernetes.tenant import discovery_adoption as module
+
+    cluster = SimpleNamespace(id='cluster-a')
+    context = SimpleNamespace(
+        cluster=cluster, client=SimpleNamespace(), resource_name='capsule-a',
+        expected_provider_uid='tenant-uid', expected_provider_resource_version='5',
+    )
+    monkeypatch.setattr(module, '_read_capsule_tenant', lambda *_: (
+        'v1beta2', {'metadata': {'name': 'capsule-a', 'uid': 'tenant-uid', 'resourceVersion': '5'}},
+    ))
+    monkeypatch.setattr(module, '_managed_capsule_map', lambda _: {})
+    monkeypatch.setattr(
+        module, 'observe_capsule_tenant_allocation',
+        lambda *_args, **_kwargs: {'correlated_namespaces': [{'name': 'claimed-ns'}]},
+    )
+    monkeypatch.setattr(
+        module, 'qualify_capsule_tenant_adoption',
+        lambda **_kwargs: ('capsule', {}),
+    )
+    monkeypatch.setattr(module, '_apply_capsule_allocation_capability_state', lambda *a, **kw: None)
+    monkeypatch.setattr(
+        module, '_managed_namespace_map',
+        lambda _: {('cluster-a', 'claimed-ns'): object()},
+    )
+
+    with pytest.raises(ValueError, match='already belongs to a governed KAORI Tenant'):
+        module._adopt_capsule(context)
