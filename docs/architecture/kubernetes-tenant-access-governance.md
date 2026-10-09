@@ -231,10 +231,15 @@ For an adopted or managed Capsule Tenant, Capsule remains the exclusive reconcil
 The provider-aware Access Grant dispatcher uses the same versioned KAORI Membership, Profile, and scope contracts.
 It never patches Native Kubernetes Role/RoleBinding objects while Capsule owns the Tenant.
 
-Capsule `v1beta2` explicitly supports `Tenant.spec.additionalRoleBindings` for Tenant-wide
-distribution, and `Tenant.spec.rules[].permissions.bindings` with `namespaceSelector`
-for targeted Namespace/Environment distribution. These fields point to **ClusterRoles**, not
-KAORI's namespaced Roles. The adapter therefore requires a **pre-approved ClusterRole**
+Capsule `v1beta2` supports `Tenant.spec.additionalRoleBindings` for automatic
+Tenant-wide distribution, and `Tenant.spec.rules[].permissions.bindings` with
+`namespaceSelector` for targeted distribution. **KAORI deliberately uses the
+selector-scoped contract for all three scopes (Tenant, Environment, Namespace)**:
+the implicit future-Namespace expansion of `additionalRoleBindings` would
+grant access to Namespaces not yet admitted into committed KAORI Tenant state.
+The exact-name selector is updated only by explicit provider reconciliation
+after additional Namespace governance is committed. These fields point to **ClusterRoles**,
+not KAORI's namespaced Roles. The adapter therefore requires a **pre-approved ClusterRole**
 named `kaori-tenant-<profile>-v<version>` with exactly the same resource/verb/API-group
 triples as the matching code-owned Access Profile. Aggregated ClusterRoles, extra permissions,
 missing ClusterRoles, mismatched subjects, or foreign ownership are rejected. KAORI does not
