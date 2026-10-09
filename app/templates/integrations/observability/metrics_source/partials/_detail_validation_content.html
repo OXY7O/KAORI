@@ -1,3 +1,4 @@
+{% import "integrations/components/_provider_detail_posture.html" as provider_detail_posture %}
 {% import "components/action_button.html" as action_button %}
 {% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
@@ -114,5 +115,9 @@
         {% include "integrations/observability/metrics_source/partials/_capability_registry.html" %}
     </div>
 </section>
-{{ framed_workspace_tabs.badge_oob("metrics-source", "validation", (instance.readiness_status or "validation_required") |replace("_", " ")|title) }}
+{% if request.headers.get('HX-Request') == 'true' %}
+    {{ framed_workspace_tabs.badge_oob("metrics-source", "validation", (instance.readiness_status or "validation_required") |replace("_", " ")|title) }}
+{% endif %}
 {% include "components/operation_feedback_oob.html" %}
+
+{{ provider_detail_posture.state_oob('metrics-source', instance.readiness_status, capability_summary.observed|default(0)) }}
