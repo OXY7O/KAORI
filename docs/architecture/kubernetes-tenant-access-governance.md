@@ -356,6 +356,35 @@ side effect. Effective grant takeover requires separately approved identity,
 exact permission/profile, source-scope, and ownership equivalence proof. A
 name match or provider ClusterRole name alone is insufficient.
 
+### Native Kubernetes Namespace RBAC inventory (#996)
+
+Native Tenant access governance now has a matching **explicit read-only inspection**
+path in **Tenant → Access Grants → Native Namespace RBAC Inventory**, alongside
+the existing Capsule observer (#981). The operator selects a healthy governed
+Native Tenant and clicks **Inspect Native RBAC**; the canonical connection
+reads only its currently Ready and governed Namespace objects plus their
+namespaced RoleBindings. No cluster-wide RoleBinding enumeration or Role/RoleBinding
+mutation is performed.
+
+The observer verifies committed Namespace/cluster correlation, live Namespace
+UID/resourceVersion, bounds the Namespace and RoleBinding inventory, and
+records the exact role reference, subject identifiers and binding UID/version
+as non-secret AuditEvent evidence. KAORI labels are **only correlation hints**;
+a grant public ID must also exist in the same canonical Tenant for the
+`kaori_correlated` classification. Marked-but-unmatched or foreign bindings
+remain `kaori_marker_unverified` or `external_observed`, not managed.
+Even correlated bindings do **not** prove the referenced Role/ClusterRole
+permissions or that access is effective. Do not import Users/Groups,
+create Memberships, revoke external roles, or infer IdP identities.
+
+Normal UI displays up to five *committed* observations without live provider
+requests. Use **Inspect/Reconcile** on an existing KAORI Access Grant only
+for its own admitted reconciliation authority; never use a foreign binding
+as a managed grant without the future human-reviewed import contract.
+Read-only observation requires `tenant.manage` and CSRF. Provider read
+failure, UID replacement or unbounded evidence fails closed, without
+claiming an inventory is complete.
+
 ### Existing-Tenant Namespace attachment (#983)
 
 In **Tenant → Discovery → Review Adoption**, a newly discovered Native
