@@ -24,6 +24,7 @@ from app.kubernetes.tenant.access_service import (
 from app.kubernetes.tenant.access_drift_analysis import evaluate_tenant_access_drift_committed
 from app.kubernetes.tenant.access_remediation_plan import prepare_tenant_access_remediation_plan_committed
 from app.kubernetes.tenant.external_access_observation import observe_external_capsule_access_committed
+from app.kubernetes.tenant.external_native_access_observation import observe_external_native_access_committed
 from app.kubernetes.tenant.route_common import (
     _csrf,
     _optional_int,
@@ -123,6 +124,40 @@ def observe_capsule_external_access_route():
             ),
             detail='No membership or RBAC mutation. Review external identities before governed takeover.',
             metadata={'tenant_id': result['tenant_id'], 'operation': 'observe_external_capsule_access'},
+        )
+    return _tenant_section_redirect('access-grants')
+
+
+@tenant_bp.post('/external-access/observe-native')
+@permission_required('tenant.manage')
+def observe_native_external_access_route():
+    """Explicit read-only Native RBAC inventory; never create memberships/grants."""
+    try:
+        _csrf()
+        result = observe_external_native_access_committed(
+            tenant_id=str(request.form.get('tenant_id') or '').strip(),
+            actor_user_id=int(current_user.id),
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_external_native_access_observation_failed',
+            status='error',
+            title='Native Access Inspection Failed',
+            message=str(exc),
+            detail='No Kubernetes RoleBinding or KAORI Membership was modified.',
+            metadata={'tenant_id': request.form.get('tenant_id'), 'operation': 'observe_external_native_access'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_external_native_access_observed',
+            status='warning' if result['status'] == 'review_required' else 'success',
+            title='Native Namespace RBAC Observed',
+            message=(
+                f"{result['external_count']} external binding(s), "
+                f"{result['kaori_correlated_count']} KAORI-correlated binding(s)."
+            ),
+            detail='Observation only; external access ownership requires separate human review.',
+            metadata={'tenant_id': result['tenant_id'], 'operation': 'observe_external_native_access'},
         )
     return _tenant_section_redirect('access-grants')
 
