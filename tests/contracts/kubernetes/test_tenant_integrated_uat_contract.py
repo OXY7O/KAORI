@@ -134,7 +134,7 @@ def test_tenant_operations_uses_shared_content_tabs_without_sidebar_third_level(
 
     assert 'components/content_tabs.html' in operations
     assert 'content_tabs.render_links' in operations
-    for label in ('Provisioning', 'Runs & Evidence', 'Drift & Reconcile', 'Activity'):
+    for label in ('Provisioning', 'Runs & Evidence', 'Allocation Drift', 'Operational Reconcile', 'Activity'):
         assert label in operations
         assert f'>{label}</span>' not in menu
 
