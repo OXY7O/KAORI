@@ -145,6 +145,13 @@ def capsule_tenant_handoff_evidence(
 
 def handoff_fingerprint(components: list[dict[str, str]]) -> str:
     """Stable equality proof for the latest committed provider identity snapshot."""
+    canonical = sorted(
+        components,
+        key=lambda item: (
+            item.get('namespace', ''), item.get('kind', ''),
+            item.get('name', ''), item.get('uid', ''),
+        ),
+    )
     return hashlib.sha256(
-        json.dumps(components, sort_keys=True, separators=(',', ':')).encode()
+        json.dumps(canonical, sort_keys=True, separators=(',', ':')).encode()
     ).hexdigest()
