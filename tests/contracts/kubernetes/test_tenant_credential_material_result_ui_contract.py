@@ -31,13 +31,26 @@ def test_generated_token_and_kubeconfig_use_existing_shared_ui_ownership() -> No
     assert template.count('one_time_secret.material_block(') == 3
     assert template.count('material_value,') == 2
     assert template.count('material_base64,') == 1
-    assert "'JumpServer ServiceAccount Token'" in template
+    assert "'Human Access Token'" in template
     assert "'Namespace-Scoped Kubeconfig'" in template
-    assert "'GitHub Actions Secret (Base64)'" in template
-    assert 'data-kaori-copy-source' not in template
+    assert "'Encoded Kubeconfig (Base64)'" in template
+    assert 'JumpServer' not in template
+    assert 'GitHub Actions' not in template
+    assert 'Helm' not in template
+    assert 'RUNNER_TEMP' not in template
+    route = read('app/kubernetes/tenant/routes_credentials.py')
+    for title in (
+        "material_title = 'Human Access Token'",
+        "material_title = 'Deployment Kubeconfig'",
+        "page_title = 'One-Time Human Access Token'",
+        "page_title = 'One-Time Deployment Kubeconfig'",
+    ):
+        assert title in route, title
+    assert "'GitHub Actions / Helm'" not in route
+        assert 'data-kaori-copy-source' not in template
 
 
-def test_secret_delivery_guidance_retains_both_provider_contracts() -> None:
+def test_secret_delivery_guidance_preserves_manual_and_pipeline_contracts() -> None:
     template = read('app/templates/kubernetes/tenant/credential_material.html')
     for text in (
         "material_kind == 'token'",
@@ -49,6 +62,9 @@ def test_secret_delivery_guidance_retains_both_provider_contracts() -> None:
         "download_name='kaori-' ~ material_namespace ~ '-kubeconfig.yaml'",
         'KAORI_KUBECONFIG_B64',
         'base64 -d',
+        'umask 077',
+        'mktemp',
+        "trap 'rm -f",
         'kubectl auth can-i create deployments',
         'Back to Credentials',
     ):
