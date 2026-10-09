@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from types import SimpleNamespace
 
 import pytest
 
@@ -9,6 +10,7 @@ from app.kubernetes.tenant.release_handoff_approval import (
     _complete_provider_snapshot,
     _valid_reference,
     approve_release_handoff_plan_committed,
+    prepare_release_handoff_plan_committed,
 )
 
 
@@ -162,3 +164,91 @@ def test_second_approver_requires_explicit_acknowledgement():
             tenant_id='tenant-a', actor_user_id=43,
             plan_sha256='a' * 64, approved=False,
         )
+
+
+class _FakeSession:
+    def __init__(self, tenant=None):
+        self.tenant = tenant
+        self.events = []
+        self.commits = 0
+
+    def get(self, model, tenant_id):
+        return self.tenant
+
+    def add(self, event):
+        self.events.append(event)
+
+    def commit(self):
+        self.commits += 1
+
+
+def test_prepare_handoff_commits_plan_without_provider_mutation(monkeypatch):
+    from app.kubernetes.tenant import release_handoff_approval as module
+
+    tenant = SimpleNamespace(ownership_status='adopted', lifecycle_status='ready')
+    session = _FakeSession(tenant)
+    monkeypatch.setattr(module, 'db', SimpleNamespace(session=session))
+    monkeypatch.setattr(module, 'AuditEvent', lambda **kwargs: SimpleNamespace(**kwargs))
+    monkeypatch.setattr(module, 'review_tenant_release_preflight_committed', lambda **_: _snapshot())
+
+    result = prepare_release_handoff_plan_committed(
+        tenant_id='tenant-a', actor_user_id=42,
+        successor_owner='platform-team', change_reference='CHG-2026-109',
+    )
+    assert len(result['plan_sha256']) == 64
+    assert result['status'] == 'pending_independent_approval'
+    assert result['provider_mutation_performed'] is False
+    assert result['provider_handoff_verified'] is False
+    assert result['release_authorized'] is False
+    assert session.commits == 1
+    assert len(session.events) == 1
+    assert session.events[0].action == 'tenant.release.handoff_plan_prepared'
+    assert session.events[0].target_id == 'tenant-a'
+
+
+def test_independent_handoff_approval_commits_pending_provider_state(monkeypatch):
+    from app.kubernetes.tenant import release_handoff_approval as module
+
+    snapshot = _snapshot()
+    plan = {
+        'status': 'pending_independent_approval',
+        'plan_sha256': 'a' * 64,
+        'requested_by': 42,
+        'requested_at': datetime.now(UTC).isoformat(),
+        'cluster_id': snapshot['cluster_id'],
+        'generation': snapshot['generation'],
+        'provider': snapshot['provider'],
+        'handoff_fingerprint': snapshot['handoff_fingerprint'],
+        'provider_identity': snapshot['live_provider_identity'],
+        'successor_owner': 'platform-team',
+        'change_reference': 'CHG-2026-109',
+    }
+    class _Query:
+        def filter_by(self, **kwargs):
+            return self
+
+        def with_for_update(self):
+            return self
+
+        def one_or_none(self):
+            return SimpleNamespace(lifecycle_status='ready')
+
+    session = _FakeSession()
+    monkeypatch.setattr(module, 'db', SimpleNamespace(session=session))
+    monkeypatch.setattr(module, 'Tenant', SimpleNamespace(query=_Query()))
+    monkeypatch.setattr(module, 'AuditEvent', lambda **kwargs: SimpleNamespace(**kwargs))
+    monkeypatch.setattr(module, 'latest_release_handoff_plan', lambda _: plan)
+    monkeypatch.setattr(module, 'latest_release_handoff_approval', lambda _: None)
+    monkeypatch.setattr(module, 'review_tenant_release_preflight_committed', lambda **_: snapshot)
+
+    result = approve_release_handoff_plan_committed(
+        tenant_id='tenant-a', actor_user_id=43,
+        plan_sha256='a' * 64, approved=True,
+    )
+    assert result['status'] == 'acknowledged_pending_provider_handoff'
+    assert result['requested_by'] == 42 and result['approved_by'] == 43
+    assert result['provider_mutation_performed'] is False
+    assert result['provider_handoff_verified'] is False
+    assert result['release_authorized'] is False
+    assert session.commits == 1
+    assert session.events[0].action == 'tenant.release.handoff_acknowledged'
