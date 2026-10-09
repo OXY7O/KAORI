@@ -44,8 +44,9 @@ The supported development path is the VS Code Dev Container described in [`docs/
 
 ```bash
 cp .env.example .env
+# Open with VS Code Dev Containers (watch-css auto-starts on folder open).
 bash scripts/init_db.sh --bootstrap-admin
-npm run watch-css
+# Press F5 in VS Code, or start Flask manually:
 flask --app run:app run --host=0.0.0.0 --port=5000 --debug
 ```
 
