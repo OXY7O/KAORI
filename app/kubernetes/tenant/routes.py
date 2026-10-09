@@ -625,6 +625,43 @@ def create_tenant_route():
     return _tenant_section_redirect('tenant-setup')
 
 
+@tenant_bp.post('/capsule/namespace-attach')
+@permission_required('tenant.manage')
+def attach_existing_capsule_namespace_route():
+    """Registry entry point into the SAME canonical Discovery attachment service."""
+    try:
+        _csrf()
+        source = {
+            'provider_key': 'capsule',
+            'attach_environment_id': str(request.form.get('environment_id') or ''),
+            'resource_name': str(request.form.get('namespace') or ''),
+            'provider_uid': str(request.form.get('namespace_uid') or ''),
+            'provider_resource_version': str(
+                request.form.get('namespace_resource_version') or ''
+            ),
+        }
+        tenant, environment, namespace = attach_discovered_capsule_namespace_committed(source)
+    except (ValueError, ApiException) as exc:
+        _record(
+            event_type='kubernetes_tenant_capsule_namespace_attachment_blocked',
+            status='warning', title='Capsule Namespace Attachment Blocked',
+            message=str(exc),
+            detail='Capsule Tenant, Namespace and external RBAC remain provider authoritative.',
+            metadata={'environment_id': request.form.get('environment_id'),
+                      'operation': 'attach_capsule_namespace'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_capsule_namespace_attached',
+            status='success', title='Capsule Namespace Attached',
+            message=f'{namespace.namespace} attached to {tenant.name} · {environment.environment}.',
+            detail='Provider remains authoritative; no Namespace/quota/RBAC mutation.',
+            metadata={'tenant_id': tenant.id, 'namespace_id': namespace.id,
+                      'operation': 'attach_capsule_namespace'},
+        )
+    return _tenant_section_redirect('registry')
+
+
 @tenant_bp.post('/tenants/<string:tenant_id>/release-preflight')
 @permission_required('tenant.manage')
 def review_tenant_release_route(tenant_id: str):

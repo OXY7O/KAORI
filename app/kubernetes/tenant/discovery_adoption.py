@@ -632,9 +632,11 @@ def attach_discovered_capsule_namespace_committed(
     if environment is None:
         raise ValueError('The selected Capsule Tenant environment is missing.')
     tenant = environment.tenant
-    cluster_id = str(source.get('cluster_id') or '').strip()
+    # Discovery includes provider scope; Registry derives it from the committed
+    # destination Environment. Never trust an arbitrary cross-cluster reparent.
+    cluster_id = str(source.get('cluster_id') or tenant.cluster_id).strip()
     namespace = str(source.get('resource_name') or '').strip()
-    capsule_name = str(source.get('capsule_tenant_name') or '').strip()
+    capsule_name = str(source.get('capsule_tenant_name') or tenant.provider_reference or '').strip()
     if (
         not namespace or namespace in {'default', 'kube-system', 'kube-public', 'kube-node-lease'}
         or str(tenant.cluster_id) != cluster_id
