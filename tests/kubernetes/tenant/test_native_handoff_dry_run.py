@@ -8,6 +8,7 @@ import pytest
 from app.kubernetes.tenant.native_handoff_dry_run import (
     build_native_handoff_patch,
     dry_run_native_handoff_component,
+    dry_run_native_release_handoff_committed,
 )
 
 
@@ -166,4 +167,41 @@ def test_dry_run_rejects_mutating_admission_or_live_provider_side_effect():
     with pytest.raises(ValueError, match='live state changed'):
         dry_run_native_handoff_component(
             core, _component(), tenant_id='tenant-1'
+        )
+
+
+
+def test_native_dry_run_rejects_colluding_or_mismatched_approval(monkeypatch):
+    from app.kubernetes.tenant import native_handoff_dry_run as module
+
+    plan = {
+        'tenant_id': 'tenant-a',
+        'requested_by': 21,
+        'plan_sha256': 'a' * 64,
+        'handoff_fingerprint': 'fingerprint',
+    }
+    approval = {
+        'plan_sha256': 'a' * 64,
+        'status': 'acknowledged_pending_provider_handoff',
+        'requested_by': 21,
+        'approved_by': 21,
+        'handoff_fingerprint': 'fingerprint',
+        'approved_at': '2026-10-09T00:00:00+00:00',
+        'provider_handoff_verified': False,
+        'release_authorized': False,
+    }
+    monkeypatch.setattr(module, 'latest_release_handoff_plan', lambda _: plan)
+    monkeypatch.setattr(module, 'latest_release_handoff_approval', lambda _: approval)
+    monkeypatch.setattr(module, '_plan_hash', lambda _: 'a' * 64)
+    monkeypatch.setattr(module, '_checked_recently', lambda _: True)
+    with pytest.raises(ValueError, match='independently approved'):
+        dry_run_native_release_handoff_committed(
+            tenant_id='tenant-a', actor_user_id=32, plan_sha256='a' * 64
+        )
+
+    approval['approved_by'] = 22
+    approval['handoff_fingerprint'] = 'outdated'
+    with pytest.raises(ValueError, match='independently approved'):
+        dry_run_native_release_handoff_committed(
+            tenant_id='tenant-a', actor_user_id=32, plan_sha256='a' * 64
         )
