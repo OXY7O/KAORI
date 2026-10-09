@@ -64,16 +64,23 @@ class _AdoptionContext:
     tenant: Tenant
     now: datetime
     expected_provider_uid: str = ''
+    expected_provider_resource_version: str = ''
 
 
 def validate_adoption_provider_identity(
-    *, expected_uid: str, observed_uid: str, resource_version: str,
+    *,
+    expected_uid: str,
+    observed_uid: str,
+    expected_resource_version: str,
+    observed_resource_version: str,
 ) -> None:
-    """Require the same immutable provider generation reviewed in Adoption Preflight."""
-    if not expected_uid or not observed_uid or not resource_version:
+    """Match the exact provider UID/resourceVersion reviewed in Adoption Preflight."""
+    if not all((expected_uid, observed_uid, expected_resource_version, observed_resource_version)):
         raise ValueError('Adoption requires complete preflight and live provider UID/resourceVersion evidence.')
     if expected_uid != observed_uid:
         raise ValueError('Provider UID changed since Adoption Preflight; refresh Discovery.')
+    if expected_resource_version != observed_resource_version:
+        raise ValueError('Provider resourceVersion changed since Adoption Preflight; refresh Discovery.')
 
 
 def _prepare_adoption(source: Mapping[str, Any]) -> _AdoptionContext:
@@ -82,14 +89,15 @@ def _prepare_adoption(source: Mapping[str, Any]) -> _AdoptionContext:
     resource_name = str(source.get('resource_name') or '').strip()
     tenant_name = str(source.get('tenant_name') or resource_name).strip()
     expected_provider_uid = str(source.get('provider_uid') or '').strip()
+    expected_provider_resource_version = str(source.get('provider_resource_version') or '').strip()
     environment_name = _adoption_environment(str(source.get('environment') or ''))
 
     if provider_key not in {'native_kubernetes', 'capsule'}:
         raise ValueError('Unsupported Tenant discovery provider.')
     if not resource_name:
         raise ValueError('Select a discovered provider object.')
-    if not expected_provider_uid:
-        raise ValueError('Adoption requires provider UID from its explicit Discovery preflight.')
+    if not expected_provider_uid or not expected_provider_resource_version:
+        raise ValueError('Adoption requires provider UID/resourceVersion from explicit Discovery preflight.')
     if not tenant_name or len(tenant_name) > 120:
         raise ValueError('Tenant name is required and must be at most 120 characters.')
 
@@ -122,6 +130,7 @@ def _prepare_adoption(source: Mapping[str, Any]) -> _AdoptionContext:
         tenant=tenant,
         now=datetime.now(UTC),
         expected_provider_uid=expected_provider_uid,
+        expected_provider_resource_version=expected_provider_resource_version,
     )
 
 
@@ -300,7 +309,9 @@ def _adopt_native(context: _AdoptionContext) -> tuple[TenantEnvironment, TenantN
     resource_version = str(getattr(metadata, 'resource_version', None) or '').strip()
     validate_adoption_provider_identity(
         expected_uid=context.expected_provider_uid,
-        observed_uid=provider_uid, resource_version=resource_version,
+        observed_uid=provider_uid,
+        expected_resource_version=context.expected_provider_resource_version,
+        observed_resource_version=resource_version,
     )
     allocation = observe_native_namespace_allocation(context.client.core_api(), context.resource_name)
     tenant = context.tenant
@@ -479,7 +490,9 @@ def _adopt_capsule(context: _AdoptionContext) -> tuple[TenantEnvironment, Tenant
     resource_version = str(metadata.get('resourceVersion') or '').strip()
     validate_adoption_provider_identity(
         expected_uid=context.expected_provider_uid,
-        observed_uid=provider_uid, resource_version=resource_version,
+        observed_uid=provider_uid,
+        expected_resource_version=context.expected_provider_resource_version,
+        observed_resource_version=resource_version,
     )
     allocation = observe_capsule_tenant_allocation(
         context.client,
