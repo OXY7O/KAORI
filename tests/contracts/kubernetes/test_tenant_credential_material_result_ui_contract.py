@@ -16,19 +16,33 @@ def test_generated_token_and_kubeconfig_use_existing_shared_ui_ownership() -> No
         'components/operational_callout.html',
         'components/operational_section_card.html',
         'components/resource_posture_grid.html',
-        'components/section_intro.html',
         'data-kaori-credential-material-result',
-        'Access Material Generated',
+        '{% block dashboard_content %}',
+        'Access Material',
+        'id="credential-material-heading"',
+        'One-time result',
         'One-time view — copy before leaving',
         'aria-label="Generated secret material"',
-        'aria-label="Credential delivery instructions"',
-        'xl:grid-cols-[minmax(0,3fr)_minmax(17rem,2fr)]',
+        "aria_label='Credential delivery instructions'",
+        'md:grid-cols-3',
         'material_expires_at|user_datetime',
         'material_credential_valid_until|user_datetime',
     ):
         assert token in template, token
 
-    assert template.count('one_time_secret.material_block(') == 3
+    assert '{% block tenant_content %}' not in template
+    assert 'page_hero' not in template
+    assert 'xl:grid-cols-[minmax(0,3fr)_minmax(17rem,2fr)]' not in template
+    assert template.count('<h1') == 1
+    assert template.count('operational_section_card.render(') == 3
+    assert template.index('Credential Context') < template.index('One-time view — copy before leaving')
+    assert template.index('One-time view — copy before leaving') < template.index('aria-label="Generated secret material"')
+    assert template.index('aria-label="Generated secret material"') < template.index("'Delivery Workflow'")
+    assert template.index("'Delivery Workflow'") < template.index("'Workflow Example'")
+    assert template.index("'Workflow Example'") < template.index('Entitlement until')
+    assert template.count('resource_posture_grid.render(delivery_metrics, columns=4)') == 1
+    assert template.count('data-kaori-sensitive-material') == 0
+        assert template.count('one_time_secret.material_block(') == 3
     assert template.count('material_value,') == 2
     assert template.count('material_base64,') == 1
     assert "'Human Access Token'" in template
@@ -75,6 +89,9 @@ def test_secret_delivery_guidance_preserves_manual_and_pipeline_contracts() -> N
         '{% if deployment_material %}',
         'Use approved individual access',
         'Remove temporary material',
+        'delivery_steps',
+        '{% for step_title, step_description in delivery_steps %}',
+        '{{ material_access_package.jumpserver_reference }}',
         'Back to Credentials',
     ):
         assert text in template, text
