@@ -22,6 +22,8 @@ CORRECTED_REGISTRIES = (
     'integrations/storage/object_storage/providers/minio/partials/_binding_registry.html',
     'integrations/partials/_domain_workspace.html',
     'intelligence/partials/_alert_ops_history.html',
+    'kubernetes/tenant/partials/_capsule_shared_allocation_drift.html',
+    'kubernetes/tenant/partials/_capsule_tenant_quota_drift.html',
     'kubernetes/tenant/partials/_access_grant_registry.html',
     'kubernetes/tenant/partials/_credential_registry.html',
     'kubernetes/tenant/partials/_group_registry.html',
@@ -94,6 +96,56 @@ def test_affected_operational_registry_footers_are_unconditional() -> None:
         source = (TEMPLATES / relative).read_text(encoding='utf-8')
         assert '.total_items > 0 %}' not in source, relative
         assert FOOTER_TOKENS.search(source), relative
+
+
+
+def test_capsule_drift_empty_tables_render_canonical_footer_and_htmx_targets() -> None:
+    environment = Environment(loader=FileSystemLoader(TEMPLATES), autoescape=True)
+    environment.filters['environment_name'] = lambda value, empty='': value or empty
+    environment.globals['url_for'] = lambda endpoint, **params: '/test/operations'
+    environment.globals['request'] = SimpleNamespace(
+        endpoint='tenant.operations',
+        view_args={},
+        args=SimpleNamespace(to_dict=lambda: {}),
+    )
+    empty_page = pagination_payload(build_pagination_window(total_items=0, page=9))
+    for template, registry_id, loading_id, pagination_key, rows_key, resource in (
+        (
+            'kubernetes/tenant/partials/_capsule_tenant_quota_drift.html',
+            'capsule-tenant-quota-drift',
+            'capsule-tenant-quota-drift-loading',
+            'capsule_tenant_quota_drift_pagination',
+            'capsule_tenant_quota_drifted',
+            'Tenant Quota Drift',
+        ),
+        (
+            'kubernetes/tenant/partials/_capsule_shared_allocation_drift.html',
+            'capsule-shared-allocation-drift',
+            'capsule-shared-allocation-drift-loading',
+            'capsule_shared_drift_pagination',
+            'capsule_shared_drift_intents',
+            'Shared Allocation Drift',
+        ),
+    ):
+        source = (TEMPLATES / template).read_text(encoding='utf-8')
+        assert f'<section id="{registry_id}"' in source
+        assert f"'{loading_id}'" in source
+        assert f"'{registry_id}'" in source
+        assert '.total_items > 0 %}' not in source
+
+        rendered = environment.get_template(template).render(
+            **{rows_key: [], pagination_key: empty_page}
+        )
+        assert f'id="{registry_id}"' in rendered
+        assert f'id="{loading_id}"' in rendered
+        assert f'data-kaori-canonical-registry-footer="{registry_id}"' in rendered
+        assert f'hx-target="#{registry_id}"' in rendered
+        assert f'hx-select="#{registry_id}"' in rendered
+        assert f'hx-indicator="#{loading_id}"' in rendered
+        assert re.search(rf'Showing\\s+0–0\\s+of\\s+0\\s+{resource}', rendered)
+        assert rendered.count('aria-disabled="true"') >= 2
+        assert 'aria-current="page">1</span>' in rendered
+        assert 'No Capsule' in rendered
 
 
 def test_no_kaori_template_hides_a_pagination_footer_when_empty() -> None:
