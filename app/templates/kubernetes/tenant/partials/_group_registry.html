@@ -197,19 +197,17 @@
             </tbody>
         </table>
     </div>
-    {% if group_pagination.total_items > 0 %}
-        {{ registry_ui.footer('tenant.tenants',
-                registry_id,
-                loading_id,
-                group_pagination,
-                query_params,
-                group_pagination.allowed_per_page,
-                resource_label='Groups',
-                rows_aria_label='Tenant group rows per page',
-                control_name='tenant-groups',
-                page_param='group_page',
-                per_page_param='group_per_page') }}
-    {% endif %}
+    {{ registry_ui.footer('tenant.tenants',
+            registry_id,
+            loading_id,
+            group_pagination,
+            query_params,
+            group_pagination.allowed_per_page,
+            resource_label='Groups',
+            rows_aria_label='Tenant group rows per page',
+            control_name='tenant-groups',
+            page_param='group_page',
+            per_page_param='group_per_page') }}
 </section>
 <div id="tenant-group-edit-modal"
      data-tenant-group-edit-modal
