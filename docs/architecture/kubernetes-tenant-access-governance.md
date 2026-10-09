@@ -352,6 +352,13 @@ The committed Namespace-level `provider_mutation_performed` field must also
 be explicitly `false` for every Namespace. A `true`, missing or unknown
 value blocks Release even if the original Tenant provenance still says
 observation-only or an allocation profile reference has disappeared.
+A provable `true` Namespace mutation value is a **Release blocker**
+but may enter the existing independently approved handoff *planning* stage
+when the exact provider inventory, dependencies and ownership fingerprint
+are otherwise admissible. A missing or unknown mutation value blocks both
+Release and handoff planning until its authority is established. A handoff
+plan, dry-run or external reference never overrides this boundary or
+authorizes a Released transition.
 That expanded lifecycle remains open under #991; no database-only unmanage
 is permitted.
 
