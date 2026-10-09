@@ -288,7 +288,20 @@ def main() -> int:
             except ValueError:
                 errors.append(f'{name} must be a non-negative integer.')
 
-    if _value('ADMIN_PASSWORD'):
+    # Secrets may be supplied by different runtime adapters. When supplied,
+    # they must not be the documented examples or weak bootstrap placeholders.
+    for name in ('POSTGRES_PASSWORD', 'REDIS_PASSWORD'):
+        supplied = _value(name)
+        if supplied and _contains_placeholder(supplied):
+            errors.append(f'{name} still contains an example placeholder.')
+
+    admin_password = _value('ADMIN_PASSWORD')
+    if admin_password:
+        if len(admin_password) < 12 or _contains_placeholder(admin_password):
+            errors.append('ADMIN_PASSWORD must be at least 12 characters and not an example placeholder.')
+        admin_email = _value('ADMIN_EMAIL')
+        if not admin_email or _contains_placeholder(admin_email):
+            errors.append('ADMIN_EMAIL must identify a configured administrator when ADMIN_PASSWORD is supplied.')
         warnings.append('Remove ADMIN_PASSWORD after the first bootstrap-admin operation.')
 
     for warning in warnings:
