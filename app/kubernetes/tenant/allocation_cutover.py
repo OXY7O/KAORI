@@ -223,6 +223,16 @@ def _mutate_namespace_ownership(
         raise ValueError('Adopted Namespace UID differs from committed provider identity; inspect before mutation.')
     if not observed_version:
         raise ValueError('Namespace resourceVersion is unavailable; refusing ownership mutation.')
+    if (
+        record.ownership_status == TenantOwnershipStatus.ADOPTED.value
+        and allocation_control_state(record) == 'adopted_observed'
+    ):
+        baseline_version = str((record.provisioning_evidence_json or {}).get('resource_version') or '').strip()
+        if not baseline_version or baseline_version != observed_version:
+            raise ValueError(
+                'Native Namespace resourceVersion differs from committed adoption evidence; '
+                'refresh provider observation before initial takeover.'
+            )
     labels = dict(getattr(metadata, 'labels', None) or {})
     owner = str(labels.get(_MANAGED_BY_KEY) or '')
     if owner and owner != _MANAGED_BY_VALUE:
