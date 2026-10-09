@@ -1,3 +1,4 @@
+{% import "integrations/components/_provider_detail_posture.html" as provider_detail_posture %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
 {% import "integrations/components/_provider_job_status.html" as provider_job_status %}
@@ -276,9 +277,12 @@
     </div>
 </article>
 {% include 'components/operation_feedback_oob.html' %}
-{{ framed_workspace_tabs.badge_oob("kubernetes", "runtime", runtime_state.health_status_label) }}
+{% if request.headers.get('HX-Request') == 'true' %}
+    {{ framed_workspace_tabs.badge_oob("kubernetes", "runtime", runtime_state.health_status_label) }}
+{% endif %}
 {% if runtime_history_oob|default(false) and history %}
     {% with runtime_history=history, runtime_history_id='kubernetes-runtime-history', runtime_history_loading_id='kubernetes-history-loading', runtime_history_url=url_for('integrations.kubernetes_runtime_history', cluster_id=cluster.id), runtime_history_endpoint='integrations.kubernetes_runtime_history', runtime_history_route_args={'cluster_id': cluster.id}, runtime_history_detail_url=url_for('integrations.kubernetes_detail', cluster_id=cluster.id, tab='runtime'), runtime_history_detail_endpoint='integrations.kubernetes_detail', runtime_history_filters_enabled=true, provider_label='Kubernetes', runtime_history_oob=true %}
         {% include 'integrations/partials/_runtime_history.html' %}
     {% endwith %}
 {% endif %}
+{{ provider_detail_posture.state_oob('kubernetes', runtime_state.readiness, runtime_state.capability_count) }}
