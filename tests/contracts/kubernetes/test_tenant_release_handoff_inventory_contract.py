@@ -20,7 +20,8 @@ def test_existing_release_preflight_reuses_provider_handoff_normalizer_and_commi
     assert "'handoff_fingerprint': handoff_fingerprint(handoff_components)" in service
     assert "'handoff_required_count': sum(" in service
     assert "previous.get('handoff_fingerprint') != latest.get('handoff_fingerprint')" in service
-    assert "No Kubernetes resources were deleted" not in service  # no fabricated status
+    assert 'capsule_namespace_handoff_evidence(' in service
+    assert '_capsule_status_namespace_names(obj)' in service
     assert "'provider_resource_deleted': False" in service
 
     assert 'kaori_marker_correlated' in normalizer
