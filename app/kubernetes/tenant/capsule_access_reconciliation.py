@@ -123,6 +123,8 @@ def _check_profile(grant: TenantAccessGrant, rbac_api: Any) -> str:
             values.append((tuple(sorted(api_groups or [])), tuple(sorted(resources or [])), tuple(sorted(verbs or []))))
         return sorted(values)
 
+    if getattr(role, 'aggregation_rule', None) is not None:
+        raise ValueError(f'ClusterRole/{name} uses aggregation and cannot be a fixed KAORI security contract.')
     if normalized(role.rules or []) != normalized(profile.rules):
         raise ValueError(f'ClusterRole/{name} does not match versioned KAORI {profile.label} permissions.')
     return name
@@ -188,7 +190,8 @@ def _update_spec(
                 found += 1
             else:
                 remaining.append(entry)
-        if len(remaining) != len(bindings or []):
+        changed = len(remaining) != len(bindings or [])
+        if changed:
             if remaining:
                 permissions['bindings'] = remaining
                 rule['permissions'] = permissions
@@ -198,7 +201,7 @@ def _update_spec(
                     rule['permissions'] = permissions
                 else:
                     rule.pop('permissions', None)
-        if rule.get('permissions') or any(key != 'namespaceSelector' for key in rule):
+        if not changed or rule.get('permissions') or any(key != 'namespaceSelector' for key in rule):
             filtered_rules.append(rule)
     if found > 1:
         raise ValueError('Duplicate Capsule grant bindings were observed; refuse to modify.')
@@ -307,7 +310,7 @@ def _reconcile(grant: TenantAccessGrant, *, mutate: bool) -> TenantAccessGrant:
         names = _namespaces(grant, client, item)
     else:
         names = sorted(previous | {target.namespace for target in target_namespaces(grant)})
-    role = _check_profile(grant, client.rbac_authorization_api())
+    role = _check_profile(grant, client.rbac_authorization_api()) if active else _role_name(grant)
     binding = _binding(grant, role, names) if active else None
     desired_spec = _update_spec(item.get('spec') or {}, grant, binding, names)
     if mutate and desired_spec != (item.get('spec') or {}):
@@ -321,11 +324,13 @@ def _reconcile(grant: TenantAccessGrant, *, mutate: bool) -> TenantAccessGrant:
         api.patch_cluster_custom_object(_GROUP, version, _PLURAL, name, patch, dry_run='All', _request_timeout=5)
         api.patch_cluster_custom_object(_GROUP, version, _PLURAL, name, patch, _request_timeout=5)
         item = _tenant_object(api, version, name, tenant_id, grant.tenant)
-    expected_spec = desired_spec
-    if _update_spec(item.get('spec') or {}, grant, binding, names) != expected_spec:
-        raise ValueError('Capsule Tenant spec read-back differs from the committed grant contract.')
+    current_spec = item.get('spec') or {}
+    spec_verified = all(current_spec.get(key) == desired_spec.get(key) for key in ('additionalRoleBindings', 'rules'))
     effective = _effective(client, grant, role, sorted(set(names) | previous))
     _write_state(grant, item=item, desired=names, effective=effective)
+    if not spec_verified:
+        grant.reconciliation_status = TenantAccessReconciliationStatus.DRIFTED.value
+        grant.reconciliation_message = 'Capsule Tenant spec has not converged to the committed Access Grant.'
     return grant
 
 
