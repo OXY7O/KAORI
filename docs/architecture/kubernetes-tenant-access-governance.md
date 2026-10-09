@@ -321,7 +321,8 @@ existing committed Release preflight event. For Native Kubernetes, the
 normalizer inspects the live Namespace and its ResourceQuota/LimitRange
 declarations through the canonical allocation observer, recording only kind,
 name, UID, resourceVersion, KAORI/external ownership-marker correlation and
-the effective allocation hash. The Capsule path observes Tenant CR identity,
+the effective allocation hash. The Capsule path observes Tenant CR identity, correlated Namespace
+UID/resourceVersion and exact Tenant label/status correlation, along with
 Capsule quota presence and ownership provenance; Capsule remains the sole
 source authority for its Tenant resource. No unreviewed provider mutation
 is attempted.
