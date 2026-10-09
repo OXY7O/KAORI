@@ -43,7 +43,8 @@ def _release_blockers(tenant: Tenant, namespace_rows: list[TenantNamespace], *, 
     if tenant.provider_key == 'native_kubernetes' and tenant.reconciliation_authority != 'native_kubernetes':
         blockers.append('Native reconciliation authority is inconsistent.')
 
-    if (tenant.provider_evidence_json or {}).get('provider_mutation_performed'):
+    provider_evidence = getattr(tenant, 'provider_evidence_json', None) or {}
+    if provider_evidence.get('provider_mutation_performed') is not False:
         blockers.append(
             'Adoption performed KAORI-owned provider mutations. Complete independently verified '
             'allocation/policy handoff before Release; database-only abandonment is prohibited.'
@@ -52,6 +53,8 @@ def _release_blockers(tenant: Tenant, namespace_rows: list[TenantNamespace], *, 
         if amount:
             blockers.append(f'{amount} active {kind} must be governed/handoff-reviewed before release.')
     for record in namespace_rows:
+        if record.provisioning_status != TenantNamespaceProvisioningStatus.READY.value:
+            blockers.append(f'{record.namespace} is not Ready for provider-preserving release.')
         if record.ownership_status != 'adopted' and record.provisioning_status != 'deprovisioned':
             blockers.append(f'{record.namespace} is KAORI-created/managed, not safely releasable.')
         if record.resource_profile_id is not None:
