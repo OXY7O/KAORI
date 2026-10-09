@@ -1,48 +1,53 @@
-{# Shared Kubernetes Analytics ranking; embedded mode attaches to the Consumer Rankings tab surface. #}
+{# Canonical committed Kubernetes ranking. The parent analytics workspace owns outer framing. #}
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
-{% macro render(panel, embedded=false) -%}
+{% macro render(panel, embedded=false, show_metrics=true) -%}
     <section class="{{ '' if embedded else analysis_surface.evidence_shell_classes() }}"
              aria-labelledby="ranked-evidence-{{ panel.key }}-title"
              data-kaori-consumer-ranking="{{ panel.key }}">
-        <header class="flex flex-wrap items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3">
-            <div class="min-w-0">
-                <h3 id="ranked-evidence-{{ panel.key }}-title"
-                    class="{{ 'sr-only' if embedded else 'text-sm font-semibold text-content-primary' }}">{{ panel.title }}</h3>
-                <p class="{{ 'text-xs leading-5 text-content-secondary' if embedded else 'mt-1 text-xs leading-5 text-content-muted' }}">{{ panel.description }}</p>
+        <header class="flex flex-wrap items-start justify-between gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}" aria-hidden="true">
+                    <i data-lucide="{{ panel.icon }}" class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <h3 id="ranked-evidence-{{ panel.key }}-title" class="text-sm font-semibold text-content-primary">{{ panel.title }}</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ panel.description }}</p>
+                </div>
             </div>
-            <div class="flex flex-wrap items-center gap-2">
-                {{ table_label.status_label(panel.coverage.label, panel.coverage.tone, size='compact') }}
-                {{ table_label.metadata_label(panel.unit, size='compact') }}
-            </div>
+            <span class="rounded-lg border border-outline-subtle bg-surface-hover px-3 py-1.5 text-xs font-medium tabular-nums text-content-secondary">
+                Top {{ panel.rows|length }} {{ 'consumer' if panel.rows|length == 1 else 'consumers' }}
+            </span>
         </header>
-        <dl class="grid gap-px bg-outline-subtle sm:grid-cols-2"
-            aria-label="{{ panel.title }} scope and capacity">
-            <div class="min-w-0 bg-surface-card px-4 py-3">
-                <dt class="{{ analysis_surface.metric_label_classes() }}">Selected-Scope Total</dt>
-                <dd class="mt-1 text-base font-semibold tabular-nums text-content-primary">{{ panel.total_value }}</dd>
-            </div>
-            <div class="min-w-0 bg-surface-card px-4 py-3">
-                <dt class="{{ analysis_surface.metric_label_classes() }}">{{ panel.capacity_label }}</dt>
-                <dd class="mt-1 text-base font-semibold tabular-nums text-content-primary">{{ panel.capacity_value }}</dd>
-            </div>
-        </dl>
-        <div class="hidden grid-cols-12 gap-3 border-y border-outline-subtle bg-surface-hover px-4 py-3 lg:grid">
-            <div class="col-span-4 {{ analysis_surface.metric_label_classes() }}">Consumer Identity</div>
-            <div class="col-span-2 {{ analysis_surface.metric_label_classes() }}">Consumption</div>
-            <div class="col-span-3 {{ analysis_surface.metric_label_classes() }}">Contribution to Scope</div>
-            <div class="col-span-2 {{ analysis_surface.metric_label_classes() }}">Status / Configuration</div>
-            <div class="col-span-1 text-right {{ analysis_surface.metric_label_classes() }}">Pressure</div>
+        {% if show_metrics %}
+            <dl class="grid gap-px bg-outline-subtle sm:grid-cols-2"
+                aria-label="{{ panel.title }} scope and capacity">
+                <div class="min-w-0 bg-surface-card px-4 py-3">
+                    <dt class="{{ analysis_surface.metric_label_classes() }}">Selected-Scope Total</dt>
+                    <dd class="mt-1 text-base font-semibold tabular-nums text-content-primary">{{ panel.total_value }}</dd>
+                </div>
+                <div class="min-w-0 bg-surface-card px-4 py-3">
+                    <dt class="{{ analysis_surface.metric_label_classes() }}">{{ panel.capacity_label }}</dt>
+                    <dd class="mt-1 text-base font-semibold tabular-nums text-content-primary">{{ panel.capacity_value }}</dd>
+                </div>
+            </dl>
+        {% endif %}
+        <div class="hidden grid-cols-12 gap-4 border-b border-outline-subtle bg-surface-hover px-4 py-3 lg:grid sm:px-5">
+            <div class="col-span-5 {{ analysis_surface.metric_label_classes() }}">Consumer</div>
+            <div class="col-span-2 {{ analysis_surface.metric_label_classes() }}">Observed Usage</div>
+            <div class="col-span-2 {{ analysis_surface.metric_label_classes() }}">Scope Share</div>
+            <div class="col-span-3 {{ analysis_surface.metric_label_classes() }}">Operational Assessment</div>
         </div>
         <div class="divide-y divide-outline-subtle">
             {% for row in panel.rows %}
-                <article class="grid min-w-0 gap-3 bg-surface-card px-4 py-3 lg:grid-cols-12 lg:items-start">
-                    <div class="flex min-w-0 items-start gap-2.5 lg:col-span-4">
-                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-hover text-xs font-semibold tabular-nums text-content-secondary"
+                <article class="grid min-w-0 gap-3 bg-surface-card px-4 py-3.5 transition hover:bg-surface-hover lg:grid-cols-12 lg:items-center lg:gap-4 sm:px-5">
+                    <div class="flex min-w-0 items-start gap-2.5 lg:col-span-5">
+                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-hover text-xs font-semibold tabular-nums text-content-secondary"
                               aria-label="Rank {{ row.rank }}">{{ row.rank }}</span>
-                        <span class="{{ analysis_surface.metric_icon_classes() }}"
-                              aria-hidden="true"><i data-lucide="{{ row.identity.icon }}" class="h-4 w-4"></i></span>
+                        <span class="{{ analysis_surface.metric_icon_classes() }}" aria-hidden="true">
+                            <i data-lucide="{{ row.identity.icon }}" class="h-4 w-4"></i>
+                        </span>
                         <div class="min-w-0 flex-1">
                             <p class="truncate text-sm font-semibold text-content-primary"
                                title="{{ row.identity.primary }}">{{ row.identity.primary }}</p>
@@ -55,14 +60,14 @@
                         </div>
                     </div>
                     <div class="min-w-0 lg:col-span-2">
-                        <p class="{{ analysis_surface.metric_label_classes() }} lg:hidden">Consumption</p>
-                        <p class="break-words text-sm font-semibold tabular-nums text-content-primary"
+                        <p class="{{ analysis_surface.metric_label_classes() }} lg:hidden">Observed Usage</p>
+                        <p class="text-sm font-semibold tabular-nums text-content-primary"
                            title="{{ row.current_display }}">{{ row.current_display }}</p>
                     </div>
-                    <div class="min-w-0 lg:col-span-3">
-                        <div class="flex items-center justify-between gap-2 text-xs">
-                            <span class="text-content-muted lg:sr-only">Contribution to Scope</span>
-                            <span class="font-semibold tabular-nums text-content-primary">{{ row.contribution_display }}</span>
+                    <div class="min-w-0 lg:col-span-2">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="{{ analysis_surface.metric_label_classes() }} lg:hidden">Scope Share</span>
+                            <span class="text-sm font-semibold tabular-nums text-content-primary">{{ row.contribution_display }}</span>
                         </div>
                         {% if row.contribution_percent is not none %}
                             {{ progress_bar.bar(row.contribution_bar_percent, track_classes='mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label=row.identity.primary ~ ' contribution to selected scope') }}
@@ -70,25 +75,18 @@
                             <div class="mt-2 border-t border-dashed border-outline-strong"></div>
                         {% endif %}
                     </div>
-                    <div class="min-w-0 lg:col-span-2">
-                        <p class="{{ analysis_surface.metric_label_classes() }} lg:hidden">Status / Configuration</p>
-                        {{ table_label.status_label(row.risk.label, row.risk.tone, size='compact') }}
+                    <div class="min-w-0 lg:col-span-3">
+                        <p class="{{ analysis_surface.metric_label_classes() }} lg:hidden">Operational Assessment</p>
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            {{ table_label.status_label(row.risk.label, row.risk.tone, size='compact') }}
+                            <span class="text-xs font-medium tabular-nums text-content-secondary"
+                                  title="{{ row.pressure_basis }}: {{ row.pressure_display }}">Pressure {{ row.pressure_display }}</span>
+                        </div>
                         {% if row.resource_type in ['cpu', 'memory'] %}
-                            <p class="mt-1 truncate text-xs leading-5 text-content-muted"
-                               title="Request: {{ row.request_state.label }}">Request: {{ row.request_state.label }}</p>
-                            <p class="truncate text-xs leading-5 text-content-muted"
-                               title="Limit: {{ row.limit_state.label }}">Limit: {{ row.limit_state.label }}</p>
+                            <span class="sr-only">Request {{ row.request_state.label }}; Limit {{ row.limit_state.label }}</span>
                         {% else %}
-                            <p class="mt-1 text-xs leading-5 text-content-muted">
-                                Denominator {{ 'available' if row.pressure_available else 'unavailable' }}
-                            </p>
+                            <span class="sr-only">Denominator {{ 'available' if row.pressure_available else 'unavailable' }}</span>
                         {% endif %}
-                    </div>
-                    <div class="min-w-0 lg:col-span-1 lg:text-right">
-                        <p class="{{ analysis_surface.metric_label_classes() }} lg:hidden">Pressure</p>
-                        <p class="text-sm font-semibold tabular-nums text-content-primary"
-                           title="{{ row.pressure_basis }}: {{ row.pressure_display }}">{{ row.pressure_display }}</p>
-                        <p class="mt-1 text-xs leading-4 text-content-muted lg:hidden">{{ row.pressure_basis }}</p>
                     </div>
                 </article>
             {% else %}
@@ -100,5 +98,8 @@
                 {% include 'components/states/_empty_state.html' %}
             {% endfor %}
         </div>
+        <footer class="border-t border-outline-subtle bg-surface-hover px-4 py-3 text-xs leading-5 text-content-muted sm:px-5">
+            Contribution compares consumers within the selected scope. Pressure uses its own resource denominator. Inspect Consumer Records for full request, limit, and evidence details.
+        </footer>
     </section>
 {%- endmacro %}
