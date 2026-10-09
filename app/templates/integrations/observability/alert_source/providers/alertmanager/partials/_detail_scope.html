@@ -1,3 +1,4 @@
+{% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/action_button.html" as action_button %}
@@ -197,6 +198,8 @@
     binding_error=binding_error|default(none)
     ) }}
 </div>
+{{ framed_workspace_tabs.badge_oob('alertmanager', 'scope', (binding_rows|length|string) ~ ' Bindings') }}
+<span id="alertmanager-hero-binding-count" hx-swap-oob="innerHTML" class="hidden">{{ (bindings|length|string) ~ ' Bindings' }}</span>
 {% if not scope_oob|default(false) %}
     {% include "components/operation_feedback_oob.html" %}
 {% endif %}
