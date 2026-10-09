@@ -17,7 +17,7 @@ Native/Capsule provider (authoritative)
   -> Tenant Registry / Access / Drift / Intelligence read committed KAORI state
   -> governed Release Review + dependency inventory
      -> observation-only + zero active dependencies
-        -> independent operator approval -> provider-preserving Released -> re-discovery / Re-adopt
+        -> explicit operator confirmation -> provider-preserving Released -> re-discovery / Re-adopt
      -> KAORI-mutated allocation / access
         -> fingerprint-bound handoff plan -> independent KAORI approval
         -> Native dry-run preview -> external successor reference (unverified)
