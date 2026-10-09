@@ -271,6 +271,17 @@ failed cleanup never claims that access was revoked. Drift/inspect/reconcile use
 committed grant lineage and store non-secret provider UID, resourceVersion, target, and
 effective-evidence hashes.
 
+### Native versus Capsule Namespace authority during adoption (#983)
+
+Native Namespace Discovery and Adoption Preflight must refuse a Namespace that
+still declares Capsule ownership through either canonical Capsule Tenant
+labels (`capsule.clastix.io/tenant`, `projectcapsule.dev/tenant`) or a Capsule
+Tenant ownerReference. Submit rechecks both forms of provider identity, and
+the Native allocation cutover must not patch such a Namespace, even where
+KAORI has no existing Tenant record. Capsule is authoritative for those
+resources; the operator must use governed Capsule attachment and its exact
+UID/resourceVersion/owner proof rather than silently switching adapters.
+
 ### Provider-preserving Release Governance preflight (#990)
 
 **Review Release** in Tenant Registry is an explicit, **read-only preflight** for
@@ -437,6 +448,41 @@ side effect. Effective grant takeover requires separately approved identity,
 exact permission/profile, source-scope, and ownership equivalence proof. A
 name match or provider ClusterRole name alone is insufficient.
 
+### Attach provider-correlated Capsule Namespace to existing Tenant (#983)
+
+The existing **Tenant Discovery → Review Adoption** surface now lists
+Capsule **Namespace** candidates when an authoritative Capsule Tenant CR
+is already governed by KAORI but the Namespace is not. Unlike full
+Capsule Tenant adoption, this action reuses the existing Tenant and
+selected Environment. No new Tenant, provider Tenant CR, Capsule RBAC,
+or Namespace owner label is created.
+
+Both live Discovery Preflight and Adoption submit reuse the same
+Capsule provider correlation contract. The Namespace must have a
+nonconflicting `projectcapsule.dev/tenant` or
+`capsule.clastix.io/tenant` label (or Capsule Tenant owner reference)
+explicitly naming the target Tenant. Membership in
+`Tenant.status.namespaces` **alone is insufficient**. Tenant CR UID
+must match its existing committed KAORI authority; Namespace immutable
+UID and resourceVersion must match the reviewed preflight, there must
+be no active owner or released-history lineage conflict, and allocation
+authority must not be ambiguous/unsupported.
+
+On successful attachment, existing Namespace quota and Container/PVC
+limits are **mirrored from Capsule** as the adopted baseline using the
+canonical Capsule Namespace policy-profile helper. KAORI does not
+modify provider CR, Kubernetes Namespace, ResourceQuota, LimitRange,
+RBAC, or implicitly broaden Tenant-level Access Grants. The original
+Tenant provider provenance remains unchanged; only the new Namespace
+governance generation and nonsecret attachment audit evidence are
+committed. If provider identity/capacity cannot be proved, attachment
+fails closed and leaves the existing Tenant untouched.
+
+This does not replace the full Capsule Tenant discovery/adoption lane,
+native Namespace attachment, or Release/Re-adopt authority. Exercise
+real Capsule correlation, mixed Namespace quotas and provider churn in
+nonproduction before staging promotion.
+
 ### Native Kubernetes Namespace RBAC inventory (#996)
 
 Native Tenant access governance now has a matching **explicit read-only inspection**
@@ -466,6 +512,29 @@ Read-only observation requires `tenant.manage` and CSRF. Provider read
 failure, UID replacement or unbounded evidence fails closed, without
 claiming an inventory is complete.
 
+### Capsule Namespace attach to existing governed Tenant (#983)
+
+**Discovery** and **Tenant Registry** share one authoritative
+`attach_discovered_capsule_namespace_committed` service, not two Kubernetes
+mutation paths. Registry derives the connected cluster and Capsule Tenant
+from the committed destination Environment; both entry points require
+the exact Namespace UID and resourceVersion observed during Discovery.
+
+Before KAORI commits a new Adopted Namespace generation, the service
+rereads the Capsule Tenant CR and selected Namespace, validates immutable
+Tenant/Namespace UID and resourceVersion, Capsule Tenant labels,
+ownerReference name **and UID**, active ownership and Released lineage,
+and then rereads both provider resources to detect concurrent replacement.
+Missing ownerReference generation UID is treated as ambiguous ownership.
+Unsupported/mixed Namespace allocation and cross-Tenant reparenting
+fail closed. Existing provider-mirrored Namespace policy normalization
+and canonical audit/evidence are reused.
+
+No Namespace, Capsule Tenant, quota, RoleBinding or external group is
+mutated by attachment; no KAORI grant is automatically imported or expanded.
+Normal Registry rendering reads committed state; only explicit attach POST
+performs fresh provider reads. Both UI entry points remain Draft pending
+Developer Check, Full Admission, Visual QA and live Capsule UAT.
 ### Native Access Drift declaration correlation (#999)
 
 After **Inspect Native RBAC** has committed a scoped, bounded namespaced

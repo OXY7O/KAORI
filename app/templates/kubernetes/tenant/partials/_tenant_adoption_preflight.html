@@ -64,6 +64,11 @@
             <input type="hidden" name="provider_key" value="{{ row.provider_key }}">
             <input type="hidden" name="resource_name" value="{{ row.resource_name }}">
             <input type="hidden" name="provider_uid" value="{{ row.provider_reference }}">
+            {% if tenant_adoption_attachment_only %}
+                <input type="hidden" name="capsule_tenant_name" value="{{ row.capsule_tenant_name }}">
+                <input type="hidden" name="provider_resource_version"
+                       value="{{ row.provider_resource_version }}">
+            {% endif %}
             <div class="space-y-3.5 p-4">
                 {% set allocation = row.allocation_preflight or {} %}
                 <section>
@@ -486,7 +491,32 @@
                 {% endif %}
                 <section>
                     <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Proposed KAORI Mapping</p>
-                    {% if row.provider_key == 'native_kubernetes' and tenant_adoption_existing_environments %}
+                    {% if tenant_adoption_attachment_only %}
+                        <div class="mb-3 rounded-xl border border-outline-subtle bg-surface-elevated p-4">
+                            <p class="text-xs font-semibold text-content-primary">
+                                Capsule Namespace → Existing Tenant
+                            </p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">
+                                Provider correlation: {{ row.capsule_tenant_name }}.
+                                Choose an existing KAORI Environment; no new Capsule Tenant is created,
+                                no Capsule RBAC is changed and grants are not expanded.
+                            </p>
+                            <label class="mt-3 block text-xs font-semibold text-content-secondary">
+                                Target Environment
+                                <select name="attach_environment_id" required
+                                        class="mt-2 h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-outline-focus">
+                                    {% for option in tenant_adoption_existing_environments %}
+                                        <option value="{{ option.id }}">
+                                            {{ option.tenant_name }} · {{ option.environment|title }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </label>
+                            <p class="mt-2 text-xs text-content-muted">
+                                Namespace UID {{ row.provider_reference }} · resourceVersion {{ row.provider_resource_version }}
+                            </p>
+                        </div>
+                    {% elif row.provider_key == 'native_kubernetes' and tenant_adoption_existing_environments %}
                         <label class="mb-3 block rounded-xl border border-outline-subtle bg-surface-elevated p-4">
                             <span class="text-xs font-semibold text-content-primary">Adoption Destination</span>
                             <select name="attach_environment_id"
@@ -505,6 +535,7 @@
                             </span>
                         </label>
                     {% endif %}
+                    {% if not tenant_adoption_attachment_only %}
                     <div class="mt-2 grid gap-4 rounded-xl border border-outline-subtle p-4 md:grid-cols-2">
                         <label class="block">
                             <span class="text-xs font-semibold text-content-primary">Tenant Name</span>
@@ -542,6 +573,7 @@
                             </div>
                         </div>
                     </div>
+                    {% endif %}
                 </section>
                 <section>
                     <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Governance Checks</p>
@@ -608,7 +640,9 @@
             </div>
             <footer class="sticky bottom-0 flex flex-col gap-3 border-t border-outline-subtle bg-surface-card px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                 <p class="text-xs leading-5 text-content-muted">
-                    <span class="font-semibold text-content-primary">Adopt managed authority; keep provider constraints mirrored.</span>
+                    <span class="font-semibold text-content-primary">
+                        {{ 'Attach to the existing Capsule Tenant; keep provider constraints mirrored.' if tenant_adoption_attachment_only else 'Adopt managed authority; keep provider constraints mirrored.' }}
+                    </span>
                     Result: Adopted / Observed.
                 </p>
                 <div class="flex flex-col-reverse gap-2 sm:flex-row">
@@ -617,7 +651,7 @@
                             class="{{ action_button.classes('secondary') }}">Cancel</button>
                     <button type="submit" class="{{ action_button.classes('primary') }}">
                         <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>
-                        Adopt & Manage
+                        {{ 'Attach Capsule Namespace' if tenant_adoption_attachment_only else 'Adopt & Manage' }}
                     </button>
                 </div>
             </footer>

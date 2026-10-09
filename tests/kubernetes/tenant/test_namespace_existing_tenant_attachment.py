@@ -61,3 +61,25 @@ def test_namespace_uid_replacement_is_never_silent(observed, expected):
 
 def test_matching_namespace_uid_is_accepted():
     validate_namespace_attachment_uid(observed_uid='stable-uid', expected_uid='stable-uid')
+
+
+@pytest.mark.parametrize(
+    ('labels', 'owners'),
+    [
+        ({'capsule.clastix.io/tenant': 'capsule-a'}, None),
+        ({'projectcapsule.dev/tenant': ''}, None),
+        ({}, [SimpleNamespace(kind='Tenant', api_version='capsule.clastix.io/v1beta2')]),
+        ({}, {'malformed': 'owner-references'}),
+    ],
+)
+def test_native_discovery_blocks_capsule_namespace_authority(labels, owners):
+    from app.kubernetes.tenant.discovery_service import _native_management
+
+    state, reason = _native_management(
+        namespace='capsule-owned',
+        labels=labels,
+        managed_record=None,
+        owner_references=owners,
+    )
+    assert state == 'Blocked'
+    assert 'Capsule Tenant authority' in reason

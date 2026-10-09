@@ -167,7 +167,7 @@
                                 {% elif row.management_status == 'Discovered' and can_manage %}
                                     <button type="button"
                                             data-tenant-adoption-load
-                                            hx-get="{{ url_for('tenant.tenant_adoption_preflight_route', cluster_id=row.cluster_id, provider_key=row.provider_key, resource_name=row.resource_name) }}"
+                                            hx-get="{{ url_for('tenant.tenant_adoption_preflight_route', cluster_id=row.cluster_id, provider_key=row.provider_key, resource_name=row.resource_name, capsule_tenant_name=row.capsule_tenant_name or '') }}"
                                             hx-target="#tenant-adoption-preflight-slot"
                                             hx-swap="innerHTML"
                                             hx-indicator="#tenant-discovery-loading"

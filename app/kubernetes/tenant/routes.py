@@ -46,6 +46,7 @@ from app.kubernetes.tenant.decommission_service import (
 )
 from app.kubernetes.tenant.discovery_adoption import (
     adopt_discovered_tenant_committed,
+    attach_discovered_capsule_namespace_committed,
     attach_discovered_native_namespace_committed,
 )
 from app.kubernetes.tenant.discovery_service import get_tenant_adoption_preflight_context
@@ -497,6 +498,7 @@ def tenant_adoption_preflight_route():
             cluster_id=str(request.args.get('cluster_id') or ''),
             provider_key=str(request.args.get('provider_key') or ''),
             resource_name=str(request.args.get('resource_name') or ''),
+            capsule_tenant_name=str(request.args.get('capsule_tenant_name') or ''),
         )
     except (ValueError, ApiException) as exc:
         rendered = render_template(
@@ -522,7 +524,9 @@ def adopt_discovered_tenant_route():
     try:
         _csrf()
         attach_existing = bool(str(request.form.get('attach_environment_id') or '').strip())
-        if attach_existing:
+        if attach_existing and str(request.form.get('capsule_tenant_name') or '').strip():
+            tenant, environment, namespace = attach_discovered_capsule_namespace_committed(request.form)
+        elif attach_existing:
             tenant, environment, namespace = attach_discovered_native_namespace_committed(request.form)
         else:
             tenant, environment, namespace = adopt_discovered_tenant_committed(request.form)
@@ -546,6 +550,8 @@ def adopt_discovered_tenant_route():
             status='success',
             title='Tenant Adopted · Managed',
             message=(
+                f'{namespace.namespace} attached to existing {tenant.name}; Capsule policies remain provider-mirrored.'
+                if attach_existing and tenant.provider_key == 'capsule' and namespace is not None else
                 f'{namespace.namespace} was attached to existing Tenant {tenant.name} with governed allocation.'
                 if attach_existing and namespace is not None else
                 f'{tenant.name} is adopted into KAORI with supported governance controls managed immediately. '
@@ -617,6 +623,43 @@ def create_tenant_route():
             },
         )
     return _tenant_section_redirect('tenant-setup')
+
+
+@tenant_bp.post('/capsule/namespace-attach')
+@permission_required('tenant.manage')
+def attach_existing_capsule_namespace_route():
+    """Registry entry point into the SAME canonical Discovery attachment service."""
+    try:
+        _csrf()
+        source = {
+            'provider_key': 'capsule',
+            'attach_environment_id': str(request.form.get('environment_id') or ''),
+            'resource_name': str(request.form.get('namespace') or ''),
+            'provider_uid': str(request.form.get('namespace_uid') or ''),
+            'provider_resource_version': str(
+                request.form.get('namespace_resource_version') or ''
+            ),
+        }
+        tenant, environment, namespace = attach_discovered_capsule_namespace_committed(source)
+    except (ValueError, ApiException) as exc:
+        _record(
+            event_type='kubernetes_tenant_capsule_namespace_attachment_blocked',
+            status='warning', title='Capsule Namespace Attachment Blocked',
+            message=str(exc),
+            detail='Capsule Tenant, Namespace and external RBAC remain provider authoritative.',
+            metadata={'environment_id': request.form.get('environment_id'),
+                      'operation': 'attach_capsule_namespace'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_capsule_namespace_attached',
+            status='success', title='Capsule Namespace Attached',
+            message=f'{namespace.namespace} attached to {tenant.name} · {environment.environment}.',
+            detail='Provider remains authoritative; no Namespace/quota/RBAC mutation.',
+            metadata={'tenant_id': tenant.id, 'namespace_id': namespace.id,
+                      'operation': 'attach_capsule_namespace'},
+        )
+    return _tenant_section_redirect('registry')
 
 
 @tenant_bp.post('/tenants/<string:tenant_id>/release-preflight')
