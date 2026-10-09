@@ -271,6 +271,24 @@ failed cleanup never claims that access was revoked. Drift/inspect/reconcile use
 committed grant lineage and store non-secret provider UID, resourceVersion, target, and
 effective-evidence hashes.
 
+### Committed Capsule access declaration drift (#984)
+
+The **Analyze Access Drift** action uses the latest explicitly captured Capsule
+External Access Inventory and compares its *declared* KAORI grant ownership
+markers with committed Access Grants. It reports external owners, ungoverned
+external bindings, orphaned markers, revoked grants still declared in the
+Capsule Tenant CR, and active grants missing a declaration. The analysis
+requires recent observation evidence, fails if grant state changed since
+collection, and stores a bounded non-secret `AuditEvent` for normal UI reads.
+
+A declaration is **not proof of effective namespaced RBAC**. Findings are
+review/reconciliation leads; they do not auto-revoke, rewrite Capsule specs,
+elevate access, or automatically create Groups/Memberships. Actual effective
+RoleBinding inspection and provider-authoritative reconciliation remains the
+existing Access Grant Inspect/Reconcile/Revoke contract. Governance Intelligence
+(#123) will later consume these committed signals via its existing rule and
+case lifecycle, not an independent duplicate finding registry.
+
 ### External Capsule Access observation (#981)
 
 A governed, healthy Capsule Tenant may have pre-existing `spec.owners`,
