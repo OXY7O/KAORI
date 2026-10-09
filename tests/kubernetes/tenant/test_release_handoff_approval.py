@@ -109,7 +109,7 @@ def test_handoff_approval_blocks_other_governance_or_provider_failures(blocker):
 def test_handoff_approval_rejects_active_dependencies():
     snapshot = _snapshot()
     snapshot['dependency_counts']['Access Grants'] = 1
-    with pytest.raises(ValueError, match='Clear all active'):
+    with pytest.raises(ValueError, match='Clear and verify every active Tenant dependency'):
         _can_confirm_plan(snapshot)
 
 
