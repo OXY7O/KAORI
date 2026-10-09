@@ -18,8 +18,8 @@
                         <h1 class="{{ page_hero.title_classes() }}">{{ instance.name }}</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">Review MinIO connection, health, bindings, and lifecycle posture.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label("shield-check", readiness|replace("_", " ") |title) }}
-                            {{ page_hero.meta_label("layers-3", (capability_count|string) ~ " Validated Capabilities") }}
+                            {{ page_hero.meta_label("shield-check", readiness|replace("_", " ") |title, value_id='minio-hero-readiness') }}
+                            {{ page_hero.meta_label("layers-3", (capability_count|string) ~ " Validated Capabilities", value_id='minio-hero-capabilities') }}
                             {{ page_hero.meta_label("database", instance.environment|default("") |title) }}
                         </div>
                     {% endcall %}
@@ -36,7 +36,7 @@
                 capability_count,
                 "S3 API and provider-owned capabilities",
                 url_for("minio.index")
-                ) }}
+                , posture_key='minio') }}
             </div>
         </section>
         <section id="minio-detail-tabs"
