@@ -77,3 +77,17 @@ def test_native_and_capsule_namespace_rows_share_one_renderer_and_semantic_statu
     assert 'No supported namespaced quota/limit dimensions observed.' in section
     assert 'Adopted Baseline · Observed</span>' not in section
     assert '{% if not loop.last %} · {% endif %}' not in section
+
+
+def test_adoption_preflight_discloses_provider_mutations_and_capsule_attach_no_write() -> None:
+    source = _source()
+    assert 'Capsule Namespace Attachment Preflight' in source
+    assert 'Adopted / Provider Mirrored' in source
+    assert 'Adopted / Managed' in source
+    assert 'No — committed KAORI attachment only' in source
+    assert 'Yes — admitted provider allocation cutover and read-back' in source
+    assert 'This is not an observation-only action.' in source
+    assert 'Provider objects and RBAC remain unchanged.' in source
+    assert 'Adoption commits <span class="font-semibold">Adopted / Observed</span> evidence only.' not in source
+    assert "value={{ row.provider_resource_version }}" not in source
+    assert 'name="provider_resource_version"' in source
