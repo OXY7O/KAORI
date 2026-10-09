@@ -130,6 +130,9 @@ def test_review_adoption_preflight_modal_survives_htmx_swap_target_variants():
     # The HTMX target may be exposed through detail.target rather than event.target.
     assert "event.detail?.target || event.target" in js
     assert "target.id === 'tenant-adoption-preflight-slot'" in js
+    assert "document.addEventListener('htmx:beforeRequest'" in js
+    assert "opener = requestElement" in js
+    assert "preflightPending = true" in js
     assert "document.addEventListener('htmx:afterSwap'" in js
     assert "document.addEventListener('htmx:afterSettle'" in js
     assert "document.addEventListener('htmx:afterRequest'" in js
@@ -150,7 +153,9 @@ def test_review_adoption_preflight_modal_survives_htmx_swap_target_variants():
         'syncAdoptionDestination(modal)'
     )
 
-    assert "if (!revealPreflight(event)) reportPreflightFailure()" in js
+    assert "if (load) reportPreflightFailure()" in js
+    assert "A successful afterRequest may precede the HTML swap" in js
+    assert "if (!revealPreflight(event)) reportPreflightFailure()" not in js
     assert "event.detail?.successful === false" in js
     assert "notice.setAttribute('role', 'alert')" in js
     assert "notice.textContent =" in js
