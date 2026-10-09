@@ -35,7 +35,7 @@ def _normalized(rules: Any) -> list[tuple[tuple[str, ...], tuple[str, ...], tupl
     result = []
     for rule in rules or []:
         value = rule if isinstance(rule, dict) else rule.to_dict()
-        if value.get('resourceNames') or value.get('resource_names') or value.get('nonResourceURLs') or value.get('non_resource_urls'):
+        if any(value.get(field) for field in ('resourceNames', 'resource_names', 'nonResourceURLs', 'non_resource_urls')):
             raise ValueError('Existing ClusterRole uses unsupported resource-name or non-resource restrictions.')
         result.append((
             tuple(sorted(value.get('apiGroups', value.get('api_groups')) or [])),
@@ -190,7 +190,9 @@ def bootstrap_missing_capsule_roles(
             raise ValueError('RBAC check evidence is stale; rerun Check RBAC before bootstrap.')
         api, rows = _read_roles(cluster_id)
         if any(row['status'] == 'conflict' for row in rows):
-            raise ValueError('ClusterRole conflict detected; resolve it before bootstrap. Existing roles are never overwritten.')
+            raise ValueError('ClusterRole conflict detected; no existing role may be overwritten.')
+        # Persist explicit authorization before mutating cluster-scoped RBAC.
+        _audit(cluster_id, actor_user_id, 'bootstrap', 'started', _summary(rows))
         # Verify every missing role can be admitted before performing any mutation.
         for profile, row in zip(_catalog(), rows, strict=True):
             if row['status'] == 'missing':
