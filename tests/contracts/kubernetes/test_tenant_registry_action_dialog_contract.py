@@ -37,7 +37,7 @@ def test_native_modal_is_outside_table_overflow_and_has_accessible_controls() ->
 
     assert source.index("data-tenant-registry-actions-dialog") > source.index("registry_ui.footer(")
     assert "data-kaori-native-dialog" in source
-    assert "max-w-4xl" in source
+    assert "max-w-5xl" in source
     assert "max-h-[calc(100dvh-2rem)]" in source
     assert "overflow-y-auto" in modal
     assert "aria-labelledby=" in source
