@@ -378,6 +378,40 @@ change reference, approval checkbox or internal plan is sufficient to set
 `lifecycle_status=released`. The operational UI reads committed plan/approval
 status rather than running provider reads on each page load.
 
+### Native Kubernetes ownership transfer: server-side dry-run phase (#991)
+
+Following a current **Prepare Handoff** plan and an independent
+**Acknowledge Handoff**, a different authorized operator can request
+**Preview Native Transfer** in the existing Tenant Registry. The provider
+preview is restricted to the exact adopted Native Tenant and same
+provider-identity/ownership fingerprint as the approved plan. All active
+Access Grants, credentials, memberships, Groups and governed resources
+must already satisfy the canonical zero-dependency ledger. Capsule
+provider transfer remains unsupported and cannot take the Native path.
+
+The preview constructs JSON Patch `test` preconditions for immutable
+Kubernetes UID, resourceVersion, `managed-by=kaori` and the exact
+`kaori.io/tenant-id` match. Only the four KAORI allocation ownership
+labels are candidates for removal; all other labels, annotations and
+Namespace/ResourceQuota/LimitRange specifications are retained.
+Kubernetes is called with `dryRun=All` and `application/json-patch+json`,
+then immediately re-read to verify that live state did **not** change.
+Any unsupported admission, permission, provider conflict, spec change
+or unexpected side effect produces a blocked/failed preview with
+committed non-secret evidence and no Release authorization.
+
+**Admission boundary:** the server-side preview is not a completed
+handoff, external successor acceptance, ownership-transfer receipt,
+or permission to set `Released`. The mutating executor is intentionally
+absent; the provider patch API call must be validated against the
+deployed Kubernetes Python client and API server in nonproduction
+before introducing a controlled non-dry-run execution route. Further
+admission needs authenticated external successor acceptance, one
+authoritative provider, an exact mutation plan, concurrency protection,
+per-object read-back, partial-failure containment, audit and security
+human acceptance. Capsule requires a separate provider-authority
+contract and must not be treated as Native Namespace RBAC.
+
 ### Governed Access Remediation Decisions (#985)
 
 An operator may prepare a **Remediation Decision** after fresh committed
