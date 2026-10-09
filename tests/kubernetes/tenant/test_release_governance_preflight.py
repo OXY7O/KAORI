@@ -12,6 +12,7 @@ def _tenant(**changes):
         'provider_key': 'native_kubernetes',
         'provider_state': 'native',
         'reconciliation_authority': 'native_kubernetes',
+        'provider_evidence_json': {'provider_mutation_performed': False},
     }
     values.update(changes)
     return SimpleNamespace(**values)
