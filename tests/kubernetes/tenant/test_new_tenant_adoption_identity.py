@@ -182,3 +182,37 @@ def test_native_discovery_without_claims_remains_a_review_candidate():
 
     state, _ = _native_management(namespace='sandbox', labels={}, managed_record=None)
     assert state == 'Discovered'
+
+
+@pytest.mark.parametrize('labels', [
+    {'app.kubernetes.io/managed-by': 'kaori'},
+    {'kaori.io/tenant-id': 'former-tenant'},
+    {'kaori.io/resource-profile': 'old-profile'},
+    {'app.kubernetes.io/managed-by': 'external-controller'},
+])
+def test_capsule_new_tenant_adoption_blocks_orphaned_or_foreign_cr_before_provider_work(
+    monkeypatch, labels,
+):
+    from types import SimpleNamespace
+
+    from app.kubernetes.tenant import discovery_adoption as module
+
+    context = SimpleNamespace(
+        cluster=SimpleNamespace(id='cluster-a'), resource_name='capsule-a',
+        client=SimpleNamespace(),
+    )
+    monkeypatch.setattr(module, '_managed_capsule_map', lambda _: {})
+    monkeypatch.setattr(module, '_read_capsule_tenant', lambda *_: (
+        'v1beta2',
+        {'metadata': {
+            'name': 'capsule-a', 'uid': 'capsule-uid', 'resourceVersion': '5',
+            'labels': labels,
+        }},
+    ))
+
+    def forbidden_observation(*args, **kwargs):
+        pytest.fail('Blocked Capsule CR must not proceed into provider allocation observation.')
+
+    monkeypatch.setattr(module, 'observe_capsule_tenant_allocation', forbidden_observation)
+    with pytest.raises(ValueError, match='ownership markers|external manager'):
+        module._adopt_capsule(context)
