@@ -530,18 +530,22 @@ def tenant_adoption_preflight_route():
 @tenant_bp.post('/discovery/adopt')
 @permission_required('tenant.manage')
 def adopt_discovered_tenant_route():
+    provider_attempt_started = False
     try:
         _csrf()
         attach_existing = bool(str(request.form.get('attach_environment_id') or '').strip())
         if attach_existing:
             provider_key = str(request.form.get('provider_key') or '').strip()
             if provider_key == 'capsule':
+                provider_attempt_started = True
                 tenant, environment, namespace = attach_discovered_capsule_namespace_committed(request.form)
             elif provider_key == 'native_kubernetes':
+                provider_attempt_started = True
                 tenant, environment, namespace = attach_discovered_native_namespace_committed(request.form)
             else:
                 raise ValueError('Unsupported provider authority for existing-Tenant Namespace attachment.')
         else:
+            provider_attempt_started = True
             tenant, environment, namespace = adopt_discovered_tenant_committed(request.form)
     except (ValueError, ApiException) as exc:
         _record(
@@ -556,6 +560,8 @@ def adopt_discovered_tenant_route():
                 else 'A provider write may have started before failure. KAORI database rollback '
                 'does not revert Kubernetes/Capsule mutations; inspect live provider identity '
                 'and allocation before retrying.'
+                if provider_attempt_started
+                else 'No provider operation started; review request/CSRF authority before retrying.'
             ),
             metadata={
                 'cluster_id': request.form.get('cluster_id'),
@@ -566,10 +572,12 @@ def adopt_discovered_tenant_route():
                     if str(request.form.get('attach_environment_id') or '').strip()
                     else 'adopt_discovered_tenant'
                 ),
-                'provider_mutation_may_have_started': not (
+                'provider_mutation_may_have_started': provider_attempt_started and not (
                     str(request.form.get('provider_key') or '') == 'capsule'
                     and bool(str(request.form.get('attach_environment_id') or '').strip())
                 ),
+                'submitted_preflight_provider_uid': request.form.get('provider_uid'),
+                'submitted_preflight_resource_version': request.form.get('provider_resource_version'),
             },
         )
     else:
