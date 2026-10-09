@@ -378,13 +378,22 @@ def get_tenant_discovery_context(
                 if obj is None:
                     continue
                 namespace_status = _namespace_phase(obj)
+                label_claims = set(observed.get('label_claims') or [])
+                owner_claims = set(observed.get('owner_claims') or [])
+                correlation_proven = bool(
+                    (label_claims or owner_claims)
+                    and (not label_claims or label_claims == {capsule_name})
+                    and (not owner_claims or owner_claims == {capsule_name})
+                )
                 blocked = bool(
-                    ambiguities or namespace_status == 'Terminating'
+                    ambiguities or not correlation_proven
+                    or namespace_status == 'Terminating'
                     or not observed.get('uid') or not observed.get('resource_version')
                 )
                 eligibility = (
                     '; '.join(ambiguities[:3]) if ambiguities else
                     'Capsule Namespace is terminating.' if namespace_status == 'Terminating' else
+                    'Explicit Capsule label/owner-ref correlation is missing.' if not correlation_proven else
                     'Provider Namespace UID/resourceVersion is incomplete.' if blocked else
                     'Attach this Capsule-correlated Namespace to its existing KAORI Tenant.'
                 )
