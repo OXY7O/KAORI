@@ -153,12 +153,21 @@ def test_review_adoption_preflight_modal_survives_htmx_swap_target_variants():
         'syncAdoptionDestination(modal)'
     )
 
-    assert "if (load) reportPreflightFailure()" in js
+    assert "if (load) reportPreflightFailure(event)" in js
     assert "A successful afterRequest may precede the HTML swap" in js
     assert "if (!revealPreflight(event)) reportPreflightFailure()" not in js
     assert "event.detail?.successful === false" in js
-    assert "notice.setAttribute('role', 'alert')" in js
-    assert "notice.textContent =" in js
+    assert "message.setAttribute('role', 'alert')" in js
+    assert "message.setAttribute('data-tenant-adoption-request-error', '')" in js
+    assert "Adoption preflight request failed (HTTP" in js
+    assert "event.detail?.xhr?.status" in js
+    assert "message.append(title, guidance)" in js
+    assert "guidance.textContent" in js
+    assert "event.detail?.xhr?.responseText" not in js
+    assert "status >= 500" in js
+    assert "kind === 'target'" in js
+    assert "document.addEventListener('htmx:responseError'" in js
+    assert "'targetError', 'swapError'" in js
 
     # HTMX replacement must not require per-page script initialization.
     assert "document.addEventListener('click'" in js
