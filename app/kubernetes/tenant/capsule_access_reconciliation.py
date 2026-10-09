@@ -49,6 +49,15 @@ def _context(grant: TenantAccessGrant) -> tuple[Any, str, str]:
 
 def _capability(grant: TenantAccessGrant, client: Any, *, scoped: bool) -> str:
     snapshot = discover_capsule(client.custom_objects_api().api_client)
+    evidence = dict(grant.tenant.provider_evidence_json or {})
+    capsule_evidence = dict(evidence.get('capsule') or {})
+    capabilities = dict(capsule_evidence.get('capabilities') or {})
+    for capability in ('access_grants_tenant', 'access_grants_scoped'):
+        capabilities[capability] = snapshot.capabilities[capability].value
+    capsule_evidence['capabilities'] = capabilities
+    capsule_evidence['access_grants_discovered_at'] = datetime.now(UTC).isoformat()
+    evidence['capsule'] = capsule_evidence
+    grant.tenant.provider_evidence_json = evidence
     key = 'access_grants_scoped' if scoped else 'access_grants_tenant'
     if snapshot.capabilities.get(key) is None or snapshot.capabilities[key].value != 'available':
         raise ValueError(f'Capsule {key} is unsupported on the served CRD/schema; grant fails closed.')
