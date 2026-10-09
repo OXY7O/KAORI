@@ -45,7 +45,9 @@ def test_generated_token_and_kubeconfig_use_existing_shared_ui_ownership() -> No
     assert 'sm:grid-cols-2 xl:grid-cols-4' in template
     assert '<dl class="grid gap-px bg-outline-subtle' in template
     assert template.count('<dt class="text-xs font-semibold leading-5 text-content-muted">') == 4
-    assert 'text-xl' not in template
+    # Only the compact page heading uses text-xl; context facts use text-sm.
+    assert template.count('text-xl') == 1
+    assert template.count('truncate text-sm font-semibold leading-5 text-content-primary') >= 3
     assert 'min-h-32' not in template
     assert 'material_access_package.tenant_name' in template
     assert 'material_namespace' in template
