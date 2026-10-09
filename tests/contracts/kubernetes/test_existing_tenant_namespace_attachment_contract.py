@@ -134,6 +134,13 @@ def test_review_adoption_preflight_modal_survives_htmx_swap_target_variants():
     assert "document.addEventListener('htmx:afterSettle'" in js
     assert "document.addEventListener('htmx:afterRequest'" in js
     assert "if (modal.classList.contains('hidden')) openModal(modal)" in js
+    # Form-specific sync cannot prevent the modal itself becoming visible.
+    open_modal = js.split('const openModal = (modal, button = opener) => {', 1)[1]
+    open_modal = open_modal.split('const closeModal = (modal) => {', 1)[0]
+    assert open_modal.index("modal.classList.remove('hidden')") < open_modal.index(
+        'syncAdoptionDestination(modal)'
+    )
+
     assert "if (!revealPreflight(event)) reportPreflightFailure()" in js
     assert "event.detail?.successful === false" in js
     assert "notice.setAttribute('role', 'alert')" in js
