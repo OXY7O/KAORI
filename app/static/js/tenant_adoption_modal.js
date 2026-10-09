@@ -1,5 +1,6 @@
 ;(() => {
     let opener = null
+    let preflightPending = false
     const focusableSelector = [
         'button:not([disabled])',
         '[href]',
@@ -71,6 +72,44 @@
         opener = null
     }
 
+    // HTMX may report the swap target through event.detail.target rather than
+    // the dispatched event target. Accept either and only open the new preflight
+    // for its owning slot; do not depend on timing or page-specific rebinding.
+    const preflightSlotFrom = (event) => {
+        const target = event.detail?.target || event.target
+        if (!(target instanceof HTMLElement)) return null
+        if (target.id === 'tenant-adoption-preflight-slot') return target
+        if (target.matches?.('[data-tenant-adoption-load]'))
+            return document.getElementById('tenant-adoption-preflight-slot')
+        return null
+    }
+
+    const revealPreflight = (event) => {
+        const slot = preflightSlotFrom(event)
+        if (!slot) return false
+        const modal = slot.querySelector('[data-tenant-adoption-modal]')
+        if (!(modal instanceof HTMLElement)) return false
+        if (modal.classList.contains('hidden')) openModal(modal)
+        preflightPending = false
+        return true
+    }
+
+    const reportPreflightFailure = () => {
+        const slot = document.getElementById('tenant-adoption-preflight-slot')
+        if (slot && !slot.querySelector('[data-tenant-adoption-modal]')) {
+            const notice = document.createElement('p')
+            notice.setAttribute('role', 'alert')
+            notice.className =
+                'rounded-xl border border-status-warning-border bg-status-warning-soft p-4 text-sm text-status-warning-text'
+            notice.textContent =
+                'Adoption preflight could not be loaded. Check the request and refresh Discovery before retrying.'
+            slot.replaceChildren(notice)
+            notice.scrollIntoView?.({ block: 'nearest' })
+        }
+        preflightPending = false
+        opener = null
+    }
+
     document.addEventListener('change', (event) => {
         const destination = event.target
         if (!(destination instanceof HTMLSelectElement) || !destination.matches('[data-tenant-adoption-destination]'))
@@ -81,7 +120,10 @@
     document.addEventListener('click', (event) => {
         const load = event.target.closest('[data-tenant-adoption-load]')
         if (load) {
-            if (!load.disabled) opener = load
+            if (!load.disabled) {
+                opener = load
+                preflightPending = true
+            }
             return
         }
 
@@ -99,18 +141,32 @@
     })
 
     document.addEventListener('htmx:afterSwap', (event) => {
-        const target = event.target
-        if (!(target instanceof HTMLElement) || target.id !== 'tenant-adoption-preflight-slot') return
-        const modal = target.querySelector('[data-tenant-adoption-modal]')
-        if (modal) openModal(modal)
+        revealPreflight(event)
+    })
+
+    // Fallback for HTMX versions/events that expose the swap target in
+    // afterSettle or afterRequest only. Once opened, later events do not reopen it.
+    document.addEventListener('htmx:afterSettle', (event) => {
+        if (preflightPending) revealPreflight(event)
     })
 
     document.addEventListener('htmx:responseError', (event) => {
-        const load = event.target?.closest?.('[data-tenant-adoption-load]')
-        if (load && opener === load) opener = null
+        const load = event.detail?.elt?.closest?.('[data-tenant-adoption-load]') ||
+            event.target?.closest?.('[data-tenant-adoption-load]')
+        if (load && preflightPending) reportPreflightFailure()
     })
 
     document.addEventListener('htmx:afterRequest', (event) => {
+        const requestElement = event.detail?.elt || event.target
+        if (requestElement?.matches?.('[data-tenant-adoption-load]')) {
+            if (!preflightPending) return
+            if (event.detail?.successful === false) {
+                reportPreflightFailure()
+                return
+            }
+            if (!revealPreflight(event)) reportPreflightFailure()
+            return
+        }
         const form = event.target instanceof HTMLFormElement ? event.target : event.target?.closest?.('form')
         if (!(form instanceof HTMLFormElement)) return
         const modal = form.closest('[data-tenant-adoption-modal]')
