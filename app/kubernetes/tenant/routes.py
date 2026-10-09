@@ -44,7 +44,10 @@ from app.kubernetes.tenant.decommission_service import (
     TenantDecommissionBlocked,
     request_tenant_decommission_committed,
 )
-from app.kubernetes.tenant.discovery_adoption import adopt_discovered_tenant_committed
+from app.kubernetes.tenant.discovery_adoption import (
+    adopt_discovered_tenant_committed,
+    attach_discovered_native_namespace_committed,
+)
 from app.kubernetes.tenant.discovery_service import get_tenant_adoption_preflight_context
 from app.kubernetes.tenant.job_adapter import (
     build_tenant_sync_state,
@@ -510,7 +513,11 @@ def tenant_adoption_preflight_route():
 def adopt_discovered_tenant_route():
     try:
         _csrf()
-        tenant, environment, namespace = adopt_discovered_tenant_committed(request.form)
+        attach_existing = bool(str(request.form.get('attach_environment_id') or '').strip())
+        if attach_existing:
+            tenant, environment, namespace = attach_discovered_native_namespace_committed(request.form)
+        else:
+            tenant, environment, namespace = adopt_discovered_tenant_committed(request.form)
     except (ValueError, ApiException) as exc:
         _record(
             event_type='kubernetes_tenant_discovery_adoption_failed',
@@ -531,6 +538,8 @@ def adopt_discovered_tenant_route():
             status='success',
             title='Tenant Adopted · Managed',
             message=(
+                f'{namespace.namespace} was attached to existing Tenant {tenant.name} with governed allocation.'
+                if attach_existing and namespace is not None else
                 f'{tenant.name} is adopted into KAORI with supported governance controls managed immediately. '
                 'Observed provider values are preserved as the initial managed baseline.'
             ),
@@ -545,7 +554,7 @@ def adopt_discovered_tenant_route():
                 'provider_key': tenant.provider_key,
                 'tenant_generation': tenant.generation,
                 'namespace_id': namespace.id if namespace is not None else None,
-                'operation': 'adopt_discovered_tenant',
+                'operation': 'attach_existing_tenant_namespace' if attach_existing else 'adopt_discovered_tenant',
                 'provider_mutation_performed': bool(
                     (tenant.provider_evidence_json or {}).get('provider_mutation_performed')
                 ),
