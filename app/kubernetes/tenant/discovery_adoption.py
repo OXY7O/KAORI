@@ -447,6 +447,25 @@ def _adopt_capsule(context: _AdoptionContext) -> tuple[TenantEnvironment, Tenant
     return environment, records[0] if records else None
 
 
+def validate_existing_tenant_attachment_target(
+    tenant: Tenant, *, cluster_id: str, namespace: str
+) -> None:
+    if not namespace or str(tenant.cluster_id) != cluster_id:
+        raise ValueError('Namespace and existing Tenant must belong to the same cluster.')
+    if (
+        tenant.lifecycle_status != TenantLifecycleStatus.READY.value
+        or tenant.provider_key != 'native_kubernetes'
+        or tenant.provider_state != 'native'
+        or tenant.reconciliation_authority != 'native_kubernetes'
+    ):
+        raise ValueError('The selected Tenant is not Ready under Native Kubernetes authority.')
+
+
+def validate_namespace_attachment_uid(*, observed_uid: str, expected_uid: str) -> None:
+    if not observed_uid or not expected_uid or observed_uid != expected_uid:
+        raise ValueError('Namespace UID changed since adoption preflight; refresh Discovery.')
+
+
 def attach_discovered_native_namespace_committed(
     source: Mapping[str, Any],
 ) -> tuple[Tenant, TenantEnvironment, TenantNamespace]:
@@ -466,15 +485,7 @@ def attach_discovered_native_namespace_committed(
     tenant = environment.tenant
     cluster_id = str(source.get('cluster_id') or '').strip()
     namespace = str(source.get('resource_name') or '').strip()
-    if not namespace or tenant.cluster_id != cluster_id:
-        raise ValueError('Namespace and existing Tenant must belong to the same cluster.')
-    if (
-        tenant.lifecycle_status != TenantLifecycleStatus.READY.value
-        or tenant.provider_key != 'native_kubernetes'
-        or tenant.provider_state != 'native'
-        or tenant.reconciliation_authority != 'native_kubernetes'
-    ):
-        raise ValueError('The selected Tenant is not Ready under Native Kubernetes authority.')
+    validate_existing_tenant_attachment_target(tenant, cluster_id=cluster_id, namespace=namespace)
 
     cluster = (
         Cluster.query.join(KubernetesConnection, KubernetesConnection.cluster_id == Cluster.id)
@@ -501,8 +512,7 @@ def attach_discovered_native_namespace_committed(
     metadata = getattr(item, 'metadata', None)
     provider_uid = str(getattr(metadata, 'uid', '') or '').strip()
     expected_uid = str(source.get('provider_uid') or '').strip()
-    if not provider_uid or not expected_uid or provider_uid != expected_uid:
-        raise ValueError('Namespace UID changed since adoption preflight; refresh Discovery.')
+    validate_namespace_attachment_uid(observed_uid=provider_uid, expected_uid=expected_uid)
     status, reason = _native_management(
         namespace=namespace,
         labels=dict(getattr(metadata, 'labels', None) or {}),
