@@ -26,6 +26,7 @@ def _grant(scope='namespace', status='active'):
     namespace = SimpleNamespace(
         namespace='payments-dev',
         ownership_status='adopted',
+        provisioning_status='ready',
         environment=SimpleNamespace(tenant_id='tenant-a'),
     )
     return SimpleNamespace(
