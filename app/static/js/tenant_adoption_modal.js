@@ -31,6 +31,7 @@
         }
         if (createFields instanceof HTMLElement) {
             createFields.classList.toggle('hidden', isAttachment)
+            createFields.classList.toggle('grid', !isAttachment)
             for (const field of createFields.querySelectorAll('[name="tenant_name"], [name="environment"]')) {
                 if (!(field instanceof HTMLInputElement || field instanceof HTMLSelectElement)) continue
                 field.disabled = isAttachment
