@@ -111,3 +111,35 @@ def test_adoption_confirmation_result_and_submit_action_follow_selected_mode():
     assert '{% if tenant_adoption_attachment_only %}' in ui
     assert 'Attach Capsule Namespace' in ui
     assert 'Adopted / Provider Mirrored' in ui
+
+
+def test_review_adoption_preflight_modal_survives_htmx_swap_target_variants():
+    discovery = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
+    preflight = read('app/templates/kubernetes/tenant/partials/_tenant_adoption_preflight.html')
+    unavailable = read('app/templates/kubernetes/tenant/partials/_tenant_adoption_preflight_error.html')
+    js = read('app/static/js/tenant_adoption_modal.js')
+    page = read('app/templates/kubernetes/tenant/tenants.html')
+
+    assert 'data-tenant-adoption-load' in discovery
+    assert 'hx-target="#tenant-adoption-preflight-slot"' in discovery
+    assert 'id="tenant-adoption-preflight-slot"' in discovery
+    assert 'data-tenant-adoption-modal' in preflight
+    assert 'data-tenant-adoption-modal' in unavailable
+    assert "js/tenant_adoption_modal.js" in page
+
+    # The HTMX target may be exposed through detail.target rather than event.target.
+    assert "event.detail?.target || event.target" in js
+    assert "target.id === 'tenant-adoption-preflight-slot'" in js
+    assert "document.addEventListener('htmx:afterSwap'" in js
+    assert "document.addEventListener('htmx:afterSettle'" in js
+    assert "document.addEventListener('htmx:afterRequest'" in js
+    assert "if (modal.classList.contains('hidden')) openModal(modal)" in js
+    assert "if (!revealPreflight(event)) reportPreflightFailure()" in js
+    assert "event.detail?.successful === false" in js
+    assert "notice.setAttribute('role', 'alert')" in js
+    assert "notice.textContent =" in js
+
+    # HTMX replacement must not require per-page script initialization.
+    assert "document.addEventListener('click'" in js
+    assert "document.addEventListener('change'" in js
+    assert "syncAdoptionDestination(modal)" in js
