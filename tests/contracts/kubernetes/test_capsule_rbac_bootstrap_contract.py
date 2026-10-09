@@ -1,3 +1,4 @@
+import ast
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -45,3 +46,29 @@ def test_cluster_rbac_bootstrap_is_governed_separately_from_tenant_adoption():
     assert 'create_cluster_role(' not in ui
     assert 'ClusterRoleBinding' not in bootstrap
     assert "runtime_adapter.build_client(connection)" in bootstrap
+
+
+def test_capsule_rbac_check_and_bootstrap_flash_feedback_has_flask_import() -> None:
+    """Both POST handlers must resolve Flask flash; missing import produced HTTP 500."""
+    tree = ast.parse(read('app/integrations/routes.py'))
+    flask_imports = [
+        item
+        for node in tree.body
+        if isinstance(node, ast.ImportFrom) and node.module == 'flask'
+        for item in node.names
+    ]
+    assert any(item.name == 'flash' and item.asname is None for item in flask_imports)
+
+    for handler_name in ('kubernetes_capsule_rbac_check', 'kubernetes_capsule_rbac_bootstrap'):
+        handlers = [
+            node
+            for node in tree.body
+            if isinstance(node, ast.FunctionDef) and node.name == handler_name
+        ]
+        assert len(handlers) == 1
+        assert any(
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id == 'flash'
+            for node in ast.walk(handlers[0])
+        ), f'{handler_name} must notify the operator after its action'
