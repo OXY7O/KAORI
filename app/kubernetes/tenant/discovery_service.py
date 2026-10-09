@@ -11,7 +11,10 @@ from app.common.presentation import present_user_datetime
 from app.extensions.db import db
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
 from app.kubernetes.tenant.allocation_observation import observe_native_namespace_allocation
-from app.kubernetes.tenant.capsule_allocation_observation import observe_capsule_tenant_allocation
+from app.kubernetes.tenant.capsule_allocation_observation import (
+    _capsule_namespace_correlation,
+    observe_capsule_tenant_allocation,
+)
 from app.kubernetes.tenant.capsule_provider import discover_capsule
 from app.models import Cluster
 from app.models.kubernetes import KubernetesConnection
@@ -338,6 +341,68 @@ def get_tenant_discovery_context(
                     'provider_api_version': capsule_version,
                 }
             )
+
+        # Surface only ungoverned Capsule Namespaces correlated to an already
+        # governed Capsule Tenant; never require operators to recreate the Tenant.
+        namespace_by_name = {
+            str(getattr(getattr(item, 'metadata', None), 'name', '') or ''): item
+            for item in namespace_items
+        }
+        for capsule_item in capsule_items:
+            capsule_metadata = capsule_item.get('metadata') or {}
+            capsule_name = str(capsule_metadata.get('name') or '').strip()
+            capsule_tenant = managed_capsule.get((cluster_key, capsule_name))
+            if (
+                capsule_tenant is None
+                or capsule_tenant.provider_state != 'capsule'
+                or capsule_tenant.reconciliation_authority != 'capsule'
+                or capsule_tenant.lifecycle_status != 'ready'
+                or _capsule_phase(capsule_item) == 'Terminating'
+            ):
+                continue
+            correlated, ambiguities = _capsule_namespace_correlation(
+                core_api=client.core_api(),
+                tenant_name=capsule_name,
+                tenant_item=capsule_item,
+                namespace_items=namespace_items,
+            )
+            capsule_uid = str(capsule_metadata.get('uid') or '').strip()
+            expected_uid = str((capsule_tenant.provider_evidence_json or {}).get('provider_uid') or '')
+            if not capsule_uid or capsule_uid != expected_uid:
+                ambiguities.append('Capsule Tenant CR UID changed since KAORI adoption.')
+            for observed in correlated[:30]:
+                name = str(observed.get('name') or '')
+                if not name or managed_namespaces.get((cluster_key, name)) is not None:
+                    continue
+                obj = namespace_by_name.get(name)
+                if obj is None:
+                    continue
+                namespace_status = _namespace_phase(obj)
+                blocked = bool(
+                    ambiguities or namespace_status == 'Terminating'
+                    or not observed.get('uid') or not observed.get('resource_version')
+                )
+                eligibility = (
+                    '; '.join(ambiguities[:3]) if ambiguities else
+                    'Capsule Namespace is terminating.' if namespace_status == 'Terminating' else
+                    'Provider Namespace UID/resourceVersion is incomplete.' if blocked else
+                    'Attach this Capsule-correlated Namespace to its existing KAORI Tenant.'
+                )
+                rows.append({
+                    'cluster': cluster, 'cluster_id': cluster_key,
+                    'provider_key': 'capsule', 'provider_label': 'Capsule',
+                    'resource_kind': 'Capsule Namespace',
+                    'resource_name': name,
+                    'capsule_tenant_name': capsule_name,
+                    'provider_status': namespace_status,
+                    'provider_tone': _tone(namespace_status),
+                    'management_status': 'Blocked' if blocked else 'Discovered',
+                    'management_tone': 'warning' if blocked else 'info',
+                    'tenant_name': capsule_tenant.name, 'tenant_id': capsule_tenant.id,
+                    'eligibility': eligibility,
+                    'provider_reference': str(observed['uid']),
+                    'provider_resource_version': str(observed['resource_version']),
+                })
 
         managed_capsule_tenants = {
             tenant.id: tenant
