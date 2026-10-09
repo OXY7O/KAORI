@@ -212,17 +212,15 @@
             </tbody>
         </table>
     </div>
-    {% if operations_drift_pagination.total_items > 0 %}
-        {{ registry_ui.footer('tenant.operations',
-                registry_id,
-                loading_id,
-                operations_drift_pagination,
-                query_params,
-                operations_drift_pagination.allowed_per_page,
-                resource_label='Drifted Records',
-                rows_aria_label='Drift rows per page',
-                control_name='operations-drift',
-                page_param='ops_drift_page',
-                per_page_param='ops_drift_per_page') }}
-    {% endif %}
+    {{ registry_ui.footer('tenant.operations',
+            registry_id,
+            loading_id,
+            operations_drift_pagination,
+            query_params,
+            operations_drift_pagination.allowed_per_page,
+            resource_label='Drifted Records',
+            rows_aria_label='Drift rows per page',
+            control_name='operations-drift',
+            page_param='ops_drift_page',
+            per_page_param='ops_drift_per_page') }}
 </section>
