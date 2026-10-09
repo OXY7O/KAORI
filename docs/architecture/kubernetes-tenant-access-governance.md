@@ -466,6 +466,30 @@ Read-only observation requires `tenant.manage` and CSRF. Provider read
 failure, UID replacement or unbounded evidence fails closed, without
 claiming an inventory is complete.
 
+### Attach provider-owned Capsule Namespace to an existing Tenant (#998)
+
+In the canonical **Tenant Registry**, a Ready Capsule Tenant can attach a
+Capsule-owned Namespace to one of its existing Environment records. The
+operator supplies the Namespace name and provider UID observed through
+Discovery; the service rereads the authoritative Capsule Tenant CR,
+correlated namespace inventory and live Namespace before committing.
+
+The operation requires matching cluster, Capsule Tenant CR name/immutable
+UID, provider authority, Namespace immutable UID/resourceVersion and
+nonconflicting Capsule labels, ownerReferences or Tenant status membership.
+Cross-Tenant reparenting, active KAORI ownership, released-generation UID
+replacement, terminating Namespace and unsupported/ambiguous namespaced
+allocation are blocked. An existing Capsule Tenant and Environment
+identity are retained. The Namespace is committed as an Adopted generation;
+provider-generated policy is mirrored by the existing canonical Capsule
+policy-profile mechanism, without creating new Capsule quotas or modifying
+Namespace, Capsule Tenant CR or RoleBindings.
+
+This operation does **not** import external users, expand Access Grants or
+claim control of Capsule-managed policies. Provider evidence and attachment
+lineage are retained for reconciliation and audit. Live provider read-back
+and real Native/Capsule UAT are required before promotion to staging.
+
 ### Native Access Drift declaration correlation (#999)
 
 After **Inspect Native RBAC** has committed a scoped, bounded namespaced
