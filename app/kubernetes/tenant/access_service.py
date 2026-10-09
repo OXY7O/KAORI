@@ -996,6 +996,10 @@ def get_tenant_access_context() -> dict[str, object]:
             AuditEvent.query.filter_by(target_type='kubernetes_tenant_access_drift_evidence')
             .order_by(AuditEvent.id.desc()).limit(5).all()
         ),
+        'recent_native_access_drift': (
+            AuditEvent.query.filter_by(target_type='kubernetes_tenant_native_access_drift_evidence')
+            .order_by(AuditEvent.id.desc()).limit(5).all()
+        ),
         'recent_capsule_access_remediation': (
             AuditEvent.query.filter_by(target_type='kubernetes_tenant_access_remediation_plan')
             .order_by(AuditEvent.id.desc()).limit(5).all()
