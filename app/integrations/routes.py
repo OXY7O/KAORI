@@ -5,6 +5,13 @@ from flask_login import current_user
 from app.access.rbac.decorators import permission_required
 from app.common.http import htmx_target, is_htmx_request
 from app.common.presentation import present_key_label
+from app.kubernetes.cluster.capsule_rbac_bootstrap import (
+    bootstrap_missing_capsule_roles,
+    check_capsule_role_bootstrap,
+    latest_capsule_role_bootstrap_evidence,
+)
+from flask_wtf.csrf import validate_csrf
+from wtforms.validators import ValidationError
 from app.integrations.binding_service import SourceBindingSpec, create_source_binding
 from app.integrations.coverage import build_binding_workspace
 from app.integrations.domain_service import (
@@ -207,6 +214,7 @@ def _kubernetes_detail_context(
     )
     context['capability_validation_job'] = build_validation_snapshot(capability_task_id) if capability_task_id else None
     context['runtime_validation_job'] = build_validation_snapshot(runtime_task_id) if runtime_task_id else None
+    context['capsule_rbac_bootstrap'] = latest_capsule_role_bootstrap_evidence(cluster_id)
     context['capability_registry'] = build_kubernetes_capability_registry(
         context['feature_rows'],
         query=request.args.get('capability_q', '').strip(),
@@ -262,6 +270,47 @@ def kubernetes_detail(cluster_id: str) -> ResponseReturnValue:
         'integrations/orchestration/container_orchestrator/providers/kubernetes/detail.html',
         **_kubernetes_detail_context(cluster_id, include_history=True),
     )
+
+
+@integrations_bp.post('/kubernetes/<string:cluster_id>/capsule-rbac/check')
+@permission_required('clusters.sync')
+def kubernetes_capsule_rbac_check(cluster_id: str) -> ResponseReturnValue:
+    if get_kubernetes_connection_by_cluster_id(cluster_id) is None:
+        abort(404)
+    try:
+        validate_csrf(str(request.form.get('csrf_token') or ''))
+    except ValidationError:
+        abort(400)
+    result = check_capsule_role_bootstrap(cluster_id, int(current_user.id))
+    flash(
+        'Capsule RBAC check: '
+        + ('all canonical roles match.' if result['status'] == 'ready' else
+           'review missing or conflicting role prerequisites in the cluster panel.'),
+        'success' if result['status'] == 'ready' else 'warning',
+    )
+    return redirect(url_for('integrations.kubernetes_detail', cluster_id=cluster_id, tab='validation'))
+
+
+@integrations_bp.post('/kubernetes/<string:cluster_id>/capsule-rbac/bootstrap')
+@permission_required('clusters.manage')
+@permission_required('integrations.manage')
+def kubernetes_capsule_rbac_bootstrap(cluster_id: str) -> ResponseReturnValue:
+    if get_kubernetes_connection_by_cluster_id(cluster_id) is None:
+        abort(404)
+    try:
+        validate_csrf(str(request.form.get('csrf_token') or ''))
+    except ValidationError:
+        abort(400)
+    if request.form.get('confirm_cluster_rbac') != 'approved':
+        abort(400)
+    result = bootstrap_missing_capsule_roles(cluster_id, int(current_user.id), approved=True)
+    flash(
+        'Capsule ClusterRole bootstrap '
+        + ('completed and verified.' if result['status'] == 'ready' else
+           'requires operator attention; no conflicting roles were overwritten.'),
+        'success' if result['status'] == 'ready' else 'warning',
+    )
+    return redirect(url_for('integrations.kubernetes_detail', cluster_id=cluster_id, tab='validation'))
 
 
 @integrations_bp.get('/kubernetes/<string:cluster_id>/capabilities/registry')
