@@ -29,6 +29,7 @@ def _plan_and_approval():
         'plan_sha256': plan['plan_sha256'],
         'status': 'acknowledged_pending_provider_handoff',
         'requested_by': 1, 'approved_by': 2,
+        'approved_at': datetime.now(UTC).isoformat(),
         'handoff_fingerprint': plan['handoff_fingerprint'],
         'provider_handoff_verified': False, 'release_authorized': False,
     }
@@ -55,6 +56,8 @@ def _plan_and_approval():
 
 @pytest.mark.parametrize('damage', [
     lambda p, a: a.update(approved_by=1),
+    lambda p, a: a.update(approved_at='2026-09-01T00:00:00+00:00'),
+    lambda p, a: p.update(requested_at='2026-09-01T00:00:00+00:00'),
     lambda p, a: a.update(status='pending_independent_approval'),
     lambda p, a: a.update(handoff_fingerprint='stale'),
     lambda p, a: a.update(provider_handoff_verified=True),
