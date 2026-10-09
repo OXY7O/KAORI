@@ -538,8 +538,33 @@ def get_tenant_adoption_preflight_context(
             'capsule_capability_preflight': capsule_capability_evidence,
         }
 
+    existing_tenant_environments: list[dict[str, Any]] = []
+    if normalized_provider == 'native_kubernetes':
+        candidates = (
+            TenantEnvironment.query.join(Tenant, TenantEnvironment.tenant_id == Tenant.id)
+            .filter(
+                Tenant.cluster_id == normalized_cluster,
+                Tenant.provider_key == 'native_kubernetes',
+                Tenant.provider_state == 'native',
+                Tenant.reconciliation_authority == 'native_kubernetes',
+                Tenant.lifecycle_status == 'ready',
+            )
+            .order_by(Tenant.name.asc(), TenantEnvironment.environment.asc())
+            .all()
+        )
+        existing_tenant_environments = [
+            {
+                'id': environment.id,
+                'tenant_id': environment.tenant_id,
+                'tenant_name': environment.tenant.name,
+                'environment': environment.environment,
+            }
+            for environment in candidates
+        ]
+
     return {
         'tenant_adoption_row': row,
+        'tenant_adoption_existing_environments': existing_tenant_environments,
         'tenant_adoption_checked_at': present_user_datetime(datetime.now(UTC)),
     }
 
