@@ -11,6 +11,8 @@ import json
 from collections.abc import Mapping
 from typing import Any
 
+from app.kubernetes.tenant.allocation_observation import _CAPSULE_TENANT_LABEL_KEYS
+
 _MAX_COMPONENTS = 100
 _MANAGER_KEY = 'app.kubernetes.io/managed-by'
 _TENANT_ID_KEY = 'kaori.io/tenant-id'
@@ -141,6 +143,38 @@ def capsule_tenant_handoff_evidence(
     if component['ownership'] == 'marker_conflict':
         blockers.append('Capsule Tenant ownership metadata is conflicting.')
     return [component], blockers
+
+
+def capsule_namespace_handoff_evidence(
+    *, record: Any, namespace: Any, tenant_name: str,
+    status_namespace_names: set[str], tenant_id: str,
+) -> tuple[dict[str, str], list[str]]:
+    """Verify a Namespace still belongs to the authoritative Capsule Tenant."""
+    meta = _field(namespace, 'metadata')
+    labels = _field(meta, 'labels') or {}
+    if not isinstance(labels, Mapping):
+        raise ValueError('Capsule Namespace ownership labels are malformed.')
+    name = _string(_field(meta, 'name'))
+    uid = _string(_field(meta, 'uid'))
+    if name != _string(record.namespace) or uid != _string(record.provider_reference):
+        raise ValueError('Capsule Namespace name/UID differs from the committed adoption record.')
+    claims = {
+        _string(labels.get(key))
+        for key in _CAPSULE_TENANT_LABEL_KEYS
+        if _string(labels.get(key))
+    }
+    blockers: list[str] = []
+    if (claims and claims != {tenant_name}) or (not claims and name not in status_namespace_names):
+        blockers.append(f'Capsule Namespace/{name} has no verifiable Tenant ownership correlation.')
+    component = _component(
+        kind='Namespace', name=name, uid=uid,
+        version=_string(_field(meta, 'resource_version') or _field(meta, 'resourceVersion')),
+        labels=labels, tenant_id=tenant_id,
+    )
+    component['authority'] = 'capsule'
+    if component['ownership'] == 'marker_conflict':
+        blockers.append(f'Capsule Namespace/{name} has inconsistent KAORI ownership markers.')
+    return component, blockers
 
 
 def handoff_fingerprint(components: list[dict[str, str]]) -> str:
