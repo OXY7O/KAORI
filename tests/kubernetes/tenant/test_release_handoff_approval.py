@@ -137,6 +137,22 @@ def test_handoff_evidence_requires_all_correlated_namespace_identities():
         _complete_provider_snapshot(snapshot)
 
 
+@pytest.mark.parametrize('duplicate_target', ['provider_identity', 'handoff_component'])
+def test_handoff_rejects_ambiguous_duplicate_provider_identity(duplicate_target):
+    snapshot = _snapshot()
+    if duplicate_target == 'provider_identity':
+        snapshot['live_provider_identity'].append({
+            **snapshot['live_provider_identity'][0], 'uid': 'replacement-generation',
+        })
+    else:
+        snapshot['handoff_components'].append({
+            **snapshot['handoff_components'][0], 'uid': 'replacement-generation',
+        })
+        snapshot['handoff_fingerprint'] = handoff_fingerprint(snapshot['handoff_components'])
+    with pytest.raises(ValueError, match='duplicated or ambiguous'):
+        _complete_provider_snapshot(snapshot)
+
+
 def test_handoff_evidence_rejects_stale_and_incomplete_provider_metadata():
     snapshot = _snapshot()
     snapshot['checked_at'] = (datetime.now(UTC) - timedelta(hours=1)).isoformat()
