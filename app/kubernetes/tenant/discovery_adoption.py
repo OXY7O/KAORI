@@ -63,6 +63,17 @@ class _AdoptionContext:
     environment_name: str
     tenant: Tenant
     now: datetime
+    expected_provider_uid: str = ''
+
+
+def validate_adoption_provider_identity(
+    *, expected_uid: str, observed_uid: str, resource_version: str,
+) -> None:
+    """Require the same immutable provider generation reviewed in Adoption Preflight."""
+    if not expected_uid or not observed_uid or not resource_version:
+        raise ValueError('Adoption requires complete preflight and live provider UID/resourceVersion evidence.')
+    if expected_uid != observed_uid:
+        raise ValueError('Provider UID changed since Adoption Preflight; refresh Discovery.')
 
 
 def _prepare_adoption(source: Mapping[str, Any]) -> _AdoptionContext:
@@ -70,12 +81,15 @@ def _prepare_adoption(source: Mapping[str, Any]) -> _AdoptionContext:
     provider_key = str(source.get('provider_key') or '').strip().lower()
     resource_name = str(source.get('resource_name') or '').strip()
     tenant_name = str(source.get('tenant_name') or resource_name).strip()
+    expected_provider_uid = str(source.get('provider_uid') or '').strip()
     environment_name = _adoption_environment(str(source.get('environment') or ''))
 
     if provider_key not in {'native_kubernetes', 'capsule'}:
         raise ValueError('Unsupported Tenant discovery provider.')
     if not resource_name:
         raise ValueError('Select a discovered provider object.')
+    if not expected_provider_uid:
+        raise ValueError('Adoption requires provider UID from its explicit Discovery preflight.')
     if not tenant_name or len(tenant_name) > 120:
         raise ValueError('Tenant name is required and must be at most 120 characters.')
 
@@ -107,6 +121,7 @@ def _prepare_adoption(source: Mapping[str, Any]) -> _AdoptionContext:
         environment_name=environment_name,
         tenant=tenant,
         now=datetime.now(UTC),
+        expected_provider_uid=expected_provider_uid,
     )
 
 
@@ -160,8 +175,10 @@ def _native_namespace_record(
     metadata: Any,
     allocation: Mapping[str, Any],
 ) -> TenantNamespace:
-    provider_uid = str(getattr(metadata, 'uid', None) or context.resource_name)
-    resource_version = str(getattr(metadata, 'resource_version', None) or '')
+    provider_uid = str(getattr(metadata, 'uid', None) or '').strip()
+    resource_version = str(getattr(metadata, 'resource_version', None) or '').strip()
+    if not provider_uid or not resource_version:
+        raise ValueError('Native Namespace provider UID/resourceVersion is missing.')
     _verify_released_namespace_lineage(
         cluster_id=str(context.cluster.id), namespace=context.resource_name,
         provider_uid=provider_uid, tenant_slug=context.tenant.slug,
@@ -279,9 +296,13 @@ def _adopt_native(context: _AdoptionContext) -> tuple[TenantEnvironment, TenantN
     if management_status != 'Discovered':
         raise ValueError(reason)
 
+    provider_uid = str(getattr(metadata, 'uid', None) or '').strip()
+    resource_version = str(getattr(metadata, 'resource_version', None) or '').strip()
+    validate_adoption_provider_identity(
+        expected_uid=context.expected_provider_uid,
+        observed_uid=provider_uid, resource_version=resource_version,
+    )
     allocation = observe_native_namespace_allocation(context.client.core_api(), context.resource_name)
-    provider_uid = str(getattr(metadata, 'uid', None) or context.resource_name)
-    resource_version = str(getattr(metadata, 'resource_version', None) or '')
     tenant = context.tenant
     tenant.provider_key = 'native_kubernetes'
     tenant.provider_state = 'native'
@@ -454,8 +475,12 @@ def _adopt_capsule(context: _AdoptionContext) -> tuple[TenantEnvironment, Tenant
         raise ValueError('This Capsule Tenant is already governed by KAORI.')
 
     metadata = item.get('metadata') or {}
-    provider_uid = str(metadata.get('uid') or context.resource_name)
-    resource_version = str(metadata.get('resourceVersion') or '')
+    provider_uid = str(metadata.get('uid') or '').strip()
+    resource_version = str(metadata.get('resourceVersion') or '').strip()
+    validate_adoption_provider_identity(
+        expected_uid=context.expected_provider_uid,
+        observed_uid=provider_uid, resource_version=resource_version,
+    )
     allocation = observe_capsule_tenant_allocation(
         context.client,
         tenant_name=context.resource_name,
