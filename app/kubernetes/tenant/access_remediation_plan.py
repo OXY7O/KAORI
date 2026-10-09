@@ -5,10 +5,10 @@ from typing import Any
 
 from app.extensions.db import db
 from app.kubernetes.tenant.access_drift_analysis import (
+    _NATIVE_TARGET,
+    latest_native_access_drift_evidence,
     latest_tenant_access_drift_evidence,
 )
-from app.kubernetes.tenant.access_drift_analysis import _NATIVE_TARGET
-from app.kubernetes.tenant.external_native_access_observation import latest_external_native_access_evidence
 from app.models.audit import AuditEvent
 from app.models.tenant import Tenant, TenantAccessGrant
 
@@ -72,10 +72,12 @@ def prepare_tenant_access_remediation_plan_committed(
         evidence = latest_tenant_access_drift_evidence(tenant_id)
         target = 'kubernetes_tenant_access_drift_evidence'
     else:
-        from app.kubernetes.tenant.access_drift_analysis import latest_native_access_drift_evidence
         evidence = latest_native_access_drift_evidence(tenant_id)
         target = _NATIVE_TARGET
-    if not evidence or evidence.get('tenant_id') != tenant_id:
+    if (
+        not evidence or evidence.get('tenant_id') != tenant_id
+        or evidence.get('cluster_id') != tenant.cluster_id
+    ):
         raise ValueError('Analyze current committed Access Drift before preparing remediation.')
     captured = datetime.fromisoformat(str(evidence.get('evaluated_at') or ''))
     age = (datetime.now(UTC) - captured).total_seconds() if captured.tzinfo else -1
