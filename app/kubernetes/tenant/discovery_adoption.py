@@ -27,6 +27,7 @@ from app.kubernetes.tenant.discovery_service import (
     _next_namespace_generation,
     _next_tenant_generation,
     _read_capsule_tenant,
+    select_capsule_namespace_attachment_candidate,
     _take_over_capsule_allocation,
 )
 from app.kubernetes.tenant.native_provider import tenant_workspace_connection_available
@@ -665,33 +666,17 @@ def attach_discovered_capsule_namespace_committed(
     allocation = observe_capsule_tenant_allocation(
         client, tenant_name=capsule_name, tenant_item=tenant_cr,
     )
-    if (
-        allocation.get('authority_unsupported_dimensions')
-        or allocation.get('authority_ambiguous_dimensions')
-        or allocation.get('ambiguous_dimensions')
-    ):
-        raise ValueError('Capsule authority or Namespace correlation is ambiguous; attachment blocked.')
-    matches = [
-        item for item in allocation.get('correlated_namespaces') or []
-        if item.get('name') == namespace
-    ]
-    if len(matches) != 1:
-        raise ValueError('Namespace is not uniquely correlated to the authoritative Capsule Tenant.')
-    selected = matches[0]
-    validate_namespace_attachment_uid(
-        observed_uid=str(selected.get('uid') or ''),
+    selected = select_capsule_namespace_attachment_candidate(
+        allocation, namespace=namespace,
         expected_uid=str(source.get('provider_uid') or '').strip(),
+        expected_resource_version=str(source.get('provider_resource_version') or '').strip(),
     )
-    expected_rv = str(source.get('provider_resource_version') or '').strip()
-    if not expected_rv or expected_rv != str(selected.get('resource_version') or ''):
-        raise ValueError('Capsule Namespace resourceVersion changed; refresh Adoption Preflight.')
-    selected_allocation = selected.get('allocation') or {}
-    if (
-        selected_allocation.get('control_state') != 'observed'
-        or selected_allocation.get('unsupported_dimensions')
-        or selected_allocation.get('ambiguous_dimensions')
-    ):
-        raise ValueError('Capsule Namespace allocation is unsupported or ambiguous.')
+    # Both immutable UID and preflight resourceVersion are mandatory for
+    # attachment; empty request fields must never skip correlation checks.
+    if not str(source.get('provider_uid') or '').strip() or not str(
+        source.get('provider_resource_version') or ''
+    ).strip():
+        raise ValueError('Capsule attachment requires fresh Namespace UID/resourceVersion evidence.')
 
     context = _AdoptionContext(
         cluster=cluster, client=client, provider_key='capsule',
