@@ -215,7 +215,8 @@ def approve_release_handoff_plan_committed(
     if not plan or plan.get('status') != 'pending_independent_approval':
         raise ValueError('Prepare a Release handoff plan before acknowledgement.')
     if (
-        plan_sha256 != plan.get('plan_sha256')
+        plan.get('tenant_id') != tenant_id
+        or plan_sha256 != plan.get('plan_sha256')
         or len(plan_sha256) != 64
         or _plan_hash(plan) != plan_sha256
     ):
@@ -243,7 +244,8 @@ def approve_release_handoff_plan_committed(
     if existing and existing.get('plan_sha256') == plan_sha256:
         raise ValueError('This handoff plan has already been acknowledged.')
     if (
-        fresh.get('cluster_id') != plan['cluster_id']
+        fresh.get('tenant_id') != tenant_id
+        or fresh.get('cluster_id') != plan['cluster_id']
         or fresh.get('generation') != plan['generation']
         or fresh.get('provider') != plan['provider']
         or fresh.get('handoff_fingerprint') != plan['handoff_fingerprint']
