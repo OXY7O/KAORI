@@ -271,6 +271,26 @@ failed cleanup never claims that access was revoked. Drift/inspect/reconcile use
 committed grant lineage and store non-secret provider UID, resourceVersion, target, and
 effective-evidence hashes.
 
+### External Capsule Access observation (#981)
+
+A governed, healthy Capsule Tenant may have pre-existing `spec.owners`,
+`spec.additionalRoleBindings`, and selector-scoped
+`spec.rules[].permissions.bindings` provisioned outside KAORI.
+In **Tenant → Access Grants → External Capsule Access Inventory**, an authorized
+operator may explicitly **Inspect External Access**. This calls the authoritative
+Capsule Tenant CR only on demand, checks provider UID/resourceVersion and served
+v1beta2 API, and commits a bounded, non-secret AuditEvent inventory. Routine
+workspace views render only the latest five committed observations.
+
+External principals and policies retain **Observed / Review Required**
+provenance. Existing KAORI grant labels are correlated only when both
+managed-by and grant public_id markers exist. No owner becomes a KAORI Tenant
+Admin automatically, no external Group membership is imported from an IdP,
+and no external Capsule binding is rewritten or removed as an observation
+side effect. Effective grant takeover requires separately approved identity,
+exact permission/profile, source-scope, and ownership equivalence proof. A
+name match or provider ClusterRole name alone is insufficient.
+
 ### Existing-Tenant Namespace attachment (#983)
 
 In **Tenant → Discovery → Review Adoption**, a newly discovered Native

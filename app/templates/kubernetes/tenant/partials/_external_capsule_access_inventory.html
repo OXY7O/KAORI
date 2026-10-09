@@ -1,0 +1,94 @@
+{% import "components/action_button.html" as action_button %}
+{% import "components/table_label.html" as table_label %}
+<section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
+         aria-labelledby="external-capsule-access-heading">
+    <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                  aria-hidden="true">
+                <i data-lucide="shield-question" class="h-5 w-5"></i>
+            </span>
+            <div>
+                <h3 id="external-capsule-access-heading" class="text-base font-semibold text-content-primary">
+                    External Capsule Access Inventory
+                </h3>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">
+                    Observe Capsule owners and externally configured role grants before importing any identity or taking governance.
+                    Capsule remains authoritative.
+                </p>
+            </div>
+        </div>
+        {% if can_manage and external_capsule_tenants %}
+            <form method="post"
+                  action="{{ url_for('tenant.observe_capsule_external_access_route') }}"
+                  class="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-end">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <label class="min-w-0 text-xs font-medium text-content-muted">
+                    Capsule Tenant
+                    <select name="tenant_id" required
+                            class="mt-1 block h-9 w-full min-w-40 rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs text-content-primary sm:w-auto">
+                        {% for tenant in external_capsule_tenants %}
+                            <option value="{{ tenant.id }}">{{ tenant.name }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <button type="submit" class="{{ action_button.classes('secondary') }} whitespace-nowrap">
+                    <i data-lucide="scan-search" class="h-4 w-4" aria-hidden="true"></i>
+                    Inspect External Access
+                </button>
+            </form>
+        {% endif %}
+    </header>
+    <div class="space-y-3 px-5 py-4">
+        {% if recent_external_capsule_access %}
+            {% for event in recent_external_capsule_access %}
+                {% set evidence = event.metadata_json or {} %}
+                <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-3.5">
+                    <div class="flex flex-wrap items-start justify-between gap-2">
+                        <div>
+                            <p class="text-xs font-semibold text-content-primary">
+                                Capsule Tenant · {{ evidence.tenant_id }}
+                            </p>
+                            <p class="mt-1 text-xs text-content-muted">
+                                {{ evidence.external_count }} external bindings · {{ evidence.owner_count }} provider owners
+                                · {{ evidence.kaori_count }} KAORI-labelled bindings
+                            </p>
+                        </div>
+                        {{ table_label.status_label(
+                            'Review Required' if evidence.status == 'review_required' else 'Observed',
+                            'warning' if evidence.status == 'review_required' else 'info'
+                        ) }}
+                    </div>
+                    <details class="group mt-3 border-t border-outline-subtle pt-2">
+                        <summary class="inline-flex cursor-pointer items-center gap-2 rounded-md text-xs font-medium text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                            <i data-lucide="file-search" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                            Inspect principal and provider evidence
+                        </summary>
+                        <div class="mt-2 space-y-3 text-xs text-content-secondary">
+                            <p>Provider UID: <span class="break-all font-mono">{{ evidence.provider_uid }}</span>
+                                · resourceVersion {{ evidence.resource_version }}</p>
+                            {% for owner in evidence.owners %}
+                                <p>Capsule owner · {{ owner.kind }} / {{ owner.name }}</p>
+                            {% endfor %}
+                            {% for binding in evidence.bindings %}
+                                <div class="rounded-lg border border-outline-subtle bg-surface-card p-2.5">
+                                    <p class="font-semibold text-content-primary">{{ binding.cluster_role_name or 'Unknown ClusterRole' }}</p>
+                                    <p class="mt-1">{{ binding.source }} · {{ binding.ownership|title }}
+                                        · {{ binding.governance|replace('_',' ')|title }}</p>
+                                    {% for subject in binding.subjects %}
+                                        <p class="mt-1 break-all font-mono">{{ subject.kind }} · {{ subject.name }}{% if subject.namespace %} · {{ subject.namespace }}{% endif %}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </details>
+                </article>
+            {% endfor %}
+        {% else %}
+            <p class="text-xs leading-5 text-content-muted">
+                No committed external-access inspection yet. Select a governed Capsule Tenant and run Inspect External Access.
+                Inspection is read-only and does not import IdP users, grant RBAC, or change provider ownership.
+            </p>
+        {% endif %}
+    </div>
+</section>

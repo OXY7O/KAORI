@@ -21,6 +21,7 @@ from app.kubernetes.tenant.access_service import (
     revoke_membership_by_id_committed,
     update_tenant_group_by_id_committed,
 )
+from app.kubernetes.tenant.external_access_observation import observe_external_capsule_access_committed
 from app.kubernetes.tenant.route_common import (
     _csrf,
     _optional_int,
@@ -29,6 +30,38 @@ from app.kubernetes.tenant.route_common import (
     _tenant_section_redirect,
     tenant_bp,
 )
+
+
+@tenant_bp.post('/external-access/observe')
+@permission_required('tenant.manage')
+def observe_capsule_external_access_route():
+    try:
+        _csrf()
+        tenant_id = str(request.form.get('tenant_id') or '').strip()
+        result = observe_external_capsule_access_committed(
+            tenant_id=tenant_id, actor_user_id=int(current_user.id)
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_external_access_observation_failed',
+            status='error',
+            title='External Capsule Access Inspection Failed',
+            message=str(exc),
+            detail='Provider access was not modified; no identity was imported.',
+            metadata={'tenant_id': request.form.get('tenant_id'), 'operation': 'observe_external_capsule_access'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_external_access_observed',
+            status='warning' if result['status'] == 'review_required' else 'success',
+            title='External Capsule Access Observed',
+            message=(
+                f"{result['external_count']} external bindings and {result['owner_count']} provider owners observed."
+            ),
+            detail='No membership or RBAC mutation. Review external identities before governed takeover.',
+            metadata={'tenant_id': result['tenant_id'], 'operation': 'observe_external_capsule_access'},
+        )
+    return _tenant_section_redirect('access-grants')
 
 
 @tenant_bp.post('/groups')

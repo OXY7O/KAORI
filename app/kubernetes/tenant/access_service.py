@@ -974,6 +974,14 @@ def get_tenant_access_context() -> dict[str, object]:
         'recent_tenant_groups': TenantGroup.query.order_by(TenantGroup.created_at.desc()).limit(5).all(),
         'recent_tenant_memberships': TenantMembership.query.order_by(TenantMembership.created_at.desc()).limit(5).all(),
         'recent_access_grants': TenantAccessGrant.query.order_by(TenantAccessGrant.created_at.desc()).limit(5).all(),
+        'external_capsule_tenants': [
+            tenant for tenant in tenant_options
+            if tenant.provider_key == 'capsule' and tenant.provider_state == 'capsule'
+        ],
+        'recent_external_capsule_access': (
+            AuditEvent.query.filter_by(target_type='kubernetes_tenant_external_access_inventory')
+            .order_by(AuditEvent.id.desc()).limit(5).all()
+        ),
     }
 
 
