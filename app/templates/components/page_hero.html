@@ -226,14 +226,15 @@
 {% macro context_panel_metrics_classes() -%}
     grid grid-cols-1 gap-2 [&>*:nth-child(n+2)]:hidden sm:grid-cols-2 sm:auto-rows-fr sm:[&>*:nth-child(n+2)]:block
 {%- endmacro %}
-{% macro context_metric(icon, label, value, description=None, value_classes=None) -%}
+{% macro context_metric(icon, label, value, description=None, value_classes=None, value_id=None) -%}
     <div class="{{ context_metric_card_classes() }}"
          data-kaori-hero-context-metric>
         <div class="flex items-center gap-2 text-brand-foreground">
             <i data-lucide="{{ icon }}" class="h-3.5 w-3.5" aria-hidden="true"></i>
             <p class="{{ context_metric_label_classes() }}">{{ label }}</p>
         </div>
-        <p class="mt-1.5 {{ value_classes or context_metric_value_classes() }} text-brand-foreground">{{ value }}</p>
+        <p {% if value_id %}id="{{ value_id }}"{% endif %}
+           class="mt-1.5 {{ value_classes or context_metric_value_classes() }} text-brand-foreground">{{ value }}</p>
         {% if description %}
             <p class="{{ context_metric_helper_classes() }}"
                title="{{ description }}">{{ description }}</p>
