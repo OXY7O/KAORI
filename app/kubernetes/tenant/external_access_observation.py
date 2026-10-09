@@ -3,8 +3,6 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
-from kubernetes.client.rest import ApiException
-
 from app.extensions.db import db
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
 from app.kubernetes.tenant.capsule_provider import discover_capsule
@@ -53,9 +51,12 @@ def normalize_capsule_access_spec(spec: dict[str, Any]) -> dict[str, Any]:
             raise ValueError('Capsule access binding evidence is unbounded.')
         managed = labels.get('app.kubernetes.io/managed-by') == 'kaori'
         grant_id = str(labels.get('kaori.io/access-grant') or '')
+        role_name = str(entry.get('clusterRoleName') or '')
+        if len(role_name) > 253:
+            raise ValueError('External ClusterRole name is unbounded.')
         bindings.append({
             'source': source,
-            'cluster_role_name': str(entry.get('clusterRoleName') or ''),
+            'cluster_role_name': role_name,
             'subjects': [_subject(subject) for subject in subjects],
             'scope_selector': selector,
             'ownership': 'kaori' if managed and grant_id else 'external',
