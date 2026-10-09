@@ -84,7 +84,14 @@ def _native_management(
     if namespace in _SYSTEM_NAMESPACES:
         return 'Blocked', 'Kubernetes system namespaces are not Tenant adoption candidates.'
     external_manager = str(labels.get('app.kubernetes.io/managed-by') or '').strip()
-    if external_manager and external_manager.lower() != 'kaori':
+    claimed_tenant = str(labels.get('kaori.io/tenant-id') or '').strip()
+    if external_manager.lower() == 'kaori' or claimed_tenant:
+        return (
+            'Blocked',
+            'Namespace has KAORI ownership markers without active governance; '
+            'inspect provider residue and recover the prior Tenant before adoption.',
+        )
+    if external_manager:
         return 'Blocked', f'Provider resource declares external manager {external_manager}.'
     return 'Discovered', 'Candidate for governed adoption preflight; no provider mutation has occurred.'
 
