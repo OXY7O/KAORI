@@ -348,6 +348,10 @@ remains identical. Namespace and Capsule Tenant resources are preserved.
 an attached Resource Profile or any outstanding grant, credential, Group or
 managed policy cannot use the observation-only Release path. Those resources
 require separately admitted external owner handoff and provider read-back.
+The committed Namespace-level `provider_mutation_performed` field must also
+be explicitly `false` for every Namespace. A `true`, missing or unknown
+value blocks Release even if the original Tenant provenance still says
+observation-only or an allocation profile reference has disappeared.
 That expanded lifecycle remains open under #991; no database-only unmanage
 is permitted.
 
