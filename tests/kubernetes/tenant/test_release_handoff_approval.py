@@ -5,7 +5,9 @@ from types import SimpleNamespace
 
 import pytest
 
+from app.kubernetes.tenant.release_handoff_inventory import handoff_fingerprint
 from app.kubernetes.tenant.release_handoff_approval import (
+    _plan_hash,
     _can_confirm_plan,
     _complete_provider_snapshot,
     _valid_reference,
@@ -15,14 +17,14 @@ from app.kubernetes.tenant.release_handoff_approval import (
 
 
 def _snapshot(*, status: str = 'blocked', blockers: list[str] | None = None) -> dict:
-    return {
+    snapshot = {
         'tenant_id': 'tenant-a',
         'cluster_id': 'cluster-a',
         'generation': 2,
         'provider': 'native_kubernetes',
         'status': status,
         'checked_at': datetime.now(UTC).isoformat(),
-        'handoff_fingerprint': 'a' * 64,
+        'handoff_fingerprint': '',
         'live_provider_identity': [
             {
                 'kind': 'Namespace',
@@ -50,6 +52,26 @@ def _snapshot(*, status: str = 'blocked', blockers: list[str] | None = None) -> 
             'external handoff and provider read-back.',
         ],
     }
+    snapshot['handoff_fingerprint'] = handoff_fingerprint(snapshot['handoff_components'])
+    return snapshot
+
+
+def _plan_from_snapshot(snapshot: dict) -> dict:
+    plan = {
+        'status': 'pending_independent_approval',
+        'tenant_id': snapshot['tenant_id'],
+        'cluster_id': snapshot['cluster_id'],
+        'generation': snapshot['generation'],
+        'provider': snapshot['provider'],
+        'handoff_fingerprint': snapshot['handoff_fingerprint'],
+        'provider_identity': snapshot['live_provider_identity'],
+        'successor_owner': 'platform-team',
+        'change_reference': 'CHG-2026-109',
+        'requested_by': 42,
+        'requested_at': datetime.now(UTC).isoformat(),
+    }
+    plan['plan_sha256'] = _plan_hash(plan)
+    return plan
 
 
 def test_handoff_plan_acceptance_requires_only_expected_handoff_blockers():
@@ -119,31 +141,19 @@ def test_handoff_owner_and_change_references_are_bounded_and_nonsecret():
 def test_second_approver_cannot_be_handoff_requester(monkeypatch):
     from app.kubernetes.tenant import release_handoff_approval as module
 
-    monkeypatch.setattr(
-        module, 'latest_release_handoff_plan',
-        lambda _: {
-            'status': 'pending_independent_approval',
-            'plan_sha256': 'a' * 64,
-            'requested_by': 42,
-            'requested_at': datetime.now(UTC).isoformat(),
-        },
-    )
+    plan = _plan_from_snapshot(_snapshot())
+    monkeypatch.setattr(module, 'latest_release_handoff_plan', lambda _: plan)
     with pytest.raises(ValueError, match='independent approver'):
         approve_release_handoff_plan_committed(
             tenant_id='tenant-a', actor_user_id=42,
-            plan_sha256='a' * 64, approved=True,
+            plan_sha256=plan['plan_sha256'], approved=True,
         )
 
 
 def test_second_approver_requires_same_latest_plan_and_fresh_window(monkeypatch):
     from app.kubernetes.tenant import release_handoff_approval as module
 
-    plan = {
-        'status': 'pending_independent_approval',
-        'plan_sha256': 'a' * 64,
-        'requested_by': 42,
-        'requested_at': datetime.now(UTC).isoformat(),
-    }
+    plan = _plan_from_snapshot(_snapshot())
     monkeypatch.setattr(module, 'latest_release_handoff_plan', lambda _: plan)
     with pytest.raises(ValueError, match='plan changed'):
         approve_release_handoff_plan_committed(
@@ -151,10 +161,11 @@ def test_second_approver_requires_same_latest_plan_and_fresh_window(monkeypatch)
             plan_sha256='b' * 64, approved=True,
         )
     plan['requested_at'] = (datetime.now(UTC) - timedelta(hours=2)).isoformat()
+    plan['plan_sha256'] = _plan_hash(plan)
     with pytest.raises(ValueError, match='expired'):
         approve_release_handoff_plan_committed(
             tenant_id='tenant-a', actor_user_id=43,
-            plan_sha256='a' * 64, approved=True,
+            plan_sha256=plan['plan_sha256'], approved=True,
         )
 
 
@@ -221,19 +232,7 @@ def test_independent_handoff_approval_commits_pending_provider_state(monkeypatch
     from app.kubernetes.tenant import release_handoff_approval as module
 
     snapshot = _snapshot()
-    plan = {
-        'status': 'pending_independent_approval',
-        'plan_sha256': 'a' * 64,
-        'requested_by': 42,
-        'requested_at': datetime.now(UTC).isoformat(),
-        'cluster_id': snapshot['cluster_id'],
-        'generation': snapshot['generation'],
-        'provider': snapshot['provider'],
-        'handoff_fingerprint': snapshot['handoff_fingerprint'],
-        'provider_identity': snapshot['live_provider_identity'],
-        'successor_owner': 'platform-team',
-        'change_reference': 'CHG-2026-109',
-    }
+    plan = _plan_from_snapshot(snapshot)
     class _Query:
         def filter_by(self, **kwargs):
             return self
@@ -254,7 +253,7 @@ def test_independent_handoff_approval_commits_pending_provider_state(monkeypatch
 
     result = approve_release_handoff_plan_committed(
         tenant_id='tenant-a', actor_user_id=43,
-        plan_sha256='a' * 64, approved=True,
+        plan_sha256=plan['plan_sha256'], approved=True,
     )
     assert result['status'] == 'acknowledged_pending_provider_handoff'
     assert result['requested_by'] == 42 and result['approved_by'] == 43
