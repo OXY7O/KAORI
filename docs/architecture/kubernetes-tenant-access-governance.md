@@ -296,6 +296,16 @@ A foreign `kaori.io/tenant-id` claim, or a KAORI manager
 marker with no matching Tenant ID, blocks mutation. These checks apply to
 existing adopted Namespace cutovers and prevent silent takeover of a
 deleted/recreated or foreign-governed Namespace generation.
+Both Native Namespace and Capsule Tenant CR Discovery/Preflight reject orphaned
+KAORI ownership markers (manager, tenant-id, tenant-generation and supported
+allocation ownership labels), as well as foreign declared resource managers.
+The New Tenant submit path repeats this provider ownership check. A resource
+with residual KAORI labels but no active governance record requires explicit
+recovery review; it must not be silently represented as a clean adoptable
+external object. Capsule New Tenant adoption also refuses duplicate/missing
+Namespace UID/resourceVersion and any Namespace already governed by another
+Tenant in the cluster, before beginning a Capsule allocation takeover.
+
 The Kubernetes provider remains authoritative; this does not permit external
 owner handoff or silently import identities.
 
