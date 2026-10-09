@@ -7,44 +7,50 @@ def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
 
 
-def test_top_consumers_uses_canonical_tabs_and_native_hidden_fallback() -> None:
+def test_top_consumers_uses_one_canonical_workspace_and_native_fallback() -> None:
     section = read('app/templates/kubernetes/analytics/top_consumers/partials/_top_consumers_section.html')
 
     for tab in ('rankings', 'records', 'recommendations'):
         assert f'data-analytics-tab-panel="{tab}"' in section
     assert "analytics_workspace.tabbed(" in section
     assert "'top-consumers-content'," in section
-    assert "detached=true" not in section
-    assert "analytics_workspace.tabbed(" in section
-    assert 'class="{{ analysis_surface.snapshot_shell_classes() }} space-y-5 p-5 sm:p-6"' not in section
-    assert section.count('class="space-y-5"') >= 2
-    assert "content_tabs.render_buttons('consumer-ranking-resource'" in section
-    workspace = read('app/templates/kubernetes/analytics/components/_analysis_workspace.html')
-    assert "class=\"{{ 'space-y-5' if detached else analysis_surface.snapshot_shell_classes() }}\"" in workspace
-    assert "content_tabs.render_buttons(tabset_id, tabs" in workspace
-    assert "data-top-consumers-tabset" in section
+    assert 'detached=true' not in section
+    assert 'data-top-consumers-tabset' in section
     assert "content_tabs.render_buttons('top-consumers-content'" not in section
-    assert "content_tabs.render_buttons('consumer-ranking-resource'" in section
     assert 'x-show="activeTab' not in section
     assert 'x-bind:hidden="activeTab' not in section
 
 
-def test_ranking_resource_tabs_use_one_embedded_evidence_surface() -> None:
+def test_resource_cards_replace_nested_tabs_without_new_tab_controller() -> None:
     section = read('app/templates/kubernetes/analytics/top_consumers/partials/_top_consumers_section.html')
     ranked = read('app/templates/kubernetes/analytics/components/_ranked_evidence_panel.html')
     rows = read('app/kubernetes/analytics/top_consumers/rows.py')
+    controller = read('app/static/js/analytics/controls.js')
 
-    assert "('cpu', 'CPU', 'cpu'), ('memory', 'Memory', 'memory-stick'), ('pods', 'Pods', 'boxes'), ('pvc', 'PVC', 'database')" in section
-    assert "content_tabs.render_buttons('consumer-ranking-resource'" in section
-    assert "data-analytics-update-query=\"false\"" in section
-    assert "ranked_evidence.render(selected_panel.value, embedded=true)" in section
-    assert 'class="min-w-0"' in section
+    assert 'data-kaori-ranking-resource-lens' in section
+    assert 'role="tablist"' in section
+    assert 'data-analytics-tab-button="{{ resource_key }}"' in section
+    assert 'data-kaori-tab-active-classes=' in section
+    assert 'data-kaori-tab-inactive-classes=' in section
+    assert 'data-analytics-update-query="false"' in section
+    assert "content_tabs.render_buttons('consumer-ranking-resource'" not in section
+    for key in ('cpu', 'memory', 'pods', 'pvc'):
+        assert f"('{key}'," in section
+    assert 'aria-controls="consumer-ranking-resource-panel-{{ resource_key }}"' in section
+    assert 'data-analytics-tab-panel="{{ resource_key }}"' in section
+    assert "{% if resource_key != 'cpu' %}hidden{% endif %}" in section
+    assert 'candidate_panel.value.total_value' in section
+    assert 'candidate_panel.value.capacity_label' in section
+    assert 'candidate_panel.value.capacity_value' in section
+    assert 'candidate_panel.value.coverage.label' in section
+    assert 'ranked_evidence.render(selected_panel.value, embedded=true, show_metrics=false)' in section
+    assert 'function setAnalyticsTab(' in controller
 
-    assert 'macro render(panel, embedded=false)' in ranked
-    assert "data-kaori-consumer-ranking=" in ranked
-    assert "Selected-Scope Total" in ranked
-    assert "panel.capacity_label" in ranked
-    for heading in ('Consumer Identity', 'Consumption', 'Contribution to Scope', 'Status / Configuration', 'Pressure'):
+    assert 'macro render(panel, embedded=false, show_metrics=true)' in ranked
+    assert 'if show_metrics' in ranked
+    assert 'data-kaori-consumer-ranking=' in ranked
+    assert 'panel.rows|length' in ranked
+    for heading in ('Consumer', 'Observed Usage', 'Scope Share', 'Operational Assessment'):
         assert heading in ranked
     assert 'row.request_state.label' in ranked
     assert 'row.limit_state.label' in ranked
@@ -53,7 +59,7 @@ def test_ranking_resource_tabs_use_one_embedded_evidence_surface() -> None:
     assert 'row.pressure_basis' in ranked
     assert 'title="{{ row.identity.primary }}"' in ranked
     assert "fill_classes='h-full rounded-full bg-kaori-primary'" in ranked
-    assert "progress_bar.semantic_bar" not in ranked
+    assert 'progress_bar.semantic_bar' not in ranked
     assert "'contribution_percent': rounded_percent(contribution)" in rows
 
 
