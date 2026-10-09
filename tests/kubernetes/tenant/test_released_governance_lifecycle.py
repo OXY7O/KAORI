@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from types import SimpleNamespace
 
 import pytest
@@ -67,3 +68,59 @@ def test_released_model_statuses_are_distinct_from_decommissioned():
     assert TenantLifecycleStatus.RELEASED != TenantLifecycleStatus.DECOMMISSIONED
     assert TenantNamespaceProvisioningStatus.RELEASED.value == 'released'
     assert TenantNamespaceProvisioningStatus.RELEASED != TenantNamespaceProvisioningStatus.DEPROVISIONED
+
+
+def test_release_does_not_commit_when_provider_resource_version_changes(monkeypatch):
+    from app.kubernetes.tenant import release_preflight
+
+    timestamp = datetime.now(UTC).isoformat()
+    shared = {
+        'status': 'handoff_review_required',
+        'tenant_id': 'tenant-a', 'cluster_id': 'cluster-a',
+        'generation': 1, 'provider': 'native_kubernetes',
+        'ownership': 'adopted', 'checked_at': timestamp,
+    }
+    previous = {
+        **shared,
+        'live_provider_identity': [
+            {'kind': 'Namespace', 'name': 'sandbox', 'uid': 'ns-a', 'resource_version': '1'}
+        ],
+    }
+    next_snapshot = {
+        **shared, 'blockers': [],
+        'live_provider_identity': [
+            {'kind': 'Namespace', 'name': 'sandbox', 'uid': 'ns-a', 'resource_version': '2'}
+        ],
+    }
+    monkeypatch.setattr(release_preflight, 'latest_tenant_release_preflight', lambda _: previous)
+    monkeypatch.setattr(
+        release_preflight,
+        'review_tenant_release_preflight_committed',
+        lambda **_: next_snapshot,
+    )
+
+    with pytest.raises(ValueError, match='UID/resourceVersion changed'):
+        release_adopted_tenant_committed(tenant_id='tenant-a', actor_user_id=1, approved=True)
+
+
+def test_release_does_not_commit_after_preflight_blocks_new_dependencies(monkeypatch):
+    from app.kubernetes.tenant import release_preflight
+
+    timestamp = datetime.now(UTC).isoformat()
+    snapshot = {
+        'status': 'handoff_review_required',
+        'tenant_id': 'tenant-a', 'cluster_id': 'cluster-a',
+        'generation': 1, 'provider': 'native_kubernetes',
+        'ownership': 'adopted', 'checked_at': timestamp,
+        'live_provider_identity': [
+            {'kind': 'Namespace', 'name': 'sandbox', 'uid': 'ns-a', 'resource_version': '1'}
+        ],
+    }
+    monkeypatch.setattr(release_preflight, 'latest_tenant_release_preflight', lambda _: snapshot)
+    monkeypatch.setattr(
+        release_preflight,
+        'review_tenant_release_preflight_committed',
+        lambda **_: {**snapshot, 'blockers': ['new active Access Grant']},
+    )
+    with pytest.raises(ValueError, match='newly observed provider'):
+        release_adopted_tenant_committed(tenant_id='tenant-a', actor_user_id=1, approved=True)
