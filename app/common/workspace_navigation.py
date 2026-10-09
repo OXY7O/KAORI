@@ -79,6 +79,7 @@ _CAPABILITY_ACTIVE_EXACT: dict[str, dict[str, str]] = {
     },
     'kubernetes_tenant': {
         'tenant.tenants': 'tenants',
+        'tenant.generate_credential_material_route': 'tenants',
         'tenant.resource_profiles': 'resource_profiles',
         'tenant.namespace_provisioning': 'namespace_provisioning',
         'tenant.operations': 'operations',
