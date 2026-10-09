@@ -300,7 +300,7 @@
                     {% endfor %}
                 </div>
                 <footer class="{{ grant_footer_classes }}">
-                    <p class="text-xs leading-5 text-content-muted">Environment/Tenant may stay Pending until namespaces exist. Namespace scope needs one target.</p>
+                    <p class="min-w-0 text-xs leading-5 text-content-muted">Environment/Tenant may stay Pending until namespaces exist. Namespace scope needs one target.</p>
                     <a href="{{ url_for('tenant.namespace_provisioning') }}"
                        class="{{ action_button.classes('secondary') }} justify-self-end">
                         <i data-lucide="boxes" class="h-4 w-4" aria-hidden="true"></i>
