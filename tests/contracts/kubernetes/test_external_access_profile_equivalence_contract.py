@@ -16,6 +16,10 @@ def test_native_foreign_role_equivalence_is_review_only_and_provider_authoritati
     assert "read_cluster_role(" in service
     assert "_role_rules_signature(" in service
     assert "review_native_external_role_profile_committed(" in routes
+    assert "review_capsule_external_role_profile_committed(" in routes
+    assert "read_capsule()" in service
+    assert "normalize_capsule_access_spec(" in service
+    assert "name=\"binding_index\"" in template
     assert "name=\"binding_uid\"" in template
     assert "Review Profile Match" in template
     assert "recent_external_access_profile_reviews" in context

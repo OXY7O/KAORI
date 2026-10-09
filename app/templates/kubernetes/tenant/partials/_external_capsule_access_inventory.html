@@ -90,6 +90,19 @@
                                     {% for subject in binding.subjects %}
                                         <p class="mt-1 break-all font-mono">{{ subject.kind }} · {{ subject.name }}{% if subject.namespace %} · {{ subject.namespace }}{% endif %}</p>
                                     {% endfor %}
+                                    {% if can_manage and binding.ownership == 'external' %}
+                                        <form method="post"
+                                              action="{{ url_for('tenant.review_external_capsule_profile_route') }}"
+                                              class="mt-2">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="tenant_id" value="{{ evidence.tenant_id }}">
+                                            <input type="hidden" name="binding_index" value="{{ loop.index0 }}">
+                                            <button type="submit" class="{{ action_button.classes('secondary') }} !h-8 !px-3 !text-xs">
+                                                <i data-lucide="shield-check" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                Review Profile Match
+                                            </button>
+                                        </form>
+                                    {% endif %}
                                 </div>
                             {% endfor %}
                         </div>
@@ -345,7 +358,9 @@
             <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
                 <div class="flex flex-wrap items-center justify-between gap-2">
                     <p class="break-all text-xs font-semibold text-content-primary">
-                        {{ review.namespace }} · {{ review.role_kind }}/{{ review.role_name }}
+                        {{ review.provider|replace('_', ' ')|title }} ·
+                        {% if review.namespace %}{{ review.namespace }} · {% endif %}
+                        {{ review.role_kind }}/{{ review.role_name }}
                     </p>
                     {{ table_label.status_label('Review Required', 'warning') }}
                 </div>

@@ -16,6 +16,10 @@ from typing import Any
 from app.extensions.db import db
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
 from app.kubernetes.tenant.access import ACCESS_PROFILE_CATALOG, get_access_profile
+from app.kubernetes.tenant.external_access_observation import (
+    latest_external_capsule_access_evidence,
+    normalize_capsule_access_spec,
+)
 from app.kubernetes.tenant.external_native_access_observation import (
     latest_external_native_access_evidence,
     normalize_native_role_binding,
@@ -209,6 +213,7 @@ def review_native_external_role_profile_committed(
     receipt = {
         **result,
         'tenant_id': tenant_id, 'cluster_id': tenant.cluster_id,
+        'provider': 'native_kubernetes',
         'namespace': namespace, 'binding_name': selected['name'],
         'binding_uid': selected['uid'],
         'binding_resource_version': selected['resource_version'],
@@ -221,6 +226,121 @@ def review_native_external_role_profile_committed(
         actor_user_id=actor_user_id, target_type=_TARGET, target_id=tenant_id,
         action='tenant.external_role.profile_reviewed',
         summary='Compared foreign Native Role rules to exact KAORI Access Profiles; no import.',
+        metadata_json=receipt,
+    ))
+    db.session.commit()
+    return receipt
+
+
+def _require_committed_capsule_binding(
+    evidence: dict[str, Any] | None, *, tenant: Tenant,
+    binding_index: int, now: datetime,
+) -> dict[str, Any]:
+    """Index only a unique, foreign-owned Capsule binding from fresh evidence."""
+    if (
+        not evidence or evidence.get('provider') != 'capsule'
+        or evidence.get('tenant_id') != tenant.id
+        or evidence.get('cluster_id') != tenant.cluster_id
+    ):
+        raise ValueError('Inspect committed Capsule RBAC inventory first.')
+    try:
+        observed = datetime.fromisoformat(str(evidence.get('observed_at') or ''))
+    except ValueError as exc:
+        raise ValueError('Capsule RBAC inventory timestamp is invalid.') from exc
+    age = (now - observed.astimezone(UTC)).total_seconds() if observed.tzinfo else -1
+    if age < 0 or age > _MAX_AGE_SECONDS:
+        raise ValueError('Capsule RBAC inventory expired; inspect again.')
+    bindings = evidence.get('bindings')
+    if (
+        not isinstance(bindings, list) or type(binding_index) is not int
+        or not 0 <= binding_index < min(len(bindings), 200)
+    ):
+        raise ValueError('Select one bounded observed Capsule binding.')
+    item = bindings[binding_index]
+    if (
+        not isinstance(item, dict)
+        or item.get('ownership') != 'external'
+        or not item.get('cluster_role_name')
+        or not isinstance(item.get('subjects'), list)
+        or not item['subjects']
+        or bindings.count(item) != 1
+    ):
+        raise ValueError('Capsule binding identity is foreign, unsupported or ambiguous.')
+    return item
+
+
+def review_capsule_external_role_profile_committed(
+    *, tenant_id: str, binding_index: int, actor_user_id: int,
+) -> dict[str, Any]:
+    """Observe Capsule authoritative CR + referenced ClusterRole; never import."""
+    tenant = db.session.get(Tenant, tenant_id)
+    if (
+        tenant is None or tenant.provider_key != 'capsule'
+        or tenant.provider_state != 'capsule'
+        or tenant.reconciliation_authority != 'capsule'
+        or tenant.lifecycle_status != 'ready'
+        or not tenant.provider_reference
+    ):
+        raise ValueError('Select a Ready Capsule Tenant with provider authority.')
+    evidence = latest_external_capsule_access_evidence(tenant_id)
+    selected = _require_committed_capsule_binding(
+        evidence, tenant=tenant, binding_index=binding_index, now=datetime.now(UTC)
+    )
+    assert evidence is not None
+    expected_uid = str((tenant.provider_evidence_json or {}).get('provider_uid') or '')
+    if not expected_uid or expected_uid != evidence.get('provider_uid'):
+        raise ValueError('Committed Capsule Tenant UID is missing or changed.')
+    cluster = db.session.get(Cluster, tenant.cluster_id)
+    if cluster is None:
+        raise ValueError('Connected Capsule Kubernetes provider is unavailable.')
+    client = runtime_adapter.build_client(cluster)
+    custom = client.custom_objects_api()
+    rbac = client.rbac_authorization_api()
+
+    def read_capsule() -> dict[str, Any]:
+        item = custom.get_cluster_custom_object(
+            'capsule.clastix.io', 'v1beta2', 'tenants',
+            str(tenant.provider_reference), _request_timeout=5,
+        )
+        if not isinstance(item, dict) or not isinstance(item.get('spec'), dict):
+            raise ValueError('Capsule Tenant spec could not be verified.')
+        meta = item.get('metadata') or {}
+        if (
+            meta.get('uid') != expected_uid
+            or meta.get('resourceVersion') != evidence.get('resource_version')
+            or meta.get('name') != tenant.provider_reference
+            or normalize_capsule_access_spec(item['spec'])['bindings'] != evidence.get('bindings')
+        ):
+            raise ValueError('Capsule provider RBAC changed since observed inventory.')
+        return item
+
+    read_capsule()
+    role = rbac.read_cluster_role(selected['cluster_role_name'], _request_timeout=5)
+    reviewed = classify_external_role_profile(role)
+    if (
+        reviewed['role_kind'] != 'ClusterRole'
+        or reviewed['role_name'] != selected['cluster_role_name']
+    ):
+        raise ValueError('Referenced Capsule ClusterRole identity changed during review.')
+    read_capsule()
+    receipt = {
+        **reviewed,
+        'tenant_id': tenant_id, 'cluster_id': tenant.cluster_id,
+        'provider': 'capsule', 'capsule_tenant_name': tenant.provider_reference,
+        'capsule_tenant_uid': expected_uid,
+        'capsule_tenant_resource_version': evidence['resource_version'],
+        'binding_index': binding_index,
+        'binding_source': selected['source'],
+        'scope_selector': selected.get('scope_selector'),
+        'subjects': selected['subjects'],
+        'source_observed_at': evidence['observed_at'],
+        'reviewed_at': datetime.now(UTC).isoformat(),
+        'secret_material_persisted': False,
+    }
+    db.session.add(AuditEvent(
+        actor_user_id=actor_user_id, target_type=_TARGET, target_id=tenant_id,
+        action='tenant.external_capsule_role.profile_reviewed',
+        summary='Reviewed Capsule external ClusterRole equivalence without importing principals.',
         metadata_json=receipt,
     ))
     db.session.commit()

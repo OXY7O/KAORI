@@ -8,6 +8,7 @@ from app.kubernetes.tenant.access import (
     ACCESS_PROFILE_CATALOG, capsule_cluster_role_manifest, get_access_profile,
 )
 from app.kubernetes.tenant.external_access_profile_equivalence import (
+    _require_committed_capsule_binding,
     classify_external_role_profile,
 )
 
@@ -66,3 +67,48 @@ def test_role_equality_is_order_independent_but_remains_exact():
     result = classify_external_role_profile(role)
     assert result['equivalent_profile'] == 'operator'
     assert result['import_authorized'] is False
+
+
+def test_capsule_profile_review_accepts_single_foreign_source_binding_only():
+    from datetime import UTC, datetime
+
+    tenant = type('TenantRef', (), {'id': 'tenant-a', 'cluster_id': 'cluster-a'})()
+    observation = {
+        'provider': 'capsule', 'tenant_id': 'tenant-a', 'cluster_id': 'cluster-a',
+        'observed_at': datetime.now(UTC).isoformat(),
+        'bindings': [{
+            'source': 'rules.permissions.bindings', 'ownership': 'external',
+            'cluster_role_name': 'platform-reader',
+            'subjects': [{'kind': 'Group', 'name': 'platform-team', 'namespace': ''}],
+        }],
+    }
+    result = _require_committed_capsule_binding(
+        observation, tenant=tenant, binding_index=0, now=datetime.now(UTC)
+    )
+    assert result['cluster_role_name'] == 'platform-reader'
+
+
+@pytest.mark.parametrize('bad', [
+    lambda rows: rows[0].update(ownership='kaori'),
+    lambda rows: rows[0].update(cluster_role_name=''),
+    lambda rows: rows[0].update(subjects=[]),
+    lambda rows: rows.append(deepcopy(rows[0])),
+])
+def test_capsule_profile_review_fails_on_managed_or_ambiguous_binding(bad):
+    from datetime import UTC, datetime
+
+    tenant = type('TenantRef', (), {'id': 'tenant-a', 'cluster_id': 'cluster-a'})()
+    rows = [{
+        'source': 'additionalRoleBindings', 'ownership': 'external',
+        'cluster_role_name': 'reader',
+        'subjects': [{'kind': 'User', 'name': 'operator', 'namespace': ''}],
+    }]
+    bad(rows)
+    observation = {
+        'provider': 'capsule', 'tenant_id': 'tenant-a', 'cluster_id': 'cluster-a',
+        'observed_at': datetime.now(UTC).isoformat(), 'bindings': rows,
+    }
+    with pytest.raises(ValueError):
+        _require_committed_capsule_binding(
+            observation, tenant=tenant, binding_index=0, now=datetime.now(UTC)
+        )
