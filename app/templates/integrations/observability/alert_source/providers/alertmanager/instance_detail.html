@@ -30,9 +30,9 @@
                         <h1 class="{{ page_hero.title_classes() }}">{{ instance.name }}</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">Manage connection, validation, runtime health, and scope resolution.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label('shield-check', readiness|replace('_', ' ') |title) }}
+                            {{ page_hero.meta_label('shield-check', readiness|replace('_', ' ') |title, value_id='alertmanager-hero-readiness') }}
                             {{ page_hero.meta_label('link-2', (bindings|length|string) ~ ' Bindings', value_id='alertmanager-hero-binding-count') }}
-                            {{ page_hero.meta_label('layers-3', (capability_rows|selectattr('available') |list|length|string) ~ ' Validated Capabilities') }}
+                            {{ page_hero.meta_label('layers-3', (capability_rows|selectattr('available') |list|length|string) ~ ' Validated Capabilities', value_id='alertmanager-hero-capabilities') }}
                         </div>
                     {% endcall %}
                 </div>
@@ -48,7 +48,7 @@
                 capability_rows|selectattr("available")|list|length,
                 "Provider-neutral core capabilities",
                 url_for("integrations.alertmanager")
-                ) }}
+                , posture_key='alertmanager') }}
             </div>
         </section>
         <section id="alertmanager-detail-tabs"
