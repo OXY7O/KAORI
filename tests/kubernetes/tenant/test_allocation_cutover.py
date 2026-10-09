@@ -112,6 +112,7 @@ class _FakeCoreApi:
         return SimpleNamespace(
             metadata=SimpleNamespace(
                 labels=labels,
+                uid='namespace-uid-1',
                 resource_version='1',
             )
         )
@@ -165,6 +166,7 @@ def _reconcile_record():
         },
         cluster_id=7,
         namespace='api-prod',
+        provider_reference='namespace-uid-1',
         effective_hash='before-hash',
         desired_hash=None,
         provisioning_status='ready',
@@ -207,6 +209,52 @@ def _install_reconcile_fakes(monkeypatch, observations):
         lambda api, namespace: next(observed),
     )
     return api
+
+
+def test_native_takeover_rejects_namespace_uid_replacement_before_provider_patch():
+    api = _FakeCoreApi()
+    record = _reconcile_record()
+    record.provider_reference = 'previous-namespace-uid'
+
+    with pytest.raises(ValueError, match='UID differs from committed'):
+        allocation_cutover._mutate_namespace_ownership(api, record, profile=_profile())
+
+    assert api.patched_namespaces == []
+
+
+def test_native_takeover_requires_provider_resource_version_before_patch():
+    api = _FakeCoreApi()
+    original_read = api.read_namespace
+
+    def missing_resource_version(name):
+        resource = original_read(name)
+        resource.metadata.resource_version = None
+        return resource
+
+    api.read_namespace = missing_resource_version
+    with pytest.raises(ValueError, match='resourceVersion is unavailable'):
+        allocation_cutover._mutate_namespace_ownership(
+            api, _reconcile_record(), profile=_profile()
+        )
+    assert api.patched_namespaces == []
+
+
+def test_native_takeover_rejects_namespace_replacement_on_readback():
+    api = _FakeCoreApi()
+    original_read = api.read_namespace
+
+    def replaced_after_patch(name):
+        resource = original_read(name)
+        if api.patched_namespaces:
+            resource.metadata.uid = 'recreated-namespace-uid'
+        return resource
+
+    api.read_namespace = replaced_after_patch
+    with pytest.raises(ValueError, match='changed during ownership read-back'):
+        allocation_cutover._mutate_namespace_ownership(
+            api, _reconcile_record(), profile=_profile()
+        )
+    assert len(api.patched_namespaces) == 1
 
 
 def test_verified_native_cutover_transfers_namespace_and_allocation_control_to_kaori(monkeypatch):
