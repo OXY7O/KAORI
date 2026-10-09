@@ -23,6 +23,8 @@ Native/Capsule provider (authoritative)
      -> observation-only + zero active dependencies
         -> explicit operator confirmation -> provider-preserving Released -> re-discovery / Re-adopt
      -> KAORI-mutated allocation / access
+        -> if Namespace mutation provenance=true and provider inventory is
+           verified, a handoff *plan* may be prepared; unknown provenance blocks
         -> fingerprint-bound handoff plan -> independent KAORI approval
         -> Native dry-run preview -> external successor reference (unverified)
         -> external operator acts in authoritative provider
@@ -54,11 +56,18 @@ authoritative for native RoleBindings and authenticated principals.
 1. **Authority:** wrong cluster, different Capsule Tenant UID, reused Native
    Namespace UID, terminating resource, stale resourceVersion, wrong
    ownerReference generation, duplicate governance owner, Released-history
-   conflict. Every invalid attach must leave provider and KAORI state unchanged.
+   conflict. Capsule Discovery and Adoption Preflight use the same immutable
+   Capsule owner UID check as final Attach Submit. Every invalid attach must
+   leave provider and KAORI state unchanged.
 2. **Non-destructive Release:** active credentials, Access Grants, memberships,
-   managed profiles, managed resources and policies must block. Verify provider
-   Namespace/Capsule CR exists with exact UID after Released. Re-adoption must
-   allocate a new generation and retain historical committed evidence.
+   managed profiles, managed resources and policies must block. All active
+   Namespace records require explicitly `provider_mutation_performed=false`
+   before observation-only Release. If `true`, an independently reviewed handoff
+   *plan* may be prepared from exact provider evidence but must never finalize
+   Released; missing/unknown provenance blocks even handoff planning.
+   Verify provider Namespace/Capsule CR exists with exact UID after Released.
+   Re-adoption must allocate a new generation and retain historical committed
+   evidence.
 3. **Native handoff:** requestor cannot approve their own plan; expired plan,
    fingerprint mismatch, inconsistent dry-run or mutated spec/labels/
    ownerReferences/finalizers must block. External provider read-back can only
