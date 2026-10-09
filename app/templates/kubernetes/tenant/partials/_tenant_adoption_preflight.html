@@ -36,9 +36,11 @@
                     </span>
                     <div class="min-w-0">
                         <h2 id="tenant-adoption-preflight-title"
-                            class="text-lg font-semibold text-content-primary">Adoption Preflight</h2>
+                            class="text-lg font-semibold text-content-primary">
+                            {{ 'Capsule Namespace Attachment Preflight' if tenant_adoption_attachment_only else 'Adoption Preflight' }}
+                        </h2>
                         <p class="mt-1 text-sm leading-6 text-content-secondary">
-                            Review authority, adoption effect, and observed allocation before registering this candidate.
+                            Review provider authority, committed governance, and actual provider effects before confirming.
                         </p>
                     </div>
                 </div>
@@ -86,10 +88,15 @@
                                     {{ table_label.status_label(row.resource_kind, 'info') }}
                                 </div>
                                 <p class="mt-1 text-sm text-content-secondary">
-                                    Adopt as <span class="font-semibold text-content-primary">Managed</span>
-                                    <span class="text-content-muted">·</span>
-                                    {{ 'Capsule' if row.provider_key == 'capsule' else 'Native Kubernetes' }} remains execution authority.
-                                    KAORI imports current provider values as the initial contract. Controls with admitted write authority use equivalent write/read-back; controller-owned constraints are mirrored without false drift.
+                                    {% if tenant_adoption_attachment_only %}
+                                        Attach as <span class="font-semibold text-content-primary">Adopted / Provider Mirrored</span>.
+                                        Capsule remains authoritative. This attachment commits evidence without provider writes or RBAC expansion.
+                                    {% else %}
+                                        Adopt as <span class="font-semibold text-content-primary">Adopted / Managed</span>.
+                                        {{ 'Capsule' if row.provider_key == 'capsule' else 'Native Kubernetes' }} remains execution authority.
+                                        KAORI applies admitted allocation ownership controls with provider write/read-back while preserving
+                                        equivalent effective values; controller-owned dimensions remain provider-mirrored.
+                                    {% endif %}
                                 </p>
                             </div>
                         </div>
@@ -109,7 +116,9 @@
                             <div class="min-w-0 bg-surface-card px-4 py-3">
                                 <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Allocation</dt>
                                 <dd class="mt-1.5">
-                                    {% if allocation.control_state == 'observed' %}
+                                    {% if tenant_adoption_attachment_only %}
+                                        {{ table_label.special_label('Provider Mirrored', 'info', 'refresh-cw') }}
+                                    {% elif allocation.control_state == 'observed' %}
                                         {{ table_label.special_label('Managed after Adopt', 'normal', 'shield-check') }}
                                     {% else %}
                                         {{ table_label.special_label('Control Unavailable', 'warning', 'shield-alert') }}
@@ -139,7 +148,14 @@
                             </span>
                             <div class="min-w-0">
                                 <p class="text-sm font-semibold text-content-primary">Provider remains authoritative</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Kubernetes/Capsule resources and external constraints are unchanged.</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">
+                                    {% if tenant_adoption_attachment_only %}
+                                        Capsule resources and external constraints stay unchanged; KAORI commits attachment evidence only.
+                                    {% else %}
+                                        Kubernetes/Capsule remains the execution authority. Admitted allocation governance writes are verified
+                                        against provider read-back; foreign constraints are preserved.
+                                    {% endif %}
+                                </p>
                             </div>
                         </div>
                         <div class="flex items-start gap-3 px-4 py-3.5">
@@ -150,11 +166,16 @@
                             <div class="min-w-0">
                                 <p class="text-sm font-semibold text-content-primary">After adoption</p>
                                 <p class="mt-1 text-xs leading-5 text-content-muted">
-                                    Ownership → <span class="font-semibold text-content-primary">Adopted / Managed</span>.
-                                    {% if allocation.control_state == 'observed' %}
-                                        Managed takeover runs during adoption with provider read-back verification.
+                                    {% if tenant_adoption_attachment_only %}
+                                        Ownership → <span class="font-semibold text-content-primary">Adopted / Provider Mirrored</span>.
+                                        Only KAORI state is committed; Capsule allocation and external access stay provider-owned.
                                     {% else %}
-                                        Resolve blocking evidence before managed takeover.
+                                        Ownership → <span class="font-semibold text-content-primary">Adopted / Managed</span>.
+                                        {% if allocation.control_state == 'observed' %}
+                                            Managed cutover performs admitted provider writes and verifies equivalent read-back.
+                                        {% else %}
+                                            Resolve blocking authority evidence before attempting managed cutover.
+                                        {% endif %}
                                     {% endif %}
                                 </p>
                             </div>
@@ -568,7 +589,7 @@
                                 <p class="text-xs font-medium text-content-muted">Adoption Result</p>
                                 <p class="mt-1 text-sm font-semibold text-content-primary">Adopted / Observed</p>
                                 <p class="mt-1 text-xs leading-5 text-content-muted">
-                                    {{ 'Existing Namespace is referenced; no provider mutation.' if row.provider_key == 'native_kubernetes' else 'Existing Capsule Tenant is registered; Capsule remains authoritative.' }}
+                                    {{ 'Native allocation ownership is written and provider read-back verified.' if row.provider_key == 'native_kubernetes' else 'Capsule allocation governance uses admitted provider writes; generated Namespace constraints remain mirrored.' }}
                                 </p>
                             </div>
                         </div>
@@ -621,7 +642,7 @@
                         <div>
                             <dt class="text-xs text-content-muted">Provider mutation during adoption</dt>
                             <dd class="mt-1 text-xs font-medium text-content-secondary">
-                                No
+                                {{ 'No — committed KAORI attachment only' if tenant_adoption_attachment_only else 'Yes — admitted provider allocation cutover and read-back' }}
                             </dd>
                         </div>
                     </dl>
@@ -633,17 +654,23 @@
                     </span>
                     <p class="text-xs leading-5">
                         <span class="font-semibold">Human confirmation.</span>
-                        Adoption registers <span class="font-semibold">Adopted / Observed</span> evidence only.
-                        Kubernetes/Capsule resources remain unchanged.
+                        {% if tenant_adoption_attachment_only %}
+                            Capsule Namespace attachment commits <span class="font-semibold">Adopted / Provider Mirrored</span>
+                            evidence only. Provider objects and RBAC remain unchanged.
+                        {% else %}
+                            Adoption commits <span class="font-semibold">Adopted / Managed</span> governance and performs
+                            admitted provider allocation writes, guarded by UID/resourceVersion and provider read-back.
+                            This is not an observation-only action.
+                        {% endif %}
                     </p>
                 </div>
             </div>
             <footer class="sticky bottom-0 flex flex-col gap-3 border-t border-outline-subtle bg-surface-card px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                 <p class="text-xs leading-5 text-content-muted">
                     <span class="font-semibold text-content-primary">
-                        {{ 'Attach to the existing Capsule Tenant; keep provider constraints mirrored.' if tenant_adoption_attachment_only else 'Adopt managed authority; keep provider constraints mirrored.' }}
+                        {{ 'Attach to the existing Capsule Tenant; keep provider constraints mirrored.' if tenant_adoption_attachment_only else 'Adopt with governed provider cutover and equivalent allocation values.' }}
                     </span>
-                    Result: Adopted / Observed.
+                    Result: {{ 'Adopted / Provider Mirrored' if tenant_adoption_attachment_only else 'Adopted / Managed' }}.
                 </p>
                 <div class="flex flex-col-reverse gap-2 sm:flex-row">
                     <button type="button"
