@@ -103,8 +103,10 @@
 
         let providerMessage =
             'Select a Membership to resolve provider authority. KAORI validates Tenant and scope before commit.'
-        if (tenantId && providerKey && providerKey !== 'native_kubernetes') {
-            providerMessage = `${tenantName} uses Capsule authority. Access Grant reconciliation is not admitted yet, so provider mutation remains blocked.`
+        if (tenantId && providerKey === 'capsule') {
+            providerMessage =
+                `${tenantName} uses Capsule authority. Apply checks live RBAC capability, exact ClusterRole,` +
+                ' namespace ownership and effective access. Unsupported mutation remains blocked.'
         } else if (tenantId && scopeValue === 'namespace' && namespaceCount === 0) {
             providerMessage = `No governed Namespace exists in ${tenantName}. Provision a Namespace before applying Namespace-scoped access.`
         } else if (tenantId && scopeValue === 'environment' && environmentCount === 0) {
@@ -136,6 +138,8 @@
         const providerKey = String(membershipOption?.dataset.providerKey || '')
             .trim()
             .toLowerCase()
+        const providerState = String(membershipOption?.dataset.providerState || '')
+        const reconciliationAuthority = String(membershipOption?.dataset.reconciliationAuthority || '')
         const principalType = membershipOption?.dataset.principalType || ''
         const scopeValue = scope.value
 
@@ -160,7 +164,11 @@
             if (!showNamespace) clearSelect(namespace)
         }
 
-        const providerSupported = !providerKey || providerKey === 'native_kubernetes'
+        const providerSupported = !providerKey || (
+            providerKey === reconciliationAuthority && (
+                providerKey === 'native_kubernetes' || (providerKey === 'capsule' && providerState === 'capsule')
+            )
+        )
         const namespaceReady = scopeValue !== 'namespace' || namespaceCount > 0
         const environmentReady = scopeValue !== 'environment' || environmentCount > 0
         if (providerWarning instanceof HTMLElement) providerWarning.hidden = providerSupported

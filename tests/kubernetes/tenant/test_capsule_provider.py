@@ -208,3 +208,48 @@ def test_capsule_tenant_resource_quota_capability_is_version_specific() -> None:
     )
 
     assert snapshot.capabilities['tenant_resource_quotas'] is TenantCapabilityStatus.AVAILABLE
+
+
+def test_capsule_access_grants_require_served_v1beta2_schema_fields() -> None:
+    tenant = _crd('tenants.capsule.clastix.io', tenant_quota_schema=False)
+    tenant['spec']['versions'][0]['schema'] = {
+        'openAPIV3Schema': {
+            'properties': {
+                'spec': {
+                    'properties': {
+                        'additionalRoleBindings': {'type': 'array', 'items': {'type': 'object'}},
+                        'rules': {
+                            'type': 'array',
+                            'items': {
+                                'type': 'object',
+                                'properties': {
+                                    'namespaceSelector': {'type': 'object'},
+                                    'permissions': {
+                                        'type': 'object',
+                                        'properties': {
+                                            'bindings': {'type': 'array', 'items': {'type': 'object'}},
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    }
+    snapshot = discover_capsule(_ApiClient([tenant]))
+    assert snapshot.capabilities['access_grants_tenant'] is TenantCapabilityStatus.AVAILABLE
+    assert snapshot.capabilities['access_grants_scoped'] is TenantCapabilityStatus.AVAILABLE
+
+    tenant['spec']['versions'][0]['schema']['openAPIV3Schema']['properties']['spec']['properties'][
+        'rules'
+    ]['items']['properties']['permissions']['properties'].pop('bindings')
+    missing_scoped = discover_capsule(_ApiClient([tenant]))
+    assert missing_scoped.capabilities['access_grants_tenant'] is TenantCapabilityStatus.AVAILABLE
+    assert missing_scoped.capabilities['access_grants_scoped'] is TenantCapabilityStatus.UNAVAILABLE
+
+    tenant['spec']['versions'][0]['name'] = 'v1beta1'
+    wrong_version = discover_capsule(_ApiClient([tenant]))
+    assert wrong_version.capabilities['access_grants_tenant'] is TenantCapabilityStatus.UNAVAILABLE
+    assert wrong_version.capabilities['access_grants_scoped'] is TenantCapabilityStatus.UNAVAILABLE

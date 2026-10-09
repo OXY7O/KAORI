@@ -312,9 +312,12 @@ def create_access_grant_route():
     else:
         _record(
             event_type='kubernetes_tenant_access_grant_created',
-            status='success',
-            title='Tenant Access Granted',
-            message=f'{grant.membership.subject_name} received {grant.access_profile.replace("_", " ").title()} access.',
+            status='success' if grant.reconciliation_status == 'ready' else 'warning',
+            title='Tenant Access Granted' if grant.reconciliation_status == 'ready' else 'Grant Pending Verification',
+            message=(
+                f'{grant.membership.subject_name} received {grant.access_profile.replace("_", " ").title()} access.'
+                if grant.reconciliation_status == 'ready' else 'Grant intent committed; effective provider access is not verified.'
+            ),
             detail=grant.reconciliation_message,
             metadata={'grant_id': grant.public_id, 'tenant_id': grant.tenant_id, 'operation': 'create_access_grant'},
         )
@@ -370,8 +373,8 @@ def reconcile_access_grant_route(grant_id: int):
     else:
         _record(
             event_type='kubernetes_tenant_access_grant_reconciled',
-            status='success',
-            title='Tenant Access Reconciled',
+            status='success' if grant.reconciliation_status in {'ready', 'revoked'} else 'warning',
+            title='Tenant Access Reconciled' if grant.reconciliation_status in {'ready', 'revoked'} else 'Reconciliation Needs Attention',
             message=grant.reconciliation_message or 'Kubernetes RBAC matches committed Tenant access intent.',
             metadata={'grant_id': grant.public_id, 'operation': 'reconcile_access_grant'},
         )
@@ -398,9 +401,9 @@ def revoke_access_grant_route(grant_id: int):
     else:
         _record(
             event_type='kubernetes_tenant_access_grant_revoked',
-            status='success',
-            title='Tenant Access Revoked',
-            message='Effective Kubernetes RoleBinding access was removed.',
+            status='success' if grant.reconciliation_status == 'revoked' else 'warning',
+            title='Tenant Access Revoked' if grant.reconciliation_status == 'revoked' else 'Revoke Pending Verification',
+            message=grant.reconciliation_message or 'Effective Kubernetes RoleBinding access requires verification.',
             metadata={'grant_id': grant.public_id, 'tenant_id': grant.tenant_id, 'operation': 'revoke_access_grant'},
         )
     return _tenant_section_redirect('access-grants')

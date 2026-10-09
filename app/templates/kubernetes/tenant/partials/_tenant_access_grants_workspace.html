@@ -67,6 +67,8 @@
                                         data-tenant-id="{{ membership.tenant_id }}"
                                         data-tenant-name="{{ membership.tenant.name }}"
                                         data-provider-key="{{ membership.tenant.provider_key }}"
+                                        data-provider-state="{{ membership.tenant.provider_state }}"
+                                        data-reconciliation-authority="{{ membership.tenant.reconciliation_authority }}"
                                         data-principal-type="{{ membership.principal_type }}"
                                         data-subject-name="{{ membership.subject_name }}">
                                     {{ membership.tenant.name }} · {{ membership.subject_name }} · {{ membership.principal_type|title }}
@@ -162,7 +164,7 @@
                            class="mt-0.5 h-4 w-4 shrink-0"
                            aria-hidden="true"></i>
                         <p class="text-xs leading-5">
-                            Capsule Access Grant reconciliation is not admitted yet. KAORI will not bypass Capsule authority with Native RBAC mutation.
+                            Capsule Grant requires healthy authority, an admitted RBAC capability, an exact pre-approved ClusterRole, and verified Namespace ownership. Unsupported operations fail closed.
                         </p>
                     </div>
                 </div>
