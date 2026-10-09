@@ -166,3 +166,37 @@ def test_created_role_has_only_canonical_permissions_and_never_clusterrolebindin
             rule.verbs == list(expected.verbs)
             for rule, expected in zip(body.rules, profile.rules, strict=True)
         )
+
+
+def test_existing_all_exact_roles_require_no_mutation(monkeypatch):
+    profiles = bootstrap._catalog()
+    api = FakeRBAC({
+        bootstrap.capsule_cluster_role_name(profile): _role(profile)
+        for profile in profiles
+    })
+    monkeypatch.setattr(bootstrap, 'latest_capsule_role_bootstrap_evidence', lambda _: _evidence())
+    monkeypatch.setattr(bootstrap, '_read_roles', lambda _: (
+        api, [bootstrap._role_status(api, profile) for profile in profiles]
+    ))
+    monkeypatch.setattr(bootstrap, '_audit', lambda cluster, actor, action, status, data: {
+        'status': status, **data
+    })
+
+    result = bootstrap.bootstrap_missing_capsule_roles('cluster-a', 42, approved=True)
+    assert result['status'] == 'ready'
+    assert result['ready'] == 4
+    assert result['created'] == []
+    assert api.calls == []
+
+
+def test_bootstrap_rejects_stale_preflight_without_kubernetes_mutation(monkeypatch):
+    monkeypatch.setattr(bootstrap, 'latest_capsule_role_bootstrap_evidence', lambda _: {
+        'operation': 'check', 'status': 'missing', 'checked_at': '2020-01-01T00:00:00+00:00'
+    })
+    monkeypatch.setattr(bootstrap, '_audit', lambda cluster, actor, action, status, data: {
+        'status': status, **data
+    })
+    result = bootstrap.bootstrap_missing_capsule_roles('cluster-a', 42, approved=True)
+    assert result['status'] == 'failed'
+    assert result['created'] == []
+    assert 'stale' in result['reason']
