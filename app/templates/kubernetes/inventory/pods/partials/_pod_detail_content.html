@@ -141,21 +141,21 @@
                 {% else %}
                     <div class="p-4">{{ detail.empty_evidence('Volume Evidence Not Reported', 'Pod specification evidence was unavailable, so volume absence cannot be established.', 'shield-question') }}</div>
                 {% endif %}
-                <div class="grid gap-4 border-t border-outline-subtle p-4 lg:grid-cols-2">
+                <div class="border-t border-outline-subtle" aria-label="Pod Configuration and Storage References">
                     {{ related_collection.inventory_render('Configuration References',
                                         'ConfigMap and Secret names referenced by Pod configuration. Secret content is never displayed.',
                                         pod.configuration_references,
                                         pod.configuration_references|length,
                                         'file-key-2',
                                         'No Configuration References' if pod.reference_evidence_reported else 'Configuration Reference Evidence Not Reported',
-                                        'No ConfigMap or Secret reference is represented in this Pod specification.' if pod.reference_evidence_reported else 'Pod specification evidence was unavailable, so KAORI cannot determine whether configuration references exist.') }}
+                                        'No ConfigMap or Secret reference is represented in this Pod specification.' if pod.reference_evidence_reported else 'Pod specification evidence was unavailable, so KAORI cannot determine whether configuration references exist.', embedded=true) }}
                     {{ related_collection.inventory_render('Storage References',
                                         'PersistentVolumeClaims referenced by Pod volumes.',
                                         pod.storage_references,
                                         pod.storage_references|length,
                                         'database-zap',
                                         'No Storage References' if pod.reference_evidence_reported else 'Storage Reference Evidence Not Reported',
-                                        'No PersistentVolumeClaim reference is represented in this Pod specification.' if pod.reference_evidence_reported else 'Pod specification evidence was unavailable, so KAORI cannot determine whether storage references exist.') }}
+                                        'No PersistentVolumeClaim reference is represented in this Pod specification.' if pod.reference_evidence_reported else 'Pod specification evidence was unavailable, so KAORI cannot determine whether storage references exist.', embedded=true) }}
                 </div>
             </section>
             <div data-kaori-unified-resource-sheet
