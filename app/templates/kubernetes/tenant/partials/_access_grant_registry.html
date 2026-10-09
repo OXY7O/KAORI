@@ -221,17 +221,15 @@
             </tbody>
         </table>
     </div>
-    {% if access_grant_pagination.total_items > 0 %}
-        {{ registry_ui.footer('tenant.tenants',
-                registry_id,
-                loading_id,
-                access_grant_pagination,
-                query_params,
-                access_grant_pagination.allowed_per_page,
-                resource_label='Access Grants',
-                rows_aria_label='Access Grant rows per page',
-                control_name='tenant-access-grants',
-                page_param='grant_page',
-                per_page_param='grant_per_page') }}
-    {% endif %}
+    {{ registry_ui.footer('tenant.tenants',
+            registry_id,
+            loading_id,
+            access_grant_pagination,
+            query_params,
+            access_grant_pagination.allowed_per_page,
+            resource_label='Access Grants',
+            rows_aria_label='Access Grant rows per page',
+            control_name='tenant-access-grants',
+            page_param='grant_page',
+            per_page_param='grant_per_page') }}
 </section>
