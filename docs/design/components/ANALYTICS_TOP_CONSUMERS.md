@@ -105,7 +105,7 @@ CPU, memory, and Pod denominators use Ready-worker allocatable capacity. PVC cap
 1. Hero with actual page posture, highest valid pressure, actionable count, and scope metadata.
 2. Controls and readiness with Cluster and Namespace Snapshot only.
 3. Top Consumer Summary with structured identities.
-4. Canonical tabs: Consumer Rankings, Consumer Records, Recommendations.
+4. Single canonical content tabs: Consumer Rankings, Consumer Records, Recommendations; Consumer Rankings provides subordinate resource overview selection cards.
 5. Bright ranked and record evidence.
 6. Darker interpretation and recommended-action regions.
 
@@ -221,7 +221,7 @@ The Top Consumers report uses `TopConsumersSelection` and the same service/domai
 
 The top-level **Consumer Rankings / Consumer Records / Recommendations** view uses the existing `kubernetes/analytics/components/_analysis_workspace.html::tabbed` presentation owner with its **attached default composition** (no `detached=true`). Header, Content Tabs, and selected panel share one canonical Analytics workspace shell, matching Capacity, Storage, Workload, Utilization, Alerts, and Forecast. The parent workspace owns the panel padding and border; Consumer Rankings and Recommendations no longer introduce another full-width card around their entire tab content. Nested ranking evidence and Consumer Records retain their own bounded evidence cards inside the workspace.
 
-The nested CPU / Memory / Pods / PVC control remains subordinate Content Tabs within the Rankings panel, driven by the same `analytics/controls.js` state owner. Tab and panel IDs, query selection, native `hidden` fallback, and HTMX Consumer Records refresh contracts are unchanged. This is a presentation-only correction, with no dataset, ranking, pagination, provider, or permission changes.
+The resource selection remains subordinate to Consumer Rankings and continues to use the shared `analytics/controls.js` state owner; its visual presentation is reviewed separately below. Tab and panel IDs, query selection, native `hidden` fallback, and HTMX Consumer Records refresh contracts are unchanged. This is a presentation-only correction, with no dataset, ranking, pagination, provider, or permission changes.
 
 Review target: `kaori/review/staging-uat` in the devcontainer. Staging admission and CI/CD gates remain held until separately authorized.
 
@@ -231,12 +231,23 @@ Review target: `kaori/review/staging-uat` in the devcontainer. Staging admission
 The previous `detached=true` layout was rejected during visual review: it placed the workspace header/tabs and Consumer Rankings in separate floating cards, contrary to the reference Analytics page family. The attached composition is the accepted implementation target for the next local review, **not** human-accepted or UAT-approved yet. No shared tab primitive changes are needed.
 
 
-### Consumer Rankings visual refinement (#1020)
+### Historical visual refinement (#1020, superseded)
 
-The resource selector continues using existing **Content Tabs (Style 4)** with one Analytics tab controller. Order is **CPU → Memory → Pods → PVC**. Tabs carry no synthetic counts or invented capacity. The selected resource shows a single attached evidence surface with a short contextual description and status, a two-column scope/denominator strip, then an aligned ranking collection. The redundant resource-sized nested card and duplicate visible resource heading are removed (a screen-reader heading remains).
+The earlier compact resource Content Tabs and five-column grid were superseded after devcontainer feedback identified two competing tab bars and excessive row-level configuration text. No new global design system standard was approved by that iteration.
 
-Ranking columns distinguish **Consumer Identity**, **Consumption**, **Contribution to Scope**, **Status / Configuration**, and **Pressure**. Configuration evidence is shown only for CPU and Memory (request and limit states). Pod and PVC rows instead disclose whether the pressure denominator is usable (`pressure_available`); their risk badge remains operational posture rather than an invented request/limit state. Pressure uses the original explicit denominator/basis and remains **N/A** when not observed. Contribution alone uses Violet progress. Status and risk use canonical semantic labels. Long identity values truncate with full title text preserved; rankings remain limited to five per resource.
+### Resource Lens redesign candidate (#1020, October 2026)
 
-Only the CPU presentation formatter gains adaptive precision for small nonzero values below 0.01 cores; it does not alter Prometheus queries, stored numeric values, contribution, sort, pressure, or risk calculation. This is a UI review candidate, not a new global formatting standard. If accepted as a cross-domain rule, propose that separately for documentation approval.
+The page retains **one visible Content Tabs group**, owned by `analytics_workspace.tabbed()`: Consumer Rankings / Consumer Records / Recommendations. Within Consumer Rankings, four **resource overview selection cards** (CPU, Memory, Pods, PVC) show committed selected-scope consumption, authoritative capacity evidence, and coverage state. They intentionally do not render as a second tab strip. These cards are local resource selection controls, not a newly registered global tab style.
 
-All changes remain within issue #1020 and the devcontainer review path. No CI/CD admission or staging deployment is authorized.
+The cards reuse the existing Analytics tab controller and accessible tab/panel semantics, rather than creating a second JavaScript/Alpine state owner. They preserve `consumer-ranking-resource` identity, native `hidden` fallback, stable resource-specific panels, keyboard arrow navigation, session restoration, and `data-analytics-update-query="false"` so the outer `tab=rankings|records|recommendations` URL remains unchanged.
+
+The selected resource's **leaderboard** uses an independent compact evidence surface:
+- a short named resource header and the top-five record count;
+- the columns **Consumer**, **Observed Usage**, **Scope Share**, and **Operational Assessment**;
+- a single violet bar for contribution, with a separate semantic risk badge and denominator-qualified pressure;
+- truncated workload identities with full `title` values;
+- full request/limit or denominator evidence retained in **Consumer Records** (also exposed to assistive technology in the shortlist), avoiding repeated long labels in every leaderboard row.
+
+Scope totals/capacity are presented **once** on the resource cards, not duplicated inside each ranking panel. Missing evidence stays **N/A** and does not imply healthy/zero. Pod resource density, PVC percentage pressure, operational priority, and committed snapshot calculations retain their original semantics. The feature is an explicitly scoped review candidate, **not** approval to add another general-purpose tab variant.
+
+Review target: `kaori/review/staging-uat` in devcontainer. Tests and human acceptance are still required; no CI/CD, staging PR, or deployment is authorized.
