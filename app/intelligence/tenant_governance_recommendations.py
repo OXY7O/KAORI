@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 from datetime import UTC, datetime
 from typing import Any
 
@@ -199,6 +200,145 @@ def _access_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
                 title='Active Access Grant has no active membership',
                 summary='The Access Grant remains active while its canonical membership is not active.',
                 evidence=evidence,
+            )
+    return findings
+
+
+_ACCESS_DECLARATION_TARGETS = frozenset({
+    'kubernetes_tenant_access_drift_evidence',
+    'kubernetes_tenant_native_access_drift_evidence',
+})
+_ACCESS_DECLARATION_GRANT_CODES = frozenset({
+    'revoked_grant_still_declared',
+    'active_grant_missing_capsule_declaration',
+    'active_grant_missing_native_declaration',
+    'native_grant_scope_mismatch',
+    'native_grant_role_reference_mismatch',
+})
+_ACCESS_DECLARATION_MAX_AGE_SECONDS = 3600
+
+
+def access_declaration_rule_key(code: str) -> str | None:
+    """Map only proven Grant declaration mismatches to the existing rule.
+
+    Foreign subjects / unverified ownership cannot be labeled as an
+    'unmanaged principal' without Kubernetes audit identity correlation.
+    """
+    if str(code or '') in _ACCESS_DECLARATION_GRANT_CODES:
+        return 'kubernetes.tenant.access.grant_drift'
+    return None
+
+
+def _access_declaration_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+    """Project *latest* committed Native/Capsule declaration drift to Intelligence."""
+    if 'kubernetes.tenant.access.grant_drift' not in rules:
+        return []
+    events = (
+        AuditEvent.query.filter(AuditEvent.target_type.in_(_ACCESS_DECLARATION_TARGETS))
+        .order_by(AuditEvent.id.desc()).limit(300).all()
+    )
+    current_tenants = {
+        tenant.id: tenant for tenant in Tenant.query.filter_by(lifecycle_status='ready').all()
+    }
+    seen: set[tuple[str, str]] = set()
+    now = datetime.now(UTC)
+    findings: list[dict[str, Any]] = []
+    for event in events:
+        metadata = event.metadata_json or {}
+        tenant_id = str(metadata.get('tenant_id') or '')
+        tenant = current_tenants.get(tenant_id)
+        if tenant is None:
+            continue
+        provider = (
+            'native_kubernetes'
+            if event.target_type == 'kubernetes_tenant_native_access_drift_evidence'
+            else 'capsule'
+        )
+        if tenant.provider_key != provider:
+            continue
+        key = (tenant_id, provider)
+        if key in seen:
+            continue
+        # The latest Tenant/provider evidence wins even if its cluster
+        # correlation is invalid. Never resurrect an older 'valid' finding.
+        seen.add(key)
+        if tenant.cluster_id != metadata.get('cluster_id'):
+            continue
+        if str(metadata.get('status') or '') != 'review_required':
+            continue
+        if metadata.get('effective_rbac_verified') is not False:
+            continue
+        try:
+            evaluated = datetime.fromisoformat(str(metadata.get('evaluated_at') or ''))
+        except ValueError:
+            continue
+        if evaluated.tzinfo is None:
+            continue
+        age = (now - evaluated.astimezone(UTC)).total_seconds()
+        if age < 0 or age > _ACCESS_DECLARATION_MAX_AGE_SECONDS:
+            continue
+        source_observed_at = (
+            metadata.get('source_observed_at')
+            or metadata.get('observation_checked_at')
+        )
+        try:
+            source_observed = datetime.fromisoformat(str(source_observed_at or ''))
+        except ValueError:
+            continue
+        if source_observed.tzinfo is None:
+            continue
+        source_observed = source_observed.astimezone(UTC)
+        source_age = (now - source_observed).total_seconds()
+        if (
+            source_age < 0
+            or source_age > _ACCESS_DECLARATION_MAX_AGE_SECONDS
+            or source_observed > evaluated.astimezone(UTC)
+        ):
+            continue
+
+        recorded = metadata.get('findings') or []
+        if not isinstance(recorded, list):
+            continue
+        for observed in recorded[:100]:
+            if not isinstance(observed, dict):
+                continue
+            code = str(observed.get('code') or '')
+            rule_key = access_declaration_rule_key(code)
+            if rule_key is None:
+                continue
+            subject = str(observed.get('subject') or '').strip()
+            if not subject:
+                continue
+            identity = f'{tenant_id}:{provider}:{code}:{subject}'
+            suffix = hashlib.sha256(identity.encode()).hexdigest()[:24]
+            source = {
+                'asset_key': tenant.cluster_id,
+                'cluster_id': tenant.cluster_id,
+                'tenant_id': tenant_id,
+                'provider': provider,
+                'declaration_code': code,
+                'subject': subject,
+                'source_event_id': event.id,
+                'source_observed_at': (
+                    metadata.get('source_observed_at')
+                    or metadata.get('observation_checked_at')
+                ),
+                'evaluated_at': evaluated.isoformat(),
+                'source_evidence_sha256': metadata.get('source_evidence_sha256'),
+                'effective_rbac_verified': False,
+                'provider_mutation_performed': False,
+                'affected_count': 1,
+            }
+            _append(
+                findings, rules, rule_key,
+                suffix=f'{tenant_id}:{provider}:{suffix}',
+                title=f'{tenant.name} Access Grant declaration requires review',
+                summary=(
+                    f'{provider.replace("_", " ").title()} committed RBAC declaration '
+                    f'differs from KAORI grant intent ({code.replace("_", " ")}). '
+                    'Effective permissions have not been independently verified.'
+                ),
+                evidence=source,
             )
     return findings
 
@@ -460,6 +600,7 @@ def build_tenant_governance_recommendation_findings(
         return [
             *_credential_findings(rules),
             *_access_findings(rules),
+            *_access_declaration_findings(rules),
             *_namespace_findings(rules),
             *_managed_resource_findings(rules),
             *_provider_findings(rules),
