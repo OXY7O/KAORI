@@ -69,6 +69,11 @@
         "panel": "dedicated",
         "clear": false,
         "showReuseMessage": false
+      },
+      "runOptions": {
+        "runOn": "folderOpen",
+        "instanceLimit": 1,
+        "instancePolicy": "silent"
       }
     },
     {
