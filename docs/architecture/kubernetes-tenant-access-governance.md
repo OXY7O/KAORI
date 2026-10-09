@@ -385,6 +385,30 @@ Read-only observation requires `tenant.manage` and CSRF. Provider read
 failure, UID replacement or unbounded evidence fails closed, without
 claiming an inventory is complete.
 
+### Native Access Drift declaration correlation (#999)
+
+After **Inspect Native RBAC** has committed a scoped, bounded namespaced
+RoleBinding inventory (#996), **Analyze Native Access Drift** compares that
+observation with KAORI's committed Access Grant declarations. It requires
+evidence less than one hour old and fails if any Access Grant changed after
+observation, rather than evaluating stale or contradictory state.
+
+Current findings distinguish foreign provider RoleBindings, unverified KAORI
+ownership markers, revoked grants still declared, missing active grant
+declarations, and the observed Namespace or RoleRef differing from a
+correlated KAORI grant's canonical scope/role. These are **declaration-level
+findings**, not independently verified effective permissions or proof that a
+foreign principal has/has not access. The existing Access Grant Inspect and
+Reconcile actions remain the only governed provider reconciliation path.
+Analysis only writes an AuditEvent with nonsecret evidence and does not
+perform Native or Capsule RBAC mutation.
+
+The resulting committed finding history is available in the existing Tenant
+Access Grants workspace. Longer-term alignment with the Intelligence Rule
+Catalog / Case lifecycle, human review of external IdP identities and
+cross-provider runtime audit evidence remains under #999 and #122; do not
+silently create a duplicate Tenant-only enforcement or alert engine.
+
 ### Existing-Tenant Namespace attachment (#983)
 
 In **Tenant → Discovery → Review Adoption**, a newly discovered Native
