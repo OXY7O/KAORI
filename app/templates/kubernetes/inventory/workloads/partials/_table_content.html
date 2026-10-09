@@ -3,7 +3,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/resource_detail_modal.html" as resource_detail_modal %}
 <div class="overflow-x-auto">
-    <table class="{{ table_ui.table_classes('min-w-[76rem]') }}">
+    <table class="{{ table_ui.table_classes('min-w-[76rem] !table-fixed') }}">
         <caption class="sr-only">Workload inventory records for {{ inventory.scope_label }}.</caption>
         <thead class="{{ table_ui.head_classes() }}">
             <tr>
