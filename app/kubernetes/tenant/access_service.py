@@ -223,8 +223,12 @@ def create_access_grant_committed(
             actor=actor,
             grant=grant,
             action='tenant_access_grant.created',
-            summary='Tenant Access Grant was committed and reconciled.',
-            outcome='success',
+            summary=(
+                'Tenant Access Grant was committed and verified.'
+                if grant.reconciliation_status == TenantAccessReconciliationStatus.READY.value
+                else 'Tenant Access Grant was committed; effective provider reconciliation is still pending.'
+            ),
+            outcome='success' if grant.reconciliation_status == TenantAccessReconciliationStatus.READY.value else 'warning',
         )
         db.session.commit()
         return grant
@@ -262,8 +266,12 @@ def revoke_access_grant_committed(*, grant_id: int, actor: User | None = None) -
             actor=actor,
             grant=grant,
             action='tenant_access_grant.revoked',
-            summary='Tenant Access Grant and dependent credential access were removed from Kubernetes.',
-            outcome='success',
+            summary=(
+                'Tenant Access Grant and dependent credential access were removed from Kubernetes.'
+                if grant.reconciliation_status == TenantAccessReconciliationStatus.REVOKED.value
+                else 'Tenant Access Grant is revoked in KAORI, but effective cleanup remains unverified.'
+            ),
+            outcome='success' if grant.reconciliation_status == TenantAccessReconciliationStatus.REVOKED.value else 'warning',
         )
         db.session.commit()
         return grant
@@ -694,12 +702,17 @@ def revoke_membership_committed(*, membership_id: int, actor: User | None = None
                 outcome='failed',
             )
         else:
+            if grant.reconciliation_status != TenantAccessReconciliationStatus.REVOKED.value:
+                errors.append(f'Grant {grant.public_id}: effective provider cleanup is unverified.')
             _record_grant_event(
                 actor=actor,
                 grant=grant,
                 action='tenant_access_grant.membership_revoked',
                 summary='Tenant Access Grant was revoked because its membership was revoked.',
-                outcome='success',
+                outcome=(
+                    'success' if grant.reconciliation_status == TenantAccessReconciliationStatus.REVOKED.value
+                    else 'warning'
+                ),
             )
 
     _record_membership_event(
@@ -865,8 +878,8 @@ def reconcile_access_grant_committed(*, grant_id: int, actor: User | None = None
             actor=actor,
             grant=grant,
             action='tenant_access_grant.reconciled',
-            summary='Tenant Access Grant was reconciled to effective Kubernetes RBAC.',
-            outcome='success',
+            summary='Tenant Access Grant provider reconciliation was attempted; effective state was read back.',
+            outcome='success' if grant.reconciliation_status in {'ready', 'revoked'} else 'warning',
         )
         db.session.commit()
         return grant
