@@ -48,7 +48,7 @@ def test_ranking_resource_tabs_use_one_embedded_evidence_surface() -> None:
         assert heading in ranked
     assert 'row.request_state.label' in ranked
     assert 'row.limit_state.label' in ranked
-    assert 'row.denominator_evidence_available' in ranked
+    assert 'row.pressure_available' in ranked
     assert 'row.risk.label' in ranked
     assert 'row.pressure_basis' in ranked
     assert 'title="{{ row.identity.primary }}"' in ranked
