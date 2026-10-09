@@ -4,7 +4,7 @@
 {% import "components/technical_value.html" as technical_value %}
 {% import "components/resource_detail_modal.html" as resource_detail_modal %}
 <div class="overflow-x-auto overscroll-x-contain">
-    <table class="{{ table_ui.table_classes('min-w-[72rem]') }}">
+    <table class="{{ table_ui.table_classes('min-w-[72rem] !table-fixed') }}">
         <caption class="sr-only">Kubernetes Service inventory for the active committed-snapshot scope.</caption>
         <thead class="{{ table_ui.head_classes() }}">
             <tr>
