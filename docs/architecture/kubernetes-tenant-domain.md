@@ -108,3 +108,33 @@ small-screen, light/dark, focus/close, state transitions, blocked evidence and
 HTMX replacement. Developer Check, Full Admission, and live-provider UAT
 remain separate acceptance gates.
 
+
+## Discovery adoption destination UX (#983)
+
+Native Kubernetes Discovery Adoption Preflight offers two distinct destination
+modes when eligible existing Tenant Environments are available:
+
+- **Create a new KAORI Tenant** (default): the operator supplies Tenant Name
+  and Environment; KAORI creates an Adopted Tenant with an initial managed
+  Namespace allocation baseline after its existing provider safety checks.
+- **Attach to an existing KAORI Tenant**: the operator chooses an eligible
+  existing Tenant Environment. The UI hides and disables the new-Tenant name
+  and environment controls, displays selected destination Tenant/Environment
+  as read-only committed context, and keeps the observed Kubernetes Namespace
+  name unchanged. The resulting operation is **Namespace Attached · Managed
+  Allocation**; it must not create or rename a Tenant or automatically expand
+  Tenant Access Grants.
+
+The existing Adoption modal controller owns the destination change behavior
+and reinitializes it after HTMX preflight replacement. Header language,
+readiness summary, human confirmation and submit label reflect the active
+mode. Create-specific fields are disabled for the attachment request so they
+are neither validated nor posted, and are re-enabled when returning to Create.
+The backend remains authoritative via `attach_environment_id`, canonical
+cluster/provider/UID/resourceVersion validation and a fresh provider read.
+
+Both Native modes may perform admitted Kubernetes allocation writes with
+provider read-back; attachment is **not** observation-only. Capsule's separate
+provider-mirrored attachment mode remains unchanged and must not be mistaken
+for Native managed allocation cutover. This is a presentation-only adjustment,
+not a relaxation of Tenant ownership, RBAC or provider authority.
