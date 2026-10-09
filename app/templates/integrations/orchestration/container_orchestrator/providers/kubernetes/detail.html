@@ -68,6 +68,7 @@
                     {% with validation_job=capability_validation_job %}
                         {% include 'integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_workspace.html' %}
                     {% endwith %}
+                    {% include 'integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capsule_rbac_bootstrap.html' %}
                 </div>
                 <div id="kubernetes-panel-runtime"
                      role="tabpanel"
