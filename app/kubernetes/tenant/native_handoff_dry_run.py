@@ -142,6 +142,16 @@ def dry_run_native_handoff_component(
         raise ValueError('Dry-run did not remove all KAORI ownership markers.')
     if _spec(before) != _spec(preview):
         raise ValueError('Dry-run changed Kubernetes spec; ownership handoff is blocked.')
+    expected_labels = {
+        key: value for key, value in before_identity[3].items()
+        if key not in _MARKER_KEYS
+    }
+    if after_labels != expected_labels:
+        raise ValueError('Dry-run changed unrelated Kubernetes labels; handoff is blocked.')
+    before_annotations = _read(_metadata(before), 'annotations') or {}
+    preview_annotations = _read(_metadata(preview), 'annotations') or {}
+    if before_annotations != preview_annotations:
+        raise ValueError('Dry-run changed provider annotations; ownership handoff is blocked.')
 
     live = _read_resource(core, component)
     if _resource_metadata(live) != before_identity or _spec(live) != _spec(before):
