@@ -533,10 +533,14 @@ def adopt_discovered_tenant_route():
     try:
         _csrf()
         attach_existing = bool(str(request.form.get('attach_environment_id') or '').strip())
-        if attach_existing and str(request.form.get('capsule_tenant_name') or '').strip():
-            tenant, environment, namespace = attach_discovered_capsule_namespace_committed(request.form)
-        elif attach_existing:
-            tenant, environment, namespace = attach_discovered_native_namespace_committed(request.form)
+        if attach_existing:
+            provider_key = str(request.form.get('provider_key') or '').strip()
+            if provider_key == 'capsule':
+                tenant, environment, namespace = attach_discovered_capsule_namespace_committed(request.form)
+            elif provider_key == 'native_kubernetes':
+                tenant, environment, namespace = attach_discovered_native_namespace_committed(request.form)
+            else:
+                raise ValueError('Unsupported provider authority for existing-Tenant Namespace attachment.')
         else:
             tenant, environment, namespace = adopt_discovered_tenant_committed(request.form)
     except (ValueError, ApiException) as exc:

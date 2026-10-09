@@ -38,6 +38,10 @@ def test_capsule_attach_reuses_discovery_and_existing_tenant_provider_authority(
     assert 'db.session.commit()' in adoption
 
     assert 'attach_discovered_capsule_namespace_committed(request.form)' in route
+    assert "provider_key == 'capsule'" in route
+    assert "provider_key == 'native_kubernetes'" in route
+    assert "Unsupported provider authority for existing-Tenant Namespace attachment." in route
+    assert "attach_existing and str(request.form.get('capsule_tenant_name')" not in route
     assert "capsule_tenant_name=str(request.args.get('capsule_tenant_name')" in route
     assert '_csrf()' in route
     assert "name=\"capsule_tenant_name\"" in modal
