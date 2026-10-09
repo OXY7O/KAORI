@@ -587,7 +587,9 @@
                             </div>
                             <div class="rounded-lg bg-kaori-soft p-3">
                                 <p class="text-xs font-medium text-content-muted">Adoption Result</p>
-                                <p class="mt-1 text-sm font-semibold text-content-primary">Adopted / Observed</p>
+                                <p class="mt-1 text-sm font-semibold text-content-primary">
+                                    {{ 'Adopted / Provider Mirrored' if tenant_adoption_attachment_only else 'Adopted / Managed' }}
+                                </p>
                                 <p class="mt-1 text-xs leading-5 text-content-muted">
                                     {{ 'Native allocation ownership is written and provider read-back verified.' if row.provider_key == 'native_kubernetes' else 'Capsule allocation governance uses admitted provider writes; generated Namespace constraints remain mirrored.' }}
                                 </p>
