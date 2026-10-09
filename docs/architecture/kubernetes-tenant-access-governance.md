@@ -290,6 +290,51 @@ Registry reads only the latest committed observation on normal requests.
 A preflight result alone remains **handoff review required** with
 `release_execution_available=false`: it is evidence, not a Release operation.
 
+### External successor acceptance reference intake (#991, draft)
+
+An authorized operator may record a bounded **external successor reference**
+against the latest independently acknowledged, fingerprint-bound Handoff Plan.
+The server rechecks the current adopted Tenant generation, fresh provider
+UID/resourceVersion/ownership evidence and zero active dependencies before
+committing an AuditEvent. The recorded status is
+`external_reference_unverified` — a ticket or self-declared receipt is
+**not** independently verifiable external consent. It cannot be promoted to
+verified acceptance by form input, two KAORI operators or a reference alone.
+
+This checkpoint does not change Kubernetes, provider-owned resources, release
+state, grant state or effective RBAC. Neither the Native server-side dry-run
+nor this receipt authorizes the live executor. A separate admitted, trusted
+successor-attestation verification mechanism, matching provider read-back,
+partial-write containment, recovery and security UAT must precede any real
+ownership-transfer or Release of KAORI-mutated allocations.
+
+Native server-side ownership transfer previews are strictly metadata-only:
+the Kubernetes dry-run response must preserve source spec, foreign labels,
+annotations, ownerReferences, finalizers, generation, and deletion state;
+provider reread must verify all of these remain unchanged. This is not
+permission to execute a real transfer or to mark a Tenant Released.
+
+### Native external provider handoff read-back (#991)
+
+A separately approved Native Release Handoff Plan and successful Kubernetes
+server-side dry-run commit each selected component's immutable UID, provider
+resourceVersion, spec fingerprint, and fingerprint of preserved foreign labels,
+annotations, finalizers and ownership/lifecycle metadata. After an external
+operator has performed its own provider-side handoff, an explicit KAORI action
+can reread those exact Native objects and require: same UID/name, a changed
+resourceVersion, manager label equal to the planned successor, all KAORI
+ownership markers absent, and unchanged spec/foreign-metadata fingerprints.
+
+This **observation only** may record
+`provider_handoff_observed_acceptance_unverified` but remains
+`external_successor_verified=false`, `provider_handoff_verified=false`,
+and `release_authorized=false`. A Kubernetes label can be forged by an actor
+with patch rights; it is not cryptographic evidence of consent by the intended
+successor. Until trusted identity/acceptance and full dual-provider handoff
+mutation contracts are admitted, the existing Released operation continues to
+refuse KAORI-mutated provider resources. No auto-transfer or database-only
+abandonment is introduced.
+
 ### Guarded Released lifecycle and Re-adopt generation (#991)
 
 `Released` is a **separate terminal governance state** for Tenant and Namespace
@@ -378,6 +423,40 @@ change reference, approval checkbox or internal plan is sufficient to set
 `lifecycle_status=released`. The operational UI reads committed plan/approval
 status rather than running provider reads on each page load.
 
+### Native Kubernetes ownership transfer: server-side dry-run phase (#991)
+
+Following a current **Prepare Handoff** plan and an independent
+**Acknowledge Handoff**, a different authorized operator can request
+**Preview Native Transfer** in the existing Tenant Registry. The provider
+preview is restricted to the exact adopted Native Tenant and same
+provider-identity/ownership fingerprint as the approved plan. All active
+Access Grants, credentials, memberships, Groups and governed resources
+must already satisfy the canonical zero-dependency ledger. Capsule
+provider transfer remains unsupported and cannot take the Native path.
+
+The preview constructs JSON Patch `test` preconditions for immutable
+Kubernetes UID, resourceVersion, `managed-by=kaori` and the exact
+`kaori.io/tenant-id` match. Only the four KAORI allocation ownership
+labels are candidates for removal; all other labels, annotations and
+Namespace/ResourceQuota/LimitRange specifications are retained.
+Kubernetes is called with `dryRun=All` and `application/json-patch+json`,
+then immediately re-read to verify that live state did **not** change.
+Any unsupported admission, permission, provider conflict, spec change
+or unexpected side effect produces a blocked/failed preview with
+committed non-secret evidence and no Release authorization.
+
+**Admission boundary:** the server-side preview is not a completed
+handoff, external successor acceptance, ownership-transfer receipt,
+or permission to set `Released`. The mutating executor is intentionally
+absent; the provider patch API call must be validated against the
+deployed Kubernetes Python client and API server in nonproduction
+before introducing a controlled non-dry-run execution route. Further
+admission needs authenticated external successor acceptance, one
+authoritative provider, an exact mutation plan, concurrency protection,
+per-object read-back, partial-failure containment, audit and security
+human acceptance. Capsule requires a separate provider-authority
+contract and must not be treated as Native Namespace RBAC.
+
 ### Governed Access Remediation Decisions (#985)
 
 An operator may prepare a **Remediation Decision** after fresh committed
@@ -437,6 +516,41 @@ side effect. Effective grant takeover requires separately approved identity,
 exact permission/profile, source-scope, and ownership equivalence proof. A
 name match or provider ClusterRole name alone is insufficient.
 
+### Attach provider-correlated Capsule Namespace to existing Tenant (#983)
+
+The existing **Tenant Discovery → Review Adoption** surface now lists
+Capsule **Namespace** candidates when an authoritative Capsule Tenant CR
+is already governed by KAORI but the Namespace is not. Unlike full
+Capsule Tenant adoption, this action reuses the existing Tenant and
+selected Environment. No new Tenant, provider Tenant CR, Capsule RBAC,
+or Namespace owner label is created.
+
+Both live Discovery Preflight and Adoption submit reuse the same
+Capsule provider correlation contract. The Namespace must have a
+nonconflicting `projectcapsule.dev/tenant` or
+`capsule.clastix.io/tenant` label (or Capsule Tenant owner reference)
+explicitly naming the target Tenant. Membership in
+`Tenant.status.namespaces` **alone is insufficient**. Tenant CR UID
+must match its existing committed KAORI authority; Namespace immutable
+UID and resourceVersion must match the reviewed preflight, there must
+be no active owner or released-history lineage conflict, and allocation
+authority must not be ambiguous/unsupported.
+
+On successful attachment, existing Namespace quota and Container/PVC
+limits are **mirrored from Capsule** as the adopted baseline using the
+canonical Capsule Namespace policy-profile helper. KAORI does not
+modify provider CR, Kubernetes Namespace, ResourceQuota, LimitRange,
+RBAC, or implicitly broaden Tenant-level Access Grants. The original
+Tenant provider provenance remains unchanged; only the new Namespace
+governance generation and nonsecret attachment audit evidence are
+committed. If provider identity/capacity cannot be proved, attachment
+fails closed and leaves the existing Tenant untouched.
+
+This does not replace the full Capsule Tenant discovery/adoption lane,
+native Namespace attachment, or Release/Re-adopt authority. Exercise
+real Capsule correlation, mixed Namespace quotas and provider churn in
+nonproduction before staging promotion.
+
 ### Native Kubernetes Namespace RBAC inventory (#996)
 
 Native Tenant access governance now has a matching **explicit read-only inspection**
@@ -466,7 +580,134 @@ Read-only observation requires `tenant.manage` and CSRF. Provider read
 failure, UID replacement or unbounded evidence fails closed, without
 claiming an inventory is complete.
 
+### Capsule Namespace attach to existing governed Tenant (#983)
+
+**Discovery** and **Tenant Registry** share one authoritative
+`attach_discovered_capsule_namespace_committed` service, not two Kubernetes
+mutation paths. Registry derives the connected cluster and Capsule Tenant
+from the committed destination Environment; both entry points require
+the exact Namespace UID and resourceVersion observed during Discovery.
+
+Before KAORI commits a new Adopted Namespace generation, the service
+rereads the Capsule Tenant CR and selected Namespace, validates immutable
+Tenant/Namespace UID and resourceVersion, Capsule Tenant labels,
+ownerReference name **and UID**, active ownership and Released lineage,
+and then rereads both provider resources to detect concurrent replacement.
+Missing ownerReference generation UID is treated as ambiguous ownership.
+Unsupported/mixed Namespace allocation and cross-Tenant reparenting
+fail closed. Existing provider-mirrored Namespace policy normalization
+and canonical audit/evidence are reused.
+
+No Namespace, Capsule Tenant, quota, RoleBinding or external group is
+mutated by attachment; no KAORI grant is automatically imported or expanded.
+Normal Registry rendering reads committed state; only explicit attach POST
+performs fresh provider reads. Both UI entry points remain Draft pending
+Developer Check, Full Admission, Visual QA and live Capsule UAT.
+### Exact Native/Capsule external Role profile equivalence (#996)
+
+Operators can explicitly review one foreign-owned Native Namespace RoleBinding
+from the latest committed (maximum 15-minute) inventory. The adapter rereads
+the Namespace UID/resourceVersion, RoleBinding UID/resourceVersion and
+subjects, resolves its namespaced Role or referenced ClusterRole, and requires
+exact canonical, versioned Access Profile permission equality. It refuses
+wildcard, named-resource, non-resource, aggregation and unsupported rules.
+A repeated RoleBinding read detects concurrent changes.
+
+Capsule additionally verifies the latest Capsule Tenant CR UID/resourceVersion
+and identical normalized external binding inventory before and after fetching
+the referenced authoritative ClusterRole. A duplicate, KAORI-owned, missing
+or unsupported external binding is never an import candidate.
+
+An exact permission match is **not** identity verification or permission to
+create a KAORI Access Grant. Foreign subjects remain under the Kubernetes
+authenticator/IdP; effective permission and group membership still require
+authoritative confirmation. All receipts are nonsecret AuditEvents with
+`import_authorized=false`, `identity_verified=false` and
+`effective_rbac_verified=false`. No foreign RBAC or Membership is mutated;
+no external authority is silently taken over. Provider-declared grants must
+never be mislabeled as KAORI-owned from a partial manager/grant label.
+
+### Committed Access Drift → canonical Intelligence Recommendations (#999)
+
+The existing Tenant Governance Intelligence recommendation builder now
+projects **only** current, grant-correlated declaration mismatches from the
+latest committed Native and Capsule Access Drift AuditEvent into the
+approved rule `kubernetes.tenant.access.grant_drift`. No new rule taxonomy
+or parallel alert engine is introduced. This integration reuses the
+normal Intelligence recommendation, exception and case workflow.
+
+Included declaration evidence: an active Grant missing its provider
+declaration, a revoked Grant still declared, or an exact Native
+Namespace/scope/Role reference mismatch. The evidence carries Tenant,
+cluster, provider, original AuditEvent, observed snapshot timestamp and
+the crucial `effective_rbac_verified=false` boundary. Entries are accepted
+only for currently Ready Tenant generations, same cluster/provider and
+evaluations no older than one hour. A new clean observation supersedes
+older drift and stale findings do not persist as fresh recommendations.
+
+**Foreign RoleBindings, Capsule owners, orphan marker labels and unknown
+principals are *not* projected as `unmanaged_principal` automatically.**
+That rule refers to actual normalized Kubernetes audit activity and
+requires independent identity correlation. External access inventory
+findings remain review-only under the Tenant Access Grants workspace
+until a specific approved Intelligence rule or audited principal
+identity is established.
+
+### Provider-agnostic governed Access Remediation planning (#1000)
+
+The canonical `kubernetes_tenant_access_remediation_plan` workflow now
+consumes the latest **Native or Capsule** Access Drift AuditEvent and
+produces the same committed, non-mutating decision contract. A candidate
+is eligible for the existing **Access Grant Inspect/Reconcile** action
+only when a same-Tenant active KAORI Grant is already `drifted` or
+`failed`, the exact provider is Ready, evidence is no older than
+15 minutes, the Grant has not changed since analysis, and the finding
+is precisely `active_grant_missing_native_declaration` or
+`active_grant_missing_capsule_declaration` for the matching provider.
+
+All foreign/unverified RoleBindings, revoked Grants, mismatched Scope,
+and unexpected role reference changes remain **manual_review**.
+The resulting decisions appear together in the existing Access Grants
+workspace and retain provider identity. `auto_execute=false` and
+`auto_mutation_performed=false` are mandatory: this workstream does
+not create a second reconciler, run Kubernetes patches in the
+background or mistake declaration drift for effective RBAC proof.
+
+A future policy-gated auto-executor requires a separately accepted
+policy and dry-run admission, current provider UID/resourceVersion,
+concurrency/idempotency controls, a kill switch, explicit permission
+boundary and post-mutation read-back. This Native extension does not
+claim that executor or Full Admission is completed.
+
+### Access Remediation plan freshness (#1000)
+
+The latest committed Native/Capsule RBAC inventory must also equal the
+original inventory consumed by Access Drift analysis. Native uses the exact
+source SHA-256 fingerprint and observation time; Capsule uses the exact
+Capsule Tenant UID/resourceVersion and observation time. A new observation
+invalidates planning until a new Analyze action commits a replacement.
+This remains a committed-evidence comparison; routine UI never performs a
+new live provider request.
+
+
+Preparing Native/Capsule remediation decisions uses existing committed Access
+Drift records but does not execute any mutation. Evidence must remain bound
+to the same Tenant/cluster/provider. Both analysis time (15-minute maximum)
+and original provider RBAC observation time (one-hour maximum) must be fresh,
+ordered and timezone-aware. Unknown/stale source evidence cannot produce an
+apparently actionable explicit-reconcile proposal. The existing Access Grant
+Inspect/Reconcile flow remains the sole admitted mutation authority, with
+separate operator action; all automatic execution flags remain false.
 ### Native Access Drift declaration correlation (#999)
+
+Intelligence freshness is evaluated against both the latest committed
+declaration analysis time and its authoritative Native/Capsule provider
+observation timestamp (maximum one hour each). An invalid or wrong-cluster
+newest snapshot suppresses older findings for that Tenant/provider; no stale
+prior condition may silently resurface as a current finding. Future-dated,
+missing, or observation-after-analysis timestamps fail closed. Existing
+Governance Rule Catalog/Recommendation identity remains authoritative.
+
 
 After **Inspect Native RBAC** has committed a scoped, bounded namespaced
 RoleBinding inventory (#996), **Analyze Native Access Drift** compares that
