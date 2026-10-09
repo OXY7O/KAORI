@@ -1,6 +1,8 @@
-from flask import Blueprint, abort, current_app, redirect, render_template, request, url_for
+from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
+from flask_wtf.csrf import validate_csrf
+from wtforms.validators import ValidationError
 
 from app.access.rbac.decorators import permission_required
 from app.common.http import htmx_target, is_htmx_request
@@ -10,8 +12,6 @@ from app.kubernetes.cluster.capsule_rbac_bootstrap import (
     check_capsule_role_bootstrap,
     latest_capsule_role_bootstrap_evidence,
 )
-from flask_wtf.csrf import validate_csrf
-from wtforms.validators import ValidationError
 from app.integrations.binding_service import SourceBindingSpec, create_source_binding
 from app.integrations.coverage import build_binding_workspace
 from app.integrations.domain_service import (
