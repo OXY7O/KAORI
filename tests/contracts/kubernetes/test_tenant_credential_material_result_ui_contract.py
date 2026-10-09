@@ -47,7 +47,7 @@ def test_generated_token_and_kubeconfig_use_existing_shared_ui_ownership() -> No
     ):
         assert title in route, title
     assert "'GitHub Actions / Helm'" not in route
-        assert 'data-kaori-copy-source' not in template
+    assert 'data-kaori-copy-source' not in template
 
 
 def test_secret_delivery_guidance_preserves_manual_and_pipeline_contracts() -> None:
