@@ -447,6 +447,100 @@ def _adopt_capsule(context: _AdoptionContext) -> tuple[TenantEnvironment, Tenant
     return environment, records[0] if records else None
 
 
+def attach_discovered_native_namespace_committed(
+    source: Mapping[str, Any],
+) -> tuple[Tenant, TenantEnvironment, TenantNamespace]:
+    """Adopt a discovered Native Namespace into an existing governed Tenant.
+
+    Provider/UID/manager/capacity validation is repeated live. The existing
+    Tenant identity and original adoption lineage must not be overwritten.
+    """
+    if str(source.get('provider_key') or '') != 'native_kubernetes':
+        raise ValueError('Existing-Tenant Namespace adoption supports Native Kubernetes only.')
+    environment_id = str(source.get('attach_environment_id') or '')
+    if not environment_id.isdecimal():
+        raise ValueError('Select a valid existing Tenant environment.')
+    environment = db.session.get(TenantEnvironment, int(environment_id))
+    if environment is None:
+        raise ValueError('The selected Tenant environment no longer exists.')
+    tenant = environment.tenant
+    cluster_id = str(source.get('cluster_id') or '').strip()
+    namespace = str(source.get('resource_name') or '').strip()
+    if not namespace or tenant.cluster_id != cluster_id:
+        raise ValueError('Namespace and existing Tenant must belong to the same cluster.')
+    if (
+        tenant.lifecycle_status != TenantLifecycleStatus.READY.value
+        or tenant.provider_key != 'native_kubernetes'
+        or tenant.provider_state != 'native'
+        or tenant.reconciliation_authority != 'native_kubernetes'
+    ):
+        raise ValueError('The selected Tenant is not Ready under Native Kubernetes authority.')
+
+    cluster = (
+        Cluster.query.join(KubernetesConnection, KubernetesConnection.cluster_id == Cluster.id)
+        .filter(Cluster.id == tenant.cluster_id, Cluster.status == ClusterStatus.CONNECTED.value)
+        .first()
+    )
+    if cluster is None or not tenant_workspace_connection_available(cluster.kubernetes_connection):
+        raise ValueError('The selected Kubernetes cluster is not available for adoption.')
+    context = _AdoptionContext(
+        cluster=cluster,
+        client=runtime_adapter.build_client(cluster),
+        provider_key='native_kubernetes',
+        resource_name=namespace,
+        environment_name=environment.environment,
+        tenant=tenant,
+        now=datetime.now(UTC),
+    )
+    try:
+        item = context.client.core_api().read_namespace(namespace, _request_timeout=5)
+    except ApiException as exc:
+        if exc.status == 404:
+            raise ValueError('The Namespace was removed before attachment.') from exc
+        raise
+    metadata = getattr(item, 'metadata', None)
+    provider_uid = str(getattr(metadata, 'uid', '') or '').strip()
+    expected_uid = str(source.get('provider_uid') or '').strip()
+    if not provider_uid or not expected_uid or provider_uid != expected_uid:
+        raise ValueError('Namespace UID changed since adoption preflight; refresh Discovery.')
+    status, reason = _native_management(
+        namespace=namespace,
+        labels=dict(getattr(metadata, 'labels', None) or {}),
+        managed_record=_managed_namespace_map([cluster_id]).get((cluster_id, namespace)),
+    )
+    if _namespace_phase(item) == 'Terminating' or status != 'Discovered':
+        raise ValueError('Namespace attachment is blocked: ' + reason)
+
+    allocation = observe_native_namespace_allocation(context.client.core_api(), namespace)
+    existing_evidence = dict(tenant.provider_evidence_json or {})
+    try:
+        record = _native_namespace_record(context, environment, metadata=metadata, allocation=allocation)
+        db.session.flush()
+        _take_over_native_allocation(context, record)
+        # Attachment is Namespace-scoped; do not rewrite the existing Tenant's
+        # top-level provenance/authority as though it had been newly adopted.
+        tenant.provider_evidence_json = existing_evidence
+        namespace_evidence = dict(record.provisioning_evidence_json or {})
+        namespace_evidence['attachment'] = {
+            'tenant_id': tenant.id,
+            'tenant_generation': tenant.generation,
+            'environment': environment.environment,
+            'provider_uid': provider_uid,
+            'source': 'governed_existing_tenant_attachment',
+            'attached_at': datetime.now(UTC).isoformat(),
+            'grants_expanded_automatically': False,
+        }
+        record.provisioning_evidence_json = namespace_evidence
+        db.session.commit()
+        return tenant, environment, record
+    except IntegrityError as exc:
+        db.session.rollback()
+        raise ValueError('Namespace attachment conflicted with committed governance state.') from exc
+    except Exception:
+        db.session.rollback()
+        raise
+
+
 def adopt_discovered_tenant_committed(
     source: Mapping[str, Any],
 ) -> tuple[Tenant, TenantEnvironment, TenantNamespace | None]:
