@@ -959,6 +959,18 @@ def get_tenant_access_context() -> dict[str, object]:
         }
         for profile, document in zip(profiles, capsule_role_documents, strict=True)
     ]
+    recent_access_remediation = (
+        AuditEvent.query.filter_by(target_type='kubernetes_tenant_access_remediation_plan')
+        .order_by(AuditEvent.id.desc()).limit(30).all()
+    )
+    capsule_remediation = [
+        row for row in recent_access_remediation
+        if (row.metadata_json or {}).get('provider', 'capsule') == 'capsule'
+    ][:5]
+    native_remediation = [
+        row for row in recent_access_remediation
+        if (row.metadata_json or {}).get('provider') == 'native_kubernetes'
+    ][:5]
     return {
         'access_tenant_options': tenant_options,
         'access_user_options': user_options,
@@ -984,6 +996,10 @@ def get_tenant_access_context() -> dict[str, object]:
             and tenant.provider_state == 'native'
             and tenant.reconciliation_authority == 'native_kubernetes'
         ],
+        'recent_external_access_profile_reviews': (
+            AuditEvent.query.filter_by(target_type='kubernetes_tenant_external_role_profile_review')
+            .order_by(AuditEvent.id.desc()).limit(5).all()
+        ),
         'recent_external_native_access': (
             AuditEvent.query.filter_by(target_type='kubernetes_tenant_native_external_access_inventory')
             .order_by(AuditEvent.id.desc()).limit(5).all()
@@ -1000,10 +1016,8 @@ def get_tenant_access_context() -> dict[str, object]:
             AuditEvent.query.filter_by(target_type='kubernetes_tenant_native_access_drift_evidence')
             .order_by(AuditEvent.id.desc()).limit(5).all()
         ),
-        'recent_capsule_access_remediation': (
-            AuditEvent.query.filter_by(target_type='kubernetes_tenant_access_remediation_plan')
-            .order_by(AuditEvent.id.desc()).limit(5).all()
-        ),
+        'recent_capsule_access_remediation': capsule_remediation,
+        'recent_native_access_remediation': native_remediation,
     }
 
 
