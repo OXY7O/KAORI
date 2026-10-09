@@ -1,0 +1,151 @@
+{% import "components/action_button.html" as action_button %}
+<dialog id="capsule-access-role-manifest-dialog"
+        data-kaori-native-dialog
+        aria-labelledby="capsule-access-role-manifest-title"
+        aria-describedby="capsule-access-role-manifest-description"
+        class="kaori-native-dialog m-auto w-[calc(100vw-1.5rem)] max-w-4xl overflow-hidden rounded-2xl border border-outline-default bg-surface-card p-0 shadow-2xl sm:w-[calc(100vw-3rem)]">
+    <section class="flex max-h-[calc(100dvh-2rem)] min-h-0 flex-col overflow-hidden" role="document">
+        <header class="flex shrink-0 items-start justify-between gap-4 border-b border-outline-subtle bg-surface-card px-5 py-4 sm:px-6">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="shield-check" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <p class="text-xs font-semibold text-kaori-primary">Capsule · RBAC Prerequisites</p>
+                    <h2 id="capsule-access-role-manifest-title"
+                        class="mt-1 text-lg font-semibold leading-7 text-content-primary">Prepare ClusterRoles</h2>
+                    <p id="capsule-access-role-manifest-description"
+                       class="mt-1 text-xs leading-5 text-content-secondary">
+                        Generate all four versioned KAORI role contracts for explicit cluster-admin review and kubectl apply.
+                    </p>
+                </div>
+            </div>
+            <button type="button"
+                    data-kaori-dialog-close
+                    class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
+                    aria-label="Close Capsule ClusterRole manifest dialog">
+                <i data-lucide="x" class="h-4 w-4"></i>
+            </button>
+        </header>
+        <div class="min-h-0 flex-1 space-y-5 overflow-y-auto bg-surface-page px-5 py-5 sm:px-6">
+            <div class="flex items-start gap-3 rounded-xl border border-status-warning-border bg-status-warning-soft px-4 py-3.5 text-status-warning-text">
+                <i data-lucide="shield-alert" class="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true"></i>
+                <p class="text-xs leading-5">
+                    <strong>Preparation only.</strong> KAORI does not create ClusterRoles, grant bind privileges, or modify Kubernetes from this dialog.
+                    Confirm the target UAT context and obtain cluster-admin approval before applying these cluster-scoped resources.
+                    Capsule still needs permission to bind the approved roles.
+                </p>
+            </div>
+            <section aria-labelledby="capsule-access-role-list-heading">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                        <h3 id="capsule-access-role-list-heading"
+                            class="text-sm font-semibold text-content-primary">Canonical Access Profiles</h3>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">
+                            Exact resource and verb rules are generated from the current versioned KAORI Access Profile catalog.
+                        </p>
+                    </div>
+                    <span class="inline-flex items-center rounded-md bg-kaori-soft px-2.5 py-1 text-xs font-semibold text-kaori-primary">
+                        {{ access_capsule_role_manifests|length }} roles
+                    </span>
+                </div>
+                <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                    {% for manifest in access_capsule_role_manifests %}
+                        <details class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                            <summary class="flex cursor-pointer items-center justify-between gap-3 px-3.5 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus">
+                                <span class="min-w-0">
+                                    <span class="block text-xs font-semibold text-content-primary">
+                                        {{ manifest.label }} · v{{ manifest.version }}
+                                    </span>
+                                    <span class="mt-1 block break-all font-mono text-[11px] leading-5 text-content-muted">
+                                        {{ manifest.name }}
+                                    </span>
+                                </span>
+                                <i data-lucide="chevron-down" class="h-4 w-4 shrink-0 text-content-muted" aria-hidden="true"></i>
+                            </summary>
+                            <div class="border-t border-outline-subtle p-3" data-kaori-copy-root>
+                                <div class="mb-2 flex flex-wrap gap-2">
+                                    <button type="button"
+                                            data-kaori-copy-button
+                                            data-copy-label="Copy YAML"
+                                            data-copied-label="Copied"
+                                            class="{{ action_button.classes('secondary') }} !h-8 !px-2.5 !text-xs">
+                                        <i data-kaori-copy-icon data-lucide="copy" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                        <span data-kaori-copy-label>Copy YAML</span>
+                                    </button>
+                                    <button type="button"
+                                            data-kaori-download-button
+                                            data-download-name="{{ manifest.name }}.yaml"
+                                            class="{{ action_button.classes('secondary') }} !h-8 !px-2.5 !text-xs">
+                                        <i data-lucide="download" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                        Download
+                                    </button>
+                                </div>
+                                <pre data-kaori-copy-source
+                                     class="max-h-48 overflow-auto rounded-lg border border-outline-subtle bg-surface-elevated p-3 font-mono text-[11px] leading-5 text-content-secondary">{{ manifest.yaml }}</pre>
+                            </div>
+                        </details>
+                    {% endfor %}
+                </div>
+            </section>
+            <section aria-labelledby="capsule-access-role-bundle-heading"
+                     class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+                     data-kaori-copy-root>
+                <div class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h3 id="capsule-access-role-bundle-heading"
+                            class="text-sm font-semibold text-content-primary">All Roles · YAML Bundle</h3>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">
+                            One multi-document manifest containing Viewer, Operator, Tenant Admin, and Deployer.
+                        </p>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button"
+                                data-kaori-copy-button
+                                data-copy-label="Copy All"
+                                data-copied-label="Copied"
+                                class="{{ action_button.classes('secondary') }} !h-9 !px-3 !text-xs">
+                            <i data-kaori-copy-icon data-lucide="copy" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                            <span data-kaori-copy-label>Copy All</span>
+                        </button>
+                        <button type="button"
+                                data-kaori-download-button
+                                data-download-name="kaori-capsule-access-clusterroles.yaml"
+                                class="{{ action_button.classes('primary') }} !h-9 !px-3 !text-xs">
+                            <i data-lucide="download" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                            Download All
+                        </button>
+                    </div>
+                </div>
+                <details class="group">
+                    <summary class="cursor-pointer px-4 py-3 text-xs font-semibold text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus">
+                        Preview complete YAML manifest
+                    </summary>
+                    <div class="border-t border-outline-subtle px-3 pb-3 pt-2">
+                        <pre data-kaori-copy-source
+                             class="max-h-72 overflow-auto rounded-lg border border-outline-subtle bg-surface-elevated p-3 font-mono text-[11px] leading-5 text-content-secondary">{{ access_capsule_role_bundle_yaml }}</pre>
+                    </div>
+                </details>
+            </section>
+            <div class="rounded-xl border border-kaori-primary/15 bg-kaori-soft px-4 py-3 text-xs leading-5 text-content-secondary">
+                <p class="font-semibold text-content-primary">After cluster-admin approval</p>
+                <p class="mt-1">Verify your selected Kubernetes UAT context, then use
+                    <code class="break-all font-mono">kubectl apply -f kaori-capsule-access-clusterroles.yaml</code>.
+                    Return to the existing Access Grant and click Reconcile; Inspect must confirm effective namespaced RoleBinding access.
+                </p>
+            </div>
+        </div>
+        <footer class="flex shrink-0 items-center justify-between gap-3 border-t border-outline-subtle bg-surface-card px-5 py-3 sm:px-6">
+            <p class="hidden text-xs leading-5 text-content-muted sm:block">
+                Generated manifests are read-only. No Kubernetes mutation has occurred.
+            </p>
+            <button type="button"
+                    data-kaori-dialog-close
+                    class="{{ action_button.classes('secondary') }} ml-auto !h-9 !px-4 !text-xs">
+                <i data-lucide="x" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                Close
+            </button>
+        </footer>
+    </section>
+</dialog>

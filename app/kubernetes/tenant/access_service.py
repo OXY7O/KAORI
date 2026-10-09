@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 
+import yaml
 from kubernetes.client.rest import ApiException
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -10,6 +11,7 @@ from app.extensions.db import db
 from app.kubernetes.tenant.access import (
     ACCESS_PROFILE_CATALOG,
     LATEST_ACCESS_PROFILE_VERSION,
+    capsule_cluster_role_manifest,
     TenantAccessScope,
     get_access_profile,
     validate_grant_scope,
@@ -947,6 +949,16 @@ def get_tenant_access_context() -> dict[str, object]:
         for key in profile_order
         if key in LATEST_ACCESS_PROFILE_VERSION
     ]
+    capsule_role_documents = [capsule_cluster_role_manifest(profile) for profile in profiles]
+    capsule_role_manifests = [
+        {
+            'label': profile.label,
+            'version': profile.version,
+            'name': document['metadata']['name'],
+            'yaml': yaml.safe_dump(document, sort_keys=False, explicit_start=True),
+        }
+        for profile, document in zip(profiles, capsule_role_documents, strict=True)
+    ]
     return {
         'access_tenant_options': tenant_options,
         'access_user_options': user_options,
@@ -955,6 +967,10 @@ def get_tenant_access_context() -> dict[str, object]:
         'access_environment_options': environment_options,
         'access_namespace_options': namespace_options,
         'access_profiles': profiles,
+        'access_capsule_role_manifests': capsule_role_manifests,
+        'access_capsule_role_bundle_yaml': yaml.safe_dump_all(
+            capsule_role_documents, sort_keys=False, explicit_start=True
+        ),
         'recent_tenant_groups': TenantGroup.query.order_by(TenantGroup.created_at.desc()).limit(5).all(),
         'recent_tenant_memberships': TenantMembership.query.order_by(TenantMembership.created_at.desc()).limit(5).all(),
         'recent_access_grants': TenantAccessGrant.query.order_by(TenantAccessGrant.created_at.desc()).limit(5).all(),

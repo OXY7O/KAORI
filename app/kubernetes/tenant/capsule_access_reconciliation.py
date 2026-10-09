@@ -10,7 +10,12 @@ from kubernetes.client.rest import ApiException
 
 from app.extensions.db import db
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
-from app.kubernetes.tenant.access import get_access_profile, membership_subject, validate_active_grant
+from app.kubernetes.tenant.access import (
+    capsule_cluster_role_name,
+    get_access_profile,
+    membership_subject,
+    validate_active_grant,
+)
 from app.kubernetes.tenant.access_reconciliation import target_namespaces
 from app.kubernetes.tenant.capsule_provider import discover_capsule
 from app.models import Cluster
@@ -109,7 +114,8 @@ def _namespaces(grant: TenantAccessGrant, client: Any, item: dict[str, Any]) -> 
 
 
 def _role_name(grant: TenantAccessGrant) -> str:
-    return f'kaori-tenant-{grant.access_profile.replace("_", "-")}-v{grant.access_profile_version}'
+    profile = get_access_profile(grant.access_profile, grant.access_profile_version)
+    return capsule_cluster_role_name(profile)
 
 
 def _check_profile(grant: TenantAccessGrant, rbac_api: Any) -> str:
