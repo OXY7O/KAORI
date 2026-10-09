@@ -1,4 +1,7 @@
 from pathlib import Path
+from types import SimpleNamespace
+
+from jinja2 import Environment, FileSystemLoader
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -184,3 +187,48 @@ def test_asset_owner_standard_names_all_current_asset_owner_providers() -> None:
     ) in standard
     assert "fourth-domain header status MUST represent that domain's evidence plane" in standard
     assert 'provider-local job-management or product-navigation shortcuts' in standard
+
+
+def test_all_provider_validation_and_runtime_htmx_responses_refresh_hero_posture() -> None:
+    hero = read('app/templates/components/page_hero.html')
+    posture = read('app/templates/integrations/components/_provider_detail_posture.html')
+    assert 'value_id=None' in hero
+    assert 'posture_key=none' in posture
+    assert 'macro state_oob(posture_key, readiness, capability_count)' in posture
+
+    for provider, detail_path in DETAILS.items():
+        prefix = 'metrics-source' if provider == 'metrics_source' else provider
+        detail = read(detail_path)
+        assert f"posture_key='{prefix}'" in detail, provider
+        for suffix in ('hero-readiness', 'hero-capabilities'):
+            assert f"value_id='{prefix}-{suffix}'" in detail, (provider, suffix)
+        for path in (VALIDATION[provider], RUNTIME[provider]):
+            partial = read(path)
+            assert "integrations/components/_provider_detail_posture.html" in partial, path
+            assert f"provider_detail_posture.state_oob('{prefix}'," in partial, path
+            assert "request.headers.get('HX-Request') == 'true'" in partial, path
+            assert 'framed_workspace_tabs.badge_oob(' in partial, path
+
+
+def test_shared_posture_emits_oob_state_only_for_htmx_requests() -> None:
+    templates = ROOT / 'app' / 'templates'
+
+    def render(headers: dict[str, str], readiness: str, capabilities: int) -> str:
+        env = Environment(loader=FileSystemLoader(templates), autoescape=True)
+        env.globals['request'] = SimpleNamespace(headers=headers)
+        macro = env.get_template('integrations/components/_provider_detail_posture.html').module
+        return str(macro.state_oob('metrics-source', readiness, capabilities))
+
+    assert not render({}, 'ready', 4).strip()
+    refreshed = render({'HX-Request': 'true'}, 'degraded', 4)
+    for identity in (
+        'metrics-source-hero-readiness',
+        'metrics-source-hero-capabilities',
+        'metrics-source-posture-status',
+        'metrics-source-posture-readiness',
+        'metrics-source-posture-capabilities',
+    ):
+        assert f'id="{identity}" hx-swap-oob="innerHTML"' in refreshed
+    assert 'Degraded' in refreshed
+    assert 'Attention' in refreshed
+    assert '4 Validated Capabilities' in refreshed
