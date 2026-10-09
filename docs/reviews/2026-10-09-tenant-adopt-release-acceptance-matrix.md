@@ -71,7 +71,12 @@ authoritative for native RoleBindings and authenticated principals.
    markers (including tenant generation) or an externally claimed manager,
    until provider recovery and identity authority review.
    Every invalid Attach must leave provider and KAORI state unchanged;
-   post-patch read-back failures must never claim success.
+   post-patch read-back failures must never claim success. Native
+   takeover also rejects Capsule Tenant labels and Capsule ownerReferences
+   at Discovery, Adoption Preflight, Submit, and immediately before provider
+   PATCH, and detects Capsule authority introduced before read-back.
+   Residual KAORI allocation markers block initial takeover even if
+   `managed-by` or tenant-id is missing.
 2. **Non-destructive Release:** active credentials, Access Grants, memberships,
    managed profiles, managed resources and policies must block. All active
    Namespace records require explicitly `provider_mutation_performed=false`
@@ -110,6 +115,35 @@ authoritative for native RoleBindings and authenticated principals.
    retry. A CSRF or unsupported-provider failure must not be marked as a
    started provider operation. Native Attach success must attribute provider
    mutation to Namespace evidence, not unchanged Tenant adoption origin.
+
+## DevContainer candidate verification (not UAT acceptance)
+
+Use the approved Local-First workflow against the exact candidate SHA. Before
+the candidate is merged to the review branch, the issue-linked integration
+branch is the implementation authority, not the older review branch.
+
+```bash
+git fetch origin
+git switch kaori/issue-1015-tenant-adopt-release-integration
+git pull --ff-only origin kaori/issue-1015-tenant-adopt-release-integration
+python scripts/developer_check_plan.py --base origin/kaori/review/staging-uat --head HEAD
+python -m ruff check app migrations tests scripts
+python -m ruff format --check app migrations tests scripts
+python -m djlint app/templates --check
+python -m pyright --project pyrightconfig.json
+pytest -q tests/kubernetes/tenant tests/contracts/kubernetes
+pytest -q tests/intelligence/test_tenant_access_declaration_intelligence.py
+```
+
+After the approved integration to `kaori/review/staging-uat`, retest its
+**exact** Git SHA in the DevContainer; do not reuse an earlier issue-branch
+PASS as evidence for an unverified merge commit. Inspect the Audit Activity,
+committed Tenant/Namespace evidence and live provider UID/resourceVersion
+before and after each mutating scenario. Capture negative evidence for Capsule
+Namespace exclusion from Native adoption, non-destructive Release blocking
+and read-back failure. Do not exercise actual external successor transfer,
+foreign-principal import or final Release until #991/#690/#996 admit those
+authorities. DevContainer PASS is not staging/UAT acceptance.
 
 ## Quality gates / evidence checklist
 
