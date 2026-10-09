@@ -91,7 +91,11 @@ def test_generated_token_and_kubeconfig_use_existing_shared_ui_ownership() -> No
     assert "delivery_label = 'Governed Individual Access'" in route
     assert "material_credential_valid_until=material.access_package.get('valid_until')" in route
     assert "material_credential_valid_until=material.expires_at" not in route
-    assert 'data-kaori-copy-source' not in template
+    # The sole page-level clipboard source is the non-secret ServiceAccount identifier.
+    assert template.count('data-kaori-copy-source') == 1
+    assert '<code data-kaori-copy-source' in template
+    assert 'title="{{ material_access_package.service_account_name }}"' in template
+    assert 'data-kaori-sensitive-material' not in template
 
 
 def test_secret_delivery_guidance_preserves_manual_and_pipeline_contracts() -> None:
