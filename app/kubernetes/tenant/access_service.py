@@ -14,7 +14,7 @@ from app.kubernetes.tenant.access import (
     get_access_profile,
     validate_grant_scope,
 )
-from app.kubernetes.tenant.access_reconciliation import inspect_native_access_grant, reconcile_native_access_grant
+from app.kubernetes.tenant.access_provider import inspect_provider_access_grant, reconcile_provider_access_grant
 from app.kubernetes.tenant.credential_service import revoke_credentials_for_access_grant
 from app.models import AuditEvent, User
 from app.models.tenant import (
@@ -218,7 +218,7 @@ def create_access_grant_committed(
 
     try:
         db.session.flush()
-        reconcile_native_access_grant(grant)
+        reconcile_provider_access_grant(grant)
         _record_grant_event(
             actor=actor,
             grant=grant,
@@ -257,7 +257,7 @@ def revoke_access_grant_committed(*, grant_id: int, actor: User | None = None) -
     grant.status = TenantAccessGrantStatus.REVOKED.value
     try:
         revoke_credentials_for_access_grant(grant, actor=actor)
-        reconcile_native_access_grant(grant)
+        reconcile_provider_access_grant(grant)
         _record_grant_event(
             actor=actor,
             grant=grant,
@@ -683,7 +683,7 @@ def revoke_membership_committed(*, membership_id: int, actor: User | None = None
             continue
         grant.status = TenantAccessGrantStatus.REVOKED.value
         try:
-            reconcile_native_access_grant(grant)
+            reconcile_provider_access_grant(grant)
         except (ApiException, ValueError) as exc:
             errors.append(str(exc))
             _record_grant_event(
@@ -776,7 +776,9 @@ def reconcile_access_grants_for_namespace_committed(
     """
 
     tenant = namespace.environment.tenant
-    if tenant.provider_key != 'native_kubernetes' or tenant.reconciliation_authority != 'native_kubernetes':
+    if tenant.provider_key != tenant.reconciliation_authority or tenant.provider_key not in {
+        'native_kubernetes', 'capsule'
+    }:
         return {'matched': 0, 'reconciled': 0, 'failed': 0}
 
     grants = (
@@ -799,7 +801,7 @@ def reconcile_access_grants_for_namespace_committed(
     failed = 0
     for grant in grants:
         try:
-            reconcile_native_access_grant(grant)
+            reconcile_provider_access_grant(grant)
             _record_grant_event(
                 actor=actor,
                 grant=grant,
@@ -837,7 +839,7 @@ def inspect_access_grant_committed(*, grant_id: int, actor: User | None = None) 
     if grant is None:
         raise ValueError('Selected Tenant Access Grant no longer exists.')
     try:
-        inspect_native_access_grant(grant)
+        inspect_provider_access_grant(grant)
         _record_grant_event(
             actor=actor,
             grant=grant,
@@ -858,7 +860,7 @@ def reconcile_access_grant_committed(*, grant_id: int, actor: User | None = None
         raise ValueError('Selected Tenant Access Grant no longer exists.')
     _require_ready_tenant(grant.tenant)
     try:
-        reconcile_native_access_grant(grant)
+        reconcile_provider_access_grant(grant)
         _record_grant_event(
             actor=actor,
             grant=grant,
