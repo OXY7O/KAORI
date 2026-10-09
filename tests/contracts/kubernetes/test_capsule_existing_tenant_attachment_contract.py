@@ -33,6 +33,7 @@ def test_capsule_attach_reuses_discovery_and_existing_tenant_provider_authority(
     assert "_capsule_namespace_records(context, environment, scoped)" in adoption
     assert '_mirror_capsule_namespace_policies(tenant, records)' in adoption
     assert "'grants_expanded_automatically': False" in adoption
+    assert "'Capsule Namespace Attached · Provider Mirrored'" in route
     assert "'provider_mutation_performed': False" in adoption
     assert 'tenant.provider_evidence_json = previous_evidence' in adoption
     assert 'db.session.commit()' in adoption

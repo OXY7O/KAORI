@@ -561,7 +561,11 @@ def adopt_discovered_tenant_route():
         _record(
             event_type='kubernetes_tenant_discovery_adopted',
             status='success',
-            title='Tenant Adopted · Managed',
+            title=(
+                'Capsule Namespace Attached · Provider Mirrored'
+                if attach_existing and tenant.provider_key == 'capsule'
+                else 'Tenant Adopted · Managed'
+            ),
             message=(
                 f'{namespace.namespace} attached to existing {tenant.name}; Capsule policies remain provider-mirrored.'
                 if attach_existing and tenant.provider_key == 'capsule' and namespace is not None else
