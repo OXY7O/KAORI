@@ -192,6 +192,36 @@
         })
     }
 
+    const navigateToGrantForm = () => {
+        const form = document.getElementById('access-grant-form')
+        if (!(form instanceof HTMLFormElement)) return
+
+        // KAORI uses a nested main scroll container, not the browser window.
+        const scrollHost = form.closest('[data-kaori-main-scroll]')
+        if (scrollHost instanceof HTMLElement) {
+            const offset = 24
+            const destination =
+                scrollHost.scrollTop +
+                form.getBoundingClientRect().top -
+                scrollHost.getBoundingClientRect().top -
+                offset
+            scrollHost.scrollTo({ top: Math.max(0, destination), behavior: 'auto' })
+        } else {
+            form.scrollIntoView({ block: 'start' })
+        }
+
+        // The registry shortcut is navigation, never an Apply Grant submission.
+        const membership = form.querySelector('[data-access-membership]')
+        if (membership instanceof HTMLSelectElement) membership.focus({ preventScroll: true })
+    }
+
+    document.addEventListener('click', (event) => {
+        const target = event.target instanceof Element ? event.target : null
+        if (!target?.closest('[data-access-grant-form-shortcut]')) return
+        event.preventDefault()
+        navigateToGrantForm()
+    })
+
     const init = (root = document) => {
         const forms = root.querySelectorAll?.('[data-access-grant-form]') || []
         for (const form of forms) syncForm(form)

@@ -329,3 +329,29 @@ def test_grant_context_exposes_canonical_capsule_role_preparation_modal_without_
     assert 'capsule_cluster_role_name(profile)' in reconciliation
     assert 'create_cluster_role(' not in modal
     assert 'ClusterRoleBinding' not in modal
+
+
+def test_access_grant_registry_shortcut_scrolls_nested_main_to_complete_form() -> None:
+    registry = read('app/templates/kubernetes/tenant/partials/_access_grant_registry.html')
+    form = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
+    script = read('app/static/js/tenant_access_grant_form.js')
+    shell = read('app/templates/layouts/app.html')
+
+    assert 'data-access-grant-form-shortcut' in registry
+    assert 'Go to Grant Form' in registry
+    assert 'aria-controls="access-grant-form"' in registry
+    assert "'#access-grant-form'" not in registry
+    assert "'Apply Grant'," not in registry
+    assert 'id="access-grant-form"' in form
+    assert 'data-access-submit' in form
+    assert 'data-kaori-main-scroll' in shell
+    assert "form.closest('[data-kaori-main-scroll]')" in script
+    assert 'scrollHost.scrollTop' in script
+    assert 'form.getBoundingClientRect().top' in script
+    assert 'scrollHost.getBoundingClientRect().top' in script
+    assert 'scrollHost.scrollTo({ top: Math.max(0, destination), behavior: \'auto\' })' in script
+    assert "document.addEventListener('click'" in script
+    assert "target?.closest('[data-access-grant-form-shortcut]')" in script
+    assert 'event.preventDefault()' in script
+    assert "form.querySelector('[data-access-membership]')" in script
+    assert 'membership.focus({ preventScroll: true })' in script

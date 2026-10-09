@@ -25,14 +25,21 @@
             per_page_param='grant_per_page'
             ) }}
         {% endif %}
+        <button type="button"
+                data-access-grant-form-shortcut
+                aria-controls="access-grant-form"
+                class="{{ table_ui.action_classes() }}">
+            <i data-lucide="arrow-up-right" class="h-4 w-4" aria-hidden="true"></i>
+            Go to Grant Form
+        </button>
     {% endset %}
     {{ table_ui.inventory_block_header('shield-check',
         'Access Grant Registry',
         'Committed authorization intent with effective Kubernetes RBAC reconciliation state.',
         loading_id,
         'Refreshing Access Grant Registry',
-        '#access-grant-form',
-        'Apply Grant',
+        none,
+        none,
         header_actions=header_actions) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         {% call registry_ui.filter_form(
