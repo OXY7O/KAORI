@@ -2,8 +2,8 @@
 {% import "components/action_button.html" as action_button %}
 {% set snapshot = capsule_rbac_bootstrap %}
 {% set roles = snapshot.roles if snapshot and snapshot.roles else [] %}
-{% set is_ready = snapshot and snapshot.status == 'ready' and not snapshot.missing and not snapshot.conflict %}
-{% set can_bootstrap = snapshot and snapshot.status == 'missing' and snapshot.missing and not snapshot.conflict %}
+{% set is_ready = snapshot and snapshot.status == 'ready' and roles|length == 4 and not snapshot.missing and not snapshot.conflict %}
+{% set can_bootstrap = snapshot and snapshot.status == 'missing' and roles|length == 4 and snapshot.missing and not snapshot.conflict %}
 {% set can_manage = current_user.has_permission('clusters.manage') and current_user.has_permission('integrations.manage') %}
 <section class="mt-5 overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
          aria-labelledby="capsule-rbac-bootstrap-heading"
@@ -127,7 +127,7 @@
                                         {% if role.status == 'ready' %}
                                             Matches the canonical KAORI permission profile.
                                         {% elif role.status == 'missing' %}
-                                            Can be provisioned after approval.
+                                            {{ 'Can be provisioned after approval.' if can_bootstrap else 'Missing in the latest recorded check.' }}
                                         {% else %}
                                             Existing permissions require review.
                                         {% endif %}
