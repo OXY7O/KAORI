@@ -80,6 +80,20 @@ def test_handoff_plan_acceptance_requires_only_expected_handoff_blockers():
     _can_confirm_plan(_snapshot())
 
 
+def test_proven_namespace_mutation_requires_handoff_but_unknown_provenance_blocks_plan():
+    approved_handoff_blocker = (
+        'sandbox has KAORI-mutated Namespace provider controls; '
+        'independently approved external handoff is required.'
+    )
+    _can_confirm_plan(_snapshot(blockers=[approved_handoff_blocker]))
+
+    with pytest.raises(ValueError, match='Unresolved'):
+        _can_confirm_plan(_snapshot(blockers=[
+            'sandbox has missing or unverified provider mutation provenance; '
+            'investigate before approving handoff.'
+        ]))
+
+
 @pytest.mark.parametrize('blocker', [
     'Namespace/sandbox provider UID mismatch.',
     'External Capsule access observation is stale.',
