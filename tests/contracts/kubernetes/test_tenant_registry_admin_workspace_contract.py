@@ -1476,9 +1476,9 @@ def test_credential_material_delivery_is_one_time_non_cached_and_not_routine_inv
     assert 'csrf_token()' not in component
     assert 'csrf_token(),' in registry
     assert 'One-Time Credential Material' in material
-    assert 'JumpServer ServiceAccount Token' in material
+    assert 'Human Access Token' in material
     assert 'Namespace-Scoped Kubeconfig' in material
-    assert 'GitHub Actions Secret (Base64)' in material
+    assert 'Encoded Kubeconfig (Base64)' in material
     assert 'KAORI does not persist this bearer token or kubeconfig body.' in material
 
     assert "@tenant_bp.post('/credentials/<int:credential_id>/material')" in routes
