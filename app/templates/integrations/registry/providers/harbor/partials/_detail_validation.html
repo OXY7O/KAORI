@@ -1,3 +1,4 @@
+{% import "integrations/components/_provider_detail_posture.html" as provider_detail_posture %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "integrations/components/_validation_poller.html" as validation_poller %}
 {% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
@@ -116,5 +117,9 @@
         {% include "integrations/registry/providers/harbor/partials/_capability_registry.html" %}
     </div>
 </section>
-{{ framed_workspace_tabs.badge_oob("harbor", "validation", readiness_label) }}
+{% if request.headers.get('HX-Request') == 'true' %}
+    {{ framed_workspace_tabs.badge_oob("harbor", "validation", readiness_label) }}
+{% endif %}
 {% include "components/operation_feedback_oob.html" %}
+
+{{ provider_detail_posture.state_oob('harbor', instance.readiness_status, capability_count) }}
