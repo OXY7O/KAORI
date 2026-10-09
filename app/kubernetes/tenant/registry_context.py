@@ -271,6 +271,7 @@ def get_tenant_registry_context(
 
     tenant_ids = [item.id for item in items]
     environment_map: dict[str, list[str]] = {tenant_id: [] for tenant_id in tenant_ids}
+    capsule_environment_map: dict[str, list[dict[str, Any]]] = {tenant_id: [] for tenant_id in tenant_ids}
     namespace_count_map: dict[str, int] = {tenant_id: 0 for tenant_id in tenant_ids}
     namespace_history_count_map: dict[str, int] = {tenant_id: 0 for tenant_id in tenant_ids}
 
@@ -282,6 +283,9 @@ def get_tenant_registry_context(
         )
         for environment_row in environment_rows:
             environment_map.setdefault(environment_row.tenant_id, []).append(environment_row.environment)
+            capsule_environment_map.setdefault(environment_row.tenant_id, []).append({
+                'id': environment_row.id, 'environment': environment_row.environment,
+            })
 
         if include_decommission_preflight:
             namespace_history_rows = (
@@ -339,10 +343,16 @@ def get_tenant_registry_context(
 
     handoff_plans: dict[str, dict[str, Any]] = {}
     handoff_approvals: dict[str, dict[str, Any]] = {}
+    handoff_dry_runs: dict[str, dict[str, Any]] = {}
+    handoff_readbacks: dict[str, dict[str, Any]] = {}
+    successor_claims: dict[str, dict[str, Any]] = {}
     if tenant_ids and include_decommission_preflight:
         for target_type, destination in (
             ('kubernetes_tenant_release_handoff_plan', handoff_plans),
             ('kubernetes_tenant_release_handoff_approval', handoff_approvals),
+            ('kubernetes_tenant_release_native_handoff_dry_run', handoff_dry_runs),
+            ('kubernetes_tenant_release_native_handoff_readback', handoff_readbacks),
+            ('kubernetes_tenant_release_successor_claim', successor_claims),
         ):
             latest_ids = (
                 db.session.query(func.max(AuditEvent.id).label('id'))
@@ -367,6 +377,7 @@ def get_tenant_registry_context(
             'tenant': item,
             'cluster': cluster_map.get(str(item.cluster_id)),
             'environments': environment_map.get(item.id, []),
+            'capsule_environment_options': capsule_environment_map.get(item.id, []),
             'namespace_count': namespace_count_map.get(item.id, 0),
         }
         if include_decommission_preflight:
@@ -375,6 +386,9 @@ def get_tenant_registry_context(
             row['release_preflight'] = release_evidence.get(item.id)
             row['release_handoff_plan'] = handoff_plans.get(item.id)
             row['release_handoff_approval'] = handoff_approvals.get(item.id)
+            row['release_native_handoff_dry_run'] = handoff_dry_runs.get(item.id)
+            row['release_native_handoff_readback'] = handoff_readbacks.get(item.id)
+            row['release_successor_claim'] = successor_claims.get(item.id)
         tenant_rows.append(row)
 
     return {
