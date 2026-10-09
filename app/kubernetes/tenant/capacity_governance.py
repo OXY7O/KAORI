@@ -407,7 +407,9 @@ def _committed_allocation_with_tenant_override(
     rows = (
         TenantNamespace.query.filter(
             TenantNamespace.cluster_id == tenant.cluster_id,
-            TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+            TenantNamespace.provisioning_status.notin_(
+                (TenantNamespaceProvisioningStatus.DEPROVISIONED.value, TenantNamespaceProvisioningStatus.RELEASED.value)
+            ),
         )
         .order_by(TenantNamespace.namespace.asc())
         .all()
