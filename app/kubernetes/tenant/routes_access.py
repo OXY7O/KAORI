@@ -21,6 +21,7 @@ from app.kubernetes.tenant.access_service import (
     revoke_membership_by_id_committed,
     update_tenant_group_by_id_committed,
 )
+from app.kubernetes.tenant.access_drift_analysis import evaluate_tenant_access_drift_committed
 from app.kubernetes.tenant.external_access_observation import observe_external_capsule_access_committed
 from app.kubernetes.tenant.route_common import (
     _csrf,
@@ -30,6 +31,35 @@ from app.kubernetes.tenant.route_common import (
     _tenant_section_redirect,
     tenant_bp,
 )
+
+
+@tenant_bp.post('/external-access/analyze')
+@permission_required('tenant.manage')
+def analyze_capsule_external_access_route():
+    try:
+        _csrf()
+        result = evaluate_tenant_access_drift_committed(
+            tenant_id=str(request.form.get('tenant_id') or '').strip(),
+            actor_user_id=int(current_user.id),
+        )
+    except ValueError as exc:
+        _record(
+            event_type='kubernetes_tenant_access_drift_analysis_blocked',
+            status='warning',
+            title='Access Drift Analysis Requires Attention',
+            message=str(exc),
+            metadata={'tenant_id': request.form.get('tenant_id'), 'operation': 'analyze_tenant_access'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_access_drift_evaluated',
+            status='warning' if result['finding_count'] else 'success',
+            title='Tenant Access Evidence Evaluated',
+            message=f"{result['finding_count']} access declaration finding(s); no provider mutation.",
+            detail='Inspect Kubernetes effective RBAC separately before remediation.',
+            metadata={'tenant_id': result['tenant_id'], 'operation': 'analyze_tenant_access'},
+        )
+    return _tenant_section_redirect('access-grants')
 
 
 @tenant_bp.post('/external-access/observe')
