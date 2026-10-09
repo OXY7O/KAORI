@@ -216,3 +216,11 @@ The Top Consumers report uses `TopConsumersSelection` and the same service/domai
 - No direct fragment endpoint as a normal `href`.
 - No compatibility `/top-consumers/section` route.
 - No inline expandable Consumer Record detail bodies; `View Details` must open the shared Analytics modal.
+
+## Local visual review: canonical workspace tabs (#1020)
+
+The top-level **Consumer Rankings / Consumer Records / Recommendations** view uses the existing `kubernetes/analytics/components/_analysis_workspace.html::tabbed` presentation owner with `detached=true`. This reproduces the standard Kubernetes Analytics workspace header, shared Content Tabs and stable detached evidence panels without nesting the record/table cards inside another card.
+
+The nested CPU / Memory / PVC / Pods control remains subordinate Content Tabs within the Rankings panel, driven by the same `analytics/controls.js` state owner. Tab and panel IDs, query selection, native `hidden` fallback, and HTMX Consumer Records refresh contracts are unchanged. This is a presentation-only correction, with no dataset, ranking, pagination, provider, or permission changes.
+
+Review target: `kaori/review/staging-uat` in the devcontainer. Staging admission and CI/CD gates remain held until separately authorized.
