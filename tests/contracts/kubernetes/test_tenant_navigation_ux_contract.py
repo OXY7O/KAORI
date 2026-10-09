@@ -82,7 +82,7 @@ def test_tenant_pages_reuse_kaori_shared_presentation_patterns() -> None:
     assert 'components/content_tabs.html' in operations
     assert 'content_tabs.render_links' in operations
 
-    for label in ('Provisioning', 'Runs & Evidence', 'Drift & Reconcile', 'Activity'):
+    for label in ('Provisioning', 'Runs & Evidence', 'Allocation Drift', 'Operational Reconcile', 'Activity'):
         assert label in operations
 
     for path in (
