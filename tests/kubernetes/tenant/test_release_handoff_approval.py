@@ -186,8 +186,19 @@ def test_prepare_handoff_commits_plan_without_provider_mutation(monkeypatch):
     from app.kubernetes.tenant import release_handoff_approval as module
 
     tenant = SimpleNamespace(ownership_status='adopted', lifecycle_status='ready')
+    class _TenantQuery:
+        def filter_by(self, **kwargs):
+            return self
+
+        def with_for_update(self):
+            return self
+
+        def one_or_none(self):
+            return tenant
+
     session = _FakeSession(tenant)
     monkeypatch.setattr(module, 'db', SimpleNamespace(session=session))
+    monkeypatch.setattr(module, 'Tenant', SimpleNamespace(query=_TenantQuery()))
     monkeypatch.setattr(module, 'AuditEvent', lambda **kwargs: SimpleNamespace(**kwargs))
     monkeypatch.setattr(module, 'review_tenant_release_preflight_committed', lambda **_: _snapshot())
 
@@ -231,7 +242,7 @@ def test_independent_handoff_approval_commits_pending_provider_state(monkeypatch
             return self
 
         def one_or_none(self):
-            return SimpleNamespace(lifecycle_status='ready')
+            return SimpleNamespace(lifecycle_status='ready', ownership_status='adopted')
 
     session = _FakeSession()
     monkeypatch.setattr(module, 'db', SimpleNamespace(session=session))
