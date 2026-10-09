@@ -74,12 +74,23 @@ The control opens the existing KAORI native dialog in the browser top layer,
 **outside the horizontal table scrolling container**. This avoids wrapped
 inline forms, clipped popovers and inconsistent row heights.
 
-The dialog preserves the exact Tenant/cluster/provider/generation identity and
-committed lifecycle snapshot. Eligible controls are grouped under **Namespace
-Attachment**, **Release Governance**, and **Lifecycle Actions**. Capsule
-attachment still verifies authoritative UID/resourceVersion and does not
-automatically grant RBAC. Release preflight status and dependency blockers
-are displayed as **persistent in-dialog evidence**, not a hover-only Info Tip.
+The dialog preserves the exact Tenant/cluster/provider/generation identity
+in a compact header with lifecycle badge. A three-metric summary strip shows
+Namespace, Environment and Lifecycle counts/state. On desktop the modal uses
+a responsive **2:1 management grid**: Release Governance and Lifecycle Actions
+occupy the primary column, while Capsule Namespace Attachment and Provider
+Authority occupy the supporting column. The smaller viewport uses a stacked
+layout with Namespace Attachment first; no fixed-width horizontal scrolling.
+
+Release Review, Handoff Inventory and Governed Handoff share one action group
+with generous gaps and expand within the modal rather than occupying separate
+full-width action rows. Review readiness uses a compact status summary; Release
+blockers use a separate, padded warning panel with readable multi-line entries.
+Lifecycle **Blocked** appears together with its Decommission warning panel
+instead of as a detached badge. Capsule attachment still verifies authoritative
+UID/resourceVersion and does not automatically grant RBAC. Release preflight
+status and dependency blockers are displayed as **persistent in-dialog
+evidence**, not a hover-only Info Tip.
 Governed Handoff remains approval-gated; an internal acknowledgment,
 unverified external reference or dry-run is **not** proof of a successor's
 acceptance or authority to mark provider-mutated resources Released.
