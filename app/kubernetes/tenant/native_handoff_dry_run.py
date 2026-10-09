@@ -140,6 +140,8 @@ def dry_run_native_handoff_component(
         raise ValueError('Dry-run unexpectedly changed provider immutable identity.')
     if any(key in after_labels for key in _MARKER_KEYS):
         raise ValueError('Dry-run did not remove all KAORI ownership markers.')
+    if _read(_metadata(preview), 'deletion_timestamp'):
+        raise ValueError('Dry-run unexpectedly marked provider resource for deletion.')
     if _spec(before) != _spec(preview):
         raise ValueError('Dry-run changed Kubernetes spec; ownership handoff is blocked.')
     expected_labels = {
@@ -188,6 +190,11 @@ def dry_run_native_release_handoff_committed(
         or approved.get('plan_sha256') != plan_sha256
         or approved.get('status') != 'acknowledged_pending_provider_handoff'
         or approved.get('approved_by') == actor_user_id
+        or approved.get('approved_by') == plan.get('requested_by')
+        or approved.get('requested_by') != plan.get('requested_by')
+        or approved.get('handoff_fingerprint') != plan.get('handoff_fingerprint')
+        or approved.get('provider_handoff_verified') is not False
+        or approved.get('release_authorized') is not False
         or not _checked_recently(approved.get('approved_at'))
     ):
         raise ValueError('Current, independently approved handoff plan is required.')
@@ -220,6 +227,9 @@ def dry_run_native_release_handoff_committed(
     ]
     if not selected or any(item.get('ownership') != 'kaori_marker_correlated' for item in selected):
         raise ValueError('Native handoff requires exact KAORI-correlated ownership evidence.')
+    keys = [(item.get('namespace'), item.get('kind'), item.get('name')) for item in selected]
+    if len(set(keys)) != len(keys):
+        raise ValueError('Duplicate Native provider objects in handoff evidence; refuse preview.')
     cluster = db.session.get(Cluster, tenant.cluster_id)
     if cluster is None:
         raise ValueError('Canonical Native Kubernetes cluster is unavailable.')
