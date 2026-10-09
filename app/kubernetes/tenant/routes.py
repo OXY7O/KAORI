@@ -450,8 +450,6 @@ def _operations_drift_context() -> dict[str, Any]:
 @any_permission_required('tenant.view', 'tenant.manage')
 def operations():
     active_tab = _operations_active_tab()
-    requested_drift_view = str(request.args.get('drift_view') or 'allocation')
-    drift_view = requested_drift_view if requested_drift_view in {'allocation', 'operations'} else 'allocation'
     context = _tenant_workspace_context()
     context.update(get_tenant_operations_summary_context())
     if active_tab == 'provisioning':
@@ -466,7 +464,7 @@ def operations():
                 search=str(request.args.get('ops_evidence_search') or ''),
             )
         )
-    elif active_tab == 'drift-reconcile':
+    elif active_tab in {'allocation-drift', 'operational-reconcile'}:
         context.update(_operations_drift_context())
 
     return render_template(
@@ -475,7 +473,6 @@ def operations():
         tenant_page_title='Operations',
         tenant_page_icon='activity',
         active_tab=active_tab,
-        drift_view=drift_view,
         can_manage=current_user.has_permission('tenant.manage'),
         **context,
     )
