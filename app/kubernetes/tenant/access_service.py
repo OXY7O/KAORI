@@ -978,6 +978,16 @@ def get_tenant_access_context() -> dict[str, object]:
             tenant for tenant in tenant_options
             if tenant.provider_key == 'capsule' and tenant.provider_state == 'capsule'
         ],
+        'external_native_tenants': [
+            tenant for tenant in tenant_options
+            if tenant.provider_key == 'native_kubernetes'
+            and tenant.provider_state == 'native'
+            and tenant.reconciliation_authority == 'native_kubernetes'
+        ],
+        'recent_external_native_access': (
+            AuditEvent.query.filter_by(target_type='kubernetes_tenant_native_external_access_inventory')
+            .order_by(AuditEvent.id.desc()).limit(5).all()
+        ),
         'recent_external_capsule_access': (
             AuditEvent.query.filter_by(target_type='kubernetes_tenant_external_access_inventory')
             .order_by(AuditEvent.id.desc()).limit(5).all()
