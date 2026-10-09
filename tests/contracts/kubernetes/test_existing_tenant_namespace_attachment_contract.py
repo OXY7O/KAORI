@@ -44,4 +44,8 @@ def test_native_namespace_can_attach_to_existing_tenant_without_duplicate_tenant
     assert "'operation': 'attach_existing_tenant_namespace' if attach_existing" in routes
     assert "'provider_mutation_may_have_started': not (" in routes
     assert 'KAORI database rollback' in routes
+    assert 'provider_attempt_started = False' in routes
+    assert "'provider_mutation_may_have_started': provider_attempt_started and not (" in routes
+    assert "'submitted_preflight_provider_uid': request.form.get('provider_uid')" in routes
+    assert "'submitted_preflight_resource_version': request.form.get('provider_resource_version')" in routes
     assert "'attach_existing_tenant_namespace'" in routes
