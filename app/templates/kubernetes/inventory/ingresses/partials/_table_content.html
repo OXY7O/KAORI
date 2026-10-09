@@ -9,16 +9,16 @@
         <thead class="{{ table_ui.head_classes() }}">
             <tr>
                 <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} min-w-[18rem]">Ingress</th>
+                    class="{{ table_ui.header_cell_classes() }} w-[19%]">Ingress</th>
                 <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} min-w-[14rem]">Scope</th>
+                    class="{{ table_ui.header_cell_classes() }} w-[16%]">Scope</th>
                 <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} min-w-[17rem]">Publication</th>
+                    class="{{ table_ui.header_cell_classes() }} w-[30%]">Publication</th>
                 <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} min-w-[14rem]">TLS References</th>
+                    class="{{ table_ui.header_cell_classes() }} w-[13%]">TLS References</th>
                 <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} min-w-[15rem]">Routing</th>
-                <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Details</th>
+                    class="{{ table_ui.header_cell_classes() }} w-[10%]">Routing</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[12%]">Details</th>
             </tr>
         </thead>
         <tbody class="{{ table_ui.body_classes() }}">
@@ -28,10 +28,19 @@
                     <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(ingress.name, ingress.class ~ ' · ' ~ ingress.class_supporting, 'route') }}</td>
                     <td class="{{ table_ui.cell_classes() }}">{{ table_ui.namespaced_scope_identity(ingress.cluster_name, ingress.cluster_environment, ingress.namespace) }}</td>
                     <td class="{{ table_ui.cell_classes() }}">
-                        <p class="truncate text-sm font-semibold text-content-primary" title="{{ ingress.host }}">{{ ingress.host }}</p>
-                        <p class="mt-0.5 truncate text-xs leading-5 text-content-muted" title="{{ ingress.host_supporting }}">{{ ingress.host_supporting }}</p>
-                        <p class="mt-1 truncate text-xs leading-5 text-content-secondary" title="{{ ingress.address }}">Address · {{ ingress.address or "Not Published" }}</p>
-                        <div class="mt-2">{{ table_label.status_indicator_label(ingress.publication_label, ingress.publication_tone) }}</div>
+                        <div class="flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                            <p class="min-w-0 flex-1 truncate text-sm font-semibold text-content-primary"
+                               title="{{ ingress.host }}">{{ ingress.host }}</p>
+                            {{ table_label.status_indicator_label(ingress.publication_label, ingress.publication_tone) }}
+                        </div>
+                        <div class="mt-1 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs leading-5 text-content-muted">
+                            <span class="truncate" title="{{ ingress.host_supporting }}">{{ ingress.host_supporting }}</span>
+                            <span class="inline-flex min-w-0 items-center gap-1.5">
+                                <span class="shrink-0 text-content-muted">Address</span>
+                                <span class="min-w-0 truncate font-medium text-content-secondary"
+                                      title="{{ ingress.address }}">{{ ingress.address or "Not Reported" }}</span>
+                            </span>
+                        </div>
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">
                         <p class="truncate text-sm font-semibold text-content-primary" title="{{ ingress.tls_reference_label }}">{{ ingress.tls_reference_label }}</p>
