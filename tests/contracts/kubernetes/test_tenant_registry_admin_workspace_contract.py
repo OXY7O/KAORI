@@ -270,7 +270,35 @@ def test_credentials_use_symmetric_issuance_and_full_lifecycle_table() -> None:
     assert workspace.count('hx-target="#tenant-admin-workspace"') >= 2
     assert "table_ui.table_classes('min-w-[760px] table-fixed lg:min-w-0')" in registry
     assert 'min-w-[1180px]' not in registry
-    assert 'table_ui.action_grid_classes(2)' in registry
+    assert 'table_ui.action_grid_classes(2)' not in registry
+    assert 'flex flex-wrap items-center justify-end gap-1.5' in registry
+    assert 'data-kaori-dialog-open' in registry
+    assert 'data-kaori-native-dialog' in registry
+    assert 'data-dialog-target="credential-more-actions-{{ credential.id }}"' in registry
+    assert 'aria-haspopup="dialog"' in registry
+    assert 'More Actions' in registry
+    assert 'Revoke Access' in registry
+    assert 'Revoke Credential' in registry
+    assert 'Suspend Credential' in registry
+    assert 'Renew Credential' in registry
+    assert 'No actions' in registry
+    assert 'Read-only' in registry
+    assert 'credential.status == \'revoked\'' in registry
+    assert "credential.status == 'suspended'" in registry
+    assert "credential.status in ['active', 'renewal_due']" in registry
+    assert "credential.reconciliation_status == 'ready'" in registry
+    assert "and delivery_targets" in registry
+    # More is a shared native dialog outside the scrolling table, not a clipped popover.
+    assert registry.index('data-kaori-native-dialog') > registry.index('registry_ui.footer(')
+    for route in (
+        'renew_credential_route',
+        'resume_credential_route',
+        'suspend_credential_route',
+        'revoke_credential_route',
+    ):
+        assert route in registry
+    assert registry.count('hx-target="#tenant-admin-workspace"') == 5
+    assert 'name="csrf_token"' in registry
     assert 'flex flex-wrap justify-end gap-1.5' not in registry
     assert 'Type / Delivery' in registry
     assert 'Owner / Delivery' not in registry
@@ -278,7 +306,7 @@ def test_credentials_use_symmetric_issuance_and_full_lifecycle_table() -> None:
         assert action in registry
     assert 'components/one_time_secret.html' in registry
     assert 'data-credential-material-open' in registry
-    assert 'Reveal Token' in registry
+    assert 'Generate' in registry
     assert 'Generate Kubeconfig' in registry
     assert 'data-credential-material-namespace' in registry
     assert 'data-credential-material-ttl' in registry
