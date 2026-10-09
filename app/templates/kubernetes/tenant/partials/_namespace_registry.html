@@ -158,15 +158,13 @@
             </tbody>
         </table>
     </div>
-    {% if namespace_pagination.total_items > 0 %}
-        {{ registry_ui.footer('tenant.namespace_provisioning',
-                registry_id,
-                loading_id,
-                namespace_pagination,
-                query_params,
-                namespace_pagination.allowed_per_page,
-                resource_label='Namespaces',
-                rows_aria_label='Namespace rows per page',
-                control_name='tenant-namespace') }}
-    {% endif %}
+    {{ registry_ui.footer('tenant.namespace_provisioning',
+            registry_id,
+            loading_id,
+            namespace_pagination,
+            query_params,
+            namespace_pagination.allowed_per_page,
+            resource_label='Namespaces',
+            rows_aria_label='Namespace rows per page',
+            control_name='tenant-namespace') }}
 </section>
