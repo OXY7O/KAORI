@@ -47,6 +47,7 @@ from app.kubernetes.tenant.decommission_service import (
 from app.kubernetes.tenant.discovery_adoption import (
     adopt_discovered_tenant_committed,
     attach_discovered_native_namespace_committed,
+    attach_capsule_namespace_to_existing_tenant_committed,
 )
 from app.kubernetes.tenant.discovery_service import get_tenant_adoption_preflight_context
 from app.kubernetes.tenant.job_adapter import (
@@ -617,6 +618,37 @@ def create_tenant_route():
             },
         )
     return _tenant_section_redirect('tenant-setup')
+
+
+@tenant_bp.post('/capsule/namespace-attach')
+@permission_required('tenant.manage')
+def attach_existing_capsule_namespace_route():
+    try:
+        _csrf()
+        tenant, environment, namespace = attach_capsule_namespace_to_existing_tenant_committed(
+            request.form
+        )
+    except (ValueError, ApiException) as exc:
+        _record(
+            event_type='kubernetes_tenant_capsule_namespace_attachment_blocked',
+            status='warning',
+            title='Capsule Namespace Attachment Blocked',
+            message=str(exc),
+            detail='Capsule Tenant, Namespace and external RBAC remain provider authoritative.',
+            metadata={'environment_id': request.form.get('environment_id'),
+                      'operation': 'attach_capsule_namespace'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_capsule_namespace_attached',
+            status='success',
+            title='Capsule Namespace Adopted',
+            message=f'{namespace.namespace} attached to {tenant.name} · {environment.environment}.',
+            detail='Capsule controller remains authoritative. No provider mutation or grant expansion.',
+            metadata={'tenant_id': tenant.id, 'namespace_id': namespace.id,
+                      'operation': 'attach_capsule_namespace'},
+        )
+    return _tenant_section_redirect('registry')
 
 
 @tenant_bp.post('/tenants/<string:tenant_id>/release-preflight')
