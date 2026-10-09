@@ -55,7 +55,7 @@ Provider readiness is **not** a page-level read gate. Tenant Registry, Resource 
 The two snapshot concepts are intentionally separate:
 
 - **Tenant Collection Snapshot** — committed evidence produced by `kubernetes.tenant.sync`; it retains last-success, source cutoff, scope, coverage, and exceptions while the provider is offline.
-- **Live Provider Connectivity** — a short live Kubernetes API reachability probe. Non-Overview pages expose it as an explicit **Check Live Connectivity** action; routine page load performs no Kubernetes API probe. The result is supplemental operational context and never replaces the committed snapshot.
+- **Live Provider Connectivity** — a short, explicit live Kubernetes API reachability probe. The on-demand endpoint remains available for supported operational flows; routine Tenant page reads do not perform live probes, and child pages do not expose a second connectivity panel. A probe result never replaces the committed snapshot.
 
 This boundary does not weaken mutation safety. Create/provision/reconcile/credential/provider mutations continue to use their owning readiness/capability checks and fail closed. Discovery from #736 remains the explicit live-provider read exception.
 
@@ -77,7 +77,7 @@ KAORI Tenant state + committed Kubernetes inventory
 
 `kubernetes.tenant.sync` runs through the canonical Platform Operations registered-job scheduler and the existing `inventory` worker queue. It does not introduce a Tenant-specific scheduler framework and it does not perform Tenant reconciliation or provider mutation.
 
-Non-Overview Tenant pages show the same committed **Tenant Collection Snapshot** evidence below the Hero, followed by the separately labeled **Live Provider Connectivity** surface when a Kubernetes connection is registered. The committed snapshot is rendered synchronously from KAORI state; the live provider probe is lazy and non-cacheable.
+Non-Overview Tenant pages (Tenants, Resource Profiles, Namespace Provisioning, and Operations) render one **compact Tenant Collection Snapshot** evidence box below the Hero using the existing Operational Callout component. It prioritizes snapshot status, last successful collection, and committed namespace coverage; exceptional scope, collection exceptions, and non-current source cutoff are shown only when relevant. The full canonical Snapshot Context Bar and **Sync Tenant / Configure Sync** actions remain on Overview without changes. Child pages do not render a Live Provider Connectivity panel or Check Live Connectivity action. Both presentations are derived from committed KAORI evidence and require no live Kubernetes API probe.
 
 Overview actions follow the established operational sync pattern:
 
