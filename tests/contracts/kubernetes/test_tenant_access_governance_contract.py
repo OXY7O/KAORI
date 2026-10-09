@@ -273,3 +273,23 @@ def test_apply_access_grant_form_uses_context_preview_instead_of_redundant_helpe
     assert 'data-reconciliation-authority' in workspace
     assert 'data-access-profile-guidance' not in script
     assert 'data-access-scope-guidance' not in script
+
+
+def test_access_grant_registry_reconciliation_uses_canonical_accessible_details_popover() -> None:
+    registry = read('app/templates/kubernetes/tenant/partials/_access_grant_registry.html')
+    info_tip = read('app/templates/components/info_tip.html')
+    info_tip_script = read('app/static/js/info_tips.js')
+
+    assert '{% import "components/info_tip.html" as info_tip %}' in registry
+    assert 'table_label.status_label(grant.reconciliation_status|title, reconciliation_tone)' in registry
+    assert "info_tip.render(" in registry
+    assert "'access-grant-reconciliation-' ~ grant.id" in registry
+    assert 'grant.reconciliation_message or \'Awaiting Kubernetes RBAC evidence.\'' in registry
+    assert "placement='left'" in registry
+    assert 'max-w-[260px]' not in registry
+    assert 'role="tooltip"' in info_tip
+    assert 'data-kaori-info-tip-trigger' in info_tip
+    assert "event.key === 'Escape'" in info_tip_script
+    assert "document.addEventListener('click'" in info_tip_script
+    assert "document.addEventListener('focusin'" in info_tip_script
+    assert "document.addEventListener('htmx:beforeSwap'" in info_tip_script

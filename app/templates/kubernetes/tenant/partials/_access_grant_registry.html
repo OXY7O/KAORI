@@ -1,6 +1,7 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry_ui %}
+{% import "components/info_tip.html" as info_tip %}
 {% set registry_id = "tenant-access-grant-registry" %}
 {% set loading_id = "tenant-access-grant-registry-loading" %}
 {% set query_params = {
@@ -146,10 +147,15 @@
                             </p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
-                            {{ table_label.status_label(grant.reconciliation_status|title, reconciliation_tone) }}
-                            <p class="mt-1 max-w-[260px] text-xs leading-5 text-content-muted">
-                                {{ grant.reconciliation_message or 'Awaiting Kubernetes RBAC evidence.' }}
-                            </p>
+                            <div class="flex items-center gap-1.5 whitespace-nowrap">
+                                {{ table_label.status_label(grant.reconciliation_status|title, reconciliation_tone) }}
+                                {{ info_tip.render(
+                                    'access-grant-reconciliation-' ~ grant.id,
+                                    'Reconciliation · ' ~ (grant.reconciliation_status|title),
+                                    grant.reconciliation_message or 'Awaiting Kubernetes RBAC evidence.',
+                                    placement='left'
+                                ) }}
+                            </div>
                         </td>
                         <td class="{{ table_ui.cell_classes(action=true) }}">
                             <div class="flex min-w-[15rem] flex-wrap justify-end gap-2">
