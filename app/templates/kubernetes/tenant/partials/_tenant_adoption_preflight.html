@@ -640,7 +640,9 @@
             </div>
             <footer class="sticky bottom-0 flex flex-col gap-3 border-t border-outline-subtle bg-surface-card px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                 <p class="text-xs leading-5 text-content-muted">
-                    <span class="font-semibold text-content-primary">Adopt managed authority; keep provider constraints mirrored.</span>
+                    <span class="font-semibold text-content-primary">
+                        {{ 'Attach to the existing Capsule Tenant; keep provider constraints mirrored.' if tenant_adoption_attachment_only else 'Adopt managed authority; keep provider constraints mirrored.' }}
+                    </span>
                     Result: Adopted / Observed.
                 </p>
                 <div class="flex flex-col-reverse gap-2 sm:flex-row">
@@ -649,7 +651,7 @@
                             class="{{ action_button.classes('secondary') }}">Cancel</button>
                     <button type="submit" class="{{ action_button.classes('primary') }}">
                         <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>
-                        Adopt & Manage
+                        {{ 'Attach Capsule Namespace' if tenant_adoption_attachment_only else 'Adopt & Manage' }}
                     </button>
                 </div>
             </footer>
