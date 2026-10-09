@@ -21,7 +21,10 @@ from app.kubernetes.tenant.access_service import (
     revoke_membership_by_id_committed,
     update_tenant_group_by_id_committed,
 )
-from app.kubernetes.tenant.access_drift_analysis import evaluate_tenant_access_drift_committed
+from app.kubernetes.tenant.access_drift_analysis import (
+    evaluate_native_access_drift_committed,
+    evaluate_tenant_access_drift_committed,
+)
 from app.kubernetes.tenant.access_remediation_plan import prepare_tenant_access_remediation_plan_committed
 from app.kubernetes.tenant.external_access_observation import observe_external_capsule_access_committed
 from app.kubernetes.tenant.external_native_access_observation import observe_external_native_access_committed
@@ -63,6 +66,36 @@ def plan_capsule_access_remediation_route():
             ),
             detail='No provider mutation; use existing Inspect/Reconcile only after approval.',
             metadata={'tenant_id': result['tenant_id'], 'operation': 'plan_access_remediation'},
+        )
+    return _tenant_section_redirect('access-grants')
+
+
+@tenant_bp.post('/external-access/analyze-native')
+@permission_required('tenant.manage')
+def analyze_native_access_drift_route():
+    """Compare committed Native RoleBinding declarations, never effective Kubernetes state."""
+    try:
+        _csrf()
+        result = evaluate_native_access_drift_committed(
+            tenant_id=str(request.form.get('tenant_id') or '').strip(),
+            actor_user_id=int(current_user.id),
+        )
+    except ValueError as exc:
+        _record(
+            event_type='kubernetes_tenant_native_access_drift_analysis_blocked',
+            status='warning',
+            title='Native Access Analysis Requires Attention',
+            message=str(exc),
+            metadata={'tenant_id': request.form.get('tenant_id'), 'operation': 'analyze_native_access'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_native_access_drift_evaluated',
+            status='warning' if result['finding_count'] else 'success',
+            title='Native Access Declaration Analysis Recorded',
+            message=f"{result['finding_count']} RBAC declaration finding(s); no mutation.",
+            detail='Verify effective Role/RoleBinding permissions separately before remediation.',
+            metadata={'tenant_id': result['tenant_id'], 'operation': 'analyze_native_access'},
         )
     return _tenant_section_redirect('access-grants')
 

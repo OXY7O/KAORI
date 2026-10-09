@@ -5,6 +5,7 @@ from typing import Any
 
 from app.extensions.db import db
 from app.kubernetes.tenant.external_access_observation import latest_external_capsule_access_evidence
+from app.kubernetes.tenant.external_native_access_observation import latest_external_native_access_evidence
 from app.models.audit import AuditEvent
 from app.models.tenant import Tenant, TenantAccessGrant
 
@@ -116,6 +117,152 @@ def evaluate_tenant_access_drift_committed(*, tenant_id: str, actor_user_id: int
         target_id=tenant_id,
         action='tenant.access_drift.evaluated',
         summary='Evaluated Capsule RBAC declarations against KAORI committed Access Grants.',
+        metadata_json=result,
+    ))
+    db.session.commit()
+    return result
+
+
+_NATIVE_TARGET = 'kubernetes_tenant_native_access_drift_evidence'
+
+
+def classify_native_access_observation(
+    evidence: dict[str, Any], grants: list[TenantAccessGrant]
+) -> list[dict[str, str]]:
+    """Correlate Native Namespace RoleBinding *declarations*, not effective permissions."""
+    from app.kubernetes.tenant.access_reconciliation import _binding_name, _role_name
+
+    by_public_id = {grant.public_id: grant for grant in grants}
+    declared: set[str] = set()
+    findings: list[dict[str, str]] = []
+    for binding in evidence.get('bindings') or []:
+        ownership = str(binding.get('ownership') or '')
+        namespace = str(binding.get('namespace') or '')
+        rolebinding_name = str(binding.get('name') or '')
+        locator = f'{namespace}/{rolebinding_name}'
+        if ownership == 'external_observed':
+            findings.append({
+                'code': 'external_native_rolebinding',
+                'severity': 'warning',
+                'subject': locator,
+                'action': 'Review provider-owned access; do not import or revoke it automatically.',
+            })
+            continue
+        if ownership == 'kaori_marker_unverified':
+            findings.append({
+                'code': 'unverified_kaori_grant_marker',
+                'severity': 'critical',
+                'subject': locator,
+                'action': 'Investigate forged/stale ownership labels; avoid provider mutation.',
+            })
+            continue
+
+        grant_id = str(binding.get('kaori_grant_id') or '')
+        grant = by_public_id.get(grant_id) if ownership == 'kaori_correlated' else None
+        if grant is None:
+            findings.append({
+                'code': 'unresolved_native_rolebinding_ownership',
+                'severity': 'critical',
+                'subject': locator,
+                'action': 'Binding ownership is unverified; refresh observation and investigate.',
+            })
+            continue
+        declared.add(grant.public_id)
+        if grant.status != 'active':
+            findings.append({
+                'code': 'revoked_grant_still_declared',
+                'severity': 'critical',
+                'subject': grant.public_id,
+                'action': 'Inspect effective Namespace RBAC and explicitly reconcile revoked grant.',
+            })
+            continue
+
+        if grant.scope_type == 'namespace':
+            allowed = {grant.namespace.namespace} if grant.namespace else set()
+        elif grant.scope_type == 'environment':
+            allowed = {record.namespace for record in grant.environment.namespaces} if grant.environment else set()
+        else:
+            allowed = {
+                record.namespace for environment in grant.tenant.environments
+                for record in environment.namespaces
+            }
+        if namespace not in allowed:
+            findings.append({
+                'code': 'native_grant_scope_mismatch',
+                'severity': 'critical',
+                'subject': locator,
+                'action': 'Binding Namespace is outside the committed KAORI grant scope.',
+            })
+            continue
+        reference = binding.get('role_ref') or {}
+        if (
+            rolebinding_name != _binding_name(grant)
+            or reference.get('kind') != 'Role'
+            or reference.get('name') != _role_name(grant)
+        ):
+            findings.append({
+                'code': 'native_grant_role_reference_mismatch',
+                'severity': 'critical',
+                'subject': locator,
+                'action': 'Observed role reference differs from the canonical KAORI grant contract.',
+            })
+
+    for grant in grants:
+        if grant.status == 'active' and grant.public_id not in declared:
+            findings.append({
+                'code': 'active_grant_missing_native_declaration',
+                'severity': 'warning',
+                'subject': grant.public_id,
+                'action': 'Inspect/Reconcile KAORI grant after checking provider scope and inventory freshness.',
+            })
+    return findings
+
+
+def evaluate_native_access_drift_committed(*, tenant_id: str, actor_user_id: int) -> dict[str, Any]:
+    """Analyze committed Native RBAC evidence without live reads or provider writes."""
+    tenant = db.session.get(Tenant, tenant_id)
+    if (
+        tenant is None or tenant.provider_key != 'native_kubernetes'
+        or tenant.reconciliation_authority != 'native_kubernetes'
+        or tenant.provider_state != 'native' or tenant.lifecycle_status != 'ready'
+    ):
+        raise ValueError('Select a healthy governed Native Tenant.')
+    observation = latest_external_native_access_evidence(tenant_id)
+    if not observation or observation.get('tenant_id') != tenant_id:
+        raise ValueError('Inspect Native RBAC before analyzing Access Drift.')
+    timestamp = datetime.fromisoformat(str(observation.get('observed_at') or ''))
+    age = (datetime.now(UTC) - timestamp).total_seconds() if timestamp.tzinfo else -1
+    if age < 0 or age > 3600:
+        raise ValueError('Native RBAC evidence is stale; inspect the provider again.')
+    grants = TenantAccessGrant.query.filter_by(tenant_id=tenant_id).all()
+    for grant in grants:
+        changed_at = grant.updated_at
+        if changed_at is not None:
+            changed = changed_at.replace(tzinfo=UTC) if changed_at.tzinfo is None else changed_at
+            if changed > timestamp:
+                raise ValueError('Access Grants changed since Native observation; inspect again.')
+    findings = classify_native_access_observation(observation, grants)
+    result = {
+        'tenant_id': tenant_id,
+        'cluster_id': tenant.cluster_id,
+        'provider': 'native_kubernetes',
+        'status': 'review_required' if findings else 'no_declaration_findings',
+        'severity': 'critical' if any(row['severity'] == 'critical' for row in findings)
+        else 'warning' if findings else 'info',
+        'findings': findings,
+        'finding_count': len(findings),
+        'source_observed_at': observation['observed_at'],
+        'source_evidence_sha256': observation.get('evidence_sha256'),
+        'evaluated_at': datetime.now(UTC).isoformat(),
+        'effective_rbac_verified': False,
+        'auto_remediation_performed': False,
+    }
+    db.session.add(AuditEvent(
+        actor_user_id=actor_user_id,
+        target_type=_NATIVE_TARGET,
+        target_id=tenant_id,
+        action='tenant.native_access_drift.evaluated',
+        summary='Compared committed Native RoleBinding declarations with KAORI Access Grants.',
         metadata_json=result,
     ))
     db.session.commit()
