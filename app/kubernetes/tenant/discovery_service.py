@@ -583,7 +583,8 @@ def _next_tenant_generation(*, cluster_id: str, slug: str) -> int:
         .order_by(Tenant.generation.desc(), Tenant.created_at.desc())
         .all()
     )
-    if any(item.lifecycle_status not in {TenantLifecycleStatus.DECOMMISSIONED.value, TenantLifecycleStatus.RELEASED.value} for item in prior):
+    terminal = {TenantLifecycleStatus.DECOMMISSIONED.value, TenantLifecycleStatus.RELEASED.value}
+    if any(item.lifecycle_status not in terminal for item in prior):
         raise ValueError('An active KAORI Tenant with this name/slug already exists on the selected cluster.')
     return max((int(item.generation or 1) for item in prior), default=0) + 1
 
@@ -594,7 +595,8 @@ def _next_namespace_generation(*, cluster_id: str, namespace: str) -> int:
         .order_by(TenantNamespace.generation.desc(), TenantNamespace.created_at.desc())
         .all()
     )
-    if any(item.provisioning_status not in {TenantNamespaceProvisioningStatus.DEPROVISIONED.value, TenantNamespaceProvisioningStatus.RELEASED.value} for item in prior):
+    terminal = {TenantNamespaceProvisioningStatus.DEPROVISIONED.value, TenantNamespaceProvisioningStatus.RELEASED.value}
+    if any(item.provisioning_status not in terminal for item in prior):
         raise ValueError('This namespace is already represented by an active KAORI Tenant record.')
     return max((int(item.generation or 1) for item in prior), default=0) + 1
 
