@@ -104,3 +104,13 @@ def test_multiple_capsule_claims_fail_closed():
     }
     with pytest.raises(ValueError, match='ambiguous'):
         _validate(namespace=_namespace(labels=labels))
+
+
+def test_capsule_owner_reference_uid_must_match_current_tenant_generation():
+    stale = SimpleNamespace(
+        kind='Tenant', name='team-a',
+        uid='recreated-capsule',
+        api_version='capsule.clastix.io/v1beta2',
+    )
+    with pytest.raises(ValueError, match='UID belongs to another generation'):
+        _validate(namespace=_namespace(owners=[stale]))
