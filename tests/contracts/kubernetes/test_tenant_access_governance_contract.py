@@ -268,6 +268,8 @@ def test_apply_access_grant_form_uses_context_preview_instead_of_redundant_helpe
     assert "target.matches('[data-access-environment]')" in script
     assert "target.matches('[data-access-namespace]')" in script
     assert 'Native Kubernetes authority selected.' in script
-    assert 'provider mutation remains blocked.' in script
+    assert 'Unsupported mutation remains blocked.' in script
+    assert 'data-provider-state' in workspace
+    assert 'data-reconciliation-authority' in workspace
     assert 'data-access-profile-guidance' not in script
     assert 'data-access-scope-guidance' not in script
