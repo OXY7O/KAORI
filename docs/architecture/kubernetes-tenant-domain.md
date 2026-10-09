@@ -129,10 +129,15 @@ The existing Adoption modal controller owns the destination change behavior
 and reinitializes it after HTMX preflight replacement. The Discovery Review
 trigger targets the HTMX-owned `#tenant-adoption-preflight-slot`, and the
 controller resolves the actual swap target from the HTMX event detail or DOM
-event target. It opens the returned normal **or** provider-revalidation-error
-modal after swap, with settle/request fallbacks so a successful preflight
-cannot silently remain hidden. Failed preflight loads surface a visible
-accessible alert in the slot; the UI never submits Adoption automatically. Header language,
+event target. Both the successful and provider-revalidation-error HTML fragments are
+rendered **visible by default** when inserted into the HTMX-owned slot; their
+visibility does not depend on post-swap callbacks, JavaScript timing or browser
+caching. The existing delegated controller enhances focus and document scroll
+locking once per response via swap/settle/request events, while preserving
+close/ESC behavior. Failed preflight loads surface an accessible warning in the
+slot; neither view submits Adoption automatically. Browser validation must
+separately confirm that the preflight GET completes and the response is inserted
+into the expected slot (a network/server error cannot be solved by modal CSS). Header language,
 readiness summary, human confirmation and submit label reflect the active
 mode. Create-specific fields are disabled for the attachment request so they
 are neither validated nor posted, and are re-enabled when returning to Create.
