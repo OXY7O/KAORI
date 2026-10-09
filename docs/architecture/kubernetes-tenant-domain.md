@@ -34,13 +34,33 @@ Operational management belongs to **Kubernetes → Tenant**. Settings does not r
 
 The completed feature must prove create → provider selection → profile/namespace provisioning → access/credential governance → managed resources/policy → reconciliation → effective-state verification → audit/governance evidence → update/revoke → governed decommission. Native Kubernetes baseline UAT is mandatory; Capsule-backed UAT is required when the approved compatible Capsule test cluster is available.
 
-## Tenant Operations — Drift & Reconcile navigation (#960)
+## Tenant Operations — primary Allocation / Operational reconcile tabs (#960)
 
-The `Tenant → Operations → Drift & Reconcile` page uses the existing URL-owned KAORI Content Tabs:
-`drift_view=allocation` (default) and `drift_view=operations`. Each inner view shows **two primary paginated registries**:
-- **Allocation Drift**: Capsule Tenant Quota Drift and Capsule Shared Allocation Drift.
-- **Operational Reconcile**: Namespace & Allocation Drift and Access Reconciliation. The additional **Provider Authority** registry remains available behind a native, collapsed `View Provider Authority` disclosure to avoid crowding the primary workspace; it is not removed or copied.
+Tenant → Operations uses **one shared primary Content Tabs row** rather than a
+nested `Drift & Reconcile` subtab hierarchy. Its five primary tabs are
+**Provisioning**, **Runs & Evidence**, **Allocation Drift**,
+**Operational Reconcile**, and **Activity**.
 
-The outer `tab=drift-reconcile` remains canonical. All five original registry owners retain their independent page-size/filter/query parameter namespaces, canonical empty pagination footers, provider-authoritative evidence and explicit human recovery actions. Inner tab changes reuse the shared server/HTMX tab component; no client-side parallel state controller or background provider mutation is introduced. Query state keeps the selected `drift_view` on paging, filtering and clearing. The provider-authority disclosure remains additional read-only context.
+- `tab=allocation-drift` displays the **Capsule Tenant Quota Drift** and
+  **Capsule Shared Allocation Drift** paginated registries.
+- `tab=operational-reconcile` displays **Namespace & Allocation Drift** and
+  **Access Reconciliation** as primary paginated registries. The additional
+  **Provider Authority** registry remains available in a native
+  `View Provider Authority` disclosure collapsed by default; it is not copied
+  or removed.
+- Prior bookmarked `tab=drift-reconcile` links are accepted as backward
+  compatibility aliases: `drift_view=operations` opens Operational Reconcile,
+  otherwise Allocation Drift. Newly generated navigation, filters, and pagers
+  use **only** the primary tab values, not nested `drift_view` state.
 
-Local human acceptance must exercise both inner views under empty and populated datasets, independent Rows/page controls, HTMX and browser back/forward, light/dark/responsive. This documentation is not staging/UAT acceptance evidence.
+The five original registries retain independent Rows/page/filter query
+parameters, canonical empty-state pagination, source-authoritative committed
+evidence, and explicit human reconciliation actions. The shared
+`content_tabs.render_links` component continues to own URL and HTMX
+navigation without a second tab controller, third-level sidebar item, or
+provider-side mutation.
+
+Local human acceptance must exercise all five primary tabs, both drift
+workflows with empty and populated datasets, browser refresh/back/forward,
+per-registry filters/Rows/HTMX, light/dark and mobile views. This is not
+staging UAT or production acceptance evidence.
