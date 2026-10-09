@@ -102,8 +102,8 @@
         return true
     }
 
-    // Report request evidence, not a generic "modal did not load" guess.
-    // Do not echo responseText (may contain internal Flask/Ingress error details).
+    // Keep operational failure guidance visible without exposing temporary
+    // debugging details (HTTP codes, endpoints, logs, or response bodies).
     const reportPreflightFailure = (event, kind = 'response') => {
         const slot = document.getElementById('tenant-adoption-preflight-slot')
         const status = Number(event.detail?.xhr?.status || 0)
@@ -116,25 +116,26 @@
 
             const title = document.createElement('p')
             title.className = 'font-semibold'
-            title.textContent = status ? `Adoption preflight request failed (HTTP ${status}).` :
-                'Adoption preflight request could not complete.'
+            title.textContent = 'Adoption Review Unavailable'
 
             const guidance = document.createElement('p')
             guidance.className = 'mt-2 text-xs leading-5'
             if (status === 401 || status === 403) {
-                guidance.textContent = 'Authentication or Tenant management permission was rejected. Review your session and permissions before retrying.'
+                guidance.textContent = 'Your session or Tenant management permission needs attention. Sign in again or contact an administrator.'
             } else if (status === 404) {
-                guidance.textContent = 'The preflight endpoint was not found. Verify the running DevContainer app and its route.'
+                guidance.textContent = 'This review is unavailable. Refresh the page and try again.'
             } else if (status >= 500) {
-                guidance.textContent = 'The server failed while preparing read-only provider evidence. Check the DevContainer application logs for GET /discovery/preflight; do not submit Adoption.'
-            } else if (kind === 'target') {
-                guidance.textContent = 'The Discovery preflight response target is missing. Refresh Discovery before retrying.'
-            } else if (kind === 'swap') {
-                guidance.textContent = 'The preflight response could not be rendered. Inspect the browser Console and Network response.'
+                guidance.textContent = 'The review could not be prepared. Refresh Discovery and retry. Contact an administrator if it continues.'
+            } else if (kind === 'target' || kind === 'swap') {
+                guidance.textContent = 'The review could not be displayed. Refresh Discovery and try again.'
             } else {
-                guidance.textContent = 'Inspect the GET /discovery/preflight request in browser Network for its status and response; retry after resolving the failure.'
+                guidance.textContent = 'Refresh Discovery and try again. Contact an administrator if it continues.'
             }
-            message.append(title, guidance)
+
+            const safeState = document.createElement('p')
+            safeState.className = 'mt-2 text-xs leading-5'
+            safeState.textContent = 'No adoption was performed.'
+            message.append(title, guidance, safeState)
             slot.replaceChildren(message)
             message.scrollIntoView?.({ block: 'nearest' })
         }
