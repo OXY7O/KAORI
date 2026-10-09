@@ -615,6 +615,11 @@ def attach_discovered_native_namespace_committed(
     provider_uid = str(getattr(metadata, 'uid', '') or '').strip()
     expected_uid = str(source.get('provider_uid') or '').strip()
     validate_namespace_attachment_uid(observed_uid=provider_uid, expected_uid=expected_uid)
+    validate_adoption_provider_identity(
+        expected_uid=expected_uid, observed_uid=provider_uid,
+        expected_resource_version=str(source.get('provider_resource_version') or '').strip(),
+        observed_resource_version=str(getattr(metadata, 'resource_version', None) or '').strip(),
+    )
     status, reason = _native_management(
         namespace=namespace,
         labels=dict(getattr(metadata, 'labels', None) or {}),
