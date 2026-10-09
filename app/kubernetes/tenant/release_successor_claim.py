@@ -12,6 +12,7 @@ from typing import Any
 from app.extensions.db import db
 from app.kubernetes.tenant.release_handoff_approval import (
     _can_confirm_plan,
+    _checked_recently,
     _plan_hash,
     _valid_reference,
     latest_release_handoff_approval,
@@ -46,6 +47,8 @@ def _require_matching_approval(
         or plan.get('plan_sha256') != plan_sha256
         or _plan_hash(plan) != plan_sha256
         or approval.get('plan_sha256') != plan_sha256
+        or not _checked_recently(plan.get('requested_at'))
+        or not _checked_recently(approval.get('approved_at'))
         or approval.get('status') != 'acknowledged_pending_provider_handoff'
         or approval.get('requested_by') != plan.get('requested_by')
         or approval.get('approved_by') == plan.get('requested_by')
