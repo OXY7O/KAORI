@@ -188,17 +188,15 @@
             </tbody>
         </table>
     </div>
-    {% if membership_pagination.total_items > 0 %}
-        {{ registry_ui.footer('tenant.tenants',
-                registry_id,
-                loading_id,
-                membership_pagination,
-                query_params,
-                membership_pagination.allowed_per_page,
-                resource_label='Memberships',
-                rows_aria_label='Membership rows per page',
-                control_name='tenant-memberships',
-                page_param='membership_page',
-                per_page_param='membership_per_page') }}
-    {% endif %}
+    {{ registry_ui.footer('tenant.tenants',
+            registry_id,
+            loading_id,
+            membership_pagination,
+            query_params,
+            membership_pagination.allowed_per_page,
+            resource_label='Memberships',
+            rows_aria_label='Membership rows per page',
+            control_name='tenant-memberships',
+            page_param='membership_page',
+            per_page_param='membership_per_page') }}
 </section>
