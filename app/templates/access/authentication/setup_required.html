@@ -16,7 +16,7 @@
         docker compose ps
         pg_isready -h db -p 5432
     {%- endset %}
-    {% set initialization_flow_rows = [[('key-round', 'Confirm the Encryption Boundary', 'Set INTEGRATION_CREDENTIAL_KEY before migration and keep the same value for this installation.'), ('database-zap', 'Run the Initial KAORI Database Bootstrap', 'Apply migrations, seed canonical RBAC, and create the first local administrator.'), ('refresh-cw', 'Return to the Readiness Check', 'Retry setup after bootstrap. Normal sign-in opens only when the required schema is present.')]] %}
+    {% set initialization_flow_rows = [[('key-round', 'Confirm the Encryption Boundary', 'Set INTEGRATION_CREDENTIAL_KEY before migration; keep it unchanged.'), ('database-zap', 'Run the Initial KAORI Database Bootstrap', 'Apply migrations, seed canonical RBAC, and create the first local administrator.'), ('refresh-cw', 'Return to the Readiness Check', 'Retry after bootstrap. Sign-in stays blocked until the required schema exists.')]] %}
     <main class="min-h-screen bg-surface-page px-3 py-3 sm:px-4 lg:py-4">
         <div class="mx-auto w-full max-w-5xl space-y-3"
              data-kaori-setup-workspace="release-v4"
@@ -35,7 +35,7 @@
                                 class="text-lg font-semibold leading-6 text-content-primary">Database Setup Required</h1>
                             <p class="mt-0.5 max-w-2xl text-xs leading-5 text-content-muted">
                                 {% if readiness.setup_required %}
-                                    PostgreSQL is reachable, but the KAORI schema is not initialized. Complete bootstrap before normal sign-in and background workflows are admitted.
+                                    PostgreSQL is reachable, but the KAORI schema is missing. Run bootstrap to enable sign-in and background jobs.
                                 {% else %}
                                     PostgreSQL is unavailable. Restore connectivity before KAORI can verify the application schema.
                                 {% endif %}
@@ -116,7 +116,7 @@
                     </section>
                     <aside class="min-w-0" aria-label="Database setup security boundary">
                         {{ operational_callout.render("Encryption Key Requirement",
-                                                "Security boundary: set INTEGRATION_CREDENTIAL_KEY before bootstrap and keep it unchanged. Rotating it can make stored integration credentials unreadable.",
+                                                "Set INTEGRATION_CREDENTIAL_KEY before bootstrap. Changing it may make stored integration credentials unreadable.",
                                                 icon="key-round",
                                                 tone="warning",
                                                 variant="semantic") }}
