@@ -80,7 +80,7 @@
                                title="Limit: {{ row.limit_state.label }}">Limit: {{ row.limit_state.label }}</p>
                         {% else %}
                             <p class="mt-1 text-xs leading-5 text-content-muted">
-                                Capacity {{ 'observed' if row.denominator_evidence_available else 'unavailable' }}
+                                Denominator {{ 'available' if row.pressure_available else 'unavailable' }}
                             </p>
                         {% endif %}
                     </div>
