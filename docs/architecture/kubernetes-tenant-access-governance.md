@@ -271,6 +271,17 @@ failed cleanup never claims that access was revoked. Drift/inspect/reconcile use
 committed grant lineage and store non-secret provider UID, resourceVersion, target, and
 effective-evidence hashes.
 
+### Native versus Capsule Namespace authority during adoption (#983)
+
+Native Namespace Discovery and Adoption Preflight must refuse a Namespace that
+still declares Capsule ownership through either canonical Capsule Tenant
+labels (`capsule.clastix.io/tenant`, `projectcapsule.dev/tenant`) or a Capsule
+Tenant ownerReference. Submit rechecks both forms of provider identity, and
+the Native allocation cutover must not patch such a Namespace, even where
+KAORI has no existing Tenant record. Capsule is authoritative for those
+resources; the operator must use governed Capsule attachment and its exact
+UID/resourceVersion/owner proof rather than silently switching adapters.
+
 ### Provider-preserving Release Governance preflight (#990)
 
 **Review Release** in Tenant Registry is an explicit, **read-only preflight** for
