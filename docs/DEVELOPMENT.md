@@ -21,10 +21,10 @@ containers. A host `.venv` is not required.
 3. Open the repository in VS Code.
 4. Run `Dev Containers: Rebuild and Reopen in Container`.
 5. Run `bash scripts/init_db.sh --bootstrap-admin` in the Dev Container terminal.
-6. After the Dev Container reports that frontend assets are ready, start `KAORI: Watch Tailwind CSS`.
+6. After the Dev Container reports frontend assets are ready, allow VS Code **Automatic Tasks** for this trusted workspace. The existing `KAORI: Watch Tailwind CSS` task starts on folder open, with at most one instance. If disabled, start it from **Terminal → Run Task**.
 7. Press `F5` and select `KAORI: Flask Debug`.
 
-The Tailwind watcher is intentionally not started on VS Code folder-open. On a fresh or reset `kaori_node_modules` volume, Dev Container lifecycle bootstrap must finish `npm ci` and frontend verification before the watcher starts.
+A fresh or reset `kaori_node_modules` volume must complete `npm ci` and frontend verification before the watcher can work. The `postCreate` lifecycle no longer forces an unconditional global npm upgrade, and `postStart` avoids rebuilding unchanged assets. If lifecycle startup fails, resolve that failure before treating the watcher as ready.
 
 The application is available at `http://localhost:5000`.
 
@@ -87,7 +87,7 @@ The planner selects existing KAORI validators and focused pytest ownership from 
 
 ### Toolchain version authority
 
-KAORI development, CI, and frontend-image builds are aligned on **Node 22.23.2** with **npm 10.9.9**. The Dev Container intentionally preserves its existing locked `ghcr.io/devcontainers/features/node:1` feature digest and pins only the Node version through that feature; `post-create.sh` then installs npm 10.9.9 before any frontend bootstrap. The frontend and CI Docker stages install the same npm version explicitly. Root `package.json` declares `npm@10.9.9` as the package-manager authority. Changing the Dev Container feature major requires regeneration of `.devcontainer/devcontainer-lock.json` through the normal Dev Container tooling and must not be done by hand.
+KAORI targets **Node 22.23.2** and declares **npm 10.9.9** as the package-manager authority in `package.json`. CI and the frontend-image build explicitly install npm 10.9.9. The Dev Container pins Node through its existing locked `ghcr.io/devcontainers/features/node:1` feature; the npm version bundled with that feature may differ (for example, npm 10.9.8). The Dev Container lifecycle deliberately avoids a network-dependent global npm upgrade every time the container is created. `npm ci` installs exactly the committed frontend dependency tree from `package-lock.json`. For intentional lockfile regeneration, use the declared npm 10.9.9 toolchain. Changing the Dev Container feature major requires normal regeneration of `.devcontainer/devcontainer-lock.json`; do not edit the lock by hand.
 
 npm 12.0.2 was reviewed but is deliberately **deferred**. Its Node 22 engine floor is satisfied by Node 22.23.2, but adopting npm 12 would introduce a separate package-manager major lifecycle across Dev Container, CI, and frontend builds. KAORI stays on the latest reviewed npm 10 patch for this maintenance line instead.
 
