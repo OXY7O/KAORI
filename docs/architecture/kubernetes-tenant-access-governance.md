@@ -271,6 +271,24 @@ failed cleanup never claims that access was revoked. Drift/inspect/reconcile use
 committed grant lineage and store non-secret provider UID, resourceVersion, target, and
 effective-evidence hashes.
 
+### Adopt/Attach provider generation binding (#1015)
+
+**New Tenant adoption** (Native Kubernetes and Capsule) uses the immutable
+provider UID and resourceVersion from the explicit Adoption Preflight as a
+mandatory submit precondition. The backend re-reads the authoritative Namespace
+or Capsule Tenant CR; a missing UID, resourceVersion, replaced object or
+intervening provider version change fails closed before KAORI commits or
+takes ownership. A provider resource name is never substituted for a missing UID.
+
+**Native allocation ownership takeover** additionally checks the observed
+Namespace UID against the committed adopted Namespace provider reference
+immediately before the Kubernetes PATCH. It requires a non-empty current
+resourceVersion and checks the same UID and an available resourceVersion on
+provider read-back. These checks apply to existing adopted Namespace cutovers
+and prevent silent takeover of a deleted/recreated Namespace generation.
+The Kubernetes provider remains authoritative; this does not permit external
+owner handoff or silently import identities.
+
 ### Provider-preserving Release Governance preflight (#990)
 
 **Review Release** in Tenant Registry is an explicit, **read-only preflight** for
