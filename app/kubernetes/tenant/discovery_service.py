@@ -640,6 +640,45 @@ def get_tenant_adoption_preflight_context(
     }
 
 
+def select_capsule_namespace_attachment_candidate(
+    allocation: Mapping[str, Any],
+    *,
+    namespace: str,
+    expected_uid: str = '',
+    expected_resource_version: str = '',
+) -> dict[str, Any]:
+    """Single fail-closed provider correlation contract for preview and submit."""
+    if (
+        allocation.get('authority_unsupported_dimensions')
+        or allocation.get('authority_ambiguous_dimensions')
+        or allocation.get('ambiguous_dimensions')
+    ):
+        raise ValueError('Capsule authority or Namespace correlation is ambiguous.')
+    matches = [
+        item for item in allocation.get('correlated_namespaces') or []
+        if item.get('name') == namespace
+    ]
+    if len(matches) != 1:
+        raise ValueError('Namespace is not uniquely correlated to its Capsule Tenant.')
+    candidate = dict(matches[0])
+    uid = str(candidate.get('uid') or '')
+    version = str(candidate.get('resource_version') or '')
+    if not uid or not version:
+        raise ValueError('Capsule Namespace identity evidence is incomplete.')
+    if expected_uid and uid != expected_uid:
+        raise ValueError('Namespace UID changed since Capsule Adoption Preflight.')
+    if expected_resource_version and version != expected_resource_version:
+        raise ValueError('Namespace resourceVersion changed since Capsule Adoption Preflight.')
+    observed = candidate.get('allocation') or {}
+    if (
+        observed.get('control_state') != 'observed'
+        or observed.get('unsupported_dimensions')
+        or observed.get('ambiguous_dimensions')
+    ):
+        raise ValueError('Capsule Namespace allocation is unsupported or ambiguous.')
+    return candidate
+
+
 def _capsule_namespace_attachment_preflight(
     *, cluster: Cluster, client: Any, cluster_id: str,
     namespace: str, capsule_tenant_name: str,
@@ -667,19 +706,9 @@ def _capsule_namespace_attachment_preflight(
     allocation = observe_capsule_tenant_allocation(
         client, tenant_name=capsule_tenant_name, tenant_item=item,
     )
-    if (
-        allocation.get('ambiguous_dimensions')
-        or allocation.get('authority_unsupported_dimensions')
-        or allocation.get('authority_ambiguous_dimensions')
-    ):
-        raise ValueError('Capsule Namespace correlation or allocation authority is ambiguous.')
-    matches = [
-        row for row in allocation.get('correlated_namespaces') or []
-        if row.get('name') == namespace
-    ]
-    if len(matches) != 1:
-        raise ValueError('Namespace is not uniquely assigned to the governed Capsule Tenant.')
-    correlated = matches[0]
+    correlated = select_capsule_namespace_attachment_candidate(
+        allocation, namespace=namespace,
+    )
     observed = client.core_api().read_namespace(namespace, _request_timeout=5)
     provider_status = _namespace_phase(observed)
     meta = getattr(observed, 'metadata', None)
