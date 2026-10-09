@@ -8,7 +8,6 @@ from flask import url_for
 from app.common.workspace_navigation_catalog import (
     _CAPABILITY_CONTEXT_KEYS,
     _CAPABILITY_VIEWS,
-    _KUBERNETES_CONFIGMAP_PERMISSIONS,
     _SECTION_ORDER,
     _WORKSPACE_CONTEXT_KEYS,
     WORKSPACES,
@@ -73,6 +72,7 @@ _CAPABILITY_ACTIVE_EXACT: dict[str, dict[str, str]] = {
         'inventory.configuration_details': 'configuration',
     },
     'kubernetes_operations': {
+        'kubernetes_operations.overview': 'overview',
         'kubernetes_operations.create_configmap': 'configmaps',
         'kubernetes_operations.update_configmap': 'configmaps',
         'kubernetes_operations.delete_configmap': 'configmaps',
@@ -215,11 +215,6 @@ def _visible_capabilities(workspace: WorkspaceDefinition, user: Any) -> tuple[Wo
 
 
 def _resolved_capability_endpoint(workspace_key: str, tab: WorkspaceCapabilityDefinition, user: Any) -> str:
-    if workspace_key == 'kubernetes' and tab.key == 'operations':
-        if _has_any_permission(user, _KUBERNETES_CONFIGMAP_PERMISSIONS):
-            return 'kubernetes_operations.configmap_management'
-        return 'kubernetes_operations.secret_management'
-
     if workspace_key == 'kubernetes' and tab.key == 'governance':
         if user.has_permission('governance.view'):
             return 'governance.overview'

@@ -74,6 +74,7 @@ _ENDPOINT_LABELS: dict[str, str] = {
     'reports.schedules': 'Schedules',
     'reports.storage': 'Storage',
     # Kubernetes operations and governance
+    'kubernetes_operations.overview': 'Overview',
     'kubernetes_operations.configmap_management': 'ConfigMaps',
     'kubernetes_operations.secret_management': 'Secrets',
     'governance.overview': 'Overview',

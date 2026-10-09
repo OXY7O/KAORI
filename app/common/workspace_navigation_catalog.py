@@ -84,7 +84,7 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
                 'operations',
                 'Operations',
                 'wrench',
-                'kubernetes_operations.secret_management',
+                'kubernetes_operations.overview',
                 _KUBERNETES_OPERATION_PERMISSIONS,
             ),
             WorkspaceCapabilityDefinition(
@@ -415,6 +415,13 @@ _CAPABILITY_VIEWS: dict[str, tuple[CapabilityViewDefinition, ...]] = {
         ),
     ),
     'kubernetes_operations': (
+        CapabilityViewDefinition(
+            'overview',
+            'Overview',
+            'layout-dashboard',
+            'kubernetes_operations.overview',
+            _KUBERNETES_OPERATION_PERMISSIONS,
+        ),
         CapabilityViewDefinition(
             'configmaps',
             'ConfigMaps',
