@@ -48,8 +48,8 @@
                 </div>
             </header>
             {% if rankings %}
-                {% set ranking_tabs = [('cpu', 'CPU', 'cpu'), ('memory', 'Memory', 'memory-stick'), ('pvc', 'PVC', 'database'), ('pods', 'Pods', 'boxes')] %}
-                <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
+                {% set ranking_tabs = [('cpu', 'CPU', 'cpu'), ('memory', 'Memory', 'memory-stick'), ('pods', 'Pods', 'boxes'), ('pvc', 'PVC', 'database')] %}
+                <div class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-card"
                      data-analytics-tabset
                      data-analytics-tabset-id="consumer-ranking-resource"
                      data-analytics-update-query="false"
@@ -67,9 +67,9 @@
                              data-analytics-tab-panel="{{ resource_key }}"
                              aria-labelledby="consumer-ranking-resource-tab-{{ resource_key }}"
                              {% if resource_key != 'cpu' %}hidden{% endif %}
-                             class="p-4 sm:p-5">
+                             class="min-w-0">
                             {% if selected_panel.value %}
-                                {{ ranked_evidence.render(selected_panel.value) }}
+                                {{ ranked_evidence.render(selected_panel.value, embedded=true) }}
                             {% else %}
                                 {% set empty_state_icon = resource_icon %}
                                 {% set empty_state_label = "No Data" %}
