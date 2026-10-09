@@ -809,6 +809,7 @@ def test_committed_tenant_snapshot_is_separate_from_on_demand_live_provider_conn
     live_partial = read('app/templates/kubernetes/tenant/partials/_live_connection_snapshot.html')
     live_loader = read('app/templates/kubernetes/tenant/partials/_live_connection_loader.html')
     committed_partial = read('app/templates/kubernetes/tenant/partials/_collection_snapshot_context.html')
+    compact_partial = read('app/templates/kubernetes/tenant/partials/_collection_snapshot_compact.html')
     sync_workspace = read('app/templates/kubernetes/tenant/partials/_sync_workspace.html')
     base = read('app/templates/kubernetes/tenant/base.html')
     service = tenant_service_source()
@@ -837,8 +838,21 @@ def test_committed_tenant_snapshot_is_separate_from_on_demand_live_provider_conn
     assert "scope_metric_label='Committed Scope'" in committed_partial
     assert '_collection_snapshot_context.html' in sync_workspace
 
-    assert '_collection_snapshot_context.html' in base
-    assert '_live_connection_loader.html' in base
+    assert '_collection_snapshot_compact.html' in base
+    assert '_collection_snapshot_context.html' not in base
+    assert '_live_connection_loader.html' not in base
+    assert 'tenant_page != \'overview\'' in base
+    assert 'components/operational_callout.html' in compact_partial
+    assert "variant='neutral'" in compact_partial
+    assert 'tenant_collection_snapshot' in compact_partial
+    assert 'snapshot.status' in compact_partial
+    assert 'snapshot.last_sync_label' in compact_partial
+    assert 'snapshot.coverage_label' in compact_partial
+    assert "snapshot.coverage_label == 'Not Collected'" in compact_partial
+    assert 'snapshot.exception_count' in compact_partial
+    assert "snapshot.tone != 'normal'" in compact_partial
+    assert 'snapshot.source_cutoff_label' in compact_partial
+    assert 'tenant.live_provider_connectivity' not in compact_partial
     assert '{% block tenant_content %}' in base
     assert (
         '{% if not native_available %}\n            {% include "components/cluster/_onboarding_banner.html" %}'
