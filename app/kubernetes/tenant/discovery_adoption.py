@@ -103,6 +103,32 @@ def _prepare_adoption(source: Mapping[str, Any]) -> _AdoptionContext:
     )
 
 
+def _released_predecessor_evidence(tenant: Tenant, *, provider_uid: str) -> dict[str, Any] | None:
+    """Correlate an adopted resource to exactly one prior Released generation."""
+    previous = (
+        Tenant.query.filter_by(cluster_id=tenant.cluster_id, slug=tenant.slug)
+        .filter(Tenant.lifecycle_status == TenantLifecycleStatus.RELEASED.value)
+        .order_by(Tenant.generation.desc()).first()
+    )
+    if previous is None:
+        return None
+    evidence = previous.provider_evidence_json or {}
+    if previous.provider_key != tenant.provider_key:
+        raise ValueError('Released Tenant provider differs; new adoption requires an independent identity.')
+    if not provider_uid or provider_uid != str(evidence.get('provider_uid') or ''):
+        raise ValueError('Released provider UID changed; refuse silent Re-adopt identity reuse.')
+    release = evidence.get('release_governance') or {}
+    if release.get('status') != 'released':
+        raise ValueError('Released generation has no verifiable handoff evidence.')
+    return {
+        'predecessor_tenant_id': previous.id,
+        'predecessor_generation': previous.generation,
+        'predecessor_correlation_id': previous.correlation_id,
+        'previous_released_at': release.get('released_at'),
+        'provider_uid_verified': True,
+    }
+
+
 def _native_namespace_record(
     context: _AdoptionContext,
     environment: TenantEnvironment,
@@ -246,6 +272,9 @@ def _adopt_native(context: _AdoptionContext) -> tuple[TenantEnvironment, TenantN
         'provider_mutation_performed': False,
         'secret_material_persisted': False,
     }
+    lineage = _released_predecessor_evidence(tenant, provider_uid=provider_uid)
+    if lineage is not None:
+        tenant.provider_evidence_json['re_adoption_lineage'] = lineage
     db.session.add(tenant)
 
     environment = TenantEnvironment()
@@ -434,6 +463,9 @@ def _adopt_capsule(context: _AdoptionContext) -> tuple[TenantEnvironment, Tenant
         'provider_mutation_performed': False,
         'secret_material_persisted': False,
     }
+    lineage = _released_predecessor_evidence(tenant, provider_uid=provider_uid)
+    if lineage is not None:
+        tenant.provider_evidence_json['re_adoption_lineage'] = lineage
     db.session.add(tenant)
     environment = TenantEnvironment()
     environment.tenant = tenant
