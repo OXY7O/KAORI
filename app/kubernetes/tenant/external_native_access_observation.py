@@ -70,7 +70,10 @@ def normalize_native_role_binding(
         'resource_version': version,
         'role_ref': {'kind': kind, 'name': role_name},
         'subjects': [_subject(subject) for subject in subjects],
-        'ownership': 'kaori_correlated' if correlated else 'kaori_marker_unverified' if marked else 'external_observed',
+        'ownership': (
+            'kaori_correlated' if correlated else
+            'kaori_marker_unverified' if marked else 'external_observed'
+        ),
         'kaori_grant_id': marker if correlated else None,
         'claimed_grant_marker': marker if marked and not correlated else None,
         'effective_permissions_verified': False,
