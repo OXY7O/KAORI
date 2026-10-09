@@ -1,5 +1,4 @@
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
-{% import "components/content_tabs.html" as content_tabs %}
 {% import "kubernetes/analytics/components/_analysis_workspace.html" as analytics_workspace %}
 {% import "kubernetes/analytics/components/_ranked_evidence_panel.html" as ranked_evidence %}
 {% import "components/recommendation_pager.html" as recommendation_pager %}
@@ -33,55 +32,96 @@
              aria-labelledby="top-consumers-content-tab-rankings"
              {% if active_tab != 'rankings' %}hidden{% endif %}
              class="space-y-5">
-            <header class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                <div class="flex min-w-0 items-start gap-3">
-                    <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="bar-chart-3" class="h-4 w-4"></i></span>
-                    <div class="min-w-0">
-                        <h2 class="text-base font-semibold text-content-primary">Consumer Rankings</h2>
-                        <p class="mt-1 text-sm leading-6 text-content-secondary">Compare consumption, scope contribution, denominator context, and priority without comparing unlike resource units.</p>
-                    </div>
+            <header class="flex flex-wrap items-start justify-between gap-3">
+                <div class="min-w-0">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary">Resource Footprint</p>
+                    <h3 class="mt-1 text-base font-semibold text-content-primary">Find the consumers that matter</h3>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">Choose a resource below to inspect its largest consumers. Each resource keeps its own unit and denominator.</p>
                 </div>
-                <div class="flex flex-wrap gap-2">
-                    {{ table_label.metadata_label(scope.label|default('Cluster') , 'scan-search', size='compact') }}
+                <div class="flex flex-wrap items-center gap-2">
+                    {{ table_label.metadata_label(scope.label|default('Cluster'), 'scan-search', size='compact') }}
                     {% set coverage_tone = 'normal' if coverage.complete_count|default(0) == 4 else ('unknown' if coverage.unavailable_count|default(0) == 4 else 'warning') %}
-                    {{ table_label.status_label(coverage.label|default('Evidence Unavailable') , coverage_tone, size='compact') }}
+                    {{ table_label.status_label(coverage.label|default('Evidence Unavailable'), coverage_tone, size='compact') }}
                 </div>
             </header>
             {% if rankings %}
-                {% set ranking_tabs = [('cpu', 'CPU', 'cpu'), ('memory', 'Memory', 'memory-stick'), ('pvc', 'PVC', 'database'), ('pods', 'Pods', 'boxes')] %}
-                <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
-                     data-analytics-tabset
+                {# Resource overview cards are one filter surface, not a second Content Tabs bar. #}
+                {% set ranking_resources = [('cpu', 'CPU', 'cpu'), ('memory', 'Memory', 'memory-stick'), ('pods', 'Pods', 'boxes'), ('pvc', 'PVC', 'database')] %}
+                <div data-analytics-tabset
                      data-analytics-tabset-id="consumer-ranking-resource"
                      data-analytics-update-query="false"
-                     data-default-tab="cpu">
-                    {{ content_tabs.render_buttons('consumer-ranking-resource', ranking_tabs, 'Consumer Ranking Resource', embedded=true, data_namespace='analytics', active_key='cpu', show_badges=false) }}
-                    {% for resource_key, resource_label, resource_icon in ranking_tabs %}
-                        {% set selected_panel = namespace(value=none) %}
-                        {% for candidate in rankings %}
-                            {% if candidate.key == resource_key %}
-                                {% set selected_panel.value = candidate %}
-                            {% endif %}
+                     data-default-tab="cpu"
+                     data-kaori-ranking-resource-lens>
+                    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+                         role="tablist"
+                         aria-label="Select resource consumption ranking">
+                        {% for resource_key, resource_label, resource_icon in ranking_resources %}
+                            {% set candidate_panel = namespace(value=none) %}
+                            {% for candidate in rankings %}
+                                {% if candidate.key == resource_key %}{% set candidate_panel.value = candidate %}{% endif %}
+                            {% endfor %}
+                            {% set active = resource_key == 'cpu' %}
+                            <button type="button"
+                                    id="consumer-ranking-resource-tab-{{ resource_key }}"
+                                    role="tab"
+                                    data-analytics-tab-button="{{ resource_key }}"
+                                    data-kaori-tab-active-classes="border-kaori-primary bg-kaori-soft text-kaori-primary-dark dark:text-kaori-accent"
+                                    data-kaori-tab-inactive-classes="border-outline-default bg-surface-card text-content-primary hover:border-outline-strong hover:bg-surface-hover"
+                                    aria-controls="consumer-ranking-resource-panel-{{ resource_key }}"
+                                    aria-selected="{{ 'true' if active else 'false' }}"
+                                    tabindex="{{ 0 if active else -1 }}"
+                                    class="group flex min-h-36 min-w-0 flex-col rounded-xl border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card {{ 'border-kaori-primary bg-kaori-soft text-kaori-primary-dark dark:text-kaori-accent' if active else 'border-outline-default bg-surface-card text-content-primary hover:border-outline-strong hover:bg-surface-hover' }}">
+                                <span class="flex items-center justify-between gap-2">
+                                    <span class="flex items-center gap-2 text-sm font-semibold">
+                                        <i data-lucide="{{ resource_icon }}" class="h-4 w-4" aria-hidden="true"></i>
+                                        {{ resource_label }}
+                                    </span>
+                                    <i data-lucide="arrow-up-right" class="h-4 w-4 opacity-60" aria-hidden="true"></i>
+                                </span>
+                                <span class="mt-3 block break-words text-xl font-semibold tabular-nums">
+                                    {{ candidate_panel.value.total_value if candidate_panel.value else 'N/A' }}
+                                </span>
+                                <span class="mt-1 text-xs text-content-secondary">Observed in selected scope</span>
+                                <span class="mt-auto flex min-w-0 flex-wrap items-center justify-between gap-2 border-t border-outline-subtle pt-3">
+                                    {% if candidate_panel.value %}
+                                        {{ table_label.status_label(candidate_panel.value.coverage.label, candidate_panel.value.coverage.tone, size='compact') }}
+                                        <span class="min-w-0 truncate text-xs text-content-secondary"
+                                              title="{{ candidate_panel.value.capacity_label }}: {{ candidate_panel.value.capacity_value }}">
+                                            Capacity {{ candidate_panel.value.capacity_value }}
+                                        </span>
+                                    {% else %}
+                                        {{ table_label.status_label('Unavailable', 'unknown', size='compact') }}
+                                    {% endif %}
+                                </span>
+                            </button>
                         {% endfor %}
-                        <div id="consumer-ranking-resource-panel-{{ resource_key }}"
-                             role="tabpanel"
-                             data-analytics-tab-panel="{{ resource_key }}"
-                             aria-labelledby="consumer-ranking-resource-tab-{{ resource_key }}"
-                             {% if resource_key != 'cpu' %}hidden{% endif %}
-                             class="p-4 sm:p-5">
-                            {% if selected_panel.value %}
-                                {{ ranked_evidence.render(selected_panel.value) }}
-                            {% else %}
-                                {% set empty_state_icon = resource_icon %}
-                                {% set empty_state_label = "No Data" %}
-                                {% set empty_state_title %}
-                                    No {{ resource_label }} Ranking Evidence
-                                {% endset %}
-                                {% set empty_state_description = "The selected materialized snapshot does not contain ranking evidence for this resource." %}
-                                {% set empty_state_min_height = "min-h-[220px]" %}
-                                {% include 'components/states/_empty_state.html' %}
-                            {% endif %}
-                        </div>
-                    {% endfor %}
+                    </div>
+                    <section class="mt-4 min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+                             aria-label="Selected resource consumer ranking">
+                        {% for resource_key, resource_label, resource_icon in ranking_resources %}
+                            {% set selected_panel = namespace(value=none) %}
+                            {% for candidate in rankings %}
+                                {% if candidate.key == resource_key %}{% set selected_panel.value = candidate %}{% endif %}
+                            {% endfor %}
+                            <div id="consumer-ranking-resource-panel-{{ resource_key }}"
+                                 role="tabpanel"
+                                 aria-labelledby="consumer-ranking-resource-tab-{{ resource_key }}"
+                                 data-analytics-tab-panel="{{ resource_key }}"
+                                 {% if resource_key != 'cpu' %}hidden{% endif %}
+                                 class="min-w-0">
+                                {% if selected_panel.value %}
+                                    {{ ranked_evidence.render(selected_panel.value, embedded=true, show_metrics=false) }}
+                                {% else %}
+                                    {% set empty_state_icon = resource_icon %}
+                                    {% set empty_state_label = "No Data" %}
+                                    {% set empty_state_title %}No {{ resource_label }} Ranking Evidence{% endset %}
+                                    {% set empty_state_description = "The committed snapshot does not contain ranking evidence for this resource." %}
+                                    {% set empty_state_min_height = "min-h-[200px]" %}
+                                    {% include 'components/states/_empty_state.html' %}
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </section>
                 </div>
             {% else %}
                 {% set empty_state_icon = "database-zap" %}
