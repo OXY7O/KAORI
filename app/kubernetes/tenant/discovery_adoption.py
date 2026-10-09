@@ -353,14 +353,20 @@ def _capsule_namespace_records(
     allocation: Mapping[str, Any],
 ) -> list[TenantNamespace]:
     records: list[TenantNamespace] = []
+    seen_names: set[str] = set()
     for correlated in allocation['correlated_namespaces']:
         namespace_name = str(correlated.get('name') or '').strip()
-        if not namespace_name:
-            continue
+        provider_uid = str(correlated.get('uid') or '').strip()
+        resource_version = str(correlated.get('resource_version') or '').strip()
+        if not namespace_name or not provider_uid or not resource_version:
+            raise ValueError('Capsule Namespace adoption requires complete provider name/UID/resourceVersion evidence.')
+        if namespace_name in seen_names:
+            raise ValueError('Capsule Namespace adoption has ambiguous duplicate Namespace correlation.')
+        seen_names.add(namespace_name)
         namespace_allocation = dict(correlated.get('allocation') or {})
         _verify_released_namespace_lineage(
             cluster_id=str(context.cluster.id), namespace=namespace_name,
-            provider_uid=str(correlated.get('uid') or ''), tenant_slug=context.tenant.slug,
+            provider_uid=provider_uid, tenant_slug=context.tenant.slug,
         )
         record = TenantNamespace()
         record.environment = environment
@@ -384,13 +390,13 @@ def _capsule_namespace_records(
         record.allocation_customized = True
         record.desired_hash = None
         record.effective_hash = str(namespace_allocation.get('effective_hash') or '') or None
-        record.provider_reference = str(correlated.get('uid') or namespace_name)
+        record.provider_reference = provider_uid
         record.last_reconciled_at = context.now
         record.provisioning_evidence_json = {
             'source': 'tenant_discovery_adoption',
             'provider': 'capsule',
-            'provider_uid': str(correlated.get('uid') or ''),
-            'resource_version': str(correlated.get('resource_version') or ''),
+            'provider_uid': provider_uid,
+            'resource_version': resource_version,
             'observed_present': True,
             'adopted_at': context.now.isoformat(),
             'allocation': namespace_allocation,
