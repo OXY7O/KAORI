@@ -225,6 +225,75 @@ KAORI never creates ClusterRoleBinding from this managed path. Wildcard API grou
 
 Provider resources declare `app.kubernetes.io/managed-by=kaori`. Existing resources owned by another controller are never silently overwritten.
 
+## Capsule provider translation (#966)
+
+For an adopted or managed Capsule Tenant, Capsule remains the exclusive reconciliation authority.
+The provider-aware Access Grant dispatcher uses the same versioned KAORI Membership, Profile, and scope contracts.
+It never patches Native Kubernetes Role/RoleBinding objects while Capsule owns the Tenant.
+
+Capsule `v1beta2` explicitly supports `Tenant.spec.additionalRoleBindings` for Tenant-wide
+distribution, and `Tenant.spec.rules[].permissions.bindings` with `namespaceSelector`
+for targeted Namespace/Environment distribution. These fields point to **ClusterRoles**, not
+KAORI's namespaced Roles. The adapter therefore requires a **pre-approved ClusterRole**
+named `kaori-tenant-<profile>-v<version>` with exactly the same resource/verb/API-group
+triples as the matching code-owned Access Profile. Aggregated ClusterRoles, extra permissions,
+missing ClusterRoles, mismatched subjects, or foreign ownership are rejected. KAORI does not
+create the ClusterRole or a ClusterRoleBinding.
+
+Each Capsule distribution entry is correlated by `app.kubernetes.io/managed-by=kaori` and
+`kaori.io/access-grant=<grant.public_id>` labels. The adapter patches only its owned
+entries, using the Capsule Tenant `resourceVersion` precondition and a server-side dry run.
+Capsule owners, other bindings, and unrelated Tenant rules are preserved. A concurrent or
+colliding ClusterRole mapping fails closed rather than merging identities unpredictably.
+
+For narrower scope, the provider rule uses the Kubernetes immutable
+`kubernetes.io/metadata.name` Namespace label with an exact `In` list of governed names.
+Before mutation, KAORI proves each target is Ready, is present in
+`Capsule Tenant.status.namespaces`, and carries the authoritative
+`capsule.clastix.io/tenant` label. A Tenant-wide grant is rejected if the Capsule Tenant
+contains additional Namespace names not yet governed by KAORI, preventing inadvertent
+privilege expansion. ServiceAccount grants are limited to Namespace scope.
+
+The Capsule CRD discovery checks the served `v1beta2` OpenAPI schema separately for
+Tenant-wide and selector-scoped grant capability. Healthy committed admission evidence and
+healthy Capsule authority are prerequisites; UI enablement is advisory, with live backend
+preflight as the enforcement boundary. No automatic Native fallback occurs.
+
+Successful Capsule Tenant PATCH is **not** proof of effective access. Effective managed
+RoleBindings are read from each Namespace and compared with expected ClusterRole, subject,
+scope, and ownership. The result remains Drifted until the controller converges, and
+failed cleanup never claims that access was revoked. Drift/inspect/reconcile use the same
+committed grant lineage and store non-secret provider UID, resourceVersion, target, and
+effective-evidence hashes.
+
+### Operator preparation and Capsule UAT
+
+1. Confirm the adopted Capsule Tenant is healthy and its Namespace inventory is committed,
+   including the target Namespace and Capsule ownership label.
+2. Ask the cluster administrator to review the four immutable permission matrices in
+   `app/kubernetes/tenant/access.py` and separately provision the approved
+   `ClusterRole/kaori-tenant-viewer-v1`,
+   `ClusterRole/kaori-tenant-operator-v1`,
+   `ClusterRole/kaori-tenant-tenant-admin-v1`, and
+   `ClusterRole/kaori-tenant-deployer-v1` as needed. **Do not** reuse Kubernetes's
+   broader built-in `admin`, `edit`, or `view` roles by name.
+3. If Capsule strict RBAC is enabled, explicitly authorize its controller to `bind`
+   each approved ClusterRole using the Capsule installation/configuration authority.
+   No KAORI path silently elevates Capsule controller permissions.
+4. In KAORI **Access Grants**, select a Membership, the corresponding approved profile,
+   Scope (Namespace is recommended for first UAT), and the target Namespace. Use Apply.
+   Observe Drifted/Ready, then Inspect or Reconcile after provider convergence.
+5. Verify with impersonated `kubectl auth can-i` operations that approved verbs succeed,
+   forbidden verbs and cross-Tenant resources fail, and Revoke removes effective access.
+   Capture the Capsule Tenant UID/resourceVersion and managed RoleBinding evidence.
+6. Repeat with degraded or unsupported Capsule capability: Apply remains fail-closed.
+   Do not accept this workstream as UAT PASS without live Capsule grant/revoke evidence
+   and human acceptance.
+
+The `ClusterRole` and Capsule controller `bind` preparation are cluster-admin changes
+outside KAORI's automatically executed reconciliation. A missing prerequisite produces a
+specific operator error; it is not silently installed.
+
 ## Revocation and re-authorization
 
 Access Grant revocation and Tenant Membership revocation are different operations.
