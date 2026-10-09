@@ -33,3 +33,14 @@ Operational management belongs to **Kubernetes → Tenant**. Settings does not r
 ## Full-cycle acceptance target
 
 The completed feature must prove create → provider selection → profile/namespace provisioning → access/credential governance → managed resources/policy → reconciliation → effective-state verification → audit/governance evidence → update/revoke → governed decommission. Native Kubernetes baseline UAT is mandatory; Capsule-backed UAT is required when the approved compatible Capsule test cluster is available.
+
+## Tenant Operations — Drift & Reconcile navigation (#960)
+
+The `Tenant → Operations → Drift & Reconcile` page uses the existing URL-owned KAORI Content Tabs:
+`drift_view=allocation` (default) and `drift_view=operations`. Each inner view shows **two primary paginated registries**:
+- **Allocation Drift**: Capsule Tenant Quota Drift and Capsule Shared Allocation Drift.
+- **Operational Reconcile**: Namespace & Allocation Drift and Access Reconciliation. The additional **Provider Authority** registry remains available behind a native, collapsed `View Provider Authority` disclosure to avoid crowding the primary workspace; it is not removed or copied.
+
+The outer `tab=drift-reconcile` remains canonical. All five original registry owners retain their independent page-size/filter/query parameter namespaces, canonical empty pagination footers, provider-authoritative evidence and explicit human recovery actions. Inner tab changes reuse the shared server/HTMX tab component; no client-side parallel state controller or background provider mutation is introduced. Query state keeps the selected `drift_view` on paging, filtering and clearing. The provider-authority disclosure remains additional read-only context.
+
+Local human acceptance must exercise both inner views under empty and populated datasets, independent Rows/page controls, HTMX and browser back/forward, light/dark/responsive. This documentation is not staging/UAT acceptance evidence.
