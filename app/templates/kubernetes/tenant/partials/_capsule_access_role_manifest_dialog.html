@@ -32,9 +32,8 @@
             <div class="flex items-start gap-3 rounded-xl border border-status-warning-border bg-status-warning-soft px-4 py-3.5 text-status-warning-text">
                 <i data-lucide="shield-alert" class="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true"></i>
                 <p class="text-xs leading-5">
-                    <strong>Preparation only.</strong> KAORI does not create ClusterRoles, grant bind privileges, or modify Kubernetes from this dialog.
-                    Confirm the target UAT context and obtain cluster-admin approval before applying these cluster-scoped resources.
-                    Capsule still needs permission to bind the approved roles.
+                    <strong>Preparation only.</strong> KAORI does not create ClusterRoles, grant bind privileges, or apply changes.
+                    Confirm UAT context and cluster-admin approval first. Capsule must be permitted to bind the approved roles.
                 </p>
             </div>
             <section aria-labelledby="capsule-access-role-list-heading">
