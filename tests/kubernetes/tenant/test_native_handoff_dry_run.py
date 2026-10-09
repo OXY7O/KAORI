@@ -39,9 +39,12 @@ def _resource(kind: str = 'Namespace', *, uid: str = 'uid-7', rv: str = '19'):
 
 
 class _CoreApi:
-    def __init__(self, kind='Namespace', *, tamper_spec=False, persist=False):
+    def __init__(self, kind='Namespace', *, tamper_spec=False, tamper_labels=False,
+                 tamper_annotations=False, persist=False):
         self.obj = _resource(kind)
         self.tamper_spec = tamper_spec
+        self.tamper_labels = tamper_labels
+        self.tamper_annotations = tamper_annotations
         self.persist = persist
         self.calls = []
 
@@ -61,6 +64,10 @@ class _CoreApi:
                 patched.metadata.labels.pop(key)
         if self.tamper_spec:
             patched.spec = {'unexpected': True}
+        if self.tamper_labels:
+            patched.metadata.labels['example.com/other'] = 'modified'
+        if self.tamper_annotations:
+            patched.metadata.annotations = {'example.com/source': 'unexpected'}
         if self.persist:
             self.obj = deepcopy(patched)
         return patched
@@ -144,6 +151,16 @@ def test_dry_run_rejects_mutating_admission_or_live_provider_side_effect():
     with pytest.raises(ValueError, match='spec'):
         dry_run_native_handoff_component(
             core, _component('ResourceQuota'), tenant_id='tenant-1'
+        )
+    core = _CoreApi('Namespace', tamper_labels=True)
+    with pytest.raises(ValueError, match='unrelated Kubernetes labels'):
+        dry_run_native_handoff_component(
+            core, _component(), tenant_id='tenant-1'
+        )
+    core = _CoreApi('Namespace', tamper_annotations=True)
+    with pytest.raises(ValueError, match='annotations'):
+        dry_run_native_handoff_component(
+            core, _component(), tenant_id='tenant-1'
         )
     core = _CoreApi('Namespace', persist=True)
     with pytest.raises(ValueError, match='live state changed'):
