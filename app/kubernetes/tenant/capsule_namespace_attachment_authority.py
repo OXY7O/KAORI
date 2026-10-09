@@ -46,7 +46,7 @@ def validate_capsule_namespace_attachment(
     namespace: Any,
     expected_namespace_uid: str,
     status_namespace_names: set[str],
-) -> dict[str, str]:
+) -> dict[str, Any]:
     """Verify immutable Capsule Tenant/Namespace linkage and fail closed on ambiguity."""
     capsule_meta = capsule_item.get('metadata') or {}
     if not isinstance(capsule_meta, Mapping):
@@ -97,5 +97,5 @@ def validate_capsule_namespace_attachment(
         'namespace': name, 'namespace_uid': uid, 'namespace_resource_version': resource_version,
         'capsule_tenant_name': capsule_name, 'capsule_tenant_uid': capsule_uid,
         'capsule_tenant_resource_version': capsule_rv,
-        'authority': 'capsule', 'provider_mutation_performed': 'false',
+        'authority': 'capsule', 'provider_mutation_performed': False,
     }
