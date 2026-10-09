@@ -219,8 +219,13 @@ The Top Consumers report uses `TopConsumersSelection` and the same service/domai
 
 ## Local visual review: canonical workspace tabs (#1020)
 
-The top-level **Consumer Rankings / Consumer Records / Recommendations** view uses the existing `kubernetes/analytics/components/_analysis_workspace.html::tabbed` presentation owner with `detached=true`. This reproduces the standard Kubernetes Analytics workspace header, shared Content Tabs and stable detached evidence panels without nesting the record/table cards inside another card.
+The top-level **Consumer Rankings / Consumer Records / Recommendations** view uses the existing `kubernetes/analytics/components/_analysis_workspace.html::tabbed` presentation owner with its **attached default composition** (no `detached=true`). Header, Content Tabs, and selected panel share one canonical Analytics workspace shell, matching Capacity, Storage, Workload, Utilization, Alerts, and Forecast. The parent workspace owns the panel padding and border; Consumer Rankings and Recommendations no longer introduce another full-width card around their entire tab content. Nested ranking evidence and Consumer Records retain their own bounded evidence cards inside the workspace.
 
 The nested CPU / Memory / PVC / Pods control remains subordinate Content Tabs within the Rankings panel, driven by the same `analytics/controls.js` state owner. Tab and panel IDs, query selection, native `hidden` fallback, and HTMX Consumer Records refresh contracts are unchanged. This is a presentation-only correction, with no dataset, ranking, pagination, provider, or permission changes.
 
 Review target: `kaori/review/staging-uat` in the devcontainer. Staging admission and CI/CD gates remain held until separately authorized.
+
+
+### Devcontainer feedback follow-up (2026-10-10)
+
+The previous `detached=true` layout was rejected during visual review: it placed the workspace header/tabs and Consumer Rankings in separate floating cards, contrary to the reference Analytics page family. The attached composition is the accepted implementation target for the next local review, **not** human-accepted or UAT-approved yet. No shared tab primitive changes are needed.
