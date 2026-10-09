@@ -549,12 +549,27 @@ def adopt_discovered_tenant_route():
             status='error',
             title='Tenant Adoption Requires Attention',
             message=str(exc),
-            detail='Discovery adoption is fail-closed. Governance takeover occurs only after provider-equivalent validation and read-back.',
+            detail=(
+                'Capsule Namespace attachment is mirror-only: no provider write is attempted.'
+                if str(request.form.get('provider_key') or '') == 'capsule'
+                and bool(str(request.form.get('attach_environment_id') or '').strip())
+                else 'A provider write may have started before failure. KAORI database rollback '
+                'does not revert Kubernetes/Capsule mutations; inspect live provider identity '
+                'and allocation before retrying.'
+            ),
             metadata={
                 'cluster_id': request.form.get('cluster_id'),
                 'provider_key': request.form.get('provider_key'),
                 'resource_name': request.form.get('resource_name'),
-                'operation': 'adopt_discovered_tenant',
+                'operation': (
+                    'attach_existing_tenant_namespace'
+                    if str(request.form.get('attach_environment_id') or '').strip()
+                    else 'adopt_discovered_tenant'
+                ),
+                'provider_mutation_may_have_started': not (
+                    str(request.form.get('provider_key') or '') == 'capsule'
+                    and bool(str(request.form.get('attach_environment_id') or '').strip())
+                ),
             },
         )
     else:
