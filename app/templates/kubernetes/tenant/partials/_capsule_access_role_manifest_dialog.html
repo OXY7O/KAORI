@@ -129,7 +129,16 @@
                 </details>
             </section>
             <div class="rounded-xl border border-kaori-primary/15 bg-kaori-soft px-4 py-3 text-xs leading-5 text-content-secondary">
-                <p class="font-semibold text-content-primary">After cluster-admin approval</p>
+                <p class="font-semibold text-content-primary">Preferred: approved cluster bootstrap</p>
+                <p class="mt-1">Open
+                    <a href="{{ url_for('integrations.kubernetes') }}"
+                       class="font-semibold text-kaori-primary underline underline-offset-2 hover:text-kaori-primary-dark">
+                        Kubernetes Integrations
+                    </a>,
+                    choose the Capsule cluster, and use Validation &amp; Capabilities → Check RBAC →
+                    Bootstrap Missing Roles. This installs missing roles once per cluster, after authorization.
+                    The YAML below remains an optional administrator-managed fallback.</p>
+                <p class="mt-3 font-semibold text-content-primary">Manual YAML fallback</p>
                 <p class="mt-1">Verify your selected Kubernetes UAT context, then use
                     <code class="break-all font-mono">kubectl apply -f kaori-capsule-access-clusterroles.yaml</code>.
                     Return to the existing Access Grant and click Reconcile; Inspect must confirm effective namespaced RoleBinding access.
