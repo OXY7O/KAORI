@@ -644,6 +644,7 @@ def select_capsule_namespace_attachment_candidate(
     allocation: Mapping[str, Any],
     *,
     namespace: str,
+    capsule_tenant_name: str,
     expected_uid: str = '',
     expected_resource_version: str = '',
 ) -> dict[str, Any]:
@@ -661,6 +662,15 @@ def select_capsule_namespace_attachment_candidate(
     if len(matches) != 1:
         raise ValueError('Namespace is not uniquely correlated to its Capsule Tenant.')
     candidate = dict(matches[0])
+    label_claims = set(candidate.get('label_claims') or [])
+    owner_claims = set(candidate.get('owner_claims') or [])
+    if (
+        not capsule_tenant_name
+        or (not label_claims and not owner_claims)
+        or (label_claims and label_claims != {capsule_tenant_name})
+        or (owner_claims and owner_claims != {capsule_tenant_name})
+    ):
+        raise ValueError('Capsule Namespace must have an unambiguous Tenant label or owner reference.')
     uid = str(candidate.get('uid') or '')
     version = str(candidate.get('resource_version') or '')
     if not uid or not version:
@@ -707,7 +717,7 @@ def _capsule_namespace_attachment_preflight(
         client, tenant_name=capsule_tenant_name, tenant_item=item,
     )
     correlated = select_capsule_namespace_attachment_candidate(
-        allocation, namespace=namespace,
+        allocation, namespace=namespace, capsule_tenant_name=capsule_tenant_name,
     )
     observed = client.core_api().read_namespace(namespace, _request_timeout=5)
     provider_status = _namespace_phase(observed)
