@@ -10,7 +10,10 @@ from app.common.pagination import paginate_sequence
 from app.common.presentation import present_user_datetime
 from app.extensions.db import db
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
-from app.kubernetes.tenant.allocation_observation import observe_native_namespace_allocation
+from app.kubernetes.tenant.allocation_observation import (
+    capsule_namespace_authority_present,
+    observe_native_namespace_allocation,
+)
 from app.kubernetes.tenant.capsule_allocation_observation import (
     _capsule_namespace_correlation,
     _capsule_status_namespace_names,
@@ -95,11 +98,16 @@ def _native_management(
     namespace: str,
     labels: dict[str, str],
     managed_record: TenantNamespace | None,
+    owner_references: Any = None,
 ) -> tuple[str, str]:
     if managed_record is not None:
         return 'Managed', 'Already governed by KAORI.'
     if namespace in _SYSTEM_NAMESPACES:
         return 'Blocked', 'Kubernetes system namespaces are not Tenant adoption candidates.'
+    if capsule_namespace_authority_present(
+        labels=labels, owner_references=owner_references,
+    ):
+        return 'Blocked', 'Namespace remains correlated to Capsule Tenant authority; use Capsule governance.'
     ownership_reason = _unclaimed_provider_ownership_reason(labels=labels, resource_kind='Namespace')
     if ownership_reason:
         return 'Blocked', ownership_reason
@@ -255,6 +263,7 @@ def get_tenant_discovery_context(
                 namespace=name,
                 labels=labels,
                 managed_record=managed_record,
+                owner_references=getattr(metadata, 'owner_references', None),
             )
             if managed_record is None and provider_status == 'Terminating':
                 management_status = 'Blocked'
@@ -576,6 +585,7 @@ def get_tenant_adoption_preflight_context(
             namespace=normalized_resource,
             labels=labels,
             managed_record=managed_record,
+            owner_references=getattr(metadata, 'owner_references', None),
         )
         if managed_record is None and provider_status == 'Terminating':
             management_status = 'Blocked'
