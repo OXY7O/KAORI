@@ -877,7 +877,7 @@ def test_committed_tenant_snapshot_is_separate_from_on_demand_live_provider_conn
     assert 'hx-get="{{ url_for(\'tenant.live_provider_connectivity\') }}"' in live_loader
     assert 'hx-trigger="load"' not in live_loader
     assert 'Check Live Connectivity' in live_loader
-    assert 'Routine page load performs no provider request' in live_loader
+    assert 'Page load makes no provider request' in live_loader
     assert 'Committed Tenant state is loaded. Check live reachability only when required.' in live_loader
     assert "title='Live Provider Connectivity'" in live_loader
     assert 'Refresh Live Connectivity' in live_partial
