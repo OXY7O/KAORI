@@ -5,6 +5,7 @@
 {% set loading_id = "operations-provider-authority-loading" %}
 {% set query_params = {
     'tab': 'drift-reconcile',
+    'drift_view': 'operations',
     'ops_provider_search': operations_provider_filters.search,
     'ops_provider_cluster_id': operations_provider_filters.cluster_id,
     'ops_provider_environment': operations_provider_filters.environment,
@@ -20,7 +21,7 @@
                         loading_id,
                         operations_provider_pagination.per_page,
                         table_ui.action_classes() ,
-            query_params={'tab': 'drift-reconcile'},
+            query_params={'tab': 'drift-reconcile', 'drift_view': 'operations'},
             page_param='ops_provider_page',
             per_page_param='ops_provider_per_page'
             ) }}
@@ -44,6 +45,7 @@
             per_page_param='ops_provider_per_page'
             ) %}
             <input type="hidden" name="tab" value="drift-reconcile">
+            <input type="hidden" name="drift_view" value="operations">
             <div>
                 <label for="ops-provider-cluster"
                        class="{{ table_ui.filter_label_classes() }}">Cluster</label>
