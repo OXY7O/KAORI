@@ -22,6 +22,26 @@ _CAPSULE_TENANT_LABEL_KEYS = (
     'projectcapsule.dev/tenant',
     'capsule.clastix.io/tenant',
 )
+
+
+def capsule_namespace_authority_present(
+    *, labels: Mapping[str, Any], owner_references: Any = None,
+) -> bool:
+    """A Namespace correlated to Capsule cannot be claimed by Native governance."""
+    if any(key in labels for key in _CAPSULE_TENANT_LABEL_KEYS):
+        return True
+    if owner_references is None:
+        return False
+    if not isinstance(owner_references, list):
+        return True  # malformed provider ownership cannot be taken over safely
+    return any(
+        str(_value(owner, 'kind') or '') == 'Tenant'
+        and str(_value(owner, 'api_version') or _value(owner, 'apiVersion') or '').startswith(
+            f'{_CAPSULE_GROUP}/'
+        )
+        for owner in owner_references
+    )
+
 _QUOTA_DISPLAY_ORDER = (
     'requests.cpu',
     'limits.cpu',
