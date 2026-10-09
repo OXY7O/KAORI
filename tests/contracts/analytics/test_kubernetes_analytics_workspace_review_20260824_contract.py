@@ -25,7 +25,7 @@ def test_requested_analytics_guidance_is_concise_without_losing_evidence_boundar
             'Compare aligned trends across the selected window before changing capacity or workload placement.',
             utilization_trend,
         ),
-        ('Unknown capacity stays Unknown; never treat it as zero utilization or Healthy.', utilization_overview),
+        ('Unknown capacity remains Unknown—not zero or Healthy.', utilization_overview),
         ('Lower headroom gets higher priority; unavailable evidence stays Unknown.', capacity_risk),
         ('Aggregate includes only nodes with paired capacity and available-byte evidence.', storage_overview),
         ('Usage includes only claims with paired capacity and used-byte evidence.', storage_overview),
