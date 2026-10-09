@@ -253,8 +253,10 @@ def test_credentials_use_symmetric_issuance_and_full_lifecycle_table() -> None:
     assert 'Generate Deployment Kubeconfig' in registry
     assert 'Access Gateway' in registry
     assert 'Pipeline Kubeconfig' in registry
-    assert "credential.delivery_method|replace('_', ' ') |title" in registry
-    assert 'Current delivery is manual through JumpServer.' in registry
+    assert 'title="{{ delivery_label }}"' in registry
+    assert 'Manually place the generated token into the approved access account' in registry
+    assert 'JumpServer' not in registry
+    assert 'JumpServer' not in workspace
     assert 'for secure deployment pipeline delivery' in registry
     assert 'Reveal JumpServer Token' not in registry
     assert 'Generate CI/CD Kubeconfig' not in registry
