@@ -2,6 +2,16 @@
 
 KAORI uses one canonical variable inventory with explicit ownership by runtime. The templates are intentionally not identical: development is comprehensive for the Dev Container, the disposable RC-image example is minimal, and production separates application configuration, runtime secrets, deployment-adapter configuration, and generated immutable release identity. Real environment files and credentials must never be committed.
 
+## Three supported runtime modes
+
+| Mode | Runtime configuration | Compose authority | Source behavior |
+| --- | --- | --- | --- |
+| Local development | Root `.env` copied from `.env.example` | `compose.yml` + `.devcontainer/compose.devcontainer.yml` | Bind-mounted working tree, VS Code debugger and automatic Tailwind watcher |
+| Governed server (UAT/production) | `/etc/kaori/app.env`, `secrets.env`, `deploy.env`, plus generated release state | `compose.production.yml` + `deploy/server/compose.server.yml` | Admitted immutable image digest; pre-migration backup and deployment verification |
+| Local standalone Docker | `example/kaori/.env` copied from its own example | `example/kaori/compose.yml` | Admitted RC image; **not** a live-source development build |
+
+The two local modes have separate Compose project names and persistent volumes. Neither local `.env` is a production/server authority. The server has no single monolithic runtime `.env` file.
+
 ## Environment authorities
 
 Use the template that owns the runtime you are configuring:
