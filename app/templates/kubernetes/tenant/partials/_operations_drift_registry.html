@@ -5,6 +5,7 @@
 {% set loading_id = "operations-drift-loading" %}
 {% set query_params = {
     'tab': 'drift-reconcile',
+    'drift_view': 'operations',
     'ops_drift_search': operations_drift_filters.search,
     'ops_drift_tenant_id': operations_drift_filters.tenant_id,
     'ops_drift_environment': operations_drift_filters.environment
@@ -19,7 +20,7 @@
                         loading_id,
                         operations_drift_pagination.per_page,
                         table_ui.action_classes() ,
-            query_params={'tab': 'drift-reconcile'},
+            query_params={'tab': 'drift-reconcile', 'drift_view': 'operations'},
             page_param='ops_drift_page',
             per_page_param='ops_drift_per_page'
             ) }}
@@ -43,6 +44,7 @@
             per_page_param='ops_drift_per_page'
             ) %}
             <input type="hidden" name="tab" value="drift-reconcile">
+            <input type="hidden" name="drift_view" value="operations">
             <div>
                 <label for="ops-drift-tenant" class="{{ table_ui.filter_label_classes() }}">Tenant</label>
                 <select id="ops-drift-tenant"
