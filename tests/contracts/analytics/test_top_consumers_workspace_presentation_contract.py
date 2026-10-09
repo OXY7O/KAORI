@@ -14,7 +14,14 @@ def test_top_consumers_uses_canonical_tabs_and_native_hidden_fallback() -> None:
         assert f'data-analytics-tab-panel="{tab}"' in section
     assert "analytics_workspace.tabbed(" in section
     assert "'top-consumers-content'," in section
-    assert "detached=true" in section
+    assert "detached=true" not in section
+    assert "analytics_workspace.tabbed(" in section
+    assert 'class="{{ analysis_surface.snapshot_shell_classes() }} space-y-5 p-5 sm:p-6"' not in section
+    assert section.count('class="space-y-5"') >= 2
+    assert "content_tabs.render_buttons('consumer-ranking-resource'" in section
+    workspace = read('app/templates/kubernetes/analytics/components/_analysis_workspace.html')
+    assert "class=\"{{ 'space-y-5' if detached else analysis_surface.snapshot_shell_classes() }}\"" in workspace
+    assert "content_tabs.render_buttons(tabset_id, tabs" in workspace
     assert "data-top-consumers-tabset" in section
     assert "content_tabs.render_buttons('top-consumers-content'" not in section
     assert "content_tabs.render_buttons('consumer-ranking-resource'" in section

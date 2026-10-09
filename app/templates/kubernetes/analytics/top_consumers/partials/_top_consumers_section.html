@@ -25,15 +25,14 @@
             'Compare ranked resource consumers, inspect committed records, and review prioritized actions.',
             'users',
             active_tab,
-            ['rankings', 'records', 'recommendations'],
-            detached=true
+            ['rankings', 'records', 'recommendations']
         ) %}
         <div id="top-consumers-content-panel-rankings"
              role="tabpanel"
              data-analytics-tab-panel="rankings"
              aria-labelledby="top-consumers-content-tab-rankings"
              {% if active_tab != 'rankings' %}hidden{% endif %}
-             class="{{ analysis_surface.snapshot_shell_classes() }} space-y-5 p-5 sm:p-6">
+             class="space-y-5">
             <header class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div class="flex min-w-0 items-start gap-3">
                     <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="bar-chart-3" class="h-4 w-4"></i></span>
@@ -118,7 +117,7 @@
              data-analytics-tab-panel="recommendations"
              aria-labelledby="top-consumers-content-tab-recommendations"
              {% if active_tab != 'recommendations' %}hidden{% endif %}
-             class="{{ analysis_surface.snapshot_shell_classes() }} space-y-5 p-5 sm:p-6">
+             class="space-y-5">
             <header class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div class="flex min-w-0 items-start gap-3">
                     <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="list-checks" class="h-4 w-4"></i></span>
