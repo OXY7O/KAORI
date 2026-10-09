@@ -22,6 +22,9 @@ def test_capsule_attach_reuses_discovery_and_existing_tenant_provider_authority(
     assert 'tenant_adoption_attachment_only' in discovery
     assert 'correlation_proven' in discovery
     assert 'namespace_items=namespace_items' in discovery
+    assert 'authority_error or ambiguities or not correlation_proven' in discovery
+    assert 'validate_capsule_namespace_attachment(' in discovery
+    assert 'proof[\'namespace_resource_version\']' in discovery
 
     assert 'def attach_discovered_capsule_namespace_committed(' in adoption
     assert "tenant.provider_key != 'capsule'" in adoption
