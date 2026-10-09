@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
 import pytest
 
-from app.kubernetes.tenant.access_remediation_plan import classify_access_remediation
+from app.kubernetes.tenant.access_remediation_plan import (
+    classify_access_remediation,
+    require_current_remediation_source,
+)
 
 
 def _grant(*, status='active', reconciliation_status='drifted'):
@@ -57,3 +61,48 @@ def test_capsule_and_native_codes_are_never_cross_admitted():
     assert classify_access_remediation(
         rows, [_grant()], authority_ready=True, provider_key='capsule'
     )[0]['decision'] == 'manual_review'
+
+
+def _observation_evidence(*, analysis_age=0, source_age=0):
+    now = datetime.now(UTC)
+    return {
+        'status': 'review_required',
+        'evaluated_at': (now - timedelta(seconds=analysis_age)).isoformat(),
+        'source_observed_at': (now - timedelta(seconds=source_age)).isoformat(),
+    }
+
+
+def test_remediation_requires_both_fresh_analysis_and_provider_observation():
+    result = require_current_remediation_source(
+        _observation_evidence(source_age=1200), now=datetime.now(UTC)
+    )
+    assert result.tzinfo is not None
+
+
+@pytest.mark.parametrize('analysis_age,source_age', [
+    (901, 1200),
+    (10, 3601),
+    (-50, 1200),
+    (10, -50),
+    (600, 0),
+])
+def test_remediation_rejects_stale_future_or_post_analysis_source(
+    analysis_age, source_age,
+):
+    with pytest.raises(ValueError, match='stale or inconsistent'):
+        require_current_remediation_source(
+            _observation_evidence(analysis_age=analysis_age, source_age=source_age),
+            now=datetime.now(UTC),
+        )
+
+
+@pytest.mark.parametrize('bad', [
+    {'evaluated_at': 'garbage'},
+    {'source_observed_at': None},
+    {'source_observed_at': '2026-10-09T00:00:00'},
+])
+def test_remediation_rejects_invalid_or_naive_evidence_timestamp(bad):
+    evidence = _observation_evidence()
+    evidence.update(bad)
+    with pytest.raises(ValueError, match='timestamps'):
+        require_current_remediation_source(evidence, now=datetime.now(UTC))

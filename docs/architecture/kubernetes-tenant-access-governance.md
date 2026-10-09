@@ -492,6 +492,16 @@ concurrency/idempotency controls, a kill switch, explicit permission
 boundary and post-mutation read-back. This Native extension does not
 claim that executor or Full Admission is completed.
 
+### Access Remediation plan freshness (#1000)
+
+Preparing Native/Capsule remediation decisions uses existing committed Access
+Drift records but does not execute any mutation. Evidence must remain bound
+to the same Tenant/cluster/provider. Both analysis time (15-minute maximum)
+and original provider RBAC observation time (one-hour maximum) must be fresh,
+ordered and timezone-aware. Unknown/stale source evidence cannot produce an
+apparently actionable explicit-reconcile proposal. The existing Access Grant
+Inspect/Reconcile flow remains the sole admitted mutation authority, with
+separate operator action; all automatic execution flags remain false.
 ### Native Access Drift declaration correlation (#999)
 
 After **Inspect Native RBAC** has committed a scoped, bounded namespaced

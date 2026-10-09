@@ -59,6 +59,34 @@ def latest_tenant_access_remediation_plan(tenant_id: str) -> dict[str, Any] | No
     return dict(event.metadata_json or {}) if event else None
 
 
+
+def require_current_remediation_source(
+    evidence: dict[str, Any], *, now: datetime,
+) -> datetime:
+    """Fail closed if analysis outlives its authoritative provider observation."""
+    try:
+        evaluated = datetime.fromisoformat(str(evidence.get('evaluated_at') or ''))
+        source = datetime.fromisoformat(str(
+            evidence.get('source_observed_at')
+            or evidence.get('observation_checked_at')
+            or ''
+        ))
+    except ValueError as exc:
+        raise ValueError('Access Drift timestamps are missing or invalid; inspect again.') from exc
+    if evaluated.tzinfo is None or source.tzinfo is None:
+        raise ValueError('Access Drift timestamps must contain a timezone; inspect again.')
+    evaluated_utc = evaluated.astimezone(UTC)
+    source_utc = source.astimezone(UTC)
+    analyzed_age = (now - evaluated_utc).total_seconds()
+    observed_age = (now - source_utc).total_seconds()
+    if (
+        analyzed_age < 0 or analyzed_age > 900
+        or observed_age < 0 or observed_age > 3600
+        or source_utc > evaluated_utc
+    ):
+        raise ValueError('Drift analysis or provider observation is stale or inconsistent; inspect again.')
+    return evaluated_utc
+
 def prepare_tenant_access_remediation_plan_committed(
     *, tenant_id: str, actor_user_id: int
 ) -> dict[str, Any]:
@@ -79,10 +107,11 @@ def prepare_tenant_access_remediation_plan_committed(
         or evidence.get('cluster_id') != tenant.cluster_id
     ):
         raise ValueError('Analyze current committed Access Drift before preparing remediation.')
-    captured = datetime.fromisoformat(str(evidence.get('evaluated_at') or ''))
-    age = (datetime.now(UTC) - captured).total_seconds() if captured.tzinfo else -1
-    if age < 0 or age > 900:
-        raise ValueError('Drift evidence is stale; collect and analyze again.')
+    captured = require_current_remediation_source(evidence, now=datetime.now(UTC))
+    if evidence.get('status') not in {'review_required', 'no_declaration_findings'}:
+        raise ValueError('Only complete committed declaration analysis can guide remediation.')
+    if evidence.get('provider') not in (None, tenant.provider_key):
+        raise ValueError('Access Drift provider authority changed; analyze again.')
     grants = TenantAccessGrant.query.filter_by(tenant_id=tenant_id).all()
     for grant in grants:
         updated = grant.updated_at
