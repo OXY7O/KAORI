@@ -163,6 +163,7 @@ def test_capsule_new_tenant_adoption_rejects_namespace_owned_by_another_tenant(m
         ({'kaori.io/tenant-id': 'orphaned-tenant'}, 'ownership markers'),
         ({'kaori.io/environment': 'production'}, 'ownership markers'),
         ({'kaori.io/resource-profile': 'profile-standard'}, 'ownership markers'),
+        ({'kaori.io/tenant-generation': '3'}, 'ownership markers'),
         ({'kaori.io/tenant-id': ''}, 'ownership markers'),
         ({'app.kubernetes.io/managed-by': 'external-controller'}, 'external manager'),
     ],
@@ -188,6 +189,7 @@ def test_native_discovery_without_claims_remains_a_review_candidate():
     {'app.kubernetes.io/managed-by': 'kaori'},
     {'kaori.io/tenant-id': 'former-tenant'},
     {'kaori.io/resource-profile': 'old-profile'},
+    {'kaori.io/tenant-generation': '2'},
     {'app.kubernetes.io/managed-by': 'external-controller'},
 ])
 def test_capsule_new_tenant_adoption_blocks_orphaned_or_foreign_cr_before_provider_work(
