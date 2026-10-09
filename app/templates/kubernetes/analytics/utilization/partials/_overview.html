@@ -40,14 +40,14 @@
                 <span class="{{ analysis_surface.role_icon_classes('insight') }}"><i data-lucide="activity" class="h-4 w-4"></i></span>
                 <div>
                     <h3 class="text-sm font-semibold text-content-primary">Utilization Posture</h3>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">CPU, memory, and pod density use worker allocatable capacity. Filesystem evidence uses canonical node identity and the validated /var or / mount contract.</p>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">CPU, memory, and Pods use worker allocatable capacity; filesystem uses verified node and /var or / mounts.</p>
                 </div>
             </div>
         </div>
         <div class="{{ analysis_surface.guidance_card_classes() }}">
             {{ analysis_surface.interpretation_callout('Decision Thresholds',
                         'Warning At 75% · Critical Above 90%',
-                        'Unknown capacity stays Unknown; never treat it as zero utilization or Healthy.',
+                        'Unknown capacity remains Unknown—not zero or Healthy.',
                         icon='gauge',
                         role='insight',
                         tone='warning') }}
