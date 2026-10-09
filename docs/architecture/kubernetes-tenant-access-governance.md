@@ -280,12 +280,18 @@ or Capsule Tenant CR; a missing UID, resourceVersion, replaced object or
 intervening provider version change fails closed before KAORI commits or
 takes ownership. A provider resource name is never substituted for a missing UID.
 
+**Attach to Existing Native Tenant** also compares the explicit Preflight
+UID/resourceVersion against a live provider read before any allocation
+takeover. This preserves the same generation invariant as New Tenant adoption.
+
 **Native allocation ownership takeover** additionally checks the observed
 Namespace UID against the committed adopted Namespace provider reference
 immediately before the Kubernetes PATCH. It requires a non-empty current
 resourceVersion and checks the same UID and an available resourceVersion on
-provider read-back. These checks apply to existing adopted Namespace cutovers
-and prevent silent takeover of a deleted/recreated Namespace generation.
+provider read-back. A foreign `kaori.io/tenant-id` claim, or a KAORI manager
+marker with no matching Tenant ID, blocks mutation. These checks apply to
+existing adopted Namespace cutovers and prevent silent takeover of a
+deleted/recreated or foreign-governed Namespace generation.
 The Kubernetes provider remains authoritative; this does not permit external
 owner handoff or silently import identities.
 
