@@ -812,18 +812,21 @@ def adopt_discovered_tenant_committed(
 ) -> tuple[Tenant, TenantEnvironment, TenantNamespace | None]:
     """Adopt provider state and perform governed takeover without changing effective values."""
 
-    context = _prepare_adoption(source)
-    if context.provider_key == 'native_kubernetes':
-        environment, namespace_record = _adopt_native(context)
-    else:
-        environment, namespace_record = _adopt_capsule(context)
-
     try:
+        context = _prepare_adoption(source)
+        if context.provider_key == 'native_kubernetes':
+            environment, namespace_record = _adopt_native(context)
+        else:
+            environment, namespace_record = _adopt_capsule(context)
+
         db.session.commit()
         return context.tenant, environment, namespace_record
     except IntegrityError as exc:
         db.session.rollback()
         raise ValueError('Tenant adoption conflicted with committed KAORI state. Refresh Discovery and retry.') from exc
-    except SQLAlchemyError:
+    except Exception:
+        # Provider writes cannot be rolled back by a database transaction.
+        # Clear all pending governance records before the route records an
+        # operational failure; never accidentally commit a partial adoption.
         db.session.rollback()
         raise
