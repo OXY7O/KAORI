@@ -558,6 +558,8 @@ def get_tenant_adoption_preflight_context(
             eligibility = 'Namespace is terminating and cannot enter governed adoption.'
         if management_status != 'Discovered':
             raise ValueError(eligibility)
+        if not getattr(metadata, 'uid', None) or not getattr(metadata, 'resource_version', None):
+            raise ValueError('Native Namespace preflight has no immutable UID/resourceVersion evidence.')
 
         allocation = observe_native_namespace_allocation(
             client.core_api(),
@@ -577,7 +579,8 @@ def get_tenant_adoption_preflight_context(
             'tenant_name': None,
             'tenant_id': None,
             'eligibility': eligibility,
-            'provider_reference': str(getattr(metadata, 'uid', None) or normalized_resource),
+            'provider_reference': str(metadata.uid),
+            'provider_resource_version': str(metadata.resource_version),
             'allocation_preflight': allocation,
         }
     else:
@@ -598,6 +601,9 @@ def get_tenant_adoption_preflight_context(
         )
         if management_status != 'Discovered':
             raise ValueError(eligibility)
+        provider_meta = item.get('metadata') or {}
+        if not provider_meta.get('uid') or not provider_meta.get('resourceVersion'):
+            raise ValueError('Capsule Tenant preflight has no immutable UID/resourceVersion evidence.')
 
         allocation = observe_capsule_tenant_allocation(
             client,
@@ -627,7 +633,8 @@ def get_tenant_adoption_preflight_context(
             'tenant_name': None,
             'tenant_id': None,
             'eligibility': eligibility,
-            'provider_reference': str(metadata.get('uid') or normalized_resource),
+            'provider_reference': str(metadata['uid']),
+            'provider_resource_version': str(metadata['resourceVersion']),
             'provider_api_version': capsule_version,
             'allocation_preflight': allocation,
             'capsule_capability_preflight': capsule_capability_evidence,
