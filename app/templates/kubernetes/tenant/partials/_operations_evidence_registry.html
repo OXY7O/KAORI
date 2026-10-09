@@ -207,17 +207,15 @@
             </tbody>
         </table>
     </div>
-    {% if operations_evidence_pagination.total_items > 0 %}
-        {{ registry_ui.footer('tenant.operations',
-                registry_id,
-                loading_id,
-                operations_evidence_pagination,
-                query_params,
-                operations_evidence_pagination.allowed_per_page,
-                resource_label='Evidence Records',
-                rows_aria_label='Evidence rows per page',
-                control_name='operations-evidence',
-                page_param='ops_evidence_page',
-                per_page_param='ops_evidence_per_page') }}
-    {% endif %}
+    {{ registry_ui.footer('tenant.operations',
+            registry_id,
+            loading_id,
+            operations_evidence_pagination,
+            query_params,
+            operations_evidence_pagination.allowed_per_page,
+            resource_label='Evidence Records',
+            rows_aria_label='Evidence rows per page',
+            control_name='operations-evidence',
+            page_param='ops_evidence_page',
+            per_page_param='ops_evidence_per_page') }}
 </section>
