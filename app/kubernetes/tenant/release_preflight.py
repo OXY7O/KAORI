@@ -14,7 +14,10 @@ from app.kubernetes.tenant.decommission_service import (
 )
 from app.kubernetes.tenant.external_access_observation import latest_external_capsule_access_evidence
 from app.models import AuditEvent, Cluster
-from app.models.tenant import Tenant, TenantEnvironment, TenantNamespace
+from app.models.tenant import (
+    Tenant, TenantEnvironment, TenantLifecycleStatus, TenantNamespace,
+    TenantNamespaceProvisioningStatus,
+)
 from app.models.tenant_advanced import TenantAdvancedCapabilityIntent, TenantAdvancedCapabilityStatus
 from app.models.tenant_managed_resource import TenantManagedResourceIntent, TenantManagedResourceStatus
 from app.models.tenant_policy import (
@@ -40,6 +43,11 @@ def _release_blockers(tenant: Tenant, namespace_rows: list[TenantNamespace], *, 
     if tenant.provider_key == 'native_kubernetes' and tenant.reconciliation_authority != 'native_kubernetes':
         blockers.append('Native reconciliation authority is inconsistent.')
 
+    if (tenant.provider_evidence_json or {}).get('provider_mutation_performed'):
+        blockers.append(
+            'Adoption performed KAORI-owned provider mutations. Complete independently verified '
+            'allocation/policy handoff before Release; database-only abandonment is prohibited.'
+        )
     for kind, amount in counts.items():
         if amount:
             blockers.append(f'{amount} active {kind} must be governed/handoff-reviewed before release.')
@@ -179,3 +187,104 @@ def review_tenant_release_preflight_committed(*, tenant_id: str, actor_user_id: 
     ))
     db.session.commit()
     return evidence
+
+
+def release_adopted_tenant_committed(
+    *, tenant_id: str, actor_user_id: int, approved: bool
+) -> dict[str, Any]:
+    """Release *only* observation-only adopted generations with verified safe handoff.
+
+    Existing active external resources stay untouched. This intentionally blocks
+    KAORI-modified provider resources until a separate approved handoff workflow
+    can prove their ownership transfer. No Kubernetes mutation is performed.
+    """
+    if not approved:
+        raise ValueError('Explicit provider-preserving Release approval is required.')
+    previous = latest_tenant_release_preflight(tenant_id)
+    if previous is None or previous.get('status') != 'handoff_review_required':
+        raise ValueError('Run an eligible Release preflight before execution.')
+    try:
+        checked_at = datetime.fromisoformat(str(previous.get('checked_at') or ''))
+    except ValueError as exc:
+        raise ValueError('Release preflight timestamp is missing or invalid.') from exc
+    age = (datetime.now(UTC) - checked_at).total_seconds() if checked_at.tzinfo else -1
+    if age < 0 or age > 900:
+        raise ValueError('Release preflight is stale; review it again before releasing.')
+
+    # Read the authoritative Kubernetes objects *again* and commit a fresh
+    # preflight before mutating any KAORI-owned governance record.
+    latest = review_tenant_release_preflight_committed(
+        tenant_id=tenant_id, actor_user_id=actor_user_id
+    )
+    if latest['status'] != 'handoff_review_required' or latest['blockers']:
+        raise ValueError('Release is blocked by newly observed provider or governance dependencies.')
+    identity_keys = ('tenant_id', 'cluster_id', 'generation', 'provider', 'ownership')
+    if any(previous.get(key) != latest.get(key) for key in identity_keys):
+        raise ValueError('Tenant authority changed since approved Release preflight.')
+    old_objects = sorted(
+        (row['kind'], row['name'], row['uid'], row['resource_version'])
+        for row in previous.get('live_provider_identity') or []
+    )
+    new_objects = sorted(
+        (row['kind'], row['name'], row['uid'], row['resource_version'])
+        for row in latest.get('live_provider_identity') or []
+    )
+    if not old_objects or new_objects != old_objects:
+        raise ValueError('Provider UID/resourceVersion changed; repeat Release preflight.')
+
+    tenant = Tenant.query.filter_by(id=tenant_id).with_for_update().one_or_none()
+    if tenant is None or tenant.lifecycle_status != TenantLifecycleStatus.READY.value:
+        raise ValueError('Tenant lifecycle changed during Release approval.')
+    records = (
+        TenantNamespace.query.join(
+            TenantEnvironment, TenantNamespace.tenant_environment_id == TenantEnvironment.id
+        ).filter(TenantEnvironment.tenant_id == tenant_id)
+        .order_by(TenantNamespace.id.asc()).with_for_update().all()
+    )
+    if tenant.ownership_status != 'adopted':
+        raise ValueError('Only adopted Tenant authority can be released.')
+    if any(
+        row.provisioning_status != TenantNamespaceProvisioningStatus.READY.value
+        or row.resource_profile_id is not None or row.ownership_status != 'adopted'
+        for row in records
+    ):
+        raise ValueError('A Namespace has active KAORI allocation or an unsafe lifecycle.')
+    provider_evidence = dict(tenant.provider_evidence_json or {})
+    if provider_evidence.get('provider_mutation_performed'):
+        raise ValueError('KAORI-owned provider controls remain; Release requires independent handoff proof.')
+
+    now = datetime.now(UTC)
+    result = {
+        'tenant_id': tenant.id, 'cluster_id': tenant.cluster_id,
+        'generation': tenant.generation, 'provider': tenant.provider_key,
+        'status': 'released', 'released_at': now.isoformat(),
+        'provider_identity': new_objects,
+        'preflight_checked_at': latest['checked_at'],
+        'provider_resource_deleted': False,
+        'provider_mutation_performed': False,
+        'rbac_mutation_performed': False,
+        'secret_material_persisted': False,
+        'released_namespace_count': len(records),
+    }
+    for record in records:
+        prior_evidence = dict(record.provisioning_evidence_json or {})
+        prior_evidence['release_governance'] = {
+            'status': 'released', 'released_at': now.isoformat(),
+            'tenant_id': tenant.id, 'generation': record.generation,
+            'provider_uid': record.provider_reference,
+            'provider_preserved': True, 'provider_mutation_performed': False,
+        }
+        record.provisioning_evidence_json = prior_evidence
+        record.provisioning_status = TenantNamespaceProvisioningStatus.RELEASED.value
+        record.provisioning_message = 'Governance Released; provider Namespace preserved for external management.'
+    provider_evidence['release_governance'] = result
+    tenant.provider_evidence_json = provider_evidence
+    tenant.lifecycle_status = TenantLifecycleStatus.RELEASED.value
+    db.session.add(AuditEvent(
+        actor_user_id=actor_user_id, target_type='kubernetes_tenant_release',
+        target_id=tenant.id, action='tenant.release.governance_released',
+        summary='Released observed Tenant governance; verified provider objects remained unchanged.',
+        metadata_json=result,
+    ))
+    db.session.commit()
+    return result
