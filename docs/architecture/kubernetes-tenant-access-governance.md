@@ -345,6 +345,39 @@ A future separately admitted executor must transfer ownership only after
 explicit successor approval, provider read-back and audit; this inventory
 deliberately does not assert that those conditions are already met.
 
+### Dual-operator Release handoff plan and approval checkpoint (#991)
+
+The Registry's **Governed Handoff** disclosure now captures the proposed
+**successor owner reference** and **change record reference** against the last
+live Review Release preflight. **Prepare Handoff** refreshes provider
+identity/ownership evidence, then commits a non-secret immutable plan fingerprint
+record to `AuditEvent`. A different authorized KAORI operator may
+**Acknowledge Handoff**, which performs a second provider/authority preflight
+and requires an unchanged cluster, generation, provider, component fingerprint
+and Namespace identity. Requests expire after 15 minutes. Existing Access
+Grants, credentials, Memberships, Groups, policies or provider/ownership
+conflicts block acknowledgement until independently resolved.
+
+The roles of the two operations are deliberately distinct:
+
+- **Prepare Handoff** records *requested successor and intended change*;
+  it does **not** validate that a real external owner has accepted ownership.
+- **Acknowledge Handoff** records an independent KAORI operator's review;
+  it is **not** an external-owner acceptance receipt, effective RBAC proof,
+  provider ownership transfer or authorization to Release.
+- **Provider Handoff Execution** must still be admitted in a later controlled
+  workstream. It will require evidence of the successor's acceptance, current
+  provider UID/resourceVersion, exact desired mutation, conditional patch,
+  preserved ResourceQuota/LimitRange/Capsule values and provider read-back.
+  A partially transferred resource must remain blocked and auditable.
+
+Both current operations are **read-only on Kubernetes/Capsule** and may create
+only committed KAORI audit events; the existing Release preflight and executor
+stay fail-closed for previously KAORI-mutated controls. No manually entered
+change reference, approval checkbox or internal plan is sufficient to set
+`lifecycle_status=released`. The operational UI reads committed plan/approval
+status rather than running provider reads on each page load.
+
 ### Governed Access Remediation Decisions (#985)
 
 An operator may prepare a **Remediation Decision** after fresh committed
