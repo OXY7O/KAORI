@@ -166,6 +166,55 @@
                         </td>
                         <td class="{{ table_ui.cell_classes(action=true) }} align-middle">
                             <div class="ml-auto flex w-fit flex-wrap items-center justify-end gap-2">
+                                {% if can_manage and tenant.provider_key == 'capsule' and tenant.provider_state == 'capsule' and tenant.lifecycle_status == 'ready' and row.capsule_environment_options %}
+                                    <details class="group max-w-64 rounded-lg border border-outline-subtle bg-surface-elevated p-2"
+                                             data-capsule-namespace-attach>
+                                        <summary class="inline-flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                            <i data-lucide="link" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                            Attach Capsule Namespace
+                                        </summary>
+                                        <form method="post"
+                                              action="{{ url_for('tenant.attach_existing_capsule_namespace_route') }}"
+                                              hx-post="{{ url_for('tenant.attach_existing_capsule_namespace_route') }}"
+                                              hx-target="#tenant-admin-workspace"
+                                              hx-select="#tenant-admin-workspace"
+                                              hx-swap="outerHTML show:none focus-scroll:false"
+                                              hx-indicator="#tenant-admin-loading"
+                                              class="mt-2 space-y-2 border-t border-outline-subtle pt-3">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <label class="block text-xs font-medium text-content-secondary">
+                                                Destination environment
+                                                <select name="environment_id" required
+                                                        class="mt-1 h-9 w-full rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs text-content-primary">
+                                                    {% for environment in row.capsule_environment_options %}
+                                                        <option value="{{ environment.id }}">{{ environment.environment|title }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </label>
+                                            <label class="block text-xs font-medium text-content-secondary">
+                                                Existing Capsule Namespace
+                                                <input type="text" name="namespace" required maxlength="253"
+                                                       placeholder="team-a-dev" autocomplete="off"
+                                                       class="mt-1 h-9 w-full rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs text-content-primary">
+                                            </label>
+                                            <label class="block text-xs font-medium text-content-secondary">
+                                                Namespace UID from Discovery
+                                                <input type="text" name="namespace_uid" required maxlength="128"
+                                                       placeholder="Provider namespace UID" autocomplete="off"
+                                                       class="mt-1 h-9 w-full rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs text-content-primary">
+                                            </label>
+                                            <p class="text-xs leading-5 text-content-muted">
+                                                Live Capsule ownership, UID, policies and committed governance are
+                                                verified before attaching. No Capsule policy or RBAC mutation.
+                                            </p>
+                                            <button type="submit"
+                                                    class="inline-flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                <i data-lucide="link-2" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                Attach Observed Namespace
+                                            </button>
+                                        </form>
+                                    </details>
+                                {% endif %}
                                 {% if can_manage and tenant.ownership_status == 'adopted' and tenant.lifecycle_status == 'ready' %}
                                     <form method="post"
                                           action="{{ url_for('tenant.review_tenant_release_route', tenant_id=tenant.id) }}"
