@@ -9,14 +9,6 @@ from app.models.audit import AuditEvent
 from app.models.tenant import Tenant, TenantAccessGrant
 
 _TARGET = 'kubernetes_tenant_access_remediation_plan'
-_MANUAL = {
-    'external_capsule_owner',
-    'external_access_review',
-    'orphaned_kaori_grant_marker',
-    'revoked_grant_still_declared',
-}
-
-
 def classify_access_remediation(
     findings: list[dict[str, str]], grants: list[TenantAccessGrant], *, authority_ready: bool
 ) -> list[dict[str, Any]]:
