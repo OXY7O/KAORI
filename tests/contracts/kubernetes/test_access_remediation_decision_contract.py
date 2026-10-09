@@ -30,5 +30,5 @@ def test_remediation_plan_reuses_existing_governed_grant_inspect_reconcile_witho
     assert '_csrf()' in routes
     assert 'Prepare Remediation Decisions' in panel
     assert 'Governed Remediation Decisions' in panel
-    assert 'no Kubernetes mutation' in panel.lower()
+    assert 'no kubernetes mutation' in panel.lower()
     assert 'Access Grant Inspect' in docs
