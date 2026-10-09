@@ -4,7 +4,7 @@
 {% import "components/technical_value.html" as technical_value %}
 {% import "components/resource_detail_modal.html" as resource_detail_modal %}
 <div class="overflow-x-auto">
-    <table class="{{ table_ui.table_classes('min-w-[70rem]') }}">
+    <table class="{{ table_ui.table_classes('min-w-[70rem] !table-fixed') }}">
         <caption class="sr-only">Node inventory records for {{ inventory.scope_label }}.</caption>
         <thead class="{{ table_ui.head_classes() }}">
             <tr>

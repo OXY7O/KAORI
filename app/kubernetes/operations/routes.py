@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from flask import Blueprint
+from flask import Blueprint, render_template
+
+from app.access.rbac.decorators import any_permission_required
 
 from app.kubernetes.operations.configmaps.routes import (
     configmap_delete_target,
@@ -47,6 +49,30 @@ kubernetes_operations_bp = Blueprint(
     'kubernetes_operations',
     __name__,
     url_prefix='/kubernetes-operations',
+)
+
+
+@any_permission_required(
+    'kubernetes_configmaps.view',
+    'kubernetes_configmaps.create',
+    'kubernetes_configmaps.update',
+    'kubernetes_configmaps.delete',
+    'kubernetes_secrets.view',
+    'kubernetes_secrets.create',
+    'kubernetes_secrets.replace',
+    'kubernetes_secrets.delete',
+    'kubernetes_secrets.reveal',
+    'kubernetes_secrets.approve_reveal',
+    'kubernetes_secrets.rotate_tls',
+    'kubernetes_secrets.bulk_rotate_tls',
+)
+def kubernetes_operations_overview():
+    """Permission-scoped capability navigation; never reads live provider state."""
+    return render_template('kubernetes/operations/overview.html')
+
+
+kubernetes_operations_bp.add_url_rule(
+    '/', endpoint='overview', view_func=kubernetes_operations_overview, methods=['GET']
 )
 
 

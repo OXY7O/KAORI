@@ -214,3 +214,12 @@ See `docs/design/components/FORM_WITH_CONTEXT_RAIL.md`.
 
 The Form + Right Context pattern stacks the guidance below the primary form below `xl`. This preserves the same semantic order used by existing Kubernetes, Metrics Source, and Alertmanager registration pages. Do not create a provider- or domain-specific breakpoint solely to keep the rail visible.
 
+
+
+## Kubernetes Operations overview (review candidate #1018)
+
+The `/kubernetes-operations/` landing page is a capability-first, permission-scoped navigation surface. It composes the existing page Hero, operational section card, workspace link card, and evidence-boundary components. ConfigMap and Secret workspaces retain their own authorization and cluster prerequisites; future capability families are added as permission-gated entries instead of duplicating a live inventory or mutation engine in this overview.
+
+The shared destructive confirmation modal retains the existing runtime, keyboard/focus trap, exact-target selection and final submit dispatch. The `kubernetes` presentation is limited to Secret and ConfigMap deletion and separates resource/scope, irreversible consequence, and bound preflight explanation. Final operations continue to enforce their server-side validation receipt, resourceVersion and RBAC contracts; the new presentation never exposes Secret values.
+
+This candidate is for `kaori/review/staging-uat` devcontainer visual and functional review; CI/CD admission, staging UAT and promotion require separate authorization.

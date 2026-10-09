@@ -116,7 +116,7 @@
             </aside>
         </form>
     </div>
-    {{ destructive_modal.render('configmap-delete-confirmation', 'Delete ConfigMap', none, 'The selected live ConfigMap and its data will be removed from Kubernetes. Known consumer evidence is best effort.', 'configmap-delete-submit', 'Delete ConfigMap') }}
+    {{ destructive_modal.render('configmap-delete-confirmation', 'Delete ConfigMap', none, 'The selected live ConfigMap and its data will be removed from Kubernetes. Known consumer evidence is best effort.', 'configmap-delete-submit', 'Delete ConfigMap', notice='Confirm removal of the validated live ConfigMap.', presentation='kubernetes') }}
     <script src="{{ url_for('static', filename='js/configmap_delete.js') }}"></script>
     <script src="{{ url_for('static', filename='js/destructive_confirmation_modal.js') }}"></script>
 {% endblock dashboard_content %}

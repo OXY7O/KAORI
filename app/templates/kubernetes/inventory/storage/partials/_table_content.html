@@ -3,21 +3,21 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/resource_detail_modal.html" as resource_detail_modal %}
 <div class="overflow-x-auto overscroll-x-contain">
-    <table class="{{ table_ui.table_classes('min-w-[76rem]') }}">
+    <table class="{{ table_ui.table_classes('min-w-[76rem] !table-fixed') }}">
         <caption class="sr-only">Committed Kubernetes StorageClass, PersistentVolume, and PersistentVolumeClaim inventory for the active filters.</caption>
         <thead class="{{ table_ui.head_classes() }}">
             <tr>
                 <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} min-w-[18rem]">Storage Object</th>
+                    class="{{ table_ui.header_cell_classes() }} w-[24%]">Storage Object</th>
                 <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} min-w-[14rem]">Scope</th>
+                    class="{{ table_ui.header_cell_classes() }} w-[16%]">Scope</th>
                 <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} min-w-[15rem]">Provisioning</th>
+                    class="{{ table_ui.header_cell_classes() }} w-[15%]">Provisioning</th>
                 <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} min-w-[14rem]">Capacity & Access</th>
+                    class="{{ table_ui.header_cell_classes() }} w-[15%]">Capacity & Access</th>
                 <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} min-w-[14rem]">Binding & Lifecycle</th>
-                <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Details</th>
+                    class="{{ table_ui.header_cell_classes() }} w-[18%]">Binding & Lifecycle</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[12%]">Details</th>
             </tr>
         </thead>
         <tbody class="{{ table_ui.body_classes() }}">
@@ -38,20 +38,20 @@
                         {% endif %}
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">
-                        <p class="text-sm font-semibold text-content-primary">{{ item.provisioning_primary }}</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ item.provisioning_secondary }}</p>
+                        <p class="truncate text-sm font-semibold text-content-primary" title="{{ item.provisioning_primary }}">{{ item.provisioning_primary }}</p>
+                        <p class="mt-1 truncate text-xs leading-5 text-content-muted" title="{{ item.provisioning_secondary }}">{{ item.provisioning_secondary }}</p>
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">
-                        <p class="text-sm font-semibold text-content-primary">{{ item.capacity_primary }}</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ item.capacity_secondary }}</p>
+                        <p class="truncate text-sm font-semibold text-content-primary" title="{{ item.capacity_primary }}">{{ item.capacity_primary }}</p>
+                        <p class="mt-1 truncate text-xs leading-5 text-content-muted" title="{{ item.capacity_secondary }}">{{ item.capacity_secondary }}</p>
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">
                         {% if item.type == 'StorageClass' %}
                             {{ table_label.metadata_label(item.lifecycle_label) }}
                         {% else %}
-                            {{ table_label.status_indicator_label(item.lifecycle_label, item.lifecycle_tone) }}
+                            <div class="min-w-0 truncate" title="{{ item.lifecycle_label }}">{{ table_label.status_indicator_label(item.lifecycle_label, item.lifecycle_tone) }}</div>
                         {% endif %}
-                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ item.binding_secondary }}</p>
+                        <p class="mt-1 truncate text-xs leading-5 text-content-muted" title="{{ item.binding_secondary }}">{{ item.binding_secondary }}</p>
                     </td>
                     <td class="{{ table_ui.cell_classes(action=true) }}">{{ resource_detail_modal.detail_button(item.id, url_for('inventory.storage_details', storage_id=item.id) , item.name, 'Storage') }}</td>
                 </tr>
