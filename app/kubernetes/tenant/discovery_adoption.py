@@ -14,6 +14,7 @@ from app.kubernetes.tenant.allocation_cutover import reconcile_adopted_native_al
 from app.kubernetes.tenant.allocation_observation import observe_native_namespace_allocation
 from app.kubernetes.tenant.capacity_governance import enforce_existing_namespace_allocation_preflight
 from app.kubernetes.tenant.capsule_allocation_observation import observe_capsule_tenant_allocation
+from app.kubernetes.tenant.capsule_namespace_attachment_authority import validate_capsule_namespace_attachment
 from app.kubernetes.tenant.capsule_tenant import qualify_capsule_tenant_adoption
 from app.kubernetes.tenant.discovery_service import (
     _adoption_environment,
@@ -603,6 +604,106 @@ def attach_discovered_native_namespace_committed(
     except IntegrityError as exc:
         db.session.rollback()
         raise ValueError('Namespace attachment conflicted with committed governance state.') from exc
+    except Exception:
+        db.session.rollback()
+        raise
+
+
+def attach_capsule_namespace_to_existing_tenant_committed(
+    source: Mapping[str, Any],
+) -> tuple[Tenant, TenantEnvironment, TenantNamespace]:
+    """Attach one *provider-owned* Capsule Namespace without any provider mutation.
+
+    Only the matching adopted/managed Capsule Tenant can admit a namespace.
+    Capsule-generated policy is mirrored from provider evidence. KAORI Access
+    Grants and external Capsule RBAC are never expanded implicitly.
+    """
+    environment_id = str(source.get('environment_id') or '').strip()
+    namespace_name = str(source.get('namespace') or '').strip()
+    namespace_uid = str(source.get('namespace_uid') or '').strip()
+    if not environment_id.isdecimal() or not namespace_name or not namespace_uid:
+        raise ValueError('Select an existing Capsule environment and a reviewed Namespace UID.')
+    environment = db.session.get(TenantEnvironment, int(environment_id))
+    if environment is None:
+        raise ValueError('Capsule Tenant environment is unavailable.')
+    tenant = environment.tenant
+    cluster = (
+        Cluster.query.join(KubernetesConnection, KubernetesConnection.cluster_id == Cluster.id)
+        .filter(Cluster.id == tenant.cluster_id, Cluster.status == ClusterStatus.CONNECTED.value)
+        .first()
+    )
+    if cluster is None or not tenant_workspace_connection_available(cluster.kubernetes_connection):
+        raise ValueError('Capsule Kubernetes connection is unavailable.')
+    client = runtime_adapter.build_client(cluster)
+    version, capsule_item = _read_capsule_tenant(client, str(tenant.provider_reference))
+    if _capsule_phase(capsule_item) == 'Terminating':
+        raise ValueError('Terminating Capsule Tenant cannot receive Namespace attachments.')
+    allocation = observe_capsule_tenant_allocation(
+        client, tenant_name=str(tenant.provider_reference), tenant_item=capsule_item
+    )
+    correlated = [
+        row for row in allocation['correlated_namespaces']
+        if str(row.get('name') or '') == namespace_name
+    ]
+    if len(correlated) != 1:
+        raise ValueError('Namespace is not uniquely correlated to this Capsule Tenant.')
+    observed = client.core_api().read_namespace(namespace_name, _request_timeout=5)
+    proof = validate_capsule_namespace_attachment(
+        tenant=tenant, cluster_id=str(cluster.id),
+        capsule_item=capsule_item, namespace=observed,
+        expected_namespace_uid=namespace_uid,
+        status_namespace_names={
+            str(value) for value in (capsule_item.get('status') or {}).get('namespaces', [])
+        },
+    )
+    if str(correlated[0].get('uid') or '') != proof['namespace_uid']:
+        raise ValueError('Capsule Namespace correlation changed during live review.')
+    if str(correlated[0].get('resource_version') or '') != proof['namespace_resource_version']:
+        raise ValueError('Capsule Namespace resourceVersion changed during attachment preflight.')
+    current = _managed_namespace_map([str(cluster.id)]).get((str(cluster.id), namespace_name))
+    if current is not None:
+        raise ValueError('Namespace already has active KAORI governance; attachment refused.')
+    namespace_allocation = dict(correlated[0].get('allocation') or {})
+    if (
+        namespace_allocation.get('control_state') != 'observed'
+        or namespace_allocation.get('unsupported_dimensions')
+        or namespace_allocation.get('ambiguous_dimensions')
+    ):
+        raise ValueError('Capsule Namespace allocation is ambiguous; attachment requires review.')
+    _verify_released_namespace_lineage(
+        cluster_id=str(cluster.id), namespace=namespace_name,
+        provider_uid=proof['namespace_uid'], tenant_slug=tenant.slug,
+    )
+    context = _AdoptionContext(
+        cluster=cluster, client=client, provider_key='capsule',
+        resource_name=str(tenant.provider_reference), environment_name=environment.environment,
+        tenant=tenant, now=datetime.now(UTC),
+    )
+    # Reuse the canonical Capsule Namespace normalization and policy mirroring
+    # without taking over Capsule Tenant quota or changing external RBAC.
+    selected_allocation = dict(allocation)
+    selected_allocation['correlated_namespaces'] = [correlated[0]]
+    try:
+        records = _capsule_namespace_records(context, environment, selected_allocation)
+        if len(records) != 1:
+            raise ValueError('Expected one uniquely correlated Capsule Namespace.')
+        _mirror_capsule_namespace_policies(tenant, records)
+        record = records[0]
+        evidence = dict(record.provisioning_evidence_json or {})
+        evidence['attachment'] = {
+            **proof, 'source': 'capsule_existing_tenant_attachment',
+            'tenant_id': tenant.id, 'tenant_generation': tenant.generation,
+            'environment': environment.environment, 'provider_api_version': version,
+            'attached_at': datetime.now(UTC).isoformat(),
+            'grants_expanded_automatically': False,
+            'provider_mutation_performed': False,
+        }
+        record.provisioning_evidence_json = evidence
+        db.session.commit()
+        return tenant, environment, record
+    except IntegrityError as exc:
+        db.session.rollback()
+        raise ValueError('Capsule Namespace attachment conflicts with existing governance.') from exc
     except Exception:
         db.session.rollback()
         raise
