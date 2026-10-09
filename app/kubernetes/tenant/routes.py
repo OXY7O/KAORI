@@ -54,6 +54,7 @@ from app.kubernetes.tenant.job_adapter import (
     dispatch_tenant_decommission,
     get_visible_tenant_sync_job,
 )
+from app.kubernetes.tenant.release_preflight import review_tenant_release_preflight_committed
 from app.kubernetes.tenant.live_connection import get_live_tenant_connection_context
 from app.kubernetes.tenant.overview import dispatch_tenant_inventory_sync
 from app.kubernetes.tenant.route_common import (
@@ -609,6 +610,35 @@ def create_tenant_route():
             },
         )
     return _tenant_section_redirect('tenant-setup')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-preflight')
+@permission_required('tenant.manage')
+def review_tenant_release_route(tenant_id: str):
+    try:
+        _csrf()
+        result = review_tenant_release_preflight_committed(
+            tenant_id=tenant_id, actor_user_id=int(current_user.id)
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_release_preflight_failed',
+            status='error',
+            title='Release Governance Review Unavailable',
+            message=str(exc),
+            detail='No Tenant, Namespace or RBAC was released.',
+            metadata={'tenant_id': tenant_id, 'operation': 'review_tenant_release'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_release_preflight_reviewed',
+            status='warning' if result['blockers'] else 'info',
+            title='Release Governance Preflight Recorded',
+            message=f"{len(result['blockers'])} blocker(s); no provider resource was modified.",
+            detail='Release is not yet admitted. Review the committed dependency and provider handoff evidence.',
+            metadata={'tenant_id': tenant_id, 'operation': 'review_tenant_release'},
+        )
+    return _tenant_section_redirect('registry')
 
 
 @tenant_bp.post('/tenants/<string:tenant_id>/decommission')
