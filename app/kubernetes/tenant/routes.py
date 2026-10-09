@@ -564,6 +564,8 @@ def adopt_discovered_tenant_route():
             title=(
                 'Capsule Namespace Attached · Provider Mirrored'
                 if attach_existing and tenant.provider_key == 'capsule'
+                else 'Native Namespace Attached · Managed Allocation'
+                if attach_existing and tenant.provider_key == 'native_kubernetes'
                 else 'Tenant Adopted · Managed'
             ),
             message=(
