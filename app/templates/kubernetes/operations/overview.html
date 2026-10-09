@@ -1,0 +1,103 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/operational_section_card.html" as section_card %}
+{% import "components/workspace_link_card.html" as workspace_card %}
+{% import "components/operation_evidence_boundary.html" as evidence_boundary %}
+{% block title %}Kubernetes Operations Overview{% endblock title %}
+{% block dashboard_content %}
+    {% set can_configmaps = current_user.has_permission('kubernetes_configmaps.view')
+        or current_user.has_permission('kubernetes_configmaps.create')
+        or current_user.has_permission('kubernetes_configmaps.update')
+        or current_user.has_permission('kubernetes_configmaps.delete') %}
+    {% set can_secrets = current_user.has_permission('kubernetes_secrets.view')
+        or current_user.has_permission('kubernetes_secrets.create')
+        or current_user.has_permission('kubernetes_secrets.replace')
+        or current_user.has_permission('kubernetes_secrets.delete')
+        or current_user.has_permission('kubernetes_secrets.reveal')
+        or current_user.has_permission('kubernetes_secrets.approve_reveal')
+        or current_user.has_permission('kubernetes_secrets.rotate_tls')
+        or current_user.has_permission('kubernetes_secrets.bulk_rotate_tls') %}
+    {% set available_capabilities = (1 if can_configmaps else 0) + (1 if can_secrets else 0) %}
+    <div class="space-y-6" data-kubernetes-operations-overview>
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('workflow', 'Kubernetes Operations', 'layout-dashboard') %}
+                        <h1 class="{{ page_hero.title_classes() }}">Operations Overview</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Governed Kubernetes workflows, organized by capability and backed by provider-authoritative execution.</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('layers-3', available_capabilities ~ ' Available Capabilities') }}
+                            {{ page_hero.meta_label('shield-check', 'Permission-Gated Operations') }}
+                            {{ page_hero.meta_label('radio-tower', 'Live Target Validation') }}
+                        </div>
+                    {% endcall %}
+                </div>
+                {{ page_hero.context_card(
+                    'Kubernetes Operations overview context',
+                    'Operation Boundary',
+                    'Provider-Authoritative Execution',
+                    'Governed',
+                    'info',
+                    [
+                        ('scan-search', 'Preflight', 'Validate First', 'Per workflow'),
+                        ('scroll-text', 'Outcome', 'Audited', 'KAORI evidence')
+                    ],
+                    'Open Cluster Integrations',
+                    url_for('integrations.kubernetes'),
+                    'server-cog'
+                ) }}
+            </div>
+        </section>
+        {{ evidence_boundary.render() }}
+        {% call section_card.render(
+            'Operational Capabilities',
+            'Select an authorized resource family. Each workspace independently owns its target, validation, mutation, and audit workflow.',
+            'layout-grid', body_classes='p-4 sm:p-5'
+        ) %}
+            <div class="grid gap-4 lg:grid-cols-2" data-kubernetes-operation-capabilities>
+                {% if can_configmaps %}
+                    {{ workspace_card.render({
+                        'href': url_for('kubernetes_operations.configmap_management'),
+                        'title': 'ConfigMaps',
+                        'label': 'Configuration Operations',
+                        'description': 'Create, update, or delete non-secret configuration with exact target validation and governed audit.',
+                        'icon': 'file-cog',
+                        'scope': 'Configuration',
+                        'search_text': 'configmap create update delete configuration'
+                    }) }}
+                {% endif %}
+                {% if can_secrets %}
+                    {{ workspace_card.render({
+                        'href': url_for('kubernetes_operations.secret_management'),
+                        'title': 'Secrets',
+                        'label': 'Protected Operations',
+                        'description': 'Create, replace, delete, or handle sensitive Secret and TLS workflows without exposing stored values.',
+                        'icon': 'key-round',
+                        'scope': 'Sensitive Data',
+                        'search_text': 'secret create replace delete reveal tls'
+                    }) }}
+                {% endif %}
+            </div>
+        {% endcall %}
+        {% call section_card.render(
+            'Execution & Evidence Model',
+            'The overview is a navigation surface, not a live inventory or a provider control plane.',
+            'shield-check', body_classes='p-5'
+        ) %}
+            <div class="grid gap-px overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle md:grid-cols-3">
+                {% for icon, heading, supporting in [
+                    ('target', 'Select a Live Target', 'Open the specific capability workspace to resolve its Kubernetes identity.'),
+                    ('scan-search', 'Validate Before Mutation', 'Permission checks, dry-run or resource-bound receipts are enforced by the selected operation.'),
+                    ('scroll-text', 'Commit Auditable Outcome', 'Provider execution remains authoritative; KAORI retains operation feedback and evidence.')
+                ] %}
+                    <div class="min-w-0 bg-surface-card p-4">
+                        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+                        <h3 class="mt-3 text-sm font-semibold text-content-primary">{{ heading }}</h3>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ supporting }}</p>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endcall %}
+    </div>
+{% endblock dashboard_content %}
