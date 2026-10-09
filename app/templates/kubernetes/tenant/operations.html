@@ -68,14 +68,50 @@
                 {% elif active_tab == 'runs-evidence' %}
                     {% include "kubernetes/tenant/partials/_operations_evidence_registry.html" %}
                 {% elif active_tab == 'drift-reconcile' %}
-                    <div class="space-y-5">
-                        <h3 class="sr-only">Namespace and Tenant Allocation Drift</h3>
-                        <p class="sr-only">Sync remains observation-only; explicit provider recovery preserves the active authority.</p>
-                        {% include "kubernetes/tenant/partials/_capsule_tenant_quota_drift.html" %}
-                        {% include "kubernetes/tenant/partials/_capsule_shared_allocation_drift.html" %}
-                        {% include "kubernetes/tenant/partials/_operations_drift_registry.html" %}
-                        {% include "kubernetes/tenant/partials/_operations_provider_registry.html" %}
-                        {% include "kubernetes/tenant/partials/_operations_access_reconciliation_registry.html" %}
+                    {% set drift_views = [
+                        ('allocation', 'Allocation Drift', 'layers-3', url_for('tenant.operations', tab='drift-reconcile', drift_view='allocation')),
+                        ('operations', 'Operational Reconcile', 'git-compare-arrows', url_for('tenant.operations', tab='drift-reconcile', drift_view='operations'))
+                    ] %}
+                    <div class="space-y-4" data-tenant-drift-view="{{ drift_view }}">
+                        {{ content_tabs.render_links(
+                            'tenant-drift-views',
+                            drift_views,
+                            drift_view,
+                            'Drift & Reconcile Views',
+                            embedded=true,
+                            data_namespace='tenant-drift',
+                            hx_target='#tenant-operations-workspace',
+                            hx_select='#tenant-operations-workspace',
+                            hx_swap='outerHTML show:none focus-scroll:false',
+                            hx_push_url='true',
+                            hx_indicator='#tenant-operations-workspace-loading',
+                            hx_sync='#tenant-operations-workspace:replace'
+                        ) }}
+                        {% if drift_view == 'allocation' %}
+                            <div class="space-y-4" id="tenant-drift-allocation">
+                                {% include "kubernetes/tenant/partials/_capsule_tenant_quota_drift.html" %}
+                                {% include "kubernetes/tenant/partials/_capsule_shared_allocation_drift.html" %}
+                            </div>
+                        {% else %}
+                            <div class="space-y-4" id="tenant-drift-operations">
+                                {% include "kubernetes/tenant/partials/_operations_drift_registry.html" %}
+                                {% include "kubernetes/tenant/partials/_operations_access_reconciliation_registry.html" %}
+                                <details class="group overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+                                         data-tenant-provider-authority-disclosure>
+                                    <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus sm:px-5">
+                                        <span class="inline-flex min-w-0 items-center gap-2">
+                                            <i data-lucide="shield-check" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                                            View Provider Authority
+                                            <span class="text-xs font-normal text-content-muted">Additional reconciliation context</span>
+                                        </span>
+                                        <i data-lucide="chevron-down" class="h-4 w-4 shrink-0 transition-transform group-open:rotate-180" aria-hidden="true"></i>
+                                    </summary>
+                                    <div class="border-t border-outline-subtle p-3 sm:p-4">
+                                        {% include "kubernetes/tenant/partials/_operations_provider_registry.html" %}
+                                    </div>
+                                </details>
+                            </div>
+                        {% endif %}
                     </div>
                 {% else %}
                     <div class="grid gap-5 xl:grid-cols-2">
