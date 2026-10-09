@@ -192,6 +192,7 @@ def bootstrap_missing_capsule_roles(
     if not approved:
         raise ValueError('Explicit cluster-scoped RBAC approval is required.')
     created: list[str] = []
+    rows: list[dict[str, Any]] = []
     try:
         last_check = latest_capsule_role_bootstrap_evidence(cluster_id)
         if not last_check or last_check.get('operation') != 'check' or last_check.get('status') != 'missing':
@@ -224,10 +225,12 @@ def bootstrap_missing_capsule_roles(
         return _audit(cluster_id, actor_user_id, 'bootstrap', 'ready', {**state, 'created': created})
     except (ApiException, ValueError) as exc:
         # Preserve partial side effects and never report success for an incomplete bootstrap.
-        try:
-            observed = _summary(_read_roles(cluster_id)[1])
-        except (ApiException, ValueError):
-            observed = {}
+        observed = _summary(rows) if rows else {}
+        if created:
+            try:
+                observed = _summary(_read_roles(cluster_id)[1])
+            except (ApiException, ValueError):
+                pass
         return _audit(
             cluster_id, actor_user_id, 'bootstrap', 'failed',
             {
