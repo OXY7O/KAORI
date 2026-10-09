@@ -15,6 +15,12 @@ def test_operations_overview_is_permission_scoped_navigation() -> None:
     assert "endpoint='overview'" in routes
     assert "render_template('kubernetes/operations/overview.html')" in routes
     assert "url_for('kubernetes_operations.overview')" in menu
+    catalog = read('app/common/workspace_navigation_catalog.py')
+    navigation = read('app/common/workspace_navigation.py')
+    assert "'operations'," in catalog
+    assert "'kubernetes_operations.overview'," in catalog
+    assert "'kubernetes_operations.overview': 'overview'" in navigation
+    assert "return 'kubernetes_operations.secret_management'" not in navigation
     assert "url_for('kubernetes_operations.configmap_management')" in page
     assert "url_for('kubernetes_operations.secret_management')" in page
     assert 'data-kubernetes-operation-capabilities' in page
