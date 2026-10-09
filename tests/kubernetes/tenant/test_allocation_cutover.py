@@ -157,6 +157,7 @@ def _reconcile_record():
         environment=environment,
         ownership_status='adopted',
         provisioning_evidence_json={
+            'resource_version': '1',
             'allocation': {
                 'provenance': 'adopted_observed',
                 'control_state': 'observed',
@@ -251,6 +252,27 @@ def test_native_takeover_rejects_ambiguous_or_foreign_kaori_claims(
             api, _reconcile_record(), profile=_profile()
         )
     assert api.patched_namespaces == []
+
+
+def test_native_initial_takeover_rejects_intervening_provider_version_before_patch():
+    api = _FakeCoreApi()
+    record = _reconcile_record()
+    record.provisioning_evidence_json['resource_version'] = 'previous-version'
+
+    with pytest.raises(ValueError, match='differs from committed adoption evidence'):
+        allocation_cutover._mutate_namespace_ownership(api, record, profile=_profile())
+    assert api.patched_namespaces == []
+
+
+def test_managed_native_reconcile_does_not_reuse_stale_original_adoption_version():
+    api = _FakeCoreApi()
+    record = _reconcile_record()
+    record.provisioning_evidence_json.update({
+        'allocation_control_state': 'kaori_managed',
+        'resource_version': 'previous-version',
+    })
+    allocation_cutover._mutate_namespace_ownership(api, record, profile=_profile())
+    assert len(api.patched_namespaces) == 1
 
 
 def test_native_takeover_requires_provider_resource_version_before_patch():
