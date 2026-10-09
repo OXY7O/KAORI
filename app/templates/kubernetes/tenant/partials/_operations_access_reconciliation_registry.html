@@ -150,17 +150,15 @@
             </tbody>
         </table>
     </div>
-    {% if operations_access_pagination.total_items > 0 %}
-        {{ registry_ui.footer('tenant.operations',
-                registry_id,
-                loading_id,
-                operations_access_pagination,
-                query_params,
-                operations_access_pagination.allowed_per_page,
-                resource_label='Access Grants',
-                rows_aria_label='Access Reconciliation rows per page',
-                control_name='operations-access',
-                page_param='ops_access_page',
-                per_page_param='ops_access_per_page') }}
-    {% endif %}
+    {{ registry_ui.footer('tenant.operations',
+            registry_id,
+            loading_id,
+            operations_access_pagination,
+            query_params,
+            operations_access_pagination.allowed_per_page,
+            resource_label='Access Grants',
+            rows_aria_label='Access Reconciliation rows per page',
+            control_name='operations-access',
+            page_param='ops_access_page',
+            per_page_param='ops_access_per_page') }}
 </section>
