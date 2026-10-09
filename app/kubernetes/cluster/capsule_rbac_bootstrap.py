@@ -35,7 +35,8 @@ def _normalized(rules: Any) -> list[tuple[tuple[str, ...], tuple[str, ...], tupl
     result = []
     for rule in rules or []:
         value = rule if isinstance(rule, dict) else rule.to_dict()
-        if any(value.get(field) for field in ('resourceNames', 'resource_names', 'nonResourceURLs', 'non_resource_urls')):
+        forbidden_fields = ('resourceNames', 'resource_names', 'nonResourceURLs', 'non_resource_urls')
+        if any(value.get(field) for field in forbidden_fields):
             raise ValueError('Existing ClusterRole uses unsupported resource-name or non-resource restrictions.')
         result.append((
             tuple(sorted(value.get('apiGroups', value.get('api_groups')) or [])),
@@ -68,7 +69,10 @@ def _role_status(api: Any, profile: Any) -> dict[str, Any]:
     row['uid'] = str(meta.uid) if meta and meta.uid else None
     row['resource_version'] = str(meta.resource_version) if meta and meta.resource_version else None
     try:
-        if getattr(existing, 'aggregation_rule', None) is not None:
+        if not row['uid'] or not row['resource_version']:
+            row['status'] = 'conflict'
+            row['reason'] = 'ClusterRole UID/resourceVersion evidence is incomplete.'
+        elif getattr(existing, 'aggregation_rule', None) is not None:
             row['status'] = 'conflict'
             row['reason'] = 'Aggregated ClusterRoles cannot satisfy a fixed KAORI profile.'
         elif _normalized(existing.rules) == _normalized(desired['rules']):
@@ -150,7 +154,14 @@ def check_capsule_role_bootstrap(cluster_id: str, actor_user_id: int) -> dict[st
     try:
         _, rows = _read_roles(cluster_id)
     except (ApiException, ValueError) as exc:
-        return _audit(cluster_id, actor_user_id, 'check', 'failed', {'error': type(exc).__name__})
+        return _audit(
+            cluster_id, actor_user_id, 'check', 'failed',
+            {
+                'error': type(exc).__name__,
+                'reason': str(exc)[:240] if isinstance(exc, ValueError)
+                else 'Kubernetes API rejected role prerequisite inspection.',
+            },
+        )
     state = _summary(rows)
     status = 'conflict' if state['conflict'] else 'ready' if not state['missing'] else 'missing'
     return _audit(cluster_id, actor_user_id, 'check', status, state)
@@ -186,7 +197,8 @@ def bootstrap_missing_capsule_roles(
         if not last_check or last_check.get('operation') != 'check' or last_check.get('status') != 'missing':
             raise ValueError('A prior Check RBAC with missing roles is required before bootstrap.')
         checked_at = datetime.fromisoformat(str(last_check.get('checked_at') or ''))
-        if checked_at.tzinfo is None or (datetime.now(UTC) - checked_at).total_seconds() > 900:
+        age_seconds = (datetime.now(UTC) - checked_at).total_seconds() if checked_at.tzinfo else -1
+        if age_seconds < 0 or age_seconds > 900:
             raise ValueError('RBAC check evidence is stale; rerun Check RBAC before bootstrap.')
         api, rows = _read_roles(cluster_id)
         if any(row['status'] == 'conflict' for row in rows):
