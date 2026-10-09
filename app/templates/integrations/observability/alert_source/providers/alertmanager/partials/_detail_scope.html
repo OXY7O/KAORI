@@ -198,8 +198,10 @@
     binding_error=binding_error|default(none)
     ) }}
 </div>
-{{ framed_workspace_tabs.badge_oob('alertmanager', 'scope', (binding_rows|length|string) ~ ' Bindings') }}
-<span id="alertmanager-hero-binding-count" hx-swap-oob="innerHTML" class="hidden">{{ (bindings|length|string) ~ ' Bindings' }}</span>
+{% if request.headers.get('HX-Request') == 'true' %}
+    {{ framed_workspace_tabs.badge_oob('alertmanager', 'scope', (binding_rows|length|string) ~ ' Bindings') }}
+    <span id="alertmanager-hero-binding-count" hx-swap-oob="innerHTML" class="hidden">{{ (bindings|length|string) ~ ' Bindings' }}</span>
+{% endif %}
 {% if not scope_oob|default(false) %}
     {% include "components/operation_feedback_oob.html" %}
 {% endif %}
