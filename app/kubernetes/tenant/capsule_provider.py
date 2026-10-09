@@ -92,6 +92,9 @@ def _served_version_has_schema_path(item: Any, version_name: str, path: tuple[st
         node = _value(schema, 'openAPIV3Schema', default={}) or {}
         for segment in path:
             properties = _value(node, 'properties', default={}) or {}
+            if _value(node, 'type') == 'array':
+                node = _value(node, 'items', default={}) or {}
+                properties = _value(node, 'properties', default={}) or {}
             node = _value(properties, segment, default={}) or {}
             if not node:
                 return False
@@ -206,6 +209,24 @@ def discover_capsule(
         'cross_namespace_credential': _dependent_status(
             controller_status=controller_status,
             ready=bool(probes.get('cross_namespace_credential')),
+        ),
+        'access_grants_tenant': _dependent_status(
+            controller_status=controller_status,
+            ready=any(
+                version == 'v1beta2' and _served_version_has_schema_path(
+                    tenant_item, version, ('spec', 'additionalRoleBindings')
+                )
+                for version in tenant_versions
+            ),
+        ),
+        'access_grants_scoped': _dependent_status(
+            controller_status=controller_status,
+            ready=any(
+                version == 'v1beta2'
+                and _served_version_has_schema_path(tenant_item, version, ('spec', 'rules', 'namespaceSelector'))
+                and _served_version_has_schema_path(tenant_item, version, ('spec', 'rules', 'permissions', 'bindings'))
+                for version in tenant_versions
+            ),
         ),
         'self_service_namespace': _dependent_status(
             controller_status=controller_status,
