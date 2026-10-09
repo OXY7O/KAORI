@@ -84,10 +84,11 @@ def _tenant_object(api: Any, version: str, name: str, tenant_id: str, tenant: An
 
 
 def _namespaces(grant: TenantAccessGrant, client: Any, item: dict[str, Any]) -> list[str]:
-    names = [record.namespace for record in target_namespaces(grant)]
+    targets = target_namespaces(grant)
+    names = [record.namespace for record in targets]
     if not names:
         raise ValueError('Access Grant requires at least one committed managed/adopted Namespace.')
-    if any(record.provisioning_status != 'ready' for record in target_namespaces(grant)):
+    if any(record.provisioning_status != 'ready' for record in targets):
         raise ValueError('All Capsule Access Grant Namespace targets must be Ready.')
     status = item.get('status') or {}
     observed = status.get('namespaces')
@@ -241,13 +242,13 @@ def _update_spec(
             ):
                 return deepcopy(spec)
         filtered_rules.append(
-                {
-                    'namespaceSelector': {'matchExpressions': [
-                        {'key': _NAME_LABEL, 'operator': 'In', 'values': names}
-                    ]},
-                    'permissions': {'bindings': [binding]},
-                }
-            )
+            {
+                'namespaceSelector': {
+                    'matchExpressions': [{'key': _NAME_LABEL, 'operator': 'In', 'values': names}]
+                },
+                'permissions': {'bindings': [binding]},
+            }
+        )
     result['additionalRoleBindings'] = retained
     result['rules'] = filtered_rules
     return result
@@ -297,18 +298,15 @@ def _write_state(
     grant.desired_hash = _hash({'grant': grant.public_id, 'active': granted, 'namespaces': desired})
     grant.effective_hash = _hash(effective)
     grant.last_reconciled_at = now
-    grant.reconciliation_status = (
-        TenantAccessReconciliationStatus.READY.value if granted and complete else
-        TenantAccessReconciliationStatus.REVOKED.value if not granted and complete else
-        TenantAccessReconciliationStatus.DRIFTED.value
-    )
-    grant.reconciliation_message = (
-        'Capsule RoleBindings verified against committed grant and Namespace scope.'
-        if granted and complete else
-        'Capsule grant revoked; no effective managed RoleBinding remains.'
-        if not granted and complete else
-        'Capsule provider has not converged to the committed Access Grant; inspect and retry.'
-    )
+    if granted and complete:
+        grant.reconciliation_status = TenantAccessReconciliationStatus.READY.value
+        grant.reconciliation_message = 'Capsule RoleBindings verified against committed grant and Namespace scope.'
+    elif complete:
+        grant.reconciliation_status = TenantAccessReconciliationStatus.REVOKED.value
+        grant.reconciliation_message = 'Capsule grant revoked; no effective managed RoleBinding remains.'
+    else:
+        grant.reconciliation_status = TenantAccessReconciliationStatus.DRIFTED.value
+        grant.reconciliation_message = 'Capsule provider has not converged to committed access; inspect and retry.'
     meta = item['metadata']
     grant.reconciliation_evidence_json = {
         'provider': 'capsule',
