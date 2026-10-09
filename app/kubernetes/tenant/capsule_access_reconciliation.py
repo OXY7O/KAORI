@@ -38,7 +38,8 @@ def _context(grant: TenantAccessGrant) -> tuple[Any, str, str]:
     ):
         raise ValueError('Healthy Capsule reconciliation authority is required; Native RBAC fallback is forbidden.')
     evidence = (tenant.provider_evidence_json or {}).get('capsule')
-    if not isinstance(evidence, dict) or evidence.get('capabilities', {}).get('admission_enforcement') != 'available':
+    capabilities = evidence.get('capabilities') if isinstance(evidence, dict) else None
+    if not isinstance(capabilities, dict) or capabilities.get('admission_enforcement') != 'available':
         raise ValueError('Committed healthy Capsule admission evidence is required for Access Grant mutation.')
     cluster = db.session.get(Cluster, tenant.cluster_id)
     if cluster is None or not tenant.provider_reference:
@@ -77,6 +78,8 @@ def _namespaces(grant: TenantAccessGrant, client: Any, item: dict[str, Any]) -> 
     names = [record.namespace for record in target_namespaces(grant)]
     if not names:
         raise ValueError('Access Grant requires at least one committed managed/adopted Namespace.')
+    if any(record.provisioning_status != 'ready' for record in target_namespaces(grant)):
+        raise ValueError('All Capsule Access Grant Namespace targets must be Ready.')
     status = item.get('status') or {}
     observed = status.get('namespaces')
     if not isinstance(observed, list):
@@ -179,8 +182,10 @@ def _update_spec(
             raise ValueError('Capsule Tenant rule is invalid.')
         rule = deepcopy(rule)
         permissions = rule.get('permissions') or {}
-        bindings = permissions.get('bindings') or {}
-        if bindings and not isinstance(bindings, list):
+        if not isinstance(permissions, dict):
+            raise ValueError('Capsule Tenant permissions structure is malformed.')
+        bindings = permissions.get('bindings') or []
+        if not isinstance(bindings, list):
             raise ValueError('Capsule Tenant permissions bindings are malformed.')
         remaining = []
         for entry in bindings or []:
