@@ -303,6 +303,18 @@ evidence and mirrors provider-owned policy without provider mutation or access
 grant expansion. Neither screen may advertise New Tenant adoption as
 "observation-only" or Capsule attachment as a managed provider takeover.
 
+All New Tenant provider/adoption work is wrapped by the same KAORI
+transaction failure handler. An exception before or during the DB commit
+rolls back pending Tenant/Environment/Namespace records before the operator
+failure Activity is committed. **This cannot undo provider writes already
+accepted by Kubernetes/Capsule.** A failed managed adoption therefore emits
+conservative possible-partial-mutation evidence and requires live provider
+UID/resourceVersion, allocation and ownership review before any retry.
+Existing Native Namespace attachment retains the original Tenant provenance;
+its success Activity derives provider-mutation evidence from the attached
+Namespace, not from the unchanged Tenant origin. Capsule attachment is
+explicitly non-mutating and uses separate operator feedback.
+
 ### Provider-preserving Release Governance preflight (#990)
 
 **Review Release** in Tenant Registry is an explicit, **read-only preflight** for
