@@ -227,6 +227,12 @@ def _mutate_namespace_ownership(
     owner = str(labels.get(_MANAGED_BY_KEY) or '')
     if owner and owner != _MANAGED_BY_VALUE:
         raise ValueError(f'Namespace is managed by {owner}; governance takeover fails closed.')
+    claimed_tenant = str(labels.get(_TENANT_ID_KEY) or '').strip()
+    if (
+        (claimed_tenant and claimed_tenant != str(record.environment.tenant.id))
+        or (owner == _MANAGED_BY_VALUE and not claimed_tenant)
+    ):
+        raise ValueError('Namespace already carries an ambiguous or foreign KAORI Tenant ownership claim.')
 
     desired_labels = {**labels, **_labels(record, profile)}
     body = {
