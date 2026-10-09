@@ -231,12 +231,33 @@ def test_credentials_use_symmetric_issuance_and_full_lifecycle_table() -> None:
 
     assert 'xl:grid-cols-2 xl:items-stretch' in workspace
     assert workspace.count('flex h-full flex-col') >= 2
-    assert 'Issue Human Access' in workspace
-    assert 'Issue CI/CD Deployer' in workspace
+    assert 'Human Access Credential' in workspace
+    assert 'Workload Deployment Credential' in workspace
     assert 'Delivery Contract' not in workspace
     assert 'human-credential-tip' in workspace
     assert 'deployer-credential-tip' in workspace
     assert '_credential_registry.html' in workspace
+    assert 'Access Account Reference' in workspace
+    assert 'Individual access linked to an approved user grant.' in workspace
+    assert 'automated application deployment' in workspace
+    assert 'JumpServer Reference' not in workspace
+    assert 'GitHub Actions and Helm delivery' not in workspace
+    # UI copy is generalized; the authoritative submitted credential contracts are not.
+    assert 'name="jumpserver_reference"' in workspace
+    assert 'name="purpose" value="github-actions-helm"' in workspace
+    assert 'name="access_grant_id"' in workspace
+    assert 'name="tenant_namespace_id"' in workspace
+    assert 'name="owner_user_id"' in workspace
+    assert 'name="application_name"' in workspace
+    assert 'Generate Human Access Token' in registry
+    assert 'Generate Deployment Kubeconfig' in registry
+    assert 'Access Gateway' in registry
+    assert 'Pipeline Kubeconfig' in registry
+    assert "credential.delivery_method|replace('_', ' ') |title" in registry
+    assert 'Current delivery is manual through JumpServer.' in registry
+    assert 'for secure deployment pipeline delivery' in registry
+    assert 'Reveal JumpServer Token' not in registry
+    assert 'Generate CI/CD Kubeconfig' not in registry
 
     assert "'Credential Lifecycle'" in registry
     assert 'registry_ui.filter_form' in registry
@@ -301,8 +322,8 @@ def test_tenant_card_guidance_is_title_adjacent_and_hover_overflow_is_visible() 
         ('Create Tenant Group', 'membership-group-tip', memberships),
         ('Add Group Membership', 'membership-attach-group-tip', memberships),
         ('Apply Access Grant', 'access-grant-form-tip', grants),
-        ('Issue Human Access', 'human-credential-tip', credentials),
-        ('Issue CI/CD Deployer', 'deployer-credential-tip', credentials),
+        ('Human Access Credential', 'human-credential-tip', credentials),
+        ('Workload Deployment Credential', 'deployer-credential-tip', credentials),
         ('Effective Namespace Access', 'namespace-access-tip', namespace_access),
     ):
         title_index = source.index(title)
