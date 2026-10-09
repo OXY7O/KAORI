@@ -33,7 +33,13 @@ def build_tenant_inventory_snapshot() -> dict[str, Any]:
     """
 
     clusters = Cluster.query.order_by(Cluster.name.asc(), Cluster.id.asc()).all()
-    tenants = Tenant.query.order_by(Tenant.name.asc(), Tenant.id.asc()).all()
+    tenants = (
+        Tenant.query.filter(
+            Tenant.lifecycle_status.notin_(
+                (TenantLifecycleStatus.DECOMMISSIONED.value, TenantLifecycleStatus.RELEASED.value)
+            )
+        ).order_by(Tenant.name.asc(), Tenant.id.asc()).all()
+    )
     namespaces = (
         TenantNamespace.query.join(
             TenantEnvironment,
@@ -41,8 +47,12 @@ def build_tenant_inventory_snapshot() -> dict[str, Any]:
         )
         .join(Tenant, TenantEnvironment.tenant_id == Tenant.id)
         .filter(
-            Tenant.lifecycle_status != TenantLifecycleStatus.DECOMMISSIONED.value,
-            TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+            Tenant.lifecycle_status.notin_(
+                (TenantLifecycleStatus.DECOMMISSIONED.value, TenantLifecycleStatus.RELEASED.value)
+            ),
+            TenantNamespace.provisioning_status.notin_(
+                (TenantNamespaceProvisioningStatus.DEPROVISIONED.value, TenantNamespaceProvisioningStatus.RELEASED.value)
+            ),
         )
         .order_by(TenantNamespace.cluster_id.asc(), TenantNamespace.namespace.asc())
         .all()
@@ -173,7 +183,9 @@ def apply_missing_namespace_drift_from_inventory() -> list[int]:
         )
         .join(Tenant, TenantEnvironment.tenant_id == Tenant.id)
         .filter(
-            Tenant.lifecycle_status != TenantLifecycleStatus.DECOMMISSIONED.value,
+            Tenant.lifecycle_status.notin_(
+                (TenantLifecycleStatus.DECOMMISSIONED.value, TenantLifecycleStatus.RELEASED.value)
+            ),
             TenantNamespace.provisioning_status == TenantNamespaceProvisioningStatus.READY.value,
         )
         .order_by(TenantNamespace.id.asc())
