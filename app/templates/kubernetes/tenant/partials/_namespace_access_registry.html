@@ -164,17 +164,15 @@
             </tbody>
         </table>
     </div>
-    {% if namespace_access_pagination.total_items > 0 %}
-        {{ registry_ui.footer('tenant.tenants',
-                registry_id,
-                loading_id,
-                namespace_access_pagination,
-                query_params,
-                namespace_access_pagination.allowed_per_page,
-                resource_label='Access Packages',
-                rows_aria_label='Namespace access rows per page',
-                control_name='tenant-namespace-access',
-                page_param='namespace_access_page',
-                per_page_param='namespace_access_per_page') }}
-    {% endif %}
+    {{ registry_ui.footer('tenant.tenants',
+            registry_id,
+            loading_id,
+            namespace_access_pagination,
+            query_params,
+            namespace_access_pagination.allowed_per_page,
+            resource_label='Access Packages',
+            rows_aria_label='Namespace access rows per page',
+            control_name='tenant-namespace-access',
+            page_param='namespace_access_page',
+            per_page_param='namespace_access_per_page') }}
 </section>
