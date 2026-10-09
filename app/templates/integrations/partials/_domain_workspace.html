@@ -265,29 +265,27 @@
                         </tbody>
                     </table>
                 </div>
-                {% if provider_registry_pagination.total_items > 0 %}
-                    {% set provider_query_params = {
-                                            'tab': 'registry',
-                                            'provider_q': selected_provider_query,
-                                            'provider_key': selected_provider_key,
-                                            'provider_readiness': selected_provider_readiness,
-                                            'binding_q': selected_binding_query,
-                                            'binding_provider': selected_binding_provider,
-                                            'binding_status': selected_binding_status,
-                                            'binding_per_page': binding_per_page
-                                        } %}
-                    {{ registry_ui.footer(domain.workspace_endpoint,
-                                        'domain-workspace',
-                                        'integration-domain-workspace-loading',
-                                        provider_registry_pagination,
-                                        provider_query_params,
-                                        provider_registry_pagination.allowed_per_page,
-                                        resource_label='Providers',
-                                        rows_aria_label='Providers per page',
-                                        control_name='integration-domain-providers',
-                                        page_param='provider_page',
-                                        per_page_param='provider_per_page') }}
-                {% endif %}
+                {% set provider_query_params = {
+                                        'tab': 'registry',
+                                        'provider_q': selected_provider_query,
+                                        'provider_key': selected_provider_key,
+                                        'provider_readiness': selected_provider_readiness,
+                                        'binding_q': selected_binding_query,
+                                        'binding_provider': selected_binding_provider,
+                                        'binding_status': selected_binding_status,
+                                        'binding_per_page': binding_per_page
+                                    } %}
+                {{ registry_ui.footer(domain.workspace_endpoint,
+                                    'domain-workspace',
+                                    'integration-domain-workspace-loading',
+                                    provider_registry_pagination,
+                                    provider_query_params,
+                                    provider_registry_pagination.allowed_per_page,
+                                    resource_label='Providers',
+                                    rows_aria_label='Providers per page',
+                                    control_name='integration-domain-providers',
+                                    page_param='provider_page',
+                                    per_page_param='provider_per_page') }}
             </div>
         </div>
     {% else %}
@@ -438,29 +436,27 @@
                         </tbody>
                     </table>
                 </div>
-                {% if binding_registry_pagination.total_items > 0 %}
-                    {% set binding_query_params = {
-                                            'tab': 'bindings',
-                                            'binding_q': selected_binding_query,
-                                            'binding_provider': selected_binding_provider,
-                                            'binding_status': selected_binding_status,
-                                            'provider_q': selected_provider_query,
-                                            'provider_key': selected_provider_key,
-                                            'provider_readiness': selected_provider_readiness,
-                                            'provider_per_page': provider_per_page
-                                        } %}
-                    {{ registry_ui.footer(domain.workspace_endpoint,
-                                        'domain-workspace',
-                                        'integration-domain-workspace-loading',
-                                        binding_registry_pagination,
-                                        binding_query_params,
-                                        binding_registry_pagination.allowed_per_page,
-                                        resource_label='Bindings',
-                                        rows_aria_label='Bindings per page',
-                                        control_name='integration-domain-bindings',
-                                        page_param='binding_page',
-                                        per_page_param='binding_per_page') }}
-                {% endif %}
+                {% set binding_query_params = {
+                                        'tab': 'bindings',
+                                        'binding_q': selected_binding_query,
+                                        'binding_provider': selected_binding_provider,
+                                        'binding_status': selected_binding_status,
+                                        'provider_q': selected_provider_query,
+                                        'provider_key': selected_provider_key,
+                                        'provider_readiness': selected_provider_readiness,
+                                        'provider_per_page': provider_per_page
+                                    } %}
+                {{ registry_ui.footer(domain.workspace_endpoint,
+                                    'domain-workspace',
+                                    'integration-domain-workspace-loading',
+                                    binding_registry_pagination,
+                                    binding_query_params,
+                                    binding_registry_pagination.allowed_per_page,
+                                    resource_label='Bindings',
+                                    rows_aria_label='Bindings per page',
+                                    control_name='integration-domain-bindings',
+                                    page_param='binding_page',
+                                    per_page_param='binding_per_page') }}
             </div>
         </div>
     {% endif %}
