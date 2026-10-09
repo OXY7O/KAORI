@@ -14,6 +14,11 @@ def test_native_handoff_readback_has_no_provider_or_governance_mutation_path():
     assert "'external_successor_verified': False" in readback
     assert "'provider_handoff_verified': False" in readback
     assert "'release_authorized': False" in readback
+    for evidence_timestamp in (
+        "plan.get('requested_at')", "approval.get('approved_at')",
+        "claim.get('recorded_at')", "dry_run.get('checked_at')",
+    ):
+        assert f'not _checked_recently({evidence_timestamp})' in readback
     assert "inspect_native_external_handoff_route" in route
     assert "Verify Provider Read-Back" in registry
     for forbidden in [
