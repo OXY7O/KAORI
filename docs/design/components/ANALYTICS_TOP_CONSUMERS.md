@@ -221,7 +221,7 @@ The Top Consumers report uses `TopConsumersSelection` and the same service/domai
 
 The top-level **Consumer Rankings / Consumer Records / Recommendations** view uses the existing `kubernetes/analytics/components/_analysis_workspace.html::tabbed` presentation owner with its **attached default composition** (no `detached=true`). Header, Content Tabs, and selected panel share one canonical Analytics workspace shell, matching Capacity, Storage, Workload, Utilization, Alerts, and Forecast. The parent workspace owns the panel padding and border; Consumer Rankings and Recommendations no longer introduce another full-width card around their entire tab content. Nested ranking evidence and Consumer Records retain their own bounded evidence cards inside the workspace.
 
-The nested CPU / Memory / PVC / Pods control remains subordinate Content Tabs within the Rankings panel, driven by the same `analytics/controls.js` state owner. Tab and panel IDs, query selection, native `hidden` fallback, and HTMX Consumer Records refresh contracts are unchanged. This is a presentation-only correction, with no dataset, ranking, pagination, provider, or permission changes.
+The nested CPU / Memory / Pods / PVC control remains subordinate Content Tabs within the Rankings panel, driven by the same `analytics/controls.js` state owner. Tab and panel IDs, query selection, native `hidden` fallback, and HTMX Consumer Records refresh contracts are unchanged. This is a presentation-only correction, with no dataset, ranking, pagination, provider, or permission changes.
 
 Review target: `kaori/review/staging-uat` in the devcontainer. Staging admission and CI/CD gates remain held until separately authorized.
 
@@ -229,3 +229,14 @@ Review target: `kaori/review/staging-uat` in the devcontainer. Staging admission
 ### Devcontainer feedback follow-up (2026-10-10)
 
 The previous `detached=true` layout was rejected during visual review: it placed the workspace header/tabs and Consumer Rankings in separate floating cards, contrary to the reference Analytics page family. The attached composition is the accepted implementation target for the next local review, **not** human-accepted or UAT-approved yet. No shared tab primitive changes are needed.
+
+
+### Consumer Rankings visual refinement (#1020)
+
+The resource selector continues using existing **Content Tabs (Style 4)** with one Analytics tab controller. Order is **CPU → Memory → Pods → PVC**. Tabs carry no synthetic counts or invented capacity. The selected resource shows a single attached evidence surface with a short contextual description and status, a two-column scope/denominator strip, then an aligned ranking collection. The redundant resource-sized nested card and duplicate visible resource heading are removed (a screen-reader heading remains).
+
+Ranking columns distinguish **Consumer Identity**, **Consumption**, **Contribution to Scope**, **Status / Configuration**, and **Pressure**. Configuration evidence is shown only for CPU and Memory (request and limit states). Pod and PVC rows instead disclose denominator coverage; their risk badge remains operational posture rather than an invented request/limit state. Pressure uses the original explicit denominator/basis and remains **N/A** when not observed. Contribution alone uses Violet progress. Status and risk use canonical semantic labels. Long identity values truncate with full title text preserved; rankings remain limited to five per resource.
+
+Only the CPU presentation formatter gains adaptive precision for small nonzero values below 0.01 cores; it does not alter Prometheus queries, stored numeric values, contribution, sort, pressure, or risk calculation. This is a UI review candidate, not a new global formatting standard. If accepted as a cross-domain rule, propose that separately for documentation approval.
+
+All changes remain within issue #1020 and the devcontainer review path. No CI/CD admission or staging deployment is authorized.
