@@ -31,6 +31,7 @@ class TenantLifecycleStatus(StrEnum):
     DEGRADED = 'degraded'
     DECOMMISSIONING = 'decommissioning'
     DECOMMISSIONED = 'decommissioned'
+    RELEASED = 'released'
 
 
 class TenantOwnershipStatus(StrEnum):
@@ -60,6 +61,7 @@ class TenantNamespaceProvisioningStatus(StrEnum):
     FAILED = 'failed'
     DEPROVISIONING = 'deprovisioning'
     DEPROVISIONED = 'deprovisioned'
+    RELEASED = 'released'
 
 
 class TenantMembershipPrincipalType(StrEnum):
@@ -191,7 +193,7 @@ class Tenant(db.Model):
         ),
         CheckConstraint("ownership_status IN ('managed', 'discovered', 'adopted')", name='ck_tenants_ownership_status'),
         CheckConstraint(
-            "lifecycle_status IN ('pending', 'ready', 'degraded', 'decommissioning', 'decommissioned')",
+            "lifecycle_status IN ('pending', 'ready', 'degraded', 'decommissioning', 'decommissioned', 'released')",
             name='ck_tenants_lifecycle_status',
         ),
         Index('ix_tenants_cluster_lifecycle', 'cluster_id', 'lifecycle_status'),
@@ -402,7 +404,7 @@ class TenantNamespace(db.Model):
             "ownership_status IN ('managed', 'discovered', 'adopted')", name='ck_tenant_namespaces_ownership_status'
         ),
         CheckConstraint(
-            "provisioning_status IN ('pending', 'ready', 'drifted', 'failed', 'deprovisioning', 'deprovisioned')",
+            "provisioning_status IN ('pending', 'ready', 'drifted', 'failed', 'deprovisioning', 'deprovisioned', 'released')",
             name='ck_tenant_namespaces_provisioning_status',
         ),
         Index('ix_tenant_namespaces_environment', 'tenant_environment_id', 'namespace'),
