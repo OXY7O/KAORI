@@ -254,6 +254,43 @@ def test_native_takeover_rejects_ambiguous_or_foreign_kaori_claims(
     assert api.patched_namespaces == []
 
 
+@pytest.mark.parametrize('ownership_labels', [
+    {'kaori.io/environment': 'production'},
+    {'kaori.io/resource-profile': 'previous-profile'},
+    {'kaori.io/tenant-generation': '1'},
+    {'kaori.io/tenant-id': 'tenant-1'},
+])
+def test_native_initial_takeover_rejects_residual_kaori_markers_before_patch(ownership_labels):
+    api = _FakeCoreApi()
+    original_read = api.read_namespace
+
+    def residual_namespace(name):
+        resource = original_read(name)
+        resource.metadata.labels = ownership_labels
+        return resource
+
+    api.read_namespace = residual_namespace
+    with pytest.raises(ValueError, match='residual KAORI ownership labels'):
+        allocation_cutover._mutate_namespace_ownership(api, _reconcile_record(), profile=_profile())
+    assert api.patched_namespaces == []
+
+
+def test_native_cutover_rejects_capsule_authority_that_appeared_after_patch():
+    api = _FakeCoreApi()
+    original_read = api.read_namespace
+
+    def raced_capsule_authority(name):
+        resource = original_read(name)
+        if api.patched_namespaces:
+            resource.metadata.labels['capsule.clastix.io/tenant'] = 'capsule-a'
+        return resource
+
+    api.read_namespace = raced_capsule_authority
+    with pytest.raises(ValueError, match='Capsule authority appeared during Native ownership read-back'):
+        allocation_cutover._mutate_namespace_ownership(api, _reconcile_record(), profile=_profile())
+    assert len(api.patched_namespaces) == 1
+
+
 def test_native_initial_takeover_rejects_intervening_provider_version_before_patch():
     api = _FakeCoreApi()
     record = _reconcile_record()
