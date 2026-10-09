@@ -180,18 +180,16 @@
                 </tbody>
             </table>
         </div>
-        {% if payload.history_pagination.total_items > 0 %}
-            {{ table_registry.footer('alert_intelligence.index',
-                        'alert-operations-history-registry',
-                        'alert-operations-history-loading',
-                        payload.history_pagination,
-                        {'tab': 'resolved', 'domain': payload.domain, 'asset': payload.selected_asset_key, 'severity': payload.filters.severity, 'source': payload.filters.source, 'q': payload.filters.q},
-                        payload.history_pagination.allowed_per_page,
-                        resource_label='Resolved Cases',
-                        rows_aria_label='Resolved cases per page',
-                        control_name='alert-history',
-                        page_param='history_page',
-                        per_page_param='history_per_page') }}
-        {% endif %}
+        {{ table_registry.footer('alert_intelligence.index',
+                    'alert-operations-history-registry',
+                    'alert-operations-history-loading',
+                    payload.history_pagination,
+                    {'tab': 'resolved', 'domain': payload.domain, 'asset': payload.selected_asset_key, 'severity': payload.filters.severity, 'source': payload.filters.source, 'q': payload.filters.q},
+                    payload.history_pagination.allowed_per_page,
+                    resource_label='Resolved Cases',
+                    rows_aria_label='Resolved cases per page',
+                    control_name='alert-history',
+                    page_param='history_page',
+                    per_page_param='history_per_page') }}
     </section>
 </div>
