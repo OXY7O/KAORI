@@ -141,7 +141,14 @@ the **HTTP status only**, with safe guidance for auth (401/403), missing route
 errors. It must not render raw HTML response bodies or sensitive Kubernetes
 details. Browser validation must confirm the GET /discovery/preflight status
 and whether the response entered the slot; a failed server request cannot be
-solved by changing from a modal to another presentation layout. Header language,
+solved by changing from a modal to another presentation layout. In particular,
+a Flask 500 with `jinja2.exceptions.TemplateSyntaxError` during
+`render_template()` is a **template compilation failure**, not a Kubernetes
+provider, authorization, or interactive-modal failure. The existing
+`tests/contracts/kubernetes/test_existing_tenant_namespace_attachment_contract.py`
+must parse both successful and error preflight templates with the Jinja
+parser; source-only delimiter balancing cannot replace actual template
+parsing. Header language,
 readiness summary, human confirmation and submit label reflect the active
 mode. Create-specific fields are disabled for the attachment request so they
 are neither validated nor posted, and are re-enabled when returning to Create.
