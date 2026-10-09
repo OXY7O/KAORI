@@ -8,6 +8,7 @@ import pytest
 from app.kubernetes.tenant.access_remediation_plan import (
     classify_access_remediation,
     require_current_remediation_source,
+    require_latest_remediation_observation,
 )
 
 
@@ -106,3 +107,71 @@ def test_remediation_rejects_invalid_or_naive_evidence_timestamp(bad):
     evidence.update(bad)
     with pytest.raises(ValueError, match='timestamps'):
         require_current_remediation_source(evidence, now=datetime.now(UTC))
+
+
+def _native_analysis_and_inventory():
+    timestamp = datetime.now(UTC).isoformat()
+    inventory = {
+        'tenant_id': 'tenant-1', 'cluster_id': 'cluster-1',
+        'provider': 'native_kubernetes', 'observed_at': timestamp,
+        'evidence_sha256': 'c' * 64,
+    }
+    analysis = {'source_observed_at': timestamp, 'source_evidence_sha256': 'c' * 64}
+    return analysis, inventory
+
+
+def test_remediation_requires_latest_native_inventory_digest():
+    analysis, inventory = _native_analysis_and_inventory()
+    require_latest_remediation_observation(
+        analysis, inventory, tenant_id='tenant-1',
+        cluster_id='cluster-1', provider_key='native_kubernetes',
+    )
+
+
+@pytest.mark.parametrize('delta', [
+    {'observed_at': '2026-01-01T00:00:00+00:00'},
+    {'evidence_sha256': 'changed'},
+    {'cluster_id': 'different-cluster'},
+    {'provider': 'capsule'},
+    {'tenant_id': 'other-tenant'},
+])
+def test_remediation_rejects_new_or_foreign_native_inventory(delta):
+    analysis, inventory = _native_analysis_and_inventory()
+    inventory.update(delta)
+    with pytest.raises(ValueError):
+        require_latest_remediation_observation(
+            analysis, inventory, tenant_id='tenant-1',
+            cluster_id='cluster-1', provider_key='native_kubernetes',
+        )
+
+
+def test_remediation_rejects_missing_inventory():
+    analysis, _ = _native_analysis_and_inventory()
+    with pytest.raises(ValueError):
+        require_latest_remediation_observation(
+            analysis, None, tenant_id='tenant-1',
+            cluster_id='cluster-1', provider_key='native_kubernetes',
+        )
+
+
+def test_capsule_remediation_requires_exact_tenant_uid_and_resourceversion():
+    now = datetime.now(UTC).isoformat()
+    inventory = {
+        'tenant_id': 'tenant-1', 'cluster_id': 'cluster-1',
+        'provider': 'capsule', 'observed_at': now,
+        'provider_uid': 'uid-1', 'resource_version': '22',
+    }
+    analysis = {
+        'observation_checked_at': now, 'observation_uid': 'uid-1',
+        'observation_resource_version': '22',
+    }
+    require_latest_remediation_observation(
+        analysis, inventory, tenant_id='tenant-1',
+        cluster_id='cluster-1', provider_key='capsule',
+    )
+    inventory['resource_version'] = '23'
+    with pytest.raises(ValueError, match='resourceVersion'):
+        require_latest_remediation_observation(
+            analysis, inventory, tenant_id='tenant-1',
+            cluster_id='cluster-1', provider_key='capsule',
+        )

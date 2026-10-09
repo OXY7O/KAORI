@@ -494,6 +494,15 @@ claim that executor or Full Admission is completed.
 
 ### Access Remediation plan freshness (#1000)
 
+The latest committed Native/Capsule RBAC inventory must also equal the
+original inventory consumed by Access Drift analysis. Native uses the exact
+source SHA-256 fingerprint and observation time; Capsule uses the exact
+Capsule Tenant UID/resourceVersion and observation time. A new observation
+invalidates planning until a new Analyze action commits a replacement.
+This remains a committed-evidence comparison; routine UI never performs a
+new live provider request.
+
+
 Preparing Native/Capsule remediation decisions uses existing committed Access
 Drift records but does not execute any mutation. Evidence must remain bound
 to the same Tenant/cluster/provider. Both analysis time (15-minute maximum)

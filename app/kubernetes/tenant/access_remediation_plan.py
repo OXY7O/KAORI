@@ -9,6 +9,8 @@ from app.kubernetes.tenant.access_drift_analysis import (
     latest_native_access_drift_evidence,
     latest_tenant_access_drift_evidence,
 )
+from app.kubernetes.tenant.external_access_observation import latest_external_capsule_access_evidence
+from app.kubernetes.tenant.external_native_access_observation import latest_external_native_access_evidence
 from app.models.audit import AuditEvent
 from app.models.tenant import Tenant, TenantAccessGrant
 
@@ -87,6 +89,43 @@ def require_current_remediation_source(
         raise ValueError('Drift analysis or provider observation is stale or inconsistent; inspect again.')
     return evaluated_utc
 
+
+def require_latest_remediation_observation(
+    evidence: dict[str, Any], observation: dict[str, Any] | None, *,
+    tenant_id: str, cluster_id: str, provider_key: str,
+) -> None:
+    """Require analysis to match the *newest* committed provider inventory.
+
+    This is not a new provider read. Observing RBAC again invalidates the
+    prior analysis until a new Analyze action explicitly incorporates it.
+    """
+    if (
+        not observation
+        or observation.get('tenant_id') != tenant_id
+        or observation.get('cluster_id') != cluster_id
+        or observation.get('provider') not in (None, provider_key)
+    ):
+        raise ValueError('Provider RBAC inventory is missing or changed; inspect and analyze again.')
+    observed_at = observation.get('observed_at')
+    analysis_source_at = (
+        evidence.get('source_observed_at')
+        or evidence.get('observation_checked_at')
+    )
+    if not observed_at or observed_at != analysis_source_at:
+        raise ValueError('Newer provider RBAC inventory supersedes the analysis; analyze again.')
+    if provider_key == 'native_kubernetes':
+        digest = str(observation.get('evidence_sha256') or '')
+        if not digest or digest != evidence.get('source_evidence_sha256'):
+            raise ValueError('Native provider RBAC inventory fingerprint changed; analyze again.')
+    elif (
+        not observation.get('provider_uid')
+        or not observation.get('resource_version')
+        or observation.get('provider_uid') != evidence.get('observation_uid')
+        or observation.get('resource_version') != evidence.get('observation_resource_version')
+    ):
+        raise ValueError('Capsule Tenant UID/resourceVersion evidence changed; analyze again.')
+
+
 def prepare_tenant_access_remediation_plan_committed(
     *, tenant_id: str, actor_user_id: int
 ) -> dict[str, Any]:
@@ -112,6 +151,15 @@ def prepare_tenant_access_remediation_plan_committed(
         raise ValueError('Only complete committed declaration analysis can guide remediation.')
     if evidence.get('provider') not in (None, tenant.provider_key):
         raise ValueError('Access Drift provider authority changed; analyze again.')
+    observation = (
+        latest_external_capsule_access_evidence(tenant_id)
+        if tenant.provider_key == 'capsule'
+        else latest_external_native_access_evidence(tenant_id)
+    )
+    require_latest_remediation_observation(
+        evidence, observation, tenant_id=tenant_id,
+        cluster_id=tenant.cluster_id, provider_key=tenant.provider_key,
+    )
     grants = TenantAccessGrant.query.filter_by(tenant_id=tenant_id).all()
     for grant in grants:
         updated = grant.updated_at
