@@ -115,6 +115,16 @@ def classify_external_role_profile(role: Any) -> dict[str, Any]:
     }
 
 
+def _require_stable_role_review(before: dict[str, Any], after: dict[str, Any]) -> None:
+    """Fail closed if Role identity or effective rule signature changed mid-review."""
+    for key in (
+        'role_kind', 'role_name', 'role_uid', 'role_resource_version',
+        'permission_sha256', 'equivalent_profile', 'equivalent_version',
+    ):
+        if before.get(key) != after.get(key):
+            raise ValueError('Provider Role changed during exact permission review.')
+
+
 def _require_committed_binding(
     evidence: dict[str, Any] | None, *, tenant: Tenant,
     namespace: str, binding_uid: str, now: datetime,
@@ -210,6 +220,11 @@ def review_native_external_role_profile_committed(
     )
     if verified != normalized:
         raise ValueError('RoleBinding changed during permission review.')
+    if ref['kind'] == 'Role':
+        confirmed_role = rbac.read_namespaced_role(ref['name'], namespace, _request_timeout=5)
+    else:
+        confirmed_role = rbac.read_cluster_role(ref['name'], _request_timeout=5)
+    _require_stable_role_review(result, classify_external_role_profile(confirmed_role))
     receipt = {
         **result,
         'tenant_id': tenant_id, 'cluster_id': tenant.cluster_id,
@@ -323,6 +338,8 @@ def review_capsule_external_role_profile_committed(
     ):
         raise ValueError('Referenced Capsule ClusterRole identity changed during review.')
     read_capsule()
+    confirmed_role = rbac.read_cluster_role(selected['cluster_role_name'], _request_timeout=5)
+    _require_stable_role_review(reviewed, classify_external_role_profile(confirmed_role))
     receipt = {
         **reviewed,
         'tenant_id': tenant_id, 'cluster_id': tenant.cluster_id,
