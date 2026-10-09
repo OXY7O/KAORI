@@ -233,8 +233,6 @@ def test_capsule_new_tenant_adoption_blocks_orphaned_or_foreign_cr_before_provid
     ],
 )
 def test_native_discovery_blocks_capsule_owned_namespaces(labels, references):
-    from types import SimpleNamespace
-
     from app.kubernetes.tenant.discovery_service import _native_management
 
     status, reason = _native_management(
