@@ -80,6 +80,7 @@ _ENDPOINT_LABELS: dict[str, str] = {
     'governance.tls_certificates': 'TLS Certificates',
     'tenant.index': 'Overview',
     'tenant.tenants': 'Tenants',
+    'tenant.generate_credential_material_route': 'Access Material',
     'tenant.resource_profiles': 'Resource Profiles',
     'tenant.namespace_provisioning': 'Namespace Provisioning',
     'tenant.operations': 'Operations',
