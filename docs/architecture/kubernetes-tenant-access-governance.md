@@ -302,7 +302,14 @@ allocation ownership labels), as well as foreign declared resource managers.
 The New Tenant submit path repeats this provider ownership check. A resource
 with residual KAORI labels but no active governance record requires explicit
 recovery review; it must not be silently represented as a clean adoptable
-external object. Capsule New Tenant adoption also refuses duplicate/missing
+external object.
+
+Native Namespace adoption also rejects **Capsule Tenant authority** from
+either canonical Capsule Namespace label or a Capsule Tenant ownerReference,
+even when no KAORI-owned Namespace record exists yet. This invariant is checked
+at Discovery, preflight, Native New Tenant/Existing Tenant submit, and immediately
+before Native allocation ownership PATCH. Capsule continues to own these
+resources: Native takeover must never erase or mask a provider-owned linkage. Capsule New Tenant adoption also refuses duplicate/missing
 Namespace UID/resourceVersion and any Namespace already governed by another
 Tenant in the cluster, before beginning a Capsule allocation takeover.
 
