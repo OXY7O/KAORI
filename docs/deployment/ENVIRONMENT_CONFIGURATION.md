@@ -73,4 +73,4 @@ python scripts/verify_environment_contract.py
 python scripts/validate_production_env.py
 ```
 
-`verify_environment_contract.py` protects the one-owner split production contract, development contract, sensitive-key placement, deployment-adapter ownership, generated release identity, and the requirement that `.env.production.example` remain deprecated and inactive. `validate_production_env.py` validates security-sensitive and operational production values such as URLs, credentials, queue names, worker limits, notification delivery controls, and TLS governance windows.
+`verify_environment_contract.py` protects the one-owner split production contract, development contract, local standalone Compose queue/port boundaries, sensitive-key placement, deployment-adapter ownership, generated release identity, and the requirement that `.env.production.example` remain deprecated and inactive. `validate_production_env.py` validates security-sensitive and operational production values such as URLs, credentials, queue names, worker limits, notification delivery controls, and TLS governance windows.
