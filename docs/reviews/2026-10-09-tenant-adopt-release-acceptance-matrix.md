@@ -95,7 +95,14 @@ authoritative for native RoleBindings and authenticated principals.
    admitted Native/Capsule provider writes for New Tenant adoption, while
    Capsule Namespace Attach must disclose read-only provider mirroring and
    no automatic RBAC expansion; operator confirmation must not call a
-   provider-mutating action "evidence-only".
+   provider-mutating action "evidence-only". Validate a failed New Tenant
+   provider cutover and a failed DB commit after a possible provider write:
+   no pending KAORI Tenant/Namespace record may survive rollback, operational
+   failure must identify potential provider residue with submitted preflight
+   UID/resourceVersion, and the operator must inspect provider state before
+   retry. A CSRF or unsupported-provider failure must not be marked as a
+   started provider operation. Native Attach success must attribute provider
+   mutation to Namespace evidence, not unchanged Tenant adoption origin.
 
 ## Quality gates / evidence checklist
 
