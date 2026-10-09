@@ -232,21 +232,15 @@ def _update_spec(
             if foreign.get('clusterRoleName') == binding['clusterRoleName']:
                 raise ValueError('Capsule ClusterRole already has another provider-owned/KAORI grant binding.')
         if found == 1:
-            if grant.scope_type == TenantAccessScope.TENANT.value and binding in additional:
+            selector = {'matchExpressions': [{'key': _NAME_LABEL, 'operator': 'In', 'values': names}]}
+            if any(
+                rule.get('namespaceSelector') == selector
+                and (rule.get('permissions') or {}).get('bindings') == [binding]
+                and set(rule) == {'namespaceSelector', 'permissions'}
+                for rule in rules
+            ):
                 return deepcopy(spec)
-            if grant.scope_type != TenantAccessScope.TENANT.value:
-                selector = {'matchExpressions': [{'key': _NAME_LABEL, 'operator': 'In', 'values': names}]}
-                if any(
-                    rule.get('namespaceSelector') == selector
-                    and (rule.get('permissions') or {}).get('bindings') == [binding]
-                    and set(rule) == {'namespaceSelector', 'permissions'}
-                    for rule in rules
-                ):
-                    return deepcopy(spec)
-        if grant.scope_type == TenantAccessScope.TENANT.value:
-            retained.append(binding)
-        else:
-            filtered_rules.append(
+        filtered_rules.append(
                 {
                     'namespaceSelector': {'matchExpressions': [
                         {'key': _NAME_LABEL, 'operator': 'In', 'values': names}
@@ -330,8 +324,9 @@ def _write_state(
 
 def _reconcile(grant: TenantAccessGrant, *, mutate: bool) -> TenantAccessGrant:
     client, name, tenant_id = _context(grant)
-    scoped = grant.scope_type != TenantAccessScope.TENANT.value
-    version = _capability(grant, client, scoped=scoped)
+    # Capsule additionalRoleBindings would silently authorize future, ungoverned Namespaces.
+    # Every KAORI scope is therefore represented by an exact governed Namespace selector.
+    version = _capability(grant, client, scoped=True)
     api = client.custom_objects_api()
     item = _tenant_object(api, version, name, tenant_id, grant.tenant)
     prior = grant.reconciliation_evidence_json or {}
