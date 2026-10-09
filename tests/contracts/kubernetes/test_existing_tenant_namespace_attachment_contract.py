@@ -161,13 +161,24 @@ def test_review_adoption_preflight_modal_survives_htmx_swap_target_variants():
     assert "event.detail?.successful === false" in js
     assert "message.setAttribute('role', 'alert')" in js
     assert "message.setAttribute('data-tenant-adoption-request-error', '')" in js
-    assert "Adoption preflight request failed (HTTP" in js
+    assert "Adoption Review Unavailable" in js
     assert "event.detail?.xhr?.status" in js
-    assert "message.append(title, guidance)" in js
+    assert "message.append(title, guidance, safeState)" in js
+    assert "safeState.textContent = 'No adoption was performed.'" in js
     assert "guidance.textContent" in js
-    assert "event.detail?.xhr?.responseText" not in js
     assert "status >= 500" in js
     assert "kind === 'target'" in js
+    # Operational UX must not expose implementation diagnostics or raw responses.
+    for debug_copy in (
+        "Adoption preflight request failed (HTTP",
+        "DevContainer",
+        "Inspect the browser",
+        "Network",
+        "application logs",
+        "responseText",
+        "/discovery/preflight",
+    ):
+        assert debug_copy not in js
     assert "document.addEventListener('htmx:responseError'" in js
     assert "'targetError', 'swapError'" in js
 
@@ -179,7 +190,7 @@ def test_review_adoption_preflight_modal_survives_htmx_swap_target_variants():
 
 def test_adoption_preflight_templates_parse_as_valid_jinja() -> None:
     # Parse with Jinja itself, not only delimiter counts. This catches
-    # malformed tags such as '{% endif %>' before the preflight GET reaches UAT.
+    # malformed tags such as an endif ending in '%>' before preflight UAT.
     environment = Environment(autoescape=True)
     for template in (
         'app/templates/kubernetes/tenant/partials/_tenant_adoption_preflight.html',
