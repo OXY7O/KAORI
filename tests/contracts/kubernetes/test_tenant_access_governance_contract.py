@@ -126,7 +126,10 @@ def test_membership_revocation_is_fail_closed_for_dependent_grants() -> None:
 
     assert 'membership.status = TenantMembershipStatus.REVOKED.value' in service
     assert 'grant.status = TenantAccessGrantStatus.REVOKED.value' in service
-    assert 'reconcile_native_access_grant(grant)' in service
+    assert 'reconcile_provider_access_grant(grant)' in service
+    dispatcher = read('app/kubernetes/tenant/access_provider.py')
+    assert 'reconcile_native_access_grant(grant)' in dispatcher
+    assert 'reconcile_capsule_access_grant(grant)' in dispatcher
     assert "action='tenant_access_grant.membership_revoked'" in service
     assert 'one or more Kubernetes RoleBindings require operator attention' in service
 
