@@ -8,11 +8,11 @@
 
 A Tenant Access Grant Registry with no rows displayed the canonical empty-state card but no pagination footer. MinIO Integration Coverage, with the same absence of data, correctly displayed `Showing 0–0 of 0 Assets`, Rows, numeric current page, and disabled navigation. The approved standard already mandates that empty operational registries retain the footer. No new visual vocabulary, paginator, data-model contract, or route is necessary.
 
-On the review branch, the specific conditional that hid a pagination footer when `pagination.total_items > 0` was removed from **19 operational template consumers (20 conditions)**:
+On the review branch, the specific conditional that hid a pagination footer when `pagination.total_items > 0` was removed from **21 operational template consumers (22 conditions)**:
 
 | Area | Updated consumers |
 | --- | --- |
-| Kubernetes Tenant | Tenant, Membership, Group, Access Grant, Credential, Namespace Access, Namespace, Resource Profile, and five Operations registries (13 templates) |
+| Kubernetes Tenant | Tenant, Membership, Group, Access Grant, Credential, Namespace Access, Namespace, Resource Profile, five Operations registries, and two Capsule drift registries (15 templates) |
 | Integrations | Domain Provider/Binding registries (two guards in one template); Kubernetes, MinIO, and Harbor bound-source registries (4 templates) |
 | Notification Channels | Channel Registry (1 template) |
 | Intelligence | Resolved Alert Operations history (1 template) |
@@ -23,9 +23,23 @@ The visible empty-state body and its contextual action remain unchanged, immedia
 
 The Git tree of the reviewed repository contained **862 Jinja HTML templates**. Initial manual source classification examined **160 registry/record/table/history/workspace-style candidate templates** across Access, Integrations, Intelligence, Kubernetes, Platform Operations, reports, Object Storage, and Artifact Registry. Included workspace fragments, table-body partials, and intentionally bounded summary previews were not treated as standalone paginated operational registries. Other reviewed tables with unconditional shared footers were retained unchanged.
 
-A new **repository-wide executable regression contract** (`tests/contracts/design/test_empty_registry_pagination_contract.py`) walks `app/templates/**/*.html` and detects pagination footers nested inside explicit zero-result guards (`*.total_items > 0`). It also protects the 19 remediated consumers and exercises the **shared Jinja registry footer** with a real canonical zero-item pagination window.
+A new **repository-wide executable regression contract** (`tests/contracts/design/test_empty_registry_pagination_contract.py`) walks `app/templates/**/*.html` and detects pagination footers nested inside explicit zero-result guards (`*.total_items > 0`). It protects the 21 remediated consumers, exercises the **shared Jinja registry footer** with a real canonical zero-item pagination window, and adds render checks for both Capsule drift tables, including HTMX target and loading indicator identity.
 
 This static contract catches the **identified anti-pattern** across the full template tree. It does not by itself prove that every UI table is intended to be paginated or that all dynamic HTMX transitions render correctly; owner-specific tests and Dev Container Visual QA remain required. No new blanket pagination was added to table-free workspaces or to deliberately bounded snapshot previews.
+
+### Capsule drift regression discovered during local visual review
+
+Follow-up screenshots identified two more omitted consumers:
+`_capsule_tenant_quota_drift.html` and `_capsule_shared_allocation_drift.html`.
+Their filenames fell outside the initial 160-file candidate-name shortlist, so the first source-only review did **not** establish comprehensive empty-table coverage. Both still hid the footer using `total_items > 0`. They also supplied target IDs to `table_registry.footer()` without actual matching `section id` elements and passed no loading indicator ID.
+
+The correction retains the provider-authoritative reconciliation content and actions, makes each
+footer unconditional, adds its matching section identity and shared header loading bar,
+and preserves the existing `tenant.operations?tab=drift-reconcile` pagination/query contract.
+The existing repo-wide regression test must run in the Dev Container; reviewing selected filenames
+alone is not an adequate replacement. The focused test also renders both Capsule empty tables,
+checks the visible `0–0 of 0` summary, Rows/Page 1 and disabled navigation,
+and verifies actual HTMX selector and loading-indicator targets.
 
 ## Accepted empty-state behavior
 
@@ -38,7 +52,7 @@ This static contract catches the **identified anti-pattern** across the full tem
 
 ## Verification and UAT
 
-**Source review:** confirmed 19 changed operational consumers no longer guard their pagination footer on positive result count, with structurally balanced Jinja `if`/`endif`; tracked exact GitHub diff. The shared Python paginator already clamps zero results to page 1/1 with start/end zero and disabled directions.
+**Source review:** confirmed 21 changed operational consumers no longer guard their pagination footer on positive result count, with structurally balanced Jinja `if`/`endif`; tracked exact GitHub diff. The shared Python paginator already clamps zero results to page 1/1 with start/end zero and disabled directions.
 
 **Local checks still required (not executed by the GitHub-only editing environment):**
 
@@ -49,6 +63,6 @@ python scripts/verify_ui_reuse.py
 python scripts/verify_ui_style.py
 ```
 
-In Dev Container, use an empty real dataset **and** a filtered-to-zero dataset on Tenant Access Grant Registry, Tenant Registry, Notification Channels, Integration Provider/Binding, Alert Operations resolved history, and bound-source registries. Check matching 0/0 summary, current page 1, disabled Previous/Next, Rows 5/10/25/50, responsive layout, light/dark, and filter reset/HTMX without reload. Repeat on a populated dataset to protect non-empty behavior.
+In Dev Container, use an empty real dataset **and** a filtered-to-zero dataset on Tenant Access Grant Registry, Tenant Registry, Notification Channels, Integration Provider/Binding, Alert Operations resolved history, bound-source registries, and both Capsule drift registries. Check matching 0/0 summary, current page 1, disabled Previous/Next, Rows 5/10/25/50, responsive layout, light/dark, and filter reset/HTMX without reload. Repeat on a populated dataset to protect non-empty behavior.
 
 **Acceptance status:** pending local Developer Check and Human Visual QA. No staging admission, deployment, UAT PASS, main promotion, or release is implied by this audit.
