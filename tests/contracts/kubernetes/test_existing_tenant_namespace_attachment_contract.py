@@ -49,3 +49,13 @@ def test_native_namespace_can_attach_to_existing_tenant_without_duplicate_tenant
     assert "'submitted_preflight_provider_uid': request.form.get('provider_uid')" in routes
     assert "'submitted_preflight_resource_version': request.form.get('provider_resource_version')" in routes
     assert "'attach_existing_tenant_namespace'" in routes
+
+
+def test_native_adoption_checks_capsule_owner_references_at_submit():
+    adoption = read('app/kubernetes/tenant/discovery_adoption.py')
+    discovery = read('app/kubernetes/tenant/discovery_service.py')
+    mutator = read('app/kubernetes/tenant/allocation_cutover.py')
+
+    assert adoption.count("owner_references=getattr(metadata, 'owner_references', None)") == 2
+    assert discovery.count("owner_references=getattr(metadata, 'owner_references', None)") == 2
+    assert 'capsule_namespace_authority_present(' in mutator

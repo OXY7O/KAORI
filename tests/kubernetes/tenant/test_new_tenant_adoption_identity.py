@@ -218,3 +218,42 @@ def test_capsule_new_tenant_adoption_blocks_orphaned_or_foreign_cr_before_provid
     monkeypatch.setattr(module, 'observe_capsule_tenant_allocation', forbidden_observation)
     with pytest.raises(ValueError, match='ownership markers|external manager'):
         module._adopt_capsule(context)
+
+
+@pytest.mark.parametrize(
+    ('labels', 'references'),
+    [
+        ({'capsule.clastix.io/tenant': 'capsule-a'}, None),
+        ({'projectcapsule.dev/tenant': ''}, None),
+        ({}, [SimpleNamespace(kind='Tenant', api_version='capsule.clastix.io/v1beta2')]),
+        ({}, [SimpleNamespace(kind='Tenant', api_version='capsule.clastix.io/v1beta1')]),
+        ({}, {'malformed': 'references'}),
+    ],
+)
+def test_native_discovery_blocks_capsule_owned_namespaces(labels, references):
+    from types import SimpleNamespace
+
+    from app.kubernetes.tenant.discovery_service import _native_management
+
+    status, reason = _native_management(
+        namespace='capsule-owned',
+        labels=labels,
+        managed_record=None,
+        owner_references=references,
+    )
+    assert status == 'Blocked'
+    assert 'Capsule Tenant authority' in reason
+
+
+def test_native_discovery_accepts_namespaces_without_capsule_authority():
+    from types import SimpleNamespace
+
+    from app.kubernetes.tenant.discovery_service import _native_management
+
+    state, _ = _native_management(
+        namespace='native-only',
+        labels={},
+        managed_record=None,
+        owner_references=[SimpleNamespace(kind='ReplicaSet', api_version='apps/v1')],
+    )
+    assert state == 'Discovered'

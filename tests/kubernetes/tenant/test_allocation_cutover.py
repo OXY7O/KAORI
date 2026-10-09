@@ -517,3 +517,29 @@ def test_storage_only_takeover_keeps_limit_range_and_pvc_policy(monkeypatch) -> 
     assert record.allocation_storage_policy_json == {'min': '1Gi', 'max': '10Gi'}
     assert record.ownership_status == 'adopted'
     assert allocation_control_state(record) == 'kaori_managed'
+
+
+@pytest.mark.parametrize(
+    ('labels', 'references'),
+    [
+        ({'capsule.clastix.io/tenant': 'capsule-a'}, None),
+        ({'projectcapsule.dev/tenant': 'capsule-a'}, None),
+        ({}, [SimpleNamespace(kind='Tenant', api_version='capsule.clastix.io/v1beta2')]),
+    ],
+)
+def test_native_allocation_takeover_rejects_capsule_authority_before_patch(labels, references):
+    api = _FakeCoreApi()
+    original_read = api.read_namespace
+
+    def capsule_namespace(name):
+        resource = original_read(name)
+        resource.metadata.labels = labels
+        resource.metadata.owner_references = references
+        return resource
+
+    api.read_namespace = capsule_namespace
+    with pytest.raises(ValueError, match='Capsule Tenant authority'):
+        allocation_cutover._mutate_namespace_ownership(
+            api, _reconcile_record(), profile=_profile(),
+        )
+    assert api.patched_namespaces == []
