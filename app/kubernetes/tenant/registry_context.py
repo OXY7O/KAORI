@@ -271,6 +271,7 @@ def get_tenant_registry_context(
 
     tenant_ids = [item.id for item in items]
     environment_map: dict[str, list[str]] = {tenant_id: [] for tenant_id in tenant_ids}
+    capsule_environment_map: dict[str, list[dict[str, Any]]] = {tenant_id: [] for tenant_id in tenant_ids}
     namespace_count_map: dict[str, int] = {tenant_id: 0 for tenant_id in tenant_ids}
     namespace_history_count_map: dict[str, int] = {tenant_id: 0 for tenant_id in tenant_ids}
 
@@ -282,6 +283,9 @@ def get_tenant_registry_context(
         )
         for environment_row in environment_rows:
             environment_map.setdefault(environment_row.tenant_id, []).append(environment_row.environment)
+            capsule_environment_map.setdefault(environment_row.tenant_id, []).append({
+                'id': environment_row.id, 'environment': environment_row.environment,
+            })
 
         if include_decommission_preflight:
             namespace_history_rows = (
@@ -367,6 +371,7 @@ def get_tenant_registry_context(
             'tenant': item,
             'cluster': cluster_map.get(str(item.cluster_id)),
             'environments': environment_map.get(item.id, []),
+            'capsule_environment_options': capsule_environment_map.get(item.id, []),
             'namespace_count': namespace_count_map.get(item.id, 0),
         }
         if include_decommission_preflight:
