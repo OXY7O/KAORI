@@ -21,6 +21,7 @@ from app.kubernetes.tenant.native_handoff_dry_run import (
     _stable_sha256,
 )
 from app.kubernetes.tenant.release_handoff_approval import (
+    _checked_recently,
     _plan_hash,
     latest_release_handoff_approval,
     latest_release_handoff_plan,
@@ -98,15 +99,19 @@ def observe_external_native_handoff_committed(
         or plan.get('plan_sha256') != plan_sha256
         or _plan_hash(plan) != plan_sha256
         or approval.get('plan_sha256') != plan_sha256
+        or not _checked_recently(plan.get('requested_at'))
+        or not _checked_recently(approval.get('approved_at'))
         or approval.get('status') != 'acknowledged_pending_provider_handoff'
         or approval.get('requested_by') != plan.get('requested_by')
         or approval.get('approved_by') == plan.get('requested_by')
         or not isinstance(approval.get('approved_by'), int)
         or approval.get('handoff_fingerprint') != plan.get('handoff_fingerprint')
         or claim.get('plan_sha256') != plan_sha256
+        or not _checked_recently(claim.get('recorded_at'))
         or claim.get('status') != 'external_reference_unverified'
         or claim.get('successor_owner') != plan.get('successor_owner')
         or dry_run.get('plan_sha256') != plan_sha256
+        or not _checked_recently(dry_run.get('checked_at'))
         or dry_run.get('status') != 'dry_run_passed'
         or dry_run.get('handoff_fingerprint') != plan.get('handoff_fingerprint')
         or dry_run.get('provider_mutation_performed') is not False
