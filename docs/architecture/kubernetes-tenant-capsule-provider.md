@@ -21,6 +21,23 @@ Capsule is not modeled as a boolean. The provider reports capability evidence fo
 
 Only `available` capabilities may authorize security-sensitive mutations. Degraded or unavailable capabilities fail closed.
 
+## Cluster-scoped RBAC prerequisites
+
+Canonical ClusterRoles for Capsule Tenant grants are shared **per Kubernetes
+cluster**, not per adopted Tenant. The approved operating path is
+**Integrations → Kubernetes → [Cluster] → Validation & Capabilities →
+Capsule Cluster RBAC Bootstrap**: Check existing exact profiles, explicitly
+approve only missing-role creation, and verify committed Audit evidence.
+Native ClusterRole owner roles or broader built-in roles are never reused as
+equivalents. Existing identical roles are reused without mutation; conflicting
+roles stop bootstrap. Readiness is derived from the last committed Check or
+Bootstrap event, never an automatic request on each page load.
+
+This prerequisite operation requires a privileged cluster connection; it
+does not run during discovery, adoption, Grant Apply, or background sync.
+Manual `Prepare Roles` YAML download remains an approved fallback without
+permission to bootstrap. See `docs/architecture/kubernetes-tenant-access-governance.md`.
+
 ## Access Grant reconciliation
 
 Issue #966 adds independent Capsule Access Grant capability detection:
