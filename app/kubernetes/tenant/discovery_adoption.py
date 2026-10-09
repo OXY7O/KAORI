@@ -529,6 +529,17 @@ def _adopt_capsule(context: _AdoptionContext) -> tuple[TenantEnvironment, Tenant
         capability_evidence=capability_evidence,
     )
 
+    # The Capsule controller may report Namespaces already governed through
+    # Native or another Capsule Tenant. Never reparent such Namespace records
+    # simply because the discovered Capsule Tenant CR itself is ungoverned.
+    existing_namespaces = _managed_namespace_map([str(context.cluster.id)])
+    for row in allocation.get('correlated_namespaces') or []:
+        if not isinstance(row, Mapping):
+            raise ValueError('Capsule Namespace correlation inventory contains malformed entries.')
+        namespace_name = str(row.get('name') or '').strip()
+        if namespace_name and (str(context.cluster.id), namespace_name) in existing_namespaces:
+            raise ValueError('Capsule Namespace already belongs to a governed KAORI Tenant.')
+
     tenant = context.tenant
     tenant.provider_key = 'capsule'
     tenant.provider_state = provider_state
