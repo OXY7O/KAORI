@@ -127,7 +127,7 @@ def test_capsule_modified_allocation_cannot_silently_release():
         id='tenant-a',
         provider_evidence_json={'provider_mutation_performed': True},
     )
-    _, blockers = capsule_tenant_handoff_evidence(
+    components, blockers = capsule_tenant_handoff_evidence(
         tenant=tenant,
         tenant_item={
             'metadata': {'name': 'sandbox', 'uid': 'uid', 'resourceVersion': '1'},
@@ -135,6 +135,8 @@ def test_capsule_modified_allocation_cannot_silently_release():
         },
     )
     assert any('explicit provider authority handoff' in reason for reason in blockers)
+    assert components[0]['handoff'] == 'external_acceptance_required'
+    assert components[0]['ownership'] == 'external_or_unattributed'
 
 
 def test_fingerprint_is_order_independent_but_detects_changed_provider_versions():

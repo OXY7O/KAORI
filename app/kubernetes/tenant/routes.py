@@ -54,6 +54,10 @@ from app.kubernetes.tenant.job_adapter import (
     dispatch_tenant_decommission,
     get_visible_tenant_sync_job,
 )
+from app.kubernetes.tenant.release_handoff_approval import (
+    approve_release_handoff_plan_committed,
+    prepare_release_handoff_plan_committed,
+)
 from app.kubernetes.tenant.release_preflight import (
     release_adopted_tenant_committed,
     review_tenant_release_preflight_committed,
@@ -640,6 +644,74 @@ def review_tenant_release_route(tenant_id: str):
             message=f"{len(result['blockers'])} blocker(s); no provider resource was modified.",
             detail='Release is not yet admitted. Review the committed dependency and provider handoff evidence.',
             metadata={'tenant_id': tenant_id, 'operation': 'review_tenant_release'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/prepare')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+def prepare_tenant_release_handoff_route(tenant_id: str):
+    try:
+        _csrf()
+        result = prepare_release_handoff_plan_committed(
+            tenant_id=tenant_id,
+            actor_user_id=int(current_user.id),
+            successor_owner=str(request.form.get('successor_owner') or ''),
+            change_reference=str(request.form.get('change_reference') or ''),
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_release_handoff_plan_blocked',
+            status='warning',
+            title='Handoff Plan Not Prepared',
+            message=str(exc),
+            detail='Release governance and provider ownership remain unchanged.',
+            metadata={'tenant_id': tenant_id, 'operation': 'prepare_release_handoff'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_release_handoff_plan_prepared',
+            status='info',
+            title='Handoff Plan Prepared',
+            message=f"Successor {result['successor_owner']} · {result['change_reference']}",
+            detail='Independent approval and provider ownership transfer are still required.',
+            metadata={'tenant_id': tenant_id, 'operation': 'prepare_release_handoff'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/approve')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+def approve_tenant_release_handoff_route(tenant_id: str):
+    try:
+        _csrf()
+        if request.form.get('confirm_handoff_approval') != 'approved':
+            raise ValueError('Independent handoff acknowledgement must be explicit.')
+        result = approve_release_handoff_plan_committed(
+            tenant_id=tenant_id,
+            actor_user_id=int(current_user.id),
+            plan_sha256=str(request.form.get('plan_sha256') or ''),
+            approved=True,
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_release_handoff_approval_blocked',
+            status='warning',
+            title='Handoff Approval Blocked',
+            message=str(exc),
+            detail='No provider mutation was attempted; Release is not unlocked.',
+            metadata={'tenant_id': tenant_id, 'operation': 'approve_release_handoff'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_release_handoff_acknowledged',
+            status='info',
+            title='Independent Handoff Review Recorded',
+            message=f"Review recorded for {result['successor_owner']}; external transfer remains pending.",
+            detail='Provider read-back and a separately admitted transfer executor are still required.',
+            metadata={'tenant_id': tenant_id, 'operation': 'approve_release_handoff'},
         )
     return _tenant_section_redirect('registry')
 
