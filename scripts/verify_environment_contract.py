@@ -314,6 +314,58 @@ def verify() -> None:
         if token not in operational:
             raise AssertionError(f'{APP_TEMPLATE} is missing required operational setting {token[:-1]}')
 
+    # Runtime-mode drift guard: a local standalone RC is neither a Dev
+    # Container nor a shortcut around the split governed-server overlay.
+    local_standalone = read('example/kaori/compose.yml')
+    dev_compose = read('compose.yml')
+    devcontainer_compose = read('.devcontainer/compose.devcontainer.yml')
+    for path, source, marker in (
+        ('compose.yml', dev_compose, '127.0.0.1:${POSTGRES_PORT:-5432}:5432'),
+        ('compose.yml', dev_compose, '127.0.0.1:${REDIS_PORT:-6379}:6379'),
+        ('.devcontainer/compose.devcontainer.yml', devcontainer_compose, '127.0.0.1:5000:5000'),
+        ('example/kaori/compose.yml', local_standalone, '127.0.0.1:${KAORI_PORT:-5000}:5000'),
+        ('example/kaori/compose.yml', local_standalone, '--queues=inventory,registry-security,'),
+    ):
+        if marker not in source:
+            raise AssertionError(f'{path} is missing local-mode runtime safeguard: {marker}')
+
+    import json
+
+    tasks = json.loads(read('.vscode/tasks.json'))['tasks']
+    watcher = [task for task in tasks if task.get('label') == 'KAORI: Watch Tailwind CSS']
+    if (
+        len(watcher) != 1
+        or watcher[0].get('command') != 'npm run watch-css'
+        or watcher[0].get('runOptions', {}).get('runOn') != 'folderOpen'
+        or watcher[0].get('runOptions', {}).get('instanceLimit') != 1
+    ):
+        raise AssertionError('Dev Container requires one auto-starting Tailwind watcher VS Code task')
+
+    for document in (
+        'docs/RUNNING.md',
+        'docs/DEPLOYMENT.md',
+        'docs/deployment/RELEASE_GOVERNANCE.md',
+    ):
+        source = read(document)
+        for stale in (
+            'cp .env.production.example .env.production',
+            '/etc/kaori/.env.production',
+            'docker compose -f compose.production.yml up -d',
+        ):
+            if stale in source:
+                raise AssertionError(f'{document} still instructs obsolete production deployment: {stale}')
+
+    runtime_guide = read('docs/RUNNING.md')
+    for mode_marker in (
+        'Mode 1',
+        'Mode 2',
+        'Mode 3',
+        'deploy/server/compose.server.yml',
+        'example/kaori/compose.yml',
+    ):
+        if mode_marker not in runtime_guide:
+            raise AssertionError(f'docs/RUNNING.md does not describe the supported {mode_marker} runtime')
+
     print(
         'PASS — KAORI Environment Contract · '
         f'{len(development_keys)} development keys / '
