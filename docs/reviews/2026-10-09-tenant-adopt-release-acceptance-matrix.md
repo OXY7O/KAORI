@@ -91,7 +91,11 @@ authoritative for native RoleBindings and authenticated principals.
 7. **UX and operations:** Violet shared UI, responsive/light/dark, 5-row default
    paging, HTMX/CSRF, accessible forms, toast/error/loading/empty state,
    audit correlations, recoverability, and no live provider reads on normal
-   Tenant Registry rendering.
+   Tenant Registry rendering. Adoption Preflight must explicitly disclose
+   admitted Native/Capsule provider writes for New Tenant adoption, while
+   Capsule Namespace Attach must disclose read-only provider mirroring and
+   no automatic RBAC expansion; operator confirmation must not call a
+   provider-mutating action "evidence-only".
 
 ## Quality gates / evidence checklist
 
