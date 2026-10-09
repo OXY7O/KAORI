@@ -32,6 +32,11 @@ _EXPECTED_HANDOFF_FRAGMENTS = (
     'has KAORI-managed allocation; explicit provider handoff is required.',
     'KAORI-linked allocation ownership requires independently approved external handoff',
 )
+_REQUIRED_DEPENDENCIES = frozenset({
+    'credentials', 'Access Grants', 'Memberships', 'enabled Groups',
+    'managed resources', 'advanced capabilities', 'domain reservations',
+    'exposure policies',
+})
 _PLAN_HASH_FIELDS = (
     'tenant_id', 'cluster_id', 'generation', 'provider', 'handoff_fingerprint',
     'provider_identity', 'successor_owner', 'change_reference',
@@ -95,12 +100,22 @@ def _complete_provider_snapshot(evidence: dict[str, Any]) -> None:
 
 def _can_confirm_plan(snapshot: dict[str, Any]) -> None:
     _complete_provider_snapshot(snapshot)
-    counts = snapshot.get('dependency_counts') or {}
-    if not isinstance(counts, dict) or any(not isinstance(v, int) or v != 0 for v in counts.values()):
-        raise ValueError('Clear all active Tenant dependencies before handoff approval.')
+    counts = snapshot.get('dependency_counts')
+    if (
+        not isinstance(counts, dict)
+        or not _REQUIRED_DEPENDENCIES.issubset(counts)
+        or any(type(v) is not int or v != 0 for v in counts.values())
+    ):
+        raise ValueError('Clear and verify every active Tenant dependency before handoff approval.')
     components = snapshot['handoff_components']
     if any(row.get('handoff') == 'owner_review_required' for row in components):
         raise ValueError('Conflicting provider ownership markers require external review.')
+    if any(row.get('handoff') not in {'external_acceptance_required', 'observe_only'} for row in components):
+        raise ValueError('Unsupported or missing ownership handoff classification.')
+    if snapshot.get('handoff_required_count') != sum(
+        row['handoff'] == 'external_acceptance_required' for row in components
+    ):
+        raise ValueError('Committed handoff count is inconsistent with provider evidence.')
     if not any(row.get('handoff') == 'external_acceptance_required' for row in components):
         raise ValueError('No verified KAORI-linked resource requires external handoff.')
     blockers = snapshot.get('blockers') or []
