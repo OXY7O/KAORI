@@ -1,9 +1,10 @@
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
-{% set readiness_tone = table_label.semantic_tone(incident_readiness.level|default('unknown'))|trim %}
-{% set source_tone = 'normal' if incident_readiness.source_score >= 80 else ('warning' if incident_readiness.source_score >= 60 else 'critical') %}
-{% set ownership_tone = 'normal' if incident_readiness.ownership_score >= 80 else ('warning' if incident_readiness.ownership_score >= 60 else 'critical') %}
+{% set has_checks = incident_readiness.checks|length > 0 %}
+{% set readiness_tone = table_label.semantic_tone(incident_readiness.level|default('unknown'))|trim if has_checks else 'unknown' %}
+{% set source_tone = ('normal' if incident_readiness.source_score >= 80 else ('warning' if incident_readiness.source_score >= 60 else 'critical')) if has_checks else 'unknown' %}
+{% set ownership_tone = ('normal' if incident_readiness.ownership_score >= 80 else ('warning' if incident_readiness.ownership_score >= 60 else 'critical')) if has_checks else 'unknown' %}
 {% set check_summary = namespace(pass_count=0, warning_count=0, fail_count=0) %}
 {% for check in incident_readiness.checks %}
     {% if check.status == 'pass' %}
@@ -14,7 +15,6 @@
         {% set check_summary.fail_count = check_summary.fail_count + 1 %}
     {% endif %}
 {% endfor %}
-{% set has_checks = incident_readiness.checks|length > 0 %}
 {% set pressure_present = incident_readiness.critical_signals + incident_readiness.warning_signals + incident_readiness.anomaly_signals > 0 %}
 {% set suppression_present = incident_readiness.silence_risk + incident_readiness.inhibition_risk > 0 %}
 <section class="{{ analysis_surface.snapshot_shell_classes() }}"
@@ -51,7 +51,7 @@
                         <p class="{{ analysis_surface.metric_label_classes() }}">Readiness Score</p>
                         <div class="mt-3 flex flex-wrap items-center gap-4">
                             <div class="relative h-32 w-32 shrink-0" role="img"
-                                 aria-label="Readiness score {{ incident_readiness.score }} out of 100">
+                                 aria-label="{{ 'Readiness score ' ~ incident_readiness.score ~ ' out of 100' if has_checks else 'Readiness score unavailable' }}">
                                 <svg viewBox="0 0 120 120" class="h-full w-full" aria-hidden="true">
                                     <circle cx="60" cy="60" r="47" fill="none"
                                             stroke-width="11" class="stroke-outline-subtle"></circle>
@@ -60,13 +60,13 @@
                                             stroke-width="11"
                                             stroke-linecap="round"
                                             pathLength="100"
-                                            stroke-dasharray="{{ incident_readiness.score }} 100"
+                                            stroke-dasharray="{{ incident_readiness.score if has_checks else 0 }} 100"
                                             transform="rotate(-90 60 60)"
                                             class="{{ table_label.tone_icon_classes(readiness_tone) }}"></circle>
                                 </svg>
                                 <div class="absolute inset-0 flex flex-col items-center justify-center">
-                                    <span class="text-3xl font-semibold tabular-nums text-content-primary">{{ incident_readiness.score }}</span>
-                                    <span class="text-xs font-medium text-content-muted">/100</span>
+                                    <span class="text-3xl font-semibold tabular-nums text-content-primary">{{ incident_readiness.score if has_checks else 'N/A' }}</span>
+                                    {% if has_checks %}<span class="text-xs font-medium text-content-muted">/100</span>{% endif %}
                                 </div>
                             </div>
                             <div class="min-w-0 flex-1">
@@ -93,9 +93,9 @@
                                     <div class="min-w-0 flex-1">
                                         <dt class="text-sm font-semibold text-content-primary">{{ title }}</dt>
                                         <dd class="mt-0.5 text-xs text-content-muted">{{ description }}</dd>
-                                        {{ progress_bar.semantic_bar(score, tone, track_classes='mt-2 h-1.5 overflow-hidden rounded-full bg-surface-hover', label=title ~ ' score') }}
+                                        {{ progress_bar.semantic_bar(score if has_checks else 0, tone, track_classes='mt-2 h-1.5 overflow-hidden rounded-full bg-surface-hover', label=title ~ ' score') }}
                                     </div>
-                                    {{ table_label.status_label(score ~ '/100', tone, size='compact') }}
+                                    {{ table_label.status_label(score ~ '/100' if has_checks else 'N/A', tone, size='compact') }}
                                 </div>
                             {% endfor %}
                             <div class="flex min-w-0 items-center gap-3 px-4 py-3">
@@ -119,9 +119,9 @@
                     <div class="grid gap-2 sm:grid-cols-3 lg:grid-cols-5">
                         {% for title, icon, state, tone in [
                             ('Signals', 'activity', 'Review' if pressure_present else ('Clear' if has_checks else 'Unknown'), 'warning' if pressure_present else ('normal' if has_checks else 'unknown')),
-                            ('Source', 'database', incident_readiness.source_score ~ '/100', source_tone if has_checks else 'unknown'),
-                            ('Ownership', 'users', incident_readiness.ownership_score ~ '/100', ownership_tone if has_checks else 'unknown'),
-                            ('Routing', 'route', 'Ready' if incident_readiness.routing_ready else 'Limited', 'normal' if incident_readiness.routing_ready else 'warning'),
+                            ('Source', 'database', incident_readiness.source_score ~ '/100' if has_checks else 'N/A', source_tone),
+                            ('Ownership', 'users', incident_readiness.ownership_score ~ '/100' if has_checks else 'N/A', ownership_tone),
+                            ('Routing', 'route', ('Ready' if incident_readiness.routing_ready else 'Limited') if has_checks else 'Unknown', ('normal' if incident_readiness.routing_ready else 'warning') if has_checks else 'unknown'),
                             ('Suppression', 'shield-check', 'Review' if suppression_present else ('Clear' if has_checks else 'Unknown'), 'warning' if suppression_present else ('normal' if has_checks else 'unknown'))
                         ] %}
                             <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-card px-3 py-3">
