@@ -148,17 +148,19 @@
             </div>
         </div>
     {% endif %}
-    {% if recent_capsule_access_remediation %}
+    {% if recent_capsule_access_remediation or recent_native_access_remediation %}
+        {% set all_access_remediation = recent_capsule_access_remediation + recent_native_access_remediation %}
         <div class="border-t border-outline-subtle px-5 py-4">
             <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">
                 Governed Remediation Decisions · latest committed evidence
             </p>
             <div class="mt-3 space-y-3">
-                {% for event in recent_capsule_access_remediation %}
-                    {% set plan = event.metadata_json or {} %}
+                {% for event in all_access_remediation %}
+                    {% set plan = event.metadata_json or %}
                     <details class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
                         <summary class="cursor-pointer text-xs font-semibold text-content-primary">
-                            Tenant {{ plan.tenant_id }} · {{ plan.explicit_reconcile_count }} approved-path candidate(s)
+                            {{ plan.provider|default('capsule')|replace('_', ' ')|title }} · Tenant {{ plan.tenant_id }}
+                            · {{ plan.explicit_reconcile_count }} approved-path candidate(s)
                             · {{ plan.manual_review_count }} human review
                         </summary>
                         <div class="mt-2 space-y-2 border-t border-outline-subtle pt-2">
@@ -359,6 +361,17 @@
                         No automatic remediation was performed. Inspect effective namespaced
                         Kubernetes Role/RoleBinding permissions before any governed action.
                     </p>
+                    {% if can_manage %}
+                        <form method="post"
+                              action="{{ url_for('tenant.plan_capsule_access_remediation_route') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="tenant_id" value="{{ evidence.tenant_id }}">
+                            <button type="submit" class="{{ action_button.classes('secondary') }} !h-8 !px-3 !text-xs">
+                                <i data-lucide="clipboard-check" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                Prepare Native Remediation Decisions
+                            </button>
+                        </form>
+                    {% endif %}
                 </div>
             </details>
         {% endfor %}
