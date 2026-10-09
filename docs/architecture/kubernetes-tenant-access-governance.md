@@ -437,6 +437,41 @@ side effect. Effective grant takeover requires separately approved identity,
 exact permission/profile, source-scope, and ownership equivalence proof. A
 name match or provider ClusterRole name alone is insufficient.
 
+### Attach provider-correlated Capsule Namespace to existing Tenant (#983)
+
+The existing **Tenant Discovery → Review Adoption** surface now lists
+Capsule **Namespace** candidates when an authoritative Capsule Tenant CR
+is already governed by KAORI but the Namespace is not. Unlike full
+Capsule Tenant adoption, this action reuses the existing Tenant and
+selected Environment. No new Tenant, provider Tenant CR, Capsule RBAC,
+or Namespace owner label is created.
+
+Both live Discovery Preflight and Adoption submit reuse the same
+Capsule provider correlation contract. The Namespace must have a
+nonconflicting `projectcapsule.dev/tenant` or
+`capsule.clastix.io/tenant` label (or Capsule Tenant owner reference)
+explicitly naming the target Tenant. Membership in
+`Tenant.status.namespaces` **alone is insufficient**. Tenant CR UID
+must match its existing committed KAORI authority; Namespace immutable
+UID and resourceVersion must match the reviewed preflight, there must
+be no active owner or released-history lineage conflict, and allocation
+authority must not be ambiguous/unsupported.
+
+On successful attachment, existing Namespace quota and Container/PVC
+limits are **mirrored from Capsule** as the adopted baseline using the
+canonical Capsule Namespace policy-profile helper. KAORI does not
+modify provider CR, Kubernetes Namespace, ResourceQuota, LimitRange,
+RBAC, or implicitly broaden Tenant-level Access Grants. The original
+Tenant provider provenance remains unchanged; only the new Namespace
+governance generation and nonsecret attachment audit evidence are
+committed. If provider identity/capacity cannot be proved, attachment
+fails closed and leaves the existing Tenant untouched.
+
+This does not replace the full Capsule Tenant discovery/adoption lane,
+native Namespace attachment, or Release/Re-adopt authority. Exercise
+real Capsule correlation, mixed Namespace quotas and provider churn in
+nonproduction before staging promotion.
+
 ### Native Kubernetes Namespace RBAC inventory (#996)
 
 Native Tenant access governance now has a matching **explicit read-only inspection**
