@@ -293,3 +293,39 @@ def test_access_grant_registry_reconciliation_uses_canonical_accessible_details_
     assert "document.addEventListener('click'" in info_tip_script
     assert "document.addEventListener('focusin'" in info_tip_script
     assert "document.addEventListener('htmx:beforeSwap'" in info_tip_script
+
+
+def test_grant_context_exposes_canonical_capsule_role_preparation_modal_without_provider_mutation() -> None:
+    workspace = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
+    modal = read('app/templates/kubernetes/tenant/partials/_capsule_access_role_manifest_dialog.html')
+    service = read('app/kubernetes/tenant/access_service.py')
+    access = read('app/kubernetes/tenant/access.py')
+    reconciliation = read('app/kubernetes/tenant/capsule_access_reconciliation.py')
+    native_dialogs = read('app/static/js/native_dialogs.js')
+    clipboard = read('app/static/js/clipboard.js')
+
+    assert 'data-access-grant-context' in workspace
+    assert 'Capsule RBAC Prerequisites' in workspace
+    assert 'Prepare Roles' in workspace
+    assert 'data-kaori-dialog-open' in workspace
+    assert 'data-dialog-target="capsule-access-role-manifest-dialog"' in workspace
+    assert '{% include "kubernetes/tenant/partials/_capsule_access_role_manifest_dialog.html" %}' in workspace
+    assert 'data-kaori-native-dialog' in modal
+    assert 'aria-labelledby="capsule-access-role-manifest-title"' in modal
+    assert 'data-kaori-dialog-close' in modal
+    assert 'access_capsule_role_manifests' in modal
+    assert 'access_capsule_role_bundle_yaml' in modal
+    assert 'data-kaori-copy-button' in modal
+    assert 'data-kaori-download-button' in modal
+    assert 'data-kaori-copy-source' in modal
+    assert 'kubectl apply -f kaori-capsule-access-clusterroles.yaml' in modal
+    assert 'No Kubernetes mutation has occurred.' in modal
+    assert 'data-kaori-dialog-open' in native_dialogs
+    assert 'data-kaori-copy-root' in clipboard
+    assert 'data-kaori-download-button' in clipboard
+    assert 'capsule_cluster_role_manifest(profile)' in service
+    assert 'yaml.safe_dump_all(' in service
+    assert 'def capsule_cluster_role_manifest(' in access
+    assert 'capsule_cluster_role_name(profile)' in reconciliation
+    assert 'create_cluster_role(' not in modal
+    assert 'ClusterRoleBinding' not in modal
