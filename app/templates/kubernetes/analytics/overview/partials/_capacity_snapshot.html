@@ -55,7 +55,7 @@
                         role='insight') }}
             {{ overview_surface.interpretation_callout('Recommended Action',
                         ('Review ' ~ recommendations ~ ' Capacity Recommendation' ~ ('' if recommendations == 1 else 's') ) if recommendations > 0 else 'Continue Monitoring Capacity Headroom',
-            'Validate requests, limits, usage peaks, and worker distribution before adding capacity or changing workload placement.' if recommendations > 0 else 'No immediate capacity recommendation is present. Recheck when workload growth, forecast risk, or scheduling pressure changes.',
+            'Validate requests, limits, usage peaks, and worker distribution before adding capacity or changing workload placement.' if recommendations > 0 else 'No capacity action needed now. Recheck as growth or scheduling risk changes.',
             icon='triangle-alert' if recommendations > 0 else 'circle-check',
             role='brand',
             tone='warning' if recommendations > 0 else 'normal'
