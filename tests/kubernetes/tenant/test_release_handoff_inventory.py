@@ -6,6 +6,7 @@ import pytest
 
 from app.kubernetes.tenant.release_handoff_inventory import (
     capsule_tenant_handoff_evidence,
+    capsule_namespace_handoff_evidence,
     handoff_fingerprint,
     native_namespace_handoff_evidence,
 )
@@ -145,3 +146,42 @@ def test_fingerprint_is_order_independent_but_detects_changed_provider_versions(
     changed = [dict(item) for item in objects]
     changed[1]['resource_version'] = '3'
     assert handoff_fingerprint(objects) != handoff_fingerprint(changed)
+
+
+def test_capsule_namespace_requires_proven_tenant_claim_and_immutable_uid():
+    record = SimpleNamespace(namespace='sandbox', provider_reference='ns-uid')
+    linked = SimpleNamespace(metadata=SimpleNamespace(
+        name='sandbox', uid='ns-uid', resource_version='14',
+        labels={'projectcapsule.dev/tenant': 'tenant-capsule'},
+    ))
+    component, blockers = capsule_namespace_handoff_evidence(
+        record=record, namespace=linked,
+        tenant_name='tenant-capsule', tenant_id='kaori-id',
+        status_namespace_names=set(),
+    )
+    assert blockers == []
+    assert component['authority'] == 'capsule'
+    assert component['uid'] == 'ns-uid'
+    assert component['resource_version'] == '14'
+
+    foreign = SimpleNamespace(metadata=SimpleNamespace(
+        name='sandbox', uid='ns-uid', resource_version='14',
+        labels={'projectcapsule.dev/tenant': 'other-capsule'},
+    ))
+    _, blockers = capsule_namespace_handoff_evidence(
+        record=record, namespace=foreign,
+        tenant_name='tenant-capsule', tenant_id='kaori-id',
+        status_namespace_names={'sandbox'},
+    )
+    assert any('no verifiable Tenant ownership' in reason for reason in blockers)
+
+    replaced = SimpleNamespace(metadata=SimpleNamespace(
+        name='sandbox', uid='new-uid', resource_version='15',
+        labels={'projectcapsule.dev/tenant': 'tenant-capsule'},
+    ))
+    with pytest.raises(ValueError, match='name/UID differs'):
+        capsule_namespace_handoff_evidence(
+            record=record, namespace=replaced,
+            tenant_name='tenant-capsule', tenant_id='kaori-id',
+            status_namespace_names=set(),
+        )
