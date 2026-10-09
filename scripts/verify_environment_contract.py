@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -328,8 +329,6 @@ def verify() -> None:
     ):
         if marker not in source:
             raise AssertionError(f'{path} is missing local-mode runtime safeguard: {marker}')
-
-    import json
 
     tasks = json.loads(read('.vscode/tasks.json'))['tasks']
     watcher = [task for task in tasks if task.get('label') == 'KAORI: Watch Tailwind CSS']
