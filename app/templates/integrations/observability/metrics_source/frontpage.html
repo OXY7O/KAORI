@@ -22,11 +22,11 @@
                 "Metrics Source is the global integration category; provider identity, adapter, query language, routing horizon, and bindings stay explicit and product-neutral.",
                 overview_metrics,
                 "Provider-Neutral Consumer Contract",
-                "Analytics and reports resolve a Metrics Source by capability, scope, readiness, role, horizon, and weight. Consumers do not branch on a specific metrics product.",
+                "Analytics and reports select Metrics Sources by capability, scope, readiness, role, horizon, and weight—not product.",
                 "Extensible Provider Registry",
-                "Provider definitions declare adapter, query language, horizon, validation mode, and presentation metadata so compatible providers need no new consumer model.",
+                "Provider definitions specify adapter, query language, horizon, validation, and UI metadata; compatible providers reuse the consumer model.",
                 "Source Platforms Remain Authoritative",
-                "The metrics platform owns collection, retention, and query execution. KAORI owns registration, validation, scoped bindings, routing, and operational correlation.") }}
+                "Metrics platforms collect, retain, and query. KAORI governs registration, validation, scoped bindings, routing, and correlation.") }}
         {% call(tab_name) integration_tabs.render("metrics-source", active_tab, coverage_stats.total, stats.total) %}
             {% if tab_name == "coverage" %}
                 {% include "integrations/partials/_coverage_card.html" %}
