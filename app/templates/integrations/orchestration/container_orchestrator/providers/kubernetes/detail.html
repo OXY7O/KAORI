@@ -18,8 +18,8 @@
                         <h1 class="{{ page_hero.title_classes() }}">{{ cluster.name }}</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">Manage connection, capabilities, runtime health, and lifecycle.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label('shield-check', readiness|replace('_', ' ') |title) }}
-                            {{ page_hero.meta_label('layers-3', (runtime_state.capability_count|string) ~ ' Validated Capabilities') }}
+                            {{ page_hero.meta_label('shield-check', readiness|replace('_', ' ') |title, value_id='kubernetes-hero-readiness') }}
+                            {{ page_hero.meta_label('layers-3', (runtime_state.capability_count|string) ~ ' Validated Capabilities', value_id='kubernetes-hero-capabilities') }}
                             {{ page_hero.meta_label('network', cluster.environment|environment_name) }}
                         </div>
                     {% endcall %}
@@ -39,7 +39,7 @@
                 primary_action_label="Review Validation" if current_user.has_permission('clusters.sync') else "Manage Connection",
                 primary_action_tab="validation" if current_user.has_permission('clusters.sync') else "configuration",
                 show_primary_action=current_user.has_permission('clusters.sync') or current_user.has_permission('integrations.manage')
-                ) }}
+                , posture_key='kubernetes') }}
             </div>
         </section>
         <section id="kubernetes-detail-tabs"
