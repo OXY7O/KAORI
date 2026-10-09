@@ -290,6 +290,8 @@ Registry reads only the latest committed observation on normal requests.
 A preflight result alone remains **handoff review required** with
 `release_execution_available=false`: it is evidence, not a Release operation.
 
+The canonical Capsule Discovery attachment now re-reads Capsule Tenant CR and the selected Namespace twice, checks immutable Tenant/Namespace UID and resourceVersion against the submitted Discovery snapshot, and rejects mismatched Capsule ownerReference generation UIDs (including missing owner UIDs). The Registry entry point proposed separately in Draft PR #1013 must reuse this canonical service rather than create a second attachment mutation path; both remain unadmitted pending combined tests.
+
 ### Guarded Released lifecycle and Re-adopt generation (#991)
 
 `Released` is a **separate terminal governance state** for Tenant and Namespace

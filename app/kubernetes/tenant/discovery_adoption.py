@@ -13,7 +13,13 @@ from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_a
 from app.kubernetes.tenant.allocation_cutover import reconcile_adopted_native_allocation
 from app.kubernetes.tenant.allocation_observation import observe_native_namespace_allocation
 from app.kubernetes.tenant.capacity_governance import enforce_existing_namespace_allocation_preflight
-from app.kubernetes.tenant.capsule_allocation_observation import observe_capsule_tenant_allocation
+from app.kubernetes.tenant.capsule_allocation_observation import (
+    _capsule_status_namespace_names,
+    observe_capsule_tenant_allocation,
+)
+from app.kubernetes.tenant.capsule_namespace_attachment_authority import (
+    validate_capsule_namespace_attachment,
+)
 from app.kubernetes.tenant.capsule_tenant import qualify_capsule_tenant_adoption
 from app.kubernetes.tenant.discovery_service import (
     _adoption_environment,
@@ -678,6 +684,42 @@ def attach_discovered_capsule_namespace_committed(
     ).strip():
         raise ValueError('Capsule attachment requires fresh Namespace UID/resourceVersion evidence.')
 
+    # Provider listing/candidate selection is not a final authority proof.
+    # Independently re-read the exact Namespace object and its Capsule CR,
+    # including ownerReferences (and owner UID), before any KAORI DB commit.
+    observed_namespace = client.core_api().read_namespace(
+        namespace, _request_timeout=5
+    )
+    proof = validate_capsule_namespace_attachment(
+        tenant=tenant, cluster_id=cluster_id, capsule_item=tenant_cr,
+        namespace=observed_namespace,
+        expected_namespace_uid=str(source['provider_uid']).strip(),
+        status_namespace_names=_capsule_status_namespace_names(tenant_cr),
+    )
+    if (
+        proof['namespace'] != namespace
+        or proof['namespace_uid'] != selected['uid']
+        or proof['namespace_resource_version'] != selected['resource_version']
+    ):
+        raise ValueError('Capsule Namespace changed after Discovery review.')
+
+    _, verified_tenant_cr = _read_capsule_tenant(client, capsule_name)
+    verified_metadata = verified_tenant_cr.get('metadata') or {}
+    if (
+        str(verified_metadata.get('uid') or '') != proof['capsule_tenant_uid']
+        or str(verified_metadata.get('resourceVersion') or '')
+        != proof['capsule_tenant_resource_version']
+    ):
+        raise ValueError('Capsule Tenant CR changed during attachment; repeat Discovery.')
+    verified_namespace = client.core_api().read_namespace(namespace, _request_timeout=5)
+    verified_namespace_meta = getattr(verified_namespace, 'metadata', None)
+    if (
+        str(getattr(verified_namespace_meta, 'uid', '') or '') != proof['namespace_uid']
+        or str(getattr(verified_namespace_meta, 'resource_version', '') or '')
+        != proof['namespace_resource_version']
+    ):
+        raise ValueError('Capsule Namespace changed during attachment; repeat Discovery.')
+
     context = _AdoptionContext(
         cluster=cluster, client=client, provider_key='capsule',
         resource_name=namespace, environment_name=environment.environment,
@@ -698,6 +740,7 @@ def attach_discovered_capsule_namespace_committed(
             'environment': environment.environment,
             'capsule_tenant': capsule_name,
             'capsule_uid': expected_tenant_uid,
+            'capsule_authority': proof,
             'provider_uid': selected['uid'],
             'provider_resource_version': selected['resource_version'],
             'source': 'governed_capsule_existing_tenant_attachment',
