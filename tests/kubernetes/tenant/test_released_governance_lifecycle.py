@@ -25,6 +25,7 @@ def _namespace(*, allocation: bool = False, status: str = 'ready'):
         ownership_status='adopted',
         provisioning_status=status,
         resource_profile_id=1 if allocation else None,
+        provisioning_evidence_json={'provider_mutation_performed': False},
     )
 
 
@@ -33,6 +34,11 @@ def test_release_blocks_adoption_with_provider_mutation_or_unproven_handoff():
     assert _release_blockers(_tenant(mutated=True), [_namespace()], counts=counts)
     assert _release_blockers(_tenant(mutated=None), [_namespace()], counts=counts)
     assert _release_blockers(_tenant(mutated=False), [_namespace(allocation=True)], counts=counts)
+    record = _namespace()
+    record.provisioning_evidence_json = {'provider_mutation_performed': True}
+    assert _release_blockers(_tenant(mutated=False), [record], counts=counts)
+    record.provisioning_evidence_json = {}
+    assert _release_blockers(_tenant(mutated=False), [record], counts=counts)
     assert _release_blockers(_tenant(mutated=False), [_namespace(status='failed')], counts=counts)
     assert _release_blockers(_tenant(mutated=False), [_namespace()], counts=counts) == []
 
