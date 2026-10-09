@@ -465,6 +465,20 @@ def test_tenant_access_grant_links_namespace_creation_and_keeps_guidance_neutral
     assert 'bg-status-info-soft' not in workspace
 
 
+def test_access_grant_and_boundaries_have_one_aligned_responsive_footer_contract() -> None:
+    workspace = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
+
+    assert "grant_footer_classes = 'grid min-h-[4.5rem]" in workspace
+    assert 'sm:grid-cols-[minmax(0,1fr)_auto]' in workspace
+    assert workspace.count('<footer class="{{ grant_footer_classes }}">') == 2
+    assert 'Effective access requires successful provider reconciliation.' in workspace
+    assert 'Environment/Tenant may stay Pending until namespaces exist.' in workspace
+    assert 'action_button.classes(\'primary\') }} justify-self-end' in workspace
+    assert 'action_button.classes(\'secondary\') }} justify-self-end' in workspace
+    assert 'flex justify-end rounded-b-xl' not in workspace
+    assert 'bg-surface-hover px-4 py-3' not in workspace
+
+
 def test_namespace_access_security_boundary_matches_peer_surface() -> None:
     workspace = read('app/templates/kubernetes/tenant/partials/_tenant_namespace_access_workspace.html')
 
