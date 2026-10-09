@@ -76,11 +76,13 @@ inline forms, clipped popovers and inconsistent row heights.
 
 The dialog preserves the exact Tenant/cluster/provider/generation identity
 in a compact header with lifecycle badge. A three-metric summary strip shows
-Namespace, Environment and Lifecycle counts/state. On desktop the modal uses
-a responsive **2:1 management grid**: Release Governance and Lifecycle Actions
-occupy the primary column, while Capsule Namespace Attachment and Provider
-Authority occupy the supporting column. The smaller viewport uses a stacked
-layout with Namespace Attachment first; no fixed-width horizontal scrolling.
+Namespace, Environment and Lifecycle counts/state. All management cards
+use **one full-width vertical flow** on desktop and smaller viewports, in this
+order: Release Governance, eligible Capsule Namespace Attachment, Provider
+Authority and Lifecycle Actions. No split content sidebar or reduced-width
+management card is used. Only compact internal field groups may use responsive
+columns (Capsule attachment inputs and provider facts), while their parent
+cards span the available dialog width without horizontal overflow.
 
 Release Review, Handoff Inventory and Governed Handoff share one action group
 with generous gaps and expand within the modal rather than occupying separate
