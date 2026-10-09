@@ -41,6 +41,25 @@ def test_tenant_is_a_kubernetes_sidebar_capability_under_v21() -> None:
     assert 'data-kaori-sidebar-capability="{{ child[\'key\'] }}"' in sidebar
 
 
+
+def test_tenant_generated_credential_material_preserves_tenants_navigation_and_breadcrumb() -> None:
+    workspace_navigation = _read('app/common/workspace_navigation.py')
+    breadcrumb_source = _read('app/common/navigation.py')
+    sidebar_tenant = _read('app/templates/components/navigation/tenant_menu.html')
+    route = _read('app/kubernetes/tenant/routes_credentials.py')
+    material = _read('app/templates/kubernetes/tenant/credential_material.html')
+
+    assert "'tenant.generate_credential_material_route': 'tenants'" in workspace_navigation
+    assert "'tenant.generate_credential_material_route': 'Access Material'" in breadcrumb_source
+    assert "request.endpoint in ['tenant.tenants', 'tenant.generate_credential_material_route']" in sidebar_tenant
+    assert "def generate_credential_material_route(credential_id: int):" in route
+    assert "tenant_page='tenants'" in route
+    assert "data-kaori-hero-profile=\"transactional-admin\"" in material
+    assert "page_hero.shell_classes()" in material
+    assert "{% block dashboard_content %}" in material
+    assert "{% block tenant_content %}" not in material
+
+
 def test_tenant_routes_own_only_five_primary_destinations() -> None:
     routes = (ROOT / 'app/kubernetes/tenant/routes.py').read_text(encoding='utf-8')
 
