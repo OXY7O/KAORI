@@ -182,3 +182,125 @@
         </div>
     {% endif %}
 </section>
+
+<section class="mt-5 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
+         aria-labelledby="external-native-access-heading" data-external-native-access-inventory>
+    <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-end sm:justify-between">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                  aria-hidden="true">
+                <i data-lucide="shield-search" class="h-5 w-5"></i>
+            </span>
+            <div>
+                <h3 id="external-native-access-heading" class="text-base font-semibold text-content-primary">
+                    Native Namespace RBAC Inventory
+                </h3>
+                <p class="mt-1 max-w-2xl text-xs leading-5 text-content-secondary">
+                    Inspect existing Namespace RoleBindings without importing identities or changing Kubernetes RBAC.
+                    Evidence is committed only when you explicitly inspect it.
+                </p>
+            </div>
+        </div>
+        {% if can_manage and external_native_tenants %}
+            <form method="post" action="{{ url_for('tenant.observe_native_external_access_route') }}"
+                  class="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-end">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <label class="min-w-0 text-xs font-medium text-content-muted">
+                    Native Tenant
+                    <select name="tenant_id" required
+                            class="mt-1 block h-9 w-full min-w-40 rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs text-content-primary sm:w-auto">
+                        {% for tenant in external_native_tenants %}
+                            <option value="{{ tenant.id }}">{{ tenant.name }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <button type="submit" class="{{ action_button.classes('secondary') }} whitespace-nowrap">
+                    <i data-lucide="scan-search" class="h-4 w-4" aria-hidden="true"></i>
+                    Inspect Native RBAC
+                </button>
+            </form>
+        {% endif %}
+    </header>
+    <div class="space-y-3 px-5 py-4">
+        {% if recent_external_native_access %}
+            {% for event in recent_external_native_access %}
+                {% set evidence = event.metadata_json or {} %}
+                <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-3.5">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold text-content-primary">
+                                Native Tenant · {{ evidence.tenant_id }}
+                            </p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">
+                                {{ evidence.namespaces|length }} Namespace(s)
+                                · {{ evidence.external_count }} external bindings
+                                · {{ evidence.kaori_correlated_count }} KAORI-correlated
+                                · {{ evidence.unverified_marker_count }} unverified markers
+                            </p>
+                        </div>
+                        {{ table_label.status_label(
+                            'Review Required' if evidence.status == 'review_required' else 'Observed',
+                            'warning' if evidence.status == 'review_required' else 'info'
+                        ) }}
+                    </div>
+                    <details class="group mt-3 border-t border-outline-subtle pt-2">
+                        <summary class="inline-flex cursor-pointer items-center gap-2 rounded-md py-1 text-xs font-medium text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                            <i data-lucide="file-search" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                            Review observed Namespace RBAC
+                        </summary>
+                        <div class="mt-3 space-y-3 text-xs text-content-secondary">
+                            {% for namespace in evidence.namespaces %}
+                                <p class="break-all">
+                                    <span class="font-semibold">{{ namespace.name }}</span>
+                                    · UID {{ namespace.uid }}
+                                    · resourceVersion {{ namespace.resource_version }}
+                                </p>
+                            {% endfor %}
+                            {% for binding in evidence.bindings %}
+                                <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
+                                    <div class="flex flex-wrap items-start justify-between gap-2">
+                                        <div class="min-w-0">
+                                            <p class="break-all font-semibold text-content-primary">
+                                                {{ binding.namespace }} / {{ binding.name }}
+                                            </p>
+                                            <p class="mt-1 break-all font-mono text-content-muted">
+                                                {{ binding.role_ref.kind }} / {{ binding.role_ref.name }}
+                                            </p>
+                                        </div>
+                                        {{ table_label.status_label(
+                                            binding.ownership|replace('_', ' ')|title,
+                                            'info' if binding.ownership == 'kaori_correlated'
+                                            else 'warning'
+                                        ) }}
+                                    </div>
+                                    {% for subject in binding.subjects %}
+                                        <p class="mt-1 break-all font-mono">
+                                            {{ subject.kind }} / {{ subject.name }}
+                                            {% if subject.namespace %}· {{ subject.namespace }}{% endif %}
+                                        </p>
+                                    {% endfor %}
+                                    <p class="mt-2 break-all text-content-muted">
+                                        UID {{ binding.uid }} · resourceVersion {{ binding.resource_version }}
+                                        {% if binding.claimed_grant_marker %}
+                                            · Unverified KAORI marker {{ binding.claimed_grant_marker }}
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            {% else %}
+                                <p class="text-content-muted">No namespaced RoleBindings observed in the governed scope.</p>
+                            {% endfor %}
+                            <p class="text-xs leading-5 text-content-muted">
+                                Labels indicate possible correlation, not provider ownership or effective permissions.
+                                External principals remain authoritative at Kubernetes/IdP.
+                            </p>
+                        </div>
+                    </details>
+                </article>
+            {% endfor %}
+        {% else %}
+            <p class="text-xs leading-5 text-content-muted">
+                No committed Native RBAC observation yet. Select a governed Native Tenant and inspect explicitly.
+            </p>
+        {% endif %}
+    </div>
+</section>
