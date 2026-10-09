@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pytest
 
 from app.kubernetes.tenant.discovery_adoption import validate_adoption_provider_identity
