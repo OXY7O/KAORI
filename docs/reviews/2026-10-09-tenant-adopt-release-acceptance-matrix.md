@@ -63,8 +63,13 @@ authoritative for native RoleBindings and authenticated principals.
    Existing Tenant uses the same preflight UID/resourceVersion binding.
    Native ownership PATCH rechecks adopted Namespace UID, requires provider
    resourceVersion, rejects foreign KAORI Tenant claims, and verifies UID
-   after mutation. Every invalid Attach must leave provider and KAORI state
-   unchanged; post-patch read-back failures must never claim success.
+   after mutation. Capsule New Tenant adoption must reject missing Namespace
+   UID/resourceVersion, duplicate correlated Namespaces and Namespace names
+   already governed by another KAORI Tenant before records/provider cutover.
+   Native Discovery must block orphaned `managed-by=kaori` or reserved
+   `kaori.io/*` allocation ownership markers until recovery review.
+   Every invalid Attach must leave provider and KAORI state unchanged;
+   post-patch read-back failures must never claim success.
 2. **Non-destructive Release:** active credentials, Access Grants, memberships,
    managed profiles, managed resources and policies must block. All active
    Namespace records require explicitly `provider_mutation_performed=false`
