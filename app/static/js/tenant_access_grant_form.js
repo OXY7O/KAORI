@@ -104,7 +104,9 @@
         let providerMessage =
             'Select a Membership to resolve provider authority. KAORI validates Tenant and scope before commit.'
         if (tenantId && providerKey === 'capsule') {
-            providerMessage = `${tenantName} uses Capsule authority. Apply performs strict live capability, ClusterRole, Namespace, and effective-access validation; unsupported provider mutation remains blocked.`
+            providerMessage =
+                `${tenantName} uses Capsule authority. Apply checks live RBAC capability, exact ClusterRole,` +
+                ' namespace ownership and effective access. Unsupported mutation remains blocked.'
         } else if (tenantId && scopeValue === 'namespace' && namespaceCount === 0) {
             providerMessage = `No governed Namespace exists in ${tenantName}. Provision a Namespace before applying Namespace-scoped access.`
         } else if (tenantId && scopeValue === 'environment' && environmentCount === 0) {
