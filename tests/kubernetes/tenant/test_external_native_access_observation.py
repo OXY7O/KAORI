@@ -106,3 +106,14 @@ def test_native_serviceaccount_identity_is_preserved_but_not_imported():
         {'kind': 'ServiceAccount', 'name': 'pipeline', 'namespace': 'jobs'}
     ]
     assert observed['ownership'] == 'external_observed'
+
+@pytest.mark.parametrize('labels', [
+    {'app.kubernetes.io/managed-by': 'kaori'},
+    {'kaori.io/access-grant': 'grant-1'},
+    {'app.kubernetes.io/managed-by': 'kaori', 'kaori.io/access-grant': 'unknown'},
+])
+def test_partial_or_conflicting_kaori_marker_is_not_foreign_import_candidate(labels):
+    observed = normalize_native_role_binding(
+        _binding(labels=labels), namespace='sandbox', grant_ids=set()
+    )
+    assert observed['ownership'] == 'kaori_marker_unverified'

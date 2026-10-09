@@ -466,6 +466,25 @@ Read-only observation requires `tenant.manage` and CSRF. Provider read
 failure, UID replacement or unbounded evidence fails closed, without
 claiming an inventory is complete.
 
+### Exact Native external Role profile equivalence (#996)
+
+Operators can explicitly review one foreign-owned Native Namespace RoleBinding
+from the latest committed (maximum 15-minute) inventory. The adapter rereads
+the Namespace UID/resourceVersion, RoleBinding UID/resourceVersion and
+subjects, resolves its namespaced Role or referenced ClusterRole, and requires
+exact canonical, versioned Access Profile permission equality. It refuses
+wildcard, named-resource, non-resource, aggregation and unsupported rules.
+A repeated RoleBinding read detects concurrent changes.
+
+An exact permission match is **not** identity verification or permission to
+create a KAORI Access Grant. Foreign subjects remain under the Kubernetes
+authenticator/IdP; effective permission and group membership still require
+authoritative confirmation. All receipts are nonsecret AuditEvents with
+\`import_authorized=false\`, \`identity_verified=false\` and
+\`effective_rbac_verified=false\`. No foreign RBAC or Membership is mutated;
+no external authority is silently taken over. Provider-declared grants must
+never be mislabeled as KAORI-owned from a partial manager/grant label.
+
 ### Native Access Drift declaration correlation (#999)
 
 After **Inspect Native RBAC** has committed a scoped, bounded namespaced
