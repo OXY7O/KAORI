@@ -42,7 +42,7 @@ def test_generated_token_and_kubeconfig_use_existing_shared_ui_ownership() -> No
     assert template.index("'Workflow Example'") < template.index('Entitlement until')
     assert template.count('resource_posture_grid.render(delivery_metrics, columns=4)') == 1
     assert template.count('data-kaori-sensitive-material') == 0
-        assert template.count('one_time_secret.material_block(') == 3
+    assert template.count('one_time_secret.material_block(') == 3
     assert template.count('material_value,') == 2
     assert template.count('material_base64,') == 1
     assert "'Human Access Token'" in template
