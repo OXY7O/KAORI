@@ -98,8 +98,8 @@ def test_tenant_tenants_surface_exposes_governed_access_and_credential_lifecycle
 
     assert 'Memberships' in template
     assert 'Access Grants' in template
-    assert 'Issue Human Access' in template
-    assert 'Issue CI/CD Deployer' in template
+    assert 'Human Access Credential' in template
+    assert 'Workload Deployment Credential' in template
     assert 'Namespace Access' in template
     assert 'service_account_name' in template
     assert 'renewal_due_at' in template
