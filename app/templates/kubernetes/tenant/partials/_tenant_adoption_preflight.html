@@ -1,6 +1,18 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/action_button.html" as action_button %}
 {% import "components/info_tip.html" as info_tip %}
+{% macro observed_allocation_labels(values, empty_message) -%}
+    {% if values %}
+        <div class="mt-2 flex flex-wrap items-center gap-1.5"
+             aria-label="Observed allocation dimensions">
+            {% for dimension in values %}
+                {{ table_label.metadata_label(dimension.label ~ ' · ' ~ dimension.value, wrap=true) }}
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="mt-1 text-xs leading-5 text-content-muted">{{ empty_message }}</p>
+    {% endif %}
+{%- endmacro %}
 {% set row = tenant_adoption_row %}
 <div id="tenant-adoption-modal-{{ row.provider_reference }}"
      data-tenant-adoption-modal
@@ -319,36 +331,30 @@
                             <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-3 px-4 py-3">
                                 <div class="min-w-0">
                                     <p class="truncate text-sm font-semibold text-content-primary">{{ row.resource_name }}</p>
-                                    {% if allocation.display_values %}
-                                        <p class="mt-1 text-xs leading-5 text-content-muted">
-                                            {% for value in allocation.display_values %}
-                                                {{ value.label }} {{ value.value }}
-                                                {% if not loop.last %} · {% endif %}
-                                            {% endfor %}
-                                        </p>
-                                    {% else %}
-                                        <p class="mt-1 text-xs text-content-muted">No supported quota dimensions observed.</p>
-                                    {% endif %}
+                                    {{ observed_allocation_labels(
+                                        allocation.display_values,
+                                        'No supported quota dimensions observed.'
+                                    ) }}
                                 </div>
-                                <span class="self-start text-xs text-content-muted">Adopted Baseline · Observed</span>
+                                <div class="flex max-w-40 flex-wrap items-start justify-end gap-1.5 self-start">
+                                    {{ table_label.status_label('Observed', 'info') }}
+                                    {{ table_label.metadata_label('Adopted Baseline', wrap=true) }}
+                                </div>
                             </div>
                         {% elif allocation.correlated_namespaces %}
                             {% for namespace in allocation.correlated_namespaces %}
                                 <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-3 border-b border-outline-subtle px-4 py-3 last:border-b-0">
                                     <div class="min-w-0">
                                         <p class="truncate text-sm font-semibold text-content-primary">{{ namespace.name }}</p>
-                                        {% if (namespace.get('allocation') or {}).get('display_values') %}
-                                            <p class="mt-1 text-xs leading-5 text-content-muted">
-                                                {% for value in (namespace.get('allocation') or {}).get('display_values', []) %}
-                                                    {{ value.label }} {{ value.value }}
-                                                    {% if not loop.last %} · {% endif %}
-                                                {% endfor %}
-                                            </p>
-                                        {% else %}
-                                            <p class="mt-1 text-xs text-content-muted">No supported namespaced quota/limit dimensions observed.</p>
-                                        {% endif %}
+                                        {{ observed_allocation_labels(
+                                            (namespace.get('allocation') or {}).get('display_values', []),
+                                            'No supported namespaced quota/limit dimensions observed.'
+                                        ) }}
                                     </div>
-                                    <span class="self-start text-xs text-content-muted">Adopted Baseline · Observed</span>
+                                    <div class="flex max-w-40 flex-wrap items-start justify-end gap-1.5 self-start">
+                                    {{ table_label.status_label('Observed', 'info') }}
+                                    {{ table_label.metadata_label('Adopted Baseline', wrap=true) }}
+                                </div>
                                 </div>
                             {% endfor %}
                         {% else %}
