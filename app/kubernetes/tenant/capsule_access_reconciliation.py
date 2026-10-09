@@ -214,12 +214,26 @@ def _update_spec(
             filtered_rules.append(rule)
     if found > 1:
         raise ValueError('Duplicate Capsule grant bindings were observed; refuse to modify.')
+    if binding is None and found == 0:
+        return deepcopy(spec)
     if binding is not None:
         for foreign in retained + [
             value for rule in filtered_rules for value in (rule.get('permissions') or {}).get('bindings', [])
         ]:
             if foreign.get('clusterRoleName') == binding['clusterRoleName']:
                 raise ValueError('Capsule ClusterRole already has another provider-owned/KAORI grant binding.')
+        if found == 1:
+            if grant.scope_type == TenantAccessScope.TENANT.value and binding in additional:
+                return deepcopy(spec)
+            if grant.scope_type != TenantAccessScope.TENANT.value:
+                selector = {'matchExpressions': [{'key': _NAME_LABEL, 'operator': 'In', 'values': names}]}
+                if any(
+                    rule.get('namespaceSelector') == selector
+                    and (rule.get('permissions') or {}).get('bindings') == [binding]
+                    and set(rule) == {'namespaceSelector', 'permissions'}
+                    for rule in rules
+                ):
+                    return deepcopy(spec)
         if grant.scope_type == TenantAccessScope.TENANT.value:
             retained.append(binding)
         else:
