@@ -1,8 +1,13 @@
 # Running KAORI
 
-This document is the canonical operator/developer entry point for starting KAORI. Use the VS Code Dev Container for local development and the immutable release image for production.
+This document is the canonical entry point for three supported Docker Compose runtime modes:
+1. **Local development (Dev Container):** root `.env` + `compose.yml` + `.devcontainer/compose.devcontainer.yml` (`kaori-dev` project, bind-mounted source and VS Code debugging).
+2. **Local standalone (no Dev Container):** `example/kaori/.env` + `example/kaori/compose.yml` (`kaori-laptop` project, admitted immutable RC image rather than live local source).
+3. **Governed server (UAT/production):** `/etc/kaori/{app,secrets,deploy}.env` + generated `/var/lib/kaori/deploy-state/release.env`, merged `compose.production.yml` + `deploy/server/compose.server.yml` (immutable release and backup/migrate/verify flow).
 
-## Development quick start
+The files and Docker volumes for these modes are intentionally separate. A root development `.env` must never become the source of production credentials.
+
+## Mode 1 — Local development in VS Code Dev Container
 
 ### 1. Prepare the environment
 
@@ -53,7 +58,7 @@ On a fresh or migration-behind development database, the workspace remains usabl
 
 ### 4. Build or watch frontend assets
 
-For active UI development:
+For active UI development, VS Code runs the `KAORI: Watch Tailwind CSS` background task automatically on folder open after the Dev Container lifecycle completes. Trust the workspace and choose **Allow Automatic Tasks** when prompted. If auto tasks are disabled, use **Terminal → Run Task → KAORI: Watch Tailwind CSS**, or run manually:
 
 ```bash
 npm run watch-css
@@ -102,44 +107,41 @@ that `active_queues` shows `registry-security@...` consuming the configured
 
 If a worker definition or Python dependency changed, rebuild the Dev Container instead of manually drifting an individual service.
 
-## Production startup
+## Mode 3 — Local standalone Docker Compose (no Dev Container)
 
-Production must use an immutable versioned image and `.env.production` derived from `.env.production.example`.
-
-```bash
-cp .env.production.example .env.production
-```
-
-Set real secrets and infrastructure endpoints, then ensure `KAORI_IMAGE` and `APP_VERSION` identify the same release.
-
-### 1. Validate environment configuration
+Use [`example/kaori/README.md`](../example/kaori/README.md) for an isolated laptop deployment of an **already admitted RC image**. This does not mount local source and does not run Flask/Tailwind development watchers.
 
 ```bash
-docker compose -f compose.production.yml run --rm validate
+cd example/kaori
+cp .env.example .env
+# Replace the immutable KAORI_IMAGE and the matching APP_VERSION, APP_BUILD_SHA,
+# APP_BUILD_DATE with exact admitted release evidence. Use disposable local credentials.
+bash ./run.sh start
+bash ./run.sh status
 ```
 
-### 2. Apply database migrations
+The service port is published only on `127.0.0.1:5000` by default; PostgreSQL and Redis remain Docker-network private. The compact worker consumes the canonical queues (including `registry-security`). For Windows PowerShell commands, see the standalone example README. The `reset` command **deletes standalone data volumes** and is never part of routine startup.
 
-Back up PostgreSQL first, then run:
+## Mode 2 — Governed server Docker Compose (UAT and production)
+
+The deprecated `.env.production.example` is **not** an active environment template and must not be copied into a runtime file. Production uses three independent, host-owned configuration authorities plus generated release identity:
+
+```text
+deploy/env/app.env.example      -> /etc/kaori/app.env
+deploy/env/secrets.env.example  -> /etc/kaori/secrets.env  (mode 0600)
+deploy/env/deploy.env.example   -> /etc/kaori/deploy.env
+governed release pipeline      -> /var/lib/kaori/deploy-state/release.env
+```
+
+The server deploy adapter merges `compose.production.yml` and `deploy/server/compose.server.yml`, injecting the immutable image digest and exact release identity. The governed GitHub deployment workflow owns **pre-migration backup → environment validation → migration → all application workers/Beat → verification**. Do not run `docker compose -f compose.production.yml up` alone: it bypasses the server overlay and split environment contract.
+
+After deployment, inspect the existing server runtime through its supported verification entry point:
 
 ```bash
-docker compose -f compose.production.yml run --rm migrate
+bash deploy/server/verify.sh
 ```
 
-### 3. Start the release stack
-
-```bash
-docker compose -f compose.production.yml up -d
-```
-
-### 4. Verify process and readiness state
-
-```bash
-docker compose -f compose.production.yml ps
-docker compose -f compose.production.yml logs --tail=100 web
-```
-
-The web container health check uses `/health/ready`. Also verify queue ownership for inventory, Artifact Registry security (`registry-security`), maintenance, runtime, validation, analytics, reporting, forecasting, resolver execution/maintenance, and Beat before approving production readiness.
+See [`deploy/server/README.md`](../deploy/server/README.md) for bootstrap, delivery, verification, and rollback. Public HTTPS reverse-proxy publication is a separate operator boundary.
 
 ## Release verification
 
