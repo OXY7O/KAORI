@@ -98,6 +98,7 @@ def test_bootstrap_only_creates_missing_roles_after_server_dry_run(monkeypatch):
     assert result['status'] == 'ready'
     assert len(result['created']) == 3
     assert len(api.calls) == 6
+    assert result['created'] == ['kaori-tenant-operator-v1', 'kaori-tenant-tenant-admin-v1', 'kaori-tenant-deployer-v1']
     assert all(value == 'All' for _, value in api.calls[:3])
     assert all(value is None for _, value in api.calls[3:])
     assert bootstrap.capsule_cluster_role_name(viewer) not in result['created']
@@ -161,4 +162,7 @@ def test_created_role_has_only_canonical_permissions_and_never_clusterrolebindin
         assert body.metadata.name == bootstrap.capsule_cluster_role_name(profile)
         assert body.metadata.labels['app.kubernetes.io/managed-by'] == 'kaori'
         assert len(body.rules) == len(profile.rules)
-        assert all(rule.verbs == list(expected.verbs) for rule, expected in zip(body.rules, profile.rules, strict=True))
+        assert all(
+            rule.verbs == list(expected.verbs)
+            for rule, expected in zip(body.rules, profile.rules, strict=True)
+        )
