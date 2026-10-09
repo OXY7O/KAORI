@@ -101,7 +101,7 @@ def _resource_evidence(
         'signal_quality_reason': (
             forecast_result['signal_quality_reason']
             if has_data
-            else 'Forecast requires at least two daily samples and a non-zero capacity baseline.'
+            else 'Forecast needs two daily samples and non-zero capacity.'
         ),
     }
 
