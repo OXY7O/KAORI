@@ -126,7 +126,13 @@ modes when eligible existing Tenant Environments are available:
   Tenant Access Grants.
 
 The existing Adoption modal controller owns the destination change behavior
-and reinitializes it after HTMX preflight replacement. Header language,
+and reinitializes it after HTMX preflight replacement. The Discovery Review
+trigger targets the HTMX-owned `#tenant-adoption-preflight-slot`, and the
+controller resolves the actual swap target from the HTMX event detail or DOM
+event target. It opens the returned normal **or** provider-revalidation-error
+modal after swap, with settle/request fallbacks so a successful preflight
+cannot silently remain hidden. Failed preflight loads surface a visible
+accessible alert in the slot; the UI never submits Adoption automatically. Header language,
 readiness summary, human confirmation and submit label reflect the active
 mode. Create-specific fields are disabled for the attachment request so they
 are neither validated nor posted, and are re-enabled when returning to Create.
