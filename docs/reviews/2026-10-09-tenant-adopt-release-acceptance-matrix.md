@@ -57,8 +57,11 @@ authoritative for native RoleBindings and authenticated principals.
    Namespace UID, terminating resource, stale resourceVersion, wrong
    ownerReference generation, duplicate governance owner, Released-history
    conflict. Capsule Discovery and Adoption Preflight use the same immutable
-   Capsule owner UID check as final Attach Submit. Every invalid attach must
-   leave provider and KAORI state unchanged.
+   Capsule owner UID check as final Attach Submit. New Native/Capsule Tenant
+   adoption submits the exact UID/resourceVersion from its explicit Preflight,
+   rejecting replaced objects and changed versions; Native ownership PATCH
+   rechecks the adopted Namespace UID and verifies UID after provider mutation.
+   Every invalid attach must leave provider and KAORI state unchanged.
 2. **Non-destructive Release:** active credentials, Access Grants, memberships,
    managed profiles, managed resources and policies must block. All active
    Namespace records require explicitly `provider_mutation_performed=false`
