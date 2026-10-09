@@ -43,7 +43,14 @@ def test_native_modal_is_outside_table_overflow_and_has_accessible_controls() ->
     assert "aria-labelledby=" in source
     assert "aria-describedby=" in source
     assert modal.count("data-kaori-dialog-close") >= 2
-    assert "Committed Lifecycle" in modal
+    assert "grid grid-cols-3 divide-x" in modal
+    assert "lg:grid-cols-3" in modal
+    assert "order-2 min-w-0 space-y-5 lg:order-1 lg:col-span-2" in modal
+    assert "order-1 min-w-0 space-y-5 lg:order-2 lg:col-span-1" in modal
+    assert "Namespaces" in modal
+    assert "Environments" in modal
+    assert "Lifecycle" in modal
+    assert "Provider Authority" in modal
     assert "Namespace Attachment" in modal
     assert "Release Governance" in modal
     assert "Lifecycle Actions" in modal
@@ -78,14 +85,39 @@ def test_blocking_evidence_is_visible_in_dialog_not_hover_only() -> None:
     modal = source.split('data-tenant-registry-actions-dialog', 1)[1]
 
     assert "Committed Release readiness" in modal
+    assert "Release review actions" in modal
+    assert "Latest Release Review" in modal
     assert "Release blockers" in modal
+    assert "bg-status-warning-soft p-4" in modal
+    assert "list-disc space-y-2 pl-5 text-xs leading-5" in modal
     assert "row.release_preflight.blockers" in modal
     assert "No current dependency blockers, but Release execution is not yet admitted." in modal
     assert "Decommission blockers" in modal
     assert "decommission.blockers" in modal
+    assert modal.count("table_label.status_label('Blocked', 'warning')") == 1
+    assert "table_label.special_label('Blocked'" not in modal
+    assert "mt-4 rounded-xl border border-status-warning-border" in modal
     assert "External Reference Unverified" in modal
     assert "data-release-handoff-approval" in modal
     assert "info_tip.render(" not in modal
     # Shared title-level lifecycle glossary is still allowed.
     assert "tenant-registry-status-tip" in source
     assert source.count("data-tenant-registry-actions-dialog") == 1
+
+
+def test_disclosure_actions_remain_grouped_without_cramped_full_width_rows() -> None:
+    modal = _template().split('data-tenant-registry-actions-dialog', 1)[1]
+    action_start = modal.index('aria-label="Release review actions"')
+    action_end = modal.index('aria-label="Committed Release readiness"')
+    action_group = modal[action_start:action_end]
+
+    assert 'flex flex-wrap items-start gap-2' in modal
+    assert 'review_tenant_release_route' in action_group
+    assert 'Handoff inventory' in action_group
+    assert 'Governed Handoff' in action_group
+    assert 'open:w-full' in action_group
+    assert 'max-h-72' in action_group
+    assert 'data-release-handoff-approval' in action_group
+    # Decommission and destructive confirmation are distinct from the Release toolbar.
+    assert 'decommission_tenant_route' not in action_group
+    assert 'data-destructive-modal-open' not in action_group
