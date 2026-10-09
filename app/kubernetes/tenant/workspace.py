@@ -109,7 +109,7 @@ def _tenant_collection_snapshot(sync_state: dict[str, Any]) -> dict[str, Any]:
         exceptions_tone = 'normal' if exception_count == 0 else 'warning'
     else:
         coverage_label = '0 Namespaces'
-        coverage_supporting = 'No governed Tenant namespaces were present in the snapshot.'
+        coverage_supporting = 'No governed Tenant namespaces in this snapshot.'
         coverage_tone = 'normal'
         exception_label = 'No Exceptions' if exception_count == 0 else f'{exception_count} Exceptions'
         exceptions_tone = 'normal' if exception_count == 0 else 'warning'
@@ -130,7 +130,7 @@ def _tenant_collection_snapshot(sync_state: dict[str, Any]) -> dict[str, Any]:
         'source_label': str(snapshot.get('source') or 'KAORI Tenant State + committed Kubernetes Inventory'),
         'source_cutoff_label': present_user_datetime(
             snapshot.get('source_inventory_cutoff'),
-            empty='No committed Kubernetes inventory cutoff',
+            empty='No committed inventory cutoff',
         ),
         'automatic_enabled': sync_state['automatic_enabled'],
         'automatic_label': 'Enabled' if sync_state['automatic_enabled'] else 'Manual Only',
