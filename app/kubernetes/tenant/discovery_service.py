@@ -371,7 +371,10 @@ def get_tenant_discovery_context(
                         else (
                             'Capsule Tenant is terminating and cannot be adopted.'
                             if status == 'Terminating'
-                            else ownership_reason or 'Candidate for governed Capsule adoption preflight; provider authority remains Capsule.'
+                            else (
+                                ownership_reason
+                                or 'Candidate for governed Capsule adoption preflight; provider authority remains Capsule.'
+                            )
                         )
                     ),
                     'provider_reference': str(metadata.get('uid') or name),
@@ -637,7 +640,10 @@ def get_tenant_adoption_preflight_context(
             if tenant is not None
             else 'Capsule Tenant is terminating and cannot be adopted.'
             if provider_status == 'Terminating'
-            else ownership_reason or 'Candidate for governed Capsule adoption preflight; provider authority remains Capsule.'
+            else (
+                ownership_reason
+                or 'Candidate for governed Capsule adoption preflight; provider authority remains Capsule.'
+            )
         )
         if management_status != 'Discovered':
             raise ValueError(eligibility)
