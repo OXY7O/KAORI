@@ -98,7 +98,11 @@ def _render_capsule_rbac_panel(snapshot: dict | None, *, can_manage: bool = True
         capsule_rbac_bootstrap=snapshot,
         cluster=SimpleNamespace(id='cluster-a', name='Kubernetes X300'),
         current_user=SimpleNamespace(has_permission=lambda permission: permission in permissions),
-        url_for=lambda endpoint, **kwargs: f'/test/{endpoint}',
+        url_for=lambda endpoint, **kwargs: (
+            f"/integrations/kubernetes/{kwargs['cluster_id']}/capsule-rbac/bootstrap"
+            if endpoint == 'integrations.kubernetes_capsule_rbac_bootstrap'
+            else f'/test/{endpoint}'
+        ),
         csrf_token=lambda: 'test-csrf',
     )
 
@@ -129,9 +133,14 @@ def _snapshot(status: str, roles: list[dict]) -> dict:
 
 
 def test_capsule_rbac_ready_state_uses_completion_action_not_mutation_approval() -> None:
-    html = _render_capsule_rbac_panel(_snapshot('ready', [_role('ready')]))
+    ready_roles = [
+        _role('ready', name=f'kaori-tenant-{profile}-v1')
+        for profile in ('viewer', 'operator', 'tenant-admin', 'deployer')
+    ]
+    html = _render_capsule_rbac_panel(_snapshot('ready', ready_roles))
 
     assert 'Cluster RBAC prerequisites ready' in html
+    assert '4 versioned roles' in html
     assert 'All canonical ClusterRoles match. No bootstrap is required.' in html
     assert 'Review Access Grants' in html
     assert 'Check RBAC' in html
