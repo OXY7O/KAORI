@@ -243,6 +243,18 @@
                             'warning' if evidence.status == 'review_required' else 'info'
                         ) }}
                     </div>
+                    {% if can_manage %}
+                        <form method="post"
+                              action="{{ url_for('tenant.analyze_native_access_drift_route') }}"
+                              class="mt-3">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="tenant_id" value="{{ evidence.tenant_id }}">
+                            <button type="submit" class="{{ action_button.classes('secondary') }} !h-8 !px-3 !text-xs">
+                                <i data-lucide="scan-eye" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                Analyze Native Access Drift
+                            </button>
+                        </form>
+                    {% endif %}
                     <details class="group mt-3 border-t border-outline-subtle pt-2">
                         <summary class="inline-flex cursor-pointer items-center gap-2 rounded-md py-1 text-xs font-medium text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                             <i data-lucide="file-search" class="h-3.5 w-3.5" aria-hidden="true"></i>
@@ -304,3 +316,52 @@
         {% endif %}
     </div>
 </section>
+
+{% if recent_native_access_drift %}
+<section class="mt-4 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
+         aria-labelledby="native-access-drift-heading">
+    <header class="border-b border-outline-subtle px-5 py-4">
+        <h3 id="native-access-drift-heading" class="text-sm font-semibold text-content-primary">
+            Native Access Drift · committed findings
+        </h3>
+        <p class="mt-1 text-xs leading-5 text-content-muted">
+            Correlation of observed RoleBinding declarations only; not effective RBAC verification.
+        </p>
+    </header>
+    <div class="space-y-3 px-5 py-4">
+        {% for event in recent_native_access_drift %}
+            {% set evidence = event.metadata_json or {} %}
+            <details class="group rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                <summary class="flex cursor-pointer flex-wrap items-center justify-between gap-2 rounded-md text-xs font-semibold text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                    <span>{{ evidence.finding_count }} finding(s) · Tenant {{ evidence.tenant_id }}</span>
+                    {{ table_label.status_label(
+                        evidence.severity|title,
+                        'critical' if evidence.severity == 'critical'
+                        else 'warning' if evidence.severity == 'warning' else 'info'
+                    ) }}
+                </summary>
+                <div class="mt-2 space-y-2 border-t border-outline-subtle pt-3">
+                    {% for finding in evidence.findings %}
+                        <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
+                            <p class="text-xs font-semibold text-content-primary">
+                                {{ finding.code|replace('_', ' ')|title }}
+                            </p>
+                            <p class="mt-1 break-all text-xs leading-5 text-content-secondary">
+                                {{ finding.subject }} · {{ finding.action }}
+                            </p>
+                        </div>
+                    {% else %}
+                        <p class="text-xs leading-5 text-content-muted">
+                            No declaration mismatch was detected in this committed observation.
+                        </p>
+                    {% endfor %}
+                    <p class="text-xs leading-5 text-content-muted">
+                        No automatic remediation was performed. Inspect effective namespaced
+                        Kubernetes Role/RoleBinding permissions before any governed action.
+                    </p>
+                </div>
+            </details>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
