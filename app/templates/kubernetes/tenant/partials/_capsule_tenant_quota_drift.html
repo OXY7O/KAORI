@@ -1,13 +1,14 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry_ui %}
-<section class="{{ table_ui.block_classes() }}"
+<section id="capsule-tenant-quota-drift"
+         class="{{ table_ui.block_classes() }}"
          aria-label="Capsule Tenant Quota Drift">
     {{ table_ui.inventory_block_header('shield-alert',
         'Capsule Tenant Quota Drift',
         'Tenant.spec.resourceQuotas remains Capsule-authoritative. Sync records divergence only; recovery requires an explicit human decision.',
-        none,
-        none) }}
+        'capsule-tenant-quota-drift-loading',
+        'Refreshing Capsule Tenant Quota Drift') }}
     <div class="overflow-x-auto">
         <table class="{{ table_ui.table_classes('min-w-[1050px]') }}">
             <caption class="sr-only">Capsule Tenant resource quota drift and reconciliation actions.</caption>
@@ -118,10 +119,9 @@
             </tbody>
         </table>
     </div>
-    {% if capsule_tenant_quota_drift_pagination.total_items > 0 %}
         {{ registry_ui.footer('tenant.operations',
                 'capsule-tenant-quota-drift',
-                none,
+                'capsule-tenant-quota-drift-loading',
                 capsule_tenant_quota_drift_pagination,
                 {'tab': 'drift-reconcile'},
                 capsule_tenant_quota_drift_pagination.allowed_per_page,
@@ -130,5 +130,4 @@
                 control_name='capsule-tenant-quota-drift',
                 page_param='ops_capsule_tenant_quota_page',
                 per_page_param='ops_capsule_tenant_quota_per_page') }}
-    {% endif %}
 </section>
