@@ -1,5 +1,6 @@
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "components/content_tabs.html" as content_tabs %}
+{% import "kubernetes/analytics/components/_analysis_workspace.html" as analytics_workspace %}
 {% import "kubernetes/analytics/components/_ranked_evidence_panel.html" as ranked_evidence %}
 {% import "components/recommendation_pager.html" as recommendation_pager %}
 {% import "components/table.html" as table_ui %}
@@ -14,15 +15,19 @@
 {% if render_dependency_blocker|default(false) and dependency_blocker %}
     {% include "components/dependencies/_blocker.html" %}
 {% elif not dependency_blocker %}
-    <section class="space-y-5"
-             data-top-consumers-tabset
-             data-analytics-tabset
-             data-analytics-tabset-id="top-consumers-content"
-             data-default-tab="{{ active_tab }}">
+    <div data-top-consumers-tabset>
         {% set consumer_tabs = [('rankings', 'Consumer Rankings', 'bar-chart-3'), ('records', 'Consumer Records', 'list-filter'), ('recommendations', 'Recommendations', 'list-checks')] %}
-        <section class="{{ analysis_surface.snapshot_shell_classes() }}">
-            {{ content_tabs.render_buttons('top-consumers-content', consumer_tabs, 'Top Consumers Workspace', embedded=true, data_namespace='analytics', active_key=active_tab, show_badges=false) }}
-        </section>
+        {% call analytics_workspace.tabbed(
+            'top-consumers-content',
+            consumer_tabs,
+            'Top Consumers Content',
+            'Top Consumers Workspace',
+            'Compare ranked resource consumers, inspect committed records, and review prioritized actions.',
+            'users',
+            active_tab,
+            ['rankings', 'records', 'recommendations'],
+            detached=true
+        ) %}
         <div id="top-consumers-content-panel-rankings"
              role="tabpanel"
              data-analytics-tab-panel="rankings"
@@ -170,5 +175,6 @@
                 {% include 'components/states/_empty_state.html' %}
             {% endif %}
         </div>
-    </section>
+        {% endcall %}
+    </div>
 {% endif %}
