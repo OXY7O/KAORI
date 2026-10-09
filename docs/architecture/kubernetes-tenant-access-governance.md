@@ -287,15 +287,32 @@ ownership-state transition. The action checks:
 
 It commits blocked/handoff-review evidence as an `AuditEvent`, and Tenant
 Registry reads only the latest committed observation on normal requests.
-Even a zero-blocker result remains **handoff review required** with
-`release_execution_available=false`. This prevents a database-only
-'Released' flag from hiding active provider resources.
+A preflight result alone remains **handoff review required** with
+`release_execution_available=false`: it is evidence, not a Release operation.
 
-A dedicated follow-on lifecycle/identity migration child (#991) must be
-accepted before release execution is exposed. It must preserve foreign
-provider-owned objects, clean only KAORI-owned access/controls with read-back
-proof, mark the canonical Tenant and Namespace release boundary consistently
-across all readers/sync, and permit Re-adopt only with a new audit generation.
+### Guarded Released lifecycle and Re-adopt generation (#991)
+
+`Released` is a **separate terminal governance state** for Tenant and Namespace
+histories; it never means that Kubernetes resources were deleted. An explicit,
+operator-approved Release action re-reads provider identity and dependencies,
+compares UID/resourceVersion to the last eligible preflight (maximum 15 minutes
+old), and commits Released audit and terminal records only when evidence
+remains identical. Namespace and Capsule Tenant resources are preserved.
+
+**Fail-closed boundary:** previous adoption with KAORI-owned provider mutation,
+an attached Resource Profile or any outstanding grant, credential, Group or
+managed policy cannot use the observation-only Release path. Those resources
+require separately admitted external owner handoff and provider read-back.
+That expanded lifecycle remains open under #991; no database-only unmanage
+is permitted.
+
+Released histories remain auditable but no longer appear as active Tenant or
+Namespace ownership. Re-adoption creates a new generation and correlates to
+the prior Released generation only when the live immutable provider UID still
+matches; name reuse after provider recreation fails closed. Decommission
+remains a separate destructive lifecycle. Downgrade is refused while Released
+records exist. Native/Capsule live UAT and provider ownership handoff gates
+remain pending before formal admission.
 
 ### Governed Access Remediation Decisions (#985)
 
