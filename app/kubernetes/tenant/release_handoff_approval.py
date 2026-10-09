@@ -132,6 +132,13 @@ def prepare_release_handoff_plan_committed(
         tenant_id=tenant_id, actor_user_id=actor_user_id
     )
     _complete_provider_snapshot(snapshot)
+    # Live review commits its AuditEvent, so take the row lock *after* review.
+    locked = Tenant.query.filter_by(id=tenant_id).with_for_update().one_or_none()
+    if (
+        locked is None or locked.lifecycle_status != TenantLifecycleStatus.READY.value
+        or locked.ownership_status != 'adopted'
+    ):
+        raise ValueError('Tenant authority changed while preparing handoff.')
     planned_at = datetime.now(UTC).isoformat()
     contract = {
         'tenant_id': tenant_id,
@@ -185,16 +192,24 @@ def approve_release_handoff_plan_committed(
         raise ValueError('Handoff requires an independent approver, not the requesting operator.')
     if not _checked_recently(plan.get('requested_at')):
         raise ValueError('Handoff approval window expired; prepare a new plan.')
-    tenant = Tenant.query.filter_by(id=tenant_id).with_for_update().one_or_none()
-    if tenant is None or tenant.lifecycle_status != TenantLifecycleStatus.READY.value:
-        raise ValueError('Tenant lifecycle changed during handoff review.')
-    existing = latest_release_handoff_approval(tenant_id)
-    if existing and existing.get('plan_sha256') == plan_sha256:
-        raise ValueError('This handoff plan has already been acknowledged.')
+    # Provider review commits the preflight AuditEvent. Acquire the row lock
+    # afterwards and recheck both plan identity and prior approval under lock.
     fresh = review_tenant_release_preflight_committed(
         tenant_id=tenant_id, actor_user_id=actor_user_id
     )
     _can_confirm_plan(fresh)
+    tenant = Tenant.query.filter_by(id=tenant_id).with_for_update().one_or_none()
+    if (
+        tenant is None or tenant.lifecycle_status != TenantLifecycleStatus.READY.value
+        or tenant.ownership_status != 'adopted'
+    ):
+        raise ValueError('Tenant authority changed during handoff review.')
+    current = latest_release_handoff_plan(tenant_id)
+    if not current or current.get('plan_sha256') != plan_sha256:
+        raise ValueError('Another handoff plan replaced this approval request.')
+    existing = latest_release_handoff_approval(tenant_id)
+    if existing and existing.get('plan_sha256') == plan_sha256:
+        raise ValueError('This handoff plan has already been acknowledged.')
     if (
         fresh.get('cluster_id') != plan['cluster_id']
         or fresh.get('generation') != plan['generation']
