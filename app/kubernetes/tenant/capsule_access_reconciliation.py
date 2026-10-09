@@ -123,7 +123,11 @@ def _check_profile(grant: TenantAccessGrant, rbac_api: Any) -> str:
             verbs = rule.verbs if hasattr(rule, 'verbs') else rule['verbs']
             if getattr(rule, 'resource_names', None) or getattr(rule, 'non_resource_urls', None):
                 raise ValueError('Capsule profile ClusterRole has unsupported RBAC restrictions/URLs.')
-            values.append((tuple(sorted(api_groups or [])), tuple(sorted(resources or [])), tuple(sorted(verbs or []))))
+            values.append((
+                tuple(sorted(api_groups or [])),
+                tuple(sorted(resources or [])),
+                tuple(sorted(verbs or [])),
+            ))
         return sorted(values)
 
     if getattr(role, 'aggregation_rule', None) is not None:
@@ -330,7 +334,10 @@ def _reconcile(grant: TenantAccessGrant, *, mutate: bool) -> TenantAccessGrant:
         api.patch_cluster_custom_object(_GROUP, version, _PLURAL, name, patch, _request_timeout=5)
         item = _tenant_object(api, version, name, tenant_id, grant.tenant)
     current_spec = item.get('spec') or {}
-    spec_verified = all(current_spec.get(key) == desired_spec.get(key) for key in ('additionalRoleBindings', 'rules'))
+    spec_verified = all(
+        (current_spec.get(key) or []) == (desired_spec.get(key) or [])
+        for key in ('additionalRoleBindings', 'rules')
+    )
     effective = _effective(client, grant, role, sorted(set(names) | previous))
     _write_state(grant, item=item, desired=names, effective=effective)
     if not spec_verified:
