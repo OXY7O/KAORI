@@ -54,22 +54,22 @@ from app.kubernetes.tenant.job_adapter import (
     dispatch_tenant_decommission,
     get_visible_tenant_sync_job,
 )
+from app.kubernetes.tenant.live_connection import get_live_tenant_connection_context
 from app.kubernetes.tenant.native_handoff_dry_run import (
     dry_run_native_release_handoff_committed,
 )
+from app.kubernetes.tenant.overview import dispatch_tenant_inventory_sync
 from app.kubernetes.tenant.release_handoff_approval import (
     approve_release_handoff_plan_committed,
     prepare_release_handoff_plan_committed,
-)
-from app.kubernetes.tenant.release_successor_claim import (
-    record_release_successor_claim_committed,
 )
 from app.kubernetes.tenant.release_preflight import (
     release_adopted_tenant_committed,
     review_tenant_release_preflight_committed,
 )
-from app.kubernetes.tenant.live_connection import get_live_tenant_connection_context
-from app.kubernetes.tenant.overview import dispatch_tenant_inventory_sync
+from app.kubernetes.tenant.release_successor_claim import (
+    record_release_successor_claim_committed,
+)
 from app.kubernetes.tenant.route_common import (
     _csrf,
     _operations_active_tab,
