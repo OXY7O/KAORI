@@ -226,6 +226,8 @@
     metrics_recent_window_hours=metrics_recent_window_hours
     ) }}
 </div>
-{{ framed_workspace_tabs.badge_oob('metrics-source', 'scope', (binding_rows|length|string) ~ ' Bindings') }}
-<span id="metrics-source-hero-binding-count" hx-swap-oob="innerHTML" class="hidden">{{ (bindings|length|string) ~ ' Bindings' }}</span>
+{% if request.headers.get('HX-Request') == 'true' %}
+    {{ framed_workspace_tabs.badge_oob('metrics-source', 'scope', (binding_rows|length|string) ~ ' Bindings') }}
+    <span id="metrics-source-hero-binding-count" hx-swap-oob="innerHTML" class="hidden">{{ (bindings|length|string) ~ ' Bindings' }}</span>
+{% endif %}
 {% include "components/operation_feedback_oob.html" %}
