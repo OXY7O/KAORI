@@ -63,6 +63,7 @@ def _event(
     *, status='review_required', code='revoked_grant_still_declared',
     age=0, event_id=14, source_age=0, cluster_id='cluster-a',
 ):
+    timestamp = datetime.now(UTC)
     return SimpleNamespace(
         id=event_id,
         target_type='kubernetes_tenant_native_access_drift_evidence',
@@ -71,9 +72,9 @@ def _event(
             'cluster_id': cluster_id,
             'status': status,
             'effective_rbac_verified': False,
-            'evaluated_at': (datetime.now(UTC) - timedelta(seconds=age)).isoformat(),
+            'evaluated_at': (timestamp - timedelta(seconds=age)).isoformat(),
             'source_observed_at': (
-                datetime.now(UTC) - timedelta(seconds=source_age)
+                timestamp - timedelta(seconds=source_age)
             ).isoformat(),
             'source_evidence_sha256': 'a' * 64,
             'findings': [
