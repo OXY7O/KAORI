@@ -277,6 +277,36 @@ effective-evidence hashes.
    `ClusterRole/kaori-tenant-tenant-admin-v1`, and
    `ClusterRole/kaori-tenant-deployer-v1` as needed. **Do not** reuse Kubernetes's
    broader built-in `admin`, `edit`, or `view` roles by name.
+To generate a reviewable ClusterRole manifest from the canonical KAORI permission
+catalog (without changing Kubernetes), run this inside the KAORI devcontainer:
+
+```bash
+python - <<'PY' > /tmp/kaori-capsule-access-clusterroles.json
+import json
+from app.kubernetes.tenant.access import ACCESS_PROFILE_CATALOG
+
+roles = []
+for (key, version), profile in sorted(ACCESS_PROFILE_CATALOG.items()):
+    roles.append({
+        "apiVersion": "rbac.authorization.k8s.io/v1",
+        "kind": "ClusterRole",
+        "metadata": {"name": f"kaori-tenant-{key.replace('_', '-')}-v{version}"},
+        "rules": [
+            {"apiGroups": list(rule.api_groups),
+             "resources": list(rule.resources),
+             "verbs": list(rule.verbs)}
+            for rule in profile.rules
+        ],
+    })
+print(json.dumps({"apiVersion": "v1", "kind": "List", "items": roles}, indent=2))
+PY
+
+# Review the output and cluster context; do not apply without cluster-admin approval.
+kubectl diff -f /tmp/kaori-capsule-access-clusterroles.json
+# Explicitly approved UAT cluster only:
+# kubectl apply -f /tmp/kaori-capsule-access-clusterroles.json
+```
+
 3. If Capsule strict RBAC is enabled, explicitly authorize its controller to `bind`
    each approved ClusterRole using the Capsule installation/configuration authority.
    No KAORI path silently elevates Capsule controller permissions.
