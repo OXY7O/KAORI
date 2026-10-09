@@ -22,6 +22,7 @@ from app.kubernetes.tenant.access_service import (
     update_tenant_group_by_id_committed,
 )
 from app.kubernetes.tenant.access_drift_analysis import evaluate_tenant_access_drift_committed
+from app.kubernetes.tenant.access_remediation_plan import prepare_tenant_access_remediation_plan_committed
 from app.kubernetes.tenant.external_access_observation import observe_external_capsule_access_committed
 from app.kubernetes.tenant.route_common import (
     _csrf,
@@ -31,6 +32,38 @@ from app.kubernetes.tenant.route_common import (
     _tenant_section_redirect,
     tenant_bp,
 )
+
+
+@tenant_bp.post('/external-access/plan-remediation')
+@permission_required('tenant.manage')
+def plan_capsule_access_remediation_route():
+    try:
+        _csrf()
+        result = prepare_tenant_access_remediation_plan_committed(
+            tenant_id=str(request.form.get('tenant_id') or '').strip(),
+            actor_user_id=int(current_user.id),
+        )
+    except ValueError as exc:
+        _record(
+            event_type='kubernetes_tenant_access_remediation_plan_blocked',
+            status='warning',
+            title='Remediation Preview Requires Attention',
+            message=str(exc),
+            metadata={'tenant_id': request.form.get('tenant_id'), 'operation': 'plan_access_remediation'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_access_remediation_plan_prepared',
+            status='success',
+            title='Access Remediation Plan Prepared',
+            message=(
+                f"{result['explicit_reconcile_count']} governed reconcile candidate(s), "
+                f"{result['manual_review_count']} manual review item(s)."
+            ),
+            detail='No provider mutation; use existing Inspect/Reconcile only after approval.',
+            metadata={'tenant_id': result['tenant_id'], 'operation': 'plan_access_remediation'},
+        )
+    return _tenant_section_redirect('access-grants')
 
 
 @tenant_bp.post('/external-access/analyze')

@@ -271,6 +271,27 @@ failed cleanup never claims that access was revoked. Drift/inspect/reconcile use
 committed grant lineage and store non-secret provider UID, resourceVersion, target, and
 effective-evidence hashes.
 
+### Governed Access Remediation Decisions (#985)
+
+An operator may prepare a **Remediation Decision** after fresh committed
+Capsule access observation and Access Drift Analysis. This produces a
+non-mutating, auditable plan from known KAORI grant status and exact
+Capsule source declaration evidence. Plans with stale evidence or grant
+changes newer than the source evaluation fail closed.
+
+Only an **active, KAORI-owned grant** that is already Drifted/Failed under a
+healthy Capsule authority may be recommended for existing
+**Access Grant Inspect → Reconcile**. No separate provider executor is
+introduced: those established actions already perform provider preflight,
+authorization and read-back. Provider-owned external entries, unknown
+identity groups, orphan markers, revoked grants and privilege conflicts
+require human review and cannot enter automatic remediation.
+
+Plans do **not** automatically execute mutations or claim that provider
+declarations prove effective RBAC. Future risk-based automation must use
+the approved Intelligence (#123) and policy/approval authority rather than
+creating a second autonomous agent or silently rewriting security policy.
+
 ### Committed Capsule access declaration drift (#984)
 
 The **Analyze Access Drift** action uses the latest explicitly captured Capsule
