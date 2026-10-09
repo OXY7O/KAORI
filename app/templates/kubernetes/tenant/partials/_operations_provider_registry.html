@@ -136,17 +136,15 @@
             </tbody>
         </table>
     </div>
-    {% if operations_provider_pagination.total_items > 0 %}
-        {{ registry_ui.footer('tenant.operations',
-                registry_id,
-                loading_id,
-                operations_provider_pagination,
-                query_params,
-                operations_provider_pagination.allowed_per_page,
-                resource_label='Tenants',
-                rows_aria_label='Provider Authority rows per page',
-                control_name='operations-provider',
-                page_param='ops_provider_page',
-                per_page_param='ops_provider_per_page') }}
-    {% endif %}
+    {{ registry_ui.footer('tenant.operations',
+            registry_id,
+            loading_id,
+            operations_provider_pagination,
+            query_params,
+            operations_provider_pagination.allowed_per_page,
+            resource_label='Tenants',
+            rows_aria_label='Provider Authority rows per page',
+            control_name='operations-provider',
+            page_param='ops_provider_page',
+            per_page_param='ops_provider_per_page') }}
 </section>
