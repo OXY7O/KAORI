@@ -135,9 +135,13 @@ visibility does not depend on post-swap callbacks, JavaScript timing or browser
 caching. The existing delegated controller enhances focus and document scroll
 locking once per response via swap/settle/request events, while preserving
 close/ESC behavior. Failed preflight loads surface an accessible warning in the
-slot; neither view submits Adoption automatically. Browser validation must
-separately confirm that the preflight GET completes and the response is inserted
-into the expected slot (a network/server error cannot be solved by modal CSS). Header language,
+slot; neither view submits Adoption automatically. The failure panel shows
+the **HTTP status only**, with safe guidance for auth (401/403), missing route
+(404), server-side preflight read/render failures (5xx), or transport/swap
+errors. It must not render raw HTML response bodies or sensitive Kubernetes
+details. Browser validation must confirm the GET /discovery/preflight status
+and whether the response entered the slot; a failed server request cannot be
+solved by changing from a modal to another presentation layout. Header language,
 readiness summary, human confirmation and submit label reflect the active
 mode. Create-specific fields are disabled for the attachment request so they
 are neither validated nor posted, and are re-enabled when returning to Create.
