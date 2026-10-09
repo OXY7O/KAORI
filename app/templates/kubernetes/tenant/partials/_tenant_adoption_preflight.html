@@ -64,10 +64,10 @@
             <input type="hidden" name="provider_key" value="{{ row.provider_key }}">
             <input type="hidden" name="resource_name" value="{{ row.resource_name }}">
             <input type="hidden" name="provider_uid" value="{{ row.provider_reference }}">
+            <input type="hidden" name="provider_resource_version"
+                   value="{{ row.provider_resource_version }}">
             {% if tenant_adoption_attachment_only %}
                 <input type="hidden" name="capsule_tenant_name" value="{{ row.capsule_tenant_name }}">
-                <input type="hidden" name="provider_resource_version"
-                       value="{{ row.provider_resource_version }}">
             {% endif %}
             <div class="space-y-3.5 p-4">
                 {% set allocation = row.allocation_preflight or {} %}
