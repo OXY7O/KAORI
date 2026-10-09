@@ -1,13 +1,14 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry_ui %}
-<section class="{{ table_ui.block_classes() }}"
+<section id="capsule-shared-allocation-drift"
+         class="{{ table_ui.block_classes() }}"
          aria-label="Capsule Shared Allocation Drift">
     {{ table_ui.inventory_block_header('layers-3',
         'Capsule Shared Allocation Drift',
         'Tenant-level GlobalResourceQuota drift remains Capsule-authoritative and requires an explicit human decision.',
-        none,
-        none) }}
+        'capsule-shared-allocation-drift-loading',
+        'Refreshing Capsule Shared Allocation Drift') }}
     <div class="overflow-x-auto">
         <table class="{{ table_ui.table_classes('min-w-[1050px]') }}">
             <caption class="sr-only">Capsule Tenant shared allocation drift and reconciliation actions.</caption>
@@ -104,10 +105,9 @@
             </tbody>
         </table>
     </div>
-    {% if capsule_shared_drift_pagination.total_items > 0 %}
         {{ registry_ui.footer('tenant.operations',
                 'capsule-shared-allocation-drift',
-                none,
+                'capsule-shared-allocation-drift-loading',
                 capsule_shared_drift_pagination,
                 {'tab': 'drift-reconcile'},
                 capsule_shared_drift_pagination.allowed_per_page,
@@ -116,5 +116,4 @@
                 control_name='capsule-shared-drift',
                 page_param='ops_capsule_shared_page',
                 per_page_param='ops_capsule_shared_per_page') }}
-    {% endif %}
 </section>
