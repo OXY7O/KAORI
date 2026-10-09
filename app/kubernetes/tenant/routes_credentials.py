@@ -174,12 +174,18 @@ def generate_credential_material_route(credential_id: int):
         page_icon = 'user-key'
     elif isinstance(material, GeneratedKubeconfigMaterial):
         material_kind = 'kubeconfig'
-        material_title = 'Deployment Kubeconfig'
         material_value = material.kubeconfig
         material_base64 = base64.b64encode(material.kubeconfig.encode('utf-8')).decode('ascii')
-        delivery_label = 'Automated Deployment'
-        page_title = 'One-Time Deployment Kubeconfig'
-        page_icon = 'git-branch'
+        if material.access_package.get('credential_type') == 'deployer_service_account':
+            material_title = 'Deployment Kubeconfig'
+            delivery_label = 'Automated Deployment'
+            page_title = 'One-Time Deployment Kubeconfig'
+            page_icon = 'git-branch'
+        else:
+            material_title = 'Approved Access Kubeconfig'
+            delivery_label = 'Governed Individual Access'
+            page_title = 'One-Time Access Kubeconfig'
+            page_icon = 'user-key'
     else:
         abort(500)
 
@@ -197,7 +203,7 @@ def generate_credential_material_route(credential_id: int):
             material_expires_at=material.expires_at,
             material_requested_seconds=requested_seconds,
             material_access_package=material.access_package,
-            material_credential_valid_until=material.expires_at,
+            material_credential_valid_until=material.access_package.get('valid_until'),
             delivery_label=delivery_label,
             **context,
         )
