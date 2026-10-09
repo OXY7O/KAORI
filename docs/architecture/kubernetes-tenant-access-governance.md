@@ -287,8 +287,12 @@ takeover. This preserves the same generation invariant as New Tenant adoption.
 **Native allocation ownership takeover** additionally checks the observed
 Namespace UID against the committed adopted Namespace provider reference
 immediately before the Kubernetes PATCH. It requires a non-empty current
-resourceVersion and checks the same UID and an available resourceVersion on
-provider read-back. A foreign `kaori.io/tenant-id` claim, or a KAORI manager
+resourceVersion and, for the **initial Adopted/Observed → Managed** cutover,
+requires that value to match the committed Namespace adoption snapshot.
+Later already-Managed reconciliations use live provider concurrency controls
+rather than the original adoption resourceVersion. Provider read-back must
+preserve the same Namespace UID and return a resourceVersion.
+A foreign `kaori.io/tenant-id` claim, or a KAORI manager
 marker with no matching Tenant ID, blocks mutation. These checks apply to
 existing adopted Namespace cutovers and prevent silent takeover of a
 deleted/recreated or foreign-governed Namespace generation.
