@@ -290,6 +290,51 @@ Registry reads only the latest committed observation on normal requests.
 A preflight result alone remains **handoff review required** with
 `release_execution_available=false`: it is evidence, not a Release operation.
 
+### External successor acceptance reference intake (#991, draft)
+
+An authorized operator may record a bounded **external successor reference**
+against the latest independently acknowledged, fingerprint-bound Handoff Plan.
+The server rechecks the current adopted Tenant generation, fresh provider
+UID/resourceVersion/ownership evidence and zero active dependencies before
+committing an AuditEvent. The recorded status is
+`external_reference_unverified` — a ticket or self-declared receipt is
+**not** independently verifiable external consent. It cannot be promoted to
+verified acceptance by form input, two KAORI operators or a reference alone.
+
+This checkpoint does not change Kubernetes, provider-owned resources, release
+state, grant state or effective RBAC. Neither the Native server-side dry-run
+nor this receipt authorizes the live executor. A separate admitted, trusted
+successor-attestation verification mechanism, matching provider read-back,
+partial-write containment, recovery and security UAT must precede any real
+ownership-transfer or Release of KAORI-mutated allocations.
+
+Native server-side ownership transfer previews are strictly metadata-only:
+the Kubernetes dry-run response must preserve source spec, foreign labels,
+annotations, ownerReferences, finalizers, generation, and deletion state;
+provider reread must verify all of these remain unchanged. This is not
+permission to execute a real transfer or to mark a Tenant Released.
+
+### Native external provider handoff read-back (#991)
+
+A separately approved Native Release Handoff Plan and successful Kubernetes
+server-side dry-run commit each selected component's immutable UID, provider
+resourceVersion, spec fingerprint, and fingerprint of preserved foreign labels,
+annotations, finalizers and ownership/lifecycle metadata. After an external
+operator has performed its own provider-side handoff, an explicit KAORI action
+can reread those exact Native objects and require: same UID/name, a changed
+resourceVersion, manager label equal to the planned successor, all KAORI
+ownership markers absent, and unchanged spec/foreign-metadata fingerprints.
+
+This **observation only** may record
+`provider_handoff_observed_acceptance_unverified` but remains
+`external_successor_verified=false`, `provider_handoff_verified=false`,
+and `release_authorized=false`. A Kubernetes label can be forged by an actor
+with patch rights; it is not cryptographic evidence of consent by the intended
+successor. Until trusted identity/acceptance and full dual-provider handoff
+mutation contracts are admitted, the existing Released operation continues to
+refuse KAORI-mutated provider resources. No auto-transfer or database-only
+abandonment is introduced.
+
 ### Guarded Released lifecycle and Re-adopt generation (#991)
 
 `Released` is a **separate terminal governance state** for Tenant and Namespace
@@ -303,6 +348,17 @@ remains identical. Namespace and Capsule Tenant resources are preserved.
 an attached Resource Profile or any outstanding grant, credential, Group or
 managed policy cannot use the observation-only Release path. Those resources
 require separately admitted external owner handoff and provider read-back.
+The committed Namespace-level `provider_mutation_performed` field must also
+be explicitly `false` for every Namespace. A `true`, missing or unknown
+value blocks Release even if the original Tenant provenance still says
+observation-only or an allocation profile reference has disappeared.
+A provable `true` Namespace mutation value is a **Release blocker**
+but may enter the existing independently approved handoff *planning* stage
+when the exact provider inventory, dependencies and ownership fingerprint
+are otherwise admissible. A missing or unknown mutation value blocks both
+Release and handoff planning until its authority is established. A handoff
+plan, dry-run or external reference never overrides this boundary or
+authorizes a Released transition.
 That expanded lifecycle remains open under #991; no database-only unmanage
 is permitted.
 
@@ -377,6 +433,40 @@ stay fail-closed for previously KAORI-mutated controls. No manually entered
 change reference, approval checkbox or internal plan is sufficient to set
 `lifecycle_status=released`. The operational UI reads committed plan/approval
 status rather than running provider reads on each page load.
+
+### Native Kubernetes ownership transfer: server-side dry-run phase (#991)
+
+Following a current **Prepare Handoff** plan and an independent
+**Acknowledge Handoff**, a different authorized operator can request
+**Preview Native Transfer** in the existing Tenant Registry. The provider
+preview is restricted to the exact adopted Native Tenant and same
+provider-identity/ownership fingerprint as the approved plan. All active
+Access Grants, credentials, memberships, Groups and governed resources
+must already satisfy the canonical zero-dependency ledger. Capsule
+provider transfer remains unsupported and cannot take the Native path.
+
+The preview constructs JSON Patch `test` preconditions for immutable
+Kubernetes UID, resourceVersion, `managed-by=kaori` and the exact
+`kaori.io/tenant-id` match. Only the four KAORI allocation ownership
+labels are candidates for removal; all other labels, annotations and
+Namespace/ResourceQuota/LimitRange specifications are retained.
+Kubernetes is called with `dryRun=All` and `application/json-patch+json`,
+then immediately re-read to verify that live state did **not** change.
+Any unsupported admission, permission, provider conflict, spec change
+or unexpected side effect produces a blocked/failed preview with
+committed non-secret evidence and no Release authorization.
+
+**Admission boundary:** the server-side preview is not a completed
+handoff, external successor acceptance, ownership-transfer receipt,
+or permission to set `Released`. The mutating executor is intentionally
+absent; the provider patch API call must be validated against the
+deployed Kubernetes Python client and API server in nonproduction
+before introducing a controlled non-dry-run execution route. Further
+admission needs authenticated external successor acceptance, one
+authoritative provider, an exact mutation plan, concurrency protection,
+per-object read-back, partial-failure containment, audit and security
+human acceptance. Capsule requires a separate provider-authority
+contract and must not be treated as Native Namespace RBAC.
 
 ### Governed Access Remediation Decisions (#985)
 

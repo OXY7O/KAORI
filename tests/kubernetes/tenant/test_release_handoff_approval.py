@@ -80,6 +80,20 @@ def test_handoff_plan_acceptance_requires_only_expected_handoff_blockers():
     _can_confirm_plan(_snapshot())
 
 
+def test_proven_namespace_mutation_requires_handoff_but_unknown_provenance_blocks_plan():
+    approved_handoff_blocker = (
+        'sandbox has KAORI-mutated Namespace provider controls; '
+        'independently approved external handoff is required.'
+    )
+    _can_confirm_plan(_snapshot(blockers=[approved_handoff_blocker]))
+
+    with pytest.raises(ValueError, match='Unresolved'):
+        _can_confirm_plan(_snapshot(blockers=[
+            'sandbox has missing or unverified provider mutation provenance; '
+            'investigate before approving handoff.'
+        ]))
+
+
 @pytest.mark.parametrize('blocker', [
     'Namespace/sandbox provider UID mismatch.',
     'External Capsule access observation is stale.',
@@ -95,7 +109,7 @@ def test_handoff_approval_blocks_other_governance_or_provider_failures(blocker):
 def test_handoff_approval_rejects_active_dependencies():
     snapshot = _snapshot()
     snapshot['dependency_counts']['Access Grants'] = 1
-    with pytest.raises(ValueError, match='Clear all active'):
+    with pytest.raises(ValueError, match='Clear and verify every active Tenant dependency'):
         _can_confirm_plan(snapshot)
 
 
@@ -120,6 +134,22 @@ def test_handoff_evidence_requires_all_correlated_namespace_identities():
         'resource_version': '1',
     })
     with pytest.raises(ValueError, match='coverage'):
+        _complete_provider_snapshot(snapshot)
+
+
+@pytest.mark.parametrize('duplicate_target', ['provider_identity', 'handoff_component'])
+def test_handoff_rejects_ambiguous_duplicate_provider_identity(duplicate_target):
+    snapshot = _snapshot()
+    if duplicate_target == 'provider_identity':
+        snapshot['live_provider_identity'].append({
+            **snapshot['live_provider_identity'][0], 'uid': 'replacement-generation',
+        })
+    else:
+        snapshot['handoff_components'].append({
+            **snapshot['handoff_components'][0], 'uid': 'replacement-generation',
+        })
+        snapshot['handoff_fingerprint'] = handoff_fingerprint(snapshot['handoff_components'])
+    with pytest.raises(ValueError, match='duplicated or ambiguous'):
         _complete_provider_snapshot(snapshot)
 
 

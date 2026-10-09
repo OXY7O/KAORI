@@ -30,6 +30,7 @@ _EXPECTED_HANDOFF_PREFIXES = (
 )
 _EXPECTED_HANDOFF_FRAGMENTS = (
     'has KAORI-managed allocation; explicit provider handoff is required.',
+    'has KAORI-mutated Namespace provider controls; independently approved external handoff is required.',
     'KAORI-linked allocation ownership requires independently approved external handoff',
 )
 _REQUIRED_DEPENDENCIES = frozenset({
@@ -88,6 +89,19 @@ def _complete_provider_snapshot(evidence: dict[str, Any]) -> None:
         raise ValueError('Provider handoff identity evidence is incomplete.')
     if handoff_fingerprint(components) != evidence['handoff_fingerprint']:
         raise ValueError('Committed provider handoff fingerprint does not match its components.')
+    # A Kubernetes resource is unique by scope/kind/name. A duplicated or
+    # conflicting committed inventory cannot define one exact transfer target,
+    # even when a hash was recomputed over the ambiguous list.
+    identity_keys = [(item['kind'], item['name']) for item in identities]
+    component_keys = [
+        (item.get('namespace') or '', item['kind'], item['name'])
+        for item in components
+    ]
+    if (
+        len(identity_keys) != len(set(identity_keys))
+        or len(component_keys) != len(set(component_keys))
+    ):
+        raise ValueError('Provider handoff inventory has duplicated or ambiguous resource identity.')
     namespace_identities = {
         (row['name'], row['uid']) for row in identities if row['kind'] == 'Namespace'
     }

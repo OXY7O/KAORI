@@ -54,6 +54,14 @@ from app.kubernetes.tenant.job_adapter import (
     dispatch_tenant_decommission,
     get_visible_tenant_sync_job,
 )
+from app.kubernetes.tenant.live_connection import get_live_tenant_connection_context
+from app.kubernetes.tenant.native_handoff_dry_run import (
+    dry_run_native_release_handoff_committed,
+)
+from app.kubernetes.tenant.native_handoff_readback import (
+    observe_external_native_handoff_committed,
+)
+from app.kubernetes.tenant.overview import dispatch_tenant_inventory_sync
 from app.kubernetes.tenant.release_handoff_approval import (
     approve_release_handoff_plan_committed,
     prepare_release_handoff_plan_committed,
@@ -62,8 +70,9 @@ from app.kubernetes.tenant.release_preflight import (
     release_adopted_tenant_committed,
     review_tenant_release_preflight_committed,
 )
-from app.kubernetes.tenant.live_connection import get_live_tenant_connection_context
-from app.kubernetes.tenant.overview import dispatch_tenant_inventory_sync
+from app.kubernetes.tenant.release_successor_claim import (
+    record_release_successor_claim_committed,
+)
 from app.kubernetes.tenant.route_common import (
     _csrf,
     _operations_active_tab,
@@ -712,6 +721,107 @@ def approve_tenant_release_handoff_route(tenant_id: str):
             message=f"Review recorded for {result['successor_owner']}; external transfer remains pending.",
             detail='Provider read-back and a separately admitted transfer executor are still required.',
             metadata={'tenant_id': tenant_id, 'operation': 'approve_release_handoff'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/successor-reference')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+def record_tenant_release_successor_reference_route(tenant_id: str):
+    try:
+        _csrf()
+        if request.form.get('confirm_successor_reference') != 'record':
+            raise ValueError('Explicit unverified external reference acknowledgement is required.')
+        result = record_release_successor_claim_committed(
+            tenant_id=tenant_id,
+            actor_user_id=int(current_user.id),
+            plan_sha256=str(request.form.get('plan_sha256') or ''),
+            successor_reference=str(request.form.get('successor_reference') or ''),
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_release_successor_reference_blocked',
+            status='warning', title='External Successor Reference Not Recorded',
+            message=str(exc),
+            detail='Provider ownership and Release authority remain unchanged.',
+            metadata={'tenant_id': tenant_id, 'operation': 'successor_reference'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_release_successor_reference_recorded',
+            status='info', title='Unverified Successor Reference Recorded',
+            message=f"External reference {result['successor_reference']} recorded for review.",
+            detail='Not verified acceptance; no provider transfer or Release authorized.',
+            metadata={'tenant_id': tenant_id, 'operation': 'successor_reference'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/native-dry-run')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+def dry_run_native_release_handoff_route(tenant_id: str):
+    try:
+        _csrf()
+        if request.form.get('confirm_native_handoff_dry_run') != 'approved':
+            raise ValueError('Explicit Native provider dry-run approval is required.')
+        result = dry_run_native_release_handoff_committed(
+            tenant_id=tenant_id,
+            actor_user_id=int(current_user.id),
+            plan_sha256=str(request.form.get('plan_sha256') or ''),
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_native_handoff_dry_run_blocked',
+            status='warning',
+            title='Native Handoff Dry-Run Blocked',
+            message=str(exc),
+            detail='No Kubernetes ownership markers or resource specifications were changed.',
+            metadata={'tenant_id': tenant_id, 'operation': 'native_handoff_dry_run'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_native_handoff_dry_run_recorded',
+            status='success' if result['status'] == 'dry_run_passed' else 'warning',
+            title='Native Handoff Preview Recorded',
+            message=(
+                f"{len(result['previewed_components'])} of "
+                f"{result['expected_component_count']} provider previews completed."
+            ),
+            detail='This was a Kubernetes server-side dry-run only. Release remains blocked.',
+            metadata={'tenant_id': tenant_id, 'operation': 'native_handoff_dry_run'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/native-readback')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+def inspect_native_external_handoff_route(tenant_id: str):
+    """Explicit provider read-back after external owner actions, no Release."""
+    try:
+        _csrf()
+        if request.form.get('confirm_native_handoff_readback') != 'inspect':
+            raise ValueError('Explicit provider read-back confirmation is required.')
+        result = observe_external_native_handoff_committed(
+            tenant_id=tenant_id, actor_user_id=int(current_user.id),
+            plan_sha256=str(request.form.get('plan_sha256') or ''),
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_native_handoff_readback_blocked',
+            status='warning', title='Native External Handoff Read-Back Blocked',
+            message=str(exc), detail='Governance remains Ready and provider resources are untouched.',
+            metadata={'tenant_id': tenant_id, 'operation': 'native_external_handoff_readback'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_native_handoff_readback_observed',
+            status='info', title='Native Provider Handoff Observed',
+            message=f"{result['observed_count']} provider components retained.",
+            detail='External successor consent remains unverified. Release remains blocked.',
+            metadata={'tenant_id': tenant_id, 'operation': 'native_external_handoff_readback'},
         )
     return _tenant_section_redirect('registry')
 

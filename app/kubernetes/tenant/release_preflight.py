@@ -61,6 +61,17 @@ def _release_blockers(tenant: Tenant, namespace_rows: list[TenantNamespace], *, 
         if amount:
             blockers.append(f'{amount} active {kind} must be governed/handoff-reviewed before release.')
     for record in namespace_rows:
+        record_evidence = getattr(record, 'provisioning_evidence_json', None) or {}
+        if record_evidence.get('provider_mutation_performed') is True:
+            blockers.append(
+                f'{record.namespace} has KAORI-mutated Namespace provider controls; '
+                'independently approved external handoff is required.'
+            )
+        elif record_evidence.get('provider_mutation_performed') is not False:
+            blockers.append(
+                f'{record.namespace} has missing or unverified provider mutation provenance; '
+                'investigate before approving handoff.'
+            )
         if record.provisioning_status != TenantNamespaceProvisioningStatus.READY.value:
             blockers.append(f'{record.namespace} is not Ready for provider-preserving release.')
         if record.ownership_status != 'adopted' and record.provisioning_status != 'deprovisioned':
