@@ -134,6 +134,7 @@ def verify_native_successor_identity_for_review(
 
 def verify_native_successor_resource_authority(
     *, cluster: Any, plan: Mapping[str, Any], provider_token: str,
+    ownership_required: str = 'kaori_marker_correlated',
 ) -> dict[str, Any]:
     """TokenReview plus SubjectAccessReview against EACH exact scoped Native object.
 
@@ -149,6 +150,8 @@ def verify_native_successor_resource_authority(
     items = plan.get('handoff_components')
     if not isinstance(items, list) or not 0 < len(items) <= 100:
         raise ValueError('Native successor authorization scope is incomplete.')
+    if ownership_required not in {'kaori_marker_correlated', 'external_successor_correlated'}:
+        raise ValueError('Unsupported Native ownership authorization boundary.')
     selected = [item for item in items if item.get('handoff') == 'external_acceptance_required']
     if not selected:
         raise ValueError('No KAORI-correlated Native resources are approved for transfer.')
@@ -163,7 +166,7 @@ def verify_native_successor_resource_authority(
             or not isinstance(name, str) or not name
             or not isinstance(namespace, str) or not namespace
             or not item.get('uid') or not item.get('resource_version')
-            or item.get('ownership') != 'kaori_marker_correlated'
+            or item.get('ownership') != ownership_required
             or (kind == 'Namespace' and name != namespace)
         ):
             raise ValueError('Native successor authorization scope is malformed.')
