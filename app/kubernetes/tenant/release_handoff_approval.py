@@ -190,11 +190,16 @@ def handoff_plan_preparation_state(
     return 'pending' if _checked_recently(plan.get('requested_at')) else 'expired'
 
 
-def _require_no_active_handoff_plan(*, tenant_id: str) -> None:
+def _require_no_active_handoff_plan(*, tenant_id: str, actor_user_id: int) -> None:
+    plan = latest_release_handoff_plan(tenant_id)
     state = handoff_plan_preparation_state(
-        latest_release_handoff_plan(tenant_id),
-        latest_release_handoff_approval(tenant_id),
+        plan, latest_release_handoff_approval(tenant_id),
     )
+    if state == 'expired' and str(plan.get('requested_by')) != str(actor_user_id):
+        raise ValueError(
+            'Only the original requester may renew an expired handoff plan. '
+            'A change of requester requires an explicitly governed reassignment.'
+        )
     if state == 'pending':
         raise ValueError(
             'A current handoff plan is awaiting independent approval. '
@@ -234,7 +239,7 @@ def prepare_release_handoff_plan_committed(
         raise ValueError('Tenant authority changed while preparing handoff.')
     # The Tenant row lock serializes concurrent preparations/acknowledgments:
     # evaluate *committed* plan/approval after locking and before writing.
-    _require_no_active_handoff_plan(tenant_id=tenant_id)
+    _require_no_active_handoff_plan(tenant_id=tenant_id, actor_user_id=actor_user_id)
     planned_at = datetime.now(UTC).isoformat()
     contract = {
         'tenant_id': tenant_id,
