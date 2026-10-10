@@ -1,6 +1,7 @@
 {% import "platform_operations/notifications/components/_activity_center_items.html" as center_item %}
 {% set center = activity_center|default({}) %}
 {% set inbox_items = center.get('inbox_items', []) %}
+{% set tenant_approval_items = center.get('tenant_approval_inbox_items', []) %}
 {% set inbox_unread_count = center.get('inbox_unread_count', 0) %}
 <div class="space-y-2" data-notification-deck-inbox-body>
     <div class="flex items-center justify-between gap-3 px-1 pb-1">
@@ -20,6 +21,42 @@
             </form>
         {% endif %}
     </div>
+    {% if tenant_approval_items %}
+        <section aria-label="Tenant Release approval requests" class="space-y-2">
+            {% for approval in tenant_approval_items %}
+                <article class="rounded-xl border border-outline-subtle bg-surface-card p-3"
+                         aria-label="{{ approval.tenant_name }} handoff approval {{ approval.state }}">
+                    <div class="flex flex-wrap items-start justify-between gap-2">
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold text-content-primary">
+                                Tenant Release Handoff · {{ approval.tenant_name }}
+                            </p>
+                            <p class="mt-1 break-words text-xs text-content-secondary">
+                                Change: {{ approval.change_reference }} · One independent acknowledgment per current plan.
+                            </p>
+                        </div>
+                        <span class="rounded-md px-2 py-1 text-xs font-semibold
+                                     {{ 'bg-status-warning-soft text-status-warning-text' if approval.is_pending
+                                        else ('bg-status-normal-soft text-status-normal-text' if approval.state == 'Approved'
+                                              else 'bg-surface-subtle text-content-muted') }}">
+                            {{ approval.state }}
+                        </span>
+                    </div>
+                    {% if approval.is_pending and approval.action_url %}
+                        <a href="{{ approval.action_url }}"
+                           class="mt-2 inline-flex min-h-8 items-center gap-1 text-xs font-semibold text-kaori-primary hover:underline">
+                            Review Handoff in Tenant Management
+                            <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                        </a>
+                    {% else %}
+                        <p class="mt-2 text-xs leading-5 text-content-muted">
+                            This request is no longer actionable. The committed plan/approval evidence remains authoritative.
+                        </p>
+                    {% endif %}
+                </article>
+            {% endfor %}
+        </section>
+    {% endif %}
     {% if inbox_items %}
         {% for notification in inbox_items %}
             {{ center_item.notification_item(notification, surface='panel', target='#notification-deck-inbox-content', compact=true, swap='innerHTML', view='inbox') }}
