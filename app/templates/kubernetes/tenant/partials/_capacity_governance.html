@@ -230,7 +230,7 @@
                                     {{ table_label.status_label('Current' if item.snapshot_state == 'current' else item.snapshot_state|title,
                                         'normal' if item.snapshot_state in ['current', 'fresh'] else 'warning') }}
                                     <span class="text-xs font-medium {{ 'text-content-secondary' if item.budget else 'text-status-warning-text' }}">
-                                        {{ 'Compute budget available' if item.budget else 'Compute evidence required' }}
+                                        {{ 'Compute budget available' if item.budget else ('Capacity policy required' if not item.policy else 'Compute evidence required') }}
                                     </span>
                                 </div>
                                 <p class="mt-1 text-xs leading-5 text-content-muted">
