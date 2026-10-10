@@ -162,6 +162,46 @@ source-of-truth, permission, audit or workflow standards. Browser desktop/
 mobile, light/dark, long metric values and toast Visual QA is pending;
 Developer Check, Full Admission, staging and deployment remain HOLD.
 
+## Native Platform Admin verified Kubernetes TLS prerequisite (#1047; detail UI authority)
+
+The Platform Admin Native successor-acceptance contract requires a **registered,
+verified Kubernetes API TLS connection** before provider SelfSubjectReview
+and scoped SelfSubjectAccessReview. Its authoritative backend guard is
+`cluster.kubernetes_connection.verify_ssl is True` in
+`native_platform_admin_authority.verify_native_provider_admin_authority`.
+A KAORI superuser, independent approval, success on an unverified transport,
+or a typed successor reference must never substitute for this trust boundary.
+
+Human DevContainer feedback showed Step 3 still exposing **Verify Provider &
+Accept as Platform Admin** for a non-TLS-verified cluster connection, which
+deterministically failed with `Verified Kubernetes TLS is required for
+Platform Admin authority`. Step 3 now uses the **existing committed
+KubernetesConnection.verify_ssl** state and offers a compact **Verified TLS
+Required** explanation instead of a doomed submit. Its settings link appears
+only when the operator has `clusters.manage` and a registered Cluster exists;
+other operators are asked to contact the Cluster administrator. For otherwise
+current, independently acknowledged plans, Step 4's next-action panel mirrors
+the same prerequisite without changing the five checkpoint data model. The
+original acceptance form remains available if TLS verification is enabled,
+but the backend still revalidates the connection and provider principal at
+submission time. No new provider request is made by the normal UI.
+
+**Operator remediation must use the canonical Kubernetes Connection edit
+workflow:** verify kubeconfig CA certificate and API endpoint certificate
+hostname/SAN, enable **Verify Kubernetes API TLS Certificate**, run the
+existing Test Connection, save the connection, then complete **Full
+Validation**. Changes invalidate saved operational readiness; never flip
+the DB field manually or disable certificate verification for convenience.
+Changing the cluster connection is a separate security/deployment-sensitive
+operation, requiring authorization and human UAT; it is not performed as
+part of this UI change. Expiring plan/review evidence must be restarted
+under the original requester + independent reviewer flow.
+
+All 14 existing Tenant governance CSRF/HTMX form sources, SHA/fingerprint,
+authn/RBAC and Release rules stay unchanged. Review-only merge to
+`kaori/review/staging-uat`; runtime tests, browser Visual QA, CI/CD,
+Developer Check, Full Admission, staging UAT and deployment HOLD.
+
 ## Native Release expiry consistency and Step 4 recovery workspace (#1091; latest detail UI authority)
 
 DevContainer feedback confirmed an expired, independently acknowledged Native

@@ -116,6 +116,26 @@ Hero
 
 `Tenant Registry` is the default tab and uses the canonical KAORI server-backed registry contract: shared loading bar, Cluster/Environment/Lifecycle/Search filters, committed-state reads, semantic labels, responsive horizontal overflow, default 5-row pagination, 5/10/25/50 page sizes, and HTMX progressive enhancement with the Tenants route as the real navigation fallback.
 
+**Native Platform Admin verified TLS prerequisite (#1047 follow-up; current UI):**
+A successful independent approval is not sufficient if the registered
+Kubernetes connection has `verify_ssl=False` or no trustworthy connection.
+Step 3 now shows **Verified TLS Required** with a permission-scoped edit link
+and does not render the Native Platform Admin acceptance POST when TLS
+certificate verification is disabled/missing. Step 4's **Next required action**
+shows the same configuration prerequisite if review and approval are current.
+Provider verification still requires server-side verified transport,
+SelfSubjectReview with a trusted principal, scoped SelfSubjectAccessReviews
+and explicit operator consent. This is a read-only hint/gate in the UI,
+never a substitute for backend checks.
+
+For operator remediation, edit the cluster's canonical **Kubernetes
+Connection Configuration**, confirm kubeconfig CA and API server certificate
+name, check **Verify Kubernetes API TLS Certificate**, **Test Connection**,
+save, and complete **Full Validation** before retrying the Release flow.
+Do not toggle DB state directly or weaken TLS. Connection updates are
+operational mutations requiring separate approval. 14 governance forms and
+original provider safeguards preserved. CI/CD, security checks, UAT HOLD.
+
 **Native Release Step 3 expiry + Step 4 recovery UX (#1091; current):**
 The Step 3 **Transfer Pending** label is no longer shown for stale
 independently acknowledged Native plans. Display **Approval Expired** or
