@@ -65,6 +65,76 @@ def test_resource_profiles_use_server_owned_kaori_content_tabs_and_snapshot_stat
     assert 'destructive_confirmation_modal.js' in page
 
 
+def test_capacity_decisions_registry_is_compact_and_exposes_read_only_evidence() -> None:
+    template = read('app/templates/kubernetes/tenant/partials/_capacity_decisions.html')
+    model = read('app/models/tenant.py')
+    registry = read('app/templates/components/table_registry.html')
+    primitives = read('app/templates/components/table_primitives.html')
+
+    # Preserve the approved canonical inventory, five-row HTMX, filter and
+    # empty/loading contracts. Detail is bounded to visible paginated records.
+    assert 'Capacity Decisions' in template
+    assert 'registry_ui.filter_form(' in template
+    assert 'registry_ui.clear_filters_link(' in template
+    assert "registry_ui.footer('tenant.namespace_provisioning'" in template
+    assert "table_ui.table_classes('min-w-[1060px] !table-fixed')" in template
+    assert 'capacity_decision_pagination.per_page' in template
+    assert "page_param='decision_page'" in template
+    assert "per_page_param='decision_per_page'" in template
+    assert 'decision_search' in template
+    assert 'decision_result' in template
+    for name, width in (
+        ('Target', 24),
+        ('Contract', 27),
+        ('Admission', 22),
+        ('Recorded', 17),
+        ('Details', 10),
+    ):
+        assert f'w-[{width}%]">{name}</th>' in template
+    assert 'colspan="5"' in template
+    assert "components/states/_empty_state.html" in template
+    assert 'macro footer(' in registry
+
+    # Decision Allow/Block is a distinct authoritative fact from capacity
+    # state, and full profile/namespace identities are available on demand.
+    assert "decision.decision|title, decision_tone" in template
+    assert "decision.capacity_state, state_tone" in template
+    assert "decision_tone = 'normal' if decision.decision == 'allow' else 'critical'" in template
+    assert 'title="{{ decision.namespace }}"' in template
+    assert 'title="{{ profile_name }}"' in template
+    assert "decision.resource_profile_version or row.profile.version" in template
+    assert "decision.operation|replace('_', ' ')|title" in template
+
+    # Reuse native KAORI dialogs with stable decision-ID identities and explicit
+    # text-left reset from the shared Action cell's inherited text-right.
+    assert "dialog_id = 'tenant-capacity-decision-' ~ decision.id" in template
+    assert 'data-kaori-dialog-open' in template
+    assert 'data-dialog-target="{{ dialog_id }}"' in template
+    assert 'data-kaori-native-dialog' in template
+    assert 'aria-labelledby="{{ dialog_id }}-title"' in template
+    assert 'aria-describedby="{{ dialog_id }}-description"' in template
+    assert 'data-kaori-dialog-close' in template
+    assert 'p-0 text-left shadow-2xl' in template
+    assert "{{ 'text-right' if action else 'text-left' }}" in primitives
+
+    # Read-only committed reason/cutoff, capacity snapshot state and correlation
+    # are not live provider diagnostics or newly computed capacity admission.
+    for key in ("reason", "allocation_scope", "capacity_source", "snapshot_id", "snapshot_state"):
+        assert key in template
+    assert "decision.evidence_json or {}" in template
+    assert "evidence.get('reason') or 'No committed explanation recorded.'" in template
+    assert 'whitespace-pre-line break-words text-sm' in template
+    assert 'row.created_at_label' in template
+    assert 'row.data_cutoff_label' in template
+    assert 'decision.correlation_id' in template
+    assert "Blocked preflight does not authorize provider allocation mutation." in template
+    assert '<details class="group mt-4' in template
+    assert 'hx-post' not in template
+    assert '<form method="post"' not in template
+    assert 'class TenantCapacityDecision(db.Model)' in model
+    assert "evidence_json: Mapped[dict]" in model
+
+
 def test_namespace_registry_uses_compact_rows_and_committed_read_only_detail_dialog() -> None:
     template = read('app/templates/kubernetes/tenant/partials/_namespace_registry.html')
     model = read('app/models/tenant.py')
