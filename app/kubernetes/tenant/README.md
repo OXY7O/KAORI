@@ -117,9 +117,10 @@ Hero
 `Tenant Registry` is the default tab and uses the canonical KAORI server-backed registry contract: shared loading bar, Cluster/Environment/Lifecycle/Search filters, committed-state reads, semantic labels, responsive horizontal overflow, default 5-row pagination, 5/10/25/50 page sizes, and HTMX progressive enhancement with the Tenants route as the real navigation fallback.
 
 **Tenant Release wizard navigation and feedback (#1095; current UX):**
-Step 1–4 tabs, Previous/Next and internal step links now fetch only the
-committed Tenant Detail fragment through HTMX while preserving canonical
-URL/history and the original plain `href` fallback. The server returns
+Step 1–4 tabs, Previous/Next and internal step links now fetch a committed
+Tenant Detail fragment through HTMX and **swap only the Release Governance
+card**, preserving the Tenant Overview, canonical URL/history, and original
+plain `href` fallback. The server returns
 fresh committed state for each step and never calls Kubernetes solely to
 render navigation. History snapshots are disabled for the sensitive
 Tenant Detail to avoid stale approval evidence on Back/Forward.
