@@ -17,7 +17,7 @@
     aria_label='Multi-cluster Tenant estate'
     ) %}
     <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[900px]') }}">
+        <table class="{{ table_ui.table_classes('min-w-[900px] !table-fixed') }}">
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
                     <th class="{{ table_ui.header_cell_classes() }} w-[29%]">Cluster</th>
@@ -32,29 +32,29 @@
                 {% if tenant_overview_clusters %}
                     {% for row in tenant_overview_clusters %}
                         <tr class="{{ table_ui.row_classes() }}">
-                            <td class="{{ table_ui.cell_classes() }} align-middle">
+                            <td class="{{ table_ui.cell_classes() }} align-middle min-w-0">
                                 {{ table_ui.cluster_identity_with_status(row.name,
                                                                 row.environment,
                                                                 row.provider_status|title,
                                                                 row.provider_tone) }}
                             </td>
-                            <td class="{{ table_ui.cell_classes() }} align-middle">
-                                <p class="text-base font-semibold tabular-nums leading-5 text-content-primary">{{ row.tenant_count }}</p>
-                                <p class="mt-1 text-xs leading-4 text-content-muted">Governed Tenants</p>
+                            <td class="{{ table_ui.cell_classes() }} align-middle min-w-0">
+                                <p class="text-base font-semibold tabular-nums leading-5 text-content-primary min-w-0 max-w-full truncate" title="{{ row.tenant_count }}">{{ row.tenant_count }}</p>
+                                <p class="mt-1 text-xs leading-4 text-content-muted min-w-0 max-w-full truncate" title="Governed Tenants">Governed Tenants</p>
                             </td>
-                            <td class="{{ table_ui.cell_classes() }} align-middle">
-                                <p class="text-base font-semibold tabular-nums leading-5 text-content-primary">{{ row.namespace_count }}</p>
-                                <p class="mt-1 text-xs leading-4 text-content-muted">Managed Namespaces</p>
+                            <td class="{{ table_ui.cell_classes() }} align-middle min-w-0">
+                                <p class="text-base font-semibold tabular-nums leading-5 text-content-primary min-w-0 max-w-full truncate" title="{{ row.namespace_count }}">{{ row.namespace_count }}</p>
+                                <p class="mt-1 text-xs leading-4 text-content-muted min-w-0 max-w-full truncate" title="Managed Namespaces">Managed Namespaces</p>
                             </td>
-                            <td class="{{ table_ui.cell_classes() }} align-middle">
+                            <td class="{{ table_ui.cell_classes() }} align-middle min-w-0">
                                 <div class="space-y-1.5">
                                     {{ table_label.status_label('Current' if row.snapshot_coverage_complete else ('Not Collected' if row.snapshot_coverage_label == 'Not Collected' else 'Needs Review') ,
                                     'normal' if row.snapshot_coverage_complete else 'warning'
                                     ) }}
-                                    <p class="text-xs leading-4 text-content-muted">{{ row.snapshot_coverage_label }} coverage</p>
+                                    <p class="text-xs leading-4 text-content-muted min-w-0 max-w-full truncate" title="{{ row.snapshot_coverage_label }} coverage">{{ row.snapshot_coverage_label }} coverage</p>
                                 </div>
                             </td>
-                            <td class="{{ table_ui.cell_classes() }} align-middle">
+                            <td class="{{ table_ui.cell_classes() }} align-middle min-w-0">
                                 <div class="space-y-1.5">
                                     {% if row.capacity_available %}
                                         {{ table_label.status_label(row.capacity_state, row.capacity_tone) }}
@@ -63,7 +63,7 @@
                                     {% else %}
                                         {{ table_label.status_label('Unavailable', 'unknown') }}
                                     {% endif %}
-                                    <p class="text-xs leading-4 text-content-muted">{{ row.capacity_data_cutoff }}</p>
+                                    <p class="text-xs leading-4 text-content-muted min-w-0 max-w-full truncate" title="{{ row.capacity_data_cutoff }}">{{ row.capacity_data_cutoff }}</p>
                                 </div>
                             </td>
                             <td class="{{ table_ui.cell_classes(action=true) }} align-middle">
