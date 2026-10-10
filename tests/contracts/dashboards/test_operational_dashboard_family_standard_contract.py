@@ -650,3 +650,18 @@ def test_unselected_dashboard_scope_uses_one_tab_level_prerequisite_without_hidi
     assert signal_helper.index('if selected is None:') < signal_helper.index('build_recommendations(')
     assert 'one shared prerequisite blocker at tab level' in standard
     assert 'All Registry Providers' in standard
+
+
+def test_reporting_scope_bound_reflects_all_or_selected_dashboard_scope() -> None:
+    kubernetes = read('app/templates/kubernetes/dashboard/partials/_reporting_guidance.html')
+    object_storage = read('app/templates/storage/object_storage/dashboard/partials/_reporting_guidance.html')
+    registry = read('app/templates/artifact_registry/partials/_overview_reporting.html')
+    object_summary = read('app/templates/storage/object_storage/dashboard/partials/_reporting_summary.html')
+
+    assert "reporting_scope = 'Selected Cluster' if dashboard.selected_cluster_id else 'All Clusters'" in kubernetes
+    assert "reporting_scope = dashboard.selected_system.name if dashboard.selected_system else 'All Systems'" in object_storage
+    for source in (kubernetes, object_storage):
+        assert 'reporting_workspace.guidance(reporting_scope,' in source
+    assert 'reporting_workspace.guidance(overview.scope_label,' in registry
+    assert 'current scope.' in object_summary
+    assert 'this system scope.' not in object_summary
