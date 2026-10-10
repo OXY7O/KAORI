@@ -195,8 +195,10 @@ transaction impact for Create/Adopt is scoped separately under #125.
 
 The cluster selector uses the existing HTMX partial-response pattern to refresh the
 selected overview immediately on change; the non-JavaScript form fallback remains
-available. The permission-guarded Capacity Analytics destination uses the shared
-KAORI secondary action contract. No live provider or Prometheus query is added.
+available. The permission-guarded Capacity Analytics destination is a lightweight
+text link, with existing Violet focus/hover states, rather than an additional
+button in the compact overview header. No live provider or Prometheus query
+is added.
 
 The compact budget guidance is an accessible disclosure rather than an always-open
 paragraph: **CPU, memory and Pod request budget = Ready-worker allocatable −
@@ -206,13 +208,25 @@ storage availability. `ResourceQuota` enforces Kubernetes quota and never
 constitutes a physical node-resource reservation.
 
 **Tenant Contributions is detail on demand:** the overview shows the committed
-Tenant count and opens the canonical native KAORI dialog. A large, responsive
-dialog retains the committed Tenant/Namespace and Native/Capsule evidence,
-search, 5-row default pagination, selectable page size, accessibility semantics
-and Tenant Registry navigation. The dialog's nested HTMX target is restricted to
-its registry section: pagination, search and page-size changes must **not**
-replace or close the parent dialog or the outer Capacity Overview. Cluster
-changes intentionally replace the outer overview and reset pagination.
+Tenant count and opens the canonical native KAORI dialog. This dialog is
+an evidence-oriented detail workspace with a clear cluster header, four compact
+summary metrics from the **unfiltered committed contribution ledger**
+(committed Tenants, linked Namespaces, shared-quota Tenants, and incomplete /
+ambiguous records), a searchable registry, readable Tenant/provider/ownership
+identity, request-unit labels, expandable Namespace details and a compact footer.
+Linked Namespace count is a count of Namespace identities and **not** a second
+summation of Capsule shared quota. Incomplete / ambiguous counts are evidence
+quality indicators, never inferred admission verdicts.
+
+Summary metrics are computed once from the existing read-only per-Tenant #654
+partition before applying the search filter. Filter results and pagination operate
+only within the registry panel using the existing canonical five-row default,
+page-size selector, and native-dialog contract. The modal header, summary and
+dialog itself persist across HTMX pagination, search and Rows changes. The footer
+provides canonical pagination and a low-emphasis Tenant Registry text link.
+On narrower screens the summary uses two columns and the existing table scroll
+pattern retains full values via display and `title` attributes. Cluster changes
+replace the entire selected overview and reset modal search/pagination.
 
 The contribution registry displays a stable Tenant ID alongside the Tenant
 name so same-named adopted and managed records remain distinguishable.
