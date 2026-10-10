@@ -455,53 +455,71 @@
                                 {% endcall %}
                                 <div class="overflow-x-auto">
                                     {% if security.view == 'vulnerabilities' %}
-                                        <table class="{{ table_ui.table_classes('min-w-[78rem]') }}">
+                                        <table class="{{ table_ui.table_classes('min-w-[68rem] !table-fixed') }}">
+                                            <caption class="sr-only">Committed vulnerability findings. Full evidence is available in View More.</caption>
                                             <thead class="{{ table_ui.head_classes() }}">
                                                 <tr>
-                                                    <th class="{{ table_ui.header_cell_classes() }}">Finding</th>
-                                                    <th class="{{ table_ui.header_cell_classes() }}">Artifact</th>
-                                                    <th class="{{ table_ui.header_cell_classes() }}">Package / Fix</th>
-                                                    <th class="{{ table_ui.header_cell_classes() }}">Runtime Exposure</th>
-                                                    <th class="{{ table_ui.header_cell_classes() }}">Provider / Source</th>
-                                                    <th class="{{ table_ui.header_cell_classes() }}">Snapshot</th>
+                                                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[19%]">Finding</th>
+                                                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[21%]">Artifact</th>
+                                                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[23%]">Package / Fix</th>
+                                                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">Runtime Exposure</th>
+                                                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[13%]">Evidence</th>
+                                                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[10%]">Details</th>
                                                 </tr>
                                             </thead>
                                             <tbody class="{{ table_ui.body_classes() }}">
                                                 {% for row in security.rows %}
                                                     {% set severity_tone = 'critical' if row.severity == 'critical' else ('warning' if row.severity in ['high', 'medium'] else ('normal' if row.severity in ['low', 'negligible'] else 'unknown')) %}
+                                                    {% set vulnerability_dialog_id = 'artifact-registry-vulnerability-detail-' ~ row.id %}
                                                     <tr class="{{ table_ui.row_classes() }}">
-                                                        <td class="{{ table_ui.cell_classes() }}">
-                                                            {{ table_ui.title_cell(row.vulnerability_id, row.severity_label, 'shield-alert') }}
-                                                            <div class="mt-2">{{ table_label.status_indicator_label(row.severity_label, severity_tone) }}</div>
+                                                        <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
+                                                            <p class="min-w-0 truncate text-sm font-semibold text-content-primary"
+                                                               title="{{ row.vulnerability_id }}">{{ row.vulnerability_id }}</p>
+                                                            <div class="mt-1.5">
+                                                                {{ table_label.status_indicator_label(row.severity_label, severity_tone) }}
+                                                            </div>
                                                         </td>
-                                                        <td class="{{ table_ui.cell_classes() }}">
-                                                            {{ table_ui.title_cell(row.repository, row.project ~ ' · ' ~ row.digest_short, 'package-search') }}
+                                                        <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
+                                                            <p class="min-w-0 truncate text-sm font-semibold text-content-primary"
+                                                               title="{{ row.repository }}">{{ row.repository }}</p>
+                                                            <p class="mt-1 min-w-0 truncate text-xs text-content-muted"
+                                                               title="Project: {{ row.project }}">Project: {{ row.project }}</p>
                                                         </td>
-                                                        <td class="{{ table_ui.cell_classes() }}">
-                                                            <p class="font-semibold text-content-primary">{{ row.package }}</p>
-                                                            <p class="mt-0.5 text-xs text-content-muted">{{ row.installed_version }} → {{ row.fixed_version }}</p>
-                                                            {% if row.fix_available %}
-                                                                <div class="mt-1">{{ table_label.status_indicator_label('Fix Observed', 'normal') }}</div>
-                                                            {% endif %}
+                                                        <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
+                                                            <p class="min-w-0 truncate text-sm font-semibold text-content-primary"
+                                                               title="{{ row.package }}">{{ row.package }}</p>
+                                                            <p class="mt-1 min-w-0 truncate text-xs text-content-muted"
+                                                               title="Installed: {{ row.installed_version }}">Installed: {{ row.installed_version }}</p>
+                                                            <p class="mt-1 text-xs font-medium {{ 'text-status-success-text' if row.fix_available else 'text-content-muted' }}">
+                                                                {{ 'Fix observed' if row.fix_available else 'No fix observed' }}
+                                                            </p>
                                                         </td>
-                                                        <td class="{{ table_ui.cell_classes() }}">
+                                                        <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
                                                             {% if row.runtime_exposure_count %}
                                                                 {{ table_label.status_indicator_label(row.runtime_exposure_count ~ ' Bindings', 'critical' if row.severity == 'critical' else 'warning') }}
-                                                                <div class="mt-2">
-                                                                    <a href="{{ url_for('artifact_registry.runtime', artifact_id=row.artifact_id) }}"
-                                                                       class="{{ table_ui.action_classes() }}">
-                                                                        <i data-lucide="waypoints" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                                                        Open Runtime
-                                                                    </a>
-                                                                </div>
                                                             {% else %}
-                                                                {{ table_label.status_indicator_label('Not Observed', 'normal') }}
+                                                                {{ table_label.status_indicator_label('Not Observed', 'unknown') }}
                                                             {% endif %}
                                                         </td>
-                                                        <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(row.source_name, row.provider_label, 'blocks') }}</td>
-                                                        <td class="{{ table_ui.cell_classes() }}">
-                                                            {{ table_label.status_indicator_label(row.freshness.label, row.freshness.tone) }}
-                                                            <p class="mt-1 text-xs text-content-muted">{{ row.observed_at|user_datetime }}</p>
+                                                        <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
+                                                            <p class="min-w-0 truncate text-sm font-semibold text-content-primary"
+                                                               title="{{ row.source_name }}">{{ row.source_name }}</p>
+                                                            <div class="mt-1">
+                                                                {{ table_label.status_indicator_label(row.freshness.label, row.freshness.tone) }}
+                                                            </div>
+                                                        </td>
+                                                        <td class="{{ table_ui.cell_classes(action=true) }} align-middle">
+                                                            <button type="button"
+                                                                    data-kaori-dialog-open
+                                                                    data-dialog-target="{{ vulnerability_dialog_id }}"
+                                                                    aria-haspopup="dialog"
+                                                                    aria-controls="{{ vulnerability_dialog_id }}"
+                                                                    aria-label="View vulnerability evidence for {{ row.vulnerability_id }} on {{ row.repository }} package {{ row.package }}"
+                                                                    class="{{ table_ui.action_classes() }}">
+                                                                <i data-lucide="eye" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                                View More
+                                                            </button>
+                                                            {{ supply_chain_detail.vulnerability(row, vulnerability_dialog_id) }}
                                                         </td>
                                                     </tr>
                                                 {% else %}
