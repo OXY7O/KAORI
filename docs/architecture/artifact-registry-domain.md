@@ -152,7 +152,7 @@ policy mutations.**
 - `governance.html` provides the full-page layout and includes the
   refreshable `partials/_governance_workspace.html`; HTMX GET returns that
   partial so active Policies/Replication workspace views remain independently
-  navigable using the existing framed-tabs and canonical five-row pagination.
+  navigable using canonical server-owned content tabs and five-row pagination.
 - The sync form submits its CSRF-authenticated request to the **existing**
   `artifact_registry.governance_sync` endpoint through HTMX, targets the
   Governance workspace, prevents a second submit while the canonical
@@ -177,6 +177,32 @@ no duplicate manual dispatch, tab/page preservation, partial-only HTMX
 responses, light/dark mode and mobile widths. Full Admission, CI/CD,
 staging/UAT deployment and main promotion remain **HOLD** until explicit
 authorization.
+
+### Governance Coverage and Evidence layout (#950 DevContainer follow-up)
+
+The Governance evidence area now follows the established Security/Supply
+Chain section hierarchy. Two **plain section-intro headings outside their
+card shells** provide operator context:
+
+- **Governance Coverage** — a single canonical `section_card` wraps the
+  existing four policy, retention, immutability, and replication coverage
+  cards in a responsive 2/4-column grid, so they no longer float as separate
+  page-level surfaces. Counts, statuses and meanings are unchanged.
+- **Governance Evidence** — the Policies/Replication records remain in their
+  own canonical section card. The navigation uses existing
+  `content_tabs.render_links` (embedded, server/URL-owned mode), matching
+  the Security Supply Chain workspace. HTMX updates still target and select
+  only `#artifact-registry-governance-registry`, with the active URL and
+  pagination kept by the existing route and shared footer.
+
+This replaces Governance's previous framed tab treatment without introducing
+another UI pattern, altering provider authority, changing content-tab semantics
+or making live Registry API requests. Default pagination remains 5.
+DevContainer Visual QA should verify standalone headings, grouped card border,
+active/inactive tab contrast, light/dark and mobile layouts, Policies/
+Replication transitions, back/forward navigation, sync completion refresh,
+and the shared pagination footer. CI/CD, Full Admission, staging/UAT and
+promotion remain **HOLD**.
 
 ## Vulnerability Findings Registry: compact list and committed detail (#948)
 
