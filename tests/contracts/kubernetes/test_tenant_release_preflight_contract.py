@@ -11,7 +11,7 @@ def test_release_preflight_is_non_destructive_and_separate_from_decommission():
     source = read('app/kubernetes/tenant/release_preflight.py')
     route = read('app/kubernetes/tenant/routes.py')
     context = read('app/kubernetes/tenant/registry_context.py')
-    ui = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
+    ui = read('app/templates/kubernetes/tenant/partials/_tenant_management_detail.html')
 
     assert "tenant.ownership_status != 'adopted'" in source
     assert "_active_credential_count(tenant_id)" in source
