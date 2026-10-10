@@ -65,7 +65,61 @@ workflows with empty and populated datasets, browser refresh/back/forward,
 per-registry filters/Rows/HTMX, light/dark and mobile views. This is not
 staging UAT or production acceptance evidence.
 
-## Tenant Details approved KAORI Hero/context and accordion design (#1073; current authority)
+## Tenant Overview + governed Release wizard (#1075; current presentation authority)
+
+Follow-up human visual review of the approved #1073 two-column Violet
+Hero/accordion requested three adjustments: shorter Hero purpose text, a
+complete Tenant Overview redesign with **no Quick Links**, and Release
+Governance as a **real four-step wizard**, analogous to KAORI's controlled
+resource-generation procedures rather than an expanded list of 11 forms.
+
+The Hero remains the existing `page_hero.context_card()` composition; its
+supporting copy is now **“Manage Tenant governance and lifecycle.”** No new
+Hero taxonomy or provider readiness panel was added.
+
+The separate **Identity & Origin** and **Governance State** Overview surfaces
+present canonical Tenant ID, Cluster, Provider, Generation, registered date,
+description, Ownership, Lifecycle, Reconciliation authority, updated date
+and historical Namespace lineage where applicable. Long values wrap,
+missing description uses the standard neutral empty text, and all values
+come from KAORI committed evidence. **Quick Links are removed.** Four small
+summary cards outside the Overview retain their existing dashboard roles.
+
+**Release wizard — one active step at a time:** four bookmarked
+`release_step=` URLs and a semantic Previous/Next navigation replace the
+inner `tenant-release-workflow-details` disclosure. The outer governed
+Release section remains permission/lifecycle-gated. The named stages are
+**Review Scope** (committed preflight and blockers), **Provider Scope**
+(UID/RV inventory and provider preservation), **Approval & Handoff**
+(existing handoff plan, separate reviewer, explicit Platform Admin
+acceptance, guarded dry-run/execution/readback), and **Verify & Finalize**
+(current readiness, required verified transfer and exact Release forms).
+The step navigator is presentation only: following Next is **never**
+approval, preflight success, transfer consent or completion evidence.
+Each existing service performs its original fail-closed checks.
+
+The `_tenant_detail_context()` projector accepts only the four known
+step keys; unknown values resolve to `scope`. It builds exact
+`tenant_release_step_urls` from the established Tenant GET route,
+preserving filtered Registry state and a Release anchor. Eleven Release
+forms carry hidden `tenant_release_step` alongside existing
+`tenant_detail_section`, exact Tenant ID, CSRF, plan SHA and registry
+context. The standard HTMX POST swaps the same Hero + selected step with
+global OOB Operational Toast; an ordinary POST redirect also restores the
+selected step. The Work Inbox independent reviewer deep link goes directly
+to `release_step=approval`. After a lifecycle transition the normal
+service-controlled Release/Handback eligibility still takes precedence
+over visual wizard state.
+
+No new provider mutations, auth, RBAC grants, foreign metadata changes,
+Release shortcut, duplicate endpoint or separate wizard state machine.
+This supersedes only the **Overview layout and Release disclosure**
+of #1073, not its canonical Hero or existing governance architecture.
+Desktop/mobile/light/dark Visual QA, focused pytest and relevant quality
+gates still require Developer Check and Human Acceptance. CI/CD, staging
+and deployment remain HOLD until explicitly authorized.
+
+## Tenant Details approved KAORI Hero/context and accordion design (#1073; superseded only for Overview/Release layout by #1075)
 
 The latest user-provided KAORI reference was a **Delete ConfigMap** two-column
 violet Hero. Only its **composition** is authoritative: the existing
