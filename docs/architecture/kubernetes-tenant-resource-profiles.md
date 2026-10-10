@@ -75,6 +75,32 @@ Resource Profile mutability is visible before an operator opens the detail dialo
 
 Editing a Custom Resource Profile changes the reusable contract version only. It never silently rewrites an existing Namespace allocation snapshot.
 
+### Resource Profile Registry identity density (#1035)
+
+The Resource Profile Registry is a compact, fixed-column, server-rendered list for
+scanning profile contracts, allocations, references and lifecycle actions.
+It shows a **display-only concise profile identity**, not the full description:
+an `Adopted ` naming prefix becomes the small `Adopted baseline` supporting
+label, and a terminal UUID after ` · ` is abbreviated to its first eight
+characters. Other profile titles are capped at 44 visible characters using the
+existing Jinja truncate presentation rule. The registry also shows the stable
+local profile number (`#id`) to distinguish otherwise similar shortened titles.
+
+**The canonical `profile.name` and `profile.description` are unchanged.**
+Profile search still uses the original data. The existing **Manage** dialog is
+the full-detail authority: its title displays the full profile name, and a
+wrapping Description section displays the complete committed description for
+Custom and built-in profiles alike. Editable Custom form fields and built-in
+hidden values still carry their original names/descriptions. No provider,
+admission, quota or persistence code is changed.
+
+The shared table title cell, five-row default, filters, pagination, status
+labels, current action authorization and `data-kaori-native-dialog` behaviors
+remain untouched. Visual QA must check long adopted names, duplicate-looking
+short names, dark/light, mobile overflow and keyboard Manage accessibility.
+
+
+
 ## Managed adoption and legacy allocation governance cutover
 
 #777 supersedes evidence-only onboarding for new managed adoptions. The explicit human **Adopt & Manage** submission is the governance boundary: live state is re-read, capacity/authority checks run, equivalent provider values are written only through the admitted authority, and read-back must succeed before KAORI commits managed allocation control.
