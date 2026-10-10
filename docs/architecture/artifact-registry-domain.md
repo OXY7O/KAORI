@@ -190,21 +190,24 @@ same nested-card geometry for every domain.
 
 | Workspace | Hero / evidence authority | Summary / section-intro treatment | Navigation / table pattern | Audit decision |
 | --- | --- | --- | --- | --- |
-| Overview | Operational Dashboard Hero and committed operational signals | KPI card grid owned by canonical Operational Dashboard composition; no extra KPI shell | Dashboard four operational workspace views | **Retain** — already canonical #911/#923 |
+| Overview | Operational Dashboard Hero and committed operational signals | Four KPI cells use shared divider grid **inside existing** Operational Signal Overview shell, with no extra card shell | Dashboard four operational workspace views | **Align** bounded lazy KPI content only under #1087; preserve #911/#923 shell |
 | Inventory | Shared Hero / committed snapshot context | External **Operational Posture** intro; existing grouped posture metrics; Registry Inventory intro | Bounded Inventory table, HTMX filters and 5-row pagination | **Retain** — grouped posture contract intentionally differs from summary KPI cards (#931) |
-| Security | Shared Hero / Security Sync / committed scan evidence | External **Security Snapshot** intro and four independent `operational_metric_card` metrics per active security view | Small content-tabs family for Supply Chain; shared vulnerability/evidence registry and 5-row footer | **Align** section-intro hierarchy only (#1087, existing #948 authority) |
-| Runtime Usage | Shared Hero / committed correlation snapshot | External **Runtime Correlation** intro and four independent `operational_metric_card` metrics | Runtime Bindings section intro and bounded table; committed correlation, 5-row footer | **Align** section-intro hierarchy only (#1087, existing #897 authority) |
+| Security | Shared Hero / Security Sync / committed scan evidence | External **Security Snapshot** intro + shared grouped four-metric posture grid, independently scoped for Vulnerabilities / Supply Chain | Small content-tabs family for Supply Chain; shared vulnerability/evidence registry and 5-row footer | **Align** summary composition under #1087; preserve #948 scanner semantics |
+| Runtime Usage | Shared Hero / committed correlation snapshot | External **Runtime Correlation** intro + four-cell grouped committed correlation grid | Runtime Bindings section intro and bounded table; committed correlation, 5-row footer | **Align** summary composition under #1087, retain #897 correlation semantics |
 | Governance | Shared Hero / Governance Sync / committed policy evidence | External **Governance Coverage** intro with one grouped operational estate shell and four evidence metrics; original Committed/Observed status badges retained | External Governance Evidence intro; standard URL/HTMX content tabs for Policies/Replication; 5-row footer | **Align** to Kubernetes Tenant Estate's shared posture-grid archetype under #950 |
-| Analytics | Shared Hero / committed analytical materialization | External **Registry Analytical Posture** intro and four independent summary cards, without a page-local uppercase eyebrow | Seven analytics-domain framed tabs remain appropriate for operational-domain navigation; lazy bounded HTMX summary/sections | **Align** summary intro only (#1087, existing #899 authority) |
+| Analytics | Shared Hero / committed analytical materialization | External **Registry Analytical Posture** intro and four-cell grouped grid with original Review/Unavailable/Ready evidence labels | Seven analytics-domain framed tabs remain appropriate for operational-domain navigation; lazy bounded HTMX summary/sections | **Align** lazy summary composition under #1087, preserve #899 framed tabs |
 
 #### Component and composition rules applied in this audit
 
-- **Summary grouping follows semantic ownership**, not a single layout rule.
-  Security, Runtime and Analytics retain `section_intro` plus a 2/4-column
-  grid of standalone evidence cards. Governance Coverage is a cohesive estate-
-  level posture summary: it uses `operational_section_card` containing the
-  existing `resource_posture_grid` with four committed metrics, mirroring
-  Kubernetes Tenant Overview. Avoid double-nested standalone cards.
+- **Current Artifact Registry metric summary standard:** a plain
+  `section_intro` outside an existing shared operational shell containing
+  `resource_posture_grid` with thin dividers, one responsive column on mobile,
+  two on tablet and four at desktop. **Overview** keeps its already-authoritative
+  `operational_signal_overview` shell; its lazy KPI projection is the grid body
+  with no new nested shell. Inventory stays grouped within its existing
+  `operational_section_card`; Security, Runtime, Governance, and Analytics
+  use the same shared grouped presentation. Governance/Analytics retain their
+  committed status labels. No extra card borders within metric cells.
 - The **Inventory Operational Posture** is intentionally a coordinated
   evidence panel with a common operational meaning; it continues using its
   approved `operational_section_card` and `posture_grid`. The Overview
@@ -221,17 +224,18 @@ same nested-card geometry for every domain.
   not decorative visual repetition. Avoid creating new page-local CSS/JS,
   tokens, wrappers or one-off card families.
 
-**Implementation separation:** #950 owns the Governance Coverage composition
-(including the later grouped-grid feedback); #1087 covers Security/Runtime/Analytics summary intro
-normalization and this cross-page audit. Existing #911, #931, #948, #897 and
+**Implementation separation:** #950 owns Governance Coverage composition;
+#1087 owns the follow-up **entire Registry** grouped-summary consistency
+implementation (Overview, Security, Runtime and Analytics), its verifier and
+cross-page audit. Inventory's existing grouped composition remains unchanged. Existing #911, #931, #948, #897 and
 #899 remain authoritative for their specific capability data or backend
 behaviors. Work is grouped only for fast DevContainer review at
 `kaori/review/staging-uat`; no CI/CD Full Admission, deployment, staging
 promotion or main promotion occurs without explicit approval.
 
-**Developer / human Visual QA:** verify summary headings, four independent
-Security/Runtime/Analytics cards and the distinct grouped Governance estate
-metrics with consistent gaps/heights, no double borders, mobile stacked cards,
+**Developer / human Visual QA:** verify summary headings and shared grouped
+metric cells on all six Registry pages, original Overview shell and Inventory
+posture header, no double borders, responsive 1/2/4-column grids,
 Violet light/dark contrasts, meaningful per-metric badges, Security
 Vulnerabilities/Supply Chain view switching, Policies/Replication HTMX,
 Analytics framed seven-domain URL transitions, 5-row pagination, and zero/
@@ -270,6 +274,48 @@ layouts, Policies/
 Replication transitions, back/forward navigation, sync completion refresh,
 and the shared pagination footer. CI/CD, Full Admission, staging/UAT and
 promotion remain **HOLD**.
+
+### Entire Artifact Registry grouped summary adoption (#1087, latest feedback)
+
+Human feedback explicitly requires the selected Kubernetes Tenant Estate
+**grouped metric-grid pattern across the entire Artifact Registry**, not only
+Governance. This supersedes the earlier proposal to keep independent summary
+cards on Security, Runtime and Analytics. The six-page audit has been updated
+accordingly; page-specific navigation and provider authority do **not** change.
+
+- **Overview:** use the existing `operational_signal_overview.render` with a
+  new backward-compatible `body_classes='p-5'` default, requested as
+  `body_classes='p-0'` by Registry. Bounded/lazy KPI rows render through the
+  existing `resource_posture_grid` within this shell—do **not** nest another
+  `operational_section_card`. Retain four dashboard tabs, provider scope,
+  freshness/status context and the lazy HTMX KPI endpoint.
+- **Inventory:** the existing `operational_section_card` +
+  `resource_posture_grid` meets the reference and remains unchanged.
+- **Security:** both Vulnerabilities and Supply Chain summary scopes now
+  populate four grouped metric cells in `operational_section_card`. Display
+  values retain original committed source and descriptions; category tones are
+  warnings for observed findings/coverage gaps, **neutral/informational for
+  zero** so absent scans are never inferred clean. Native Security Snapshot,
+  filtered evidence and scanning rules remain authoritative.
+- **Runtime:** four grouped metric cells retain digest-vs-tag confidence;
+  Tag Matched is warning when present, Security Exposed is critical when
+  present. Zero/unknown correlation is not an inferred clean runtime posture.
+  Committed correlation/read-only links and identity evidence are unchanged.
+- **Governance:** uses #950's prior grouped four-metric posture shell with
+  original Committed/Observed/Partial/Not Collected status labels.
+- **Analytics:** the four existing analytical values and the original
+  Review/Unavailable/Ready status labels are projected into the shared
+  `resource_posture_grid`. Lazy HTMX and seven-domain framed tabs remain.
+
+All six areas reuse **existing** icon/tone/divider geometry; only a
+backward-compatible optional Overview shell-body argument was added.
+No new provider request, authentication, database change, job dispatch,
+scanner, backend metric computation or inventory/analytics authoritative
+source is involved. Tests follow the existing contract and Operational
+Dashboard verifier; local browser Visual QA must verify responsive
+one/two/four-cell layout, light/dark mode, long labels, loading-to-evidence
+updates, status tone semantics, tabs and 5-row Registry tables. CI/CD
+admission, staging/UAT and main promotion remain HOLD.
 
 ### Governance Coverage grouped posture implementation (#950 latest human feedback)
 
