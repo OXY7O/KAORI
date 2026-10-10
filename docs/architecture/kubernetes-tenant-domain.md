@@ -162,6 +162,46 @@ source-of-truth, permission, audit or workflow standards. Browser desktop/
 mobile, light/dark, long metric values and toast Visual QA is pending;
 Developer Check, Full Admission, staging and deployment remain HOLD.
 
+## Tenant Release Step 2 — evidence-first provider handoff scope (#1085; current UI authority)
+
+DevContainer feedback identified dense, stacked unstructured text in the
+four-step Native/Capsule Release wizard **Provider handoff scope**. The
+current canonical Step 2 is a **single structured read-only resource list**
+within the existing Release panel (not separate cards or an additional tab):
+one short title/description, committed handoff-required count, committed
+recorded-resource count, then separated resource rows. Each row leads with a
+type icon (Namespace / ResourceQuota / LimitRange / CapsuleTenant), exact
+resource kind/name, and the preflight's original **Handoff Required /
+Ownership Conflict / Observed** semantic status. Ownership marker correlation
+and provider manager are distinct, labeled facts, not a sentence blob.
+
+An accessible native **Provider identifiers** disclosure on each resource
+shows the exact committed Namespace, provider UID and resourceVersion without
+truncation. The initial list is scan-friendly; keyboard users can expand
+each item for immutable identity evidence. Long values wrap, no extra
+horizontal scrolling or nested list scrollbar, and the original no-review /
+empty-evidence states remain distinct. `handoff_components` and
+`handoff_required_count` come **only** from the recorded Release preflight;
+no separate provider API, client state, or inferred readiness. The scope
+retains an explicit read-only handoff boundary: observing provider objects
+does not approve, transfer, or delete resources. Original wizard navigation,
+11 Release POST forms (14 Tenant governance forms overall), independent
+approval, UID/RV guards and live provider read-back remain unchanged.
+
+The existing managed-allocation preflight blocker is expanded to explain
+that an adopted Namespace linked to a KAORI Resource Profile still requires
+**explicit independently approved allocation handoff with authoritative
+provider read-back**; KAORI cannot silently abandon the allocation or
+delete provider resources. This is wording only: the same
+`resource_profile_id is not None` guard still blocks Release, and no
+handoff policy/admission calculation changed.
+
+Focused contract/unit tests are authored for field retention, semantic
+statuses, failure/empty branches, exact blocker content and preservation
+of all forms. Runtime tests, DevContainer browser Visual QA, Developer
+Check, CI/CD/Full Admission, staging UAT, main promotion and deployment
+are HOLD pending explicit authorization.
+
 ## Tenant Governance Scope and permanent Release wizard (#1077; historical Release/authority foundation; scope presentation superseded by #1079)
 
 Human Visual Review of #1075 rejected the generic four-KPI dashboard, the

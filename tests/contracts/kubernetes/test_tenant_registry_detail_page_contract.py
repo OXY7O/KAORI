@@ -179,7 +179,7 @@ def test_release_evidence_is_readable_full_width_without_nested_scroll():
     )[0]
     for label in (
         'Scope readiness',
-        '02 · Provider handoff scope',
+        'Provider handoff scope',
         '03 · Independent approval and handoff',
         '04 · Verify and finalize',
         'aria-label="Release blockers"',
@@ -194,6 +194,61 @@ def test_release_evidence_is_readable_full_width_without_nested_scroll():
     assert 'overflow-y-auto' not in release
     assert 'text-sm leading-6' in release
     assert release.count('<form ') == 11
+
+
+
+def test_release_handoff_inventory_is_structured_with_full_on_demand_identifiers():
+    detail = read(DETAIL)
+    handoff = detail.split('id="tenant-release-stage-inventory"', 1)[1].split(
+        "{% elif tenant_release_step == 'approval' %}", 1
+    )[0]
+    Environment().parse(detail)
+    assert 'aria-label="Provider handoff inventory"' in handoff
+    assert 'aria-label="Recorded provider handoff resources"' in handoff
+    assert "row.release_preflight.handoff_components|length" in handoff
+    assert "row.release_preflight.handoff_required_count" in handoff
+    assert "for item in row.release_preflight.handoff_components" in handoff
+    assert '<ol class="divide-y divide-outline-subtle"' in handoff
+    assert "item.kind == 'Namespace'" in handoff
+    assert "item.kind == 'ResourceQuota'" in handoff
+    assert "item.kind == 'LimitRange'" in handoff
+    assert "item.kind == 'CapsuleTenant'" in handoff
+    assert '{{ item.name }}' in handoff
+    assert 'break-words' in handoff
+    assert '[overflow-wrap:anywhere]' in handoff
+
+    for state in ('external_acceptance_required', 'owner_review_required', 'observe_only'):
+        assert state in handoff
+    for label in ('Handoff Required', 'Ownership Conflict', 'Observed'):
+        assert label in handoff
+    assert "warning' if item.handoff != 'observe_only' else 'info'" in handoff
+
+    # Primary row separates the ownership correlation and the provider manager.
+    assert 'Ownership evidence' in handoff
+    assert 'Provider manager' in handoff
+    assert "item.ownership|replace('_', ' ')|title" in handoff
+    assert "item.managed_by if item.managed_by else 'Not recorded'" in handoff
+
+    # Long provider identities are preserved unchanged in accessible native details.
+    assert 'group/identifiers' in handoff
+    assert 'aria-label="Provider identifiers for {{ item.kind }} {{ item.name }}"' in handoff
+    assert 'Provider identifiers' in handoff
+    assert '{{ item.namespace }}' in handoff
+    assert '{{ item.uid }}' in handoff
+    assert '{{ item.resource_version }}' in handoff
+    assert 'break-all font-mono' in handoff
+    assert '<details' in handoff
+    assert '<summary' in handoff
+    assert 'overflow-y-auto' not in handoff
+    assert 'overflow-x-auto' not in handoff
+    assert 'max-h-72' not in handoff
+
+    # Showing provider evidence never executes or authorizes a provider write.
+    assert 'read-only provider observations' in handoff
+    assert 'This does not authorize Release.' in handoff
+    assert 'Run Review Release to collect' in handoff
+    assert '<form ' not in handoff
+
 
 
 def test_exact_governance_forms_return_to_same_page_and_global_toast():
