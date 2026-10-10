@@ -249,6 +249,48 @@ def test_governance_evidence_reuses_entire_canonical_table_workspace() -> None:
     assert 'artifactRegistryGovernanceSyncFinished from:body' in workspace
 
 
+def test_governance_evidence_filter_matches_committed_rows_before_pagination() -> None:
+    from app.artifact_registry.presentation_governance import _filter_governance_rows
+
+    policies = [
+        {'project': 'library', 'provider_label': 'Harbor', 'retention_label': 'Not Configured',
+         'immutability_label': 'Configured'},
+        {'project': 'demo', 'provider_label': 'Harbor', 'retention_label': 'Configured',
+         'immutability_label': 'Not Configured'},
+        {'project': 'archive', 'provider_label': 'Another Registry', 'retention_label': 'Unavailable',
+         'immutability_label': 'Not Collected'},
+    ]
+    def filter_rows(rows, *, tab='policies', search='', provider='', retention='', immutability='', state=''):
+        return _filter_governance_rows(
+            rows, active_tab=tab, search=search, provider=provider, retention=retention,
+            immutability=immutability, state=state,
+        )
+
+    assert len(filter_rows(policies)) == 3
+    assert [row['project'] for row in filter_rows(policies, search='LIBRARY')] == ['library']
+    assert [row['project'] for row in filter_rows(policies, provider='harbor')] == ['library', 'demo']
+    assert [row['project'] for row in filter_rows(policies, retention='not_configured')] == ['library']
+    assert [row['project'] for row in filter_rows(policies, immutability='not_collected')] == ['archive']
+    assert filter_rows(policies, provider='Harbor', retention='unavailable') == []
+
+    replication = [
+        {'name': 'primary-copy', 'provider_label': 'Harbor', 'enabled': True,
+         'trigger_type': 'event', 'source_registry': 'local', 'destination_registry': 'remote-a',
+         'destination_namespace': 'library'},
+        {'name': 'standby-copy', 'provider_label': 'Harbor', 'enabled': False,
+         'trigger_type': None, 'source_registry': None, 'destination_registry': 'remote-b',
+         'destination_namespace': None},
+        {'name': 'legacy-copy', 'provider_label': 'Another Registry', 'enabled': None,
+         'trigger_type': None, 'source_registry': None, 'destination_registry': None,
+         'destination_namespace': None},
+    ]
+    assert [row['name'] for row in filter_rows(replication, tab='replication', state='enabled')] == ['primary-copy']
+    assert [row['name'] for row in filter_rows(replication, tab='replication', state='disabled')] == ['standby-copy']
+    assert [row['name'] for row in filter_rows(replication, tab='replication', state='unknown')] == ['legacy-copy']
+    assert [row['name'] for row in filter_rows(replication, tab='replication', search='remote-b')] == ['standby-copy']
+    assert [row['name'] for row in filter_rows(replication, tab='replication', search='LIBRARY')] == ['primary-copy']
+
+
 def test_governance_coverage_and_evidence_follow_canonical_section_layout() -> None:
     from jinja2 import Environment
 
