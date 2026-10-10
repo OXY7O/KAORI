@@ -117,3 +117,23 @@ dry-run and the blocked gate projection without provider mutation.
 - Developer Check, Full Admission, CI/CD, staging-server UAT, main promotion and release remain **HOLD** pending explicit authorization. Passing static contracts alone is not UAT.
 
 **Decision requested of maintainer:** accept KAORI as the controlled Native provider executor and choose an *approved verifiable successor principal mapping* (with the one-click combined consent fast path only when the same independent reviewer is itself verified as the successor). Do **not** admit or turn on a live transfer based on this draft alone.
+
+
+## #1048 pre-executor code review slice (non-mutating)
+
+The issue-linked `native_handoff_transfer_patch.py` composes a deterministic
+provider JSON Patch by **reusing** the existing canonical Native dry-run patch
+builder. Four exact guard tests cover provider UID, resourceVersion and KAORI
+ownership markers. Only the original KAORI ownership labels are removed, then
+`app.kubernetes.io/managed-by` is assigned to the intended verified successor
+label. This aligns the proposed write contract with the *existing*
+`verify_external_native_component` read-back contract without changing quota,
+Container/PVC LimitRange, foreign metadata, Namespace identity or workload.
+
+This helper is intentionally **pure**. It does not call any Kubernetes PATCH,
+obtain consent, approve the request or commit `Released`. A live executor must
+remain blocked until #1047 identity/consent authority has been accepted and
+implementation of operation-state tracking, partial-failure recovery and
+post-write verification can be reviewed and exercised against nonproduction
+Kubernetes. Existing Native dry-run behavior is unchanged, and this branch
+must not be promoted into staging as an admitted handoff executor.
