@@ -150,6 +150,7 @@
             </button>
         </footer>
     </form>
+    {% include "kubernetes/tenant/partials/_tenant_allocation_overview.html" %}
     <section id="{{ capacity_registry_id }}"
              class="{{ table_ui.block_classes(allow_overflow=true) }}"
              aria-labelledby="tenant-allocation-budget-heading">
