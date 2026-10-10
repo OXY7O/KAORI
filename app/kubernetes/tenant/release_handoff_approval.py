@@ -160,6 +160,47 @@ def latest_release_handoff_approval(tenant_id: str) -> dict[str, Any] | None:
     return _latest_event(tenant_id=tenant_id, target_type=_APPROVAL_TARGET)
 
 
+def handoff_plan_preparation_state(
+    plan: dict[str, Any] | None, approval: dict[str, Any] | None,
+) -> str:
+    """Single-plan policy shared by backend and read-only Registry presentation.
+
+    An acknowledged plan remains authoritative until an explicit governed
+    successor/handoff restart exists; an expired *unacknowledged* plan can be
+    replaced by a fresh request. Unknown states are blocked, not ignored.
+    """
+    if plan is None:
+        return 'available'
+    sha = plan.get('plan_sha256')
+    if (
+        sha and approval and approval.get('plan_sha256') == sha
+        and approval.get('status') == 'acknowledged_pending_provider_handoff'
+    ):
+        return 'acknowledged'
+    if plan.get('status') != 'pending_independent_approval':
+        return 'blocked'
+    return 'pending' if _checked_recently(plan.get('requested_at')) else 'expired'
+
+
+def _require_no_active_handoff_plan(*, tenant_id: str) -> None:
+    state = handoff_plan_preparation_state(
+        latest_release_handoff_plan(tenant_id),
+        latest_release_handoff_approval(tenant_id),
+    )
+    if state == 'pending':
+        raise ValueError(
+            'A current handoff plan is awaiting independent approval. '
+            'Review the existing plan; preparing another would replace the request.'
+        )
+    if state == 'acknowledged':
+        raise ValueError(
+            'The current handoff plan was independently acknowledged and awaits '
+            'external provider handoff. A new plan requires a separate governed restart.'
+        )
+    if state == 'blocked':
+        raise ValueError('Handoff plan state is not eligible for replacement.')
+
+
 def prepare_release_handoff_plan_committed(
     *, tenant_id: str, actor_user_id: int, successor_owner: str, change_reference: str
 ) -> dict[str, Any]:
@@ -183,6 +224,9 @@ def prepare_release_handoff_plan_committed(
         or locked.ownership_status != 'adopted'
     ):
         raise ValueError('Tenant authority changed while preparing handoff.')
+    # The Tenant row lock serializes concurrent preparations/acknowledgments:
+    # evaluate *committed* plan/approval after locking and before writing.
+    _require_no_active_handoff_plan(tenant_id=tenant_id)
     planned_at = datetime.now(UTC).isoformat()
     contract = {
         'tenant_id': tenant_id,
