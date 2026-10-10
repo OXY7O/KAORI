@@ -542,7 +542,7 @@ def _overview_capacity_projection(
     *,
     context: dict[str, Any],
     scoped_providers: list[IntegrationInstance],
-    selected_provider: IntegrationInstance | None,
+    selected_provider: IntegrationInstance,
     states: list[RegistryCollectionState],
 ) -> dict[str, Any]:
     artifact_query = (
