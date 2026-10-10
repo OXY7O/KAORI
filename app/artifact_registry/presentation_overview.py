@@ -667,6 +667,8 @@ def build_overview_section(
         )
 
     if section == 'capacity':
+        if selected_provider is None:
+            return context
         return _overview_capacity_projection(
             context=context,
             scoped_providers=scoped_providers,
