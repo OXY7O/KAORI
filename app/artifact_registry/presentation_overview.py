@@ -545,9 +545,11 @@ def _overview_capacity_projection(
     selected_provider: IntegrationInstance | None,
     states: list[RegistryCollectionState],
 ) -> dict[str, Any]:
-    artifact_query = RegistryArtifact.query.join(RegistryRepository).join(RegistryProject)
-    if selected_provider is not None:
-        artifact_query = artifact_query.filter(RegistryProject.integration_instance_id == selected_provider.id)
+    artifact_query = (
+        RegistryArtifact.query.join(RegistryRepository)
+        .join(RegistryProject)
+        .filter(RegistryProject.integration_instance_id == selected_provider.id)
+    )
     artifact_total, total_size_bytes = artifact_query.with_entities(
         func.count(RegistryArtifact.id),
         func.coalesce(func.sum(RegistryArtifact.size_bytes), 0),
