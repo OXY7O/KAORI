@@ -11,7 +11,7 @@
 <div id="artifact-registry-analytics-controls-readiness">
     {% call shared_readiness.frame(
         'Analytics Controls & Data Readiness',
-        'Set the Registry and Time Range, then confirm Registry Source status and committed worker datasets. Time Range filters snapshot age, not provider telemetry.',
+        'Set the Registry and Time Range, then confirm Registry Source status and committed analytics datasets.',
         'sliders-horizontal',
         'artifact-registry-analytics-refresh-indicator',
         eyebrow='Registry Analytics',
@@ -57,7 +57,11 @@
                     <span class="{{ analytics_workspace.control_label_classes() }}">Time Range</span>
                     <select id="artifact-registry-analytics-window"
                             name="snapshot_window"
-                            class="{{ analytics_workspace.control_select_classes() }}">
+                            class="{{ analytics_workspace.control_select_classes() }}"
+                            title="Filters the generation age of committed Registry snapshots, not provider telemetry history.">
+                        {% if analytics.snapshot_window == 'current' %}
+                            <option value="current" selected>Latest Snapshot (Any Age)</option>
+                        {% endif %}
                         {% for value, label in [
                             ('1h', 'Last 1 Hour'),
                             ('6h', 'Last 6 Hours'),
@@ -65,8 +69,7 @@
                             ('24h', 'Last 24 Hours'),
                             ('7d', 'Last 7 Days'),
                             ('30d', 'Last 30 Days'),
-                            ('60d', 'Last 60 Days'),
-                            ('current', 'Latest Snapshot (Any Age)')
+                            ('60d', 'Last 60 Days')
                         ] %}
                             <option value="{{ value }}"
                                     {% if analytics.snapshot_window == value %}selected{% endif %}>
@@ -81,14 +84,14 @@
             <div class="grid gap-4 lg:grid-cols-2">
                 {{ shared_readiness.source_card(
                     'Registry Source Status',
-                    'Provider-neutral Registry integration scope and committed analytics coverage.',
+                    'Registry providers eligible for committed analytics snapshots.',
                     'Eligible' if readiness.eligible_count else 'Blocked',
                     'normal' if readiness.eligible_count else 'warning',
                     'Ready Providers',
                     readiness.eligible_count ~ ' / ' ~ readiness.registered_count,
                     'Snapshot Coverage',
                     readiness.covered_count ~ ' / ' ~ readiness.eligible_count,
-                    icon='database'
+                    icon=none
                 ) }}
                 {{ shared_readiness.snapshot_card(
                     'Latest Analytics Data Snapshot',

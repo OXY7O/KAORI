@@ -200,6 +200,9 @@ def test_registry_analytics_readiness_reuses_k8s_shared_controls_without_buttons
     assert 'Last 60 Days' in registry
     assert 'Latest Snapshot (Any Age)' in registry
     assert 'Registry Source Status' in registry
+    assert 'icon=none' in registry
+    assert "bg-status-' ~ dot_tone" in common
+    assert "analytics.snapshot_window == 'current'" in registry
     assert 'Latest Analytics Data Snapshot' in registry
     assert '<select id="artifact-registry-analytics-provider"' in registry
     assert '<select id="artifact-registry-analytics-window"' in registry
@@ -367,7 +370,7 @@ def test_registry_analytics_selector_preserves_scope_through_routes_and_alerts()
     ).read_text()
 
     assert routes.count("provider_id=request.args.get('provider_id', type=int)") >= 3
-    assert routes.count("snapshot_window=request.args.get('snapshot_window', 'current', type=str)") >= 3
+    assert routes.count("snapshot_window=request.args.get('snapshot_window', '24h', type=str)") >= 3
     assert "analytics = build_analytics_shell(" in routes
     assert "'alert_search': request.args.get('alert_q', '', type=str)" in routes
     assert "'alert_page': request.args.get('alert_page', 1, type=int) or 1" in routes
@@ -402,7 +405,7 @@ def test_registry_analytics_materialization_is_bounded_and_worker_owned() -> Non
 
     assert "@artifact_registry_bp.get('/analytics/materialization/resolve')" in routes
     assert "@permission_required('artifact_registry.view')" in routes
-    assert "should_request_registry_analytics_materialization(readiness)" in routes
+    assert "should_request_registry_analytics_materialization(build_registry_analytics_readiness())" in routes
     assert "dispatch_registered_job(" in routes
     assert "trigger_type='on_demand'" in routes
     assert "job_key='artifact_registry.analytics.materialize'" in routes
@@ -424,7 +427,7 @@ def test_registry_analytics_materialization_is_bounded_and_worker_owned() -> Non
     assert "get_or_create_job_policy(" not in adapter
     assert "RegistryAnalyticsSnapshot.query" in adapter
     assert "present_job_execution(active)" in adapter
-    assert "build_registry_analytics_readiness()" in presenter
+    assert "build_registry_analytics_readiness(" in presenter
     assert "MetricsConsumer" not in presenter
     assert "queue_name: analytics-batch" in job_catalog
     assert "key: artifact_registry.analytics.materialize" in job_catalog
