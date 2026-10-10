@@ -505,6 +505,8 @@ def test_native_no_transfer_recovery_keeps_three_independent_governed_actions():
 
     assert 'data-native-no-transfer-recovery' in detail
     assert 'Governed No-Transfer Recovery' in detail
+    assert 'native_cycle.no_transfer_assessment_candidate' in detail
+    assert '"no_transfer_assessment_candidate": no_transfer_assessment_candidate' in readiness
     assert 'native_cycle.provider_handoff_recovery_required' in detail
     assert 'native_cycle.no_transfer_assessment_current' in detail
     assert 'native_cycle.no_transfer_authorized_current' in detail

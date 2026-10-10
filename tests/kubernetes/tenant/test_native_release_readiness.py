@@ -417,3 +417,47 @@ def test_legacy_bearer_acceptance_not_used_by_new_platform_admin_readiness():
     result = project_native_release_readiness(**snapshot)
     assert result['verified_successor_acceptance'] is False
     assert result['stages'][2]['complete'] is False
+
+def test_governed_recovery_projection_coexists_with_read_only_candidate():
+    """PR #1111 independent decision and PR #1112 advisory both survive integration."""
+    snapshot = evidence()
+    snapshot['plan']['handoff_fingerprint'] = 'scope-fp'
+    snapshot['approval']['approved_at'] = '2020-01-01T00:00:00+00:00'
+    snapshot['execution_history'] = [{
+        'plan_sha256': 'a' * 64, 'handoff_fingerprint': 'scope-fp',
+        'status': 'partial_handoff_recovery_required',
+        'provider_mutation_performed': False,
+        'provider_handoff_verified': False, 'release_authorized': False,
+        'verified_count': 0, 'verified_components': [],
+    }]
+    snapshot['no_transfer_assessment'] = {
+        'status': 'verified_no_transfer_pending_independent_review',
+        'plan_sha256': 'a' * 64, 'handoff_fingerprint': 'scope-fp',
+        'assessed_by': 11, 'assessed_at': datetime.now(UTC).isoformat(),
+        'executor_actor_id': 22, 'assessment_sha256': 'c' * 64,
+        'history_digest': 'd' * 64, 'provider_proof_sha256': 'e' * 64,
+    }
+    snapshot['no_transfer_decision'] = {
+        'status': 'authorized_for_requester_restart',
+        'plan_sha256': 'a' * 64, 'handoff_fingerprint': 'scope-fp',
+        'assessment_sha256': 'c' * 64, 'history_digest': 'd' * 64,
+        'provider_proof_sha256': 'e' * 64, 'authorized_by': 33,
+        'authorized_at': datetime.now(UTC).isoformat(),
+    }
+
+    status = project_native_release_readiness(**snapshot)
+    assert status['no_transfer_assessment_candidate'] is True
+    assert status['no_transfer_assessment_current'] is True
+    assert status['no_transfer_authorized_current'] is True
+    assert status['restart_required'] is False
+    assert status['execute_admitted'] is False
+    assert status['release_admitted'] is False
+
+    snapshot['no_transfer_decision']['authorized_by'] = 22
+    assert project_native_release_readiness(**snapshot)['no_transfer_authorized_current'] is False
+    snapshot['no_transfer_decision']['authorized_by'] = 33
+    snapshot['no_transfer_decision']['history_digest'] = 'f' * 64
+    assert project_native_release_readiness(**snapshot)['no_transfer_authorized_current'] is False
+    snapshot['no_transfer_decision']['history_digest'] = 'd' * 64
+    snapshot['no_transfer_assessment']['assessed_at'] = '2020-01-01T00:00:00+00:00'
+    assert project_native_release_readiness(**snapshot)['no_transfer_assessment_current'] is False
