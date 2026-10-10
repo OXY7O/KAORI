@@ -14,6 +14,7 @@ from app.intelligence.recommendation_engine import (
     build_utilization_actionable_recommendations,
     count_actionable_recommendations,
 )
+from app.common.analytics.params import get_allowed_time_ranges
 from app.kubernetes.analytics.common.presentation import present_metrics_source_status
 from app.kubernetes.analytics.overview.health import build_health_summary
 from app.kubernetes.analytics.overview.schema import build_empty_overview_payload, classify_count_risk, classify_percent
@@ -146,6 +147,7 @@ def get_analytics_overview(
     payload['selected_cluster'] = selected_cluster
     payload['selected_cluster_id'] = _get_cluster_id(selected_cluster)
     payload['selected_time_range'] = time_range or '24h'
+    payload['allowed_time_ranges'] = get_allowed_time_ranges()
     payload['last_analyzed_at'] = _utc_now_display()
 
     cluster_id = str(payload['selected_cluster_id'])

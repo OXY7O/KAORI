@@ -1,6 +1,5 @@
 {% import "analytics/components/_controls_readiness.html" as shared_readiness %}
 {% import "components/table_label.html" as table_label %}
-{% import "kubernetes/analytics/components/_analysis_workspace.html" as analytics_workspace %}
 {% set readiness = analytics.data_readiness %}
 {% set page_endpoint = 'artifact_registry.analytics' if analytics.active_tab == 'overview' else 'artifact_registry.analytics_' ~ analytics.active_tab %}
 {% set worker_status %}
@@ -39,50 +38,29 @@
                 <input type="hidden" name="alert_page" value="1">
                 <input type="hidden" name="alert_per_page" value="{{ analytics.alert_filters.per_page }}">
             {% endif %}
-            <div class="grid gap-4 sm:grid-cols-2">
-                <label for="artifact-registry-analytics-provider" class="block">
-                    <span class="{{ analytics_workspace.control_label_classes() }}">Registry</span>
-                    <select id="artifact-registry-analytics-provider"
-                            name="provider_id"
-                            class="{{ analytics_workspace.control_select_classes() }}">
-                        <option value="">All Registries</option>
-                        {% for source in analytics.provider_options %}
-                            <option value="{{ source.id }}"
-                                    {% if analytics.selected_provider_id == source.id %}selected{% endif %}>
-                                {{ source.name }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </label>
-                <label for="artifact-registry-analytics-window" class="block">
-                    <span class="{{ analytics_workspace.control_label_classes() }}">Time Range</span>
-                    <select id="artifact-registry-analytics-window"
-                            name="snapshot_window"
-                            class="{{ analytics_workspace.control_select_classes() }}"
-                            title="Filters the generation age of committed Registry snapshots, not provider telemetry history.">
-                        {% if analytics.snapshot_window == 'current' %}
-                            <option value="current" selected>Latest Snapshot (Any Age)</option>
-                        {% endif %}
-                        {% for value, label in [
-                            ('1h', 'Last 1 Hour'),
-                            ('6h', 'Last 6 Hours'),
-                            ('12h', 'Last 12 Hours'),
-                            ('24h', 'Last 24 Hours'),
-                            ('7d', 'Last 7 Days'),
-                            ('30d', 'Last 30 Days'),
-                            ('60d', 'Last 60 Days')
-                        ] %}
-                            <option value="{{ value }}"
-                                    {% if analytics.snapshot_window == value %}selected{% endif %}>
-                                {{ label }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </label>
-            </div>
+            {% call shared_readiness.controls_grid() %}
+                {{ shared_readiness.selector(
+                    'artifact-registry-analytics-provider',
+                    'provider_id',
+                    'Registry',
+                    analytics.provider_options,
+                    analytics.selected_provider_id,
+                    empty_label='All Registries'
+                ) }}
+                {{ shared_readiness.selector(
+                    'artifact-registry-analytics-window',
+                    'snapshot_window',
+                    'Time Range',
+                    analytics.time_range_options,
+                    analytics.snapshot_window,
+                    title='Filters the generation age of committed Registry snapshots, not provider telemetry history.',
+                    legacy_value='current',
+                    legacy_label='Latest Snapshot (Any Age)'
+                ) }}
+            {% endcall %}
         </form>
         <div class="space-y-3">
-            <div class="grid gap-4 lg:grid-cols-2">
+            {% call shared_readiness.readiness_grid() %}
                 {{ shared_readiness.source_card(
                     'Registry Source Status',
                     'Registry providers eligible for committed analytics snapshots.',
@@ -105,7 +83,7 @@
                     readiness.last_attempt_label,
                     coverage=readiness.current_count ~ '/' ~ readiness.eligible_count ~ ' Current'
                 ) }}
-            </div>
+            {% endcall %}
             {% if readiness.current_count < readiness.eligible_count or readiness.execution_tone == 'critical' or readiness.collection_warning %}
                 <div class="divide-y divide-outline-subtle overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover">
                     {% if readiness.current_count < readiness.eligible_count %}

@@ -185,6 +185,18 @@ Overview section endpoints hydrate only the requested snapshot-backed section.
   Domain Readiness. It is not silently discarded or misrepresented as a source
   outage.
 
+## Shared Analytics presentation ownership (#1122)
+
+Kubernetes Analytics Overview now uses the common `controls_readiness`
+frame, selector and two-card readiness grid. Its Metrics Source-specific
+readiness projector still resolves waiting/not-configured/ready/degraded/
+unavailable states, but delegates source card geometry, status badge/dot
+and response/checked-at detail cells to shared `source_card`. Snapshot
+card layout remains shared. The seven Overview Time Range options come
+from canonical `get_allowed_time_ranges()` supplied by its service payload,
+not a second hard-coded list in Jinja. No change to MetricsConsumer,
+JobExecution, workload materialization or committed snapshot ownership.
+
 ## Shared section-request loading tracker (#1106)
 
 Analytics Overview retains the approved compact Violet tracker geometry and

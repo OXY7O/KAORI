@@ -39,6 +39,20 @@ by the UI tracker. A future change to true lazy Overview content requires a
 separate scoped issue with fast-shell read-model, fragment endpoints and
 real data-loading evidence; don't turn static tabs into fake HTMX requests.
 
+## Canonical Analytics selectors and reusable presentation (#1122)
+
+The Object Storage Analytics Controls form now calls shared
+`analytics/components/_controls_readiness.html::selector`,
+`controls_grid` and `readiness_grid` for all System, Time Range,
+Forecast History Window and Alert Source selectors. The canonical
+`app/common/analytics/params.py` options remain the only time-range
+vocabulary source; provider-specific forecast/alert choices stay with
+their owning domain. Two main cards already used shared `source_card`
+and `snapshot_card`. A subsequent shared layout/style adjustment now
+reaches all three Analytics capabilities without copying template markup.
+HTMX targets, worker dispatch, committed evidence and Alertmanager
+authority are unchanged.
+
 ## Canonical two-card Analytics readiness layout (#1114)
 
 The six Object Storage Analytics views now use the same **two-column,

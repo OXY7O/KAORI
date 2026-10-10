@@ -85,10 +85,11 @@ def test_object_storage_controls_use_shared_shell_with_preserved_domain_evidence
     assert 'hx-get="{{ url_for(\'analytics.object_storage_\' ~ page_key) }}"' in controls
     assert 'hx-target="#object-storage-analytics-page"' in controls
     assert 'hx-push-url="true"' in controls
-    assert 'name="system_id"' in controls
-    assert 'name="time_range"' in controls
-    assert 'name="history_window"' in controls
-    assert 'name="source"' in controls
+    assert 'shared_readiness.selector(' in controls
+    assert 'shared_readiness.controls_grid()' in controls
+    assert 'shared_readiness.readiness_grid()' in controls
+    for field in ('system_id', 'time_range', 'history_window', 'source'):
+        assert f"'{field}'" in controls
     for evidence in (
         'Committed Inventory',
         'Latest Analytics Data Snapshot',

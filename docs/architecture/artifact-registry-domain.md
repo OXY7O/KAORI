@@ -610,6 +610,21 @@ updates push its canonical page URL. No additional materialization models,
 provider read paths, RBAC definitions, alert collection or central Intelligence
 recommendation lifecycle are introduced.
 
+## Registry Analytics reusable presentation ownership (#1122)
+
+Registry Analytics now uses `analytics/components/_controls_readiness.html`
+for the header, provider/time-range selector fields, their responsive grid,
+and paired source/snapshot card geometry. It no longer imports
+`kubernetes/analytics/components/_analysis_workspace.html` for styling.
+Normal selectable ranges are projected from
+`app/common/analytics/params.py::get_allowed_time_ranges()`; the
+`snapshot_window=current` legacy URL explicitly renders its own special
+option only while selected. **Range selection still filters the age of
+the latest committed Registry snapshot until #1108 delivers qualified
+Metrics Source history**; sharing UI does not change this authority.
+Provider adapters must supply normalized evidence while future Registry
+instances reuse the same controls without forking markup.
+
 ## Shared Analytics Section Loading (#1106)
 
 Artifact Registry Overview and its seven dedicated analytical routes reuse

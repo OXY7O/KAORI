@@ -178,6 +178,7 @@ def test_registry_analytics_readiness_reuses_k8s_shared_controls_without_buttons
     for text in templates.values():
         Environment().parse(text)
     common, k8s, registry, live, page = templates.values()
+    presenter = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
 
     assert "{% macro frame(" in common
     assert 'analysis_surface.snapshot_shell_classes()' in common
@@ -194,25 +195,29 @@ def test_registry_analytics_readiness_reuses_k8s_shared_controls_without_buttons
     assert 'shared_readiness.snapshot_card(' in registry
     assert 'Analytics Controls & Data Readiness' in registry
     assert "eyebrow='Analytics Overview' if analytics.active_tab == 'overview'" in registry
-    assert 'Registry</span>' in registry
-    assert 'Time Range</span>' in registry
+    assert "'Registry'" in registry
+    assert "'Time Range'" in registry
     assert 'All Registries' in registry
-    assert 'Last 24 Hours' in registry
-    assert 'Last 60 Days' in registry
-    assert 'Latest Snapshot (Any Age)' in registry
+    assert 'analytics.time_range_options' in registry
+    assert "'time_range_options': get_allowed_time_ranges()" in presenter
+    assert "legacy_label='Latest Snapshot (Any Age)'" in registry
     assert 'Registry Source Status' in registry
     assert 'icon=none' in registry
     assert "'bg-status-normal'" in common
     assert "'bg-status-warning'" in common
     assert "'bg-status-critical'" in common
     assert "'bg-status-unknown'" in common
-    assert "analytics.snapshot_window == 'current'" in registry
+    assert "legacy_value='current'" in registry
     assert 'Latest Analytics Data Snapshot' in registry
-    assert '<select id="artifact-registry-analytics-provider"' in registry
-    assert '<select id="artifact-registry-analytics-window"' in registry
-    assert 'name="provider_id"' in registry
-    assert 'name="snapshot_window"' in registry
-    assert "for source in analytics.provider_options" in registry
+    assert "shared_readiness.selector(" in registry
+    assert "'artifact-registry-analytics-provider'" in registry
+    assert "'artifact-registry-analytics-window'" in registry
+    assert "'provider_id'" in registry
+    assert "'snapshot_window'" in registry
+    assert 'analytics.provider_options' in registry
+    assert 'shared_readiness.controls_grid()' in registry
+    assert 'shared_readiness.readiness_grid()' in registry
+    assert 'kubernetes/analytics/components/_analysis_workspace.html' not in registry
     assert 'hx-trigger="change delay:120ms"' in registry
     assert 'hx-push-url="true"' in registry
     assert 'hx-indicator="#artifact-registry-analytics-refresh-indicator"' in registry

@@ -1,6 +1,5 @@
 {% import "analytics/components/_controls_readiness.html" as shared_readiness %}
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
-{% import "components/table_primitives.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% set storage_readiness_description %}
     {% if page_key == 'alerts' %}
@@ -31,61 +30,49 @@
               hx-indicator="#object-storage-analytics-refresh-indicator"
               hx-trigger="change delay:120ms"
               data-analytics-preserve-tab
-              class="{{ table_ui.filter_layout_classes() }}">
+              class="{{ shared_readiness.filter_layout_classes() }}">
             <input type="hidden" name="tab" value="">
-            <label class="block" for="object-storage-system-filter">
-                <span class="{{ table_ui.filter_label_classes() }}">Object Storage System</span>
-                <select id="object-storage-system-filter"
-                        name="system_id"
-                        class="{{ table_ui.filter_select_classes() }}">
-                    {% for item in systems %}
-                        <option value="{{ item.id }}"
-                                {% if system and system.id == item.id %}selected{% endif %}>{{ item.name }}</option>
-                    {% endfor %}
-                </select>
-            </label>
-            {% if page_key == 'alerts' %}
-                <label class="block" for="object-storage-alert-source-filter">
-                    <span class="{{ table_ui.filter_label_classes() }}">Alert Source</span>
-                    <select id="object-storage-alert-source-filter"
-                            name="source"
-                            class="{{ table_ui.filter_select_classes() }}">
-                        <option value="auto"
-                                {% if selected_alert_source == 'auto' %}selected{% endif %}>Automatic · Alertmanager Preferred</option>
-                        <option value="alertmanager"
-                                {% if selected_alert_source == 'alertmanager' %}selected{% endif %}>Alertmanager</option>
-                        <option value="metrics_source"
-                                {% if selected_alert_source == 'metrics_source' %}selected{% endif %}>Metrics Source</option>
-                    </select>
-                </label>
-            {% elif page_key == 'forecast' %}
-                <label class="block" for="object-storage-history-window-filter">
-                    <span class="{{ table_ui.filter_label_classes() }}">History Window</span>
-                    <select id="object-storage-history-window-filter"
-                            name="history_window"
-                            class="{{ table_ui.filter_select_classes() }}">
-                        {% for item in forecast_history_windows %}
-                            <option value="{{ item.value }}"
-                                    {% if selected_forecast_history_window == item.value %}selected{% endif %}>{{ item.label }}</option>
-                        {% endfor %}
-                    </select>
-                </label>
-            {% else %}
-                <label class="block" for="object-storage-time-range-filter">
-                    <span class="{{ table_ui.filter_label_classes() }}">Time Range</span>
-                    <select id="object-storage-time-range-filter"
-                            name="time_range"
-                            class="{{ table_ui.filter_select_classes() }}">
-                        {% for item in allowed_time_ranges %}
-                            <option value="{{ item.value }}"
-                                    {% if selected_time_range == item.value %}selected{% endif %}>{{ item.label }}</option>
-                        {% endfor %}
-                    </select>
-                </label>
-            {% endif %}
+            {% call shared_readiness.controls_grid() %}
+                {{ shared_readiness.selector(
+                    'object-storage-system-filter',
+                    'system_id',
+                    'Object Storage System',
+                    systems,
+                    system.id if system else none
+                ) }}
+                {% if page_key == 'alerts' %}
+                    {{ shared_readiness.selector(
+                        'object-storage-alert-source-filter',
+                        'source',
+                        'Alert Source',
+                        [
+                            {'value': 'auto', 'label': 'Automatic · Alertmanager Preferred'},
+                            {'value': 'alertmanager', 'label': 'Alertmanager'},
+                            {'value': 'metrics_source', 'label': 'Metrics Source'}
+                        ],
+                        selected_alert_source
+                    ) }}
+                {% elif page_key == 'forecast' %}
+                    {{ shared_readiness.selector(
+                        'object-storage-history-window-filter',
+                        'history_window',
+                        'History Window',
+                        forecast_history_windows,
+                        selected_forecast_history_window
+                    ) }}
+                {% else %}
+                    {{ shared_readiness.selector(
+                        'object-storage-time-range-filter',
+                        'time_range',
+                        'Time Range',
+                        allowed_time_ranges,
+                        selected_time_range
+                    ) }}
+                {% endif %}
+            {% endcall %}
         </form>
         <div class="space-y-3">
-            <div class="grid gap-4 lg:grid-cols-2">
+            {% call shared_readiness.readiness_grid() %}
                 {% if page_key == 'alerts' %}
                     {{ shared_readiness.source_card(
                         'Alert Source Status',
@@ -121,7 +108,7 @@
                     analytics_materialization.expires_at|user_datetime('Not Scheduled') if analytics_materialization.expires_at|default(none) else 'Not Scheduled',
                     analytics_materialization.last_attempt_at|user_datetime('Unavailable') if analytics_materialization.last_attempt_at else 'Unavailable'
                 ) }}
-            </div>
+            {% endcall %}
             {% if page_key == 'alerts' %}
                 <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-outline-subtle bg-surface-hover px-4 py-3">
                     <div class="min-w-0">

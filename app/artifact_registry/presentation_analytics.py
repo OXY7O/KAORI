@@ -10,6 +10,7 @@ from app.artifact_registry.analytics_job_adapter import (
 )
 from app.artifact_registry.presentation_common import _fmt_bytes, _providers
 from app.artifact_registry.presentation_overview import build_overview
+from app.common.analytics.params import get_allowed_time_ranges
 from app.common.pagination import paginate_sequence
 from app.models.registry import RegistryAnalyticsSnapshot
 
@@ -78,6 +79,7 @@ def build_analytics_shell(
         'snapshot_count': readiness['covered_count'],
         'latest_generated_at': readiness['latest_generated_at'],
         'provider_options': provider_options,
+        'time_range_options': get_allowed_time_ranges(),
         'selected_provider_id': selected_provider_id,
         'snapshot_window': selected_window,
         'active_tab': normalized_tab,
