@@ -330,17 +330,25 @@ def _verify_artifact_registry_dashboard(
     _require(
         kpi_cards,
         (
-            'components/resource_posture_grid.html',
-            'posture_grid.render(overview_metrics, columns=4)',
+            'components/operational_metric_card.html',
+            'operational_metric_card.render(',
             'for kpi in overview.kpis',
+            'grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4',
+            "source_label='Committed Inventory'",
+            "scope_label='Active Scope'",
             'data-kaori-artifact-registry-operational-kpis',
         ),
-        'Artifact Registry grouped bounded KPI projection',
+        'Artifact Registry independent Operational Signal KPI cards',
     )
+    for forbidden in ("body_classes='p-0'", 'grouped=true'):
+        if forbidden in signal_overview:
+            raise AssertionError(f'Artifact Registry Signal Overview retains grouped-KPI exception: {forbidden}')
+    if 'resource_posture_grid.html' in kpi_cards:
+        raise AssertionError('Registry Operational Signal KPIs must use independent dashboard metric cards')
     _require(
         signal_overview,
-        ("body_classes='p-0'",),
-        'Artifact Registry signal shell uses no nested card padding',
+        ('section_loading.kpis(item_count=4,',),
+        'Artifact Registry canonical independent KPI loading skeleton',
     )
     _require(
         operations,
