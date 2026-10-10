@@ -48,8 +48,9 @@
         {% set status_lower = snapshot_status|string|lower %}
         {% set snapshot_tone = 'normal' if status_lower in ['current', 'ready', 'available', 'healthy'] else ('info' if 'progress' in status_lower or 'pending' in status_lower or 'refresh' in status_lower else ('warning' if 'stale' in status_lower or 'partial' in status_lower else 'unknown')) %}
     {% endif %}
+    {% set outer_caller = caller %}
     {% call shared_readiness.frame(title, description, icon, indicator_id, eyebrow=eyebrow) %}
-        {{ caller() }}
+        {{ outer_caller() }}
         <div class="space-y-3">
             <div class="grid gap-4 lg:grid-cols-2">
                 {{ metrics_source_status_panel.render(status) }}
