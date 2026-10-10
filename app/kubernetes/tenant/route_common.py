@@ -166,6 +166,50 @@ def _tenant_detail_context(tenant_id: str) -> dict[str, Any]:
     )
     context['row'] = rows[0]
     context['registry_state'] = state
+
+    tenant = rows[0]['tenant']
+    admin = (
+        current_user.has_permission('tenant.manage')
+        and current_user.has_permission('integrations.manage')
+        and current_user.has_permission('clusters.manage')
+    )
+    views: list[tuple[str, str, str]] = [('overview', 'Overview', 'layout-dashboard')]
+    if admin and tenant.ownership_status == 'adopted' and tenant.lifecycle_status == 'ready':
+        views.append(('release', 'Release', 'clipboard-check'))
+    if (
+        admin and tenant.provider_key == 'native_kubernetes'
+        and tenant.lifecycle_status == 'released'
+        and (tenant.provider_evidence_json or {}).get('release_governance', {}).get('release_mode')
+        == 'managed_handoff'
+    ):
+        views.append(('handback', 'Handback', 'arrow-left-right'))
+    if (
+        current_user.has_permission('tenant.manage') and tenant.provider_key == 'capsule'
+        and tenant.provider_state == 'capsule' and tenant.lifecycle_status == 'ready'
+        and rows[0].get('capsule_environment_options')
+    ):
+        views.append(('attachment', 'Attachment', 'link-2'))
+    views.extend([
+        ('provider', 'Provider', 'shield-check'),
+        ('lifecycle', 'Lifecycle', 'flag'),
+    ])
+    query = {
+        f'registry_{key}': value for key, value in state.items() if value
+    }
+    context['tenant_detail_tab_urls'] = {
+        key: url_for('tenant.tenant_detail', tenant_id=tenant_id, view=key, **query)
+        for key, _, _ in views
+    }
+    context['tenant_detail_tabs'] = [
+        (key, label, icon, context['tenant_detail_tab_urls'][key])
+        for key, label, icon in views
+    ]
+    requested_view = str(request.values.get('tenant_detail_view')
+                         or request.values.get('view') or 'overview').strip().lower()
+    allowed_views = {key for key, _, _ in views}
+    context['active_tenant_detail_view'] = (
+        requested_view if requested_view in allowed_views else 'overview'
+    )
     context['return_to_registry_url'] = url_for(
         'tenant.tenants',
         section='registry',
@@ -182,6 +226,7 @@ def _tenant_section_redirect(section: str):
         if request.headers.get('HX-Request') != 'true':
             return redirect(url_for(
                 'tenant.tenant_detail', tenant_id=detail_id,
+                view=context['active_tenant_detail_view'],
                 **{f'registry_{key}': value for key, value in context['registry_state'].items() if value},
             ))
         rendered = render_template(

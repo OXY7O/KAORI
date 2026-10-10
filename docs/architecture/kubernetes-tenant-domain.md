@@ -65,46 +65,51 @@ workflows with empty and populated datasets, browser refresh/back/forward,
 per-registry filters/Rows/HTMX, light/dark and mobile views. This is not
 staging UAT or production acceptance evidence.
 
-## Tenant Details native KAORI workspace — human Visual Review correction (#1067)
+## Tenant Details focused workspace — second human Visual Review (#1069; supersedes #1067 layout)
 
-Follow-up to #1065 and inherited #734 architecture. The first detail implementation
-carried the **generic** Tenant Management Hero, an overview Provider Readiness
-card, a duplicate in-page Tenant heading/breadcrumb/back button, and a
-three-column dialog snapshot framed as one enormous white modal. The global
-capability router also defaulted the detail endpoint to **Overview**, even
-though the workflow belongs to **Tenants**. This duplicated authority and
-misrepresented the navigation state.
+The first two iterations (#1065/#1067) solved the browser top-layer toast
+problem and corrected Tenants navigation but still created a cluttered,
+single long workspace: oversized Hero, four competing KPI cards, persistent
+sidebar, Release workflow buried in nested boxes and tiny evidence rows.
+That presentation was explicitly rejected during second human Visual Review
+and is no longer the current design.
 
-The corrected design has a **single, Tenant-specific transactional Violet Hero**
-using the approved shared `page_hero` helpers. Its h1 is the committed Tenant
-name and it shows lifecycle, cluster, provider and generation. The Hero's
-**only action** is Back to the filtered Tenant Registry. The generic
-cluster-wide Provider Readiness aside is intentionally absent: it belongs on
-the Tenant capability overview and collection surfaces, not an individual
-Tenant detail. There is no secondary page breadcrumb; the **global navbar**
-resolves `tenant.tenant_detail` as Kubernetes → Tenant → Tenants →
-**the actual committed Tenant name** (the generic endpoint label remains
-Tenant Details as a canonical fallback). Both the capability navigation and sidebar map this route to
-the **Tenants** active key rather than defaulting to Overview.
+The current detail page uses **the same shared Content Tabs standard**
+(`components/content_tabs.html`) as Resource Profiles and Tenant Operations.
+Only one URL-addressable management view renders at a time:
 
-Below the Hero, standalone committed-state cards summarize Namespace count,
-environments, ownership and reconciliation authority. On desktop, a narrow
-sticky section navigation lives beside the full-width Release Governance,
-Native Handback, Capsule Attachment, Provider Authority and Lifecycle cards;
-mobile layouts flow linearly. The working area has **no modal shell**, duplicate
-page header, fixed-height scroll trap, close footer or generic top-layer dialog.
-Short destructive Decommission confirmation remains the existing shared modal
-component, with unchanged CSRF and safety checks.
+- A compact contextual Violet Hero shows exact Tenant name, lifecycle,
+  provider/cluster/generation and only **Back to Registry**. The global topbar
+  is the only breadcrumb, ending at the actual committed Tenant name, while
+  the active capability remains **Tenants**.
+- One compact four-field committed facts strip replaces the four large
+  dashboard KPI tiles. No fabricated analytics or live provider GET.
+- Approved `content_tabs.render_links` exposes **Overview, Release,
+  Handback, Attachment, Provider, Lifecycle** only where operator
+  permissions and Tenant state allow. Every view has its own bookmarked
+  `?view=...` URL and HTMX swap with history; ordinary browser navigation
+  works without JavaScript. Unauthorized/unsupported views fall back to
+  the safe Overview.
+- Overview offers a short context/next-authorized-action surface rather
+  than opening a long Release approval process by default. Independent
+  reviewers from Work Inbox open `?view=release` directly.
+- Release presents four numbered, full-width phases: preflight and
+  blockers, provider handoff scope, independent approval/handoff, and
+  provider verification/finalization. Nested outer dialog-shaped shells and
+  mini-scroll inventory traps have been removed; precise evidence is retained.
+- All existing 14 CSRF-protected POST forms retain exact Tenant and Registry
+  identity and now include `tenant_detail_view`, so ordinary POST and HTMX
+  response return to the selected view. The Hero stays within the same
+  `#tenant-management-detail` replacement and global OOB Operational Toast
+  remains visible. If lifecycle changes invalidate the tab, redirect
+  safely falls back to Overview. Only short Decommission confirmation
+  remains a modal.
 
-The **Hero and body share the same `#tenant-management-detail` HTMX target**,
-so any POST that changes lifecycle/status replaces current committed detail
-evidence including the Hero; normal HTML POST still redirects to this detail
-page. Existing OOB Operational Toast remains in the global app toast stack;
-no custom stacking-context/z-index escalation is added. Read-only GET
-is provider-independent. The current 14 governance forms, independent
-reviewer, SHA/UID/RV validation, provider read-back and audit authority are
-all unchanged. Runtime browser Visual QA, pytest and Full Admission are
-pending; no staging/main or Kubernetes deployment was authorized.
+No Native/Capsule provider execution, approval authority, quotas, RBAC,
+grants, reconciliation or audit services change in this UI workstream.
+Developer Check, browser Visual QA (responsive/light/dark), Full Admission,
+Kubernetes UAT, staging/main promotion and deployment remain HOLD until
+separately authorized.
 
 ## Tenant Registry → dedicated Tenant Management detail (#1065, supersedes #1022 presentation)
 
@@ -117,15 +122,18 @@ projection, unconstrained by Registry filtering or pagination. Missing Tenant
 IDs return 404. There is no inline expansion below the table (rejected in
 #1039/#1041), and there is no long-lived native management dialog overlay.
 
-The detail page reuses the shared Tenant Hero/layout, breadcrumb back to the
-filtered Registry, compact Namespace/Environment/Lifecycle snapshot, in-page
-navigation and full-width Release Governance, Native Release/Handback,
-Capsule Attachment, Provider Authority and Lifecycle cards. These stay
-read-only for `tenant.view` users and permission/CSRF-gated for managers.
+The detail page reuses the shared Tenant layout with one compact Tenant
+Hero and Back to the filtered Registry. Its committed facts strip and
+permission-aware Content Tabs separate Overview, Release, Handback,
+Attachment, Provider and Lifecycle, each as a focused URL-addressable
+workspace (#1069 is the current presentation authority). Read-only
+`tenant.view` users cannot open mutation-only views; managers remain
+permission/CSRF-gated by existing services.
 Existing service endpoints, two-actor plan authority, evidence read models,
 provider inventory and destructive-operation rules are **unchanged**.
-All 14 existing POST forms include a bounded `tenant_detail_id` plus
-prefixed `registry_*` context for browser fallback and HTMX.
+All 14 existing POST forms include `tenant_detail_id`, the selected
+`tenant_detail_view`, and bounded prefixed `registry_*` context for browser
+fallback and HTMX.
 `_tenant_section_redirect` renders the same dedicated detail partial for
 HTMX POST and emits the **existing** OOB Operational Toast; normal POST
 redirects back to the same Tenant detail. Because the everyday management
@@ -135,8 +143,8 @@ short-form destructive **Decommission confirmation**; it is removed with the
 replaced detail fragment after the action. No custom toast z-index, new
 provider mutations or alternative authorization engine were introduced.
 
-The Platform Operations Work Inbox deep link for an independent reviewer now
-points directly at this detail route rather than the removed
+The Platform Operations Work Inbox deep link for an independent reviewer
+opens this detail route at `view=release` rather than the removed
 `manage_tenant_id` auto-opening dialog. Approval still requires a different
 authorized actor, the same committed plan SHA and canonical backend checks.
 The old native-dialog reopen logic remains a shared component for other
