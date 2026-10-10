@@ -113,6 +113,43 @@ HTMX, plan fingerprint, independent actor, Native dry-run, provider read-back,
 successor-reference and destructive Release guard. An internal acknowledgment,
 unverified external reference or dry-run is **not** proof of a successor's
 acceptance or authority to mark provider-mutated resources Released.
+### Multi-approver Work Inbox projection (#1040)
+
+The existing Platform Operations **Work Inbox** projects the *same* Tenant
+Release handoff request for every currently active user with both
+`tenant.manage` and `integrations.manage`, except the requesting operator.
+It reads committed `kubernetes_tenant_release_handoff_plan` and
+`kubernetes_tenant_release_handoff_approval` AuditEvents; it does not create
+recipient-specific approvals or a second approval authority. Work items are
+computed from approved KAORI state on Inbox read without provider calls,
+database writes, notification fan-out, new tables or duplicate alert channels.
+The latest plan per Tenant is authoritative; earlier committed plans are
+**Superseded**. When the plan's 15-minute approval window expires, a pending
+item becomes **Expired**, non-actionable. The Inbox's pending count includes
+only current, eligible, unacknowledged requests.
+
+One reviewer may open a deep link to the **same Tenant Management modal**
+and acknowledge the current plan (subject to permission, distinct actor,
+fresh canonical provider read, fingerprint, and locked duplicate-check).
+After the committed approval event, the winning reviewer sees **Approved**,
+and the other eligible reviewers see **Resolved by another reviewer**. This
+is not an expiration or multiple approval votes. A dismissed/marked-read
+notification cannot approve or reject a plan; Work Inbox approval items are
+separate from mark-as-read notifications. Existing per-user Work Inbox badge
+and panel show committed request counts after refresh. The UI does not choose
+an approver by name, bypass a role revocation, or treat internal approval as
+external provider handoff/ownership acceptance. The approver's task deep
+link `?section=registry&search=<tenant>&manage_tenant_id=<id>` is checked
+against the authorized Registry row before the modal auto-opens; all mutation
+routes independently enforce permissions and provider authority.
+
+The Inbox uses a bounded recent committed plan history for a responsive
+view; it does not replace AuditEvent as the full retention/audit history.
+If a future workflow requires explicit assignee, rejection, escalation,
+SLA routing, persisted recipient delivery receipts or push notifications,
+those are separately governed workflow capabilities, not assumptions made
+by this approval read model.
+
 For a plan awaiting independent approval, the requesting operator sees
 **Awaiting Independent Approver** and cannot approve their own plan, even when
 Super Admin. Any **different authenticated KAORI user** with both
