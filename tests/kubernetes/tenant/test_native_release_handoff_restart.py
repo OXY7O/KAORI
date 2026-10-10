@@ -300,3 +300,64 @@ def test_unknown_or_incomplete_receipt_stays_fail_closed(monkeypatch):
         prepare(monkeypatch, readback={'status': 'provider_handoff_not_started'})
 
 
+
+
+def test_independently_authorized_failed_before_write_can_renew_only_after_fresh_verification(monkeypatch):
+    from app.kubernetes.tenant import native_no_transfer_recovery as recovery
+    decision = {
+        'assessment_sha256': 'a' * 64,
+        'provider_proof_sha256': 'b' * 64,
+        'authorized_by': 44,
+    }
+    monkeypatch.setattr(
+        recovery, 'require_authorized_no_transfer_restart',
+        lambda **_: decision,
+    )
+    monkeypatch.setattr(
+        recovery, '_source_history',
+        lambda *args: {'digest': 'c' * 64, 'executor_actor_id': 43, 'failed_event_id': 2},
+    )
+    monkeypatch.setattr(
+        recovery, '_verify_original_provider_state',
+        lambda **_: {'provider_proof_sha256': decision['provider_proof_sha256']},
+    )
+
+    def failed_attempts(original):
+        return [
+            {'plan_sha256': original['plan_sha256'], 'status': 'in_progress'},
+            {'plan_sha256': original['plan_sha256'], 'status': 'partial_handoff_recovery_required'},
+        ]
+
+    renewed, original, session = prepare(monkeypatch, executions=failed_attempts)
+    assert renewed['plan_sha256'] != original['plan_sha256']
+    assert renewed['supersedes_plan_sha256'] == original['plan_sha256']
+    assert renewed['no_transfer_recovery_assessment_sha256'] == 'a' * 64
+    assert renewed['no_transfer_recovery_authorized_by'] == 44
+    assert renewed['status'] == 'pending_independent_approval'
+    assert renewed['release_authorized'] is False
+    assert session.commits == 1
+
+
+def test_changed_provider_proof_still_blocks_independently_authorized_restart(monkeypatch):
+    from app.kubernetes.tenant import native_no_transfer_recovery as recovery
+    monkeypatch.setattr(
+        recovery, 'require_authorized_no_transfer_restart',
+        lambda **_: {
+            'assessment_sha256': 'a' * 64,
+            'provider_proof_sha256': 'b' * 64,
+            'authorized_by': 44,
+        },
+    )
+    monkeypatch.setattr(recovery, '_source_history', lambda *args: {'digest': 'c' * 64})
+    monkeypatch.setattr(
+        recovery, '_verify_original_provider_state',
+        lambda **_: {'provider_proof_sha256': 'different'},
+    )
+    with pytest.raises(ValueError, match='Live provider proof changed'):
+        prepare(
+            monkeypatch,
+            executions=lambda original: [
+                {'plan_sha256': original['plan_sha256'], 'status': 'in_progress'},
+                {'plan_sha256': original['plan_sha256'], 'status': 'partial_handoff_recovery_required'},
+            ],
+        )
