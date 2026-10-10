@@ -116,7 +116,29 @@ Hero
 
 `Tenant Registry` is the default tab and uses the canonical KAORI server-backed registry contract: shared loading bar, Cluster/Environment/Lifecycle/Search filters, committed-state reads, semantic labels, responsive horizontal overflow, default 5-row pagination, 5/10/25/50 page sizes, and HTMX progressive enhancement with the Tenants route as the real navigation fallback.
 
-**Tenant Details approved visual composition (#1073; current design):**
+**Tenant Overview and Release wizard (#1075; current revision):**
+Keep the existing KAORI two-column Violet Hero/context card, but shorten its
+subtitle to "Manage Tenant governance and lifecycle." Replace the old
+identity table + Description/Quick Links with distinct **Identity & Origin**
+and **Governance State** surfaces. No Quick Links; source all factual values
+from committed Tenant and Cluster records, with guarded timestamp and
+historical Namespace display.
+
+For ready governed Tenants, Release Governance offers a real four-stage
+`release_step` URL workflow rather than immediately displaying every form:
+1. Review Scope (preflight/blockers), 2. Provider Scope (inventory),
+3. Approval & Handoff (independent plan, consent, guarded execution),
+4. Verify & Finalize (evidence read-back and Released commit). Only the
+selected step renders. Links are navigation only, not admission: original
+service-side plan freshness, separate reviewer, CAS and provider read-back
+remain authoritative. Next/Previous and full reload preserve the Registry
+context; HTMX POST keeps the active stage through `tenant_release_step`
+and displays the normal global OOB toast. Work Inbox opens the Approval
+stage directly. Unsupported stage values fall back safely to Scope.
+No extra provider requests on ordinary GET or new mutation endpoints.
+All gates and real cluster/Visual UAT remain HOLD.
+
+**Tenant Details approved visual composition (#1073; Hero/accordion foundation; Overview/Release layout superseded by #1075):**
 Use existing full-size Violet two-column Hero with shared `page_hero.context_card`
 for a contextual Tenant Details right-side panel, two committed metrics,
 lifecycle status and the full-width Back to Registry. Under it show four
