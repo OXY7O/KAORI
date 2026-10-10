@@ -124,6 +124,9 @@ def test_near_capacity_exposes_tightest_governed_dimension_without_reclassifying
     assert describe_tightest_headroom(bars, "Unknown") is None
     assert describe_tightest_headroom(bars, "Overcommitted") is None
 
+    zero_budget = build_tenant_allocation_bars(_summary(cpu_budget="0", cpu_used="0"))
+    assert describe_tightest_headroom(zero_budget, "Exhausted") == "Exhausted: CPU Requests (zero governed budget)"
+
     no_bounded = build_tenant_allocation_bars(_summary(cpu_budget=None))
     assert describe_tightest_headroom(no_bounded[:1], "Near Capacity") is None
 
