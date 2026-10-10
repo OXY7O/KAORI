@@ -52,17 +52,12 @@
             'tenant-detail-overview-heading'
         ) }}
         <div class="rounded-xl border border-outline-subtle bg-surface-card px-5 py-4 sm:px-6">
-            <div class="flex flex-wrap items-center gap-3 border-b border-outline-subtle pb-4">
-                <h3 class="break-words text-base font-semibold text-content-primary">{{ tenant.name }}</h3>
-                {{ table_label.status_label(
-                    tenant.lifecycle_status|replace('_', ' ')|title,
-                    'success' if tenant.lifecycle_status == 'ready'
-                    else ('warning' if tenant.lifecycle_status == 'decommissioning' else 'info')
-                ) }}
-                <span class="text-sm text-content-secondary">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-outline-subtle pb-4">
+                <h3 class="text-base font-semibold text-content-primary">Managed resource scope</h3>
+                <p class="text-sm text-content-secondary">
                     {{ row.namespace_count }} active Namespace{{ '' if row.namespace_count == 1 else 's' }}
                     · {{ row.environments|length }} environment{{ '' if row.environments|length == 1 else 's' }}
-                </span>
+                </p>
             </div>
             <dl class="grid min-w-0 gap-x-8 gap-y-4 pt-4 sm:grid-cols-2 lg:grid-cols-3">
                 <div class="min-w-0">
