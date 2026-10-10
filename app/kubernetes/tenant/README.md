@@ -212,6 +212,28 @@ provider handoff has not begun, never for partial/full handoff.
 Contract/unit tests and browser QA are pending, as are CI/CD gates, Full
 Admission, staging/UAT and deployment; no production migration performed.
 
+**Native executor approved-component patch binding (#1102 corrective under #1048):**
+`dry_run_native_handoff_component` commits authoritative Kubernetes
+**preview evidence**, not a governance ownership decision. Executor patches
+must bind each receipt's exact namespace/kind/name/UID and original
+resourceVersion back to one uniquely approved handoff component from the
+current SHA-verified plan. The approved component must explicitly carry
+`external_acceptance_required` and `kaori_marker_correlated`; the full
+scope is checked before recording an in-progress attempt or sending any
+provider mutation. Only this approved component is passed to the current
+metadata-only conditional successor JSON PATCH builder. Dry-run receipt
+hashes remain the source of pre/post spec, foreign metadata and immutable
+identity verification; provider and backend authority never moves to the
+presentation layer. Reject mismatched/ambiguous/missing authority.
+
+This corrects the first ResourceQuota `ValueError` produced when the
+executor sent a preview receipt lacking the two plan-only fields to the
+patch builder. The existing historical failure remains an AuditEvent and
+requires separate, explicit provider-authoritative recovery review; do not
+reset audit history, inherit expired approval or blindly Resume. No
+live mutations or provider tests were made as part of the fix. Source
+regressions authored; all CI/CD, admission and staging UAT gates HOLD.
+
 **Native executor recovery priority in Release Steps 3/4 (#1091 follow-up):**
 When the most recent current-plan Native handoff executor AuditEvent is
 `partial_handoff_recovery_required`, the shared committed readiness
