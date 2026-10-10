@@ -117,7 +117,7 @@ def _partition_tenant_contributions(
     namespaces: list[TenantNamespace],
     shared: Mapping[str, Mapping[str, object]],
     ambiguous: list[str],
-) -> list[dict[str, object]]:
+) -> list[dict[str, Any]]:
     """Pure read-model partition; match #654's shared and ambiguous accounting."""
     by_tenant: dict[str, list[TenantNamespace]] = defaultdict(list)
     for row in namespaces:
