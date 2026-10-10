@@ -187,61 +187,52 @@
                     data-kaori-native-dialog
                     aria-labelledby="{{ contributions_dialog_id }}-title"
                     aria-describedby="{{ contributions_dialog_id }}-description"
-                    class="kaori-native-dialog m-auto w-[calc(100vw-1.5rem)] max-w-6xl overflow-hidden rounded-2xl border border-outline-default bg-surface-card p-0 shadow-2xl sm:w-[calc(100vw-3rem)]">
+                    class="kaori-native-dialog m-auto w-[calc(100vw-1.5rem)] max-w-5xl overflow-hidden rounded-2xl border border-outline-default bg-surface-card p-0 shadow-2xl sm:w-[calc(100vw-3rem)]">
                 <section class="flex max-h-[calc(100dvh-2rem)] min-h-0 flex-col overflow-hidden" role="document">
-                    <header class="shrink-0 border-b border-outline-subtle bg-surface-card px-4 py-4 sm:px-6 sm:py-5">
-                        <div class="flex min-w-0 items-start justify-between gap-3">
-                            <div class="flex min-w-0 items-start gap-3">
-                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
-                                      aria-hidden="true"><i data-lucide="layers-3" class="h-5 w-5"></i></span>
-                                <div class="min-w-0">
-                                    <p class="text-xs font-semibold text-kaori-primary">Committed Allocation Evidence</p>
-                                    <h2 id="{{ contributions_dialog_id }}-title" class="mt-1 text-lg font-semibold leading-6 text-content-primary">
-                                        Tenant Contributions
-                                    </h2>
-                                    <p class="mt-1 text-sm font-medium text-content-secondary">
-                                        {{ allocation_overview.cluster.name }} · {{ allocation_overview.cluster.environment|title }}
-                                    </p>
-                                    <p id="{{ contributions_dialog_id }}-description" class="mt-1 text-xs leading-5 text-content-muted">
-                                        Effective Namespace requests; Capsule shared quotas count once per Tenant.
-                                    </p>
-                                </div>
-                            </div>
-                            <button type="button"
-                                    data-kaori-dialog-close
-                                    class="{{ table_ui.action_classes() }} shrink-0"
-                                    aria-label="Close Tenant Contributions">
-                                <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
-                            </button>
+                    <header class="flex shrink-0 items-start justify-between gap-4 border-b border-outline-subtle px-4 py-4 sm:px-6">
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold text-kaori-primary">Committed Allocation Evidence</p>
+                            <h2 id="{{ contributions_dialog_id }}-title" class="mt-1 text-lg font-semibold text-content-primary">
+                                Tenant Contributions
+                            </h2>
+                            <p class="mt-1 text-sm text-content-secondary">
+                                {{ allocation_overview.cluster.name }} · {{ allocation_overview.cluster.environment|title }}
+                            </p>
+                            <p id="{{ contributions_dialog_id }}-description" class="mt-1 text-xs leading-5 text-content-muted">
+                                Governed Namespace requests; Capsule shared quota counted once per Tenant.
+                            </p>
                         </div>
+                        <button type="button"
+                                data-kaori-dialog-close
+                                class="{{ table_ui.action_classes() }} shrink-0"
+                                aria-label="Close Tenant Contributions">
+                            <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
+                        </button>
                     </header>
-                    <section class="shrink-0 border-b border-outline-subtle bg-surface-page px-4 py-3 sm:px-6"
+                    <section class="shrink-0 border-b border-outline-subtle bg-surface-elevated px-4 py-3 sm:px-6"
                              aria-label="Committed Tenant allocation summary">
-                        <dl class="grid grid-cols-2 gap-2 lg:grid-cols-4">
-                            {% for label, value, icon, attention in [
-                                ('Committed Tenants', allocation_tenant_summary.tenants, 'users-round', false),
-                                ('Linked Namespaces', allocation_tenant_summary.namespaces, 'folder-tree', false),
-                                ('Shared Quota Tenants', allocation_tenant_summary.shared, 'layers-3', false),
-                                ('Needs Review', allocation_tenant_summary.attention, 'alert-circle', allocation_tenant_summary.attention > 0)
+                        <dl class="grid grid-cols-2 gap-x-5 gap-y-3 sm:grid-cols-4">
+                            {% for label, value in [
+                                ('Committed Tenants', allocation_tenant_summary.tenants),
+                                ('Namespaces', allocation_tenant_summary.namespaces),
+                                ('Shared Quota', allocation_tenant_summary.shared),
+                                ('Needs Review', allocation_tenant_summary.attention)
                             ] %}
-                                <div class="flex min-w-0 items-center gap-3 rounded-lg border border-outline-subtle bg-surface-card px-3 py-3">
-                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {{ 'bg-status-warning-soft text-status-warning-text' if attention else 'bg-kaori-soft text-kaori-primary' }}"
-                                          aria-hidden="true">
-                                        <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
-                                    </span>
-                                    <div class="min-w-0">
-                                        <dt class="text-xs font-medium leading-4 text-content-muted">{{ label }}</dt>
-                                        <dd class="mt-0.5 text-lg font-semibold leading-6 {{ 'text-status-warning-text' if attention else 'text-content-primary' }}">{{ value }}</dd>
-                                    </div>
+                                <div class="min-w-0">
+                                    <dt class="text-xs text-content-muted">{{ label }}</dt>
+                                    <dd class="mt-0.5 text-base font-semibold tabular-nums text-content-primary">{{ value }}</dd>
                                 </div>
                             {% endfor %}
                         </dl>
                     </section>
-                    <div id="{{ contributions_loading_id }}" class="htmx-indicator h-0.5 w-full shrink-0 bg-kaori-primary"
-                         role="status" aria-label="Refreshing Tenant Contributions"></div>
-                    <section id="{{ contributions_body_id }}" class="flex min-h-0 flex-1 flex-col overflow-hidden"
+                    <div id="{{ contributions_loading_id }}"
+                         class="htmx-indicator h-0.5 w-full shrink-0 bg-kaori-primary"
+                         role="status"
+                         aria-label="Refreshing Tenant Contributions"></div>
+                    <section id="{{ contributions_body_id }}"
+                             class="flex min-h-0 flex-1 flex-col overflow-hidden"
                              aria-label="Tenant contribution registry">
-                        <div class="shrink-0 border-b border-outline-subtle bg-surface-card px-4 py-3 sm:px-6">
+                        <div class="shrink-0 border-b border-outline-subtle px-4 py-3 sm:px-6">
                             {% call registry_ui.filter_form('tenant.resource_profiles',
                                         contributions_body_id, contributions_loading_id,
                                         allocation_tenant_pagination.per_page,
@@ -261,121 +252,93 @@
                                                             'Search Tenant, Namespace, or ID', id='tenant-contributions-search') }}
                                 </div>
                             {% endcall %}
-                            <p class="mt-2 text-xs leading-5 text-content-muted" role="status">
-                                {% if allocation_search %}
+                            {% if allocation_search %}
+                                <p class="mt-2 text-xs text-content-muted" role="status">
                                     {{ allocation_tenant_pagination.total_items }} matching Tenant record{{ '' if allocation_tenant_pagination.total_items == 1 else 's' }}
-                                    from {{ allocation_tenant_summary.tenants }} committed Tenants
-                                {% else %}
-                                    Search by Tenant, Namespace, Environment, or allocation authority
-                                {% endif %}
-                            </p>
+                                </p>
+                            {% endif %}
                         </div>
-                        <div class="min-h-0 flex-1 overflow-auto bg-surface-card">
+                        <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
                             {% if allocation_tenant_rows %}
-                                <table class="{{ table_ui.table_classes('min-w-[900px] !table-fixed') }}">
-                                    <caption class="sr-only">Committed Tenant request allocations and authoritative quota sources.</caption>
-                                    <thead class="{{ table_ui.head_classes() }} sticky top-0 z-10">
-                                        <tr>
-                                            <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[36%]">Tenant / Namespaces</th>
-                                            <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[22%]">Allocation Authority</th>
-                                            <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[21%]">CPU / Memory</th>
-                                            <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[21%]">Pods / Storage</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="{{ table_ui.body_classes() }}">
-                                        {% for row in allocation_tenant_rows %}
-                                            <tr class="{{ table_ui.row_classes() }}">
-                                                <td class="{{ table_ui.cell_classes() }} min-w-0 align-top">
-                                                    <div class="flex min-w-0 items-start gap-2.5">
-                                                        <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                                                              aria-hidden="true"><i data-lucide="box" class="h-4 w-4"></i></span>
-                                                        <div class="min-w-0 flex-1">
-                                                            <div class="flex min-w-0 flex-wrap items-center gap-2">
-                                                                <p class="max-w-full truncate text-sm font-semibold text-content-primary"
-                                                                   title="{{ row.tenant.name }}">{{ row.tenant.name }}</p>
-                                                                {{ table_label.status_label(row.tenant.ownership_status|title,
-                                                                    'normal' if row.tenant.ownership_status == 'managed' else 'info') }}
-                                                            </div>
-                                                            <p class="mt-1 truncate font-mono text-xs text-content-secondary"
-                                                               title="Tenant ID: {{ row.tenant.id }}">
-                                                                ID: {{ row.tenant.id|string|truncate(24, True, '…') }}
-                                                            </p>
-                                                            <p class="mt-1 text-xs text-content-muted">
-                                                                {{ row.namespace_count }} linked Namespace{{ '' if row.namespace_count == 1 else 's' }}
-                                                            </p>
-                                                            {% if row.namespaces %}
-                                                                <details class="group mt-2 rounded-md border border-outline-subtle bg-surface-elevated">
-                                                                    <summary class="flex cursor-pointer list-none items-center gap-1.5 px-2.5 py-2 text-xs font-semibold text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus [&::-webkit-details-marker]:hidden">
-                                                                        <i data-lucide="folder-tree" class="h-3.5 w-3.5 shrink-0" aria-hidden="true"></i>
-                                                                        <span class="flex-1">View Namespaces</span>
-                                                                        <i data-lucide="chevron-down" class="h-3.5 w-3.5 shrink-0 transition-transform group-open:rotate-180" aria-hidden="true"></i>
-                                                                    </summary>
-                                                                    <ul class="space-y-2 border-t border-outline-subtle px-2.5 py-2 text-xs leading-5 text-content-secondary">
-                                                                        {% for namespace in row.namespaces %}
-                                                                            <li class="break-words">
-                                                                                <span class="font-medium text-content-primary">{{ namespace.environment|title }} / {{ namespace.name }}</span>
-                                                                                <span class="block text-content-muted">{{ namespace.state|replace('_', ' ')|title }}</span>
-                                                                            </li>
-                                                                        {% endfor %}
-                                                                    </ul>
-                                                                </details>
-                                                            {% endif %}
-                                                        </div>
+                                <ol class="divide-y divide-outline-subtle" aria-label="Committed Tenant contributions">
+                                    {% for row in allocation_tenant_rows %}
+                                        <li class="px-4 py-4 sm:px-6">
+                                            <article class="grid min-w-0 gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] md:gap-8"
+                                                     aria-label="{{ row.tenant.name }} allocation">
+                                                <div class="min-w-0">
+                                                    <div class="flex min-w-0 flex-wrap items-center gap-2">
+                                                        <h3 class="min-w-0 max-w-full break-words text-sm font-semibold text-content-primary"
+                                                            title="{{ row.tenant.name }}">{{ row.tenant.name }}</h3>
+                                                        {{ table_label.status_label(row.tenant.ownership_status|title,
+                                                            'normal' if row.tenant.ownership_status == 'managed' else 'info') }}
+                                                        {% if row.unknown %}
+                                                            {{ table_label.status_label('Incomplete / Ambiguous', 'warning') }}
+                                                        {% endif %}
                                                     </div>
-                                                </td>
-                                                <td class="{{ table_ui.cell_classes() }} min-w-0 align-top">
-                                                    <p class="text-sm font-semibold leading-5 text-content-primary">{{ row.source }}</p>
-                                                    <p class="mt-1 text-xs text-content-muted">{{ row.tenant.provider_key|replace('_', ' ')|title }}</p>
-                                                    {% if row.unknown %}
-                                                        <p class="mt-2">{{ table_label.status_label('Incomplete / Ambiguous', 'warning') }}</p>
+                                                    <p class="mt-1 min-w-0 truncate font-mono text-xs text-content-muted"
+                                                       title="Tenant ID: {{ row.tenant.id }}">
+                                                        ID: {{ row.tenant.id|string|truncate(24, True, '…') }}
+                                                    </p>
+                                                    <p class="mt-2 text-xs leading-5 text-content-secondary">
+                                                        <span class="font-medium text-content-primary">{{ row.source }}</span>
+                                                        <span aria-hidden="true"> · </span>
+                                                        {{ row.tenant.provider_key|replace('_', ' ')|title }}
+                                                    </p>
+                                                    {% if row.namespaces %}
+                                                        <details class="group mt-2">
+                                                            <summary class="inline-flex min-h-8 cursor-pointer list-none items-center gap-1.5 rounded-md text-xs font-semibold text-kaori-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus [&::-webkit-details-marker]:hidden">
+                                                                <i data-lucide="chevron-right"
+                                                                   class="h-3.5 w-3.5 shrink-0 transition-transform group-open:rotate-90"
+                                                                   aria-hidden="true"></i>
+                                                                View {{ row.namespace_count }} Namespace{{ '' if row.namespace_count == 1 else 's' }}
+                                                            </summary>
+                                                            <ul class="mt-1 space-y-1 border-l-2 border-outline-subtle pl-3 text-xs leading-5">
+                                                                {% for namespace in row.namespaces %}
+                                                                    <li class="break-words text-content-secondary">
+                                                                        <span class="font-medium text-content-primary">{{ namespace.environment|title }} / {{ namespace.name }}</span>
+                                                                        <span class="text-content-muted"> · {{ namespace.state|replace('_', ' ')|title }}</span>
+                                                                    </li>
+                                                                {% endfor %}
+                                                            </ul>
+                                                        </details>
+                                                    {% else %}
+                                                        <p class="mt-2 text-xs text-content-muted">No linked Namespace identities</p>
                                                     {% endif %}
-                                                </td>
-                                                <td class="{{ table_ui.cell_classes() }} align-top">
-                                                    <dl class="space-y-3">
-                                                        <div>
-                                                            <dt class="text-xs font-medium text-content-muted">CPU requests</dt>
-                                                            <dd class="mt-0.5 text-sm font-semibold text-content-primary">{{ row.allocation.cpu }}</dd>
+                                                </div>
+                                                <dl class="grid min-w-0 grid-cols-2 gap-x-4 gap-y-3 self-start">
+                                                    {% for label, value in [
+                                                        ('CPU Requests', row.allocation.cpu),
+                                                        ('Memory Requests', row.allocation.memory),
+                                                        ('Pod Slots', row.allocation.pods),
+                                                        ('Logical Storage', row.allocation.storage)
+                                                    ] %}
+                                                        <div class="min-w-0">
+                                                            <dt class="text-xs text-content-muted">{{ label }}</dt>
+                                                            <dd class="mt-1 break-words text-sm font-semibold tabular-nums text-content-primary">{{ value }}</dd>
                                                         </div>
-                                                        <div>
-                                                            <dt class="text-xs font-medium text-content-muted">Memory requests</dt>
-                                                            <dd class="mt-0.5 text-sm font-semibold text-content-primary">{{ row.allocation.memory }}</dd>
-                                                        </div>
-                                                    </dl>
-                                                </td>
-                                                <td class="{{ table_ui.cell_classes() }} align-top">
-                                                    <dl class="space-y-3">
-                                                        <div>
-                                                            <dt class="text-xs font-medium text-content-muted">Pod slots</dt>
-                                                            <dd class="mt-0.5 text-sm font-semibold text-content-primary">{{ row.allocation.pods }}</dd>
-                                                        </div>
-                                                        <div>
-                                                            <dt class="text-xs font-medium text-content-muted">Logical storage</dt>
-                                                            <dd class="mt-0.5 text-sm font-semibold text-content-primary">{{ row.allocation.storage }}</dd>
-                                                        </div>
-                                                    </dl>
-                                                </td>
-                                            </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
+                                                    {% endfor %}
+                                                </dl>
+                                            </article>
+                                        </li>
+                                    {% endfor %}
+                                </ol>
                             {% else %}
                                 <div class="flex min-h-44 flex-col items-center justify-center px-5 py-10 text-center">
-                                    <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-elevated text-content-muted"
-                                          aria-hidden="true"><i data-lucide="search-x" class="h-5 w-5"></i></span>
+                                    <i data-lucide="search-x" class="h-6 w-6 text-content-muted" aria-hidden="true"></i>
                                     <p class="mt-3 text-sm font-semibold text-content-primary">
                                         {{ 'No matching Tenant allocations' if allocation_search else 'No committed Tenant allocations' }}
                                     </p>
                                     <p class="mt-1 max-w-md text-xs leading-5 text-content-muted">
                                         {% if allocation_search %}
-                                            Try another Tenant name, ID, Namespace, Environment, or allocation authority.
+                                            Try another Tenant name, ID, Namespace, Environment, or authority.
                                         {% else %}
-                                            A Tenant without a governed Namespace or shared quota does not consume the Tenant allocation budget.
+                                            A Tenant without a governed Namespace or shared quota does not consume the allocation budget.
                                         {% endif %}
                                     </p>
                                 </div>
                             {% endif %}
                         </div>
-                        <div class="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-outline-subtle bg-surface-hover px-4 py-3 sm:px-6">
+                        <div class="flex shrink-0 flex-col gap-2 border-t border-outline-subtle px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                             <div class="min-w-0 flex-1 [&>footer]:border-0 [&>footer]:bg-transparent [&>footer]:p-0">
                                 {% if allocation_tenant_pagination and allocation_tenant_pagination.total_items > 0 %}
                                     {{ registry_ui.footer('tenant.resource_profiles',
@@ -395,7 +358,7 @@
                                 {% endif %}
                             </div>
                             <a href="{{ url_for('tenant.tenants', section='registry') }}"
-                               class="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-md text-xs font-semibold text-kaori-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                               class="inline-flex min-h-9 shrink-0 items-center gap-1.5 self-start rounded-md text-xs font-semibold text-kaori-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus lg:self-auto">
                                 Tenant Registry
                                 <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
                             </a>
