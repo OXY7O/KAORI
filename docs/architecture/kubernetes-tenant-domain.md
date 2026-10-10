@@ -348,6 +348,35 @@ tests, contract tests and staging/UAT evidence are pending. CI/CD,
 Developer Check, Full Admission, promotion and deployment remain HOLD
 until separately authorized.
 
+## Read-only Native executor no-transfer recovery assessment (#1110)
+
+A prior provider executor can report `partial_handoff_recovery_required`
+and 0/2 verified with `provider_mutation_performed=False`, while the original
+plan and independent approval have expired. Recorded 0 does **not** establish
+that no Kubernetes mutation occurred; a read-only GET of UID/RV and KAORI
+markers is preliminary provider evidence, not a complete canonical recovery
+decision. The existing restart guard continues to reject every same-plan
+executor attempt.
+
+The committed-readiness projection now exposes advisory
+`no_transfer_assessment_candidate` only if there is current-plan executor
+history, every same-plan receipt has an exact plan SHA/fingerprint,
+`status` limited to failed/in-progress attempts, explicit false mutation,
+provider-verified and release-authorized flags, and zero verified components.
+Any inconsistent/unknown/partial-positive history fails closed. The Step 4
+recovery panel explains candidate versus blocked evidence but deliberately
+offers **no new mutation or restart action**. Candidate is not an admission
+predicate and never overrides `restart_blocked_by_readback`.
+
+A future separately authorized recovery decision must require fresh
+authoritative Kubernetes inspection of all originally approved components:
+UID/RV, exact ownership markers, complete spec hash, retained foreign
+metadata, dependencies, previous AuditEvents and in-progress operations,
+then immutable approval by the proper actors. A successful decision may
+form the authority for a new approved review-cycle design; historical
+AuditEvents must never be erased or reinterpreted as transferred/Released.
+Developer Check, CI/CD, Full Admission, UAT and deployment remain HOLD.
+
 ## Native handoff approved component versus preview evidence binding (#1102; #1048 authority)
 
 During DevContainer testing of the approved Native Release flow, the
