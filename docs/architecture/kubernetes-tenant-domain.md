@@ -247,6 +247,28 @@ space for the actual action set and is **never** truncated to make text fit.
 The four conditional Operations Evidence table headers retain independent
 100%-width distributions.
 
+**Tenant Registry correction (#1035 follow-up):** the earlier 1300px
+minimum forced horizontal scrolling even when the surrounding desktop Registry
+had enough room for seven columns. The Tenant Registry now uses a 1040px
+minimum (remaining inside the existing responsive overflow wrapper for genuinely
+narrow viewports) and rebalances its header widths to
+**20/19/12/9/15/13/12%** for Tenant/Cluster/Environment/Namespaces/Provider
+Authority/Lifecycle/Actions. The Cluster identity retains its shared minimum
+and the Manage/View action keeps a reserved non-truncated column; supporting
+Lifecycle text truncates with an accessible full-value title. No other Tenant
+table widths or shared table primitives are changed.
+
+The **Namespaces** column now presents only the canonical active count and
+short `active` label. Its tooltip retains historical record count context,
+while the detailed “N historical Namespace records retained” evidence moves
+to the existing full-width **Tenant Management native dialog** beside the
+Namespace summary. Historical Namespace records are not included in the
+active count, and no persisted commitment/lifecycle value is changed.
+Desktop table fit and responsive narrow-screen scroll are separate cases:
+at wide desktop layouts the old forced scrollbar should disappear; at smaller
+viewports the canonical table remains intentionally horizontally scrollable
+rather than hiding the last Actions column or compressing critical evidence.
+
 Cluster Estate now enforces its already documented proportional columns under
 fixed-layout geometry. Credential Registry and Capacity Decisions already have
 locked fixed-layout contracts and are intentionally unchanged.
