@@ -308,6 +308,70 @@ def test_vulnerability_registry_compact_rows_preserve_complete_committed_evidenc
     assert '[5, 10, 25, 50]' in workspace
 
 
+
+def test_vulnerability_detail_uses_supply_chain_cards_and_safe_long_value_wrapping() -> None:
+    from jinja2 import Environment
+
+    template = read("app/templates/artifact_registry/partials/_security_supply_chain_detail_modals.html")
+    Environment().parse(template)
+    dialog = template.split("{% macro vulnerability(row, dialog_id) -%}", 1)[1]
+
+    # Reuse the Supply Chain shell instead of introducing a competing modal.
+    assert "{% call shell(" in dialog
+    assert "data-artifact-registry-vulnerability-detail-v2" in dialog
+    assert "data-artifact-registry-vulnerability-assessment" in dialog
+    assert "data-artifact-registry-vulnerability-artifact" in dialog
+    assert "data-artifact-registry-vulnerability-exposure" in dialog
+    assert dialog.index("Finding &amp; Remediation") < dialog.index(
+        "Affected Artifact"
+    ) < dialog.index("Runtime &amp; Scan Evidence")
+    assert dialog.count("rounded-xl border border-outline-default bg-surface-card") == 3
+    for icon in ('shield-alert', 'package-search', 'fingerprint', 'waypoints'):
+        assert f'data-lucide="{icon}"' in dialog
+
+    # Each unpredictable text dimension has its own safe wrapping contract.
+    # Grids are one column on narrow viewports, two columns only at sm+.
+    assert dialog.count("grid-cols-1 gap-px border-t border-outline-subtle") == 3
+    assert dialog.count("sm:grid-cols-2") >= 3
+    assert dialog.count("sm:col-span-2") >= 2
+    for key in ('row.package', 'row.project', 'row.repository', 'row.provider_label',
+                'row.source_name', 'row.observed_at|user_datetime'):
+        assert key in dialog
+    for value in (
+        '{{ row.package }}',
+        '{{ row.project }}',
+        '{{ row.repository }}',
+        '{{ row.installed_version }}',
+        '{{ row.fixed_version }}',
+        '{{ row.digest }}',
+        '{{ row.provider_label }}',
+        '{{ row.source_name }}',
+        '{{ row.observed_at|user_datetime }}',
+    ):
+        # The last occurrence of each value must be within a non-truncating,
+        # min-w-0 block with an anywhere-wrap fallback.
+        before = dialog.rsplit(value, 1)[0].rsplit('<dd', 1)[-1]
+        if value == '{{ row.digest }}':
+            before = dialog.rsplit(value, 1)[0].rsplit('<p', 1)[-1]
+        assert 'min-w-0' in before, value
+        assert '[overflow-wrap:anywhere]' in before, value
+        assert 'truncate' not in before, value
+    for value in ('{{ row.installed_version }}', '{{ row.fixed_version }}', '{{ row.digest }}'):
+        preceding = dialog.rsplit(value, 1)[0].rsplit('<', 1)[-1]
+        assert 'break-all' in preceding, value
+
+    # Scanner/authority semantics, provenance, and on-demand runtime drilldown
+    # remain identical to the committed evidence contract.
+    assert "row.severity_label, severity_tone" in dialog
+    assert "row.runtime_exposure_count ~ ' Runtime Bindings'" in dialog
+    assert "status_indicator_label('Runtime Not Observed', 'unknown')" in dialog
+    assert "row.freshness.label, row.freshness.tone" in dialog
+    assert "No committed Kubernetes workload binding is currently observed" in dialog
+    assert "does not establish that the finding is remediated" in dialog
+    assert "url_for('artifact_registry.runtime', artifact_id=row.artifact_id)" in dialog
+    assert 'hx-post' not in dialog
+
+
 def test_security_sync_revalidates_stale_targets_and_heartbeats_repository_discovery() -> None:
     providers = read('app/artifact_registry/security/providers.py')
     sync = read('app/artifact_registry/security/sync.py')
