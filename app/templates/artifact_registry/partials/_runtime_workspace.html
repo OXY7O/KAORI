@@ -1,4 +1,5 @@
-{% import "components/operational_metric_card.html" as metric_card %}
+{% import "components/operational_section_card.html" as section_card %}
+{% import "components/resource_posture_grid.html" as posture_grid %}
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/resource_detail_modal.html" as resource_detail_modal %}
 {% import "components/section_intro.html" as section_intro %}
@@ -79,33 +80,21 @@
             {{ section_intro.render('Runtime Correlation',
                 'Committed artifact-to-Kubernetes bindings, identity matches, and security exposure.',
                 'artifact-registry-runtime-summary-heading') }}
-            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
-                 aria-label="Runtime Usage summary">
-            {{ metric_card.render('Runtime Bindings',
-                        runtime.total,
-                        'Committed Registry artifact to Kubernetes runtime bindings.',
-                        'link-2',
-                        source_label='Committed Correlation',
-                        scope_label=runtime.scope.label) }}
-            {{ metric_card.render('Digest Matched',
-                        runtime.digest_matches,
-                        'Immutable artifact identity matched at runtime.',
-                        'fingerprint',
-                        source_label='Registry × Kubernetes',
-                        scope_label=runtime.scope.label) }}
-            {{ metric_card.render('Tag Matched',
-                        runtime.tag_matches,
-                        'Mutable tag matches; lower confidence.',
-                        'tags',
-                        source_label='Registry × Kubernetes',
-                        scope_label=runtime.scope.label) }}
-            {{ metric_card.render('Security Exposed',
-                        runtime.security_exposed,
-                        'Runtime artifacts with critical or high findings.',
-                        'shield-alert',
-                        source_label='Security × Runtime',
-                        scope_label=runtime.scope.label) }}
-            </div>
+            {% set runtime_metrics = [
+                ('link-2', 'Runtime Bindings', runtime.total, 'Committed Registry artifact to Kubernetes runtime bindings.', 'info'),
+                ('fingerprint', 'Digest Matched', runtime.digest_matches, 'Immutable artifact identity matched at runtime.', 'info'),
+                ('tags', 'Tag Matched', runtime.tag_matches, 'Mutable tag matches; lower confidence.', 'warning' if runtime.tag_matches else 'normal'),
+                ('shield-alert', 'Security Exposed', runtime.security_exposed, 'Runtime artifacts with critical or high findings.', 'critical' if runtime.security_exposed else 'normal')
+            ] %}
+            {% call section_card.render(
+                'Runtime Evidence Summary',
+                'Committed Registry and Kubernetes correlations; digest matches are higher confidence than tag matches.',
+                'waypoints',
+                body_classes='p-0',
+                aria_label='Runtime Usage summary'
+            ) %}
+                {{ posture_grid.render(runtime_metrics, columns=4) }}
+            {% endcall %}
         </section>
         <section class="space-y-4"
                  aria-labelledby="artifact-registry-runtime-bindings-heading">
