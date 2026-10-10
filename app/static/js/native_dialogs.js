@@ -63,6 +63,26 @@
         pendingDialogId = null
     })
 
+    // An Inbox link leads to the same authorized Registry GET with a selected
+    // Tenant. Never auto-open an arbitrary ID: the server emits this marker
+    // only when the Tenant is present on the authorized registry page.
+    const openSelectedDialog = (root = document) => {
+        const dialog = root.querySelector?.(
+            'dialog[data-kaori-native-dialog][data-kaori-dialog-auto-open]'
+        )
+        if (dialog instanceof HTMLDialogElement) showDialog(dialog)
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => openSelectedDialog(), { once: true })
+    } else {
+        openSelectedDialog()
+    }
+    document.addEventListener('htmx:afterSwap', (event) => {
+        const workspace = event.detail?.target || event.target
+        if (workspace instanceof HTMLElement && workspace.id === 'tenant-admin-workspace')
+            openSelectedDialog(workspace)
+    })
+
     const closeDialog = (control) => {
         if (!(control instanceof HTMLElement)) return
         const dialog = control.closest('dialog')
