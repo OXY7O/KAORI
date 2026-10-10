@@ -396,7 +396,10 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert capacity.count('Logical budget only.') == 1
     assert 'Physical and usable capacity remain separate Storage Analytics evidence.' in capacity
     assert 'min-h-10 w-full items-center' in capacity
-    assert 'mt-2 grid gap-3 lg:grid-cols-[minmax(14rem,22rem)_minmax(0,1fr)] lg:items-center' in capacity
+    assert 'mt-2 grid items-start gap-3 lg:grid-cols-[minmax(14rem,22rem)_minmax(0,1fr)]' in capacity
+    assert 'class="{{ form_field.input_classes() }} !mt-0 pr-14"' in capacity
+    assert 'class="flex min-h-10 w-full items-center gap-2' in capacity
+    assert 'name="tenant_storage_budget_gib"' in capacity
     assert "form_field.help('Enter GiB" not in capacity
     assert 'values.pods' in capacity
     assert 'values.storage' in capacity
