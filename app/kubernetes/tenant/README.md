@@ -212,6 +212,23 @@ provider handoff has not begun, never for partial/full handoff.
 Contract/unit tests and browser QA are pending, as are CI/CD gates, Full
 Admission, staging/UAT and deployment; no production migration performed.
 
+**Native executor recovery priority in Release Steps 3/4 (#1091 follow-up):**
+When the most recent current-plan Native handoff executor AuditEvent is
+`partial_handoff_recovery_required`, the shared committed readiness
+projection and both Release step headers prioritize **Recovery Required**
+over generic Transfer Pending or Verification Required. The fourth
+checkpoint remains incomplete; 3/5 indicates internal approval evidence
+only. Read-only Step 4 details show exact attempt verified/expected
+resource count, whether mutation was reported, and sanitized failure
+summaries; 0 verified must never be interpreted as 0 resources changed.
+Find `tenant.release.native_handoff_recovery_required` in Activity Audit,
+correlate `plan_sha256`, inspect the authoritative Kubernetes state and
+only then decide whether an existing permitted recovery operation is
+appropriate. Actor-specific forms stay unchanged: the accepted Platform
+Admin alone can see the eligible Resume action; the other account can
+still see permitted read-only dry-run. No automatic retry or new Release
+admission is created. Validation/UAT and CI/CD gates remain HOLD.
+
 **Native Release Step 3 expiry + Step 4 recovery UX (#1091; current):**
 The Step 3 **Transfer Pending** label is no longer shown for stale
 independently acknowledged Native plans. Display **Approval Expired** or
