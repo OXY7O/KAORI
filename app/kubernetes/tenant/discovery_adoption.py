@@ -135,6 +135,27 @@ def _prepare_adoption(source: Mapping[str, Any]) -> _AdoptionContext:
     )
 
 
+def _require_re_adoption_handback_for_managed_release(
+    *, provider_evidence: Mapping[str, Any], release_evidence: Mapping[str, Any],
+) -> None:
+    """Block former KAORI-controlled provider objects until successor handback.
+
+    The current observation-only Released path remains compatible. The future
+    managed-handoff finalizer must admit an authoritative successor relinquishment
+    before re-adoption; old release status, unchanged UID or marker removal alone
+    are never proof of consent.
+    """
+    if (
+        provider_evidence.get('provider_mutation_performed') is not False
+        or release_evidence.get('release_mode') == 'managed_handoff'
+        or release_evidence.get('provider_handoff_verified') is True
+    ):
+        raise ValueError(
+            'Previously managed Released resources require verified successor '
+            'handback before a new KAORI Adoption generation.'
+        )
+
+
 def _released_predecessor_evidence(tenant: Tenant, *, provider_uid: str) -> dict[str, Any] | None:
     """Correlate an adopted resource to exactly one prior Released generation."""
     previous = (
@@ -152,6 +173,10 @@ def _released_predecessor_evidence(tenant: Tenant, *, provider_uid: str) -> dict
     release = evidence.get('release_governance') or {}
     if release.get('status') != 'released':
         raise ValueError('Released generation has no verifiable handoff evidence.')
+    _require_re_adoption_handback_for_managed_release(
+        provider_evidence=evidence,
+        release_evidence=release,
+    )
     return {
         'predecessor_tenant_id': previous.id,
         'predecessor_generation': previous.generation,
@@ -176,6 +201,10 @@ def _verify_released_namespace_lineage(
         raise ValueError('Released Namespace belongs to another Tenant lineage; ownership review is required.')
     if not provider_uid or provider_uid != previous.provider_reference:
         raise ValueError('Released Namespace UID changed; refuse silent Namespace Re-adopt.')
+    _require_re_adoption_handback_for_managed_release(
+        provider_evidence=previous.provisioning_evidence_json or {},
+        release_evidence=(previous.provisioning_evidence_json or {}).get('release_governance') or {},
+    )
 
 
 def _native_namespace_record(
