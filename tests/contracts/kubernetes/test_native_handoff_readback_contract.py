@@ -11,6 +11,9 @@ def test_native_handoff_readback_has_no_provider_or_governance_mutation_path():
     assert "'spec_sha256': _stable_sha256(_spec(before))" in preview
     assert "'retained_metadata_sha256': _stable_sha256(" in preview
     assert "verify_external_native_component(" in readback
+    assert "summarize_native_handoff_recovery(" in readback
+    assert "if complete else recovery['status']" in readback
+    assert "'provider_handoff_observed': complete" in readback
     assert "'external_successor_verified': False" in readback
     assert "'provider_handoff_verified': False" in readback
     assert "'release_authorized': False" in readback
