@@ -139,6 +139,45 @@ uses the same validated Registry read-contract eligibility as inventory and neve
 The default governance schedule is less frequent than inventory because policy state changes materially less
 often than artifact inventory.
 
+### Governance Evidence Operations: Security Sync UX parity (#950)
+
+The Governance workspace follows the **same canonical sync interaction** as
+Artifact Registry Security, while retaining a separate authoritative job:
+`artifact_registry.governance.sync`. The existing Governance JobExecution
+collector, read-only provider policy/replication evidence, progress adapter,
+polling endpoint and schedule policy remain unchanged. **Governance Sync does
+not trigger Security Sync, Inventory Sync, provider-side scans or provider
+policy mutations.**
+
+- `governance.html` provides the full-page layout and includes the
+  refreshable `partials/_governance_workspace.html`; HTMX GET returns that
+  partial so active Policies/Replication workspace views remain independently
+  navigable using the existing framed-tabs and canonical five-row pagination.
+- The sync form submits its CSRF-authenticated request to the **existing**
+  `artifact_registry.governance_sync` endpoint through HTMX, targets the
+  Governance workspace, prevents a second submit while the canonical
+  JobExecution is active, and preserves the selected tab/page/page size.
+- HTMX manual sync dispatch renders current committed Governance context and
+  an out-of-band operational toast. Standard non-HTMX POST/redirect remains
+  available. Active JobExecution progress still polls the existing
+  `governance_sync_status` endpoint; on terminal completion it emits
+  `artifactRegistryGovernanceSyncFinished` to refresh the workspace using
+  committed evidence and notify the existing notification system.
+- The **Governance Evidence Operations** panel now groups just the canonical
+  sync state, two actions (Sync Governance / Configure Sync) and three
+  scheduling facts: Automatic Sync, Last Successful and Next Scheduled.
+  The four separate policy/retention/immutability/replication coverage cards
+  remain unchanged in meaning but move to their own responsive grid, as in
+  Security's separately owned findings/coverage summary.
+
+This is an existing KAORI HTMX/JobExecution pattern, not a new job, registry
+provider, UI component, governance calculation or policy interpretation.
+DevContainer human Visual QA must cover active/error/completed sync, toast,
+no duplicate manual dispatch, tab/page preservation, partial-only HTMX
+responses, light/dark mode and mobile widths. Full Admission, CI/CD,
+staging/UAT deployment and main promotion remain **HOLD** until explicit
+authorization.
+
 ## Vulnerability Findings Registry: compact list and committed detail (#948)
 
 The Vulnerability Findings workspace keeps the existing Security Evidence
