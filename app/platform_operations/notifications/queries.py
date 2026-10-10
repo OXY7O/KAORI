@@ -187,6 +187,15 @@ def get_activity_center_context(
         for notification in inbox_notifications
     ]
 
+    # Tenant handoff has one authoritative committed approval, not one
+    # Notification per candidate approver. Reuse the shared Work Inbox surface
+    # while projecting status from the current plan/acknowledgment evidence.
+    from app.kubernetes.tenant.approval_inbox import get_tenant_release_work_inbox
+
+    tenant_approval_inbox = get_tenant_release_work_inbox(user_id=user_id)
+    inbox_unread_count += tenant_approval_inbox["pending_count"]
+    inbox_total_count += tenant_approval_inbox["total_count"]
+
     presented_jobs = [present_job_execution(job) for job in active_jobs]
     queued_jobs = [job for job in presented_jobs if job['status'] == 'queued']
     if queued_jobs:
@@ -203,6 +212,7 @@ def get_activity_center_context(
         'history_items': history_items,
         'attention_items': attention_items,
         'inbox_items': inbox_items,
+        'tenant_approval_inbox_items': tenant_approval_inbox['items'],
         'active_jobs': presented_jobs,
         'active_count': active_count,
         'attention_count': attention_count,
