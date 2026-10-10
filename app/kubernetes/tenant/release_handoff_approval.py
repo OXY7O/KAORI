@@ -30,6 +30,14 @@ _EXPECTED_HANDOFF_PREFIXES = (
 )
 _EXPECTED_HANDOFF_FRAGMENTS = (
     'has KAORI-managed allocation; explicit provider handoff is required.',
+    # Keep the full known handoff obligation in sync with release_preflight.
+    # Do not accept arbitrary provider/identity/governance blocker text.
+    (
+        'has a KAORI-managed allocation linked to a Resource Profile. '
+        'Before Release, its Namespace allocation controls must be handed over explicitly '
+        'with independent approval and authoritative provider read-back. '
+        'KAORI cannot silently abandon the committed allocation or delete provider resources.'
+    ),
     'has KAORI-mutated Namespace provider controls; independently approved external handoff is required.',
     'KAORI-linked allocation ownership requires independently approved external handoff',
 )
