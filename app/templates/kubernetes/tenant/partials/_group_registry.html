@@ -92,33 +92,33 @@
         {% endcall %}
     </div>
     <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[980px]') }}">
+        <table class="{{ table_ui.table_classes('min-w-[1250px] !table-fixed') }}">
             <caption class="sr-only">Tenant group registry.</caption>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Group</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Tenant</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Kubernetes Subject</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">State</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Updated</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Actions</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[18%]">Group</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[15%]">Tenant</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[17%]">Kubernetes Subject</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[12%]">State</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[12%]">Updated</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[26%]">Actions</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
                 {% for group in group_rows %}
                     <tr class="{{ table_ui.row_classes() }}">
-                        <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(group.name, group.slug, 'users') }}</td>
-                        <td class="{{ table_ui.cell_classes() }}">
-                            <p class="text-sm font-semibold text-content-primary">{{ group.tenant.name }}</p>
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">{{ table_ui.title_cell(group.name, group.slug, 'users') }}</td>
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
+                            <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ group.tenant.name }}">{{ group.tenant.name }}</p>
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
                             <code class="text-xs text-content-secondary">{{ group.subject_name }}</code>
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
                             {{ table_label.status_label('Enabled' if group.enabled else 'Disabled', 'normal' if group.enabled else 'warning') }}
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">
-                            <p class="text-xs font-medium text-content-secondary">{{ group.updated_at|user_datetime }}</p>
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
+                            <p class="text-xs font-medium text-content-secondary min-w-0 max-w-full truncate" title="{{ group.updated_at|user_datetime }}">{{ group.updated_at|user_datetime }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes(action=true) }}">
                             <div class="flex min-w-[15rem] flex-wrap justify-end gap-2">
