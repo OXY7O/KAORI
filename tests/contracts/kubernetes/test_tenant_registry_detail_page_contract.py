@@ -208,7 +208,7 @@ def test_release_handoff_inventory_is_structured_with_full_on_demand_identifiers
     assert "row.release_preflight.handoff_components|length" in handoff
     assert "row.release_preflight.handoff_required_count" in handoff
     assert "for item in row.release_preflight.handoff_components" in handoff
-    assert '<ol class="divide-y divide-outline-subtle"' in handoff
+    assert '<ol class="mt-3 divide-y divide-outline-subtle border-y border-outline-subtle"' in handoff
     assert "item.kind == 'Namespace'" in handoff
     assert "item.kind == 'ResourceQuota'" in handoff
     assert "item.kind == 'LimitRange'" in handoff
@@ -223,16 +223,23 @@ def test_release_handoff_inventory_is_structured_with_full_on_demand_identifiers
         assert label in handoff
     assert "warning' if item.handoff != 'observe_only' else 'info'" in handoff
 
-    # Primary row separates the ownership correlation and the provider manager.
-    assert 'Ownership evidence' in handoff
-    assert 'Provider manager' in handoff
+    # Each clickable summary contains the compact Kind/Name + ownership/manager
+    # line; no extra metadata band or standalone identifiers row.
+    assert 'Ownership:' in handoff
+    assert 'Manager:' in handoff
+    assert 'sm:grid-cols-[minmax(0,1fr)_auto]' in handoff
+    assert 'group/identifiers min-w-0' in handoff
+    assert '<li class="min-w-0">' in handoff
+    assert 'cursor-pointer list-none' in handoff
+    assert 'min-h-9' not in handoff
     assert "item.ownership|replace('_', ' ')|title" in handoff
     assert "item.managed_by if item.managed_by else 'Not recorded'" in handoff
 
     # Long provider identities are preserved unchanged in accessible native details.
     assert 'group/identifiers' in handoff
     assert 'aria-label="Provider identifiers for {{ item.kind }} {{ item.name }}"' in handoff
-    assert 'Provider identifiers' in handoff
+    assert 'Provider IDs' in handoff
+    assert 'Provider identifiers for {{ item.kind }} {{ item.name }}' in handoff
     assert '{{ item.namespace }}' in handoff
     assert '{{ item.uid }}' in handoff
     assert '{{ item.resource_version }}' in handoff
@@ -245,6 +252,9 @@ def test_release_handoff_inventory_is_structured_with_full_on_demand_identifiers
 
     # Showing provider evidence never executes or authorizes a provider write.
     assert 'read-only provider observations' in handoff
+    assert 'Recorded during the latest Release preflight' not in handoff
+    assert "row.release_preflight.handoff_components|length" in handoff
+    assert 'flex min-w-0 flex-wrap items-baseline gap-x-3' in handoff
     assert 'This does not authorize Release.' in handoff
     assert 'Run Review Release to collect' in handoff
     assert '<form ' not in handoff

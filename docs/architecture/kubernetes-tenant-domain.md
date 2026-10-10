@@ -162,7 +162,38 @@ source-of-truth, permission, audit or workflow standards. Browser desktop/
 mobile, light/dark, long metric values and toast Visual QA is pending;
 Developer Check, Full Admission, staging and deployment remain HOLD.
 
-## Tenant Release Step 2 — evidence-first provider handoff scope (#1085; current UI authority)
+## Tenant Release Step 2 — compact two-line resource summaries (#1085; latest detail UI authority)
+
+Human DevContainer review of the #1085 initial evidence-first design found
+large unused vertical space in the per-resource layout: separate type/name,
+ownership/manager and identifier-toggle rows were repeated for each resource.
+The current Step 2 keeps a **single compact list** with **one native
+`details/summary` per resource**. Closed rows are approximately two lines:
+resource Kind/Name and status on the first; Namespace when distinct,
+Ownership and Manager (all literal committed evidence) on the second.
+The status and **Provider IDs** cue remain visible, and the complete row
+is keyboard-operable with hover/focus. Opening the native disclosure reveals
+exact Namespace, provider UID and resourceVersion at full width. This
+eliminates the third standalone disclosure row and redundant per-resource
+horizontal divider, without hiding or truncating immutable evidence.
+
+The source-derived total resource count is folded into the section subtitle;
+the original committed handoff-required count remains the semantic status
+badge. No second full-width metric band. The one list has compact padding,
+mobile wraps without horizontal scroll, and no internal scrollbar. The
+original Handoff Required / Ownership Conflict / Observed classes remain
+unchanged. The note that display does not authorize transfer or deletion,
+the unreviewed/empty states, and all Release governance safeguards are
+preserved. This is a layout-only successor to the earlier #1085
+"evidence-first provider handoff scope" arrangement, not a second handoff
+model. It does not change provider authority, server-side decisions,
+preflight blocker wording, provider requests, CSRF/HTMX or modal behavior.
+
+DevContainer light/dark, mobile and expanded-identifier human visual review
+is still pending; no CI/CD, Developer Check, Full Admission, staging UAT,
+promotion or deployment is authorized.
+
+## Tenant Release Step 2 — evidence-first provider handoff scope (#1085; historical first pass)
 
 DevContainer feedback identified dense, stacked unstructured text in the
 four-step Native/Capsule Release wizard **Provider handoff scope**. The
