@@ -162,6 +162,50 @@ source-of-truth, permission, audit or workflow standards. Browser desktop/
 mobile, light/dark, long metric values and toast Visual QA is pending;
 Developer Check, Full Admission, staging and deployment remain HOLD.
 
+## Native Release expiry consistency and Step 4 recovery workspace (#1091; latest detail UI authority)
+
+DevContainer feedback confirmed an expired, independently acknowledged Native
+plan: Step 4 correctly projected **Release review Expired** and
+**Independent approval Recorded · Expired** (0/5 checkpoints), while Step 3
+still said **Transfer Pending** and displayed Platform Admin acceptance.
+The backend `accept_native_successor_handoff_committed` already requires
+current plan and approval timestamps (both within the existing 900-second
+window), SHA/fingerprint and distinct requester; presentation alone must
+never pretend stale evidence is executable.
+
+Step 3 now uses **the same committed `row.native_release_readiness`
+projection** as Step 4 to display **Approval Expired** or **Review Expired**.
+A compact warning links directly to Step 4 recovery. The existing Native
+Platform Admin consent form is only presented when both
+`approval_complete` and `review_complete` are true, in addition to
+existing non-requester, permission and plan-state guards. Capsule's separate
+authority and other Native backend safeguards are unchanged. Expiry remains
+server-authoritative at submission time (a page can become stale while open).
+
+Step 4 replaces a long narrative card with one bounded **2-area responsive
+readiness + next required action** workspace: five committed checkpoints
+with original status/detail and semantic tones, plus one conditional
+recovery/action panel. In the expired case, the existing **Restart Expired
+Handoff Plan** form stays exactly requester-only and requires explicit
+confirmation and fresh provider preflight; read-back/recovery blocks
+restart, and other operators see a clear instruction to ask the original
+requester. When only provider review is stale, link back to Review Scope;
+when approval is not completed, link to Approval & Handoff. No false Release
+CTA, no automated restart, no provider API call from normal UI, no new
+readiness policy. Existing Release/Finalize safety controls after Step 4,
+provider read-back and audit remain intact. Five checkpoints are never
+equivalent to approval to promote staging.
+
+The implementation stays presentation-only: reuse shared Violet surfaces,
+`table_label.status_label`, HTMX/form patterns, full SHA evidence and
+responsive text. All 14 original Tenant forms/CSRF including restart and
+Platform Admin remain in source; role/readiness conditions control which
+forms render. Existing security authority #1057/#1040/#1045/#1047–#1049
+remains controlling. Human light/dark/mobile, requester/reviewer, expired
+plan, read-back and post-expiry navigation QA pending. pytest/lint,
+Developer Check, CI/CD, Full Admission, staging UAT, promotion and
+deployment remain **HOLD** until explicit direction.
+
 ## Tenant Release Step 3 — structured independent approval evidence (#1089; current presentation authority)
 
 Human DevContainer review of Release wizard **Step 3: Independent approval and handoff**

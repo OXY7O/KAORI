@@ -116,6 +116,26 @@ Hero
 
 `Tenant Registry` is the default tab and uses the canonical KAORI server-backed registry contract: shared loading bar, Cluster/Environment/Lifecycle/Search filters, committed-state reads, semantic labels, responsive horizontal overflow, default 5-row pagination, 5/10/25/50 page sizes, and HTMX progressive enhancement with the Tenants route as the real navigation fallback.
 
+**Native Release Step 3 expiry + Step 4 recovery UX (#1091; current):**
+The Step 3 **Transfer Pending** label is no longer shown for stale
+independently acknowledged Native plans. Display **Approval Expired** or
+**Review Expired** from committed `native_release_readiness`, link to
+Step 4 and keep Platform Admin acceptance invisible when either plan/
+approval or provider review freshness is invalid. The existing backend
+15-minute identity/approval/fingerprint and separation-of-duties checks
+are unchanged and still authoritative at submit time.
+
+Step 4 now shows five read-only checkpoints and a compact **Next required
+action** area rather than one long text panel. Eligible original requester
+can explicitly restart an expired acknowledged plan with the original
+CSRF/HTMX POST and exact SHA; other users are instructed to contact the
+requester, while prior provider read-back requires manual recovery.
+Read-only source-of-truth language, pending and review-expired navigation,
+Release/Finalize gates, all 14 original forms, provider identity,
+external-reference status and audit lineage are preserved. No live
+provider fetch in normal UI; no automatic mutation. DevContainer Visual
+QA pending and every CI/CD/admission gate remains HOLD.
+
 **Tenant Release Step 3 — independent approval evidence (#1089; current UI):**
 In the four-step Native/Capsule Release wizard, the independent-approval
 step now separates a compact locked-plan state and original Successor owner /
