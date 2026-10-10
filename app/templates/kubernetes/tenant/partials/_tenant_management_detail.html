@@ -895,7 +895,7 @@
                                           hx-select="#tenant-management-detail"
                                           hx-swap="outerHTML show:none focus-scroll:false"
                                           hx-indicator="#tenant-management-loading"
-                                          class="mt-4 flex min-w-0 flex-col gap-3 rounded-xl border border-outline-subtle bg-surface-elevated p-4">
+                                          class="mt-4 flex min-w-0 flex-col gap-3 border-t border-outline-subtle pt-4">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
                                             <input type="hidden" name="tenant_detail_view" value="{{ active_tenant_detail_view }}">
