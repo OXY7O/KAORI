@@ -75,6 +75,33 @@ Resource Profile mutability is visible before an operator opens the detail dialo
 
 Editing a Custom Resource Profile changes the reusable contract version only. It never silently rewrites an existing Namespace allocation snapshot.
 
+### Create Resource Profile: compact progressive-disclosure layout (#777)
+
+The **Create Resource Profile** form starts with **Identity & Lineage**
+visible. The four field groups—**Basic Resources**, **Storage Guardrails**,
+**Object Limits**, and **Container Defaults**—are native, keyboard-accessible
+`details/summary` disclosures and all start **collapsed**. Their concise
+headings, scope descriptions and chevrons are visible before expansion.
+The existing Advanced Controls editor retains its separate collapsed
+disclosure behavior, matching the established KAORI pattern.
+
+Scope and effect information from existing Info Tips remains within each
+expanded group (outside the `summary` trigger), avoiding nested interactive
+controls inside the disclosure summary. Each closed group still contains the
+original resource inputs, `data-tenant-resource-field-wrap` bindings, **Managed**
+checkboxes, and quota/LimitRange values as descendants of the same POST form.
+Collapsing a group is *presentation only*: it never disables, clears, or omits
+a governed dimension. The existing preset-to-Custom script still discovers
+all fields, applies canonical preset values and the managed-dimension mask,
+and preserves the `control_contract_present` submission contract.
+
+No new JavaScript or CSS, alternate control taxonomy, data model, resource
+budget calculation, provider operation or validation gate is introduced.
+DevContainer Visual QA must confirm initial collapsed state, expand/collapse
+by pointer and keyboard, switching Medium/Custom while groups are closed,
+Managed toggles after expansion, responsive light/dark appearance, and
+Create submission. CI/CD remains HOLD pending explicit user approval.
+
 ### Resource Profile Registry identity density (#1035)
 
 The Resource Profile Registry is a compact, fixed-column, server-rendered list for
