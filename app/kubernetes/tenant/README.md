@@ -116,6 +116,26 @@ Hero
 
 `Tenant Registry` is the default tab and uses the canonical KAORI server-backed registry contract: shared loading bar, Cluster/Environment/Lifecycle/Search filters, committed-state reads, semantic labels, responsive horizontal overflow, default 5-row pagination, 5/10/25/50 page sizes, and HTMX progressive enhancement with the Tenants route as the real navigation fallback.
 
+**Tenant Release Step 2 — provider handoff resource evidence (#1085; current presentation):**
+Render the four-stage Release wizard's second step as one clear structured
+resource list rather than dense provider text rows. A compact summary uses
+committed `handoff_required_count` and `handoff_components|length`; each
+resource shows its exact Kind/Name, Handoff Required/Ownership Conflict/
+Observed semantic label, and distinct Ownership evidence and Provider manager
+facts. Exact provider Namespace, UID and resourceVersion are kept under
+native keyboard-accessible `Provider identifiers` disclosures. Show the
+original not-collected and no-handoff messages distinctly, with no false
+ready/approved state. This is committed Release preflight evidence only;
+Kubernetes/Capsule remains authoritative, and provider handoff/Release never
+occurs from merely viewing this list.
+
+The `release_preflight._release_blockers` copy for an adopted Namespace with
+a linked Resource Profile now explicitly states the need for approved
+provider allocation handoff and verified read-back; its admission guard
+is unchanged. All 14 original CSRF/HTMX governance forms and step URLs,
+independent approval, native provider verification, styling and global OOB
+toast remain unchanged. All CI/CD gates and local human Visual QA remain HOLD.
+
 **Tenant Overview — integrated authority and lifecycle (#1081 follow-up; current UX):**
 On the same compact Overview surface, retain exact Provider and
 Reconciliation Authority facts but remove their redundant full-size
