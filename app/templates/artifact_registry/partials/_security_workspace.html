@@ -490,7 +490,7 @@
                                                                title="{{ row.package }}">{{ row.package }}</p>
                                                             <p class="mt-1 min-w-0 truncate text-xs text-content-muted"
                                                                title="Installed: {{ row.installed_version }}">Installed: {{ row.installed_version }}</p>
-                                                            <p class="mt-1 text-xs font-medium {{ 'text-status-success-text' if row.fix_available else 'text-content-muted' }}">
+                                                            <p class="mt-1 text-xs font-medium text-content-muted">
                                                                 {{ 'Fix observed' if row.fix_available else 'No fix observed' }}
                                                             </p>
                                                         </td>
