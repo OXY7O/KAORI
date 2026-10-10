@@ -162,7 +162,7 @@ def test_tenant_overview_keeps_multicluster_posture_compact_and_canonical() -> N
     assert 'kubernetes/tenant/partials/_cluster_estate.html' in overview
     assert 'components/table.html' in cluster_estate
     assert 'components/pagination.html' in cluster_estate
-    assert "table_ui.table_classes('min-w-[900px]')" in cluster_estate
+    assert "table_ui.table_classes('min-w-[900px] !table-fixed')" in cluster_estate
     assert 'table_ui.cluster_identity_with_status(' in cluster_estate
     assert 'macro cluster_identity_with_status' in table
     assert 'row.provider_status|title' in cluster_estate
