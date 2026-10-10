@@ -10,27 +10,22 @@
     {% if waiting %}
         {% set label = "Waiting for Cluster" %}
         {% set tone = "disabled" %}
-        {% set dot_class = "bg-status-disabled" %}
         {% set message = "Select or register a Kubernetes cluster before Metrics Source readiness can be evaluated." %}
     {% elif not configured %}
         {% set label = "Not Configured" %}
         {% set tone = "unknown" %}
-        {% set dot_class = "bg-status-unknown" %}
         {% set message = "Configure and bind a metrics source for the selected cluster." %}
     {% elif connected and degraded %}
         {% set label = "Query Degraded" %}
         {% set tone = "warning" %}
-        {% set dot_class = "bg-status-warning" %}
         {% set message = "Metrics Source can execute analytics queries, but the latest runtime observation is degraded." %}
     {% elif connected %}
         {% set label = "Query Ready" %}
         {% set tone = "normal" %}
-        {% set dot_class = "bg-status-normal" %}
         {% set message = "Metrics Source is reachable and eligible for Kubernetes Analytics queries." %}
     {% else %}
         {% set label = "Unavailable" %}
         {% set tone = "critical" %}
-        {% set dot_class = "bg-status-critical" %}
         {% set message = status.error|default(status.last_error|default('Metrics Source cannot execute Kubernetes Analytics queries for the selected cluster.'), true) %}
     {% endif %}
     {% set response_time = status.response_time_ms|default(none) %}
