@@ -60,6 +60,7 @@ def analytics_snapshot_state(snapshot: ObjectStorageAnalyticsSnapshot | None) ->
             'usable': False,
             'stale': False,
             'generated_at': None,
+            'expires_at': None,
             'last_attempt_at': None,
             'last_error': None,
         }
@@ -93,6 +94,7 @@ def analytics_snapshot_state(snapshot: ObjectStorageAnalyticsSnapshot | None) ->
         'usable': usable,
         'stale': stale,
         'generated_at': snapshot.generated_at,
+        'expires_at': snapshot.expires_at,
         'last_attempt_at': snapshot.last_attempt_at,
         'last_error': snapshot.last_error,
     }
