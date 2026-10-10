@@ -116,6 +116,31 @@ Hero
 
 `Tenant Registry` is the default tab and uses the canonical KAORI server-backed registry contract: shared loading bar, Cluster/Environment/Lifecycle/Search filters, committed-state reads, semantic labels, responsive horizontal overflow, default 5-row pagination, 5/10/25/50 page sizes, and HTMX progressive enhancement with the Tenants route as the real navigation fallback.
 
+**Tenant Release wizard navigation and feedback (#1095; current UX):**
+Step 1–4 tabs, Previous/Next and internal step links now fetch only the
+committed Tenant Detail fragment through HTMX while preserving canonical
+URL/history and the original plain `href` fallback. The server returns
+fresh committed state for each step and never calls Kubernetes solely to
+render navigation. History snapshots are disabled for the sensitive
+Tenant Detail to avoid stale approval evidence on Back/Forward.
+
+Every existing Tenant governance POST still includes the original CSRF,
+resource identity, plan SHA and HTMX response/toast. Submit buttons are
+temporarily disabled by HTMX while an action is in flight; the loading
+indicator shows pending work. Server-recorded operational feedback is
+rendered near the active Release step as well as in the global Operational
+Toast. The inline result is **not** a replacement for checking committed
+preflight/approval/handoff/read-back evidence. Required checkboxes are
+intentionally reset after a POST or page navigation: they represent
+one-time consent to send that specific request, **not** persisted evidence
+that the action was accepted. Operators should inspect the request result
+and Activity Audit, then the current stage status, before attempting
+another governed action.
+
+No new client storage, bypass, provider API, form endpoints, automatic
+approval, new UI taxonomy or changes to any of the 14 Tenant forms.
+Local browser Visual QA and CI/CD/admission gates remain HOLD.
+
 **Native Platform Admin verified TLS prerequisite (#1047 follow-up; current UI):**
 A successful independent approval is not sufficient if the registered
 Kubernetes connection has `verify_ssl=False` or no trustworthy connection.
