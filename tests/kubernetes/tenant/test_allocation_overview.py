@@ -178,7 +178,7 @@ def test_contribution_summary_uses_unfiltered_committed_tenant_rows() -> None:
     }
 
 
-def test_redesigned_contributions_modal_keeps_summary_and_footer_separate_from_scroll_region() -> None:
+def test_redesigned_contributions_modal_keeps_header_summary_and_search_outside_scroll_region() -> None:
     from pathlib import Path
 
     root = Path(__file__).resolve().parents[3]
@@ -203,9 +203,11 @@ def test_redesigned_contributions_modal_keeps_summary_and_footer_separate_from_s
     assert dialog.index('aria-label="Committed Tenant allocation summary"') < dialog.index(
         'id="{{ contributions_body_id }}"'
     )
-    assert dialog.index('id="{{ contributions_body_id }}"') < dialog.index(
-        "registry_ui.footer('tenant.resource_profiles'"
-    )
+    assert dialog.index('Tenant Registry') < dialog.index('id="{{ contributions_body_id }}"')
+    assert dialog.index('role="search"') < dialog.index('tabindex="0"')
+    assert "registry_ui.footer" not in dialog
+    assert "allocation_tenant_pagination" not in dialog
+    assert 'aria-label="Scroll through Tenant contributions"' in dialog
     assert "<table" not in dialog
     assert "<thead" not in dialog
     assert "min-w-[900px]" not in dialog
@@ -218,6 +220,9 @@ def test_redesigned_contributions_modal_keeps_summary_and_footer_separate_from_s
     assert "role=\"status\"" in dialog
     assert "Tenant Registry" in dialog
     assert "summarize_tenant_contributions(tenant_rows)" in routes
+    assert "context['allocation_tenant_rows'] = tenant_rows" in routes
+    assert "context['allocation_tenant_matches'] = len(tenant_rows)" in routes
+    assert "paginate_sequence(\n            tenant_rows" not in routes
     assert routes.index("summarize_tenant_contributions(tenant_rows)") < routes.index(
         "filter_tenant_contribution_rows(tenant_rows, allocation_search)"
     )
@@ -248,14 +253,17 @@ def test_tenant_contributions_stacked_list_exposes_request_metrics_and_namespace
         assert dimension in dialog
     for key in ("cpu", "memory", "pods", "storage"):
         assert "row.allocation." + key in dialog
-    assert "registry_ui.filter_form" in dialog
-    assert "registry_ui.footer" in dialog
+    assert 'hx-target="#{{ contributions_body_id }}"' in dialog
+    assert 'hx-select="#{{ contributions_body_id }}"' in dialog
+    assert 'hx-swap="outerHTML"' in dialog
+    assert 'role="search"' in dialog
+    assert "registry_ui.footer" not in dialog
     assert "data-kaori-native-dialog" in dialog
     assert "data-kaori-dialog-open" in page
     assert "data-kaori-dialog-close" in dialog
 
 
-def test_allocation_modal_htmx_contract_preserves_dialog_across_pagination() -> None:
+def test_allocation_modal_htmx_contract_preserves_dialog_during_scrollable_search() -> None:
     from pathlib import Path
 
     root = Path(__file__).resolve().parents[3]
@@ -271,14 +279,42 @@ def test_allocation_modal_htmx_contract_preserves_dialog_across_pagination() -> 
     assert "data-kaori-native-dialog" in page
     assert "data-kaori-dialog-open" in page
     assert "data-kaori-dialog-close" in page
-    assert "contributions_body_id," in page
-    assert "contributions_loading_id," in page
-    assert "registry_ui.filter_form" in page
-    assert "registry_ui.footer" in page
+    assert 'hx-target="#{{ contributions_body_id }}"' in page
+    assert 'hx-select="#{{ contributions_body_id }}"' in page
+    assert 'hx-indicator="#{{ contributions_loading_id }}"' in page
+    assert 'hx-sync="closest section:replace"' in page
+    assert "registry_ui.filter_form" not in page
+    assert "registry_ui.footer" not in page
+    assert "allocation_page" not in page
+    assert "allocation_per_page" not in page
     assert 'row.tenant.id|string|truncate' in page
     assert "allocation_tenant_total" in page
     assert "allocation_search" in routes
     assert "filter_tenant_contribution_rows(tenant_rows, allocation_search)" in routes
+    assert "allocation_tenant_pagination" not in routes
+    assert "allocation_per_page" not in routes
+    assert "context['capacity_pagination'] = capacity_pagination" in routes
+
+
+def test_scrollable_contribution_ledger_preserves_all_fifty_rows_and_search() -> None:
+    # No modal pagination: list and search must both operate on all committed Tenant rows.
+    tenants = [
+        SimpleNamespace(
+            id=f"tenant-{index:02d}",
+            name=f"tenant-demo-{index:02d}",
+            provider_key="native_kubernetes",
+            ownership_status="adopted",
+        )
+        for index in range(50)
+    ]
+    namespaces = [_namespace(tenant.id, f"namespace-{index:02d}") for index, tenant in enumerate(tenants)]
+    rows = _partition_tenant_contributions(tenants, namespaces, {}, [])
+    assert len(rows) == 50
+    assert len(filter_tenant_contribution_rows(rows, "")) == 50
+    assert [row["tenant"].id for row in filter_tenant_contribution_rows(rows, "tenant-demo-49")] == [
+        "tenant-49"
+    ]
+    assert summarize_tenant_contributions(rows)["tenants"] == 50
 
 
 def test_tenant_allocation_overview_template_parses_with_jinja() -> None:
@@ -292,6 +328,7 @@ def test_tenant_allocation_overview_template_parses_with_jinja() -> None:
     assert 'id="{{ overview_id }}"' in template
     assert "allocation_overview.bars" in template
     assert "row.namespaces" in template
-    assert "registry_ui.footer" in template
+    assert "registry_ui.footer" not in template
+    assert 'tabindex="0"' in template
     assert "analytics.capacity" in template
     assert "actual workload utilization" in template
