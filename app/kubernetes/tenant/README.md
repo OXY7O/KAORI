@@ -194,8 +194,9 @@ do not authorize a retry, even when Kubernetes labels currently show
 
 The bounded Step 4 workflow is:
 - Original requester: **Assess No-Transfer Provider State**. The server
-  checks exactly one failed-before-write executor sequence, no ambiguous
-  same-plan read-back/attempts, exact former dry-run identities/hashes,
+  checks exactly one failed-before-write executor sequence and rejects
+  ambiguous/partial same-plan read-back attempts (strictly canonical
+  no-transfer read-backs remain digest-bound), exact former dry-run identities/hashes,
   fresh provider inventory, metadata/spec/foreign-label preservation and
   dependency counts. Only read-only Kubernetes GETs occur; a SHA-bound
   assessment is committed to AuditEvent.
