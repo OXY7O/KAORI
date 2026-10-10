@@ -1,5 +1,7 @@
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/section_intro.html" as section_intro %}
+{% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/resource_posture_grid.html" as resource_posture_grid %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/destructive_confirmation_modal.html" as destructive_modal %}
 {% set tenant = row.tenant %}
@@ -52,71 +54,35 @@
         </div>
     </section>
 
-    <section class="min-w-0 space-y-3" aria-labelledby="tenant-governance-scope-title">
-        <div class="flex flex-wrap items-end justify-between gap-2">
-            <div class="min-w-0">
-                <h2 id="tenant-governance-scope-title" class="text-base font-semibold text-content-primary">Governance Scope</h2>
-                <p class="mt-1 text-sm leading-5 text-content-secondary">
-                    Governed resource coverage and current authority from committed Tenant state.
-                </p>
-            </div>
-            <span class="inline-flex items-center gap-1.5 text-xs font-medium text-content-muted">
-                <i data-lucide="database" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                Committed evidence
-            </span>
-        </div>
-        <div class="grid min-w-0 gap-3 lg:grid-cols-2">
-            <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5"
-                     aria-labelledby="tenant-resource-coverage-title">
-                <div class="flex items-center gap-2">
-                    <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                          aria-hidden="true"><i data-lucide="boxes" class="h-4 w-4"></i></span>
-                    <h3 id="tenant-resource-coverage-title" class="text-sm font-semibold text-content-primary">Resource Coverage</h3>
-                </div>
-                <dl class="mt-4 grid grid-cols-2 gap-4 divide-x divide-outline-subtle">
-                    <div class="min-w-0">
-                        <dt class="text-xs font-medium text-content-muted">Active Namespaces</dt>
-                        <dd class="mt-1 text-xl font-semibold tabular-nums text-content-primary">{{ row.namespace_count }}</dd>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">Managed allocation scope</p>
-                    </div>
-                    <div class="min-w-0 pl-4">
-                        <dt class="text-xs font-medium text-content-muted">Environments</dt>
-                        <dd class="mt-1 text-xl font-semibold tabular-nums text-content-primary">{{ row.environments|length }}</dd>
-                        <p class="mt-1 break-words text-xs leading-5 text-content-secondary">
-                            {{ row.environments|join(' · ') if row.environments else 'None registered' }}
-                        </p>
-                    </div>
-                </dl>
-            </section>
-            <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5"
-                     aria-labelledby="tenant-authority-scope-title">
-                <div class="flex items-center gap-2">
-                    <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                          aria-hidden="true"><i data-lucide="shield-check" class="h-4 w-4"></i></span>
-                    <h3 id="tenant-authority-scope-title" class="text-sm font-semibold text-content-primary">Governance Authority</h3>
-                </div>
-                <dl class="mt-4 grid grid-cols-2 gap-4 divide-x divide-outline-subtle">
-                    <div class="min-w-0">
-                        <dt class="text-xs font-medium text-content-muted">Reconciliation</dt>
-                        <dd class="mt-1 break-words text-base font-semibold text-content-primary">
-                            {{ tenant.reconciliation_authority|replace('_', ' ')|title }}
-                        </dd>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">Authoritative boundary</p>
-                    </div>
-                    <div class="min-w-0 pl-4">
-                        <dt class="text-xs font-medium text-content-muted">Lifecycle</dt>
-                        <dd class="mt-1">
-                            {{ table_label.status_label(
-                                tenant.lifecycle_status|replace('_', ' ')|title,
-                                'success' if tenant.lifecycle_status == 'ready'
-                                else ('warning' if tenant.lifecycle_status == 'decommissioning' else 'info')
-                            ) }}
-                        </dd>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">Committed Tenant state</p>
-                    </div>
-                </dl>
-            </section>
-        </div>
+    {# Mirror the canonical Tenant Estate posture composition; metrics are
+       strictly scoped to this Tenant's committed evidence, never the fleet. #}
+    {% set tenant_governance_metrics = [
+        ('boxes', 'Active Namespaces', row.namespace_count, 'Committed Namespace allocations', 'info'),
+        ('layers-3', 'Environments', row.environments|length,
+            row.environments|join(' · ') if row.environments else 'None registered', 'info'),
+        ('shield-check', 'Reconciliation Authority', tenant.reconciliation_authority|replace('_', ' ')|title,
+            'Committed reconciliation responsibility', 'info'),
+        ('circle-check', 'Lifecycle', tenant.lifecycle_status|replace('_', ' ')|title,
+            'Committed Tenant governance state',
+            'normal' if tenant.lifecycle_status == 'ready' else
+                ('warning' if tenant.lifecycle_status == 'decommissioning' else 'info'))
+    ] %}
+    <section class="space-y-4" aria-labelledby="tenant-governance-scope-title">
+        {{ section_intro.render(
+            'Governance Scope',
+            'Committed Namespace, environment, authority and lifecycle posture for this Tenant.',
+            'tenant-governance-scope-title'
+        ) }}
+        {% call operational_section_card.render(
+            'Tenant Governance',
+            'Committed resource scope and governance state for this Tenant.',
+            'layout-grid',
+            id='tenant-governance-scope-card',
+            body_classes='p-0',
+            aria_label='Tenant governance summary'
+        ) %}
+            {{ resource_posture_grid.render(tenant_governance_metrics, columns=4) }}
+        {% endcall %}
     </section>
 
     <section id="tenant-detail-snapshot" class="min-w-0 space-y-4"
