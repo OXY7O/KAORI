@@ -103,7 +103,7 @@ def test_one_described_page_not_a_new_tabbed_application():
 def test_tenant_overview_record_sheet_preserves_committed_identity_and_audit():
     detail = read(DETAIL)
     overview = detail.split('id="tenant-detail-snapshot"', 1)[1].split(
-        'aria-label="Authority Boundary"', 1
+        'aria-label="Tenant management sections"', 1
     )[0]
     Environment().parse(detail)
 
@@ -143,18 +143,24 @@ def test_tenant_overview_record_sheet_preserves_committed_identity_and_audit():
     assert 'whitespace-pre-wrap' in overview
     assert 'Quick Links' not in overview
     assert 'overflow-x-auto' not in overview
-    assert '<form ' not in overview
+    assert overview.count('<form ') == 1  # Governed Decommission moved into the sheet.
+    assert 'data-destructive-modal-open' in overview
+    assert 'name="tenant_detail_section" value="lifecycle"' in overview
+    assert 'aria-label="Authority Boundary"' in overview
+    assert '<details id="tenant-lifecycle-actions"' in overview
+    assert 'id="tenant-provider-authority"' in overview
+    assert '<details id="tenant-provider-authority"' not in overview
 
 
 def test_page_shows_all_governed_sections_in_authoritative_order():
     detail = read(DETAIL)
     labels = (
         'id="tenant-detail-snapshot"',
+        'id="tenant-provider-authority"',
+        'id="tenant-lifecycle-actions"',
         'id="tenant-release-governance"',
         'id="tenant-native-handback"',
         'id="tenant-namespace-attachment"',
-        'id="tenant-provider-authority"',
-        'id="tenant-lifecycle-actions"',
     )
     assert all(label in detail for label in labels)
     assert [detail.index(label) for label in labels] == sorted(
@@ -348,29 +354,67 @@ def test_single_tenant_overview_and_authority_boundary_preserved():
 
 
 
+
+def test_compact_provider_and_lifecycle_evidence_without_duplicate_accordions():
+    detail = read(DETAIL)
+    overview = detail.split('id="tenant-detail-snapshot"', 1)[1].split(
+        'aria-label="Tenant management sections"', 1
+    )[0]
+
+    # Provider values are already shown in the existing Overview facts.
+    assert overview.count('id="tenant-provider-authority"') == 1
+    assert '<details id="tenant-provider-authority"' not in detail
+    assert "tenant.provider_key|replace('_', ' ')|title" in overview
+    assert "tenant.reconciliation_authority|replace('_', ' ')|title" in overview
+    statement = (
+        'KAORI presents committed governance evidence; Kubernetes or Capsule '
+        'remains authoritative for provider resources.'
+    )
+    assert detail.count(statement) == 1
+    assert overview.count(statement) == 1
+    assert detail.count('role="note" aria-label="Authority Boundary"') == 1
+    assert '<aside' not in overview
+
+    # Lifecycle is a native Overview disclosure, not a fifth standalone card.
+    assert overview.count('id="tenant-lifecycle-actions"') == 1
+    assert 'Lifecycle controls' in overview
+    assert "tenant_detail_open_section == 'lifecycle'" in overview
+    assert 'name="tenant-governance"' not in overview
+    assert "row.decommission_preflight" in overview
+    assert "tenant.decommission_tenant_route" in overview
+    assert 'data-destructive-modal-open' in overview
+    assert 'data-destructive-submit-button-id=' in overview
+    assert 'aria-label="Decommission blockers"' in overview
+    assert "for blocker in decommission.blockers" in overview
+    assert '{{ blocker }}' in overview
+    assert "destructive_modal.render('tenant-decommission-modal'" in detail
+    assert detail.count('name="csrf_token"') == 14
+    assert detail.count('<form ') == 14
+
+
 def test_release_is_permanent_and_other_governance_sections_remain_accessible():
     detail = read(DETAIL)
     release = detail.split('id="tenant-release-governance"', 1)[1].split(
         'id="tenant-native-handback"', 1
     )[0]
-    names = (
-        'tenant-native-handback', 'tenant-namespace-attachment',
-        'tenant-provider-authority', 'tenant-lifecycle-actions',
-    )
+    names = ('tenant-native-handback', 'tenant-namespace-attachment')
     assert '<section id="tenant-release-governance"' in detail
     assert '<details id="tenant-release-governance"' not in detail
     assert '<summary' not in release.split('aria-label="Release wizard steps"', 1)[0]
     assert 'data-lucide="clipboard-check" class="h-5 w-5"' in release
     assert 'aria-label="Release Governance"' in release
     assert detail.count('name="tenant-governance"') == len(names)
-    assert detail.count('tenant_detail_open_section ==') == len(names)
-    assert detail.count('group-open:rotate-180') == len(names)
+    assert detail.count('tenant_detail_open_section ==') == len(names) + 1
+    assert detail.count('group-open:rotate-180') == len(names) + 1
     for id_ in names:
         assert f'<details id="{id_}" name="tenant-governance"' in detail
     assert '<summary class="flex min-h-20 cursor-pointer' in detail
     for name in ('Release Governance', 'Platform Admin Handback',
-                 'Namespace Attachment', 'Provider Authority', 'Lifecycle Actions'):
+                 'Namespace Attachment', 'Lifecycle controls'):
         assert name in detail
+    assert '<details id="tenant-provider-authority"' not in detail
+    assert '<details id="tenant-lifecycle-actions"' in detail
+    assert 'name="tenant-governance"' not in detail.split('id="tenant-lifecycle-actions"', 1)[1].split('</details>', 1)[0]
     assert 'tenant-release-stage-readiness' in detail
     assert 'tenant-release-stage-inventory' in detail
     assert 'tenant-release-stage-approval' in detail
@@ -390,7 +434,7 @@ def test_release_is_permanent_and_other_governance_sections_remain_accessible():
 
 def test_short_hero_subtitle_and_no_quick_links_regression():
     detail = read(DETAIL)
-    assert 'Manage Tenant governance and lifecycle.' in detail
+    assert 'Manage Tenant governance, provider authority, and lifecycle with committed evidence.' in detail
     assert 'Govern Tenant ownership, Namespace allocations' not in detail
     assert 'Quick Links' not in detail
     assert 'Tenant ID' in detail
