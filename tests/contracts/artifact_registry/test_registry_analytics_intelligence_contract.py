@@ -193,6 +193,7 @@ def test_registry_analytics_readiness_reuses_k8s_shared_controls_without_buttons
     assert 'shared_readiness.source_card(' in registry
     assert 'shared_readiness.snapshot_card(' in registry
     assert 'Analytics Controls & Data Readiness' in registry
+    assert "eyebrow='Analytics Overview' if analytics.active_tab == 'overview'" in registry
     assert 'Registry</span>' in registry
     assert 'Time Range</span>' in registry
     assert 'All Registries' in registry
@@ -271,7 +272,7 @@ def test_kubernetes_and_registry_render_shared_readiness_without_duplicate_shell
             'active_tab': 'overview',
             'provider_options': [],
             'selected_provider_id': None,
-            'snapshot_window': 'current',
+            'snapshot_window': '24h',
             'alert_filters': {},
             'data_readiness': {
                 'eligible_count': 1,
@@ -291,9 +292,10 @@ def test_kubernetes_and_registry_render_shared_readiness_without_duplicate_shell
         }
     )
     assert registry.count('data-analytics-controls-readiness') == 1
-    assert 'Registry Source Readiness' in registry
-    assert 'Latest Data Snapshot' in registry
+    assert 'Registry Source Status' in registry
+    assert 'Latest Analytics Data Snapshot' in registry
     assert 'Analytics Controls & Data Readiness' in registry
+    assert "eyebrow='Analytics Overview' if analytics.active_tab == 'overview'" in registry
     assert 'Collect Analytics Data' not in registry
     assert 'Configure Collection' not in registry
 

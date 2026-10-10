@@ -14,7 +14,7 @@
         'Set the Registry and Time Range, then confirm Registry Source status and committed analytics datasets.',
         'sliders-horizontal',
         'artifact-registry-analytics-refresh-indicator',
-        eyebrow='Registry Analytics',
+        eyebrow='Analytics Overview' if analytics.active_tab == 'overview' else analytics.page_title,
         loading=readiness.is_active,
         header_content=worker_status if readiness.is_active else ''
         ) %}

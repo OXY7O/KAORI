@@ -521,6 +521,11 @@ inventory, security, runtime, or governance truth.
 
 The Registry Analytics Overview and all seven focused analytics pages use the
 approved Kubernetes Analytics **Controls & Data Readiness** composition.
+Overview uses the canonical **Analytics Overview** eyebrow, while focused
+domain pages use their own page title. The Registry source card uses the
+same semantic status-dot/title/badge hierarchy as the K8s Metrics Source
+Status card without claiming that Registry source eligibility proves live
+Metrics Source query readiness.
 Their authoritative read-only source/commit readiness comes from
 `build_registry_analytics_readiness`, which reads eligible Registry providers,
 the latest ready materialized snapshot per eligible provider, snapshot expiry,
