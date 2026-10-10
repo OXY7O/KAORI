@@ -24,8 +24,7 @@
                     <h1 id="tenant-detail-{{ tenant.id }}-title"
                         class="{{ page_hero.title_classes() }}">{{ tenant.name }}</h1>
                     <p class="mt-2 {{ page_hero.description_classes() }}">
-                        Govern Tenant ownership, Namespace allocations, provider handoff
-                        and lifecycle with committed, independently verified evidence.
+                        Manage Tenant governance and lifecycle.
                     </p>
                     {{ page_hero.persistent_metadata([
                         ('server', row.cluster.name if row.cluster else 'Cluster unavailable'),
@@ -77,91 +76,120 @@
         </div>
     </section>
 
-    <section id="tenant-detail-snapshot" class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-6"
-             aria-label="Tenant overview">
-        <div class="mb-4 flex flex-wrap items-start gap-3">
-            <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-kaori-soft text-sm font-semibold text-kaori-primary"
-                  aria-hidden="true">1</span>
-            <div class="min-w-0">
-                <h2 class="text-lg font-semibold text-content-primary">Tenant Overview</h2>
-                <p class="mt-1 text-sm leading-6 text-content-secondary">
-                    Identity, allocation scope and historical governance evidence for this Tenant.
-                </p>
-            </div>
+    <section id="tenant-detail-snapshot" class="min-w-0 space-y-4"
+             aria-labelledby="tenant-overview-heading">
+        <div class="min-w-0">
+            <h2 id="tenant-overview-heading" class="text-lg font-semibold text-content-primary">Tenant Overview</h2>
+            <p class="mt-1 text-sm leading-6 text-content-secondary">
+                Identity, governance responsibility and committed lifecycle evidence for this Tenant.
+            </p>
         </div>
-        <div class="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
-            <div class="min-w-0 overflow-hidden rounded-lg border border-outline-subtle">
-                <dl class="divide-y divide-outline-subtle">
-                    {% set tenant_identity_rows = [
-                        ('Tenant Name', tenant.name),
+        <div class="grid min-w-0 gap-4 lg:grid-cols-2">
+            <section class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+                     aria-labelledby="tenant-identity-heading">
+                <header class="flex items-start gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5">
+                    <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
+                        <i data-lucide="fingerprint" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h3 id="tenant-identity-heading" class="text-base font-semibold text-content-primary">Identity &amp; Origin</h3>
+                        <p class="mt-1 text-sm leading-5 text-content-secondary">
+                            Registered identity and the provider this Tenant belongs to.
+                        </p>
+                    </div>
+                </header>
+                <dl class="divide-y divide-outline-subtle px-4 sm:px-5">
+                    {% set identity_facts = [
+                        ('Tenant ID', tenant.id),
                         ('Cluster', row.cluster.name if row.cluster else 'Cluster unavailable'),
                         ('Provider', tenant.provider_key|replace('_', ' ')|title),
-                        ('Generation', tenant.generation),
-                        ('Ownership', tenant.ownership_status|replace('_', ' ')|title),
-                        ('Lifecycle', tenant.lifecycle_status|replace('_', ' ')|title)
+                        ('Generation', tenant.generation)
                     ] %}
-                    {% for label, value in tenant_identity_rows %}
-                        <div class="grid min-w-0 gap-1 px-4 py-2.5 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-3">
-                            <dt class="text-sm text-content-secondary">{{ label }}</dt>
-                            <dd class="break-words text-sm font-semibold text-content-primary">{{ value }}</dd>
+                    {% for label, value in identity_facts %}
+                        <div class="grid min-w-0 gap-1 py-3 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-3">
+                            <dt class="text-sm text-content-muted">{{ label }}</dt>
+                            <dd class="min-w-0 break-all text-sm font-semibold text-content-primary">{{ value }}</dd>
                         </div>
                     {% endfor %}
                     {% if tenant.created_at %}
-                        <div class="grid min-w-0 gap-1 px-4 py-2.5 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-3">
-                            <dt class="text-sm text-content-secondary">Created</dt>
-                            <dd class="text-sm font-semibold tabular-nums text-content-primary">{{ tenant.created_at.strftime('%Y-%m-%d %H:%M') }}</dd>
-                        </div>
-                    {% endif %}
-                    {% if tenant.updated_at %}
-                        <div class="grid min-w-0 gap-1 px-4 py-2.5 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-3">
-                            <dt class="text-sm text-content-secondary">Updated</dt>
-                            <dd class="text-sm font-semibold tabular-nums text-content-primary">{{ tenant.updated_at.strftime('%Y-%m-%d %H:%M') }}</dd>
+                        <div class="grid min-w-0 gap-1 py-3 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-3">
+                            <dt class="text-sm text-content-muted">Registered</dt>
+                            <dd class="text-sm font-semibold tabular-nums text-content-primary">
+                                {{ tenant.created_at.strftime('%Y-%m-%d %H:%M') }}
+                            </dd>
                         </div>
                     {% endif %}
                 </dl>
-            </div>
-            <div class="min-w-0 space-y-3">
-                <section class="rounded-lg border border-outline-subtle p-4" aria-label="Tenant description">
-                    <div class="flex items-center gap-2 text-sm font-semibold text-content-primary">
-                        <i data-lucide="file-text" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
-                        Description
-                    </div>
-                    <p class="mt-2 break-words text-sm leading-6 text-content-secondary">
-                        {{ tenant.description or 'This Tenant is governed by KAORI using committed evidence. Kubernetes or Capsule retains authority over provider resources.' }}
+                <div class="border-t border-outline-subtle bg-surface-elevated px-4 py-4 sm:px-5">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Description</p>
+                    <p class="mt-1 break-words text-sm leading-6 text-content-secondary">
+                        {{ tenant.description or 'No Tenant description has been recorded.' }}
                     </p>
-                </section>
-                <section class="rounded-lg border border-outline-subtle p-4" aria-label="Tenant quick links">
-                    <div class="flex items-center gap-2 text-sm font-semibold text-content-primary">
-                        <i data-lucide="link-2" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
-                        Quick Links
+                </div>
+            </section>
+
+            <section class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+                     aria-labelledby="tenant-governance-heading">
+                <header class="flex items-start gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5">
+                    <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
+                        <i data-lucide="shield-check" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h3 id="tenant-governance-heading" class="text-base font-semibold text-content-primary">Governance State</h3>
+                        <p class="mt-1 text-sm leading-5 text-content-secondary">
+                            Current lifecycle and reconciliation responsibility.
+                        </p>
                     </div>
-                    <div class="mt-3 grid gap-2 sm:grid-cols-2">
-                        <a href="{{ url_for('tenant.tenants', section='access-grants') }}"
-                           class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-outline-default px-3 text-sm font-semibold text-kaori-primary hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                            <i data-lucide="users" class="h-4 w-4" aria-hidden="true"></i>Access Grants
-                        </a>
-                        <a href="{{ url_for('tenant.resource_profiles') }}"
-                           class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-outline-default px-3 text-sm font-semibold text-kaori-primary hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                            <i data-lucide="layers-3" class="h-4 w-4" aria-hidden="true"></i>Resource Profiles
-                        </a>
-                        <a href="{{ url_for('tenant.tenants', section='registry') }}"
-                           class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-outline-default px-3 text-sm font-semibold text-kaori-primary hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                            <i data-lucide="building-2" class="h-4 w-4" aria-hidden="true"></i>Tenant Registry
-                        </a>
-                        <a href="{{ url_for('tenant.operations') }}"
-                           class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-outline-default px-3 text-sm font-semibold text-kaori-primary hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                            <i data-lucide="activity" class="h-4 w-4" aria-hidden="true"></i>Operations
-                        </a>
+                </header>
+                <dl class="divide-y divide-outline-subtle px-4 sm:px-5">
+                    <div class="grid min-w-0 gap-1 py-3 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-3">
+                        <dt class="text-sm text-content-muted">Ownership</dt>
+                        <dd class="break-words text-sm font-semibold text-content-primary">
+                            {{ tenant.ownership_status|replace('_', ' ')|title }}
+                        </dd>
                     </div>
-                </section>
-                {% set historical_namespace_count = row.namespace_history_count - row.namespace_count %}
-                {% if historical_namespace_count > 0 %}
-                    <p class="rounded-lg border border-outline-subtle bg-surface-elevated px-4 py-3 text-sm text-content-secondary">
-                        {{ historical_namespace_count }} historical Namespace record{{ '' if historical_namespace_count == 1 else 's' }}
-                        retained for audit and generation lineage.
-                    </p>
-                {% endif %}
-            </div>
+                    <div class="grid min-w-0 gap-1 py-3 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-3">
+                        <dt class="text-sm text-content-muted">Lifecycle</dt>
+                        <dd>
+                            {{ table_label.status_label(
+                                tenant.lifecycle_status|replace('_', ' ')|title,
+                                'success' if tenant.lifecycle_status == 'ready'
+                                else ('warning' if tenant.lifecycle_status == 'decommissioning' else 'info')
+                            ) }}
+                        </dd>
+                    </div>
+                    <div class="grid min-w-0 gap-1 py-3 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-3">
+                        <dt class="text-sm text-content-muted">Reconciliation</dt>
+                        <dd class="break-words text-sm font-semibold text-content-primary">
+                            {{ tenant.reconciliation_authority|replace('_', ' ')|title }}
+                        </dd>
+                    </div>
+                    {% if tenant.updated_at %}
+                        <div class="grid min-w-0 gap-1 py-3 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-3">
+                            <dt class="text-sm text-content-muted">Last updated</dt>
+                            <dd class="text-sm font-semibold tabular-nums text-content-primary">
+                                {{ tenant.updated_at.strftime('%Y-%m-%d %H:%M') }}
+                            </dd>
+                        </div>
+                    {% endif %}
+                </dl>
+                <div class="border-t border-outline-subtle bg-surface-elevated px-4 py-4 sm:px-5">
+                    <div class="flex items-start gap-2">
+                        <i data-lucide="database" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                        <p class="text-sm leading-6 text-content-secondary">
+                            KAORI presents committed governance evidence; Kubernetes or Capsule remains authoritative for provider resources.
+                        </p>
+                    </div>
+                    {% set historical_namespace_count = row.namespace_history_count - row.namespace_count %}
+                    {% if historical_namespace_count > 0 %}
+                        <p class="mt-2 text-sm leading-6 text-content-muted">
+                            {{ historical_namespace_count }} historical Namespace record{{ '' if historical_namespace_count == 1 else 's' }} retained for audit.
+                        </p>
+                    {% endif %}
+                </div>
+            </section>
         </div>
     </section>
 
