@@ -240,3 +240,85 @@ def test_decision_requires_same_fresh_actor_separated_evidence(monkeypatch):
         recovery.require_authorized_no_transfer_restart(
             tenant_id=p['tenant_id'], plan=p, actor_user_id=42,
         )
+
+
+def setup_read_only_provider_proof(monkeypatch):
+    p = plan()
+    preview = {
+        'kind': 'Namespace', 'name': 'demo', 'namespace': None,
+        'uid': 'uid-1', 'resource_version': '21',
+        'operation': 'metadata_only_json_patch_dry_run',
+        'dry_run': True, 'live_provider_unchanged': True,
+        'spec_sha256': 'spec-hash', 'retained_metadata_sha256': 'foreign-hash',
+    }
+    fresh = {
+        'tenant_id': p['tenant_id'], 'cluster_id': p['cluster_id'],
+        'generation': p['generation'], 'provider': 'native_kubernetes',
+        'handoff_fingerprint': p['handoff_fingerprint'],
+        'live_provider_identity': [{'kind': 'Namespace', 'name': 'demo', 'uid': 'uid-1', 'resource_version': '21'}],
+        'handoff_components': p['handoff_components'],
+    }
+    p['provider_identity'] = fresh['live_provider_identity']
+    monkeypatch.setattr(recovery, '_can_confirm_plan', lambda value: None)
+    monkeypatch.setattr(
+        recovery, '_latest_native_dry_run', lambda _: {
+            'plan_sha256': p['plan_sha256'],
+            'handoff_fingerprint': p['handoff_fingerprint'],
+            'status': 'dry_run_passed',
+            'provider_mutation_performed': False,
+            'release_authorized': False,
+            'expected_component_count': 1,
+            'previewed_components': [preview],
+        },
+    )
+    monkeypatch.setattr(recovery, '_approved_component_for_preview', lambda **kwargs: p['handoff_components'][0])
+    monkeypatch.setattr(recovery, 'db', SimpleNamespace(session=SimpleNamespace(get=lambda *args: object())))
+    core = object()
+    monkeypatch.setattr(
+        recovery, 'runtime_adapter',
+        SimpleNamespace(build_client=lambda _: SimpleNamespace(core_api=lambda: core)),
+    )
+    monkeypatch.setattr(recovery, '_read_resource', lambda *args: object())
+    return p, fresh
+
+
+def test_provider_assessment_uses_read_only_exact_original_evidence(monkeypatch):
+    p, fresh = setup_read_only_provider_proof(monkeypatch)
+    monkeypatch.setattr(
+        recovery, 'summarize_native_handoff_recovery',
+        lambda **kwargs: {
+            'status': 'provider_handoff_not_started',
+            'components': [{'state': 'pending_provider_transfer'}],
+            'transferred_count': 0, 'pending_count': 1,
+            'provider_spec_preserved': True, 'provider_resource_deleted': False,
+            'release_authorized': False,
+        },
+    )
+    proof = recovery._verify_original_provider_state(
+        tenant_id=p['tenant_id'], plan=p, actor_user_id=42, fresh=fresh,
+    )
+    assert len(proof['provider_proof_sha256']) == 64
+    assert proof['verified_count'] == 1
+
+
+def test_provider_assessment_rejects_partial_markers_or_changed_inventory(monkeypatch):
+    p, fresh = setup_read_only_provider_proof(monkeypatch)
+    monkeypatch.setattr(
+        recovery, 'summarize_native_handoff_recovery',
+        lambda **kwargs: {
+            'status': 'partial_handoff_recovery_required',
+            'components': [{'state': 'provider_markers_transferred'}],
+            'transferred_count': 1, 'pending_count': 0,
+            'provider_spec_preserved': True, 'provider_resource_deleted': False,
+            'release_authorized': False,
+        },
+    )
+    with pytest.raises(ValueError, match='Partial/unknown'):
+        recovery._verify_original_provider_state(
+            tenant_id=p['tenant_id'], plan=p, actor_user_id=42, fresh=fresh,
+        )
+    changed = {**fresh, 'handoff_fingerprint': 'different'}
+    with pytest.raises(ValueError, match='Fresh provider identity'):
+        recovery._verify_original_provider_state(
+            tenant_id=p['tenant_id'], plan=p, actor_user_id=42, fresh=changed,
+        )
