@@ -36,6 +36,52 @@ Domain capability → instance/asset binding (source provider stays authoritativ
 
 The Registry gap is governed by [#1108](https://github.com/OXY7O/KAORI/issues/1108), not disguised by the common UI. Its `snapshot_window` selector currently tests the **age of the latest materialized snapshot**, not how far back Prometheus/Thanos was queried. Never present this as measured time-series history until worker range materialization is implemented and validated.
 
+## Canonical cross-domain Analytics presentation (#1122)
+
+A single shared Jinja module — `analytics/components/_controls_readiness.html`
+— owns the **header**, selector label/control CSS, paired controls grid,
+two-card readiness grid, normalized **Source Status** card, and **Latest
+Analytics Data Snapshot** card. The same module is used by Kubernetes,
+Object Storage, and Artifact Registry Analytics. Shared HTMX section progress
+remains independently owned by `analytics/components/_section_load_tracker.html`;
+neither UI component owns a provider collector, worker, or data query.
+
+| Presentation responsibility | Canonical owner | Domain supplies |
+|---|---|---|
+| Controls header and loading bar | `shared_readiness.frame` | capability title, scope description, busy/worker status, HTMX indicator |
+| Selector label, form field and focus styles | `shared_readiness.selector` | field ID/name, options, selected value, optional legacy bookmark |
+| Filter/readiness two-column geometry | `shared_readiness.controls_grid`, `readiness_grid` | filter/section content |
+| Source badge, status dot and 2-cell details | `shared_readiness.source_card` | real readiness status, provenance, labels/values; K8s optional response/check icons |
+| Snapshot status and committed evidence | `shared_readiness.snapshot_card` | generated time, dataset, coverage/expiry and worker attempt |
+| Canonical seven time-range values and labels | `app/common/analytics/params.py::get_allowed_time_ranges` | selected range, dataset semantics, provider retention validation |
+| Requested HTMX section tracker | `analytics/components/_section_load_tracker.html` | actual bounded fragment requests, not Celery percentage |
+
+Kubernetes Overview now delegates its former page-local header, selectors,
+and source-status geometry to shared macros. Its
+`kubernetes/analytics/components/_metrics_source_status.html` only
+classifies Metrics Source states and supplies response time/checked-at:
+the shared `source_card` renders the actual card. Object Storage delegates
+System/Time Range/History Window/Alert Source controls to `selector`
+and retains committed Metrics Source, Inventory and Forecast provenance.
+Registry delegates provider and time-range controls to `selector` without
+importing any Kubernetes-owned template. Normal seven options come from
+`get_allowed_time_ranges`; the Registry `current` bookmark remains an
+explicit **snapshot-age** selector and is not historical source telemetry.
+
+For a **new provider in an existing domain**, register the provider adapter,
+qualify its capabilities, and supply the same normalized context/options;
+do **not** copy or fork the view. For a **new Analytics domain**, use the
+existing shared macros, canonical time-range source, section tracker,
+readiness model, and registered jobs; implement only the domain-specific
+source adapter, dataset builder, and evidence projection.
+
+**Visual changes** to these canonical components propagate automatically to
+all consumers. Domain-specific evidence semantics, provider capability
+validation, section availability and the meaning of a time-range query
+are deliberately **not** centralized into presentation code. A component
+change still requires visual/a11y regression checks of all three consumers
+before acceptance; no design drift is accepted as a domain exception by default.
+
 ## Extension checklist for a fourth domain
 
 1. Define domain capability and asset type before provider product or instance. Register provider-qualified source capabilities and integration binding using the existing Integration Registry.
