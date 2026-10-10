@@ -83,7 +83,7 @@ def test_tenant_registry_uses_canonical_server_registry_contract() -> None:
     assert 'registry_ui.filter_form' in registry
     assert 'registry_ui.footer' in registry
     assert 'tenant-registry-loading' in registry
-    assert "table_ui.table_classes('min-w-[1300px] !table-fixed')" in registry
+    assert "table_ui.table_classes('min-w-[1040px] !table-fixed')" in registry
     assert 'tenant-registry-cluster' in registry
     assert 'tenant-registry-environment' in registry
     assert 'tenant-registry-lifecycle' in registry
