@@ -100,6 +100,7 @@ from app.kubernetes.tenant.route_common import (
     _tenant_active_section_context,
     _tenant_admin_section,
     _tenant_admin_support_context,
+    _tenant_detail_context,
     _tenant_section_redirect,
     _tenant_workspace_context,
     tenant_bp,
@@ -327,6 +328,22 @@ def tenants():
         tenant_page_title='Tenants',
         tenant_page_icon='users-round',
         active_tenant_section=active_section,
+        **context,
+    )
+
+
+@tenant_bp.get('/tenants/<string:tenant_id>/manage')
+@any_permission_required('tenant.view', 'tenant.manage')
+def tenant_detail(tenant_id: str):
+    """Dedicated committed-only Tenant workflow; no provider read on GET."""
+    context = _tenant_workspace_context(include_sync=False)
+    context.update(_tenant_detail_context(tenant_id))
+    return render_template(
+        'kubernetes/tenant/tenant_detail.html',
+        tenant_page='tenants',
+        tenant_page_title='Tenant Management',
+        tenant_page_icon='building-2',
+        can_manage=current_user.has_permission('tenant.manage'),
         **context,
     )
 
