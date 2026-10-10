@@ -84,16 +84,29 @@ management card is used. Only compact internal field groups may use responsive
 columns (Capsule attachment inputs and provider facts), while their parent
 cards span the available dialog width without horizontal overflow.
 
-Release Review, Handoff Inventory and Governed Handoff share one action group
-with generous gaps and expand within the modal rather than occupying separate
-full-width action rows. Review readiness uses a compact status summary; Release
-blockers use a separate, padded warning panel with readable multi-line entries.
+The **Release Governance** card presents an ordered, full-width workflow
+instead of three controls that resemble interchangeable tabs. **Release
+Readiness** remains first, with a standalone **Review Release** POST action,
+latest committed review status and persistent multiline blocker evidence.
+Three stable, numbered sections follow: **(1) Handoff Inventory**, whose
+read-only provider objects are visible without an expanding toolbar;
+**(2) Governed Handoff**, which displays the authorized successor/change
+form and independently gated approval within a permanent full-width card;
+and **(3) Independent Verification & Release**, which states the remaining
+external ownership/read-back requirements and keeps the existing explicit
+Release action conditional on authoritative preflight. Without a review or
+handoff eligibility, the relevant section shows concise non-action guidance,
+not an empty disclosure. The only nested disclosure retained within this
+workflow is optional detailed Native dry-run evidence. Stable card boundaries
+do not change position when the operator inspects handoff evidence or a form.
+
 Lifecycle **Blocked** appears together with its Decommission warning panel
 instead of as a detached badge. Capsule attachment still verifies authoritative
 UID/resourceVersion and does not automatically grant RBAC. Release preflight
-status and dependency blockers are displayed as **persistent in-dialog
-evidence**, not a hover-only Info Tip.
-Governed Handoff remains approval-gated; an internal acknowledgment,
+status and dependency blockers remain persistent in-dialog evidence, never a
+hover-only Info Tip. Governed Handoff keeps every prior permission, CSRF,
+HTMX, plan fingerprint, independent actor, Native dry-run, provider read-back,
+successor-reference and destructive Release guard. An internal acknowledgment,
 unverified external reference or dry-run is **not** proof of a successor's
 acceptance or authority to mark provider-mutated resources Released.
 Decommission remains separate and uses the existing destructive confirmation
