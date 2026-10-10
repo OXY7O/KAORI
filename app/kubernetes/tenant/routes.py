@@ -928,6 +928,8 @@ def accept_native_successor_handoff_route(tenant_id: str):
     """One explicit provider-authenticated successor consent, no provider write."""
     try:
         _csrf()
+        if not request.is_secure:
+            raise ValueError('Native successor credentials require verified HTTPS ingress.')
         if request.form.get('confirm_successor_acceptance') != 'accept':
             raise ValueError('The authenticated successor must explicitly accept responsibility.')
         result = accept_native_successor_handoff_committed(
