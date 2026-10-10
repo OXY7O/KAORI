@@ -55,7 +55,7 @@ def build_analytics_shell(
     *,
     active_tab: str = 'overview',
     provider_id: int | None = None,
-    snapshot_window: str = 'current',
+    snapshot_window: str = '24h',
     alert_search: str = '',
     alert_severity: str = 'all',
     alert_state: str = 'all',
@@ -290,7 +290,7 @@ def _analytics_snapshot_view(identity: Any, snapshot: RegistryAnalyticsSnapshot 
 
 
 def _collect_analytics_rows(
-    identities: list[Any], *, snapshot_window: str = 'current'
+    identities: list[Any], *, snapshot_window: str = '24h'
 ) -> dict[str, Any]:
     bundle: dict[str, Any] = {
         'aggregate': _analytics_aggregate(),
@@ -687,7 +687,7 @@ def build_analytics(
     *,
     active_tab: str = 'growth',
     provider_id: int | None = None,
-    snapshot_window: str = 'current',
+    snapshot_window: str = '24h',
     alert_search: str = '',
     alert_severity: str = 'all',
     alert_state: str = 'all',

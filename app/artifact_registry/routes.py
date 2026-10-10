@@ -374,7 +374,7 @@ def _render_registry_analytics_page(section: str) -> ResponseReturnValue:
         analytics=build_analytics_shell(
             active_tab=section,
             provider_id=request.args.get('provider_id', type=int),
-            snapshot_window=request.args.get('snapshot_window', 'current', type=str),
+            snapshot_window=request.args.get('snapshot_window', '24h', type=str),
             alert_search=request.args.get('alert_q', '', type=str),
             alert_severity=request.args.get('alert_severity', 'all', type=str),
             alert_state=request.args.get('alert_state', 'all', type=str),
@@ -452,7 +452,7 @@ def analytics_materialization_resolve() -> ResponseReturnValue:
     if section not in _REGISTRY_ANALYTICS_DETAIL_ROUTES:
         section = 'overview'
     provider_id = request.args.get('provider_id', type=int)
-    window = request.args.get('snapshot_window', 'current', type=str)
+    window = request.args.get('snapshot_window', '24h', type=str)
     alert_params = {
         'alert_search': request.args.get('alert_q', '', type=str),
         'alert_severity': request.args.get('alert_severity', 'all', type=str),
@@ -541,7 +541,7 @@ def analytics_section(section: str) -> ResponseReturnValue:
     context = build_analytics(
         active_tab='growth' if section == 'summary' else section,
         provider_id=request.args.get('provider_id', type=int),
-        snapshot_window=request.args.get('snapshot_window', 'current', type=str),
+        snapshot_window=request.args.get('snapshot_window', '24h', type=str),
         alert_search=request.args.get('alert_q', '', type=str),
         alert_severity=request.args.get('alert_severity', 'all', type=str),
         alert_state=request.args.get('alert_state', 'all', type=str),
@@ -568,7 +568,7 @@ def analytics_alerts_table() -> ResponseReturnValue:
     context = build_analytics(
         active_tab='alerts',
         provider_id=request.args.get('provider_id', type=int),
-        snapshot_window=request.args.get('snapshot_window', 'current', type=str),
+        snapshot_window=request.args.get('snapshot_window', '24h', type=str),
         alert_search=request.args.get('alert_q', '', type=str),
         alert_severity=request.args.get('alert_severity', 'all', type=str),
         alert_state=request.args.get('alert_state', 'all', type=str),

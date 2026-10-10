@@ -136,11 +136,21 @@ def build_registry_analytics_context(policy: JobPolicy) -> dict[str, Any]:
     }
 
 
-_ANALYTICS_SNAPSHOT_WINDOWS = {'current': None, '24h': 1, '7d': 7, '30d': 30}
+# Registry time ranges filter committed snapshot age, not provider telemetry history.
+_ANALYTICS_SNAPSHOT_WINDOWS = {
+    '1h': timedelta(hours=1),
+    '6h': timedelta(hours=6),
+    '12h': timedelta(hours=12),
+    '24h': timedelta(hours=24),
+    '7d': timedelta(days=7),
+    '30d': timedelta(days=30),
+    '60d': timedelta(days=60),
+    'current': None,  # Explicit legacy/all-age latest snapshot mode.
+}
 
 
 def normalize_registry_analytics_window(window: str) -> str:
-    return window if window in _ANALYTICS_SNAPSHOT_WINDOWS else 'current'
+    return window if window in _ANALYTICS_SNAPSHOT_WINDOWS else '24h'
 
 
 def analytics_snapshot_matches_window(
@@ -150,12 +160,12 @@ def analytics_snapshot_matches_window(
     now: datetime | None = None,
 ) -> bool:
     """A lookback limits the age of committed snapshot evidence, not provider measurements."""
-    days = _ANALYTICS_SNAPSHOT_WINDOWS[normalize_registry_analytics_window(window)]
-    if days is None:
+    lookback = _ANALYTICS_SNAPSHOT_WINDOWS[normalize_registry_analytics_window(window)]
+    if lookback is None:
         return True
     generated = snapshot.generated_at
     aware = generated if generated.tzinfo is not None else generated.replace(tzinfo=UTC)
-    return aware >= (now or datetime.now(UTC)) - timedelta(days=days)
+    return aware >= (now or datetime.now(UTC)) - lookback
 
 
 ANALYTICS_JOB_KEY = 'artifact_registry.analytics.materialize'
@@ -224,7 +234,7 @@ def should_request_registry_analytics_materialization(
 def build_registry_analytics_readiness(
     *,
     provider_id: int | None = None,
-    snapshot_window: str = 'current',
+    snapshot_window: str = '24h',
 ) -> dict[str, Any]:
     """Read-only UI projection of canonical JobExecution and committed snapshots."""
     eligible_ids = _eligible_ids()
