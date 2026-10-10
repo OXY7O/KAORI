@@ -108,6 +108,31 @@
                     {% set provider_name = item.environment.tenant.provider_key|replace('_', ' ')|title %}
                     {% set authority_name = item.environment.tenant.reconciliation_authority|replace('_', ' ')|title %}
                     {% set profile_name = 'Imported Provider Baseline' if adopted_observed else (item.resource_profile.name if item.resource_profile else ('Imported Provider Policy' if provider_mirrored else 'No profile')) %}
+                    {# Match the already-approved Resource Profile Registry display identity;
+                       never change the complete committed name in the detail modal. #}
+                    {% set adopted_prefix = profile_name.startswith('Adopted ') %}
+                    {% set profile_display = profile_name[8:] if adopted_prefix else profile_name %}
+                    {% set profile_display = profile_display|replace(' Baseline · ', ' Baseline ') %}
+                    {% set name_parts = profile_display.rsplit(' · ', 1) %}
+                    {% if name_parts|length == 2 and name_parts[1]|length == 36 and name_parts[1].count('-') == 4 %}
+                        {% set profile_display = name_parts[0] ~ ' · ' ~ name_parts[1][:8] %}
+                    {% endif %}
+                    {% set profile_display = profile_display|truncate(42, True, '…') %}
+                    {% if provider_mirrored %}
+                        {% set control_label = 'Provider Mirrored' %}
+                    {% elif adopted_observed and allocation_control != 'control_unavailable' %}
+                        {% set control_label = 'Awaiting Takeover' %}
+                    {% elif allocation_control == 'control_unavailable' %}
+                        {% set control_label = 'Control Unavailable' %}
+                    {% elif allocation_control == 'kaori_managed' %}
+                        {% set control_label = 'KAORI Managed' %}
+                    {% elif allocation_control %}
+                        {% set control_label = allocation_control|replace('_', ' ')|title %}
+                    {% elif adopted_observed %}
+                        {% set control_label = 'Observed · Not managed' %}
+                    {% else %}
+                        {% set control_label = none %}
+                    {% endif %}
                     {% set quota = item.allocation_quota_json or {} %}
                     {% set limit_defaults = item.allocation_limit_defaults_json or {} %}
                     {% set storage_policy = item.allocation_storage_policy_json or {} %}
@@ -123,18 +148,17 @@
                         </td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
                             <p class="min-w-0 truncate text-sm font-semibold text-content-primary"
-                               title="{{ profile_name }}">{{ profile_name|truncate(45, True, '…') }}</p>
-                            <p class="mt-1 min-w-0 truncate text-xs text-content-muted"
-                               title="Snapshot v{{ item.resource_profile_version or '—' }} · {{ provider_name }} · {{ authority_name }} authority">
-                                Snapshot v{{ item.resource_profile_version or '—' }} · {{ provider_name }}
-                            </p>
-                            {% if allocation_control %}
-                                <p class="mt-1 text-xs font-medium text-kaori-primary">
-                                    {{ 'Provider Mirrored' if provider_mirrored else 'Awaiting Managed Takeover' if adopted_observed and allocation_control != 'control_unavailable' else 'Control Unavailable' if allocation_control == 'control_unavailable' else 'KAORI Managed' if allocation_control == 'kaori_managed' else allocation_control|replace('_', ' ')|title }}
-                                </p>
-                            {% elif adopted_observed %}
-                                <p class="mt-1 text-xs font-medium text-content-secondary">Observed · Not managed</p>
-                            {% endif %}
+                               title="{{ profile_name }}">{{ profile_display }}</p>
+                            <div class="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                                <span class="text-xs text-content-muted"
+                                      title="{{ 'Snapshot v' ~ item.resource_profile_version if item.resource_profile_version else 'No pinned snapshot' }} · {{ provider_name }} · {{ authority_name }} authority">
+                                    {{ 'v' ~ item.resource_profile_version if item.resource_profile_version else 'No pinned snapshot' }}
+                                    · {{ provider_name }}
+                                </span>
+                                {% if control_label %}
+                                    {{ table_label.metadata_label(control_label) }}
+                                {% endif %}
+                            </div>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
                             {{ table_label.status_label(item.provisioning_status|replace('_', ' ')|title, state_tone) }}
