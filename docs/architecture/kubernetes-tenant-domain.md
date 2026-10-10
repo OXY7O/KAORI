@@ -348,6 +348,53 @@ tests, contract tests and staging/UAT evidence are pending. CI/CD,
 Developer Check, Full Admission, promotion and deployment remain HOLD
 until separately authorized.
 
+## Current Native executor recovery as Release wizard priority (#1091 follow-up)
+
+DevContainer human feedback confirmed the original requester, independent reviewer
+and accepted Platform Admin correctly share **3/5 committed readiness** across
+accounts, while their buttons are scoped by actor (`Resume Verified Native
+Handoff` for the accepted operator, `Preview Native Transfer` for another
+eligible operator). After an executor attempt failed with **0 of 2 provider
+objects verified**, Step 3 still displayed **Transfer Pending** and Step 4
+**Verification Required**, although the current exact-plan executor had
+already recorded `partial_handoff_recovery_required`.
+
+The authoritative operation remains
+`native_handoff_executor.execute_native_handoff_committed`. Its AuditEvent
+records plan SHA, fingerprint, status, `verified_count`,
+`expected_component_count`, `provider_mutation_performed` and sanitized
+resource+exception-class summaries under `errors`. **0 verified does not
+mean no resources mutated**: writes can precede a failed post-write read-back.
+
+The committed-only `project_native_release_readiness` now exposes
+`provider_handoff_recovery_required` *only* for the latest
+`partial_handoff_recovery_required` executor receipt matching the current
+plan SHA and handoff fingerprint with `provider_handoff_verified=False`.
+The fourth checkpoint displays **Recovery Required** rather than generic
+Pending, remaining incomplete; this flag never admits a mutation or Release.
+Step 3 header prioritizes **Recovery Required** over **Transfer Pending**,
+and Step 4's **Next required action** prioritizes recovery over normal
+approval/TLS/verification guidance. It shows read-only 0/2 (or actual
+counts), explicit mutation reported Yes/No/Unknown, at most three already
+sanitized error summaries, an Activity Audit event type and a link back to
+the existing Handoff Evidence step.
+
+No automatic resume, no new "safe to retry" classification, no new endpoint,
+and no change to role-scoped conditional form eligibility or backend
+provider checks. The operator must correlate the same Plan SHA in
+`tenant.release.native_handoff_recovery_required` and independently inspect
+current Kubernetes marker/UID/resourceVersion evidence before authorizing
+existing governed recovery. No evidence supplied in the screenshot proves
+the specific provider failure class; detailed root-cause resolution remains
+an operator investigation, not a fabricated release-success state.
+
+This remains consistent with the Violet design system, committed
+read-model, HTMX history and global Operational Toast. Existing tests now
+cover current-versus-historical executor SHA/fingerprint, a 0-verified
+mutation-positive attempt, form retention and recovery precedence.
+DevContainer QA, runtime tests and all CI/CD, Developer Check, Full
+Admission, staging/UAT, main promotion and deployment stay HOLD.
+
 ## Native Release expiry consistency and Step 4 recovery workspace (#1091; latest detail UI authority)
 
 DevContainer feedback confirmed an expired, independently acknowledged Native

@@ -436,6 +436,48 @@ def test_step_four_has_compact_readiness_and_role_scoped_recovery():
 
 
 
+
+def test_recoverable_executor_has_priority_in_both_release_steps():
+    detail = read(DETAIL)
+    projection = read('app/kubernetes/tenant/native_release_readiness.py')
+    Environment().parse(detail)
+
+    approval = detail.split('id="tenant-release-stage-approval"', 1)[1].split(
+        "{% elif tenant_release_step == 'finalize' %}", 1
+    )[0]
+    finalize = detail.split('id="tenant-release-stage-finalize"', 1)[1].split(
+        "{% if row.release_preflight and row.release_preflight.status == 'handoff_review_required'", 1
+    )[0]
+    assert 'row.native_release_readiness.provider_handoff_recovery_required' in approval
+    assert "table_label.status_label('Recovery Required', 'warning')" in approval
+    assert approval.index('row.native_release_readiness.provider_handoff_recovery_required') < approval.index(
+        'row.native_release_readiness.approval_expired'
+    )
+    assert 'partial_handoff_recovery_required' in approval
+    assert 'Resume Verified Native Handoff' in approval
+    assert "verified_consent.accepted_by == current_user.id" in approval
+
+    assert 'native_cycle.provider_handoff_recovery_required' in finalize
+    assert finalize.index('native_cycle.provider_handoff_recovery_required') < finalize.index(
+        'native_cycle.approval_expired'
+    )
+    assert 'aria-label="Native provider handoff recovery"' in finalize
+    assert 'Verified objects' in finalize
+    assert 'Provider mutation reported' in finalize
+    assert 'recovery_attempt.provider_mutation_performed is true' in finalize
+    assert 'Zero verified objects does not prove zero resources changed.' in finalize
+    assert 'tenant.release.native_handoff_recovery_required' in finalize
+    assert 'Review Handoff Evidence' in finalize
+    assert 'recovery_attempt.errors[:3]' in finalize
+    assert "tenant_release_step_urls['approval']" in finalize
+    assert '"Recovery Required" if label == "KAORI provider handoff"' in projection
+    assert '"provider_handoff_recovery_required": provider_handoff_recovery_required' in projection
+    assert detail.count('<form method="post"') == 14
+    assert detail.count('name="csrf_token"') == 14
+    assert detail.count('hx-post=') == 14
+
+
+
 def test_expired_approval_does_not_offer_a_doomed_native_dry_run():
     detail = read(DETAIL)
     approval = detail.split('id="tenant-release-stage-approval"', 1)[1].split(
