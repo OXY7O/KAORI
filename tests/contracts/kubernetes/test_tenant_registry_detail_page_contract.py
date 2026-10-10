@@ -248,17 +248,41 @@ def test_approved_kaori_hero_matches_reference_composition():
     assert detail.count('Back to Registry') == 1
 
 
-def test_overview_matches_grouped_governance_scope_and_authority_note():
+def test_governance_scope_reuses_approved_tenant_estate_posture_pattern():
     detail = read(DETAIL)
+    fleet = read('app/templates/kubernetes/tenant/overview.html')
+    card = read('app/templates/components/operational_section_card.html')
+    posture = read('app/templates/components/resource_posture_grid.html')
     assert 'Governance Scope' in detail
-    assert 'Resource Coverage' in detail
-    assert 'Governance Authority' in detail
-    assert 'lg:grid-cols-2' in detail
-    assert "row.namespace_count" in detail
+    assert 'section_intro.render(' in detail
+    assert 'operational_section_card.render(' in detail
+    assert 'resource_posture_grid.render(tenant_governance_metrics, columns=4)' in detail
+    assert "'Tenant Governance'" in detail
+    assert "'layout-grid'" in detail
+    assert "id='tenant-governance-scope-card'" in detail
+    assert "body_classes='p-0'" in detail
+    assert "aria_label='Tenant governance summary'" in detail
+    assert "{% import \"components/operational_section_card.html\" as operational_section_card %}" in detail
+    assert "{% import \"components/resource_posture_grid.html\" as resource_posture_grid %}" in detail
+    assert 'operational_section_card.render(' in fleet
+    assert 'resource_posture_grid.render(estate_metrics, columns=5)' in fleet
+    assert 'border-b border-outline-subtle' in card
+    assert 'grid gap-px bg-outline-subtle' in posture
+    assert "columns == 5" in posture  # four-column responsive fallback also shared
+    for label in ('Active Namespaces', 'Environments', 'Reconciliation Authority', 'Lifecycle'):
+        assert f"'{label}'" in detail
+    assert 'row.namespace_count' in detail
     assert 'row.environments|length' in detail
     assert 'tenant.reconciliation_authority' in detail
     assert 'tenant.lifecycle_status' in detail
-    assert "tenant_summary_cards" not in detail
+    assert 'tenant_summary_cards' not in detail
+    assert 'tenant-resource-coverage-title' not in detail
+    assert 'tenant-authority-scope-title' not in detail
+    assert 'Tenant Estate' not in detail  # Never claim fleet-level scope for one Tenant.
+
+
+def test_single_tenant_overview_and_authority_boundary_unchanged():
+    detail = read(DETAIL)
     assert 'Identity &amp; Origin' in detail
     assert 'Governance State' in detail
     assert "('Tenant ID', tenant.id)" in detail
@@ -270,10 +294,11 @@ def test_overview_matches_grouped_governance_scope_and_authority_note():
     assert 'tenant.created_at.strftime(' in detail
     assert 'tenant.updated_at.strftime(' in detail
     assert 'role="note" aria-label="Authority Boundary"' in detail
-    assert 'KAORI presents committed governance evidence; Kubernetes or Capsule remains authoritative for provider resources.' in detail
-    assert detail.count(
-        'KAORI presents committed governance evidence; Kubernetes or Capsule remains authoritative for provider resources.'
-    ) == 1
+    statement = (
+        'KAORI presents committed governance evidence; Kubernetes or Capsule '
+        'remains authoritative for provider resources.'
+    )
+    assert detail.count(statement) == 1
 
 
 
