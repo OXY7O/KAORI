@@ -1,7 +1,10 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry %}
 {% import "components/table_primitives.html" as table_ui %}
-<div id="artifact-registry-analytics-active-section" class="p-5">
+<div id="artifact-registry-analytics-active-section"
+     data-analytics-lazy-section="true"
+     data-analytics-load-state="loaded"
+     class="p-5">
     {% if analytics.active_tab == 'growth' %}
         <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Registry Growth</p>
         <h3 class="mt-1 text-base font-semibold text-content-primary">Growth trajectory</h3>
