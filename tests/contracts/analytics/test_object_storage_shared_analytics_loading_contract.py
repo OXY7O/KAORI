@@ -118,6 +118,20 @@ def test_shared_object_storage_templates_parse_and_worker_remains_domain_owned()
     ):
         environment.parse(_source(TEMPLATES / name))
 
+    # Render the actual shared shell rather than testing its text alone.
+    example = environment.from_string(
+        '{% import "analytics/components/_controls_readiness.html" as controls %}'
+        '{% call controls.frame("Analytics Controls & Data Readiness", '
+        '"Committed data only", "sliders-horizontal", "example-loading", '
+        'eyebrow="Analytics Overview") %}'
+        '<span id="example-body">Source data</span>'
+        '{% endcall %}'
+    ).render()
+    assert 'Analytics Controls & Data Readiness' in example
+    assert 'id="example-loading"' in example
+    assert 'id="example-body"' in example
+    assert 'data-analytics-controls-readiness' in example
+
     service = _source(ROOT / 'app/storage/object_storage/analytics/service.py')
     job_adapter = _source(ROOT / 'app/storage/object_storage/analytics/job_adapter.py')
     assert 'read_analytics_snapshot(' in service
