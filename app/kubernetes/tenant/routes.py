@@ -9,11 +9,16 @@ from kubernetes.client.rest import ApiException
 
 from app.access.rbac.decorators import any_permission_required, permission_required
 from app.common.pagination import paginate_sequence
+from app.common.presentation import present_user_datetime
 from app.kubernetes.tenant import routes_access as _routes_access
 from app.kubernetes.tenant import routes_credentials as _routes_credentials
 from app.kubernetes.tenant.admin_workspace import (
     get_access_grant_registry_context,
     get_tenant_summary_context,
+)
+from app.kubernetes.tenant.allocation_overview import (
+    build_tenant_allocation_bars,
+    build_tenant_contribution_rows,
 )
 from app.kubernetes.tenant.allocation_drift import (
     accept_provider_allocation_state_committed,
@@ -335,6 +340,33 @@ def resource_profiles():
 
     capacity_search = str(request.args.get('capacity_search') or '').strip()
     capacity_rows = list(context.get('capacity_governance') or [])
+
+    # Read-only cluster visual projection uses the same committed #654 summaries
+    # already resolved for this page. Only one cluster's Tenant contributions are
+    # queried on the Capacity tab (no provider calls or speculative admission).
+    selection = str(request.args.get('allocation_cluster_id') or '').strip()
+    selected = next(
+        (row for row in capacity_rows if str(row['cluster'].id) == selection),
+        capacity_rows[0] if capacity_rows else None,
+    )
+    context['allocation_cluster_options'] = capacity_rows
+    context['allocation_cluster_id'] = str(selected['cluster'].id) if selected else ''
+    context['allocation_overview'] = None
+    context['allocation_tenant_rows'] = []
+    context['allocation_tenant_pagination'] = None
+    if active_view == 'capacity' and selected is not None:
+        context['allocation_overview'] = {
+            'cluster': selected['cluster'],
+            'summary': selected,
+            'bars': build_tenant_allocation_bars(selected),
+            'cutoff': present_user_datetime(selected.get('data_cutoff')),
+        }
+        tenant_rows = build_tenant_contribution_rows(str(selected['cluster'].id))
+        context['allocation_tenant_rows'], context['allocation_tenant_pagination'] = paginate_sequence(
+            tenant_rows,
+            page=request.args.get('allocation_page', 1, type=int) or 1,
+            per_page=request.args.get('allocation_per_page', 5, type=int) or 5,
+        )
     if capacity_search:
         needle = capacity_search.lower()
         capacity_rows = [
