@@ -53,10 +53,16 @@ def test_analytics_summary_uses_shared_intro_without_changing_seven_domain_tabs(
     assert "section_intro.render('Registry Analytical Posture'," in summary
     assert 'artifact-registry-analytics-summary-heading' in summary
     assert 'Analytics Summary</p>' not in summary
-    assert 'grid gap-4 sm:grid-cols-2 xl:grid-cols-4' in summary
     assert 'for card in analytics.summary_cards' in summary
-    assert 'rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm' in summary
-    assert 'section_card.shell_classes()' not in summary
+    assert "section_card.render(" in summary
+    assert "'Analytical Evidence Summary'" in summary
+    assert "body_classes='p-0'" in summary
+    assert "posture_grid.render(analytical_metrics, columns=4, status_labels=analytical_statuses)" in summary
+    for expression in ('card.icon', 'card.label', 'card.value', 'card.detail', 'card.tone'):
+        assert expression in summary
+    assert "analytical_statuses.append('Review' if card.tone == 'warning'" in summary
+    assert "'Unavailable' if card.tone == 'unknown' else 'Ready'" in summary
+    assert 'rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm' not in summary
 
     # The seven-domain Analytics navigation is intentionally framed and
     # server owned; the two-view Governance/Supply Chain use content tabs.
