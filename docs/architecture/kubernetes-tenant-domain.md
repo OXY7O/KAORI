@@ -65,7 +65,51 @@ workflows with empty and populated datasets, browser refresh/back/forward,
 per-registry filters/Rows/HTMX, light/dark and mobile views. This is not
 staging UAT or production acceptance evidence.
 
-## Tenant Overview + governed Release wizard (#1075; current presentation authority)
+## Tenant Governance Scope and permanent Release wizard (#1077; current presentation authority)
+
+Human Visual Review of #1075 rejected the generic four-KPI dashboard, the
+expandable Release shell with numeric badge 2, and the dense Review Scope
+wall of blocker text. This workstream **supersedes presentation only**;
+provider-side handoff, independent review, Release authorizations, and
+committed audit evidence remain governed by the existing services.
+
+**Governance Scope** now groups existing committed dimensions into two
+responsive KAORI cards: **Resource Coverage** (active Namespace count,
+Environment count) and **Governance Authority** (reconciliation authority,
+lifecycle). There are no duplicated or fabricated provider live metrics.
+The unchanged authority contract (“KAORI presents committed governance
+evidence; Kubernetes or Capsule remains authoritative for provider
+resources.”) is shown **once** inside a neutral, accessible
+**Authority Boundary** information box below Tenant Overview, with its
+original historical Namespace lineage note preserved separately.
+
+**Release Governance** is now a regular always-visible section, using
+the established icon treatment instead of the numeric badge and eliminating
+the outer `details/summary` wrapper. All four numbered URL-addressable
+wizard steps and 11 original Release form authorities remain. Other
+provider-specific governance sections retain their permission-scoped,
+keyboard-accessible expandables. Step navigation preserves normal
+URL/history and active stage after POST without changing backend gates.
+
+**Review Scope** is a concise evidence-first view: a prominent committed
+readiness/count, the unchanged Review Release action, and a compact
+review-coverage summary. When blockers exist, an accessible **View recorded
+conditions** disclosure exposes **all original exact blocker messages**
+with their committed count; evidence is not discarded, summarized as
+fabricated severity, or hidden from users who explicitly inspect it.
+Absence of blockers is never represented as approval or permission to
+execute Release.
+
+Two lengthy explanatory footnotes are removed from the UI at the user's
+request. Their underlying architecture requirements **remain mandatory**:
+navigation never grants approval, a reference is not external consent,
+independent review must be valid, X.509 Platform Admin authority and
+provider read-back remain required. Normal HTMX Operational Toast,
+CSRF/authorization, state recovery and all 14 existing form endpoints
+are unchanged. Runtime tests, browser Visual QA (responsive/light/dark),
+Developer Check, Full Admission and UAT remain HOLD.
+
+## Tenant Overview + governed Release wizard (#1075; historical #1075 architecture, updated by #1077)
 
 Follow-up human visual review of the approved #1073 two-column Violet
 Hero/accordion requested three adjustments: shorter Hero purpose text, a
