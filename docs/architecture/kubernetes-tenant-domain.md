@@ -181,8 +181,9 @@ space for the actual action set and is **never** truncated to make text fit.
 The four conditional Operations Evidence table headers retain independent
 100%-width distributions.
 
-The existing Credential Registry, Cluster Estate, and Capacity Decisions tables
-already have locked fixed-column contracts and are intentionally unchanged.
+Cluster Estate now enforces its already documented proportional columns under
+fixed-layout geometry. Credential Registry and Capacity Decisions already have
+locked fixed-layout contracts and are intentionally unchanged.
 This refinement changes no committed Tenant data, permission gate, pagination,
 HTMX target, provider authority, or Kubernetes mutation semantics.
 
