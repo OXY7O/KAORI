@@ -319,3 +319,29 @@ standard. Pending checks: existing contract tests, formatter/static quality gate
 responsive/light/dark Devcontainer Visual QA and human acceptance. Review
 integration target is `kaori/review/staging-uat`; CI/CD admission and
 staging/UAT/deployment are explicitly held.
+
+## Managed Release Re-adoption safety boundary (#1049)
+
+The admitted observation-only `Released` history remains eligible for fresh
+Discovery/Re-adoption when immutable provider UID and previous-generation
+lineage agree. A **previously KAORI-mutated** provider object is different:
+removing KAORI metadata or leaving the Namespace UID unchanged is not proof
+that its verified successor agrees to return control. Re-adoption must not
+silently take governance away from an external successor after a Release.
+
+The existing `discovery_adoption.py` lineage checks therefore require fresh,
+explicit successor handback authority for any previous provider mutation,
+managed handoff marker, or recorded verified handoff. Until #1047/#1048/#1049
+admit such a trustworthy handback contract, the new generation is blocked.
+This applies both to Tenant-level and Namespace-level previous Released
+records. It does not weaken the existing observation-only flow or create a
+second Discovery or Release engine. The separate existing provider-authority,
+capacity, UID/resourceVersion and human adoption preflights remain mandatory.
+
+The guard is deliberately fail-closed: the current code **does not** accept
+a manually entered change reference, a new provider label, a stale approval,
+or a forged local consent flag as handback evidence. A future approved
+successor-authenticated handback must be bound to the immutable Released
+lineage and a freshly observed provider UID/resourceVersion before the guard
+can admit a managed Re-adopt. No live Kubernetes mutation or Released
+finalization is introduced by this protection.
