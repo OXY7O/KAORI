@@ -19,6 +19,7 @@ from app.kubernetes.tenant.admin_workspace import (
 from app.kubernetes.tenant.allocation_overview import (
     build_tenant_allocation_bars,
     build_tenant_contribution_rows,
+    describe_tightest_headroom,
 )
 from app.kubernetes.tenant.allocation_drift import (
     accept_provider_allocation_state_committed,
@@ -354,14 +355,33 @@ def resource_profiles():
     context['allocation_overview'] = None
     context['allocation_tenant_rows'] = []
     context['allocation_tenant_pagination'] = None
+    context['allocation_tenant_total'] = 0
+    allocation_search = str(request.args.get('allocation_search') or '').strip()
+    context['allocation_search'] = allocation_search
     if active_view == 'capacity' and selected is not None:
+        bars = build_tenant_allocation_bars(selected)
         context['allocation_overview'] = {
             'cluster': selected['cluster'],
             'summary': selected,
-            'bars': build_tenant_allocation_bars(selected),
+            'bars': bars,
+            'tightest_headroom': describe_tightest_headroom(bars, selected['state']),
             'cutoff': present_user_datetime(selected.get('data_cutoff')),
         }
         tenant_rows = build_tenant_contribution_rows(str(selected['cluster'].id))
+        context['allocation_tenant_total'] = len(tenant_rows)
+        if allocation_search:
+            needle = allocation_search.casefold()
+            tenant_rows = [
+                row for row in tenant_rows
+                if needle in str(row['tenant'].name).casefold()
+                or needle in str(row['tenant'].id).casefold()
+                or needle in str(row['source']).casefold()
+                or any(
+                    needle in str(namespace['name']).casefold()
+                    or needle in str(namespace['environment']).casefold()
+                    for namespace in row['namespaces']
+                )
+            ]
         context['allocation_tenant_rows'], context['allocation_tenant_pagination'] = paginate_sequence(
             tenant_rows,
             page=request.args.get('allocation_page', 1, type=int) or 1,
