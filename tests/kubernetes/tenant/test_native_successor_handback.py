@@ -64,7 +64,7 @@ def test_handback_requires_explicit_confirmation():
         handback_native_successor_governance_committed(
             tenant_id='tenant-a', actor_user_id=52,
             release_plan_sha256='a' * 64,
-            provider_token='transient', confirmed=False,
+            confirmed=False,
         )
 
 
@@ -137,8 +137,9 @@ def test_handback_never_reuses_release_forced_adoption_or_modifies_specs():
         Path(__file__).resolve().parents[3]
         / 'app/kubernetes/tenant/native_successor_handback.py'
     ).read_text(encoding='utf-8')
-    assert 'verify_native_successor_resource_authority(' in source
-    assert "ownership_required='external_successor_correlated'" in source
+    assert 'verify_native_provider_admin_authority(' in source
+    assert 'require_platform_admin_actor(' in source
+    assert "'authority_mode': 'platform_admin_governed'" in source
     assert "TenantLifecycleStatus.RELEASED.value" in source
     assert "'adoption_automatic': False" in source
     assert "'release_plan_sha256'" in source

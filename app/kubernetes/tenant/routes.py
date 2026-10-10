@@ -764,6 +764,7 @@ def attach_existing_capsule_namespace_route():
 
 @tenant_bp.post('/tenants/<string:tenant_id>/release-preflight')
 @permission_required('tenant.manage')
+@permission_required('clusters.manage')
 def review_tenant_release_route(tenant_id: str):
     try:
         _csrf()
@@ -794,6 +795,7 @@ def review_tenant_release_route(tenant_id: str):
 @tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/prepare')
 @permission_required('tenant.manage')
 @permission_required('integrations.manage')
+@permission_required('clusters.manage')
 def prepare_tenant_release_handoff_route(tenant_id: str):
     try:
         _csrf()
@@ -827,6 +829,7 @@ def prepare_tenant_release_handoff_route(tenant_id: str):
 @tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/restart-expired')
 @permission_required('tenant.manage')
 @permission_required('integrations.manage')
+@permission_required('clusters.manage')
 def restart_expired_tenant_release_handoff_route(tenant_id: str):
     """Explicit requester-only renewal; no Kubernetes mutations or Release."""
     try:
@@ -861,6 +864,7 @@ def restart_expired_tenant_release_handoff_route(tenant_id: str):
 @tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/approve')
 @permission_required('tenant.manage')
 @permission_required('integrations.manage')
+@permission_required('clusters.manage')
 def approve_tenant_release_handoff_route(tenant_id: str):
     try:
         _csrf()
@@ -896,6 +900,7 @@ def approve_tenant_release_handoff_route(tenant_id: str):
 @tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/successor-reference')
 @permission_required('tenant.manage')
 @permission_required('integrations.manage')
+@permission_required('clusters.manage')
 def record_tenant_release_successor_reference_route(tenant_id: str):
     try:
         _csrf()
@@ -966,6 +971,7 @@ def accept_native_successor_handoff_route(tenant_id: str):
 @tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/native-dry-run')
 @permission_required('tenant.manage')
 @permission_required('integrations.manage')
+@permission_required('clusters.manage')
 def dry_run_native_release_handoff_route(tenant_id: str):
     try:
         _csrf()
@@ -1040,6 +1046,7 @@ def execute_native_release_handoff_route(tenant_id: str):
 @tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/native-readback')
 @permission_required('tenant.manage')
 @permission_required('integrations.manage')
+@permission_required('clusters.manage')
 def inspect_native_external_handoff_route(tenant_id: str):
     """Explicit provider read-back after external owner actions, no Release."""
     try:
@@ -1083,6 +1090,7 @@ def inspect_native_external_handoff_route(tenant_id: str):
 @tenant_bp.post('/tenants/<string:tenant_id>/release-governance')
 @permission_required('tenant.manage')
 @permission_required('integrations.manage')
+@permission_required('clusters.manage')
 def release_tenant_governance_route(tenant_id: str):
     try:
         _csrf()
@@ -1117,6 +1125,7 @@ def release_tenant_governance_route(tenant_id: str):
 @tenant_bp.post('/tenants/<string:tenant_id>/release-managed-native')
 @permission_required('tenant.manage')
 @permission_required('integrations.manage')
+@permission_required('clusters.manage')
 def finalize_verified_native_release_route(tenant_id: str):
     """Finalizer only; all provider objects remain intact."""
     try:
@@ -1147,16 +1156,14 @@ def finalize_verified_native_release_route(tenant_id: str):
 @tenant_bp.post('/tenants/<string:tenant_id>/release-handback')
 @permission_required('tenant.manage')
 @permission_required('integrations.manage')
+@permission_required('clusters.manage')
 def verify_native_successor_handback_route(tenant_id: str):
-    """Successor explicitly relinquishes Native owner markers, not auto-adopt."""
+    """Platform Admin authorizes Native governance handback, not auto-adopt."""
     try:
         _csrf()
-        if not request.is_secure:
-            raise ValueError('Native successor credentials require verified HTTPS ingress.')
         result = handback_native_successor_governance_committed(
             tenant_id=tenant_id, actor_user_id=int(current_user.id),
             release_plan_sha256=str(request.form.get('release_plan_sha256') or ''),
-            provider_token=str(request.form.get('kubernetes_successor_token') or ''),
             confirmed=request.form.get('confirm_successor_handback') == 'handback',
         )
     except (ApiException, ValueError) as exc:
@@ -1172,7 +1179,7 @@ def verify_native_successor_handback_route(tenant_id: str):
         _record(
             event_type='kubernetes_tenant_successor_handback_recorded',
             status='success' if done else 'warning',
-            title='Successor Handback Verified' if done else 'Handback Recovery Required',
+            title='Platform Admin Handback Verified' if done else 'Handback Recovery Required',
             message=f"{result['verified_count']} of {result['expected_component_count']} resources verified.",
             detail=(
                 'Use fresh Discovery to explicitly Re-adopt as a new Tenant generation.'

@@ -16,13 +16,14 @@ def test_canonical_native_handoff_release_handback_are_separate_explicit_routes(
     assert "def execute_native_release_handoff_route(" in routes
     assert "def finalize_verified_native_release_route(" in routes
     assert "def verify_native_successor_handback_route(" in routes
-    assert 'Native successor credentials require verified HTTPS ingress.' in routes
+    assert "@permission_required('clusters.manage')" in routes
     assert 'confirm_native_handoff_execution' in html
     assert 'confirm_native_release_finalization' in html
     assert 'confirm_successor_handback' in html
     assert 'csrf_token()' in html
     assert 'Finalize Verified Native Release' in html
-    assert 'Verify Successor &amp; Hand Back' in html
+    assert 'Verify Provider &amp; Hand Back as Platform Admin' in html
+    assert 'kubernetes_successor_token' not in html
 
 
 def test_native_cycle_services_are_provider_preserving_and_fail_closed():
@@ -30,8 +31,8 @@ def test_native_cycle_services_are_provider_preserving_and_fail_closed():
     finalizer = source('app/kubernetes/tenant/release_preflight.py')
     handback = source('app/kubernetes/tenant/native_successor_handback.py')
     discovery = source('app/kubernetes/tenant/discovery_adoption.py')
-    scope = source('app/kubernetes/tenant/native_successor_identity.py')
-    assert 'verify_native_successor_resource_authority(' in executor
+    scope = source('app/kubernetes/tenant/native_platform_admin_authority.py')
+    assert 'verify_native_provider_admin_authority(' in executor
     assert 'require_current_native_acceptance(' in executor
     assert 'verify_external_native_component(' in executor
     assert "'status': 'in_progress'" in executor
@@ -41,12 +42,12 @@ def test_native_cycle_services_are_provider_preserving_and_fail_closed():
     assert 'TenantLifecycleStatus.RELEASED.value' in finalizer
     assert 'TenantNamespaceProvisioningStatus.RELEASED.value' in finalizer
     assert 'handback_native_successor_governance_committed(' in handback
-    assert "ownership_required='external_successor_correlated'" in handback
+    assert "require_platform_admin_actor(" in handback
     assert "'adoption_automatic': False" in handback
     assert "'handback_governance'" in discovery
     assert 'resource_version=resource_version' in discovery
-    assert 'V1TokenReviewSpec(' in scope
-    assert 'V1SubjectAccessReviewSpec(' in scope
+    assert 'V1SelfSubjectReview(' in scope
+    assert 'V1SelfSubjectAccessReviewSpec(' in scope
     for snippet in ('delete_namespace(', 'delete_namespaced_resource_quota(',
                     'delete_namespaced_limit_range(', 'create_namespace('):
         assert snippet not in executor

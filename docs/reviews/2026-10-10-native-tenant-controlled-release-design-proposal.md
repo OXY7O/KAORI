@@ -1,7 +1,7 @@
 # Native Tenant KAORI-controlled Release / Re-adopt — design proposal
 
-**Status:** ARCHITECTURE DECISION ACCEPTED (2026-10-10) for TokenReview + SubjectAccessReview + explicit successor acceptance and KAORI-controlled Native provider handoff. **Runtime/security UAT and Full Admission remain HOLD**; this is not a staging/production execution clearance.
-**Accepted approach:** KAORI executes the Native Kubernetes provider handoff after valid independent review and verified successor consent; operators do not need manual kubectl patches.
+**Status:** ARCHITECTURE CORRECTED/ACCEPTED (2026-10-10): existing KAORI X.509 kubeconfig for provider execution; independent KAORI Platform Admin governance consent and Kubernetes SelfSubjectReview/SelfSubjectAccessReview for resource authority. Earlier external TokenReview successor proposal is **SUPERSEDED**. **Runtime/security UAT and Full Admission HOLD**.
+**Accepted approach:** a privileged KAORI Platform Admin explicitly confirms Release after an independent reviewer, while the existing provider kubeconfig executes metadata-only handoff with fresh provider permission checks. Ordinary JumpServer/pipeline users do not administer cluster governance.
 **Source authority:** #991 (under #982), #690 / #114 identity governance, #996 external identity observation, existing Native handoff #1009, current `docs/architecture/kubernetes-tenant-domain.md`, and `docs/reviews/2026-10-09-tenant-adopt-release-acceptance-matrix.md`.
 **Workstreams:** #1047 trust/identity (this proposal) → #1048 provider executor → #1049 Released/re-adopt finalization. **Capsule stays out of scope.**
 
@@ -119,7 +119,7 @@ dry-run and the blocked gate projection without provider mutation.
 **Decision requested of maintainer:** accept KAORI as the controlled Native provider executor and choose an *approved verifiable successor principal mapping* (with the one-click combined consent fast path only when the same independent reviewer is itself verified as the successor). Do **not** admit or turn on a live transfer based on this draft alone.
 
 
-## #1047 bounded Kubernetes TokenReview identity candidate (not admitted)
+## SUPERSEDED historical candidate: #1047 Kubernetes TokenReview identity (removed)
 
 The issue-linked review implementation `native_successor_identity.py` evaluates an
 alternative to guessing KAORI SSO → Kubernetes identity mapping. For a Native
@@ -152,8 +152,7 @@ on its own authorize `#1048` patches. The current provider executor and
 `#1049` finalizer remain explicitly blocked. No staging, production or live
 provider mutation follows from this candidate.
 
-Review-focused negative tests:
-`tests/kubernetes/tenant/test_native_successor_identity.py`.
+Historical review-only TokenReview helper and corresponding tests were retired following the Platform Admin X.509 decision. The current tests live in `test_native_successor_acceptance.py` and `test_native_successor_handback.py`.
 
 
 ## #1057 expired acknowledged-plan recovery (review branch)
@@ -191,34 +190,43 @@ substitute for the missing accepted #1047 trusted successor attestation, the
 successor-authorized new-generation Re-adoption.
 
 
-## Accepted design → review-branch implementation status (2026-10-10)
+## Final accepted identity correction → review-branch implementation (2026-10-10)
 
-The user accepted the exact authentication and authority mechanism:
-**Kubernetes TokenReview + resource-scoped SubjectAccessReview + explicit
-successor consent**. Issues #1047/#1048/#1049 deliver isolated code review
-slices targeting `kaori/review/staging-uat`, not staging or main.
-`native_successor_acceptance.py` commits the trusted plan-bound consent;
-`native_handoff_executor.py` dispatches explicit UID/RV-conditioned Native
-metadata-only provider patches and read-back; `release_preflight.py` now
-supports verified managed Release without changing Kubernetes; and
-`native_successor_handback.py` supports authenticated return of successor
-ownership metadata before independent new-generation Re-adopt through current
-Discovery. No new Capsule mutation or duplicate lifecycle model exists.
+The **current** approved contract supersedes the bearer-token branch described
+earlier in this historical design proposal. The user confirmed that KAORI's
+registered Kubernetes provider connection uses a Base64-embedded X.509 client
+certificate; the actual Kubernetes API reports principal `kubernetes-admin`,
+group `kubeadm:cluster-admins`. Platform Admins perform Native and separately
+authorized Capsule infrastructure administration; ordinary users only receive
+delegated access through JumpServer, pipeline or scoped Tenant RBAC.
 
-The historical PROPOSAL paragraphs above describe the original blocked
-state. The accepted contract resolves that identity authority **for this
-review-only Native implementation**, not for generic KAORI SSO principals.
-The canonical architecture decision is documented in
+Current implementation follows issues #1047 → #1048 → #1049. Authorized
+KAORI Platform Admin permissions, explicit per-plan administrative consent
+and independent human review form the governance decision. Kubernetes
+SelfSubjectReview + scoped SelfSubjectAccessReview on the **existing**
+TLS-verified kubeconfig prove the executing provider identity and effective
+get/patch permissions. There is no successor credential field, no
+bearer/TokenReview user/group mapping and no private-key upload. Governance
+manager labels do not confer RBAC. Previously committed bearer consent
+receipts cannot authorize a new provider handoff.
+
+The Native executor retains metadata-only UID/RV JSON Patch, final server
+dry-run and full provider read-back. The canonical Released finalizer uses
+the new acceptance/execution receipts, and Re-adopt requires a fresh
+explicit Platform Admin handback plus original UID/RV-bound lineage.
+Neither lifecycle action deletes/re-sizes Kubernetes resources, grants
+automatic user privileges or silently reactivates previous generation state.
+Old workflow text above is retained for audit history, not current authority.
+
+Current normative source-of-truth documents:
 `docs/architecture/kubernetes-tenant-access-governance.md` and
 `docs/architecture/kubernetes-tenant-domain.md`.
 
-Validation still outstanding before security admission: actual Kubernetes
-TokenReview audiences and IdP UID/group semantics; SubjectAccessReview
-permissions against namespaced and cluster-scoped objects; verified HTTPS
-proxy behavior; duplicate/revoked/expired token trials; dry-run webhooks;
-provider UID/resourceVersion concurrent mutations, partial recovery;
-provider resource spec/foreign metadata preservation; absence of unwanted
-RBAC/credential changes; Released capacity/sync exclusion; explicit new
-Discovery and generation lineage; mobile/dark-mode Visual QA; complete
-Developer Check/Full Admission and Human Acceptance. The implementation is
-**not** a claim that end-to-end UAT has passed, and CI/CD gates remain HOLD.
+**Validation remains outstanding:** Kubernetes cluster-version
+SelfSubjectReview support, X.509 principal/group and optional credential-id,
+scoped SelfSubjectAccessReview, provider CAS/dry-run/post-write preservation,
+cross-object crash/partial-recovery, Release read models and logical capacity,
+fresh Discovery/Re-adopt lineage, existing regression gates, Violet
+light/dark/mobile Visual QA and security-sensitive Human Acceptance.
+Provider mutation has **NOT** been executed during this GitHub work.
+CI/CD, Full Admission, staging and main promotion remain HOLD.

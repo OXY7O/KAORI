@@ -394,6 +394,8 @@ def release_verified_native_tenant_committed(
     """
     if not approved:
         raise ValueError('Explicit provider-preserving Native Release confirmation is required.')
+    from app.kubernetes.tenant.native_platform_admin_authority import require_platform_admin_actor
+    require_platform_admin_actor(actor_user_id)
     # Delayed imports avoid a cycle: the executor uses canonical preflight
     # dependency and provider evidence helpers from this module.
     from app.kubernetes.tenant.native_handoff_dry_run import _read_resource
@@ -419,15 +421,19 @@ def release_verified_native_tenant_committed(
         or approval.get('plan_sha256') != plan_sha256
         or approval.get('status') != 'acknowledged_pending_provider_handoff'
         or approval.get('approved_by') == plan.get('requested_by')
-        or acceptance.get('status') != 'verified_explicit_successor_acceptance'
+        or acceptance.get('status') != 'platform_admin_handoff_accepted'
+        or acceptance.get('authority_mode') != 'platform_admin_governed'
         or acceptance.get('plan_sha256') != plan_sha256
         or acceptance.get('consent_verified') is not True
         or acceptance.get('resource_authority_verified') is not True
-        or acceptance.get('provider_principal_uid') != execution.get('provider_principal_uid')
+        or acceptance.get('verified_provider_identity') is not True
+        or acceptance.get('provider_username') != execution.get('provider_username')
+        or acceptance.get('provider_credential_id') != execution.get('provider_credential_id')
+        or execution.get('authority_mode') != 'platform_admin_governed'
+        or execution.get('provider_authority_verified') is not True
         or execution.get('status') != 'provider_handoff_verified'
         or execution.get('plan_sha256') != plan_sha256
         or execution.get('provider_handoff_verified') is not True
-        or execution.get('external_successor_verified') is not True
         or execution.get('handoff_fingerprint') != plan.get('handoff_fingerprint')
         or preview.get('status') != 'dry_run_passed'
         or preview.get('plan_sha256') != plan_sha256
@@ -515,7 +521,10 @@ def release_verified_native_tenant_committed(
         'generation': tenant.generation, 'provider': tenant.provider_key,
         'plan_sha256': plan_sha256, 'handoff_fingerprint': plan['handoff_fingerprint'],
         'successor_owner': plan['successor_owner'],
-        'provider_principal_uid': acceptance['provider_principal_uid'],
+        'authority_mode': 'platform_admin_governed',
+        'approved_by_platform_admin': acceptance['accepted_by'],
+        'provider_username': acceptance['provider_username'],
+        'provider_credential_id': acceptance['provider_credential_id'],
         'released_at': now.isoformat(),
         'released_namespace_count': len(rows),
         'verified_components': actual,

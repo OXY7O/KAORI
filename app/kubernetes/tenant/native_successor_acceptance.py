@@ -128,7 +128,8 @@ def accept_native_successor_handoff_committed(
         or not acknowledged or acknowledged.get('plan_sha256') != plan_sha256
         or not _checked_recently(current.get('requested_at'))
         or not _checked_recently(acknowledged.get('approved_at'))
-        or previous and previous.get('plan_sha256') == plan_sha256
+        or (previous and previous.get('plan_sha256') == plan_sha256
+            and previous.get('authority_mode') == _MODE)
     ):
         raise ValueError('Platform Admin acceptance is stale, already committed or superseded.')
     accepted = {

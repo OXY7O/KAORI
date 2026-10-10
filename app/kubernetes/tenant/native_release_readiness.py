@@ -104,7 +104,8 @@ def project_native_release_readiness(
         and handoff_execution.get("plan_sha256") == plan_sha
         and handoff_execution.get("handoff_fingerprint") == (plan or {}).get("handoff_fingerprint")
         and handoff_execution.get("provider_handoff_verified") is True
-        and handoff_execution.get("external_successor_verified") is True
+        and handoff_execution.get("authority_mode") == "platform_admin_governed"
+        and handoff_execution.get("provider_authority_verified") is True
         and type(handoff_execution.get("verified_count")) is int
         and handoff_execution.get("verified_count") == handoff_execution.get("expected_component_count")
         and handoff_execution.get("verified_count", 0) > 0
@@ -120,7 +121,7 @@ def project_native_release_readiness(
          "Authorized Platform Admin accepted this exact plan; kubeconfig identity and scoped permissions were verified."
          if verified_acceptance else "Requires independent Platform Admin confirmation, Kubernetes SelfSubjectReview and scoped SelfSubjectAccessReview."),
         ("KAORI provider handoff", provider_transfer_verified,
-         "Exact Native provider handoff was committed with post-write read-back."
+         "Platform Admin Native provider handoff was committed with post-write read-back."
          if provider_transfer_verified else "Execute accepted Native handoff and verify all provider objects; partial transfer requires recovery."),
         ("Released and Re-adopt", False,
          "Canonical Released commit and new-generation Re-adopt require verified handoff."),
