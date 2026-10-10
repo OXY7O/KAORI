@@ -1,0 +1,228 @@
+{% import "components/action_button.html" as action_button %}
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/table_registry.html" as registry_ui %}
+{% set overview_id = 'tenant-allocation-overview' %}
+{% set overview_loading_id = 'tenant-allocation-overview-loading' %}
+<section id="{{ overview_id }}"
+         class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
+         aria-labelledby="tenant-allocation-overview-heading">
+    <header class="flex flex-col gap-4 border-b border-outline-subtle p-4 sm:flex-row sm:items-end sm:justify-between sm:p-5">
+        <div class="min-w-0">
+            <div class="flex items-center gap-2">
+                <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true"><i data-lucide="chart-no-axes-combined" class="h-4 w-4"></i></span>
+                <div class="min-w-0">
+                    <h2 id="tenant-allocation-overview-heading"
+                        class="text-base font-semibold text-content-primary">Tenant Allocation Overview</h2>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">
+                        Governed request commitments, not actual workload utilization or physical reservations.
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% if allocation_cluster_options %}
+            <form method="get"
+                  action="{{ url_for('tenant.resource_profiles') }}"
+                  hx-get="{{ url_for('tenant.resource_profiles') }}"
+                  hx-target="#{{ overview_id }}"
+                  hx-select="#{{ overview_id }}"
+                  hx-swap="outerHTML"
+                  hx-push-url="true"
+                  hx-indicator="#{{ overview_loading_id }}"
+                  hx-sync="this:replace"
+                  class="flex w-full flex-wrap items-end gap-2 sm:w-auto">
+                <input type="hidden" name="view" value="capacity">
+                {% if capacity_filters.search %}<input type="hidden" name="capacity_search" value="{{ capacity_filters.search }}">{% endif %}
+                <label class="min-w-[12rem] flex-1 sm:flex-initial">
+                    <span class="{{ table_ui.filter_label_classes() }}">Cluster</span>
+                    <select name="allocation_cluster_id" class="{{ table_ui.filter_select_classes() }} w-full">
+                        {% for option in allocation_cluster_options %}
+                            <option value="{{ option.cluster.id }}"
+                                    {% if allocation_cluster_id == option.cluster.id|string %}selected{% endif %}>
+                                {{ option.cluster.name }} · {{ option.cluster.environment|title }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <button type="submit" class="{{ action_button.classes('secondary') }}">View Allocation</button>
+            </form>
+        {% endif %}
+    </header>
+    <div id="{{ overview_loading_id }}" class="htmx-indicator h-0.5 w-full bg-kaori-primary" role="status"
+         aria-label="Loading Tenant Allocation Overview"></div>
+    {% if allocation_overview %}
+        {% set selected = allocation_overview.summary %}
+        {% set state_tone = 'normal' if selected.state == 'Healthy' else ('critical' if selected.state in ['Critical', 'Exhausted', 'Overcommitted'] else 'warning') %}
+        <div class="space-y-5 p-4 sm:p-5">
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="text-sm font-semibold text-content-primary">
+                    {{ allocation_overview.cluster.name }} · {{ allocation_overview.cluster.environment|title }}
+                </span>
+                {{ table_label.status_label(selected.state, state_tone) }}
+                {{ table_label.status_label('Current' if selected.snapshot_state == 'current' else 'Evidence ' ~ selected.snapshot_state|replace('_', ' ')|title,
+                                            'normal' if selected.snapshot_state == 'current' else 'warning') }}
+                <span class="text-xs text-content-muted">
+                    Snapshot cutoff: {{ allocation_overview.cutoff or 'Unavailable' }}
+                </span>
+                {% if current_user.has_permission('analytics.view') %}
+                    <a href="{{ url_for('analytics.capacity') }}"
+                       class="ml-auto text-xs font-semibold text-kaori-primary underline-offset-4 hover:underline">
+                        Open Kubernetes Capacity Analytics
+                        <i data-lucide="arrow-up-right" class="inline h-3.5 w-3.5" aria-hidden="true"></i>
+                    </a>
+                {% endif %}
+            </div>
+            {% if selected.state == 'Unknown' %}
+                <p class="rounded-lg border border-status-warning-border bg-status-warning-soft px-3 py-2 text-xs leading-5 text-status-warning-text"
+                   role="status">
+                    {{ selected.reason }} Unknown capacity cannot be interpreted as free headroom or an allocation approval.
+                </p>
+            {% elif selected.state == 'Overcommitted' %}
+                <p class="rounded-lg border border-status-critical-border bg-status-critical-soft px-3 py-2 text-xs leading-5 text-status-critical-text"
+                   role="status">
+                    {{ selected.reason }} Existing commitments remain tracked; further positive allocations are governed by admission.
+                </p>
+            {% endif %}
+            <div class="grid gap-3 md:grid-cols-2">
+                {% for bar in allocation_overview.bars %}
+                    <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-elevated p-4"
+                             aria-label="{{ bar.label }} allocation">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <h3 class="text-sm font-semibold text-content-primary">{{ bar.label }}</h3>
+                            {% if bar.state != 'Governed' %}
+                                <span class="text-xs font-semibold {{ 'text-status-critical-text' if bar.state == 'Overcommitted' else 'text-content-muted' }}">
+                                    {{ bar.state }}
+                                </span>
+                            {% endif %}
+                        </div>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ bar.explanation }}</p>
+                        {% if bar.known %}
+                            <div class="mt-4 flex h-3 w-full overflow-hidden rounded-full bg-surface-card"
+                                 role="img"
+                                 aria-label="{{ bar.label }}: {{ bar.committed }} committed of {{ bar.budget }} budget; {{ bar.headroom }} headroom">
+                                <span class="h-full bg-kaori-primary" style="width: {{ bar.percent }}%"></span>
+                                <span class="h-full bg-kaori-primary/20" style="width: {{ bar.free_percent }}%"></span>
+                            </div>
+                        {% else %}
+                            <div class="mt-4 flex h-3 w-full items-center overflow-hidden rounded-full bg-surface-card"
+                                 role="img"
+                                 aria-label="{{ bar.label }} proportion unavailable; {{ bar.state }}">
+                                <span class="h-full w-full bg-outline-subtle"></span>
+                            </div>
+                        {% endif %}
+                        <dl class="mt-4 grid grid-cols-3 gap-2 text-xs">
+                            <div class="min-w-0">
+                                <dt class="text-content-muted">Budget</dt>
+                                <dd class="mt-1 break-words font-semibold text-content-primary">{{ bar.budget }}</dd>
+                            </div>
+                            <div class="min-w-0">
+                                <dt class="text-content-muted">Committed</dt>
+                                <dd class="mt-1 break-words font-semibold text-content-primary">{{ bar.committed }}</dd>
+                            </div>
+                            <div class="min-w-0">
+                                <dt class="text-content-muted">Headroom</dt>
+                                <dd class="mt-1 break-words font-semibold {{ 'text-status-critical-text' if bar.shortfall else 'text-content-primary' }}">{{ bar.headroom }}</dd>
+                            </div>
+                        </dl>
+                        {% if bar.shortfall %}
+                            <p class="mt-2 text-xs font-semibold text-status-critical-text">Over budget by {{ bar.shortfall }}</p>
+                        {% endif %}
+                    </section>
+                {% endfor %}
+            </div>
+            <p class="text-xs leading-5 text-content-muted">
+                CPU, memory and Pod Tenant Budget = Ready-worker allocatable − platform reserve − safety headroom − unmanaged commitment.
+                Storage is an explicitly governed logical ceiling, not physical free space. ResourceQuota does not reserve node resources.
+            </p>
+        </div>
+        <section class="border-t border-outline-subtle" aria-label="Committed allocation by Tenant">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-outline-subtle px-4 py-3 sm:px-5">
+                <div>
+                    <h3 class="text-sm font-semibold text-content-primary">Tenant Contributions</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">
+                        Frozen effective Namespace allocations; Capsule shared quotas are counted once per Tenant.
+                    </p>
+                </div>
+                <a href="{{ url_for('tenant.tenants', section='registry') }}"
+                   class="text-xs font-semibold text-kaori-primary hover:underline">Tenant Registry</a>
+            </div>
+            {% if allocation_tenant_rows %}
+                <div class="overflow-x-auto">
+                    <table class="{{ table_ui.table_classes('min-w-[680px]') }}">
+                        <caption class="sr-only">Committed Tenant request allocation for the selected cluster.</caption>
+                        <thead class="{{ table_ui.head_classes() }}">
+                            <tr>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[32%]">Tenant / Namespaces</th>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[22%]">Allocation Authority</th>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[25%]">CPU / Memory</th>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[21%]">Pods / Logical Storage</th>
+                            </tr>
+                        </thead>
+                        <tbody class="{{ table_ui.body_classes() }}">
+                            {% for row in allocation_tenant_rows %}
+                                <tr class="{{ table_ui.row_classes() }}">
+                                    <td class="{{ table_ui.cell_classes() }} align-top">
+                                        <p class="text-sm font-semibold text-content-primary">{{ row.tenant.name }}</p>
+                                        <p class="mt-1 text-xs text-content-muted">
+                                            {{ row.namespace_count }} Namespace{{ '' if row.namespace_count == 1 else 's' }} ·
+                                            {{ row.tenant.ownership_status|title }}
+                                        </p>
+                                        {% if row.namespaces %}
+                                            <details class="mt-2 max-w-xs">
+                                                <summary class="cursor-pointer text-xs font-semibold text-kaori-primary">View Namespaces</summary>
+                                                <ul class="mt-2 space-y-1 text-xs text-content-secondary">
+                                                    {% for namespace in row.namespaces %}
+                                                        <li class="break-words">
+                                                            {{ namespace.environment|title }} / {{ namespace.name }}
+                                                            <span class="text-content-muted">({{ namespace.state|replace('_', ' ')|title }})</span>
+                                                        </li>
+                                                    {% endfor %}
+                                                </ul>
+                                            </details>
+                                        {% endif %}
+                                    </td>
+                                    <td class="{{ table_ui.cell_classes() }} align-top">
+                                        <p class="text-xs font-semibold text-content-primary">{{ row.source }}</p>
+                                        <p class="mt-1 text-xs text-content-muted">{{ row.tenant.provider_key|replace('_', ' ')|title }}</p>
+                                        {% if row.unknown %}<p class="mt-1 text-xs font-semibold text-status-warning-text">Incomplete or ambiguous allocation</p>{% endif %}
+                                    </td>
+                                    <td class="{{ table_ui.cell_classes() }} align-top text-xs">
+                                        <p class="font-semibold text-content-primary">{{ row.allocation.cpu }}</p>
+                                        <p class="mt-1 text-content-muted">{{ row.allocation.memory }}</p>
+                                    </td>
+                                    <td class="{{ table_ui.cell_classes() }} align-top text-xs">
+                                        <p class="font-semibold text-content-primary">{{ row.allocation.pods }}</p>
+                                        <p class="mt-1 text-content-muted">{{ row.allocation.storage }}</p>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="px-4 py-8 text-center text-sm text-content-muted">
+                    No committed Tenant allocations on this cluster. A Tenant without a governed Namespace or shared quota consumes no Tenant allocation budget.
+                </p>
+            {% endif %}
+            {% if allocation_tenant_pagination and allocation_tenant_pagination.total_items > 0 %}
+                {{ registry_ui.footer('tenant.resource_profiles',
+                    overview_id,
+                    overview_loading_id,
+                    allocation_tenant_pagination,
+                    {'view': 'capacity', 'allocation_cluster_id': allocation_cluster_id,
+                     'capacity_search': capacity_filters.search},
+                    allocation_tenant_pagination.allowed_per_page,
+                    resource_label='Tenants',
+                    rows_aria_label='Tenant allocation rows per page',
+                    control_name='tenant-allocation',
+                    page_param='allocation_page',
+                    per_page_param='allocation_per_page') }}
+            {% endif %}
+        </section>
+    {% else %}
+        <div class="px-4 py-10 text-center text-sm text-content-muted">
+            No clusters available for Tenant Capacity Governance. Register a connected Kubernetes cluster to view governed allocation.
+        </div>
+    {% endif %}
+</section>
