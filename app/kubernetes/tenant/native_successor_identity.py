@@ -94,7 +94,7 @@ def verify_native_successor_identity_for_review(
             V1TokenReview(spec=V1TokenReviewSpec(token=provider_token)),
             _request_timeout=5,
         )
-    except ApiException as exc:
+    except ApiException:
         # Never surface a provider error body that could echo credential input.
         raise ValueError('Kubernetes TokenReview unavailable or rejected the supplied principal.') from None
     status = _field(reply, 'status')
