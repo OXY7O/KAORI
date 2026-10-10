@@ -116,3 +116,21 @@ def test_runtime_usage_preserves_digest_first_and_explicit_tag_confidence() -> N
     assert "'description': 'Mutable reference; lower confidence.'" in presentation
     assert "'tone': 'warning'" in presentation
     assert 'row.match.description' in workspace
+
+
+def test_runtime_summary_reuses_shared_section_intro_and_standalone_metrics() -> None:
+    from jinja2 import Environment
+
+    template = (ROOT / 'app/templates/artifact_registry/partials/_runtime_workspace.html').read_text()
+    Environment().parse(template)
+    start = template.index("section_intro.render('Runtime Correlation',")
+    end = template.index("section_intro.render('Runtime Bindings',", start)
+    summary = template[start:end]
+
+    assert 'artifact-registry-runtime-summary-heading' in template
+    assert 'grid gap-4 sm:grid-cols-2 xl:grid-cols-4' in summary
+    assert summary.count('metric_card.render(') == 4
+    assert 'section_card.shell_classes()' not in summary
+    assert 'runtime.scope.label' in summary
+    assert 'registry.footer(' in template
+    assert 'data-kaori-native-dialog' in template or 'runtime.binding' in template
