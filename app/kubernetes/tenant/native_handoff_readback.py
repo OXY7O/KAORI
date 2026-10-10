@@ -45,6 +45,19 @@ def latest_native_handoff_readback(tenant_id: str) -> dict[str, Any] | None:
     return dict(row.metadata_json or {}) if row else None
 
 
+def native_handoff_readback_history(tenant_id: str) -> list[dict[str, Any]]:
+    """Committed receipts for all attempts, not merely the latest observation.
+
+    Earlier partial/full transfers must not be hidden by a later zero-transfer
+    read-back after an external rollback. This performs no provider reads.
+    """
+    rows = (
+        AuditEvent.query.filter_by(target_type=_TARGET, target_id=tenant_id)
+        .order_by(AuditEvent.id.desc()).all()
+    )
+    return [dict(row.metadata_json or {}) for row in rows]
+
+
 def _latest_native_dry_run(tenant_id: str) -> dict[str, Any] | None:
     row = (
         AuditEvent.query.filter_by(target_type=_DRY_RUN_TARGET, target_id=tenant_id)
