@@ -33,11 +33,14 @@ def test_artifact_registry_overview_consumes_operational_dashboard_family() -> N
     assert 'signal_overview.render(' in signal
     assert "section='kpi_cards'" in signal
     assert 'hx-trigger="load"' in signal
-    assert 'components/resource_posture_grid.html' in kpis
-    assert 'posture_grid.render(overview_metrics, columns=4)' in kpis
+    assert 'components/operational_metric_card.html' in kpis
+    assert 'operational_metric_card.render(' in kpis
     assert 'for kpi in overview.kpis' in kpis
-    assert "body_classes='p-0'" in signal
-    assert "grouped=true" in signal
+    assert 'grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4' in kpis
+    assert "source_label='Committed Inventory'" in kpis
+    assert "scope_label='Active Scope'" in kpis
+    assert "body_classes='p-0'" not in signal
+    assert "grouped=true" not in signal
     assert 'components/operational_signal_overview.html' in signal
     assert 'hx-trigger="load"' in signal
     assert 'hx-push-url="true"' in signal
@@ -431,26 +434,34 @@ def test_artifact_registry_signals_match_object_storage_scope_and_alert_logic() 
     assert "'alerts': _registry_alerts(selected_provider)" in presentation
 
 
-def test_artifact_registry_overview_grouped_kpi_uses_existing_signal_shell() -> None:
+def test_artifact_registry_overview_kpi_cards_match_reference_dashboard_family() -> None:
     from jinja2 import Environment
 
-    kpis = read('app/templates/artifact_registry/partials/_overview_kpi_cards.html')
+    registry = read('app/templates/artifact_registry/partials/_overview_kpi_cards.html')
     signal = read('app/templates/artifact_registry/partials/_overview_signal_overview.html')
     shell = read('app/templates/components/operational_signal_overview.html')
-    grid = read('app/templates/components/resource_posture_grid.html')
+    card = read('app/templates/components/operational_metric_card.html')
     skeleton = read('app/templates/components/operational_section_loading.html')
-    for template in (kpis, signal, shell, grid, skeleton):
+    kubernetes = read('app/templates/kubernetes/dashboard/partials/_kpi_cards.html')
+    object_storage = read('app/templates/storage/object_storage/dashboard/partials/_kpi_cards.html')
+    for template in (registry, signal, shell, card, skeleton, kubernetes, object_storage):
         Environment().parse(template)
 
+    for template in (registry, kubernetes, object_storage):
+        assert 'components/operational_metric_card.html' in template
+        assert 'operational_metric_card.render(' in template
+        assert 'grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4' in template
+        assert "scope_label='Active Scope'" in template
+    assert "source_label='Committed Inventory'" in registry
+    for field in ('kpi.icon', 'kpi.label', 'kpi.value', 'kpi.description'):
+        assert field in registry
     assert "body_classes='p-5'" in shell
     assert '<div class="{{ body_classes }}">{{ signal_content|safe }}</div>' in shell
-    assert "body_classes='p-0'" in signal
-    assert "grouped=true" in signal
+    assert "body_classes='p-0'" not in signal
+    assert "grouped=true" not in signal
+    assert 'section_loading.kpis(item_count=4,' in signal
     assert "macro kpis(" in skeleton and "grouped=false" in skeleton
-    assert "grid gap-px bg-outline-subtle" in skeleton
-    assert "posture_grid.render(overview_metrics, columns=4)" in kpis
-    for field in ('kpi.icon', 'kpi.label', 'kpi.value', 'kpi.description'):
-        assert field in kpis
-    assert "data-kaori-artifact-registry-operational-kpis" in kpis
-    assert "hx-trigger=\"load\"" in signal
-    assert "components/operational_metric_card.html" not in kpis
+    assert 'h-28 animate-pulse rounded-lg bg-surface-hover' in skeleton
+    assert 'resource_posture_grid.html' not in registry
+    assert 'data-kaori-artifact-registry-operational-kpis' in registry
+    assert 'hx-trigger="load"' in signal
