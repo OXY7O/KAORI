@@ -9,12 +9,13 @@
 <div id="tenant-management-detail"
      class="relative min-w-0 space-y-6"
      data-tenant-management-detail="{{ tenant.id }}"
-     data-kaori-tenant-detail-workspace>
+     data-kaori-tenant-detail-workspace
+     hx-history="false">
     {# HTMX indicators fade by opacity, not display. Keep it outside normal
        flow so an invisible indicator cannot create a false gap above the Hero. #}
     <div id="tenant-management-loading"
-         class="htmx-indicator pointer-events-none absolute right-3 top-3 z-10 rounded-lg border border-outline-subtle bg-surface-card px-3 py-2 text-xs font-medium text-content-secondary shadow-sm"
-         role="status" aria-live="polite">Updating Tenant Management…</div>
+         class="htmx-indicator pointer-events-none fixed bottom-4 right-4 z-40 rounded-lg border border-outline-subtle bg-surface-card px-3 py-2 text-xs font-medium text-content-secondary shadow-sm"
+         role="status" aria-live="polite">Processing Tenant request…</div>
 
     {# Use the same canonical two-column Hero/context card as KAORI operations. #}
     <section class="{{ page_hero.shell_classes() }}"
@@ -336,6 +337,28 @@
                     </div>
                     {{ table_label.status_label('Provider-governed', 'info') }}
                 </div>
+                {# Confirmations are request-scoped; persisted server evidence is the authority. #}
+                {% if tenant_action_feedback is defined and tenant_action_feedback %}
+                    {% set action_status = tenant_action_feedback.get('status', 'info') %}
+                    <div data-tenant-release-action-feedback
+                         class="mx-4 mt-3 flex min-w-0 items-start gap-2.5 rounded-lg border px-3 py-2.5 text-xs leading-5 sm:mx-6
+                                {{ 'border-status-warning-border bg-status-warning-soft' if action_status in ['error', 'warning']
+                                   else 'border-outline-subtle bg-surface-elevated' }}"
+                         role="{{ 'alert' if action_status == 'error' else 'status' }}"
+                         aria-live="{{ 'assertive' if action_status == 'error' else 'polite' }}">
+                        <i data-lucide="{{ 'alert-circle' if action_status in ['error', 'warning'] else 'clipboard-check' }}"
+                           class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                        <div class="min-w-0 flex-1">
+                            <p class="font-semibold text-content-primary">{{ tenant_action_feedback.title }}</p>
+                            <p class="mt-0.5 break-words text-content-secondary">{{ tenant_action_feedback.message }}</p>
+                            <p class="mt-0.5 text-content-muted">The confirmation resets after submission. Check committed workflow status and Activity Audit to verify the result.</p>
+                        </div>
+                    </div>
+                {% endif %}
+                <p class="px-4 pt-2 text-xs leading-5 text-content-muted sm:px-6"
+                   data-release-confirmation-guidance>
+                    Switching steps never executes an action. A checked box authorizes one submission, not a recorded approval.
+                </p>
                 {% if tenant_release_step == 'scope' %}
                     <section id="tenant-release-stage-readiness"
                              class="min-w-0 scroll-mt-24 px-4 py-5 sm:px-6 sm:py-6"
@@ -400,7 +423,7 @@
                                                 <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
                                             {% endfor %}
                                             <button type="submit"
-                                                    class="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-kaori-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus sm:w-auto">
+                                                    class="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-kaori-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus sm:w-auto disabled:cursor-progress disabled:opacity-60">
                                                 <i data-lucide="clipboard-check" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                                 Review Release
                                             </button>
@@ -689,7 +712,7 @@
                                                        class="mt-1 block h-9 w-full rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs text-content-primary">
                                             </label>
                                             <button type="submit"
-                                                    class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                    class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-progress disabled:opacity-60">
                                                 <i data-lucide="clipboard-list" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                                 Prepare Handoff
                                             </button>
@@ -786,7 +809,7 @@
                                                                 This is not proof of acceptance or authorization to transfer.</span>
                                                         </label>
                                                         <button type="submit"
-                                                                class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                                class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-progress disabled:opacity-60">
                                                             Record External Reference
                                                         </button>
                                                     </form>
@@ -865,7 +888,7 @@
                                                                     I understand that Kubernetes resource values must remain unchanged.</span>
                                                             </label>
                                                             <button type="submit"
-                                                                    class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                                    class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-progress disabled:opacity-60">
                                                                 <i data-lucide="shield-check" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                                                 Verify Provider &amp; Accept as Platform Admin
                                                             </button>
@@ -899,7 +922,7 @@
                                                                 or quota/limit values will be persisted.</span>
                                                         </label>
                                                         <button type="submit"
-                                                                class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                                class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-progress disabled:opacity-60">
                                                             <i data-lucide="scan-eye" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                                             Preview Native Transfer
                                                         </button>
@@ -964,7 +987,7 @@
                                                                     Recovery is required on any partial failure.</span>
                                                             </label>
                                                             <button type="submit"
-                                                                    class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                                    class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-progress disabled:opacity-60">
                                                                 <i data-lucide="arrow-right-left" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                                                 {{ 'Resume Verified Native Handoff' if live_handoff and live_handoff.status == 'partial_handoff_recovery_required' else 'Execute Native Handoff' }}
                                                             </button>
@@ -1002,7 +1025,7 @@
                                                                 This does not prove successor consent or authorize Release.</span>
                                                         </label>
                                                         <button type="submit"
-                                                                class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                                class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-progress disabled:opacity-60">
                                                             <i data-lucide="scan-eye" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                                             Verify Provider Read-Back
                                                         </button>
@@ -1071,7 +1094,7 @@
                                                             No ownership transfer has been performed.</span>
                                                     </label>
                                                     <button type="submit"
-                                                            class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                            class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-progress disabled:opacity-60">
                                                         <i data-lucide="user-check" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                                         Acknowledge as Independent Reviewer
                                                     </button>
@@ -1200,7 +1223,7 @@
                                                             <span>Restart this expired plan after verifying provider ownership has not changed.</span>
                                                         </label>
                                                         <button type="submit"
-                                                                class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                                class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-progress disabled:opacity-60">
                                                             <i data-lucide="refresh-cw" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                                             Restart Expired Handoff Plan
                                                         </button>
@@ -1306,7 +1329,7 @@
                                             <span>Release governance, keep provider resources. Requires fresh verified preflight.</span>
                                         </label>
                                         <button type="submit"
-                                                class="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                class="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-progress disabled:opacity-60">
                                             <i data-lucide="unlink" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                             Release Governance
                                         </button>
@@ -1346,7 +1369,7 @@
                                                 Preserve the external Kubernetes resources.</span>
                                         </label>
                                         <button type="submit"
-                                                class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-progress disabled:opacity-60">
                                             <i data-lucide="unlink" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                             Finalize Verified Native Release
                                         </button>
@@ -1507,7 +1530,7 @@
                                         Their names, specs, CPU, memory and quotas must remain unchanged.</span>
                                 </label>
                                 <button type="submit"
-                                        class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                        class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-progress disabled:opacity-60">
                                     <i data-lucide="arrow-left-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                     Verify Provider &amp; Hand Back as Platform Admin
                                 </button>
@@ -1593,7 +1616,7 @@
                                                 quota and RBAC boundaries without provider mutation.
                                             </p>
                                             <button type="submit"
-                                                    class="inline-flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus sm:col-span-2">
+                                                    class="inline-flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus sm:col-span-2 disabled:cursor-progress disabled:opacity-60">
                                                 <i data-lucide="link-2" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                                 Attach Observed Namespace
                                             </button>
