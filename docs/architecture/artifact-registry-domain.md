@@ -610,6 +610,29 @@ updates push its canonical page URL. No additional materialization models,
 provider read paths, RBAC definitions, alert collection or central Intelligence
 recommendation lifecycle are introduced.
 
+## Shared Analytics Section Loading (#1106)
+
+Artifact Registry Overview and its seven dedicated analytical routes reuse
+the exact K8s `analytics/components/_section_load_tracker.html` geometry and
+the shared `js/analytics/section_load_tracker.js` runtime. Overview tracks
+its actual lazy committed Summary fragment; a focused route tracks only its
+active evidence fragment. Each fragment owns its loaded/failed state across
+outerHTML swaps. The tracker is shown after Hero and counts **requested
+HTMX sections**, not invisible routes or Celery work items. The shared
+controls header continues to show the independent filter loading bar and
+JobExecution collection progress. A materialization-status refresh may
+reload the page once the worker commits its evidence; the next section
+request is counted afresh. The old K8s handler remains available as a
+compatibility hook.
+
+For a new Analytics domain, add `data-analytics-section-tracker-root` on
+the page wrapper, invoke the shared macro once after Hero, mark only actual
+lazy request nodes with `data-analytics-lazy-section="true"`, and include
+the shared controller asset once. Mark a full-fragment replacement with
+`data-analytics-load-state="loaded"` and preserve its stable element ID
+so the tracker can resolve the completed element after HTMX outerHTML
+swaps. Do not create a new tracker JavaScript controller per domain.
+
 ## Operational UI Contract
 
 Normal Artifact Registry pages read committed KAORI state. Provider calls are worker-owned and never occur
