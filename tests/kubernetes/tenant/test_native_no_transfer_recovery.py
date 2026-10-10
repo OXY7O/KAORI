@@ -284,7 +284,7 @@ def test_restart_rechecks_complete_multi_attempt_lineage(monkeypatch):
         'assessment_sha256': a['assessment_sha256'],
         'history_digest': a['history_digest'],
         'provider_proof_sha256': a['provider_proof_sha256'],
-        'assessed_by': p['requested_by'], 'authorized_by': 44,
+        'assessed_by': p['requested_by'], 'authorized_by': 43,
         'authorized_at': datetime.now(UTC).isoformat(),
     }
     monkeypatch.setattr(recovery, 'latest_no_transfer_decision', lambda *_: decision)
@@ -294,6 +294,8 @@ def test_restart_rechecks_complete_multi_attempt_lineage(monkeypatch):
         'attempt_count': 2,
     }
     monkeypatch.setattr(recovery, '_source_history', lambda *_: source)
+    # Original executor (43) may independently review the two-pair proof;
+    # the original requester (42) remains the only plan-renewal actor.
     assert recovery.require_authorized_no_transfer_restart(
         tenant_id=p['tenant_id'], plan=p, actor_user_id=42,
     ) == decision
@@ -426,7 +428,15 @@ def setup_authorize(monkeypatch, *, stale=False):
     monkeypatch.setattr(recovery, '_require_expired_plan', lambda *args: p)
     monkeypatch.setattr(recovery, 'latest_no_transfer_assessment', lambda *args: a)
     monkeypatch.setattr(recovery, 'latest_no_transfer_decision', lambda *args: None)
-    monkeypatch.setattr(recovery, '_source_history', lambda *args: {'digest': a['history_digest']})
+    monkeypatch.setattr(
+        recovery, '_source_history',
+        lambda *args: {
+            'digest': a['history_digest'],
+            'executor_actor_id': a['executor_actor_id'],
+            'failed_event_ids': a['failed_event_ids'],
+            'attempt_count': a['attempt_count'],
+        },
+    )
     monkeypatch.setattr(recovery, 'Tenant', SimpleNamespace(query=LockedTenantQuery()))
     class Session:
         events = []
@@ -440,18 +450,64 @@ def setup_authorize(monkeypatch, *, stale=False):
     return p, a, session
 
 
-@pytest.mark.parametrize('actor', [42, 43])
-def test_requester_or_executor_cannot_self_authorize_recovery(monkeypatch, actor):
+def test_original_requester_cannot_approve_own_no_transfer_assessment(monkeypatch):
     p, a, _ = setup_authorize(monkeypatch)
     with pytest.raises(ValueError, match='must differ'):
         recovery.authorize_native_no_transfer_recovery_committed(
-            tenant_id=p['tenant_id'], actor_user_id=actor,
+            tenant_id=p['tenant_id'], actor_user_id=p['requested_by'],
             plan_sha256=p['plan_sha256'],
             assessment_sha256=a['assessment_sha256'], confirmed=True,
         )
 
 
-def test_independent_third_operator_can_authorize_only_new_restart(monkeypatch):
+def test_original_failed_executor_can_review_only_canonical_no_transfer(monkeypatch):
+    p, a, session = setup_authorize(monkeypatch)
+    decision = recovery.authorize_native_no_transfer_recovery_committed(
+        tenant_id=p['tenant_id'], actor_user_id=a['executor_actor_id'],
+        plan_sha256=p['plan_sha256'],
+        assessment_sha256=a['assessment_sha256'], confirmed=True,
+    )
+    assert decision['authorized_by'] == a['executor_actor_id']
+    assert decision['assessed_by'] != decision['authorized_by']
+    assert decision['release_authorized'] is False
+    assert decision['provider_mutation_performed'] is False
+    assert session.events[0].action == 'tenant.release.native_no_transfer_authorized'
+
+
+def test_executor_review_denied_if_complete_history_changed(monkeypatch):
+    p, a, _ = setup_authorize(monkeypatch)
+    monkeypatch.setattr(
+        recovery, '_source_history',
+        lambda *_: {
+            'digest': a['history_digest'],
+            'executor_actor_id': a['executor_actor_id'],
+            'failed_event_ids': [2, 6],
+            'attempt_count': 2,
+        },
+    )
+    with pytest.raises(ValueError, match='history changed'):
+        recovery.authorize_native_no_transfer_recovery_committed(
+            tenant_id=p['tenant_id'], actor_user_id=a['executor_actor_id'],
+            plan_sha256=p['plan_sha256'],
+            assessment_sha256=a['assessment_sha256'], confirmed=True,
+        )
+
+
+def test_forged_assessor_cannot_get_executor_review(monkeypatch):
+    p, a, _ = setup_authorize(monkeypatch)
+    a['assessed_by'] = a['executor_actor_id']
+    a['assessment_sha256'] = recovery._sha({
+        k: v for k, v in a.items() if k != 'assessment_sha256'
+    })
+    with pytest.raises(ValueError, match='Current exact'):
+        recovery.authorize_native_no_transfer_recovery_committed(
+            tenant_id=p['tenant_id'], actor_user_id=44,
+            plan_sha256=p['plan_sha256'],
+            assessment_sha256=a['assessment_sha256'], confirmed=True,
+        )
+
+
+def test_independent_second_or_third_operator_can_authorize_only_new_restart(monkeypatch):
     p, a, session = setup_authorize(monkeypatch)
     decision = recovery.authorize_native_no_transfer_recovery_committed(
         tenant_id=p['tenant_id'], actor_user_id=44,
@@ -506,9 +562,43 @@ def test_decision_requires_same_fresh_actor_separated_evidence(monkeypatch):
         tenant_id=p['tenant_id'], plan=p, actor_user_id=42,
     ) == d
     d['authorized_by'] = 43
+    assert recovery.require_authorized_no_transfer_restart(
+        tenant_id=p['tenant_id'], plan=p, actor_user_id=42,
+    ) == d
+    d['authorized_by'] = 42
     with pytest.raises(ValueError, match='absent or expired'):
         recovery.require_authorized_no_transfer_restart(
             tenant_id=p['tenant_id'], plan=p, actor_user_id=42,
+        )
+
+
+def test_two_person_restart_rejects_changed_evidence_after_executor_review(monkeypatch):
+    p, a, _ = setup_authorize(monkeypatch)
+    decision = {
+        'status': 'authorized_for_requester_restart',
+        'plan_sha256': p['plan_sha256'],
+        'handoff_fingerprint': p['handoff_fingerprint'],
+        'assessment_sha256': a['assessment_sha256'],
+        'history_digest': a['history_digest'],
+        'provider_proof_sha256': a['provider_proof_sha256'],
+        'assessed_by': p['requested_by'],
+        'authorized_by': a['executor_actor_id'],
+        'authorized_at': datetime.now(UTC).isoformat(),
+    }
+    monkeypatch.setattr(recovery, 'latest_no_transfer_decision', lambda *_: decision)
+    monkeypatch.setattr(
+        recovery, '_source_history',
+        lambda *_: {
+            'digest': 'changed' * 10,
+            'executor_actor_id': a['executor_actor_id'],
+            'failed_event_id': 2,
+            'failed_event_ids': [2],
+            'attempt_count': 1,
+        },
+    )
+    with pytest.raises(ValueError, match='Provider execution evidence changed'):
+        recovery.require_authorized_no_transfer_restart(
+            tenant_id=p['tenant_id'], plan=p, actor_user_id=p['requested_by'],
         )
 
 

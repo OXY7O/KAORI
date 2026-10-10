@@ -203,9 +203,12 @@ The bounded Step 4 workflow is:
   dependency counts. Only read-only Kubernetes GETs occur; a SHA-bound
   assessment is committed to AuditEvent.
 - Independent recovery reviewer: **Authorize Reviewed No-Transfer Recovery**
-  only if not the requester/assessor/original executor. A third authorized
-  operator can be required. Decision is bound to the exact assessment and
-  expires; it never authorizes Kubernetes PATCH or Release.
+  only when different from the original requester/assessor. For this
+  canonical verified-no-transfer path, the failed executor may be the
+  second operator; no third operator is mandatory. This does not relax
+  the full historical provider/read-back verification. The decision binds
+  the exact assessment, expires and never authorizes Kubernetes PATCH
+  or Release.
 - Original requester: **Restart with Fresh Provider Verification**.
   All provider/history evidence is verified again and an immutable new
   pending-independent-review Plan SHA replaces the expired plan. No previous
@@ -279,7 +282,8 @@ canonical predicate. All history stays SHA256 digest-bound, and new
 assessments record all failed event IDs and the total attempt count.
 Existing fresh authoritative Kubernetes GET, verified TLS, original dry-run
 UID/RV/spec/foreign metadata and dependencies, original requester,
-independent third-actor review and new-plan approval remain mandatory.
+independent second-operator review (which may be the original executor,
+but never the requester) and new-plan approval remain mandatory.
 Candidate status never grants restart, provider mutation or Release.
 Tests/CI/CD/UAT/deployment remain HOLD; this is source-only integration.
 

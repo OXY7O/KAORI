@@ -511,6 +511,8 @@ def test_governed_recovery_projection_coexists_with_read_only_candidate():
     assert status['release_admitted'] is False
 
     snapshot['no_transfer_decision']['authorized_by'] = 22
+    assert project_native_release_readiness(**snapshot)['no_transfer_authorized_current'] is True
+    snapshot['no_transfer_decision']['authorized_by'] = 11
     assert project_native_release_readiness(**snapshot)['no_transfer_authorized_current'] is False
     snapshot['no_transfer_decision']['authorized_by'] = 33
     snapshot['no_transfer_decision']['history_digest'] = 'f' * 64

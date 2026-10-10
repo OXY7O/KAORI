@@ -179,7 +179,7 @@ def project_native_release_readiness(
         and no_transfer_decision.get('history_digest') == no_transfer_assessment.get('history_digest')
         and no_transfer_decision.get('provider_proof_sha256') == no_transfer_assessment.get('provider_proof_sha256')
         and no_transfer_decision.get('authorized_by') not in {
-            plan.get('requested_by'), no_transfer_assessment.get('executor_actor_id'),
+            plan.get('requested_by'), no_transfer_assessment.get('assessed_by'),
         }
         and _checked_recently(no_transfer_decision.get('authorized_at'))
     )

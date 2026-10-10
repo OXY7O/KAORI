@@ -512,7 +512,11 @@ def test_native_no_transfer_recovery_keeps_three_independent_governed_actions():
     assert 'native_cycle.no_transfer_authorized_current' in detail
     assert 'recovery_requester and recovery_operator_permitted' in detail
     assert 'recovery_independent and recovery_operator_permitted' in detail
-    assert 'current_user.id != recovery_assessment.executor_actor_id' in detail
+    assert 'current_user.id != recovery_assessment.assessed_by' in detail
+    assert 'current_user.id != recovery_plan.requested_by' in detail
+    assert 'current_user.id != recovery_assessment.executor_actor_id' not in detail
+    assert 'The original failed executor may review' in detail
+    assert 'a second authorized recovery reviewer' in detail
     assert 'assess_native_no_transfer_recovery_route' in detail
     assert 'authorize_native_no_transfer_recovery_route' in detail
     assert 'restart_expired_tenant_release_handoff_route' in detail

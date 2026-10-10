@@ -298,8 +298,12 @@ The earlier executor bug #1102 (preview vs approved component) could fail
 before the first provider write; a negative mutation counter alone does not
 prove provider state or authorize retry.
 
-This is a three-operator, **read-only-first** governance extension. Normal
-Tenant GETs consume committed KAORI state only.
+This is a **two-person, read-only-first** governance extension for fully
+verified no-transfer only. The requester/assessor cannot self-approve; the
+original executor may independently review a canonical no-transfer
+assessment. Unknown/partial/full mutation remains fail-closed, with
+separate manual recovery. Normal Tenant GETs consume committed KAORI
+state only.
 
 1. **Requester assessment** (original plan `requested_by` actor):
    require one exact SHA/fingerprint/generation Native plan, originally
@@ -322,13 +326,15 @@ Tenant GETs consume committed KAORI state only.
    `pending_provider_transfer`. Persist immutable SHA-bound assessment,
    audit history digest, every failed event ID and attempt count,
    assessment actor and provider proof hash. **No provider PATCH**.
-2. **Independent recovery decision**: a different authorized operator must
-   be neither the original requester/assessor nor the original failed
-   executor actor. The decision binds the assessment SHA, history digest,
-   exact plan/fingerprint, observed provider proof and current timestamps.
-   It grants *only* a fresh requester restart, never a provider transfer,
-   successor consent or Release. This distinct security-sensitive review
-   may require a third authorized human.
+2. **Independent recovery decision**: a second authorized operator must
+   be different from the original requester/assessor. The original failed
+   executor may independently approve this **canonical verified-no-transfer**
+   assessment, since all historical attempts, read-backs and fresh
+   authoritative provider proof have already been validated. The decision
+   binds assessment SHA, history digest, exact plan/fingerprint, observed
+   provider proof and current timestamps. It grants *only* a fresh
+   requester plan renewal, never provider transfer, consent or Release.
+   Self-approval by the requester and unsafe/partial evidence remain blocked.
 3. **Original requester restart**: backend revalidates original plan,
    original independent approval, new distinct recovery decision, full
    executor/read-back history, fresh authoritative provider preflight and
@@ -474,9 +480,10 @@ and attempt count, and the original-requester restart revalidates them.
 Source-only admission does not authorize a Kubernetes PATCH or Release.
 Fresh provider-authoritative preflight and TLS-verified GET of original
 UID/RV/spec/foreign metadata, complete dry-run evidence and dependency
-checks remain mandatory before immutable assessment; independent third
-actor authorization remains required before a new requester-owned SHA
-can be reviewed. No old approval/dry-run/consent is inherited.
+checks remain mandatory before immutable assessment; an independent
+second-operator decision (potentially by the original executor, but not
+the requester/assessor) remains required before a new requester-owned
+SHA can be reviewed. No old approval/dry-run/consent is inherited.
 No provider mutation, workflow deployment or CI/CD gate was executed.
 Tests, Developer Check, Full Admission and formal UAT remain HOLD.
 
