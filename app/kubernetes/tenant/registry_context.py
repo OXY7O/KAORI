@@ -371,6 +371,10 @@ def get_tenant_registry_context(
                 for event in rows
             })
 
+    # The read model uses the same eligibility predicate as the locked
+    # preparation service. No provider read or independent plan decision here.
+    from app.kubernetes.tenant.release_handoff_approval import handoff_plan_preparation_state
+
     tenant_rows: list[dict[str, Any]] = []
     for item in items:
         row: dict[str, Any] = {
@@ -386,6 +390,9 @@ def get_tenant_registry_context(
             row['release_preflight'] = release_evidence.get(item.id)
             row['release_handoff_plan'] = handoff_plans.get(item.id)
             row['release_handoff_approval'] = handoff_approvals.get(item.id)
+            row['release_handoff_preparation_state'] = handoff_plan_preparation_state(
+                row['release_handoff_plan'], row['release_handoff_approval'],
+            )
             row['release_native_handoff_dry_run'] = handoff_dry_runs.get(item.id)
             row['release_native_handoff_readback'] = handoff_readbacks.get(item.id)
             row['release_successor_claim'] = successor_claims.get(item.id)
