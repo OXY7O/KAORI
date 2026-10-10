@@ -566,6 +566,7 @@ def test_operational_dashboard_loading_presentation_is_shared_across_current_con
     assert 'Projection granularity remains domain-owned' in standard
     assert 'operational_section_loading.html' in dashboard_readme
 
+
 def test_dashboard_unavailable_alert_evidence_does_not_prompt_scope_reselection() -> None:
     """Once selected, a scope with missing alert evidence must not imply no scope was selected."""
 
@@ -580,6 +581,7 @@ def test_dashboard_unavailable_alert_evidence_does_not_prompt_scope_reselection(
         assert f"Committed Alert Intelligence case evidence is unavailable for this {expected_scope}." in source
         assert "unavailable_title='Select " not in source
         assert "unavailable_description='Select " not in source
+
 
 def test_top_consumer_missing_evidence_uses_snapshot_required_panel_in_reference_dashboards() -> None:
     kubernetes = read('app/templates/kubernetes/dashboard/partials/_top_consumers.html')
