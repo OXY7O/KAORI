@@ -48,6 +48,7 @@ def plan(snapshot_data, *, expired=True):
         'handoff_fingerprint': snapshot_data['handoff_fingerprint'],
         'provider_identity': snapshot_data['live_provider_identity'],
         'successor_owner': 'platform-team',
+        'handoff_components': snapshot_data['handoff_components'],
         'change_reference': 'CHG-2026-002',
         'requested_by': 42,
         'requested_at': (
@@ -71,7 +72,38 @@ def approval(plan_data, *, expired=True):
     }
 
 
-def prepare(monkeypatch, *, expired=True, actor=42, readback=None, mutate=None):
+
+def canonical_no_transfer_readback(plan_data):
+    component = plan_data['handoff_components'][0]
+    observed = {
+        'namespace': component.get('namespace'), 'kind': component['kind'],
+        'name': component['name'], 'uid': component['uid'],
+        'resource_version': component['resource_version'],
+        'state': 'pending_provider_transfer', 'spec_preserved': True,
+        'foreign_metadata_preserved': True,
+    }
+    recovery = {
+        'status': 'provider_handoff_not_started',
+        'components': [observed], 'transferred_count': 0,
+        'pending_count': 1, 'provider_spec_preserved': True,
+        'provider_resource_deleted': False, 'successor_consent_verified': False,
+        'resume_authorized': False, 'release_authorized': False,
+    }
+    return {
+        'tenant_id': plan_data['tenant_id'], 'cluster_id': plan_data['cluster_id'],
+        'generation': plan_data['generation'],
+        'plan_sha256': plan_data['plan_sha256'],
+        'handoff_fingerprint': plan_data['handoff_fingerprint'],
+        'status': 'provider_handoff_not_started',
+        'observed_components': [observed], 'observed_count': 0,
+        'recovery': recovery,
+        'provider_handoff_observed': False, 'provider_mutation_performed': False,
+        'provider_handoff_verified': False, 'release_authorized': False,
+        'external_successor_verified': False,
+    }
+
+
+def prepare(monkeypatch, *, expired=True, actor=42, readback=None, mutate=None, executions=None):
     existing = snapshot()
     data = plan(existing, expired=expired)
     acknowledged = approval(data, expired=expired)
@@ -109,10 +141,24 @@ def prepare(monkeypatch, *, expired=True, actor=42, readback=None, mutate=None):
         service, 'review_tenant_release_preflight_committed',
         lambda **_: mutate(existing) if mutate else existing,
     )
-    from app.kubernetes.tenant import native_handoff_readback
+    from app.kubernetes.tenant import native_handoff_executor, native_handoff_readback
+    if readback == 'zero':
+        readback_receipts = [canonical_no_transfer_readback(data)]
+    elif readback == 'current':
+        readback_receipts = [{'plan_sha256': data['plan_sha256']}]
+    elif isinstance(readback, list):
+        readback_receipts = readback
+    elif readback:
+        readback_receipts = [readback]
+    else:
+        readback_receipts = []
     monkeypatch.setattr(
-        native_handoff_readback, 'latest_native_handoff_readback',
-        lambda _: {'plan_sha256': data['plan_sha256']} if readback == 'current' else readback,
+        native_handoff_readback, 'native_handoff_readback_history',
+        lambda _: readback_receipts,
+    )
+    monkeypatch.setattr(
+        native_handoff_executor, 'native_handoff_execution_history',
+        lambda _: executions or [],
     )
     result = service.restart_expired_native_release_handoff_plan_committed(
         tenant_id='tenant-a', actor_user_id=actor,
@@ -169,3 +215,66 @@ def test_stale_reapproval_cannot_reuse_original_external_reference(monkeypatch):
     assert renewed['plan_sha256'] != old['plan_sha256']
     assert renewed.get('successor_reference') is None
     assert renewed.get('approved_by') is None
+
+
+def test_canonical_zero_transfer_receipt_allows_only_fresh_rechecked_restart(monkeypatch):
+    renewed, original, session = prepare(monkeypatch, readback='zero')
+    assert renewed['plan_sha256'] != original['plan_sha256']
+    assert renewed['restart_zero_transfer_readback_reverified'] is True
+    assert renewed['supersedes_plan_sha256'] == original['plan_sha256']
+    assert renewed['status'] == 'pending_independent_approval'
+    assert renewed['release_authorized'] is False
+    assert session.commits == 1
+
+
+def test_zero_transfer_receipt_does_not_bypass_fresh_identity_comparison(monkeypatch):
+    with pytest.raises(ValueError, match='Provider inventory changed'):
+        prepare(
+            monkeypatch, readback='zero',
+            mutate=lambda evidence: {
+                **evidence,
+                'live_provider_identity': [
+                    {'kind': 'Namespace', 'name': 'sandbox', 'uid': 'different', 'resource_version': '21'},
+                ],
+            },
+        )
+
+
+@pytest.mark.parametrize('field,value', [
+    ('status', 'partial_handoff_recovery_required'),
+    ('observed_count', 1),
+    ('handoff_fingerprint', 'unrelated'),
+    ('provider_handoff_observed', True),
+    ('release_authorized', True),
+])
+def test_corrupt_or_transferred_receipts_never_allow_restart(monkeypatch, field, value):
+    old = snapshot()
+    data = plan(old)
+    receipt = canonical_no_transfer_readback(data)
+    receipt[field] = value
+    with pytest.raises(ValueError, match='recovery review'):
+        prepare(monkeypatch, readback=receipt)
+
+
+def test_previous_partial_observation_cannot_be_hidden_by_latest_zero(monkeypatch):
+    data = plan(snapshot())
+    zero = canonical_no_transfer_readback(data)
+    partial = {**zero, 'status': 'partial_handoff_recovery_required'}
+    with pytest.raises(ValueError, match='recovery review'):
+        prepare(monkeypatch, readback=[zero, partial])
+
+
+def test_any_same_plan_executor_attempt_blocks_restart_even_after_zero(monkeypatch):
+    data = plan(snapshot())
+    with pytest.raises(ValueError, match='execution exists'):
+        prepare(
+            monkeypatch, readback='zero',
+            executions=[{'plan_sha256': data['plan_sha256'], 'status': 'partial_handoff_recovery_required'}],
+        )
+
+
+def test_unknown_or_incomplete_receipt_stays_fail_closed(monkeypatch):
+    with pytest.raises(ValueError, match='read-back history is incomplete'):
+        prepare(monkeypatch, readback={'status': 'provider_handoff_not_started'})
+
+
