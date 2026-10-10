@@ -48,6 +48,12 @@
                 </div>
             </header>
             <div class="min-h-0 flex-1 space-y-5 overflow-y-auto bg-surface-page p-5 sm:p-6">
+                {% if profile.description %}
+                    <section aria-label="Resource Profile description" class="min-w-0">
+                        <h3 class="text-xs font-semibold text-content-primary">Description</h3>
+                        <p class="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-content-secondary">{{ profile.description }}</p>
+                    </section>
+                {% endif %}
                 <dl class="grid gap-px overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle sm:grid-cols-2 lg:grid-cols-4">
                     <div class="bg-surface-card p-3.5">
                         <dt class="text-xs uppercase tracking-wide text-content-muted">Contract</dt>
