@@ -132,7 +132,7 @@ def test_release_evidence_is_readable_full_width_without_nested_scroll():
         '04 · Verify and finalize',
         'aria-label="Release blockers"',
         'aria-label="Provider handoff inventory"',
-        'aria-label="Release governance workflow"',
+        'aria-label="Release wizard active step"',
     ):
         assert label in release
     assert 'divide-y divide-outline-subtle' in release
