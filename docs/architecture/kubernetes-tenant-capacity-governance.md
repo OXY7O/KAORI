@@ -202,8 +202,9 @@ the evidence/decision workload: Cluster 28%, Evidence 39%, State 17%, Details 16
 **Snapshot freshness and computable budget are separate facts.** The Evidence
 column displays the actual committed `snapshot_state` label; current/fresh
 snapshots use a normal-status tone. A compute budget is called **available**
-only when the authoritative `item.budget` is present; if it is absent, the
-label explicitly states **Compute evidence required**. This avoids showing
+only when the authoritative `item.budget` is present; when no policy
+exists, it states **Capacity policy required**, otherwise it states
+**Compute evidence required**. This avoids showing
 "Fresh / Compute evidence required" merely due to treating only the literal
 snapshot state `current` as a sufficient budget. Logical storage governance
 is reported independently when a storage policy exists, not inferred from
