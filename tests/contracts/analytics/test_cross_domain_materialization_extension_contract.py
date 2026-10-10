@@ -95,10 +95,12 @@ def test_analytics_time_range_values_have_one_canonical_owner() -> None:
     ]
     assert all(TIME_RANGE_LABELS[key] for key in expected)
     storage = read('app/storage/object_storage/analytics/job_adapter.py')
-    k8s = read('app/templates/kubernetes/analytics/overview/partials/_health_summary.html')
-    registry = read('app/templates/artifact_registry/partials/_analytics_controls_readiness.html')
+    k8s = read('app/kubernetes/analytics/overview/service.py')
+    registry = read('app/artifact_registry/presentation_analytics.py')
+    shared = read('app/templates/analytics/components/_controls_readiness.html')
     assert 'allowed = set(ALLOWED_TIME_RANGE_VALUES)' in storage
     assert 'requested_time_range in ALLOWED_TIME_RANGE_VALUES' in storage
-    for range_id in expected:
-        assert f'value="{range_id}"' in k8s
-        assert f"('{range_id}'," in registry
+    assert "payload['allowed_time_ranges'] = get_allowed_time_ranges()" in k8s
+    assert "'time_range_options': get_allowed_time_ranges()" in registry
+    assert '{% for option in options %}' in shared
+    assert 'option.label|default(option.name' in shared
