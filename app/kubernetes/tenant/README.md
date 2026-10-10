@@ -658,6 +658,42 @@ run `kubectl label` manually, rewrite historical receipts, or force Adopt.
 Regression test files are authored; running gates or provider mutation
 still requires lifting HOLD.
 
+### Governed Native residual metadata recovery executor (#1128)
+
+The positive #1129 `read_only_recovery_candidate` report (2/2 components)
+does **not** authorize Kubernetes cleanup. A separate source-only
+`native_residual_recovery_governance` and
+`native_residual_recovery_executor` pair implements strict
+Prepare / Independent Approval / Execute / Read-back boundaries under
+the existing Platform Admin permissions. A and B must be distinct,
+authenticated KAORI human operators. Plans and approvals are immutable,
+bound to the exact original Release/Handback plan SHA, a fresh read-only
+provider assessment digest, UID/RV and component scope; expired or
+changed evidence refuses execution. Both plan and approval use the
+existing AuditEvent store, and no provider patch is made before an
+immutable `in_progress` execution receipt is written.
+
+The executor is **not registered as a route or job**. Once separately
+approved and enabled by a trusted permission-gated route, it can
+conditionally remove only the exact `kaori.io/resource-profile` label
+on verified historical Namespace/ResourceQuota/LimitRange components.
+Each patch performs UID/RV/label-value tests, Kubernetes dry-run,
+prewrite GET and postwrite read-back. The original CPU/memory, quotas,
+RBAC, immutable metadata, external labels and annotations remain
+unchanged; no wildcard KAORI label deletion. A failed partial patch
+blocks automatic retries and demands fresh human provider recovery.
+
+A complete recovery appends a new terminal AuditEvent and
+`residual_recovery_governance` RV ledger; the prior verified Release
+and Handback evidence remains untouched. Re-adoption still requires
+fresh Discovery, provider preflight and next-generation authority.
+For a newer RV, the existing lineage guard additionally checks
+the *latest verified immutable recovery receipt* and checksum before
+allowing another adopted generation. It never accepts a DB flag alone.
+No cleanup, UAT, Developer Check, CI/CD or other quality gate has been
+run or authorized; do not invoke these source functions directly in
+DevContainer to mutate Kubernetes while the HOLD is active.
+
 ### Provider Discovery and Adoption
 
 #736 owns the two-way Tenant Registry path. Discovery is an explicit live-provider exception to normal committed-state reads: it reads Native Kubernetes namespaces and Capsule Tenant CRs on the Discovery request, shows provider status, correlates objects already governed by KAORI, and classifies candidates as **Managed**, **Discovered**, or **Blocked**. It does not wait for the Overview inventory worker sync. Discovery itself never mutates provider state.
