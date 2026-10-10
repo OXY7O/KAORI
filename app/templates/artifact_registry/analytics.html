@@ -48,6 +48,14 @@
         {% if analytics.setup.is_blocked %}
             {% include "artifact_registry/components/_setup_blocker.html" %}
         {% else %}
+            <span class="hidden"
+                  aria-hidden="true"
+                  hx-get="{{ url_for('artifact_registry.analytics_materialization_resolve') }}"
+                  hx-trigger="load once"
+                  hx-target="#artifact-registry-analytics-controls-readiness"
+                  hx-swap="outerHTML"
+                  hx-indicator="#artifact-registry-analytics-refresh-indicator"
+                  hx-sync="#artifact-registry-analytics-page:replace"></span>
             {% include "artifact_registry/partials/_analytics_controls_readiness.html" %}
             {% if analytics.active_tab == 'overview' %}
             <section id="artifact-registry-analytics-summary"

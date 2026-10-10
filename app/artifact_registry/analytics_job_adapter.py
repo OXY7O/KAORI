@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import func
@@ -163,12 +163,36 @@ def _analytics_snapshot_posture(
     if not eligible_count:
         return 'Blocked', 'warning', 'No eligible Registry providers. Validate and enable a provider first.'
     if not covered_count:
-        return 'Not Materialized', 'warning', 'Collect analytics data to create committed Registry snapshots.'
+        return 'Not Materialized', 'warning', 'The registered analytics worker has not yet committed Registry snapshots.'
     if current_count == eligible_count:
         return 'Current Snapshot', 'normal', 'All eligible providers have current committed analytics evidence.'
     if current_count:
         return 'Partial Coverage', 'warning', 'Some providers have stale or missing committed analytics snapshots.'
     return 'Stale Snapshot', 'warning', 'All available snapshots have expired; prior evidence remains readable.'
+
+
+
+_AUTO_RETRY_COOLDOWN = timedelta(minutes=5)
+
+
+def should_request_registry_analytics_materialization(
+    readiness: dict[str, Any],
+    *,
+    now: datetime | None = None,
+) -> bool:
+    """Follow the K8s on-demand materialization model without a duplicate dispatch loop."""
+    if (
+        not readiness['eligible_count']
+        or readiness['is_active']
+        or readiness['current_count'] >= readiness['eligible_count']
+    ):
+        return False
+    last_attempt = readiness.get('latest_attempt_at')
+    if last_attempt is not None:
+        reference = last_attempt.replace(tzinfo=UTC) if last_attempt.tzinfo is None else last_attempt
+        if (now or datetime.now(UTC)) - reference < _AUTO_RETRY_COOLDOWN:
+            return False
+    return True
 
 
 def build_registry_analytics_readiness() -> dict[str, Any]:
@@ -230,7 +254,7 @@ def build_registry_analytics_readiness() -> dict[str, Any]:
         execution_helper = 'New analytical evidence becomes available after the worker commits its snapshots.'
     else:
         execution_label, execution_tone = 'Not Collected', 'warning'
-        execution_helper = 'Collect Registry analytics using the registered analytics worker.'
+        execution_helper = 'Analytics data will be materialized by the registered worker when scheduled or requested.'
 
     latest_snapshot = max(snapshots, key=lambda item: item.generated_at) if snapshots else None
     return {
@@ -264,5 +288,7 @@ def build_registry_analytics_readiness() -> dict[str, Any]:
         'next_run_label': present_user_datetime(
             policy.next_run_at if policy else None, empty='Not Scheduled'
         ),
-        'can_collect': bool(eligible_ids) and active is None,
+        'latest_status': latest.status if latest else None,
+        'latest_attempt_at': latest.created_at if latest else None,
+        'collection_warning': None,
     }
