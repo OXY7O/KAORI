@@ -295,11 +295,26 @@ def _dashboard_kpis(systems: list[ObjectStorageSystem], selected: ObjectStorageS
 def _freshness(selected: ObjectStorageSystem | None, systems: list[ObjectStorageSystem]) -> list[dict[str, str]]:
     if selected is None:
         observed = _inventory_observation_times(systems)
-        analytics_states = [
-            analytics_snapshot_state(get_analytics_snapshot(system_id=str(system.id), time_range=_DASHBOARD_TIME_RANGE))
-            for system in systems
-        ]
-        ready = sum(bool(state.get('usable')) for state in analytics_states)
+        analytics_ready = 0
+        forecast_ready = 0
+        alert_ready = 0
+        alert_fallback = 0
+        for system in systems:
+            payload, analytics_state = _snapshot_payload(system)
+            analytics_usable = bool(analytics_state.get('usable'))
+            analytics_ready += int(analytics_usable)
+            forecast_state = forecast_snapshot_state(
+                get_forecast_snapshot(system_id=str(system.id), history_window=_DASHBOARD_FORECAST_WINDOW)
+            )
+            forecast_ready += int(bool(forecast_state.get('usable')))
+            if not analytics_usable or not isinstance(payload, dict):
+                continue
+            stream, _posture = _alert_view(payload)
+            if stream.get('connected'):
+                alert_ready += 1
+                alert_fallback += int(bool(stream.get('fallback_used')))
+
+        system_count = len(systems)
         return [
             {
                 'label': 'Inventory Fleet',
@@ -311,11 +326,55 @@ def _freshness(selected: ObjectStorageSystem | None, systems: list[ObjectStorage
             },
             {
                 'label': 'Analytics Fleet',
-                'status': 'Ready' if ready == len(systems) and systems else ('Partial' if ready else 'Required'),
-                'tone': 'normal' if ready == len(systems) and systems else ('warning' if ready else 'unknown'),
-                'value': f'{ready} / {len(systems)} systems',
+                'status': (
+                    'Ready'
+                    if analytics_ready == system_count and systems
+                    else ('Partial' if analytics_ready else 'Required')
+                ),
+                'tone': (
+                    'normal'
+                    if analytics_ready == system_count and systems
+                    else ('warning' if analytics_ready else 'unknown')
+                ),
+                'value': f'{analytics_ready} / {system_count} systems',
                 'description': 'Usable 24h Object Storage Analytics worker snapshots.',
                 'icon': 'database-zap',
+            },
+            {
+                'label': 'Forecast Fleet',
+                'status': (
+                    'Ready'
+                    if forecast_ready == system_count and systems
+                    else ('Partial' if forecast_ready else 'Required')
+                ),
+                'tone': (
+                    'normal'
+                    if forecast_ready == system_count and systems
+                    else ('warning' if forecast_ready else 'unknown')
+                ),
+                'value': f'{forecast_ready} / {system_count} systems',
+                'description': 'Usable committed 30d Object Storage Forecast worker snapshots.',
+                'icon': 'trending-up',
+            },
+            {
+                'label': 'Alert Evidence Fleet',
+                'status': (
+                    ('Fallback' if alert_fallback else 'Available')
+                    if alert_ready == system_count and systems
+                    else ('Partial' if alert_ready else 'Required')
+                ),
+                'tone': (
+                    'normal'
+                    if alert_ready == system_count and systems and not alert_fallback
+                    else ('warning' if alert_ready else 'unknown')
+                ),
+                'value': f'{alert_ready} / {system_count} systems',
+                'description': (
+                    'Available alert streams from usable committed 24h analytics snapshots; '
+                    'Alertmanager preferred, Metrics Source fallback.'
+                    + (f' {alert_fallback} system(s) using fallback evidence.' if alert_fallback else '')
+                ),
+                'icon': 'bell-ring',
             },
         ]
 
