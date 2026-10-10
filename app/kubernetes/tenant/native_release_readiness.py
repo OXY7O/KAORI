@@ -9,6 +9,7 @@ from __future__ import annotations
 import re
 from typing import Any, Mapping
 
+from app.kubernetes.tenant.native_handoff_recovery import readback_proves_handoff_not_started
 from app.kubernetes.tenant.release_handoff_approval import _checked_recently
 
 
@@ -22,6 +23,8 @@ def project_native_release_readiness(
     readback: Mapping[str, Any] | None,
     successor_acceptance: Mapping[str, Any] | None = None,
     handoff_execution: Mapping[str, Any] | None = None,
+    readback_history: list[Mapping[str, Any]] | None = None,
+    execution_history: list[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Display checkpoints only; no provider calls, audit writes, or admission."""
     plan_sha = str((plan or {}).get("plan_sha256") or "")
@@ -60,11 +63,46 @@ def project_native_release_readiness(
         and preflight.get("handoff_components")
         and not _checked_recently(preflight.get("checked_at"))
     )
-    readback_for_plan = bool(
-        (readback and readback.get("plan_sha256") == plan_sha)
-        or (handoff_execution and handoff_execution.get("plan_sha256") == plan_sha)
+    # The restart service evaluates the complete committed audit history and
+    # fresh provider preflight. This is only a display hint; unknown and
+    # incomplete receipts remain fail-closed.
+    readbacks = (
+        readback_history if readback_history is not None
+        else ([readback] if readback else [])
     )
-    restart_required = bool(approval_expired and not readback_for_plan)
+    executions = (
+        execution_history if execution_history is not None
+        else ([handoff_execution] if handoff_execution else [])
+    )
+    same_plan_readbacks = [
+        item for item in readbacks
+        if isinstance(item, dict) and item.get("plan_sha256") == plan_sha
+    ]
+    any_execution = any(
+        not isinstance(item, dict)
+        or not isinstance(item.get("plan_sha256"), str)
+        or len(item["plan_sha256"]) != 64
+        or item["plan_sha256"] == plan_sha
+        for item in executions
+    )
+    history_incomplete = any(
+        not isinstance(item, dict)
+        or not isinstance(item.get("plan_sha256"), str)
+        or len(item["plan_sha256"]) != 64
+        for item in readbacks
+    )
+    zero_transfer_observed = bool(
+        plan and same_plan_readbacks and not history_incomplete
+        and all(
+            readback_proves_handoff_not_started(item, plan=plan)
+            for item in same_plan_readbacks
+        )
+    )
+    restart_blocked = bool(
+        history_incomplete or any_execution
+        or (same_plan_readbacks and not zero_transfer_observed)
+    )
+    restart_required = bool(approval_expired and not restart_blocked)
     preview_passed = bool(
         same_plan and dry_run
         and dry_run.get("plan_sha256") == plan_sha
@@ -161,7 +199,8 @@ def project_native_release_readiness(
         "approval_expired": approval_expired,
         "review_expired": review_expired,
         "restart_required": restart_required,
-        "restart_blocked_by_readback": bool(approval_expired and readback_for_plan),
+        "restart_blocked_by_readback": bool(approval_expired and restart_blocked),
+        "restart_zero_transfer_recheck_required": bool(approval_expired and zero_transfer_observed and not restart_blocked),
         "dry_run_passed": preview_passed,
         "reference_recorded": reference_recorded,
         "external_reference_current": external_reference_current,
