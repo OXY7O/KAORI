@@ -489,7 +489,7 @@ def test_tenant_identity_is_immutable_and_htmx_feedback_uses_oob_toast() -> None
 def test_cluster_estate_uses_compact_shared_table_geometry() -> None:
     estate = read('app/templates/kubernetes/tenant/partials/_cluster_estate.html')
 
-    assert "table_ui.table_classes('min-w-[900px]')" in estate
+    assert "table_ui.table_classes('min-w-[900px] !table-fixed')" in estate
     assert 'table_ui.cluster_identity_with_status(' in estate
     assert 'row.provider_status|title' in estate
     assert 'row.provider_tone' in estate
