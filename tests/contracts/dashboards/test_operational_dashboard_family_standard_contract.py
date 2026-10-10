@@ -340,7 +340,7 @@ def test_operational_signal_kpi_cards_share_independent_geometry_across_three_do
 
     assert "source_label='Committed Inventory'" in registry_cards
     assert 'resource_posture_grid.html' not in registry_cards
-    assert 'body_classes=\'p-0\'' not in registry_signal
+    assert "body_classes='p-0'" not in registry_signal
     assert 'grouped=true' not in registry_signal
     assert 'section_loading.kpis(item_count=4,' in registry_signal
     assert 'h-28 animate-pulse rounded-lg bg-surface-hover' in registry_loading
