@@ -208,15 +208,21 @@ storage availability. `ResourceQuota` enforces Kubernetes quota and never
 constitutes a physical node-resource reservation.
 
 **Tenant Contributions is detail on demand:** the overview shows the committed
-Tenant count and opens the canonical native KAORI dialog. This dialog is
-an evidence-oriented detail workspace with a clear cluster header, four compact
-summary metrics from the **unfiltered committed contribution ledger**
-(committed Tenants, linked Namespaces, shared-quota Tenants, and incomplete /
-ambiguous records), a searchable registry, readable Tenant/provider/ownership
-identity, request-unit labels, expandable Namespace details and a compact footer.
-Linked Namespace count is a count of Namespace identities and **not** a second
-summation of Capsule shared quota. Incomplete / ambiguous counts are evidence
-quality indicators, never inferred admission verdicts.
+Tenant count and opens the canonical native KAORI dialog. After DevContainer
+visual feedback, this detail workspace uses **one visual hierarchy**: concise
+cluster header, low-emphasis inline summary strip, compact search, a responsive
+stacked Tenant contribution list, and the canonical registry pagination footer.
+Each list record groups Tenant name, ownership badge, stable ID and quota
+authority/provider with a simple keyboard-accessible Namespace disclosure;
+the four governed request amounts are displayed as a two-column metric grid.
+There are no table columns, nested cards or horizontal table scrolling.
+
+The inline summary metrics come from the **unfiltered committed contribution
+ledger** (committed Tenants, linked Namespaces, shared-quota Tenants, and
+incomplete / ambiguous records). Linked Namespace count is a count of
+Namespace identities and **not** a second summation of Capsule shared quota.
+Incomplete / ambiguous counts are evidence-quality indicators, never inferred
+admission verdicts.
 
 Summary metrics are computed once from the existing read-only per-Tenant #654
 partition before applying the search filter. Filter results and pagination operate
@@ -224,9 +230,11 @@ only within the registry panel using the existing canonical five-row default,
 page-size selector, and native-dialog contract. The modal header, summary and
 dialog itself persist across HTMX pagination, search and Rows changes. The footer
 provides canonical pagination and a low-emphasis Tenant Registry text link.
-On narrower screens the summary uses two columns and the existing table scroll
-pattern retains full values via display and `title` attributes. Cluster changes
-replace the entire selected overview and reset modal search/pagination.
+On narrower screens the summary uses two columns and the Tenant list stacks
+identity above its four allocation metrics without horizontal scrolling;
+the complete Tenant ID remains available via its `title` attribute.
+Cluster changes replace the entire selected overview and reset modal
+search/pagination.
 
 The contribution registry displays a stable Tenant ID alongside the Tenant
 name so same-named adopted and managed records remain distinguishable.
