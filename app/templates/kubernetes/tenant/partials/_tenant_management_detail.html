@@ -101,7 +101,7 @@
                             <div class="min-w-0">
                                 <h2 class="text-xl font-semibold tracking-tight text-content-primary">Release Governance</h2>
                                 <p class="mt-1 text-sm leading-6 text-content-secondary">
-                                    Review dependencies and provider handoff evidence before releasing governance.
+                                    Check dependencies, preserve existing Kubernetes resources and confirm the independently approved handoff before changing Tenant governance.
                                 </p>
                             </div>
                         </div>
@@ -255,7 +255,7 @@
                                         <div class="min-w-0">
                                             <h4 class="text-base font-semibold text-content-primary">03 · Independent approval and handoff</h4>
                                             <p class="mt-1 text-sm leading-6 text-content-secondary">
-                                                Prepare a successor record and obtain independent acknowledgment.
+                                                Prepare a provider governance plan, then obtain independent Platform Admin approval.
                                             </p>
                                         </div>
                                     </div>
@@ -863,8 +863,8 @@
                         </div>
                         <p class="mt-4 flex items-start gap-2 border-t border-outline-subtle pt-4 text-sm leading-6 text-content-muted">
                             <i data-lucide="shield-check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
-                            Internal approval or an external reference does not prove successor acceptance.
-                            Provider ownership remains authoritative.
+                            Independent approval or an external reference alone cannot authorize provider handoff.
+                            Explicit Platform Admin acceptance and authoritative provider verification are still required.
                         </p>
                     </section>
                 {% endif %}
@@ -1051,7 +1051,7 @@
                             <div class="min-w-0">
                                 <h3 class="text-sm font-semibold text-content-primary">Lifecycle Actions</h3>
                                 <p class="mt-1 text-xs leading-5 text-content-secondary">
-                                    Decommission is destructive. Release preserves provider resources.
+                                    Release preserves provider resources and audit lineage. Decommission removes governed resources only after explicit safety checks.
                                 </p>
                             </div>
                         </div>
