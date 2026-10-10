@@ -126,7 +126,10 @@
                         <td class="{{ table_ui.cell_classes() }} min-w-0">{{ table_ui.title_cell(grant.membership.subject_name, grant.membership.principal_type|replace('_', ' ') |title, 'user-round-check') }}</td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
                             <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ grant.tenant.name }}">{{ grant.tenant.name }}</p>
-                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="{{ grant.tenant.slug }}">{{ grant.tenant.slug }}</p>
+                            {% if grant.tenant.slug|lower != grant.tenant.name|lower %}
+                                <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate"
+                                   title="{{ grant.tenant.slug }}">{{ grant.tenant.slug }}</p>
+                            {% endif %}
                         </td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
                             <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ grant.access_profile|replace('_', ' ') |title }} · v{{ grant.access_profile_version }}">{{ grant.access_profile|replace('_', ' ') |title }} · v{{ grant.access_profile_version }}</p>
