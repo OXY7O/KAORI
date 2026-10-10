@@ -321,6 +321,60 @@ def test_platform_admin_handoff_counts_only_current_provider_evidence():
     assert changed['verified_successor_acceptance'] is False
 
 
+
+def test_same_plan_partial_executor_is_recovery_not_pending_or_completed():
+    snapshot = evidence()
+    snapshot['plan']['handoff_fingerprint'] = 'scope-fp'
+    snapshot['handoff_execution'] = {
+        'status': 'partial_handoff_recovery_required',
+        'plan_sha256': 'a' * 64, 'handoff_fingerprint': 'scope-fp',
+        'provider_handoff_verified': False,
+        'verified_count': 0, 'expected_component_count': 2,
+        'provider_mutation_performed': True,
+        'errors': ['ResourceQuota/demo: ApiException'],
+    }
+    result = project_native_release_readiness(**snapshot)
+    assert result['provider_handoff_recovery_required'] is True
+    assert result['provider_transfer_verified'] is False
+    assert result['stages'][3]['complete'] is False
+    assert result['stages'][3]['display_status'] == 'Recovery Required'
+    assert 'incomplete provider handoff attempt' in result['stages'][3]['detail']
+    assert result['completed_count'] == 2
+    assert result['execute_admitted'] is False
+    assert result['release_admitted'] is False
+
+    # An unrelated/old plan or fingerprint must never control current UX.
+    snapshot['handoff_execution']['plan_sha256'] = 'b' * 64
+    stale = project_native_release_readiness(**snapshot)
+    assert stale['provider_handoff_recovery_required'] is False
+    assert stale['stages'][3]['display_status'] == 'Pending'
+    snapshot['handoff_execution']['plan_sha256'] = 'a' * 64
+    snapshot['handoff_execution']['handoff_fingerprint'] = 'other-scope'
+    mismatch = project_native_release_readiness(**snapshot)
+    assert mismatch['provider_handoff_recovery_required'] is False
+    snapshot['handoff_execution']['handoff_fingerprint'] = 'scope-fp'
+    snapshot['handoff_execution']['provider_handoff_verified'] = True
+    conflicting = project_native_release_readiness(**snapshot)
+    assert conflicting['provider_handoff_recovery_required'] is False
+
+
+def test_zero_verified_objects_never_implies_zero_provider_mutation():
+    snapshot = evidence()
+    snapshot['plan']['handoff_fingerprint'] = 'scope-fp'
+    snapshot['handoff_execution'] = {
+        'status': 'partial_handoff_recovery_required',
+        'plan_sha256': 'a' * 64, 'handoff_fingerprint': 'scope-fp',
+        'provider_handoff_verified': False,
+        'verified_count': 0, 'expected_component_count': 2,
+        'provider_mutation_performed': True,
+    }
+    result = project_native_release_readiness(**snapshot)
+    assert result['provider_handoff_recovery_required'] is True
+    assert result['provider_transfer_verified'] is False
+    assert result['release_admitted'] is False
+
+
+
 def test_legacy_bearer_acceptance_not_used_by_new_platform_admin_readiness():
     snapshot = evidence()
     snapshot['successor_acceptance'] = {
