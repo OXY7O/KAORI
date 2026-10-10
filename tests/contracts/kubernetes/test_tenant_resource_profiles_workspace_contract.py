@@ -599,3 +599,52 @@ def test_namespace_allocation_preview_is_snapshot_not_fake_form() -> None:
     assert 'data-tenant-namespace-advanced-preview' in namespace_form
     assert "if ('value' in target)" in script
     assert "target.textContent = value || '—'" in script
+
+
+def test_capacity_governance_exposes_read_only_tenant_allocation_overview() -> None:
+    page = read('app/templates/kubernetes/tenant/resource_profiles.html')
+    parent = read('app/templates/kubernetes/tenant/partials/_capacity_governance.html')
+    overview = read('app/templates/kubernetes/tenant/partials/_tenant_allocation_overview.html')
+    routes = read('app/kubernetes/tenant/routes.py')
+    projection = read('app/kubernetes/tenant/allocation_overview.py')
+    capacity = read('app/kubernetes/tenant/capacity_governance.py')
+
+    assert 'kubernetes/tenant/partials/_tenant_allocation_overview.html' in parent
+    assert parent.index('kubernetes/tenant/partials/_tenant_allocation_overview.html') < parent.index(
+        '<section id="{{ capacity_registry_id }}"'
+    )
+    assert 'Tenant Allocation Overview' in overview
+    assert 'allocation_cluster_id' in overview
+    assert 'hx-target="#{{ overview_id }}"' in overview
+    assert 'hx-select="#{{ overview_id }}"' in overview
+    assert 'registry_ui.footer' in overview
+    assert 'allocation_tenant_pagination.allowed_per_page' in overview
+    assert 'row.namespaces' in overview
+    assert 'selected.snapshot_state' in overview
+    assert 'selected.state' in overview
+    assert 'bar.shortfall' in overview
+    assert "bar.known" in overview
+    assert "url_for('analytics.capacity')" in overview
+    assert "current_user.has_permission('analytics.view')" in overview
+    assert 'not actual workload utilization or physical reservations' in overview
+    assert 'Storage is an explicitly governed logical ceiling' in overview
+
+    assert 'build_tenant_allocation_bars(selected)' in routes
+    assert 'build_tenant_contribution_rows(str(selected[\'cluster\'].id))' in routes
+    assert "'allocation_page'" in routes
+    assert "'allocation_per_page'" in routes
+    assert "per_page=request.args.get('allocation_per_page', 5" in routes
+    assert "if active_view == 'capacity' and selected is not None:" in routes
+    assert "get_resource_profile_workspace_context()" in routes
+    assert "build_capacity_governance_summaries" in capacity
+
+    # Reuse #654's exact shared-quota selection, committed aggregation, and
+    # committed-state read path. Do not introduce provider calls on navigation.
+    assert '_canonical_shared_allocation_quota(cluster_id)' in projection
+    assert '_aggregate_committed_allocation(' in projection
+    assert 'TenantNamespaceProvisioningStatus.DEPROVISIONED.value' in projection
+    assert 'allocation_quota_json' not in overview
+    assert 'build_client(' not in projection
+    assert 'read_namespace(' not in projection
+    assert 'requests.get(' not in projection
+    assert 'view=\'capacity\'' not in page  # existing canonical HTMX tabs remain intact
