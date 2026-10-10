@@ -83,8 +83,8 @@
             {% set runtime_metrics = [
                 ('link-2', 'Runtime Bindings', runtime.total, 'Committed Registry artifact to Kubernetes runtime bindings.', 'info'),
                 ('fingerprint', 'Digest Matched', runtime.digest_matches, 'Immutable artifact identity matched at runtime.', 'info'),
-                ('tags', 'Tag Matched', runtime.tag_matches, 'Mutable tag matches; lower confidence.', 'warning' if runtime.tag_matches else 'normal'),
-                ('shield-alert', 'Security Exposed', runtime.security_exposed, 'Runtime artifacts with critical or high findings.', 'critical' if runtime.security_exposed else 'normal')
+                ('tags', 'Tag Matched', runtime.tag_matches, 'Mutable tag matches; lower confidence.', 'warning' if runtime.tag_matches else 'info'),
+                ('shield-alert', 'Security Exposed', runtime.security_exposed, 'Runtime artifacts with critical or high findings.', 'critical' if runtime.security_exposed else 'info')
             ] %}
             {% call section_card.render(
                 'Runtime Evidence Summary',
