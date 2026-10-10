@@ -8,7 +8,11 @@ from types import SimpleNamespace
 import pytest
 
 from app.kubernetes.tenant.native_handoff_executor import (
-    _patch_native_live, _verify_patch_preview, execute_native_handoff_committed,
+    _approved_component_for_preview, _patch_native_live,
+    _verify_patch_preview, execute_native_handoff_committed,
+)
+from app.kubernetes.tenant.native_handoff_transfer_patch import (
+    build_native_successor_handoff_patch,
 )
 
 
@@ -47,6 +51,101 @@ class FakeCore:
 
     def patch_namespaced_limit_range(self, **kwargs):
         self.calls.append(('LimitRange', kwargs))
+
+
+def _approved_plan_component(kind='ResourceQuota'):
+    return {
+        'namespace': 'dev', 'kind': kind, 'name': 'dev',
+        'uid': 'provider-uid', 'resource_version': '21',
+        'handoff': 'external_acceptance_required',
+        'ownership': 'kaori_marker_correlated',
+    }
+
+
+def _canonical_preview(kind='ResourceQuota'):
+    # Exact evidence shape produced by dry_run_native_handoff_component:
+    # it intentionally does not contain handoff or ownership.
+    return {
+        'namespace': 'dev', 'kind': kind, 'name': 'dev',
+        'uid': 'provider-uid', 'resource_version': '21',
+        'operation': 'metadata_only_json_patch_dry_run',
+        'dry_run': True, 'live_provider_unchanged': True,
+        'spec_unchanged': True, 'spec_sha256': 'abc',
+        'retained_metadata_sha256': 'def',
+        'label_keys_to_release': [
+            'app.kubernetes.io/managed-by', 'kaori.io/tenant-id',
+            'kaori.io/environment', 'kaori.io/profile-id',
+        ],
+    }
+
+
+@pytest.mark.parametrize('kind', ['Namespace', 'ResourceQuota', 'LimitRange'])
+def test_live_patch_resolves_approved_scope_from_real_preview_shape(kind):
+    approved = _approved_plan_component(kind)
+    preview = _canonical_preview(kind)
+    assert 'handoff' not in preview and 'ownership' not in preview
+    resolved = _approved_component_for_preview(
+        plan={'handoff_components': [approved]}, preview=preview,
+    )
+    assert resolved is approved
+    ops = build_native_successor_handoff_patch(
+        resolved, resource(kind=kind), tenant_id='tenant-a',
+        verified_successor_owner='platform-team',
+    )
+    assert ops[:2] == [
+        {'op': 'test', 'path': '/metadata/uid', 'value': 'provider-uid'},
+        {'op': 'test', 'path': '/metadata/resourceVersion', 'value': '21'},
+    ]
+    assert ops[-1] == {
+        'op': 'add', 'path': '/metadata/labels/app.kubernetes.io~1managed-by',
+        'value': 'platform-team',
+    }
+    assert all(op['path'].startswith('/metadata/') for op in ops)
+    assert not any('spec' in op['path'] for op in ops)
+    assert 'handoff' not in preview and 'ownership' not in preview
+
+
+@pytest.mark.parametrize('field,value', [
+    ('resource_version', '22'),
+    ('uid', 'different-uid'),
+    ('kind', 'LimitRange'),
+    ('name', 'other-resource'),
+    ('operation', 'other-operation'),
+    ('dry_run', False),
+    ('live_provider_unchanged', False),
+])
+def test_live_patch_rejects_incomplete_or_changed_preview_scope(field, value):
+    preview = _canonical_preview()
+    preview[field] = value
+    with pytest.raises(ValueError):
+        _approved_component_for_preview(
+            plan={'handoff_components': [_approved_plan_component()]},
+            preview=preview,
+        )
+
+
+@pytest.mark.parametrize('field,value', [
+    ('handoff', 'observe_only'),
+    ('ownership', 'provider_owned'),
+    ('resource_version', '22'),
+])
+def test_live_patch_rejects_unapproved_authority_or_stale_rv(field, value):
+    approved = _approved_plan_component()
+    approved[field] = value
+    with pytest.raises(ValueError):
+        _approved_component_for_preview(
+            plan={'handoff_components': [approved]},
+            preview=_canonical_preview(),
+        )
+
+
+def test_live_patch_rejects_duplicate_approved_identity():
+    component = _approved_plan_component()
+    with pytest.raises(ValueError, match='uniquely bound'):
+        _approved_component_for_preview(
+            plan={'handoff_components': [component, dict(component)]},
+            preview=_canonical_preview(),
+        )
 
 
 @pytest.mark.parametrize('kind', ['Namespace', 'ResourceQuota', 'LimitRange'])
