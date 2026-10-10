@@ -91,6 +91,9 @@
         if (!refreshRoot) return
         const view = tracker(refreshRoot)
         show(view, 'refreshing')
+        setText(view, '[data-analytics-load-counter]', 'Applying Filter')
+        const progress = view?.querySelector('[data-analytics-load-progress]')
+        if (progress) progress.style.width = '4%'
         setText(view, '[data-analytics-load-title]', refreshRoot.dataset.analyticsRefreshTitle || 'Refreshing Analytics Overview')
         setText(view, '[data-analytics-load-description]', refreshRoot.dataset.analyticsRefreshDescription || 'Applying the selected analytics scope and time range.')
     })
@@ -111,7 +114,21 @@
             if (root) {
                 setState(section, 'failed')
                 update(root)
+                return
             }
+            const refresh = requestElement(event)?.closest?.(
+                '[data-analytics-refresh-request="true"], [data-overview-refresh-request="true"]'
+            )
+            const refreshRoot = refresh?.closest?.(ROOT)
+            const view = tracker(refreshRoot)
+            if (!view) return
+            setText(view, '[data-analytics-load-title]', 'Analytics Refresh Failed')
+            setText(view, '[data-analytics-load-description]', 'The requested analytics scope could not be refreshed.')
+            setText(view, '[data-analytics-load-counter]', 'Refresh Failed')
+            show(view, 'completed-with-errors')
+            window.setTimeout(() => {
+                if (view.isConnected && view.dataset.overviewLoadState === 'completed-with-errors') hide(view)
+            }, 2600)
         })
     })
     if (document.readyState === 'loading') {
