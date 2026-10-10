@@ -65,28 +65,41 @@ workflows with empty and populated datasets, browser refresh/back/forward,
 per-registry filters/Rows/HTMX, light/dark and mobile views. This is not
 staging UAT or production acceptance evidence.
 
-## Tenant Registry — contextual lifecycle actions (#1022)
+## Tenant Registry → dedicated Tenant Management detail (#1065, supersedes #1022 presentation)
 
-Tenant Registry keeps the canonical committed-state table, filters and
-pagination while limiting each row's Actions cell to one **Manage/View**
-control. The operator-requested inline expansion was reverted after browser
-Visual QA showed unwanted page geometry and large blank scrolling regions.
-The original KAORI **native top-layer dialog** remains authoritative for
-management, independent of registry/table overflow. Its interior preserves
-the existing full-width Release Readiness → Handoff Inventory → Governed
-Handoff → Verification/Release flow, plus provider and lifecycle cards.
+Tenant Registry retains the canonical committed-state summary table, Cluster /
+Environment / Lifecycle / Search filters, default pagination 5 and a single
+right-aligned **Manage/View** link per Tenant. Complex governance actions now
+live at `/kubernetes/tenant/tenants/<tenant-id>/manage`, an independent,
+permission-scoped full page based on the *same exact committed Registry row*
+projection, unconstrained by Registry filtering or pagination. Missing Tenant
+IDs return 404. There is no inline expansion below the table (rejected in
+#1039/#1041), and there is no long-lived native management dialog overlay.
 
-Existing authorized POSTs render a fresh Tenant workspace and OOB operational
-toast. Replacing that workspace previously destroyed its open native dialog.
-The shared `native_dialogs.js` now preserves only explicitly opted-in dialogs
-(`data-kaori-dialog-preserve-on-swap`) by snapshotting the active dialog ID
-before HTMX swaps `#tenant-admin-workspace`, then reopening the newly rendered
-dialog with normal focus handling after swap. Explicit user Close/Escape/backdrop
-and unrelated navigation remain ordinary dialog behavior; the separate
-destructive Decommission confirmation remains separate. The dialog inherits
-prefixed `registry_*` paging/filter state and Tenant identity via `hx-vals`
-so the exact selected dialog exists on the next committed-state response.
-No new backend mutation or provider governance path is introduced.
+The detail page reuses the shared Tenant Hero/layout, breadcrumb back to the
+filtered Registry, compact Namespace/Environment/Lifecycle snapshot, in-page
+navigation and full-width Release Governance, Native Release/Handback,
+Capsule Attachment, Provider Authority and Lifecycle cards. These stay
+read-only for `tenant.view` users and permission/CSRF-gated for managers.
+Existing service endpoints, two-actor plan authority, evidence read models,
+provider inventory and destructive-operation rules are **unchanged**.
+All 14 existing POST forms include a bounded `tenant_detail_id` plus
+prefixed `registry_*` context for browser fallback and HTMX.
+`_tenant_section_redirect` renders the same dedicated detail partial for
+HTMX POST and emits the **existing** OOB Operational Toast; normal POST
+redirects back to the same Tenant detail. Because the everyday management
+workflow is not an HTML `<dialog>`, its toast is no longer obscured by
+the browser's modal top layer. The only retained modal is the approved
+short-form destructive **Decommission confirmation**; it is removed with the
+replaced detail fragment after the action. No custom toast z-index, new
+provider mutations or alternative authorization engine were introduced.
+
+The Platform Operations Work Inbox deep link for an independent reviewer now
+points directly at this detail route rather than the removed
+`manage_tenant_id` auto-opening dialog. Approval still requires a different
+authorized actor, the same committed plan SHA and canonical backend checks.
+The old native-dialog reopen logic remains a shared component for other
+existing dialogs, but Tenant Registry does not opt in to it.
 
 The **Release Governance** card presents an ordered, full-width workflow
 instead of three controls that resemble interchangeable tabs. **Release
@@ -147,9 +160,8 @@ recorded after independent KAORI acknowledgment. It is **not** a second
 independent approval and does not certify successor consent, provider handoff
 or Release eligibility. The existing Native dry-run/read-back are likewise
 limited evidence; a trusted external acceptance verification/executor remains
-separately governed. The modal now visually places Ready/other lifecycle state
-next to Tenant identity, while top-right and bottom Close targets retain
-comfortable KAORI hit areas and inset padding. No Release/provider mutation
+separately governed. The dedicated detail page places lifecycle status beside Tenant identity and
+provides accessible Back to Registry links at both ends of the workspace. No Release/provider mutation
 is introduced by these changes.
 
 ### Multi-approver Work Inbox projection (#1040)
@@ -167,7 +179,7 @@ The latest plan per Tenant is authoritative; earlier committed plans are
 item becomes **Expired**, non-actionable. The Inbox's pending count includes
 only current, eligible, unacknowledged requests.
 
-One reviewer may open a deep link to the **same Tenant Management modal**
+One reviewer may open a deep link to the **dedicated Tenant Management page**
 and acknowledge the current plan (subject to permission, distinct actor,
 fresh canonical provider read, fingerprint, and locked duplicate-check).
 After the committed approval event, the winning reviewer sees **Approved**,
@@ -177,10 +189,9 @@ notification cannot approve or reject a plan; Work Inbox approval items are
 separate from mark-as-read notifications. Existing per-user Work Inbox badge
 and panel show committed request counts after refresh. The UI does not choose
 an approver by name, bypass a role revocation, or treat internal approval as
-external provider handoff/ownership acceptance. The approver's task deep
-link `?section=registry&search=<tenant>&manage_tenant_id=<id>` is checked
-against the authorized Registry row before the modal auto-opens; all mutation
-routes independently enforce permissions and provider authority.
+external provider handoff/ownership acceptance. The approver's task deep link to `/kubernetes/tenant/tenants/<id>/manage`
+resolves one exact committed Tenant, independent of pagination; all mutation
+routes still independently enforce permissions and provider authority.
 
 The Inbox uses a bounded recent committed plan history for a responsive
 view; it does not replace AuditEvent as the full retention/audit history.
@@ -201,17 +212,18 @@ approver assignment, that is a distinct governance authority/workstream and
 must be approved separately. Internal acknowledgment is not verified external
 successor acceptance or provider ownership transfer.
 
-Decommission remains separate and uses the existing destructive confirmation
-modal; the expandable panel itself does not require an overlay.
+Decommission remains separate and uses only the existing confirmation modal.
+The main Tenant detail workflow never requires a browser top-layer overlay.
 
-This is a **presentation composition only**. No provider mutations, endpoint
-changes, permissions, HTMX targets, committed-evidence contracts or automatic
-Release/decommission eligibility changes are introduced. Native-dialog
-keyboard/focus/ESC handling reuses `app/static/js/native_dialogs.js`; table
-styles reuse `components/table.html`. Local DevContainer review must verify
-small-screen, light/dark, focus/close, state transitions, blocked evidence and
-HTMX replacement. Developer Check, Full Admission, and live-provider UAT
-remain separate acceptance gates.
+This is a **presentation/navigation change only**. It adds one read-only
+Tenant detail GET, redirects existing POST feedback to its HTMX partial,
+and updates Work Inbox navigation. Existing mutation endpoints, permissions,
+committed-evidence contracts, resource/Release decisions and provider behavior
+are unchanged. Table styles reuse `components/table.html`. DevContainer
+review must verify mobile/light/dark, keyboard navigation, browser back,
+committed blockers, OOB toast, independent reviewer, Decommission confirmation
+and 5+ Tenant pagination. Developer Check, Full Admission and live-provider
+UAT remain separate HOLD gates.
 
 
 ## Discovery adoption destination UX (#983)
@@ -300,7 +312,7 @@ table widths or shared table primitives are changed.
 The **Namespaces** column now presents only the canonical active count and
 short `active` label. Its tooltip retains historical record count context,
 while the detailed “N historical Namespace records retained” evidence moves
-to the existing full-width **Tenant Management native dialog** beside the
+to the dedicated full-width **Tenant Management detail page** beside the
 Namespace summary. Historical Namespace records are not included in the
 active count, and no persisted commitment/lifecycle value is changed.
 Desktop table fit and responsive narrow-screen scroll are separate cases:
