@@ -186,6 +186,8 @@ def test_registry_analytics_readiness_reuses_k8s_shared_controls_without_buttons
     assert "{% macro snapshot_card(" in common
     assert "{% macro source_card(" in common
     assert 'shared_readiness.frame(title, description, icon, indicator_id' in k8s
+    assert '{% set outer_caller = caller %}' in k8s
+    assert '{{ outer_caller() }}' in k8s
     assert 'shared_readiness.snapshot_card(' in k8s
     assert 'shared_readiness.frame(' in registry
     assert 'shared_readiness.source_card(' in registry
@@ -208,6 +210,61 @@ def test_registry_analytics_readiness_reuses_k8s_shared_controls_without_buttons
     assert 'hx-indicator="#artifact-registry-analytics-refresh-indicator"' in page
     assert 'hx-select="#artifact-registry-analytics-page"' in page
     assert 'artifactRegistryAnalyticsMaterializationFinished from:body' in page
+
+
+def test_kubernetes_and_registry_render_shared_readiness_without_duplicate_shells() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')))
+    env.filters['user_datetime'] = lambda value, default='Unavailable': str(value or default)
+
+    kubernetes = env.from_string(
+        '''
+        {% import "kubernetes/analytics/components/_analysis_workspace.html" as controls %}
+        {% call controls.controls_readiness(
+            'Capacity Controls & Data Readiness',
+            'Worker-backed analysis and committed snapshot.',
+            'sliders-horizontal',
+            'capacity-refresh-indicator',
+            {'status_label': 'Waiting for Cluster'}
+        ) %}
+            <span>Cluster selector remains rendered</span>
+        {% endcall %}
+        '''
+    ).render()
+    assert kubernetes.count('data-analytics-controls-readiness') == 1
+    assert 'Cluster selector remains rendered' in kubernetes
+    assert 'Metrics Source Status' in kubernetes
+    assert 'Latest Data Snapshot' in kubernetes
+    assert 'Capacity Controls & Data Readiness' in kubernetes
+
+    registry = env.get_template(
+        'artifact_registry/partials/_analytics_controls_readiness.html'
+    ).render(
+        analytics={
+            'data_readiness': {
+                'eligible_count': 1,
+                'registered_count': 1,
+                'covered_count': 1,
+                'current_count': 1,
+                'label': 'Current Snapshot',
+                'tone': 'normal',
+                'latest_generated_at': None,
+                'latest_expiry_at': None,
+                'last_attempt_label': 'Never',
+                'helper': 'Current committed evidence.',
+                'is_active': False,
+                'execution_tone': 'normal',
+                'collection_warning': None,
+            }
+        }
+    )
+    assert registry.count('data-analytics-controls-readiness') == 1
+    assert 'Registry Source Readiness' in registry
+    assert 'Latest Data Snapshot' in registry
+    assert 'Analytics Controls & Data Readiness' in registry
+    assert 'Collect Analytics Data' not in registry
+    assert 'Configure Collection' not in registry
 
 
 def test_registry_analytics_materialization_is_bounded_and_worker_owned() -> None:
