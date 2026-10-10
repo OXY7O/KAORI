@@ -622,7 +622,7 @@ def test_dashboard_health_registries_preserve_zero_result_pagination_and_compact
         assert '</footer>\n{% endcall %}' in source
 
 
-def test_unselected_dashboard_scope_uses_one_tab_level_prerequisite_without_hiding_valid_aggregates() -> None:
+def test_unselected_dashboard_scope_uses_one_tab_level_prerequisite_for_detailed_sections() -> None:
     kubernetes_capacity = read('app/templates/kubernetes/dashboard/partials/_capacity.html')
     kubernetes_signals = read('app/templates/kubernetes/dashboard/partials/_signals.html')
     object_capacity = read('app/templates/storage/object_storage/dashboard/partials/_capacity.html')
@@ -640,10 +640,17 @@ def test_unselected_dashboard_scope_uses_one_tab_level_prerequisite_without_hidi
         assert source.index('{% else %}') < source.index('peer_content_grid.layout_classes()')
         assert source.count('components/states/_blocked_state.html') == 1
 
-    assert '{% if not overview.selected_provider %}' in registry_signals
-    assert 'components/states/_blocked_state.html' in registry_signals
-    assert '{% if not overview.selected_provider %}' not in registry_capacity
+    for source in (registry_capacity, registry_signals):
+        assert '{% if not overview.selected_provider %}' in source
+        assert 'components/states/_blocked_state.html' in source
+        assert 'Select Registry Provider' in source
+        assert source.count('components/states/_blocked_state.html') == 1
+        assert source.index('components/states/_blocked_state.html') < source.index('{% else %}')
+        assert source.index('{% else %}') < source.index('peer_content_grid.layout_classes()')
+
     assert 'artifact_registry/partials/_overview_capacity_snapshot.html' in registry_capacity
+    assert 'artifact_registry/partials/_overview_forecast_risk.html' in registry_capacity
+    assert 'artifact_registry/partials/_overview_top_consumers.html' in registry_capacity
 
     signal_helper = service.split('def _populate_signals(', 1)[1].split('def get_dashboard_overview(', 1)[0]
     assert 'if selected is None:\n        return' in signal_helper
@@ -665,3 +672,29 @@ def test_reporting_scope_bound_reflects_all_or_selected_dashboard_scope() -> Non
     assert 'reporting_workspace.guidance(overview.scope_label,' in registry
     assert 'current scope.' in object_summary
     assert 'this system scope.' not in object_summary
+
+
+def test_registry_capacity_requires_selected_provider_before_evidence_projection() -> None:
+    service = read('app/artifact_registry/presentation_overview.py')
+    capacity_tab = read('app/templates/artifact_registry/partials/_overview_capacity.html')
+    registry_signals = read('app/templates/artifact_registry/partials/_overview_signals.html')
+    operations = read('app/templates/artifact_registry/partials/_overview_operations.html')
+    reporting = read('app/templates/artifact_registry/partials/_overview_reporting.html')
+    standard = read('docs/design/patterns/OPERATIONAL_DASHBOARD.md')
+
+    section = service.split("if section == 'capacity':", 1)[1].split("if section == 'signals':", 1)[0]
+    assert 'if selected_provider is None:\n            return context' in section
+    assert section.index('return context') < section.index('return _overview_capacity_projection(')
+
+    capacity_projection = service.split('def _overview_capacity_projection(', 1)[1].split(
+        'def build_overview(', 1
+    )[0]
+    assert 'selected_provider: IntegrationInstance,' in capacity_projection
+    assert '.filter(RegistryProject.integration_instance_id == selected_provider.id)' in capacity_projection
+    assert 'if selected_provider is not None:' not in capacity_projection
+    assert capacity_tab.count('components/states/_blocked_state.html') == 1
+    assert capacity_tab.count('Select Registry Provider') == 1
+    assert 'components/states/_blocked_state.html' in registry_signals
+    assert 'artifact_registry/partials/_overview_provider_health.html' in operations
+    assert 'reporting_workspace.summary(overview.reporting,' in reporting
+    assert 'Registry `All Registry Providers` scope must not trigger aggregate Capacity' in standard
