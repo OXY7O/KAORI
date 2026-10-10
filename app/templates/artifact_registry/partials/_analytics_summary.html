@@ -1,12 +1,11 @@
 {% import "components/table_label.html" as table_label %}
+{% import "components/section_intro.html" as section_intro %}
 <section id="artifact-registry-analytics-summary"
          aria-labelledby="artifact-registry-analytics-summary-heading">
-    <div class="mb-3">
-        <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Analytics Summary</p>
-        <h2 id="artifact-registry-analytics-summary-heading"
-            class="mt-1 text-base font-semibold text-content-primary">Registry analytical posture</h2>
-        <p class="mt-1 text-xs leading-5 text-content-muted">Cross-domain summary from committed inventory, metrics, runtime, security, governance, and alert evidence.</p>
-    </div>
+    {{ section_intro.render('Registry Analytical Posture',
+        'Cross-domain evidence from committed inventory, metrics, runtime, security, governance, and alerts.',
+        'artifact-registry-analytics-summary-heading',
+        extra_classes='mb-3') }}
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {% for card in analytics.summary_cards %}
             <article class="rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm">
