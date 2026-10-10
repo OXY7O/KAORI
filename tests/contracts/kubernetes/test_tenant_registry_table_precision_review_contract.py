@@ -8,6 +8,7 @@ TENANT = ROOT / "app/templates/kubernetes/tenant/partials"
 
 # Each width profile reflects the existing table's content and action density.
 REGISTRIES = {
+    "_cluster_estate": (900, (29, 11, 13, 16, 17, 14)),
     "_resource_profile_registry": (1150, (43, 16, 17, 12, 12)),
     "_tenant_registry": (1300, (21, 14, 12, 11, 16, 13, 13)),
     "_namespace_registry": (1100, (19, 19, 30, 16, 16)),
@@ -83,10 +84,8 @@ def test_destructive_and_multi_action_cells_have_reserved_width() -> None:
 
 def test_existing_canonical_fixed_tables_are_not_unnecessarily_modified() -> None:
     credential = _template("_credential_registry")
-    estate = _template("_cluster_estate")
     decisions = _template("_capacity_decisions")
     assert "table_ui.table_classes('min-w-[760px] table-fixed lg:min-w-0')" in credential
-    assert "table_ui.table_classes('min-w-[900px]')" in estate
     assert "table_ui.table_classes('table-fixed')" in decisions
 
 
