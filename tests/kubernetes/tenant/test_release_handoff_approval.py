@@ -380,7 +380,7 @@ def test_handoff_prepare_blocks_other_operator_and_requester_on_locked_plan(
     monkeypatch.setattr(module, 'latest_release_handoff_plan', lambda _: plan)
     monkeypatch.setattr(module, 'latest_release_handoff_approval', lambda _: approval)
     with pytest.raises(ValueError, match=message):
-        _require_no_active_handoff_plan(tenant_id='tenant-a')
+        _require_no_active_handoff_plan(tenant_id='tenant-a', actor_user_id=42)
 
 
 def test_expired_unacknowledged_plan_allows_fresh_prepare_after_locked_check(monkeypatch):
@@ -390,7 +390,7 @@ def test_expired_unacknowledged_plan_allows_fresh_prepare_after_locked_check(mon
     expired['requested_at'] = (datetime.now(UTC) - timedelta(hours=1)).isoformat()
     monkeypatch.setattr(module, 'latest_release_handoff_plan', lambda _: expired)
     monkeypatch.setattr(module, 'latest_release_handoff_approval', lambda _: None)
-    _require_no_active_handoff_plan(tenant_id='tenant-a')
+    _require_no_active_handoff_plan(tenant_id='tenant-a', actor_user_id=42)
 
 
 def test_handoff_prepare_checks_active_plan_after_tenant_row_lock(monkeypatch):
@@ -430,3 +430,26 @@ def test_handoff_prepare_checks_active_plan_after_tenant_row_lock(monkeypatch):
     assert events.index('row-lock') < events.index('check-current-plan')
     assert session.commits == 0
     assert not session.events
+
+
+def test_other_reviewer_cannot_renew_expired_requesters_plan(monkeypatch):
+    from app.kubernetes.tenant import release_handoff_approval as module
+
+    expired = _plan_from_snapshot(_snapshot())
+    expired['requested_at'] = (datetime.now(UTC) - timedelta(hours=1)).isoformat()
+    monkeypatch.setattr(module, 'latest_release_handoff_plan', lambda _: expired)
+    monkeypatch.setattr(module, 'latest_release_handoff_approval', lambda _: None)
+    with pytest.raises(ValueError, match='Only the original requester'):
+        _require_no_active_handoff_plan(tenant_id='tenant-a', actor_user_id=43)
+
+
+def test_corrupt_active_plan_timestamp_fails_closed(monkeypatch):
+    from app.kubernetes.tenant import release_handoff_approval as module
+
+    plan = _plan_from_snapshot(_snapshot())
+    plan['requested_at'] = 'not-a-date'
+    monkeypatch.setattr(module, 'latest_release_handoff_plan', lambda _: plan)
+    monkeypatch.setattr(module, 'latest_release_handoff_approval', lambda _: None)
+    assert handoff_plan_preparation_state(plan, None) == 'blocked'
+    with pytest.raises(ValueError, match='not eligible for replacement'):
+        _require_no_active_handoff_plan(tenant_id='tenant-a', actor_user_id=42)
