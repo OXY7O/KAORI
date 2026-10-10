@@ -344,6 +344,9 @@ def test_registry_analytics_selector_preserves_scope_through_routes_and_alerts()
     assert routes.count("provider_id=request.args.get('provider_id', type=int)") >= 3
     assert routes.count("snapshot_window=request.args.get('snapshot_window', 'current', type=str)") >= 3
     assert "analytics = build_analytics_shell(" in routes
+    assert "'alert_search': request.args.get('alert_q', '', type=str)" in routes
+    assert "'alert_page': request.args.get('alert_page', 1, type=int) or 1" in routes
+    assert "snapshot_window=window, **alert_params" in routes
     assert "should_request_registry_analytics_materialization(build_registry_analytics_readiness())" in routes
     assert "'provider_id', 'snapshot_window', 'alert_q'" in routes
     assert "selected_provider_id = _registry_analytics_scope(provider_id, identities)" in presentation

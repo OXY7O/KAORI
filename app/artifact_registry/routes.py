@@ -453,8 +453,16 @@ def analytics_materialization_resolve() -> ResponseReturnValue:
         section = 'overview'
     provider_id = request.args.get('provider_id', type=int)
     window = request.args.get('snapshot_window', 'current', type=str)
+    alert_params = {
+        'alert_search': request.args.get('alert_q', '', type=str),
+        'alert_severity': request.args.get('alert_severity', 'all', type=str),
+        'alert_state': request.args.get('alert_state', 'all', type=str),
+        'alert_source': request.args.get('alert_source', 'all', type=str),
+        'alert_page': request.args.get('alert_page', 1, type=int) or 1,
+        'alert_per_page': request.args.get('alert_per_page', 5, type=int) or 5,
+    }
     analytics = build_analytics_shell(
-        active_tab=section, provider_id=provider_id, snapshot_window=window
+        active_tab=section, provider_id=provider_id, snapshot_window=window, **alert_params
     )
     # The canonical worker materializes the entire fleet regardless of the viewer's filter.
     if should_request_registry_analytics_materialization(build_registry_analytics_readiness()):
@@ -485,7 +493,10 @@ def analytics_materialization_resolve() -> ResponseReturnValue:
                 analytics['data_readiness']['collection_warning'] = result.message
             else:
                 analytics = build_analytics_shell(
-                    active_tab=section, provider_id=provider_id, snapshot_window=window
+                    active_tab=section,
+                    provider_id=provider_id,
+                    snapshot_window=window,
+                    **alert_params,
                 )
     response = make_response(
         render_template(
