@@ -1,0 +1,123 @@
+"""Read-only Kubernetes identity proof candidate for Native Release (#1047).
+
+Not a successor-consent receipt, admission authority or provider mutation path.
+A Kubernetes TokenReview proves an authenticated Kubernetes principal at a point
+in time, *not* a KAORI-account mapping or authorization to execute Release.
+The #690 identity/consent decision must be accepted separately before any
+mutating #1048/#1049 workflow may consume this kind of evidence.
+"""
+
+from __future__ import annotations
+
+import re
+from collections.abc import Mapping
+from datetime import UTC, datetime
+from typing import Any
+
+from kubernetes.client import V1TokenReview, V1TokenReviewSpec
+
+from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
+from app.kubernetes.tenant.release_handoff_approval import _checked_recently, _plan_hash
+
+# Successor labels are Kubernetes label VALUES, not unconstrained KAORI references.
+_LABEL_VALUE = re.compile(r'[A-Za-z0-9](?:[A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?\Z')
+_MAX_TOKEN_LENGTH = 16384
+
+
+def _field(record: Any, key: str, default: Any = None) -> Any:
+    return record.get(key, default) if isinstance(record, Mapping) else getattr(record, key, default)
+
+
+def _verify_review_plan(plan: Mapping[str, Any], cluster_id: str) -> str:
+    owner = str(plan.get('successor_owner') or '')
+    digest = str(plan.get('plan_sha256') or '')
+    if (
+        plan.get('provider') != 'native_kubernetes'
+        or plan.get('cluster_id') != cluster_id
+        or not plan.get('tenant_id')
+        or type(plan.get('generation')) is not int
+        or plan['generation'] < 1
+        or not isinstance(plan.get('handoff_components'), list)
+        or not plan['handoff_components']
+        or not isinstance(plan.get('provider_identity'), list)
+        or not plan['provider_identity']
+        or not plan.get('handoff_fingerprint')
+        or not _checked_recently(plan.get('requested_at'))
+        or len(digest) != 64
+        or _plan_hash(dict(plan)) != digest
+    ):
+        raise ValueError('A fresh, exact Native handoff plan is required for identity review.')
+    if (
+        not _LABEL_VALUE.fullmatch(owner)
+        or owner.lower() == 'kaori'
+        or owner.startswith('system')
+    ):
+        raise ValueError('The successor must use a valid non-system Kubernetes owner label.')
+    return owner
+
+
+def verify_native_successor_identity_for_review(
+    *, cluster: Any, plan: Mapping[str, Any], provider_token: str,
+) -> dict[str, Any]:
+    """Authenticate the prospective successor through the *cluster* API server.
+
+    No token, bearer, Kubernetes response credential or unverified consent is
+    committed. The returned evidence cannot on its own authorize live handoff.
+    The caller must supply a token via an independently approved secure channel;
+    no HTTP form, credential storage or broad provider privileges are added here.
+    """
+    cluster_id = str(_field(cluster, 'id') or '')
+    owner = _verify_review_plan(plan, cluster_id)
+    if (
+        not isinstance(provider_token, str)
+        or not provider_token
+        or len(provider_token) > _MAX_TOKEN_LENGTH
+        or any(c.isspace() for c in provider_token)
+    ):
+        raise ValueError('A bounded Kubernetes authentication token is required.')
+    # The canonical cluster kubeconfig identifies the API server. TokenReview
+    # authenticates the separately supplied successor token against that server.
+    provider = runtime_adapter.build_client(cluster)
+    reply = provider.authentication_api().create_token_review(
+        V1TokenReview(spec=V1TokenReviewSpec(token=provider_token)),
+        _request_timeout=5,
+    )
+    status = _field(reply, 'status')
+    principal = _field(status, 'user')
+    username = str(_field(principal, 'username') or '')
+    principal_uid = str(_field(principal, 'uid') or '')
+    groups = _field(principal, 'groups') or []
+    audiences = _field(status, 'audiences') or []
+    if (
+        _field(status, 'authenticated') is not True
+        or _field(status, 'error')
+        or not username
+        or not principal_uid
+        or username.startswith('system:')
+        or not isinstance(groups, (list, tuple))
+        or not all(isinstance(group, str) for group in groups)
+        or owner not in groups
+        or any(group == 'system:masters' for group in groups)
+    ):
+        raise ValueError('Kubernetes did not authenticate an eligible successor group member.')
+    return {
+        'status': 'provider_identity_observed_consent_unverified',
+        'verification_source': 'kubernetes_token_review',
+        'cluster_id': cluster_id,
+        'tenant_id': plan['tenant_id'],
+        'generation': plan['generation'],
+        'plan_sha256': plan['plan_sha256'],
+        'handoff_fingerprint': plan['handoff_fingerprint'],
+        'successor_owner': owner,
+        'provider_username': username,
+        'provider_principal_uid': principal_uid,
+        'provider_groups_include_successor': True,
+        'audience_reported': bool(audiences),
+        'checked_at': datetime.now(UTC).isoformat(),
+        'consent_verified': False,
+        'identity_mapping_admitted': False,
+        'provider_handoff_verified': False,
+        'release_authorized': False,
+        'provider_mutation_performed': False,
+        'secret_material_persisted': False,
+    }
