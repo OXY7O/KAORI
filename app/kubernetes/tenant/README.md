@@ -186,6 +186,32 @@ Do not toggle DB state directly or weaken TLS. Connection updates are
 operational mutations requiring separate approval. 14 governance forms and
 original provider safeguards preserved. CI/CD, security checks, UAT HOLD.
 
+**Native expired-plan recovery with 0 transferred resources (#1057 follow-up):**
+A `provider_handoff_not_started` receipt may permit the original requester
+to **attempt** Restart Expired Handoff Plan only when its complete canonical
+evidence proves all exact originally approved provider objects are still
+pending, UID/resourceVersion and preservation hashes match, no prior
+partial/full marker transfer or executor event exists in committed history,
+and every release/mutation flag is false. A bare `observed_count=0`,
+missing/legacy receipt, or unknown/partial/full observation does not
+permit restart. Before superseding the old plan, KAORI performs a fresh
+authoritative Kubernetes Release preflight and checks the same plan,
+fingerprint, UID/RV, zero dependencies and all committed audit history
+again under the existing Tenant lock. The replacement SHA keeps immutable
+lineage and must be independently approved by another operator. No prior
+reference, dry-run or acceptance is inherited; no provider write occurs.
+
+The Step 4 **Next required action** differentiates eligible zero-transfer
+evidence from transfer/recovery-required evidence. A reviewer cannot
+restart a requester's plan. Step 3 no longer offers Native Dry-Run on
+expired review/approval; use Step 4 requester renewal instead. The
+display projection is **not** an admission gate; backend checks remain
+authoritative and fail closed on any drift. This is recovery **only** when
+provider handoff has not begun, never for partial/full handoff.
+
+Contract/unit tests and browser QA are pending, as are CI/CD gates, Full
+Admission, staging/UAT and deployment; no production migration performed.
+
 **Native Release Step 3 expiry + Step 4 recovery UX (#1091; current):**
 The Step 3 **Transfer Pending** label is no longer shown for stale
 independently acknowledged Native plans. Display **Approval Expired** or
