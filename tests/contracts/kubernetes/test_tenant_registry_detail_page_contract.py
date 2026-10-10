@@ -463,12 +463,14 @@ def test_release_wizard_navigation_is_fragment_get_with_history_and_plain_link_f
     # preserve normal href while using scoped HTMX GET and canonical URLs.
     assert detail.count('hx-get="{{ tenant_release_step_urls[') == 11
     assert detail.count('hx-push-url="{{ tenant_release_step_urls[') == 11
-    assert detail.count('hx-select="#tenant-management-detail"') == 25
-    assert detail.count('hx-target="#tenant-management-detail"') == 25
+    assert detail.count('hx-select="#tenant-management-detail"') == 14
+    assert detail.count('hx-target="#tenant-management-detail"') == 14
+    assert detail.count('hx-select="#tenant-release-governance"') == 11
+    assert detail.count('hx-target="#tenant-release-governance"') == 11
     assert detail.count('hx-swap="outerHTML show:none focus-scroll:false"') == 25
     assert 'hx-history="false"' in detail  # Avoid restoring stale authorization evidence.
     assert detail.count('href="{{ tenant_release_step_urls[') == 11
-    assert "request.headers.get('HX-Target') == 'tenant-management-detail'" in routes
+    assert "request.headers.get('HX-Target') == 'tenant-release-governance'" in routes
     assert "request.headers.get('HX-History-Restore-Request') != 'true'" in routes
     assert "'kubernetes/tenant/partials/_tenant_management_detail.html'" in routes
     assert "response.headers['Cache-Control'] = 'no-store, max-age=0'" in routes
