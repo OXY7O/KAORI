@@ -34,14 +34,18 @@
                     ]) }}
                 {% endcall %}
             </div>
-            <aside class="{{ page_hero.aside_classes() }} flex items-center justify-end"
+            <aside class="{{ page_hero.aside_classes() }}"
                    aria-label="Tenant detail navigation">
-                <a href="{{ return_to_registry_url }}"
-                   class="{{ page_hero.primary_action_classes() }}"
-                   aria-label="Back to filtered Tenant Registry">
-                    <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
-                    Back to Registry
-                </a>
+                {# aside_classes expands its direct child to full height on xl;
+                   keep that behavior on a wrapper, never on the Back button. #}
+                <div class="flex items-center justify-start xl:justify-end">
+                    <a href="{{ return_to_registry_url }}"
+                       class="{{ page_hero.primary_action_classes() }}"
+                       aria-label="Back to filtered Tenant Registry">
+                        <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
+                        Back to Registry
+                    </a>
+                </div>
             </aside>
         </div>
     </section>
