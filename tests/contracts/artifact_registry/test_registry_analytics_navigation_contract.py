@@ -41,7 +41,7 @@ def test_artifact_registry_routes_keep_artifact_registry_sidebar_active() -> Non
         assert f"('{endpoint}', '{capability}')" in navigation
 
 
-def test_analytics_summary_uses_shared_intro_without_changing_seven_domain_tabs() -> None:
+def test_analytics_overview_uses_shared_intro_and_level_three_navigation() -> None:
     from jinja2 import Environment
 
     summary = (ROOT / 'app/templates/artifact_registry/partials/_analytics_summary.html').read_text()
@@ -64,8 +64,10 @@ def test_analytics_summary_uses_shared_intro_without_changing_seven_domain_tabs(
     assert "'Unavailable' if card.tone == 'unknown' else 'Ready'" in summary
     assert 'rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm' not in summary
 
-    # The seven-domain Analytics navigation is intentionally framed and
-    # server owned; the two-view Governance/Supply Chain use content tabs.
-    assert 'framed_workspace_tabs.render_navigation' in workspace
+    # Navigation belongs to shared layout level-3 tabs, never an inner card.
+    assert 'framed_workspace_tabs.render_navigation' not in workspace
+    assert "analytics.active_tab == 'overview'" in workspace
     assert "section='summary'" in workspace
+    assert "section_intro.render('Explore Analytics'," in workspace
     assert 'hx-trigger="load"' in workspace
+    assert "'artifact_registry.analytics_insights'" in workspace

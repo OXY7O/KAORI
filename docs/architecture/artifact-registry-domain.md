@@ -195,7 +195,7 @@ same nested-card geometry for every domain.
 | Security | Shared Hero / Security Sync / committed scan evidence | External **Security Snapshot** intro + shared grouped four-metric posture grid, independently scoped for Vulnerabilities / Supply Chain | Small content-tabs family for Supply Chain; shared vulnerability/evidence registry and 5-row footer | **Align** summary composition under #1087; preserve #948 scanner semantics |
 | Runtime Usage | Shared Hero / committed correlation snapshot | External **Runtime Correlation** intro + four-cell grouped committed correlation grid | Runtime Bindings section intro and bounded table; committed correlation, 5-row footer | **Align** summary composition under #1087, retain #897 correlation semantics |
 | Governance | Shared Hero / Governance Sync / committed policy evidence | External **Governance Coverage** intro with one grouped operational estate shell and four evidence metrics; original Committed/Observed status badges retained | External Governance Evidence intro; standard URL/HTMX content tabs for Policies/Replication; 5-row footer | **Align** to Kubernetes Tenant Estate's shared posture-grid archetype under #950 |
-| Analytics | Shared Hero / committed analytical materialization | External **Registry Analytical Posture** intro and four-cell grouped grid with original Review/Unavailable/Ready evidence labels | Seven analytics-domain framed tabs remain appropriate for operational-domain navigation; lazy bounded HTMX summary/sections | **Align** lazy summary composition under #1087, preserve #899 framed tabs |
+| Analytics | Shared Hero / committed analytical materialization | Overview owns **Registry Analytical Posture** four-cell grouped summary with Review/Unavailable/Ready labels; detail views own focused evidence | Eight page-level Integrated Workspace Tabs (Overview + seven dedicated domains); existing bounded HTMX summary/section fragments | **Align** #1097 with Kubernetes Analytics level-3 navigation under #747/#748, preserve #899/#952 committed authority |
 
 #### Component and composition rules applied in this audit
 
@@ -223,10 +223,12 @@ same nested-card geometry for every domain.
   canonical Operational Dashboard composition.
 - **Navigation follows interaction scope**, not cosmetic uniformity. The
   two-view Governance and closely related Supply Chain content use
-  `content_tabs.render_links`; the seven-domain Analytics workspace retains
-  the approved `framed_workspace_tabs.render_navigation`. Both are
-  server/URL-owned and preserve HTMX boundaries and keyboard/navigation
-  semantics.
+  `content_tabs.render_links`. Artifact Registry Analytics now follows
+  Kubernetes Analytics' server-owned **page-level Integrated Workspace Tabs**
+  with Overview plus seven analytical domains (#1097), removing its previous
+  in-card `framed_workspace_tabs` and retaining individual lazy bounded HTMX
+  analytics projections. These are distinct from subordinate content tabs and
+  preserve capability-level sidebar and keyboard/navigation semantics.
 - Use shared Hero, loading/empty/error, filters, tables, labels and default
   five-row paginated footer in each owning workspace; never replace provider
   semantics with generic optimistic states. Icons and badges convey meaning,
@@ -329,7 +331,9 @@ accordingly; page-specific navigation and provider authority do **not** change.
   original Committed/Observed/Partial/Not Collected status labels.
 - **Analytics:** the four existing analytical values and the original
   Review/Unavailable/Ready status labels are projected into the shared
-  `resource_posture_grid`. Lazy HTMX and seven-domain framed tabs remain.
+  `resource_posture_grid` **only on Analytics Overview**. Detail pages use
+  focused lazy HTMX sections under canonical eight-view page-level navigation
+  (#1097), without a second framed tab bar.
 
 All six areas reuse **existing** icon/tone/divider geometry; only a
 backward-compatible optional Overview shell-body argument was added.
@@ -524,8 +528,20 @@ GET /artifact-registry/analytics
   → lazy active workspace section
 ```
 
-Inactive Analytics tabs are not rendered before first paint. Growth, Capacity, Usage, Risk, Governance,
-Alerts, and Insights remain separate analytical projections over committed materialization.
+Overview is the canonical `/artifact-registry/analytics` landing route and
+presents the existing lazy materialized analytical summary, followed by seven
+bounded navigation destinations. Page-level Integrated Workspace Tabs use the
+existing `artifact_registry_analytics` capability-view catalog and same layout
+owner as Kubernetes Analytics. Each of Growth, Capacity, Usage, Risk, Governance,
+Alerts & Anomalies and Insights has a dedicated canonical
+`/artifact-registry/analytics/<domain>` route. Each deep route shares the fast
+shell and lazy loads only its active committed analytical section; it does not
+repeat the Overview estate summary. The legacy `?tab=<domain>` bookmark shape
+redirects to the corresponding route and preserves bounded Alerts search,
+severity, state, source and pagination query parameters. Alerts HTMX table
+updates push its canonical page URL. No additional materialization models,
+provider read paths, RBAC definitions, alert collection or central Intelligence
+recommendation lifecycle are introduced.
 
 ## Operational UI Contract
 

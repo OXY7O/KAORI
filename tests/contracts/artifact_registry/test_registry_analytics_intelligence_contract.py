@@ -114,9 +114,10 @@ def test_registry_analytics_workspace_is_reusable_and_intelligence_bounded() -> 
     presentation = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
 
-    assert 'components/framed_workspace_tabs.html' in shell
-    assert 'framed_workspace_tabs.render_navigation' in shell
-    assert 'Analytics Workspace' in shell
+    assert 'components/framed_workspace_tabs.html' not in shell
+    assert 'framed_workspace_tabs.render_navigation' not in shell
+    assert 'artifact-registry-analytics-workspace' in shell
+    assert 'Explore Analytics' in shell
     for title in (
         'Registry Growth',
         'Capacity Outlook',
@@ -130,10 +131,11 @@ def test_registry_analytics_workspace_is_reusable_and_intelligence_bounded() -> 
         assert title in section
 
     for tab in ('growth', 'capacity', 'usage', 'risk', 'governance', 'alerts', 'insights'):
-        assert f"'{tab}'" in shell
+        assert f"'artifact_registry.analytics_{tab}'" in shell
         assert f"'{tab}'" in presentation
 
-    assert "active_tab=request.args.get('tab', 'growth', type=str)" in routes
+    assert "return _render_registry_analytics_page('overview')" in routes
+    assert "legacy_tab = request.args.get('tab', '', type=str)" in routes
     assert 'never waits on live Harbor, Alertmanager, Prometheus, or Thanos requests' in shell
     assert 'never auto-cleaned' in section
     assert (
@@ -152,13 +154,13 @@ def test_registry_analytics_uses_fast_shell_and_bounded_fragments() -> None:
     template = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
 
     assert 'def build_analytics_shell(' in presentation
-    assert "active_tab: str = 'growth'" in presentation
+    assert "active_tab: str = 'overview'" in presentation
     assert 'analytics=build_analytics_shell(' in routes
     assert "@artifact_registry_bp.get('/analytics/section/<string:section>')" in routes
     assert "section='summary'" in template
     assert 'section=analytics.active_tab' in template
     assert 'hx-trigger="load"' in template
-    assert 'Fast shell · bounded HTMX projection' in template
+    assert 'Fast Shell · Committed Evidence' in template
     assert 'never waits on live Harbor, Alertmanager, Prometheus, or Thanos requests' in template
 
 
@@ -187,7 +189,7 @@ def test_registry_alert_workspace_reuses_committed_alert_evidence_contract() -> 
     template = (ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html').read_text()
     shell = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
 
-    assert "('alerts', 'Alerts', 'siren'" in shell
+    assert "'artifact_registry.analytics_alerts'" in shell
     assert 'Alertmanager is primary. Metrics Source is fallback evidence.' in template
     assert 'committed Analytics materialization' in template
     assert 'alert_per_page' in template
