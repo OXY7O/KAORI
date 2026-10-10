@@ -167,11 +167,13 @@ def _require_expired_plan(tenant_id: str, plan_sha256: str) -> dict[str, Any]:
 
 def _verify_original_provider_state(
     *, tenant_id: str, plan: dict[str, Any], actor_user_id: int,
+    fresh: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Fresh preflight and per-resource authoritative GET: no provider PATCH."""
-    fresh = review_tenant_release_preflight_committed(
-        tenant_id=tenant_id, actor_user_id=actor_user_id,
-    )
+    if fresh is None:
+        fresh = review_tenant_release_preflight_committed(
+            tenant_id=tenant_id, actor_user_id=actor_user_id,
+        )
     _can_confirm_plan(fresh)
     if (
         fresh.get('tenant_id') != tenant_id
