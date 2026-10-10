@@ -116,6 +116,23 @@ Hero
 
 `Tenant Registry` is the default tab and uses the canonical KAORI server-backed registry contract: shared loading bar, Cluster/Environment/Lifecycle/Search filters, committed-state reads, semantic labels, responsive horizontal overflow, default 5-row pagination, 5/10/25/50 page sizes, and HTMX progressive enhancement with the Tenants route as the real navigation fallback.
 
+**Dedicated Tenant Management (#1065):** a Registry row's single
+`Manage/View` action navigates to `/kubernetes/tenant/tenants/<tenant-id>/manage`,
+a full-width, responsive, committed-state Tenant detail page. It retains
+Registry search/filters/pagination on the **Back to Registry** link and
+provides in-page navigation for provider ownership, Release governance,
+Capsule attachment, Native handback/Re-adopt and lifecycle actions. It does
+not expand below the table or open the removed long native Tenant Management
+dialog. Independent approvers from Work Inbox deep-link to the same detail
+page instead of reopening a top-layer dialog. Every form keeps its existing
+authoritative backend endpoint, CSRF token, permission gate and audit
+metadata; both progressive HTMX swaps and ordinary POST redirects return
+to the same Tenant detail rather than a Registry modal. Normal HTMX
+feedback continues using the existing OOB Operational Toast, which stays
+visible because the daily management page is not in the browser's modal
+top layer. Decommission retains its separate concise destructive confirmation
+modal. Normal detail GET performs no Kubernetes provider request.
+
 `Tenant Setup` combines the create form with a non-collapsible governance flow so the operator sees the required order: Tenant → Namespace → Membership → Access Grant → Credential. Important boundaries use icon-backed tiles plus a persistent warning row. Dense field guidance uses the shared `components/info_tip.html` hover/focus pattern instead of repeating helper paragraphs under controls.
 
 Tenant Setup supports two direct-create provider paths while retaining one provider-neutral UI. **Native Kubernetes** creates the KAORI Tenant boundary without a first-class Kubernetes Tenant object; Namespace resources are introduced later by Namespace Provisioning. **Capsule** performs its live supported-CRD/capability and admission preflight when **Add Tenant** is submitted, requires both an initial Owner Kind and Owner Subject, dry-runs the exact Tenant CR, then creates the authoritative Capsule Tenant CR before committing KAORI provider evidence. Existing Capsule Tenant CRs are never overwritten and continue through **Discovery → Adoption**.
@@ -135,7 +152,7 @@ Tenant identity is immutable after creation in the normal operator workflow.
 - **Create** — create the Tenant ownership boundary and initial environment.
 - **Read** — Tenant Registry is the committed-state source for operator reads.
 - **Update** — no inline Tenant identity update is exposed. Name/slug identity, cluster placement, provider authority, and reconciliation authority are intentionally locked.
-- **Lifecycle removal** — #735 owns governed teardown. Tenant Registry exposes asynchronous **Decommission** and preserves one ordered lifecycle: freeze new mutations → revoke access state → retire memberships/groups → remove admitted managed resources/namespaces → retire reservation/exposure state → provider verification → commit `decommissioned`.
+- **Lifecycle removal** — #735 owns governed teardown. Tenant detail exposes asynchronous **Decommission** and preserves one ordered lifecycle: freeze new mutations → revoke access state → retire memberships/groups → remove admitted managed resources/namespaces → retire reservation/exposure state → provider verification → commit `decommissioned`.
 - **Provider verification** — a successful provider `DELETE` request is not completion. Native Namespace teardown observes Kubernetes until absence and never strips finalizers automatically. Capsule teardown likewise commits completion only after the authoritative Capsule Tenant CR is verified absent.
 - **Capsule authority** — baseline Capsule teardown is admitted only for **KAORI-created, Managed, healthy Capsule Tenant CRs with zero active namespace/access/credential/managed-resource residue**. The adapter validates KAORI ownership labels, Tenant generation, and provider UID before deleting the Capsule CR, then verifies absence. Adopted/foreign Capsule objects, degraded Capsule state, active namespaces, or other unsupported provider residue remain fail-closed; KAORI never falls back to Native deletion.
 - **Historical identity** — decommission retains the historical Tenant row, evidence, memberships, grants, credentials, and correlation lineage. Re-creating the same cluster+slug creates the next Tenant generation rather than overwriting history.
