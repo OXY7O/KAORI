@@ -194,6 +194,32 @@ keyboard-accessible disclosure. This presentation does not change #654
 admission arithmetic, committed decisions, provider authority or #113
 frozen Namespace effective allocation.
 
+### Capacity Decision View More visual hierarchy (#775 follow-up)
+
+Human DevContainer feedback found the initial native dialog too fragmented:
+a separate boxed Admission region competed with free-floating Contract and
+Evidence sections, while a second Traceability card dominated the bottom.
+The dialog now uses **one bounded surface** with subtle section dividers and
+a clear reading sequence: **Admission → Target & Contract → Committed
+Evidence → Traceability**. Admission decision and capacity state remain two
+independent canonical status labels; the full committed reason is displayed
+with no source-template indentation or truncation. The blocked-preflight
+provider-write boundary remains visible when applicable.
+
+The Contract section prioritizes the complete Resource Profile identity and
+pinned version, with Operation and Allocation Scope as secondary metadata.
+Recorded/Cutoff and capacity dataset/snapshot state use a compact two-column
+definition list. Traceability is a quiet, default-closed native disclosure
+within the same surface; correlation and snapshot IDs retain selectable
+monospace values and are never hidden from keyboard users. No extra cards,
+new components, action footer, provider calls, data mutation or admission
+recalculation were introduced. The modal explicitly resets `text-left` from
+the registry Action cell, matching the #1053 alignment correction.
+
+The scope is confined to the existing `_capacity_decisions.html`, its
+contract tests, and this documentation. The review branch is the only
+integration destination before explicit gate authorization.
+
 Local DevContainer Developer Check and human Visual QA must verify mixed
 Allow/Block and Healthy/Unknown/Overcommitted cases; duplicate/long names,
 full reasons, nullable legacy evidence, screen width and dark mode,
