@@ -191,6 +191,42 @@ changes and Namespace allocation increases still require the same #654
 preflight and provider reconciliation/write-readback governance. Projected
 transaction impact for Create/Adopt is scoped separately under #125.
 
+### Allocation Budget registry and detail visual hierarchy (#1053)
+
+The existing Allocation Budget inventory remains a read-only, server-rendered
+committed-state projection under the canonical #654 capacity governance authority.
+It retains shared KAORI fixed-layout table, cluster search, status labels,
+native-detail dialog, and five-row HTMX pagination. Column proportions follow
+the evidence/decision workload: Cluster 28%, Evidence 39%, State 17%, Details 16%.
+
+**Snapshot freshness and computable budget are separate facts.** The Evidence
+column displays the actual committed `snapshot_state` label; current/fresh
+snapshots use a normal-status tone. A compute budget is called **available**
+only when the authoritative `item.budget` is present; if it is absent, the
+label explicitly states **Compute evidence required**. This avoids showing
+"Fresh / Compute evidence required" merely due to treating only the literal
+snapshot state `current` as a sufficient budget. Logical storage governance
+is reported independently when a storage policy exists, not inferred from
+physical or usable backend capacity.
+
+The **View More** dialog uses one resource-first comparison instead of
+three dense parallel card grids. Four resource rows—CPU Requests, Memory
+Requests, Pod Slots, Logical Storage—each show the previously committed
+Budget, Committed and Headroom display values in consistent positions.
+Desktop widths display a quiet common column header; narrower layouts repeat
+the metric labels and keep the three values in one responsive row beneath
+the resource title. Neither layout recalculates, rounds or hides unknown,
+unmanaged, zero, exhausted or overcommitted dimensions. An understated footer
+keeps governed Namespace count and the storage-is-logical boundary.
+
+The dialog retains `data-kaori-native-dialog`, labelled heading/description,
+close control, existing access semantics, light/dark tokens and responsive
+scroll container. This is presentation only—no provider read, new endpoint,
+schema, admission calculation or namespace mutation. Local DevContainer
+Visual QA must verify metric legibility at desktop/mobile sizes and status
+cases where snapshot freshness and compute availability differ. No CI/CD
+gate or deployment is authorized by this integrated review candidate.
+
 ### Tenant Allocation Overview UX refinement (#1038)
 
 The cluster selector uses the existing HTMX partial-response pattern to refresh the
