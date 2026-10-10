@@ -236,6 +236,7 @@ def get_tenant_registry_context(
     environment: str = '',
     lifecycle_status: str = '',
     include_decommission_preflight: bool = True,
+    tenant_id: str = '',
 ) -> dict[str, Any]:
     normalized_search = search.strip()
     normalized_cluster_id = cluster_id.strip()
@@ -243,6 +244,10 @@ def get_tenant_registry_context(
     normalized_lifecycle = lifecycle_status.strip().lower()
 
     query = Tenant.query
+    if tenant_id:
+        # The detail route resolves exactly one committed Tenant regardless of
+        # the Registry's current pagination and filters; no provider live read.
+        query = query.filter(Tenant.id == tenant_id)
 
     if normalized_search:
         pattern = f'%{normalized_search.lower()}%'
