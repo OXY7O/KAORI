@@ -210,15 +210,31 @@ snapshot state `current` as a sufficient budget. Logical storage governance
 is reported independently when a storage policy exists, not inferred from
 physical or usable backend capacity.
 
-The **View More** dialog uses one resource-first comparison instead of
-three dense parallel card grids. Four resource rows—CPU Requests, Memory
-Requests, Pod Slots, Logical Storage—each show the previously committed
-Budget, Committed and Headroom display values in consistent positions.
-Desktop widths display a quiet common column header; narrower layouts repeat
-the metric labels and keep the three values in one responsive row beneath
-the resource title. Neither layout recalculates, rounds or hides unknown,
-unmanaged, zero, exhausted or overcommitted dimensions. An understated footer
-keeps governed Namespace count and the storage-is-logical boundary.
+The **View More** dialog uses one resource-first comparison rather than
+three dense parallel cards. Its header has one left-aligned hierarchy: a shared
+icon, Allocation Budget eyebrow, cluster title beside its actual capacity-state
+label, environment context and a right-aligned native Close action. This avoids
+the off-center title/status placement seen in earlier DevContainer feedback.
+
+Four resource rows—CPU Requests, Memory Requests, Pod Slots and Logical
+Storage—show authoritative Budget, Committed and Headroom display values in
+consistent columns. Each governed, positive-budget dimension additionally shows
+**committed %**, **remaining %** and a restrained Violet capacity bar, taken
+directly from the existing read-only `build_tenant_allocation_bars` presentation
+model (#1034). The route creates this model only for visible, already-committed
+#654 cluster rows; it neither recalculates admission nor reads providers.
+Percentages use the existing 0.1% rounded, 0–100 display-only bounds.
+Overcommitted dimensions retain the explicit committed **shortfall** alongside
+the full bar and 0% remaining. **Unknown, Not Governed and zero-budget**
+dimensions show no misleading percentage; instead they report that the
+percentage is unavailable along with the canonical reason.
+
+At desktop widths the common column header remains aligned with metric rows;
+narrower screens place the three labelled metric values beneath the resource
+name in one three-column grid, without horizontal scrolling. A small note below
+the comparison retains governed Namespace count and the logical-storage
+boundary. The redundant lower Close footer was removed; the accessible Close
+action remains in the top-right header.
 
 The dialog retains `data-kaori-native-dialog`, labelled heading/description,
 close control, existing access semantics, light/dark tokens and responsive
