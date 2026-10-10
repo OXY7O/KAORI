@@ -195,6 +195,36 @@ def execute_native_handoff_committed(
             or fresh.get('handoff_components') != plan.get('handoff_components')
         ):
             raise ValueError('Provider resource inventory changed; restart handoff approval.')
+    # Persist an in-progress operation under the canonical Tenant row lock
+    # before the first Kubernetes write. If execution crashes, an operator must
+    # observe provider state and explicitly reconcile; no blind retry.
+    locked = Tenant.query.filter_by(id=tenant_id).with_for_update().one_or_none()
+    current_plan = latest_release_handoff_plan(tenant_id)
+    current_attempt = latest_native_handoff_execution(tenant_id)
+    if (
+        locked is None
+        or locked.lifecycle_status != TenantLifecycleStatus.READY.value
+        or locked.generation != plan['generation']
+        or not current_plan or current_plan.get('plan_sha256') != plan_sha256
+        or (current_attempt and current_attempt.get('plan_sha256') == plan_sha256
+            and current_attempt.get('status') not in ('partial_handoff_recovery_required',))
+        or (previous and (not current_attempt
+            or current_attempt.get('status') != previous.get('status')))
+    ):
+        raise ValueError('A concurrent or incomplete Native handoff operation requires recovery review.')
+    db.session.add(AuditEvent(
+        actor_user_id=actor_user_id, target_type=_TARGET, target_id=tenant_id,
+        action='tenant.release.native_handoff_started',
+        summary='Started explicit accepted Native ownership transfer; provider mutation pending.',
+        metadata_json={
+            'status': 'in_progress', 'tenant_id': tenant_id,
+            'generation': tenant.generation, 'plan_sha256': plan_sha256,
+            'handoff_fingerprint': plan['handoff_fingerprint'],
+            'started_at': datetime.now(UTC).isoformat(),
+            'release_authorized': False, 'secret_material_persisted': False,
+        },
+    ))
+    db.session.commit()
     # Process Namespace last: quota/limits must be preserved before Namespace
     # management marker passes to the successor.
     order = {'ResourceQuota': 0, 'LimitRange': 1, 'Namespace': 2}
@@ -204,6 +234,7 @@ def execute_native_handoff_committed(
     core = runtime_adapter.build_client(cluster).core_api()
     results: list[dict[str, Any]] = []
     errors: list[str] = []
+    mutated_count = 0
     for component in components:
         try:
             live = _read_resource(core, component)
@@ -221,6 +252,7 @@ def execute_native_handoff_committed(
                     before=live, preview=preview, successor_owner=plan['successor_owner'],
                 )
                 _patch_native_live(core, component, patch)
+                mutated_count += 1
                 live = _read_resource(core, component)
             verified = verify_external_native_component(
                 before=component, current=live, successor_owner=plan['successor_owner'],
@@ -244,7 +276,7 @@ def execute_native_handoff_committed(
         'expected_component_count': len(components),
         'verified_count': len(results),
         'errors': errors, 'checked_at': datetime.now(UTC).isoformat(),
-        'provider_mutation_performed': True,
+        'provider_mutation_performed': bool(mutated_count),
         'provider_handoff_verified': complete,
         'external_successor_verified': True,
         'release_authorized': False,
