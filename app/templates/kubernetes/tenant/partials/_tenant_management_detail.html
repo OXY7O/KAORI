@@ -1072,7 +1072,7 @@
                                                 {% if dry_run and dry_run.plan_sha256 == handoff_plan.plan_sha256 %}
                                                     <details class="mt-2 rounded-lg border border-outline-subtle bg-surface-card p-2">
                                                         <summary class="cursor-pointer text-xs font-semibold text-content-primary">
-                                                            Native Dry-Run · {{ dry_run.status|replace('_', ' ')|title }}
+                                                            Native Dry-Run · {{ dry_run.status|replace('_', ' ')|title }}{% if not row.native_release_readiness.dry_run_passed %} · Historical / Not Current{% endif %}
                                                         </summary>
                                                         <p class="mt-2 text-sm leading-6 text-content-secondary">
                                                             {{ dry_run.previewed_components|length }} /
