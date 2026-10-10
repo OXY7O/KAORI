@@ -116,7 +116,24 @@ Hero
 
 `Tenant Registry` is the default tab and uses the canonical KAORI server-backed registry contract: shared loading bar, Cluster/Environment/Lifecycle/Search filters, committed-state reads, semantic labels, responsive horizontal overflow, default 5-row pagination, 5/10/25/50 page sizes, and HTMX progressive enhancement with the Tenants route as the real navigation fallback.
 
-**Tenant Overview — compact committed record (#1081; current detail presentation):**
+**Tenant Overview — integrated authority and lifecycle (#1081 follow-up; current UX):**
+On the same compact Overview surface, retain exact Provider and
+Reconciliation Authority facts but remove their redundant full-size
+**Provider Authority** accordion. The Reconciliation field owns the prior
+`#tenant-provider-authority` deep-link anchor. Move the precise
+Kubernetes/Capsule source-of-truth statement out of the large
+**Authority Boundary** callout into a small neutral Overview note. Place
+the existing Decommission/Retry and blocker preflight in one collapsed
+**Lifecycle controls** row at the bottom of Overview, retaining
+`#tenant-lifecycle-actions`, the lifecycle section auto-open state,
+permission guards, exact POST/CSRF/HTMX fields and native destructive
+confirmation modal. Release/Handback/Attachment and global toast behavior
+remain unchanged; there are still 14 original form authorities.
+Hero subtitle: “Manage Tenant governance, provider authority, and lifecycle
+with committed evidence.” No new provider read, grant or mutation contract.
+DevContainer visual QA and all CI/CD gates remain HOLD.
+
+**Tenant Overview — compact committed record (#1081; historical foundation, superseded standalone boundary placement):**
 DevContainer feedback supersedes the former #1081 two-subpanel + Record
 History band layout. Reuse one existing bordered Violet KAORI surface with
 a **small Identity & Governance header**; show exact wrapped/monospace Tenant
