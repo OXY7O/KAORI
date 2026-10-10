@@ -20,6 +20,7 @@
         ) %}
         <form id="artifact-registry-analytics-filter"
               method="get"
+              data-analytics-refresh-request="true"
               action="{{ url_for(page_endpoint) }}"
               hx-get="{{ url_for(page_endpoint) }}"
               hx-trigger="change delay:120ms"
