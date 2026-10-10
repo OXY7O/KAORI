@@ -94,6 +94,10 @@ def test_global_navigation_sets_tenants_active_and_correct_detail_breadcrumb():
     assert "'tenant.tenant_detail': 'tenants'" in capability
     assert "'tenant.tenant_detail'" in sidebar
     assert "'tenant.tenant_detail': 'Tenant Details'" in breadcrumb
+    routes = read('app/kubernetes/tenant/routes.py')
+    assert "build_navigation_breadcrumb('tenant.tenant_detail')" in routes
+    assert "breadcrumb[-1]['label'] = context['row']['tenant'].name" in routes
+    assert "context['navigation_breadcrumb'] = breadcrumb" in routes
     detail_branch = breadcrumb.split("elif endpoint == 'tenant.tenant_detail':", 1)[1].split(
         "elif endpoint.startswith", 1
     )[0]
