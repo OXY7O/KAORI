@@ -50,7 +50,7 @@
                     </select>
                 </label>
                 <noscript>
-                    <button type="submit" class="{{ action_button.classes('secondary') }}">View Allocation</button>
+                    <button type="submit" class="{{ action_button.classes('secondary') }}">Apply Cluster</button>
                 </noscript>
             </form>
         {% endif %}
@@ -168,8 +168,8 @@
                 <div class="min-w-0">
                     <h3 class="text-sm font-semibold text-content-primary">Tenant Contributions</h3>
                     <p class="mt-1 text-xs leading-5 text-content-muted">
-                        {{ allocation_tenant_pagination.total_items if allocation_tenant_pagination else 0 }}
-                        committed Tenant record{{ '' if allocation_tenant_pagination and allocation_tenant_pagination.total_items == 1 else 's' }}
+                        {{ allocation_tenant_total }}
+                        committed Tenant record{{ '' if allocation_tenant_total == 1 else 's' }}
                         · Frozen Namespace allocations; shared Capsule quotas are counted once per Tenant.
                     </p>
                 </div>
