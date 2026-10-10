@@ -109,13 +109,13 @@
                     {% if tenant.created_at %}
                         <div class="grid min-w-0 gap-1 px-4 py-2.5 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-3">
                             <dt class="text-sm text-content-secondary">Created</dt>
-                            <dd class="text-sm font-semibold tabular-nums text-content-primary">{{ tenant.created_at.strftime('%Y-%m-%d %H:%M') }} UTC</dd>
+                            <dd class="text-sm font-semibold tabular-nums text-content-primary">{{ tenant.created_at.strftime('%Y-%m-%d %H:%M') }}</dd>
                         </div>
                     {% endif %}
                     {% if tenant.updated_at %}
                         <div class="grid min-w-0 gap-1 px-4 py-2.5 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-3">
                             <dt class="text-sm text-content-secondary">Updated</dt>
-                            <dd class="text-sm font-semibold tabular-nums text-content-primary">{{ tenant.updated_at.strftime('%Y-%m-%d %H:%M') }} UTC</dd>
+                            <dd class="text-sm font-semibold tabular-nums text-content-primary">{{ tenant.updated_at.strftime('%Y-%m-%d %H:%M') }}</dd>
                         </div>
                     {% endif %}
                 </dl>
@@ -190,9 +190,33 @@
                 </span>
             </summary>
             <div class="border-t border-outline-subtle ">
-                <div class="divide-y divide-outline-subtle" aria-label="Release governance workflow">
+                <div class="border-t border-outline-subtle px-4 py-4 sm:px-5"
+                 aria-label="Release governance stages">
+                <ol class="grid grid-cols-2 gap-4 sm:grid-cols-4" aria-label="Governed Release sequence">
+                    {% set release_steps = [
+                        ('tenant-release-stage-readiness', 'Preflight', 'Review blockers'),
+                        ('tenant-release-stage-inventory', 'Provider Scope', 'Preserve resources'),
+                        ('tenant-release-stage-approval', 'Independent Approval', 'Separate reviewer'),
+                        ('tenant-release-stage-finalize', 'Verify & Finalize', 'Read-back before Release')
+                    ] %}
+                    {% for step_id, label, caption in release_steps %}
+                        <li class="min-w-0">
+                            <a href="#{{ step_id }}"
+                               class="group/step flex min-w-0 items-start gap-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-outline-default bg-kaori-soft text-xs font-semibold tabular-nums text-kaori-primary group-hover/step:border-kaori-primary"
+                                      aria-hidden="true">{{ loop.index }}</span>
+                                <span class="min-w-0">
+                                    <span class="block break-words text-xs font-semibold text-content-primary">{{ label }}</span>
+                                    <span class="mt-0.5 block break-words text-xs leading-5 text-content-secondary">{{ caption }}</span>
+                                </span>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ol>
+            </div>
+            <div class="divide-y divide-outline-subtle" aria-label="Release governance workflow">
                             {# The release review is an action; evidence and handoff are stable workflow steps, not tabs. #}
-                            <section class="min-w-0 space-y-4 px-5 py-5 sm:px-6 sm:py-6"
+                            <section id="tenant-release-stage-readiness" class="min-w-0 scroll-mt-24 space-y-4 px-5 py-5 sm:px-6 sm:py-6"
                                      aria-label="Release readiness">
                                 <div class="flex flex-wrap items-start justify-between gap-3">
                                     <div class="min-w-0 flex-1">
@@ -274,7 +298,7 @@
                                     </div>
                                 {% endif %}
                             </section>
-                            <section class="min-w-0 px-5 py-5 sm:px-6 sm:py-6"
+                            <section id="tenant-release-stage-inventory" class="min-w-0 scroll-mt-24 px-5 py-5 sm:px-6 sm:py-6"
                                      aria-label="Provider handoff inventory">
                                 <div class="flex flex-wrap items-start justify-between gap-3">
                                     <div class="flex min-w-0 items-start gap-3">
@@ -333,7 +357,7 @@
                                     </p>
                                 {% endif %}
                             </section>
-                            <section class="min-w-0 px-5 py-5 sm:px-6 sm:py-6"
+                            <section id="tenant-release-stage-approval" class="min-w-0 scroll-mt-24 px-5 py-5 sm:px-6 sm:py-6"
                                      aria-label="Governed handoff workflow">
                                 <div class="flex flex-wrap items-start justify-between gap-3">
                                     <div class="flex min-w-0 items-start gap-3">
@@ -778,7 +802,7 @@
                                     </p>
                                 {% endif %}
                             </section>
-                            <section class="min-w-0 px-5 py-5 sm:px-6 sm:py-6"
+                            <section id="tenant-release-stage-finalize" class="min-w-0 scroll-mt-24 px-5 py-5 sm:px-6 sm:py-6"
                                      aria-label="Independent verification and release">
                                 <div class="flex min-w-0 items-start gap-3">
                                     
