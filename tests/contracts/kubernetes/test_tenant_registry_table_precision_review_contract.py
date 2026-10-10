@@ -39,7 +39,7 @@ def _template(name: str) -> str:
 def _header_widths(html: str) -> tuple[int, ...]:
     head = html.split("<thead", 1)[1].split("</thead>", 1)[0]
     return tuple(
-        int(x) for x in re.findall(r"<th[^>]*?w-[[]([0-9]+)%[]]", head)
+        int(x) for x in re.findall(r"<th[^>]*?w-\[([0-9]+)%\]", head)
     )
 
 
