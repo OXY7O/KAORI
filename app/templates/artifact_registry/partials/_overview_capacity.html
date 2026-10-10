@@ -1,12 +1,21 @@
 {% import "components/peer_content_grid.html" as peer_content_grid %}
 <div id="artifact-registry-dashboard-section-capacity" class="space-y-5">
-    <div class="{{ peer_content_grid.layout_classes() }}">
-        <div class="{{ peer_content_grid.column_classes('primary') }}">
-            {% include "artifact_registry/partials/_overview_capacity_snapshot.html" %}
+    {% if not overview.selected_provider %}
+        {% set blocked_state_icon = "gauge" %}
+        {% set blocked_state_label = "Provider Required" %}
+        {% set blocked_state_title = "Select Registry Provider" %}
+        {% set blocked_state_description = "Select a Registry provider to review committed capacity, forecast, and project consumer evidence." %}
+        {% set blocked_state_tone = "warning" %}
+        {% include 'components/states/_blocked_state.html' %}
+    {% else %}
+        <div class="{{ peer_content_grid.layout_classes() }}">
+            <div class="{{ peer_content_grid.column_classes('primary') }}">
+                {% include "artifact_registry/partials/_overview_capacity_snapshot.html" %}
+            </div>
+            <div class="{{ peer_content_grid.column_classes('secondary') }}">
+                {% include "artifact_registry/partials/_overview_forecast_risk.html" %}
+            </div>
         </div>
-        <div class="{{ peer_content_grid.column_classes('secondary') }}">
-            {% include "artifact_registry/partials/_overview_forecast_risk.html" %}
-        </div>
-    </div>
-    {% include "artifact_registry/partials/_overview_top_consumers.html" %}
+        {% include "artifact_registry/partials/_overview_top_consumers.html" %}
+    {% endif %}
 </div>
