@@ -410,6 +410,9 @@ def test_step_four_has_compact_readiness_and_role_scoped_recovery():
     assert 'native_cycle.review_expired' in step
     assert 'native_cycle.restart_blocked_by_readback' in step
     assert 'native_cycle.restart_required' in step
+    assert 'native_cycle.restart_zero_transfer_recheck_required' in step
+    assert 'Last committed read-back classified zero transferred resources' in step
+    assert 'fresh authoritative provider verification' in step
     assert 'row.release_handoff_plan.requested_by == current_user.id' in step
     assert "current_user.has_permission('tenant.manage')" in step
     assert "current_user.has_permission('integrations.manage')" in step
@@ -417,8 +420,10 @@ def test_step_four_has_compact_readiness_and_role_scoped_recovery():
     assert 'name="confirm_handoff_restart"' in step
     assert 'value="restart" required' in step
     assert 'Restart Expired Handoff Plan' in step
-    assert 'Ask the original requester to restart this plan' in step
-    assert 'Resolve partial-transfer recovery before restarting' in step
+    assert 'This account is not the original requester' in step
+    assert 'row.release_handoff_plan.requested_by != current_user.id' in step
+    assert 'Restart requires the original requester with both Tenant and Integrations management permissions' in step
+    assert 'Governed recovery review is required; automatic restart is prohibited.' in step
     assert "tenant_release_step_urls['scope']" in step
     assert "tenant_release_step_urls['approval']" in step
     assert 'External reference' not in step  # Not acceptance evidence.
@@ -427,6 +432,23 @@ def test_step_four_has_compact_readiness_and_role_scoped_recovery():
     assert detail.count('<form ') == 14
     assert detail.count('name="csrf_token"') == 14
 
+
+
+
+
+def test_expired_approval_does_not_offer_a_doomed_native_dry_run():
+    detail = read(DETAIL)
+    approval = detail.split('id="tenant-release-stage-approval"', 1)[1].split(
+        "{% elif tenant_release_step == 'finalize' %}", 1
+    )[0]
+    Environment().parse(detail)
+    assert 'tenant.dry_run_native_release_handoff_route' in approval
+    before_preview = approval.split("tenant.dry_run_native_release_handoff_route", 1)[0]
+    assert 'row.native_release_readiness.approval_complete' in before_preview
+    assert 'row.native_release_readiness.review_complete' in before_preview
+    assert 'Preview Native Transfer' in approval
+    assert detail.count('<form method="post"') == 14
+    assert detail.count('name="csrf_token"') == 14
 
 
 

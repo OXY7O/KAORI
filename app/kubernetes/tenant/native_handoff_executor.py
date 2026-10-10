@@ -48,6 +48,15 @@ def latest_native_handoff_execution(tenant_id: str) -> dict[str, Any] | None:
     return dict(event.metadata_json or {}) if event else None
 
 
+def native_handoff_execution_history(tenant_id: str) -> list[dict[str, Any]]:
+    """All committed provider-executor attempts, including partial failures."""
+    rows = (
+        AuditEvent.query.filter_by(target_type=_TARGET, target_id=tenant_id)
+        .order_by(AuditEvent.id.desc()).all()
+    )
+    return [dict(row.metadata_json or {}) for row in rows]
+
+
 def _component_key(item: dict[str, Any]) -> tuple[str, str, str, str]:
     return (
         str(item.get('namespace') or ''), str(item.get('kind') or ''),

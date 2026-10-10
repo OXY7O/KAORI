@@ -289,6 +289,65 @@ object. Contract tests are authored; runtime tests, light/dark/mobile
 browser QA, CI/CD, Developer Check, Full Admission, UAT, promotion and
 deployment remain HOLD until separately authorized.
 
+## Expired Native plan recovery after canonical zero-transfer read-back (#1057; latest recovery authority)
+
+DevContainer screenshots exposed a **stranded renewal** after an expired
+independently acknowledged Native Release plan: Step 4 treated *any* same-plan
+read-back as evidence of a partial handoff, even when the committed receipt
+reported **0 transferred resources**. The original requester could not use
+`Restart Expired Handoff Plan`; a different account also could not restart
+because separation of duties must remain intact. Step 3 still offered a
+`Preview Native Transfer` dry-run on expired evidence, resulting in an
+expected backend rejection.
+
+A read-back count of zero **alone is never clearance**. Recovery
+`provider_handoff_not_started` is now a narrow, auditable classification
+only when the **full canonical read-back receipt** and its nested recovery
+agree: exact plan SHA, Tenant/cluster/generation/fingerprint, matching unique
+external-handoff resource identity and original UID/resourceVersion; every
+object is `pending_provider_transfer`; provider specs/foreign metadata
+preserved; transferred count is exactly 0, pending count equals exact
+resource scope, and all provider mutation/transfer/consent/Release flags
+are explicitly false. Missing, conflicting, partially transferred, fully
+transferred or legacy counter-only receipts remain **FAIL CLOSED**.
+
+Before an expired plan can be superseded, the requester-only backend:
+1. Revalidates the exact committed, previously acknowledged plan, independent
+   reviewer, expiry timestamps and explicit confirmation.
+2. Reads **all** historical read-back receipts and Native executor attempts
+   for this Tenant and rejects every unsafe event for the same plan.
+   A later zero-transfer observation cannot conceal earlier partial/full
+   transfer or an executor attempt. Invalid/missing SHA receipt provenance
+   also blocks recovery.
+3. Performs the **existing fresh provider-authoritative Release preflight**,
+   including dependency-zero checks, UID/resourceVersion, original live
+   provider identity and unchanged handoff fingerprint. This check remains
+   mandatory even when every historical observation says no transfer.
+4. Acquires the existing Tenant row lock, verifies no competing plan, and
+   re-reads committed read-back/executor history to reject new receipts
+   recorded during the preflight before committing the replacement SHA.
+5. Persists immutable `supersedes_plan_sha256`, restart reason and
+   `restart_zero_transfer_readback_reverified` evidence. The new SHA has
+   **pending** independent review; prior approval/reference/dry-run/
+   successor consent are not inherited and no Kubernetes mutation occurs.
+
+The committed-state Step 4 readiness projection receives read-back and
+executor history for the paginated Tenant set. It distinguishes
+**Safe for fresh verification (not auto-clearance)** from **Recovery
+required**. Only the original requester with existing permissions sees
+the explicit restart confirmation; other users are told to request that
+operator. Step 3 no longer presents Native Dry-Run if the plan/independent
+approval/review has expired. These are presentation hints: server-side
+restart and all other Release security gates are always authoritative.
+
+This bounded follow-up **does not** allow any partial/full transfer retry,
+mark provider ownership transferred, verify successor consent, commit
+Released, bypass X.509/RBAC or create a general rollback engine.
+Native Kubernetes is still authoritative. Human DevContainer review, unit
+tests, contract tests and staging/UAT evidence are pending. CI/CD,
+Developer Check, Full Admission, promotion and deployment remain HOLD
+until separately authorized.
+
 ## Native Release expiry consistency and Step 4 recovery workspace (#1091; latest detail UI authority)
 
 DevContainer feedback confirmed an expired, independently acknowledged Native

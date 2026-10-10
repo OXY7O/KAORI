@@ -202,6 +202,69 @@ def test_prior_handoff_readback_blocks_expired_plan_restart():
     assert projection["release_admitted"] is False
 
 
+
+def test_canonical_zero_transfer_receipt_allows_advisory_restart_with_live_recheck():
+    snapshot = evidence()
+    snapshot['plan'].update({
+        'tenant_id': 'tenant-a', 'cluster_id': 'cluster-a',
+        'generation': 3, 'handoff_fingerprint': 'fp',
+        'handoff_components': [{
+            'kind': 'Namespace', 'namespace': None, 'name': 'sandbox',
+            'uid': 'uid-1', 'resource_version': '21',
+            'handoff': 'external_acceptance_required',
+        }],
+    })
+    component = {
+        'kind': 'Namespace', 'namespace': None, 'name': 'sandbox',
+        'uid': 'uid-1', 'resource_version': '21',
+        'state': 'pending_provider_transfer',
+        'spec_preserved': True, 'foreign_metadata_preserved': True,
+    }
+    recovery = {
+        'status': 'provider_handoff_not_started',
+        'components': [component], 'transferred_count': 0,
+        'pending_count': 1, 'provider_spec_preserved': True,
+        'provider_resource_deleted': False, 'successor_consent_verified': False,
+        'resume_authorized': False, 'release_authorized': False,
+    }
+    receipt = {
+        'tenant_id': 'tenant-a', 'cluster_id': 'cluster-a',
+        'generation': 3, 'plan_sha256': 'a' * 64,
+        'handoff_fingerprint': 'fp', 'status': 'provider_handoff_not_started',
+        'observed_components': [component], 'observed_count': 0,
+        'recovery': recovery, 'provider_handoff_observed': False,
+        'provider_mutation_performed': False, 'provider_handoff_verified': False,
+        'release_authorized': False, 'external_successor_verified': False,
+    }
+    snapshot['plan']['requested_at'] = '2020-01-01T00:00:00+00:00'
+    snapshot['approval']['approved_at'] = '2020-01-01T00:00:00+00:00'
+    snapshot['readback'] = receipt
+    snapshot['readback_history'] = [receipt]
+    snapshot['execution_history'] = []
+
+    ready = project_native_release_readiness(**snapshot)
+    assert ready['restart_required'] is True
+    assert ready['restart_zero_transfer_recheck_required'] is True
+    assert ready['restart_blocked_by_readback'] is False
+    assert ready['release_admitted'] is False
+
+    snapshot['readback_history'] = [
+        receipt, {**receipt, 'status': 'partial_handoff_recovery_required'},
+    ]
+    blocked = project_native_release_readiness(**snapshot)
+    assert blocked['restart_required'] is False
+    assert blocked['restart_blocked_by_readback'] is True
+
+    snapshot['readback_history'] = [receipt]
+    snapshot['execution_history'] = [{
+        'plan_sha256': 'a' * 64, 'status': 'partial_handoff_recovery_required',
+    }]
+    blocked_execution = project_native_release_readiness(**snapshot)
+    assert blocked_execution['restart_required'] is False
+    assert blocked_execution['restart_blocked_by_readback'] is True
+
+
+
 def test_current_independent_review_never_offers_restart():
     projection = project_native_release_readiness(**evidence())
     assert projection["approval_recorded"] is True
@@ -213,7 +276,7 @@ def test_existing_ui_restart_is_explicit_and_scoped_by_original_requester():
     from pathlib import Path
 
     root = Path(__file__).resolve().parents[3]
-    source = (root / "app/templates/kubernetes/tenant/partials/_tenant_registry.html").read_text()
+    source = (root / "app/templates/kubernetes/tenant/partials/_tenant_management_detail.html").read_text()
     route = (root / "app/kubernetes/tenant/routes.py").read_text()
     assert "native_cycle.approval_expired" in source
     assert "native_cycle.restart_blocked_by_readback" in source
