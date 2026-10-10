@@ -160,12 +160,13 @@ def test_page_shows_all_governed_sections_in_authoritative_order():
         'id="tenant-lifecycle-actions"',
         'id="tenant-release-governance"',
         'id="tenant-native-handback"',
-        'id="tenant-namespace-attachment"',
     )
     assert all(label in detail for label in labels)
     assert [detail.index(label) for label in labels] == sorted(
         detail.index(label) for label in labels
     )
+    assert 'tenant-namespace-attachment' not in detail
+    assert 'data-capsule-namespace-attach' not in detail
     assert "tenant.ownership_status == 'adopted'" in detail
     assert "tenant.provider_key == 'native_kubernetes'" in detail
     assert "tenant.provider_key == 'capsule'" in detail
@@ -321,8 +322,8 @@ def test_release_step_three_separates_plan_review_external_claim_and_platform_ad
     ):
         assert action in approval
     assert approval.count('<form ') == 10
-    assert detail.count('<form ') == 18
-    assert detail.count('name="csrf_token"') == 18
+    assert detail.count('<form ') == 17
+    assert detail.count('name="csrf_token"') == 17
 
 
 
@@ -362,8 +363,8 @@ def test_native_platform_admin_acceptance_requires_verified_cluster_tls_in_ui():
     assert "url_for('cluster.edit_cluster', cluster_id=row.cluster.id)" in final
 
     # Existing operations are not deleted and may still render when eligible.
-    assert detail.count('<form ') == 18
-    assert detail.count('name="csrf_token"') == 18
+    assert detail.count('<form ') == 17
+    assert detail.count('name="csrf_token"') == 17
 
 
 def test_step_three_freshness_matches_native_readiness_and_hides_stale_acceptance():
@@ -429,8 +430,8 @@ def test_step_four_has_compact_readiness_and_role_scoped_recovery():
     assert 'External reference' not in step  # Not acceptance evidence.
     assert 'Kubernetes stays authoritative' in step
     assert step.count('<form ') == 1
-    assert detail.count('<form ') == 18
-    assert detail.count('name="csrf_token"') == 18
+    assert detail.count('<form ') == 17
+    assert detail.count('name="csrf_token"') == 17
 
 
 
@@ -472,9 +473,9 @@ def test_recoverable_executor_has_priority_in_both_release_steps():
     assert "tenant_release_step_urls['approval']" in finalize
     assert '"Recovery Required" if label == "KAORI provider handoff"' in projection
     assert '"provider_handoff_recovery_required": provider_handoff_recovery_required' in projection
-    assert detail.count('<form method="post"') == 18
-    assert detail.count('name="csrf_token"') == 18
-    assert detail.count('hx-post=') == 18
+    assert detail.count('<form method="post"') == 17
+    assert detail.count('name="csrf_token"') == 17
+    assert detail.count('hx-post=') == 17
 
 
 
@@ -489,8 +490,8 @@ def test_expired_approval_does_not_offer_a_doomed_native_dry_run():
     assert 'row.native_release_readiness.approval_complete' in before_preview
     assert 'row.native_release_readiness.review_complete' in before_preview
     assert 'Preview Native Transfer' in approval
-    assert detail.count('<form method="post"') == 18
-    assert detail.count('name="csrf_token"') == 18
+    assert detail.count('<form method="post"') == 17
+    assert detail.count('name="csrf_token"') == 17
 
 
 
@@ -539,9 +540,9 @@ def test_native_no_transfer_recovery_keeps_three_independent_governed_actions():
     assert '_verify_original_provider_state(' in approval
     assert "no_transfer_recovery_assessment_sha256" in approval
 
-    assert detail.count('<form method="post"') == 18
-    assert detail.count('name="csrf_token"') == 18
-    assert detail.count('hx-post=') == 18
+    assert detail.count('<form method="post"') == 17
+    assert detail.count('name="csrf_token"') == 17
+    assert detail.count('hx-post=') == 17
 
 
 def test_external_readback_discloses_stale_requirements_before_read_only_inspection():
@@ -577,9 +578,9 @@ def test_external_readback_discloses_stale_requirements_before_read_only_inspect
     assert '"external_reference_current": external_reference_current' in readiness
     assert 'and (dry_run or {}).get("release_authorized") is False' in readiness
     # Render-gating does not delete or silently replace original protected POST.
-    assert detail.count('<form method="post"') == 18
-    assert detail.count('name="csrf_token"') == 18
-    assert detail.count('hx-post=') == 18
+    assert detail.count('<form method="post"') == 17
+    assert detail.count('name="csrf_token"') == 17
+    assert detail.count('hx-post=') == 17
 
 
 
@@ -587,15 +588,15 @@ def test_exact_governance_forms_return_to_same_page_and_global_toast():
     detail = read(DETAIL)
     common = read('app/kubernetes/tenant/route_common.py')
     toast = read('app/templates/components/operational_toast.html')
-    assert detail.count('<form ') == 18
-    assert detail.count('name="csrf_token"') == 18
-    assert detail.count('name="tenant_detail_id"') == 18
-    assert detail.count('registry_state.items()') == 18
-    assert detail.count('hx-target="#tenant-management-detail"') == 18
-    assert detail.count('hx-select="#tenant-management-detail"') == 18
-    assert detail.count('hx-post=') == 18
+    assert detail.count('<form ') == 17
+    assert detail.count('name="csrf_token"') == 17
+    assert detail.count('name="tenant_detail_id"') == 17
+    assert detail.count('registry_state.items()') == 17
+    assert detail.count('hx-target="#tenant-management-detail"') == 17
+    assert detail.count('hx-select="#tenant-management-detail"') == 17
+    assert detail.count('hx-post=') == 17
     assert 'name="tenant_detail_view"' not in detail
-    assert detail.count('name="tenant_detail_section"') == 18
+    assert detail.count('name="tenant_detail_section"') == 17
     assert detail.count('name="tenant_release_step"') == 15
     assert 'tenant_release_step_urls' in common
     assert "context['tenant_release_step']" in common
@@ -617,8 +618,8 @@ def test_release_wizard_navigation_is_fragment_get_with_history_and_plain_link_f
     # preserve normal href while using scoped HTMX GET and canonical URLs.
     assert detail.count('hx-get="{{ tenant_release_step_urls[') == 13
     assert detail.count('hx-push-url="{{ tenant_release_step_urls[') == 13
-    assert detail.count('hx-select="#tenant-management-detail"') == 18
-    assert detail.count('hx-target="#tenant-management-detail"') == 18
+    assert detail.count('hx-select="#tenant-management-detail"') == 17
+    assert detail.count('hx-target="#tenant-management-detail"') == 17
     assert detail.count('hx-select="#tenant-release-governance"') == 13
     assert detail.count('hx-target="#tenant-release-governance"') == 13
     assert detail.count('hx-swap="outerHTML show:none focus-scroll:false"') == 31
@@ -648,13 +649,13 @@ def test_release_action_feedback_reports_server_result_without_persisting_confir
     assert 'A checked box authorizes one submission, not a recorded approval.' in detail
     assert 'The confirmation resets after submission.' in detail
     assert 'hx-history="false"' in detail
-    assert detail.count('hx-disabled-elt="find button[type=\'submit\']"') == 18
-    assert detail.count('disabled:cursor-progress disabled:opacity-60') == 17
+    assert detail.count('hx-disabled-elt="find button[type=\'submit\']"') == 17
+    assert detail.count('disabled:cursor-progress disabled:opacity-60') == 16
     assert 'Processing Tenant request…' in detail
     assert 'fixed bottom-4 right-4' in detail
-    assert detail.count('<form method="post"') == 18
-    assert detail.count('name="csrf_token"') == 18
-    assert detail.count('hx-post=') == 18
+    assert detail.count('<form method="post"') == 17
+    assert detail.count('name="csrf_token"') == 17
+    assert detail.count('hx-post=') == 17
     assert detail.count('name="tenant_release_step"') == 15
 
 
@@ -674,16 +675,21 @@ def test_service_endpoints_and_independent_approval_remain_unchanged():
         'release_tenant_governance_route',
         'finalize_verified_native_release_route',
         'verify_native_successor_handback_route',
-        'attach_existing_capsule_namespace_route',
         'decommission_tenant_route',
     ):
         assert name in detail
     assert 'Acknowledge as Independent Reviewer' in detail
     assert 'handoff_plan.requested_by != current_user.id' in detail
     assert 'row.release_preflight.blockers' in detail
-    assert 'data-capsule-namespace-attach' in detail
-    assert 'name="namespace_uid"' in detail
-    assert 'name="namespace_resource_version"' in detail
+    # Attachment is a Discovery/Adoption operation, not a Tenant Detail form.
+    discovery = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
+    preflight = read('app/templates/kubernetes/tenant/partials/_tenant_adoption_preflight.html')
+    routes = read('app/kubernetes/tenant/routes.py')
+    assert 'data-capsule-namespace-attach' not in detail
+    assert 'tenant-namespace-attachment' not in detail
+    assert 'Review Attachment' in discovery
+    assert 'tenant_adoption_attachment_only' in preflight
+    assert 'attach_existing_capsule_namespace_route' in routes
     assert "destructive_modal.render('tenant-decommission-modal'" in detail
     assert 'data-destructive-modal-open' in detail
     assert 'name="kubernetes_successor_token"' not in detail
@@ -826,8 +832,8 @@ def test_compact_provider_and_lifecycle_evidence_without_duplicate_accordions():
     assert "for blocker in decommission.blockers" in overview
     assert '{{ blocker }}' in overview
     assert "destructive_modal.render('tenant-decommission-modal'" in detail
-    assert detail.count('name="csrf_token"') == 18
-    assert detail.count('<form ') == 18
+    assert detail.count('name="csrf_token"') == 17
+    assert detail.count('<form ') == 17
 
 
 def test_release_is_permanent_and_other_governance_sections_remain_accessible():
@@ -835,7 +841,7 @@ def test_release_is_permanent_and_other_governance_sections_remain_accessible():
     release = detail.split('id="tenant-release-governance"', 1)[1].split(
         'id="tenant-native-handback"', 1
     )[0]
-    names = ('tenant-native-handback', 'tenant-namespace-attachment')
+    names = ('tenant-native-handback',)
     assert '<section id="tenant-release-governance"' in detail
     assert '<details id="tenant-release-governance"' not in detail
     assert '<summary' not in release.split('aria-label="Release wizard steps"', 1)[0]
@@ -848,7 +854,7 @@ def test_release_is_permanent_and_other_governance_sections_remain_accessible():
         assert f'<details id="{id_}" name="tenant-governance"' in detail
     assert '<summary class="flex min-h-20 cursor-pointer' in detail
     for name in ('Release Governance', 'Platform Admin Handback',
-                 'Namespace Attachment', 'Lifecycle controls'):
+                 'Lifecycle controls'):
         assert name in detail
     assert '<details id="tenant-provider-authority"' not in detail
     assert '<details id="tenant-lifecycle-actions"' in detail

@@ -16,6 +16,29 @@ Memberships, access grants, credentials, resource profiles, policy, activity cor
 
 Provider binding is per tenant. `native_kubernetes` and `capsule` are the initial provider identities. One governed capability for one tenant has one active reconciliation authority at a time. A binding must never change merely because another provider becomes unavailable. Capsule-to-Native authority transfer is permitted only through explicit `native_recovery` after equivalent enforceable protections are materialized and verified.
 
+## Capsule Namespace attachment entry point (#1124; current UI authority)
+
+Initial **Adopt Capsule Tenant** already imports every Namespace with
+unambiguous Capsule correlation in the same committed KAORI adoption.
+Subsequent Namespaces added directly to Capsule may surface in live
+**Tenant Discovery** as separate, ungoverned `Capsule Namespace` rows.
+Only these eligible rows offer **Review Attachment**; adoption of a new
+Tenant continues to offer **Review Adoption**. The existing shared
+preflight handles Capsule's single existing-Tenant Environment target,
+provider UID/resourceVersion, ownership and RBAC evidence, and submits
+through the canonical `/discovery/adopt` handler. Managed/blocked rows,
+missing privileges and ambiguous ownership never offer an actionable attach.
+
+Tenant Detail no longer shows an unconditional **Namespace Attachment /
+Available** accordion or asks for manual provider identifiers. No new
+provider API, callback or approval authority is introduced. The legacy
+attachment handler may remain registered for compatibility but is not
+presented as a second onboarding UI. Capsule provider remains authoritative
+and attach is mirror-only, with no Kubernetes write or implicit RBAC grant.
+The removed accordion also removes one HTMX/CSRF POST form; remaining
+Release/Handback/Decommission forms keep existing behavior and shared
+Violet layout. CI/CD, automated gates, Visual QA and formal UAT remain HOLD.
+
 ## Ownership
 
 KAORI distinguishes `managed`, `discovered`, and `adopted` resources. Discovery must not silently claim provider resources.
@@ -880,8 +903,9 @@ a clear **two-column Tenant Overview** (identity/history facts beside
 description and links to existing KAORI pages). All long workflows remain
 on this one routable Tenant page, but present as accessible native
 `details/summary` governance sections: **Release Governance**, Native
-Platform Admin Handback/Re-adopt, Capsule Namespace Attachment, Provider
-Authority, Lifecycle. Inapplicable mutation sections stay absent because
+Platform Admin Handback/Re-adopt, Provider Authority and Lifecycle.
+Capsule Namespace attachment belongs to Tenant Discovery/Adoption, not to
+this management governance page. Inapplicable mutation sections stay absent because
 the original permissions and provider/lifecycle checks remain authoritative.
 
 Release shows a **four-stage stepper preview by default**. Its full
@@ -932,9 +956,10 @@ Namespace/environment scope, Cluster, ownership and reconciliation
 authority. Avoid duplicating Tenant name/lifecycle into KPI grids.
 The normal page then presents clear full-width sections, in lifecycle
 order: **Release Governance** (only where eligible), **Platform Admin
-Handback/Re-adopt** (only Released Native where eligible), **Capsule
-Namespace Attachment** (only applicable), **Provider Authority**, and
-**Lifecycle Actions**. Every section has a clear heading, concise
+Handback/Re-adopt** (only Released Native where eligible), **Provider Authority**, and **Lifecycle Actions**. Attach a previously
+ungoverned Capsule Namespace only from **Tenant Discovery → Review Attachment**
+under the already-governed Capsule Tenant, using its existing provider-
+verified UID/resourceVersion preflight and explicit destination Environment. Every section has a clear heading, concise
 description, authoritative evidence and only its legitimate actions.
 Release has a single full-width bordered panel with four divided phases:
 **01 Preflight and blockers → 02 Provider handoff scope → 03 Independent

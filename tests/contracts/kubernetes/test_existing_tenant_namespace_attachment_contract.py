@@ -115,6 +115,40 @@ def test_adoption_confirmation_result_and_submit_action_follow_selected_mode():
     assert 'Adopted / Provider Mirrored' in ui
 
 
+
+def test_capsule_namespace_attachment_stays_in_discovery_not_tenant_detail():
+    discovery = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
+    preflight = read('app/templates/kubernetes/tenant/partials/_tenant_adoption_preflight.html')
+    detail = read('app/templates/kubernetes/tenant/partials/_tenant_management_detail.html')
+    adoption = read('app/kubernetes/tenant/discovery_adoption.py')
+    discovery_service = read('app/kubernetes/tenant/discovery_service.py')
+    routes = read('app/kubernetes/tenant/routes.py')
+    common = read('app/kubernetes/tenant/route_common.py')
+
+    Environment().parse(discovery)
+    Environment().parse(preflight)
+    Environment().parse(detail)
+    assert "row.management_status == 'Discovered' and can_manage" in discovery
+    assert "row.provider_key == 'capsule' and row.resource_kind == 'Capsule Namespace'" in discovery
+    assert "'Review Attachment' if is_capsule_attachment else 'Review Adoption'" in discovery
+    assert 'data-tenant-adoption-load' in discovery
+    assert 'hx-target="#tenant-adoption-preflight-slot"' in discovery
+    assert 'tenant_adoption_attachment_only' in preflight
+    assert 'name="attach_environment_id"' in preflight
+    assert 'name="provider_uid"' in preflight
+    assert 'name="provider_resource_version"' in preflight
+    assert 'Attach Capsule Namespace' in preflight
+    assert '_capsule_namespace_records(context, environment, allocation)' in adoption
+    assert 'managed_namespaces.get((cluster_key, name)) is not None' in discovery_service
+    assert "'management_status': 'Blocked' if blocked else 'Discovered'" in discovery_service
+    assert 'attach_discovered_capsule_namespace_committed(request.form)' in routes
+    assert 'id="tenant-namespace-attachment"' not in detail
+    assert 'data-capsule-namespace-attach' not in detail
+    assert 'namespace_uid' not in detail
+    assert "allowed_sections.add('attachment')" not in common
+    assert "'attachment': 'tenant-namespace-attachment'" not in common
+
+
 def test_review_adoption_preflight_modal_survives_htmx_swap_target_variants():
     discovery = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
     preflight = read('app/templates/kubernetes/tenant/partials/_tenant_adoption_preflight.html')
