@@ -22,7 +22,7 @@ def _item(monkeypatch, *, plan: dict, user_id: int, current_sha: str | None = No
     clock = now or datetime.now(UTC)
     monkeypatch.setattr(
         approval_inbox, "url_for",
-        lambda endpoint, **kwargs: f"/tenant/{kwargs.get('manage_tenant_id')}",
+        lambda endpoint, **kwargs: f"/tenant/{kwargs.get('tenant_id')}",
     )
     return approval_inbox._present_handoff_request(
         plan=plan,
@@ -118,10 +118,10 @@ def test_work_inbox_is_bound_to_committed_evidence_and_existing_notification_dec
     panel = (
         root / "app/templates/platform_operations/notifications/partials/_notification_deck_inbox.html"
     ).read_text(encoding="utf-8")
-    modal = (root / "app/templates/kubernetes/tenant/partials/_tenant_registry.html").read_text(
+    detail = (root / "app/templates/kubernetes/tenant/partials/_tenant_management_detail.html").read_text(
         encoding="utf-8"
     )
-    js = (root / "app/static/js/native_dialogs.js").read_text(encoding="utf-8")
+    inbox = (root / "app/kubernetes/tenant/approval_inbox.py").read_text(encoding="utf-8")
 
     assert "get_tenant_release_work_inbox(user_id=user_id)" in queries
     assert "inbox_unread_count += tenant_approval_inbox" in queries
@@ -129,5 +129,6 @@ def test_work_inbox_is_bound_to_committed_evidence_and_existing_notification_dec
     assert "Tenant Release approval requests" in panel
     assert "Resolved by another reviewer" in panel or "approval.state" in panel
     assert "Review Handoff in Tenant Management" in panel
-    assert "data-kaori-dialog-auto-open" in modal
-    assert "openSelectedDialog" in js
+    assert "tenant.tenant_detail" in inbox
+    assert "id=\"tenant-management-detail\"" in detail
+    assert "Acknowledge as Independent Reviewer" in detail
