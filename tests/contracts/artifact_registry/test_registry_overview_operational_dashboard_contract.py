@@ -37,6 +37,7 @@ def test_artifact_registry_overview_consumes_operational_dashboard_family() -> N
     assert 'posture_grid.render(overview_metrics, columns=4)' in kpis
     assert 'for kpi in overview.kpis' in kpis
     assert "body_classes='p-0'" in signal
+    assert "grouped=true" in signal
     assert 'components/operational_signal_overview.html' in signal
     assert 'hx-trigger="load"' in signal
     assert 'hx-push-url="true"' in signal
@@ -437,12 +438,16 @@ def test_artifact_registry_overview_grouped_kpi_uses_existing_signal_shell() -> 
     signal = read('app/templates/artifact_registry/partials/_overview_signal_overview.html')
     shell = read('app/templates/components/operational_signal_overview.html')
     grid = read('app/templates/components/resource_posture_grid.html')
-    for template in (kpis, signal, shell, grid):
+    skeleton = read('app/templates/components/operational_section_loading.html')
+    for template in (kpis, signal, shell, grid, skeleton):
         Environment().parse(template)
 
     assert "body_classes='p-5'" in shell
     assert '<div class="{{ body_classes }}">{{ signal_content|safe }}</div>' in shell
     assert "body_classes='p-0'" in signal
+    assert "grouped=true" in signal
+    assert "macro kpis(" in skeleton and "grouped=false" in skeleton
+    assert "grid gap-px bg-outline-subtle" in skeleton
     assert "posture_grid.render(overview_metrics, columns=4)" in kpis
     for field in ('kpi.icon', 'kpi.label', 'kpi.value', 'kpi.description'):
         assert field in kpis
