@@ -109,6 +109,16 @@ def build_tenant_contribution_rows(cluster_id: str) -> list[dict[str, object]]:
         .all()
     )
     shared, ambiguous = _canonical_shared_allocation_quota(cluster_id)
+    return _partition_tenant_contributions(tenants, namespaces, shared, ambiguous)
+
+
+def _partition_tenant_contributions(
+    tenants: list[Tenant],
+    namespaces: list[TenantNamespace],
+    shared: Mapping[str, Mapping[str, object]],
+    ambiguous: list[str],
+) -> list[dict[str, object]]:
+    """Pure read-model partition; match #654's shared and ambiguous accounting."""
     by_tenant: dict[str, list[TenantNamespace]] = defaultdict(list)
     for row in namespaces:
         by_tenant[str(row.environment.tenant_id)].append(row)
