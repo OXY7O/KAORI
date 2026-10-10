@@ -249,6 +249,31 @@ different requester/reviewer, light/dark, mobile and long digest is pending.
 CI/CD, Developer Check, Full Admission, staging UAT, main promotion and
 deployment remain HOLD until explicitly authorized.
 
+## Managed allocation blocker contract — preflight vs handoff admission (#1085 corrective)
+
+A Resource Profile-linked adopted Namespace produces a **known, explicit
+handoff obligation** in `release_preflight._release_blockers`, not an
+unresolved identity failure. The independent review/restart admission
+function `release_handoff_approval._can_confirm_plan` must recognize
+that **exact current managed-allocation message** alongside previously
+recognized handoff obligations. In the #1085 copy refinement, this message
+was lengthened without updating `_EXPECTED_HANDOFF_FRAGMENTS`, causing a
+correctly classified preflight snapshot to fail restart with the generic
+`Unresolved provider, identity or governance blockers prevent approval`
+error. The corrective follow-up synchronizes the narrow known-text
+recognition with the generated preflight wording and adds a test passing
+the actual `_release_blockers` output into `_can_confirm_plan`.
+
+This does **not** permit missing/changed provider UID or resourceVersion,
+ambiguous or foreign ownership, active Tenant dependencies, unknown
+provenance, malformed inventory or already-read-back partial handoff.
+Independent approval, fresh authoritative provider evidence, exact plan
+SHA/fingerprint and requester-only expired-plan restart remain compulsory.
+The provider remains authoritative; no provider mutation, automatic
+acceptance or Release occurs. Any future changes to handoff blocker copy
+must update its admission classification and coupled regression tests in
+the same issue/PR.
+
 ## Tenant Release Step 2 — compact two-line resource summaries (#1085; latest detail UI authority)
 
 Human DevContainer review of the #1085 initial evidence-first design found
