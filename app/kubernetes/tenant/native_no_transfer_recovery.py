@@ -12,6 +12,8 @@ import json
 from datetime import UTC, datetime
 from typing import Any
 
+from kubernetes.client.rest import ApiException
+
 from app.extensions.db import db
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
 from app.kubernetes.tenant.native_handoff_dry_run import _read_resource
@@ -209,6 +211,8 @@ def _verify_original_provider_state(
     cluster = db.session.get(Cluster, plan['cluster_id'])
     if cluster is None:
         raise ValueError('Registered Native provider connection is unavailable.')
+    if getattr(getattr(cluster, 'kubernetes_connection', None), 'verify_ssl', None) is not True:
+        raise ValueError('Verified Kubernetes API TLS is required for authoritative recovery.')
     try:
         core = runtime_adapter.build_client(cluster).core_api()
         live = {_component_key(row): _read_resource(core, row) for row in snapshots}
@@ -216,7 +220,7 @@ def _verify_original_provider_state(
             previewed_components=snapshots, live_components=live,
             tenant_id=tenant_id, successor_owner=plan['successor_owner'],
         )
-    except (ValueError, TypeError, AttributeError) as exc:
+    except (ApiException, ValueError, TypeError, AttributeError) as exc:
         raise ValueError('Authoritative provider ownership, UID/RV or retained metadata differs.') from exc
     if (
         proof.get('status') != 'provider_handoff_not_started'
@@ -312,6 +316,12 @@ def authorize_native_no_transfer_recovery_committed(
         raise ValueError('Tenant changed during recovery authorization.')
     if latest_no_transfer_assessment(tenant_id).get('assessment_sha256') != assessment_sha256:
         raise ValueError('A newer recovery assessment replaced the reviewed evidence.')
+    if _source_history(tenant_id, plan)['digest'] != assessed['history_digest']:
+        raise ValueError('Provider history changed during independent recovery decision.')
+    if latest_no_transfer_decision(tenant_id) and (
+        latest_no_transfer_decision(tenant_id).get('assessment_sha256') == assessment_sha256
+    ):
+        raise ValueError('A concurrent reviewer already decided this recovery assessment.')
     receipt = {
         'status': 'authorized_for_requester_restart',
         'tenant_id': tenant_id, 'cluster_id': plan['cluster_id'],
