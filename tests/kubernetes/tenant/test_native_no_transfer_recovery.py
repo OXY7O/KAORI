@@ -284,7 +284,7 @@ def test_restart_rechecks_complete_multi_attempt_lineage(monkeypatch):
         'assessment_sha256': a['assessment_sha256'],
         'history_digest': a['history_digest'],
         'provider_proof_sha256': a['provider_proof_sha256'],
-        'assessed_by': p['requested_by'], 'authorized_by': 44,
+        'assessed_by': p['requested_by'], 'authorized_by': 43,
         'authorized_at': datetime.now(UTC).isoformat(),
     }
     monkeypatch.setattr(recovery, 'latest_no_transfer_decision', lambda *_: decision)
@@ -294,6 +294,8 @@ def test_restart_rechecks_complete_multi_attempt_lineage(monkeypatch):
         'attempt_count': 2,
     }
     monkeypatch.setattr(recovery, '_source_history', lambda *_: source)
+    # Original executor (43) may independently review the two-pair proof;
+    # the original requester (42) remains the only plan-renewal actor.
     assert recovery.require_authorized_no_transfer_restart(
         tenant_id=p['tenant_id'], plan=p, actor_user_id=42,
     ) == decision
