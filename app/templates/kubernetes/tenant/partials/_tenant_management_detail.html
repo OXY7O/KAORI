@@ -577,8 +577,13 @@
                                             {{ table_label.status_label('Approval Expired', 'warning') }}
                                         {% elif tenant.provider_key == 'native_kubernetes' and row.get('native_release_readiness') and row.native_release_readiness.review_expired %}
                                             {{ table_label.status_label('Review Expired', 'warning') }}
-                                        {% elif tenant.provider_key == 'native_kubernetes' and row.cluster
-                                              and (not row.cluster.kubernetes_connection
+                                        {% elif tenant.provider_key == 'native_kubernetes'
+                                              and current_handoff_approval
+                                              and current_handoff_approval.plan_sha256 == current_handoff_plan.plan_sha256
+                                              and row.get('native_release_readiness')
+                                              and row.native_release_readiness.approval_complete
+                                              and row.native_release_readiness.review_complete
+                                              and (not row.cluster or not row.cluster.kubernetes_connection
                                                    or row.cluster.kubernetes_connection.verify_ssl is not true) %}
                                             {{ table_label.status_label('Verified TLS Required', 'warning') }}
                                         {% elif current_handoff_approval and current_handoff_approval.plan_sha256 == current_handoff_plan.plan_sha256 %}
