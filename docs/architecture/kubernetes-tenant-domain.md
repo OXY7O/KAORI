@@ -122,16 +122,20 @@ committed plan and independent approval before writing another AuditEvent:
 regardless of who submits the request; **acknowledged** blocks re-preparation
 while external provider handoff is pending. It cannot silently turn the
 independent reviewer into a new requester. A correctly formed **expired and
-unacknowledged** plan may be replaced only through a fresh canonical provider
-preflight. Unexpected statuses, malformed or future timestamp evidence fail
-closed. No new backend approval executor, bypass, automatic plan amendment or
+unacknowledged** plan may be renewed only by the **same original requester**
+through a fresh canonical provider preflight. A different reviewer cannot
+silently take over the expired request; a change of requester needs a separate
+explicit reassignment workflow. Unexpected statuses, malformed or future
+timestamp evidence fail closed. No new backend approval executor, bypass, automatic plan amendment or
 privileged Super Admin exception is introduced. Restarting an acknowledged
 handoff requires a separate governed authority/workstream, not this UI.
 
 The Registry computes `release_handoff_preparation_state` using the exact
 same service predicate as the backend. The **Prepare Handoff** form is shown
-only for an available or expired/unacknowledged plan; a pending/acknowledged
-plan shows a locked successor/change summary. The independent reviewer sees
+only when there is no plan, or when an expired/unacknowledged plan is
+reopened by the original requester; a pending/acknowledged plan and other
+operators facing an expired plan see the locked successor/change summary.
+The independent reviewer sees
 **Acknowledge as Independent Reviewer** only while the current plan is
 pending and the viewer is a different actor with existing permissions.
 A requester cannot approve their own plan and another authorized operator
