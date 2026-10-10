@@ -21,6 +21,7 @@ from app.kubernetes.tenant.allocation_overview import (
     build_tenant_contribution_rows,
     describe_tightest_headroom,
     filter_tenant_contribution_rows,
+    summarize_tenant_contributions,
 )
 from app.kubernetes.tenant.allocation_drift import (
     accept_provider_allocation_state_committed,
@@ -357,6 +358,7 @@ def resource_profiles():
     context['allocation_tenant_rows'] = []
     context['allocation_tenant_pagination'] = None
     context['allocation_tenant_total'] = 0
+    context['allocation_tenant_summary'] = {'tenants': 0, 'namespaces': 0, 'shared': 0, 'attention': 0}
     allocation_search = str(request.args.get('allocation_search') or '').strip()
     context['allocation_search'] = allocation_search
     if active_view == 'capacity' and selected is not None:
@@ -370,6 +372,7 @@ def resource_profiles():
         }
         tenant_rows = build_tenant_contribution_rows(str(selected['cluster'].id))
         context['allocation_tenant_total'] = len(tenant_rows)
+        context['allocation_tenant_summary'] = summarize_tenant_contributions(tenant_rows)
         tenant_rows = filter_tenant_contribution_rows(tenant_rows, allocation_search)
         context['allocation_tenant_rows'], context['allocation_tenant_pagination'] = paginate_sequence(
             tenant_rows,
