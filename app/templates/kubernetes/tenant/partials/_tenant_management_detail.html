@@ -994,12 +994,9 @@
                                                         </form>
                                                     {% endif %}
                                                 {% endif %}
-                                                {% if tenant.provider_key == 'native_kubernetes'
-                                                      and successor_claim
-                                                      and successor_claim.plan_sha256 == handoff_plan.plan_sha256
-                                                      and row.release_native_handoff_dry_run
-                                                      and row.release_native_handoff_dry_run.status == 'dry_run_passed'
-                                                      and row.release_native_handoff_dry_run.plan_sha256 == handoff_plan.plan_sha256 %}
+                                                {% if tenant.provider_key == 'native_kubernetes' and row.get('native_release_readiness') %}
+                                                    {% set readback_status = row.native_release_readiness %}
+                                                    {% if readback_status.external_readback_prerequisites_current %}
                                                     <form method="post"
                                                           action="{{ url_for('tenant.inspect_native_external_handoff_route', tenant_id=tenant.id) }}"
                                                           hx-post="{{ url_for('tenant.inspect_native_external_handoff_route', tenant_id=tenant.id) }}"
@@ -1017,26 +1014,58 @@
                                                 <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
                                             {% endfor %}
                                                         <input type="hidden" name="plan_sha256" value="{{ handoff_plan.plan_sha256 }}">
+                                                        <p class="text-xs font-semibold text-content-primary">External operator handoff — inspection only</p>
+                                                        <p class="text-xs leading-5 text-content-muted">Use only after a separate external operator changed provider ownership. For KAORI-controlled transfer, use the governed Native Handoff executor instead.</p>
                                                         <label class="flex items-start gap-2 text-sm leading-6 text-content-secondary">
                                                             <input type="checkbox" name="confirm_native_handoff_readback"
                                                                    value="inspect" required
                                                                    class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
-                                                            <span>Read provider ownership after an external operator handoff.
-                                                                This does not prove successor consent or authorize Release.</span>
+                                                            <span>An external operator already completed the ownership handoff. Inspect Kubernetes markers without modifying resources; this does not verify successor consent or authorize Release.</span>
                                                         </label>
                                                         <button type="submit"
                                                                 class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-progress disabled:opacity-60">
                                                             <i data-lucide="scan-eye" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                                            Verify Provider Read-Back
+                                                            Inspect External Handoff
                                                         </button>
                                                     </form>
+                                                    {% else %}
+                                                        <div class="mt-2 flex min-w-0 items-start gap-2.5 rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5"
+                                                             role="status" aria-label="External read-back prerequisites">
+                                                            <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                                            <div class="min-w-0 flex-1">
+                                                                <p class="text-xs font-semibold text-content-primary">External handoff inspection is unavailable</p>
+                                                                {% if readback_status.approval_expired %}
+                                                                    <p class="mt-1 text-xs leading-5 text-content-secondary">The plan or independent approval has expired. The original requester must restart it and a different operator must approve the new SHA. Old references and dry-run evidence cannot be reused.</p>
+                                                                    <a href="{{ tenant_release_step_urls['finalize'] }}"
+                                                                       hx-get="{{ tenant_release_step_urls['finalize'] }}"
+                                                                       hx-target="#tenant-release-governance"
+                                                                       hx-select="#tenant-release-governance"
+                                                                       hx-swap="outerHTML show:none focus-scroll:false"
+                                                                       hx-push-url="{{ tenant_release_step_urls['finalize'] }}"
+                                                                       hx-indicator="#tenant-management-loading"
+                                                                       class="mt-2 inline-flex min-h-9 items-center gap-1.5 text-xs font-semibold text-kaori-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                                        View recovery steps <i data-lucide="arrow-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                                    </a>
+                                                                {% elif not readback_status.approval_complete %}
+                                                                    <p class="mt-1 text-xs leading-5 text-content-secondary">A current independent approval for the exact plan SHA is required before provider inspection.</p>
+                                                                {% elif not readback_status.external_reference_current %}
+                                                                    <p class="mt-1 text-xs leading-5 text-content-secondary">The external successor reference is missing or expired for this plan. A reference alone is not verified successor acceptance.</p>
+                                                                {% elif not readback_status.dry_run_passed %}
+                                                                    <p class="mt-1 text-xs leading-5 text-content-secondary">A fresh passed Native dry-run for the same plan is required. The historical Dry-Run Passed receipt may be expired.</p>
+                                                                {% else %}
+                                                                    <p class="mt-1 text-xs leading-5 text-content-secondary">Current plan, independent reviewer, reference and dry-run must match the committed provider scope and fingerprint.</p>
+                                                                {% endif %}
+                                                                <p class="mt-1 text-xs leading-5 text-content-muted">This action only inspects ownership after an external operator has actually handed over the provider objects; it never performs the transfer.</p>
+                                                            </div>
+                                                        </div>
+                                                    {% endif %}
                                                 {% endif %}
                                                 {% set handoff_readback = row.release_native_handoff_readback %}
                                                 {% if handoff_readback and handoff_readback.plan_sha256 == handoff_plan.plan_sha256 %}
                                                     <p class="text-sm leading-6 text-content-secondary">
                                                         {{ table_label.status_label('Acceptance Unverified', 'warning') }}
-                                                        {{ handoff_readback.observed_count }} provider resources read back.
-                                                        External acceptance and governance Release remain blocked.
+                                                        Last recorded read-back: {{ handoff_readback.observed_count }} provider resources observed.
+                                                        This historical observation does not verify external acceptance or authorize Release.
                                                     </p>
                                                 {% endif %}
                                                 {% set dry_run = row.release_native_handoff_dry_run %}
