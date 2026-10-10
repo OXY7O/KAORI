@@ -65,6 +65,31 @@ workflows with empty and populated datasets, browser refresh/back/forward,
 per-registry filters/Rows/HTMX, light/dark and mobile views. This is not
 staging UAT or production acceptance evidence.
 
+## Tenant Overview committed record sheet (#1081; current detail-record UI authority)
+
+Human DevContainer review of the two detached #1075 Identity/Governance cards
+found the Governance panel half empty and audit data visually scattered.
+Single-Tenant **Tenant Overview** is now one cohesive, responsive, full-width
+record sheet beneath the existing #1079 **Governance Scope** metric grid:
+two balanced content areas (**Identity & Origin**, **Governance &
+Responsibility**) followed by full-width **Record History** and a
+non-truncated **Description**. This is detail/provenance information, not
+another cluster-wide KPI dashboard.
+
+The registered Cluster, provider binding and exact Tenant ID retain their
+committed values; technical ID uses the existing `technical_value.render`
+macro with monospace and safe wrapping. Ownership, lifecycle semantic status
+and reconciliation authority remain factual (no derived health or grant).
+Generation, original registration time, last updated time and optional
+historical Namespace lineage remain accessible; missing timestamps are
+explicitly `Not recorded`, and history is distinguished from active
+Namespaces. Long values wrap on mobile and light/dark surfaces reuse Violet
+tokens and shared section/semantic-label conventions. No Quick Links, extra
+provider fetch, schema change or mutation control. The separate
+**Authority Boundary** note and all 14 CSRF/HTMX release/handback/attach/
+lifecycle forms remain untouched. Browser Visual QA, Developer Check and
+Full Admission are not claimed; CI/CD and deployment remain HOLD.
+
 ## Tenant Details Governance Scope — shared estate posture composition (#1079; current scope UI authority)
 
 Human visual reference: the existing **Kubernetes Tenant Overview → Governance
@@ -145,7 +170,7 @@ The Hero remains the existing `page_hero.context_card()` composition; its
 supporting copy is now **“Manage Tenant governance and lifecycle.”** No new
 Hero taxonomy or provider readiness panel was added.
 
-The separate **Identity & Origin** and **Governance State** Overview surfaces
+The former **Identity & Origin** and **Governance State** Overview surfaces
 present canonical Tenant ID, Cluster, Provider, Generation, registered date,
 description, Ownership, Lifecycle, Reconciliation authority, updated date
 and historical Namespace lineage where applicable. Long values wrap,
