@@ -693,7 +693,12 @@
                                                           and row.release_native_handoff_dry_run
                                                           and row.release_native_handoff_dry_run.status == 'dry_run_passed'
                                                           and row.release_native_handoff_dry_run.plan_sha256 == handoff_plan.plan_sha256
-                                                          and (not live_handoff or live_handoff.plan_sha256 != handoff_plan.plan_sha256) %}
+                                                          and (not live_handoff or live_handoff.plan_sha256 != handoff_plan.plan_sha256
+                                                               or live_handoff.status == 'partial_handoff_recovery_required')
+                                                          and row.native_release_readiness
+                                                          and row.native_release_readiness.approval_complete
+                                                          and row.native_release_readiness.verified_successor_acceptance
+                                                          and row.native_release_readiness.dry_run_passed %}
                                                         <form method="post"
                                                               action="{{ url_for('tenant.execute_native_release_handoff_route', tenant_id=tenant.id) }}"
                                                               hx-post="{{ url_for('tenant.execute_native_release_handoff_route', tenant_id=tenant.id) }}"
@@ -721,7 +726,7 @@
                                                             <button type="submit"
                                                                     class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                                                                 <i data-lucide="arrow-right-left" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                                                Execute Native Handoff
+                                                                {{ 'Resume Verified Native Handoff' if live_handoff and live_handoff.status == 'partial_handoff_recovery_required' else 'Execute Native Handoff' }}
                                                             </button>
                                                         </form>
                                                     {% endif %}
