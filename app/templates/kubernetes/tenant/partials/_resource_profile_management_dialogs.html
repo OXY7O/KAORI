@@ -15,93 +15,77 @@
             class="kaori-native-dialog m-auto w-[calc(100vw-1.5rem)] max-w-7xl overflow-hidden rounded-2xl border border-outline-default bg-surface-card p-0 shadow-2xl sm:w-[calc(100vw-3rem)]">
         <section class="flex max-h-[calc(100dvh-2rem)] min-h-0 flex-col overflow-hidden"
                  role="document">
-            <header class="shrink-0 border-b border-outline-subtle bg-surface-card px-5 py-4 sm:px-6">
-                <div class="flex min-w-0 items-start justify-between gap-4">
-                    <div class="flex min-w-0 items-start gap-3">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
-                              aria-hidden="true">
-                            <i data-lucide="{{ 'settings-2' if editable else 'lock-keyhole' }}"
-                               class="h-5 w-5"></i>
-                        </span>
-                        <div class="min-w-0">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <p class="text-xs font-semibold text-kaori-primary">{{ 'Custom Resource Profile' if editable else 'KAORI Built-in Preset' }}</p>
-                                {{ table_label.status_label('Enabled' if profile.enabled else 'Disabled', 'normal' if profile.enabled else 'unknown') }}
-                            </div>
-                            <h2 id="resource-profile-manage-{{ profile.id }}-title"
-                                class="mt-1 break-words text-lg font-semibold leading-7 text-content-primary">{{ profile.name }}</h2>
-                            <p class="mt-1 max-w-3xl text-xs leading-5 text-content-muted">
-                                {% if editable %}
-                                    Edit the reusable Custom contract. Allocation changes create the next version for future use; existing Namespace snapshots remain frozen.
-                                {% else %}
-                                    Preset sizing stays fixed. Control changes create a new version; Namespace snapshots stay pinned until rollout.
-                                {% endif %}
-                            </p>
-                        </div>
+            <header class="shrink-0 border-b border-outline-subtle bg-surface-card px-4 py-4 sm:px-6">
+                <div class="flex min-w-0 items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold text-kaori-primary">
+                            {{ 'Custom Resource Profile' if editable else 'KAORI Built-in Preset' }}
+                        </p>
+                        <h2 id="resource-profile-manage-{{ profile.id }}-title"
+                            class="mt-1 text-lg font-semibold text-content-primary">
+                            {{ 'Manage Resource Profile' if editable else 'Resource Profile Details' }}
+                        </h2>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">
+                            {{ 'Update reusable intent; Namespace snapshots stay pinned.' if editable
+                               else 'Fixed preset values; approved control changes create a new version.' }}
+                        </p>
                     </div>
                     <button type="button"
                             data-kaori-dialog-close
-                            class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted transition-colors hover:bg-kaori-soft hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
+                            class="{{ action_button.classes('secondary') }} shrink-0"
                             aria-label="Close Resource Profile">
                         <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
                     </button>
                 </div>
             </header>
-            <div class="min-h-0 flex-1 space-y-5 overflow-y-auto bg-surface-page p-5 sm:p-6">
-                {% if profile.description %}
-                    <section aria-label="Resource Profile description" class="min-w-0">
-                        <h3 class="text-xs font-semibold text-content-primary">Description</h3>
-                        <p class="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-content-secondary">{{ profile.description }}</p>
-                    </section>
-                {% endif %}
-                <dl class="grid gap-px overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle sm:grid-cols-2 lg:grid-cols-4">
-                    <div class="bg-surface-card p-3.5">
-                        <dt class="text-xs uppercase tracking-wide text-content-muted">Contract</dt>
-                        <dd class="mt-1 text-sm font-semibold text-content-primary">
-                            {{ profile_class_labels.get(profile.profile_class, profile.profile_class|replace('_', ' ') |title) }} · v{{ profile.version }}
-                        </dd>
-                        <dd class="mt-1 text-xs text-content-muted">
-                            {{ 'Operator managed' if editable else 'Fixed values · Versioned controls' }}
-                        </dd>
+            <div class="min-h-0 flex-1 space-y-4 overflow-y-auto bg-surface-page p-4 sm:p-6">
+                <section class="rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5"
+                         aria-label="Resource Profile identity">
+                    <div class="flex min-w-0 flex-wrap items-center gap-2">
+                        {{ table_label.status_label('Enabled' if profile.enabled else 'Disabled',
+                            'normal' if profile.enabled else 'unknown') }}
+                        <span class="text-xs text-content-muted">Profile #{{ profile.id }} · v{{ profile.version }}</span>
                     </div>
-                    <div class="bg-surface-card p-3.5">
-                        <dt class="text-xs uppercase tracking-wide text-content-muted">Lineage</dt>
-                        <dd class="mt-1 text-sm font-semibold text-content-primary">
-                            {% if editable and profile.base_preset_class %}
-                                Based on {{ profile_class_labels.get(profile.base_preset_class, profile.base_preset_class|replace('_', ' ') |title) }}
-                            {% elif editable %}
-                                Independent Custom
-                            {% else %}
-                                Canonical preset
-                            {% endif %}
-                        </dd>
-                        <dd class="mt-1 text-xs text-content-muted">
-                            {% if editable and profile.base_preset_class %}
-                                Base preset v{{ profile.base_preset_version or '—' }}
-                            {% else %}
-                                Stable contract identity
-                            {% endif %}
-                        </dd>
-                    </div>
-                    <div class="bg-surface-card p-3.5">
-                        <dt class="text-xs uppercase tracking-wide text-content-muted">Namespace References</dt>
-                        <dd class="mt-1 text-sm font-semibold text-content-primary">
-                            {{ usage.namespaces }}
-                        </dd>
-                        <dd class="mt-1 text-xs text-content-muted">
-                            Committed allocation snapshot references
-                        </dd>
-                    </div>
-                    <div class="bg-surface-card p-3.5">
-                        <dt class="text-xs uppercase tracking-wide text-content-muted">Capacity Decisions</dt>
-                        <dd class="mt-1 text-sm font-semibold text-content-primary">
-                            {{ usage.capacity_decisions }}
-                        </dd>
-                        <dd class="mt-1 text-xs text-content-muted">
-                            Retained admission evidence
-                        </dd>
-                    </div>
+                    <h3 class="mt-3 break-words text-base font-semibold leading-6 text-content-primary"
+                        title="{{ profile.name }}">{{ profile.name }}</h3>
+                    {% if profile.description %}
+                        <div aria-label="Resource Profile description" class="mt-2 max-w-4xl">
+                            <p class="whitespace-pre-wrap break-words text-sm leading-6 text-content-secondary">{{ profile.description }}</p>
+                        </div>
+                    {% else %}
+                        <p class="mt-1 text-xs text-content-muted">No profile description.</p>
+                    {% endif %}
+                    <p class="mt-3 text-xs text-content-muted">
+                        {% if editable and profile.base_preset_class %}
+                            Based on {{ profile_class_labels.get(profile.base_preset_class, profile.base_preset_class|replace('_', ' ')|title) }}
+                            v{{ profile.base_preset_version or '—' }}
+                        {% elif editable %}
+                            Independent Custom · Operator-managed values
+                        {% else %}
+                            Canonical KAORI preset · Fixed numeric values
+                        {% endif %}
+                    </p>
+                </section>
+                <dl class="grid grid-cols-2 gap-x-4 gap-y-3 border-b border-outline-subtle px-1 pb-4 sm:grid-cols-4">
+                    {% for label, value in [
+                        ('Class', profile_class_labels.get(profile.profile_class, profile.profile_class|replace('_', ' ')|title)),
+                        ('Version', 'v' ~ profile.version),
+                        ('Namespace References', usage.namespaces),
+                        ('Capacity Decisions', usage.capacity_decisions)
+                    ] %}
+                        <div class="min-w-0">
+                            <dt class="text-xs text-content-muted">{{ label }}</dt>
+                            <dd class="mt-1 text-sm font-semibold text-content-primary">{{ value }}</dd>
+                        </div>
+                    {% endfor %}
                 </dl>
+                <div class="min-w-0">
+                    <h3 class="text-sm font-semibold text-content-primary">Profile Configuration</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">
+                        {{ 'Set the dimensions KAORI manages for the next contract version.' if editable
+                           else 'Keep canonical sizing; adjust only permitted ownership controls.' }}
+                    </p>
+                </div>
                 {% if editable %}
                     <form id="resource-profile-update-form-{{ profile.id }}"
                           method="post"
