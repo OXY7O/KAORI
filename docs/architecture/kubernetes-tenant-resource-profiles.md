@@ -422,6 +422,47 @@ Tenant Sync performs no provider write. Drift evidence retains the last KAORI de
 
 Capsule now recommends newer Rules-based quota capabilities for new designs; KAORI treats `Tenant.spec.resourceQuotas` as a legacy compatibility authority for estates that already use it. #773 does not auto-migrate a legacy Tenant to another Capsule quota model because the external provider remains authoritative for that transition.
 
+## Tenant Operations presentation: provider authority and zero-result registries (#959, #960)
+
+**Provider Authority** answers which external engine owns each Tenant
+and its effective reconciliation/mutation contract. It is a *reference*
+for deciding whether an operator can act on a Native Kubernetes or
+Capsule-owned resource; it is not itself drift, a newly discovered
+problem or an instruction to mutate provider state. The canonical
+Tenant Registry already exposes committed provider and reconciliation
+authority. Per the existing #960 first-level Operations tab design,
+Operational Reconcile keeps the complete paginated authority history as
+an **optional collapsed native disclosure**, rather than a third
+always-visible operational queue.
+
+Following DevContainer feedback, the disclosure now clearly identifies
+itself as **Provider Authority Reference** and explains its reference-only
+role. When expanded, the existing authority registry uses an embedded
+presentation without a duplicated block header/card border, includes
+a text link to canonical **Tenant Registry**, and groups provider state,
+provider key and reconciliation authority in one compact column.
+Cluster/environment, lifecycle, full filters, HTMX, pagination and the
+distinct Native/Capsule control boundary remain unchanged. In Access
+Reconciliation, a Tenant slug is omitted only when it case-insensitively
+duplicates its displayed Tenant name; distinct slugs remain visible.
+
+The #959 empty-result contract remains authoritative across Runs &
+Evidence, both Capsule allocation-drift registries, Namespace/Allocation
+Drift, Access Reconciliation and Provider Authority. A zero-row
+operational table uses the existing KAORI shared empty-state component
+without empty column headers or unnecessary minimum-width scrollbar;
+the canonical footer **must still render** `Showing 0–0 of 0`,
+Rows 5, page 1, and disabled navigation. A nonempty result keeps
+the existing bounded-width columns and responsive horizontal overflow.
+No new shared design-system component, provider request, evidence
+recomputation, automatic recovery or permission change is introduced.
+
+Local DevContainer Visual QA must cover zero vs nonzero records, HTMX
+filter/search and page size, Native/Capsule authority, native disclosure
+keyboard/focus, distinct and repeated Tenant slug, tablet/mobile sizing
+and Violet light/dark modes. CI/CD admission, staging/UAT deployment and
+main promotion remain HOLD until explicitly requested.
+
 ## Effective allocation evidence
 
 A managed namespace records:
