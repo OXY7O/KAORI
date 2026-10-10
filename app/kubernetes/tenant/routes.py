@@ -67,6 +67,7 @@ from app.kubernetes.tenant.live_connection import get_live_tenant_connection_con
 from app.kubernetes.tenant.native_successor_acceptance import (
     accept_native_successor_handoff_committed,
 )
+from app.kubernetes.tenant.native_handoff_executor import execute_native_handoff_committed
 from app.kubernetes.tenant.native_handoff_dry_run import (
     dry_run_native_release_handoff_committed,
 )
@@ -993,6 +994,45 @@ def dry_run_native_release_handoff_route(tenant_id: str):
             ),
             detail='This was a Kubernetes server-side dry-run only. Release remains blocked.',
             metadata={'tenant_id': tenant_id, 'operation': 'native_handoff_dry_run'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/native-execute')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+def execute_native_release_handoff_route(tenant_id: str):
+    """Explicit verified successor Native provider mutation, never Released."""
+    try:
+        _csrf()
+        if not request.is_secure:
+            raise ValueError('Native successor credentials require verified HTTPS ingress.')
+        result = execute_native_handoff_committed(
+            tenant_id=tenant_id, actor_user_id=int(current_user.id),
+            plan_sha256=str(request.form.get('plan_sha256') or ''),
+            provider_token=str(request.form.get('kubernetes_successor_token') or ''),
+            confirmed=request.form.get('confirm_native_handoff_execution') == 'transfer',
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_native_handoff_execution_blocked',
+            status='warning', title='Native Provider Transfer Blocked',
+            message=str(exc),
+            detail='Provider state must be read back; never assume a failed request had no side effects.',
+            metadata={'tenant_id': tenant_id, 'operation': 'execute_native_handoff'},
+        )
+    else:
+        completed = result['status'] == 'provider_handoff_verified'
+        _record(
+            event_type='kubernetes_tenant_native_handoff_execution_recorded',
+            status='success' if completed else 'warning',
+            title='Provider Handoff Verified' if completed else 'Native Handoff Recovery Required',
+            message=f"{result['verified_count']} of {result['expected_component_count']} provider objects verified.",
+            detail=(
+                'Ownership markers transferred; governance Release remains a separate verified step.'
+                if completed else 'Partial/failed provider transfer. Do not Release or retry blindly.'
+            ),
+            metadata={'tenant_id': tenant_id, 'operation': 'execute_native_handoff'},
         )
     return _tenant_section_redirect('registry')
 
