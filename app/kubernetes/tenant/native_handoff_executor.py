@@ -64,6 +64,33 @@ def _component_key(item: dict[str, Any]) -> tuple[str, str, str, str]:
     )
 
 
+def _approved_component_for_preview(
+    *, plan: dict[str, Any], preview: dict[str, Any],
+) -> dict[str, Any]:
+    """Resolve provider authority from the approved plan, not its dry-run receipt."""
+    if (
+        preview.get('operation') != 'metadata_only_json_patch_dry_run'
+        or preview.get('dry_run') is not True
+        or preview.get('live_provider_unchanged') is not True
+    ):
+        raise ValueError('Canonical Native handoff preview evidence is incomplete.')
+    matches = [
+        item for item in plan.get('handoff_components', [])
+        if isinstance(item, dict) and _component_key(item) == _component_key(preview)
+    ]
+    if len(matches) != 1:
+        raise ValueError('Native handoff preview is not uniquely bound to approved scope.')
+    approved = matches[0]
+    if (
+        approved.get('handoff') != 'external_acceptance_required'
+        or approved.get('ownership') != 'kaori_marker_correlated'
+        or not preview.get('resource_version')
+        or approved.get('resource_version') != preview.get('resource_version')
+    ):
+        raise ValueError('Approved handoff ownership or resourceVersion differs from preview.')
+    return approved
+
+
 def _patch_native_live(core: Any, component: dict[str, Any], patch: list[dict[str, str]]) -> Any:
     """Dispatch ONLY approved JSON Patch; never replace/delete/create resource."""
     params = {'body': patch, '_content_type': _CONTENT_TYPE, '_request_timeout': 5}
@@ -212,6 +239,16 @@ def execute_native_handoff_committed(
             or fresh.get('handoff_components') != plan.get('handoff_components')
         ):
             raise ValueError('Provider resource inventory changed; restart handoff approval.')
+    # Bind and check the entire preview scope before starting any provider write.
+    approved_by_key = {
+        _component_key(preview): _approved_component_for_preview(
+            plan=plan, preview=preview,
+        )
+        for preview in snapshots
+    }
+    if len(approved_by_key) != len(snapshots):
+        raise ValueError('Duplicate Native handoff preview component identity.')
+
     # Persist an in-progress operation under the canonical Tenant row lock
     # before the first Kubernetes write. If execution crashes, an operator must
     # observe provider state and explicitly reconcile; no blind retry.
@@ -261,7 +298,8 @@ def execute_native_handoff_committed(
             )
             if observation['state'] == 'pending_provider_transfer':
                 patch = build_native_successor_handoff_patch(
-                    component, live, tenant_id=tenant_id,
+                    approved_by_key[_component_key(component)], live,
+                    tenant_id=tenant_id,
                     verified_successor_owner=plan['successor_owner'],
                 )
                 preview = _dry_run_patch(core, component, patch)
