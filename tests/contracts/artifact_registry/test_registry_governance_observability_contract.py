@@ -173,16 +173,33 @@ def test_governance_coverage_and_evidence_follow_canonical_section_layout() -> N
     coverage = workspace.split("section_intro.render('Governance Coverage',", 1)[1].split(
         "section_intro.render('Governance Evidence',", 1
     )[0]
-    # KPI cards match standalone Security/Runtime/Analytics summary geometry,
-    # without a second outer border or surface frame.
-    assert 'class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"' in coverage
-    assert 'flex h-full min-w-0 flex-col rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm' in coverage
-    assert 'class="grid gap-3 bg-surface-subtle p-4 sm:grid-cols-2 xl:grid-cols-4"' not in coverage
-    assert 'class="{{ section_card.shell_classes() }}"' not in coverage
-    assert 'for item in governance.posture_cards' in coverage
-    assert 'item.status_label, item.tone' in coverage
-    assert "item.label" in coverage and "item.value" in coverage and "item.detail" in coverage
-    assert "min-w-0 rounded-lg border border-outline-subtle" in coverage
+    # Human reference is the existing Tenant Estate grouped posture shell.
+    # Governance alone adopts that composition; provider-committed state
+    # labels remain visible rather than being replaced by icon-only tones.
+    assert "section_card.render(" in coverage
+    assert "'Governance Evidence Estate'" in coverage
+    assert "body_classes='p-0'" in coverage
+    assert "resource_posture_grid.render(coverage_metrics, columns=4, status_labels=coverage_status_labels)" in coverage
+    assert 'class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"' not in coverage
+    assert "governance.posture_cards[0]" in coverage
+    assert "governance.posture_cards[1]" in coverage
+    assert "governance.posture_cards[2]" in coverage
+    assert "governance.posture_cards[3]" in coverage
+    for name in ("policy_coverage", "retention_coverage", "immutability_coverage", "replication_coverage"):
+        for field in (".label", ".value", ".detail", ".tone", ".status_label"):
+            assert name + field in coverage
+    for icon in ("shield-check", "clock-3", "lock-keyhole", "git-compare-arrows"):
+        assert icon in coverage
+
+    posture = (ROOT / 'app/templates/components/resource_posture_grid.html').read_text()
+    tenant = (ROOT / 'app/templates/kubernetes/tenant/overview.html').read_text()
+    Environment().parse(posture)
+    assert "macro render(metrics, columns=3, status_labels=none)" in posture
+    assert "table_label.status_indicator_label(status_labels[loop.index0], tone)" in posture
+    assert "grid gap-px bg-outline-subtle" in posture
+    assert "[overflow-wrap:anywhere]" in posture
+    assert "resource_posture_grid.render(estate_metrics, columns=5)" in tenant
+    assert "status_labels=" not in tenant
 
     # URL/HTMX-owned tabs reuse the shared content-tabs contract rather than
     # framed workspace tabs or bespoke client-side tab state.
