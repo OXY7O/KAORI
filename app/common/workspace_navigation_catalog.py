@@ -552,7 +552,11 @@ _CAPABILITY_VIEWS: dict[str, tuple[CapabilityViewDefinition, ...]] = {
             'governance', 'Governance', 'scale', 'artifact_registry.analytics_governance', ('artifact_registry.view',)
         ),
         CapabilityViewDefinition(
-            'alerts', 'Alerts & Anomalies', 'triangle-alert', 'artifact_registry.analytics_alerts', ('artifact_registry.view',)
+            'alerts',
+            'Alerts & Anomalies',
+            'triangle-alert',
+            'artifact_registry.analytics_alerts',
+            ('artifact_registry.view',),
         ),
         CapabilityViewDefinition(
             'insights', 'Insights', 'sparkles', 'artifact_registry.analytics_insights', ('artifact_registry.view',)
