@@ -50,7 +50,7 @@
         {% else %}
             <span class="hidden"
                   aria-hidden="true"
-                  hx-get="{{ url_for('artifact_registry.analytics_materialization_resolve') }}"
+                  hx-get="{{ url_for('artifact_registry.analytics_materialization_resolve', section=analytics.active_tab, provider_id=analytics.selected_provider_id, snapshot_window=analytics.snapshot_window, alert_q=analytics.alert_filters.search if analytics.active_tab == 'alerts' else none, alert_severity=analytics.alert_filters.severity if analytics.active_tab == 'alerts' else none, alert_state=analytics.alert_filters.state if analytics.active_tab == 'alerts' else none, alert_source=analytics.alert_filters.source if analytics.active_tab == 'alerts' else none, alert_page=analytics.alert_filters.page if analytics.active_tab == 'alerts' else none, alert_per_page=analytics.alert_filters.per_page if analytics.active_tab == 'alerts' else none) }}"
                   hx-trigger="load once"
                   hx-target="#artifact-registry-analytics-controls-readiness"
                   hx-swap="outerHTML"
@@ -59,7 +59,7 @@
             {% include "artifact_registry/partials/_analytics_controls_readiness.html" %}
             {% if analytics.active_tab == 'overview' %}
             <section id="artifact-registry-analytics-summary"
-                     hx-get="{{ url_for('artifact_registry.analytics_section', section='summary') }}"
+                     hx-get="{{ url_for('artifact_registry.analytics_section', section='summary', provider_id=analytics.selected_provider_id, snapshot_window=analytics.snapshot_window) }}"
                      hx-trigger="load"
                      hx-target="this"
                      hx-swap="outerHTML">
@@ -112,7 +112,7 @@
                      class="{{ section_card.shell_classes() }}"
                      aria-label="{{ analytics.page_title }} workspace">
                 <div id="artifact-registry-analytics-active-section"
-                     hx-get="{{ url_for('artifact_registry.analytics_section', section=analytics.active_tab, alert_q=analytics.alert_filters.search if analytics.active_tab == 'alerts' else none, alert_severity=analytics.alert_filters.severity if analytics.active_tab == 'alerts' else none, alert_state=analytics.alert_filters.state if analytics.active_tab == 'alerts' else none, alert_source=analytics.alert_filters.source if analytics.active_tab == 'alerts' else none, alert_page=analytics.alert_filters.page if analytics.active_tab == 'alerts' else none, alert_per_page=analytics.alert_filters.per_page if analytics.active_tab == 'alerts' else none) }}"
+                     hx-get="{{ url_for('artifact_registry.analytics_section', section=analytics.active_tab, provider_id=analytics.selected_provider_id, snapshot_window=analytics.snapshot_window, alert_q=analytics.alert_filters.search if analytics.active_tab == 'alerts' else none, alert_severity=analytics.alert_filters.severity if analytics.active_tab == 'alerts' else none, alert_state=analytics.alert_filters.state if analytics.active_tab == 'alerts' else none, alert_source=analytics.alert_filters.source if analytics.active_tab == 'alerts' else none, alert_page=analytics.alert_filters.page if analytics.active_tab == 'alerts' else none, alert_per_page=analytics.alert_filters.per_page if analytics.active_tab == 'alerts' else none) }}"
                      hx-trigger="load"
                      hx-target="this"
                      hx-swap="outerHTML">

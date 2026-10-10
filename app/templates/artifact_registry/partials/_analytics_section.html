@@ -234,6 +234,8 @@
                   hx-sync="closest section:replace"
                   class="mt-5 {{ table_ui.filter_layout_classes() }}">
                 <input type="hidden" name="alert_page" value="1">
+                <input type="hidden" name="provider_id" value="{{ analytics.selected_provider_id or '' }}">
+                <input type="hidden" name="snapshot_window" value="{{ analytics.snapshot_window }}">
                 <input type="hidden"
                        name="alert_per_page"
                        value="{{ analytics.alert_pagination.per_page }}">
@@ -313,6 +315,8 @@
                         'artifact-registry-alerts-loading',
                         analytics.alert_pagination,
                         {
+                        'provider_id': analytics.selected_provider_id or '',
+                        'snapshot_window': analytics.snapshot_window,
                         'alert_q': analytics.alert_filters.search,
                         'alert_severity': analytics.alert_filters.severity,
                         'alert_state': analytics.alert_filters.state,
