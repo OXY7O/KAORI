@@ -14,6 +14,7 @@ Read the references in this order:
 8. `consumer-pattern.md`: asset-consumer boundary and simplified primary/secondary/fallback flow.
 9. `artifact-registry-domain.md`: provider-neutral Artifact Registry ownership, scalable sync topology, alert analytics, and large-estate collection rules.
 10. `artifact-registry-alert-analytics-contract.md`: Registry Alert Source reuse, materialized alert evidence, and fast Analytics delivery boundary.
+11. `analytics-materialization-extension-standard.md`: reusable cross-domain Analytics source, dataset, collector/worker, committed snapshot, and loading contract for future integrations.
 
 Domain-specific rules live beside complex code in `app/<domain>/README.md`. General architecture rules belong here, while product direction belongs in `docs/product`, to avoid duplicated and drifting documentation.
 
