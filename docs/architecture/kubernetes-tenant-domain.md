@@ -69,20 +69,30 @@ staging UAT or production acceptance evidence.
 
 Tenant Registry keeps the canonical committed-state table, filters and
 pagination while limiting each row's **Actions** cell to one labelled
-**Manage** control (read-only **View** for users without `tenant.manage`).
-The control opens the existing KAORI native dialog in the browser top layer,
-**outside the horizontal table scrolling container**. This avoids wrapped
-inline forms, clipped popovers and inconsistent row heights.
+**Manage** link (read-only **View** for users without `tenant.manage`).
+Manage opens exactly one **full-width expandable management panel immediately
+below the registry**, outside the horizontal table scrolling container;
+no inline row expansion or native overlay dialog is used. Clicking a different
+Tenant replaces the currently selected panel; Close Management clears that
+selection without changing provider or database state.
 
-The dialog preserves the exact Tenant/cluster/provider/generation identity
+The selected panel preserves Tenant/cluster/provider/generation identity
 in a compact header with lifecycle badge. A three-metric summary strip shows
-Namespace, Environment and Lifecycle counts/state. All management cards
-use **one full-width vertical flow** on desktop and smaller viewports, in this
-order: Release Governance, eligible Capsule Namespace Attachment, Provider
-Authority and Lifecycle Actions. No split content sidebar or reduced-width
-management card is used. Only compact internal field groups may use responsive
-columns (Capsule attachment inputs and provider facts), while their parent
-cards span the available dialog width without horizontal overflow.
+Namespace, Environment and Lifecycle counts/state. Cards use one full-width
+vertical flow: Release Governance, eligible Capsule Namespace Attachment,
+Provider Authority and Lifecycle Actions. Only internal form field groups may
+use responsive columns. The selection is a URL/HTMX workspace projection
+(`manage_tenant_id`) and must refer to a Tenant in the **current authorized
+paginated/filter registry rows**. It never changes backend authorization.
+The selected panel inherits `hx-vals` containing its ID and **prefixed**
+registry page/filters (`registry_*`) for each existing POST; `_tenant_section_redirect`
+reconstructs the same page/selected Tenant and appends the existing OOB toast.
+Prefixed values avoid shadowing provider form fields. Thus Review Release,
+handoff steps and other in-panel actions refresh committed evidence while
+keeping the management panel open. Filter or page changes may close it if the
+selected Tenant is no longer present, as expected. Native dialog focus and
+scroll locking are deliberately not used for this expandable workspace;
+the separate destructive decommission confirmation remains a modal.
 
 The **Release Governance** card presents an ordered, full-width workflow
 instead of three controls that resemble interchangeable tabs. **Release
@@ -103,14 +113,26 @@ do not change position when the operator inspects handoff evidence or a form.
 Lifecycle **Blocked** appears together with its Decommission warning panel
 instead of as a detached badge. Capsule attachment still verifies authoritative
 UID/resourceVersion and does not automatically grant RBAC. Release preflight
-status and dependency blockers remain persistent in-dialog evidence, never a
+status and dependency blockers remain persistent inline evidence, never a
 hover-only Info Tip. Governed Handoff keeps every prior permission, CSRF,
 HTMX, plan fingerprint, independent actor, Native dry-run, provider read-back,
 successor-reference and destructive Release guard. An internal acknowledgment,
 unverified external reference or dry-run is **not** proof of a successor's
 acceptance or authority to mark provider-mutated resources Released.
+For a plan awaiting independent approval, the requesting operator sees
+**Awaiting Independent Approver** and cannot approve their own plan, even when
+Super Admin. Any **different authenticated KAORI user** with both
+`tenant.manage` and `integrations.manage` may open **Tenant Registry →
+Manage → Release Governance → Governed Handoff** and acknowledge the current
+plan after inspecting the evidence; an account is not assigned as approver by
+the UI or implicitly selected from users. The backend enforces actor inequality,
+plan fingerprint, freshness and permission. If future policy needs a named
+approver assignment, that is a distinct governance authority/workstream and
+must be approved separately. Internal acknowledgment is not verified external
+successor acceptance or provider ownership transfer.
+
 Decommission remains separate and uses the existing destructive confirmation
-modal after leaving the native actions dialog.
+modal; the expandable panel itself does not require an overlay.
 
 This is a **presentation composition only**. No provider mutations, endpoint
 changes, permissions, HTMX targets, committed-evidence contracts or automatic
