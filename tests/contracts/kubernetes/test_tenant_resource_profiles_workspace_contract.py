@@ -214,6 +214,39 @@ def test_resource_profile_registry_uses_canonical_htmx_filters_and_pagination() 
     assert "'profile_registry_filters':" in service
 
 
+def test_resource_profile_registry_shows_compact_identity_and_full_detail_in_manage() -> None:
+    registry = read('app/templates/kubernetes/tenant/partials/_resource_profile_registry.html')
+    dialogs = read('app/templates/kubernetes/tenant/partials/_resource_profile_management_dialogs.html')
+    table = read('app/templates/components/table.html')
+
+    # Display-only abbreviations never modify persisted names or descriptions.
+    assert "profile.name.startswith('Adopted ')" in registry
+    assert "profile.name[8:] if adopted_baseline else profile.name" in registry
+    assert "registry_name.rsplit(' · ', 1)" in registry
+    assert "name_parts[1][:8]" in registry
+    assert "registry_name|truncate(44, True, '…')" in registry
+    assert "('Adopted baseline' if adopted_baseline else 'Profile') ~ ' · #' ~ profile.id" in registry
+    assert "table_ui.title_cell(registry_name, registry_meta, 'layers-3')" in registry
+    assert "table_ui.title_cell(profile.name, profile.description" not in registry
+    assert "profile.description or 'Reusable allocation contract'" not in registry
+    assert "aria-label=\"Manage Resource Profile {{ profile.name }}\"" in registry
+
+    # Shared table geometry, HTMX, default pagination and actual Manage action stay intact.
+    assert "title_cell(name, supporting_text='', icon='')" in table
+    assert "table_ui.table_classes('min-w-[1150px] !table-fixed')" in registry
+    assert "registry_ui.footer" in registry
+    assert 'data-dialog-target="resource-profile-manage-{{ profile.id }}"' in registry
+
+    # Modal is the full authority for both editable Custom and locked KAORI presets.
+    assert 'id="resource-profile-manage-{{ profile.id }}-title"' in dialogs
+    assert '{{ profile.name }}</h2>' in dialogs
+    assert 'aria-label="Resource Profile description"' in dialogs
+    assert '<p class="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-content-secondary">{{ profile.description }}</p>' in dialogs
+    assert "name=\"profile_description\"" in dialogs
+    assert "value=\"{{ profile.description or '' }}\"" in dialogs
+    assert "data-kaori-native-dialog" in dialogs
+
+
 def test_resource_profile_workflow_uses_numbered_contract_stages_without_arrow_flow() -> None:
     workflow = read('app/templates/kubernetes/tenant/partials/_resource_profile_workflow.html')
     page = read('app/templates/kubernetes/tenant/resource_profiles.html')
