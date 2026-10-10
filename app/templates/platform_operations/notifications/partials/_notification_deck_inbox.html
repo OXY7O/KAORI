@@ -48,9 +48,13 @@
                             Review Handoff in Tenant Management
                             <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
                         </a>
+                    {% elif approval.state in ['Approved', 'Resolved by another reviewer'] %}
+                        <p class="mt-2 text-xs leading-5 text-content-muted">
+                            Independent approval is recorded. External provider handoff and successor acceptance remain pending.
+                        </p>
                     {% else %}
                         <p class="mt-2 text-xs leading-5 text-content-muted">
-                            This request is no longer actionable. The committed plan/approval evidence remains authoritative.
+                            This request is no longer actionable. Review a newer plan if one is available.
                         </p>
                     {% endif %}
                 </article>
