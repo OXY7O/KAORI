@@ -116,20 +116,25 @@ Hero
 
 `Tenant Registry` is the default tab and uses the canonical KAORI server-backed registry contract: shared loading bar, Cluster/Environment/Lifecycle/Search filters, committed-state reads, semantic labels, responsive horizontal overflow, default 5-row pagination, 5/10/25/50 page sizes, and HTMX progressive enhancement with the Tenants route as the real navigation fallback.
 
-**Tenant Details Visual QA correction (#1067):** the first full page
-still inherited an unrelated cluster-wide Provider Readiness Hero and
-presented a second management header/snapshot inside an oversized modal-style
-frame. The approved correction renders a single Tenant-specific Violet Hero
-(committed name, status, provider/cluster and generation) with **only Back to
-Registry** as its action. The global navbar breadcrumb now ends with the actual committed Tenant
-name, while the active capability tab resolves to **Tenants**, not Overview.
-Distinct responsive summary cards and an in-page section rail replace the
-modal shell; long Release evidence and provider authority are ordinary cards.
-The entire Hero and workspace use one `#tenant-management-detail` HTMX swap
-target so status remains current after mutations. OOB toast remains global.
-The Decommission confirmation modal is intentionally retained unchanged.
-No service, permission, Kubernetes provider execution or audit protocol
-is altered by this presentation work.
+**Tenant Details focused workspace (#1069, supersedes #1067 layout):**
+The latest approved layout no longer combines a large hero, four big KPI
+cards, a sticky sidebar and a very long Release page. The detail uses a
+compact contextual Violet Hero with a single Back action, a small committed
+facts strip and canonical `components/content_tabs.html` navigation.
+Operator-visible views are Overview, Release, Handback, Attachment, Provider
+and Lifecycle (available according to current Tenant state/permissions).
+Tabs preserve URL history and use normal GET or HTMX fragment navigation;
+unsupported views safely fall back to Overview. Work Inbox approval links
+open `view=release` directly. Release displays independently scoped phases
+for preflight, handoff inventory, approval and final verification.
+
+All 14 existing POST forms retain CSRF/provider authority plus selected
+`tenant_detail_view` and Registry search/pagination in both HTMX and normal
+redirects. The whole Hero + active view is swapped and standard OOB toast
+stays visible. No new provider code or RBAC grants; only the small destructive
+Decommission confirmation uses a modal. The previous stacked-workspace
+design was rejected during human Visual Review. Full browser Visual QA and
+security-sensitive admission remain pending.
 
 **Dedicated Tenant Management (#1065):** a Registry row's single
 `Manage/View` action navigates to `/kubernetes/tenant/tenants/<tenant-id>/manage`,
