@@ -469,7 +469,9 @@
                                             a different authorized operator acknowledges it. Neither action
                                             transfers provider ownership or unlocks Release.
                                         </p>
-                                        {% if row.release_handoff_preparation_state in ['available', 'expired'] %}
+                                        {% if row.release_handoff_preparation_state == 'available'
+                                              or (row.release_handoff_preparation_state == 'expired'
+                                                  and handoff_plan and handoff_plan.requested_by == current_user.id) %}
                                             {% if row.release_handoff_preparation_state == 'expired' %}
                                                 <p class="rounded-lg border border-status-warning-border bg-status-warning-soft p-3 text-xs leading-5 text-status-warning-text">
                                                     Previous plan expired without approval. A fresh request requires
@@ -519,9 +521,17 @@
                                                        else ('Independent Review Recorded' if row.release_handoff_preparation_state == 'acknowledged'
                                                              else 'Plan Not Eligible for Replacement') }}
                                                 </p>
-                                                <p class="mt-1">The current handoff plan is locked. Preparing another plan
-                                                    would invalidate the review target. Acknowledged handoff requires
-                                                    an explicitly governed restart before replacement.</p>
+                                                {% if row.release_handoff_preparation_state == 'expired' %}
+                                                    <p class="mt-1">
+                                                        The plan expired without approval. Only its original requester
+                                                        may prepare a fresh version; changing the requester requires
+                                                        explicit reassignment. This account cannot replace the plan.
+                                                    </p>
+                                                {% else %}
+                                                    <p class="mt-1">The current handoff plan is locked. Preparing another plan
+                                                        would invalidate the review target. Acknowledged handoff requires
+                                                        an explicitly governed restart before replacement.</p>
+                                                {% endif %}
                                                 {% if handoff_plan %}
                                                     <dl class="mt-3 grid min-w-0 gap-3 sm:grid-cols-2">
                                                         <div class="min-w-0">
