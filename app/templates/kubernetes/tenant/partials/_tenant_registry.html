@@ -758,7 +758,7 @@
                                         <div class="flex flex-wrap items-center justify-between gap-2">
                                             <h5 class="text-xs font-semibold text-content-primary">Native Release &amp; Re-adopt Readiness</h5>
                                             {{ table_label.status_label(
-                                                (native_cycle.completed_count|string) ~ ' of ' ~ (native_cycle.total_count|string) ~ ' checkpoints',
+                                                (native_cycle.completed_count|string) ~ ' of ' ~ (native_cycle.total_count|string) ~ ' active checkpoints',
                                                 'warning'
                                             ) }}
                                         </div>
@@ -770,13 +770,61 @@
                                                        aria-hidden="true"></i>
                                                     <div class="min-w-0">
                                                         <p class="font-semibold text-content-primary">
-                                                            {{ checkpoint.label }} — {{ 'Evidence available' if checkpoint.complete else 'Pending' }}
+                                                            {{ checkpoint.label }} — {{ checkpoint.display_status }}
                                                         </p>
                                                         <p class="text-content-secondary">{{ checkpoint.detail }}</p>
                                                     </div>
                                                 </li>
                                             {% endfor %}
                                         </ol>
+                                        {% if native_cycle.approval_expired %}
+                                            <div class="space-y-3 rounded-lg border border-status-warning-border bg-status-warning-soft p-3"
+                                                 role="status">
+                                                <p class="text-xs font-semibold text-status-warning-text">
+                                                    Independent approval recorded, but its evidence has expired.
+                                                </p>
+                                                <p class="text-xs leading-5 text-content-secondary">
+                                                    The original approval remains in the audit history; it is not valid for execution.
+                                                    Restarting creates a new plan SHA and requires a fresh independent reviewer.
+                                                </p>
+                                                {% if native_cycle.restart_blocked_by_readback %}
+                                                    <p class="text-xs leading-5 text-status-warning-text">
+                                                        Provider handoff read-back exists for this plan. Review partial-transfer recovery;
+                                                        restarting is blocked until the current provider state is resolved.
+                                                    </p>
+                                                {% elif native_cycle.restart_required and row.release_handoff_plan
+                                                          and row.release_handoff_plan.requested_by == current_user.id
+                                                          and current_user.has_permission('tenant.manage')
+                                                          and current_user.has_permission('integrations.manage') %}
+                                                    <form method="post"
+                                                          action="{{ url_for('tenant.restart_expired_tenant_release_handoff_route', tenant_id=tenant.id) }}"
+                                                          hx-post="{{ url_for('tenant.restart_expired_tenant_release_handoff_route', tenant_id=tenant.id) }}"
+                                                          hx-target="#tenant-admin-workspace"
+                                                          hx-select="#tenant-admin-workspace"
+                                                          hx-swap="outerHTML show:none focus-scroll:false"
+                                                          hx-indicator="#tenant-admin-loading"
+                                                          class="space-y-2">
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                        <input type="hidden" name="plan_sha256" value="{{ row.release_handoff_plan.plan_sha256 }}">
+                                                        <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                                                            <input type="checkbox" name="confirm_handoff_restart" value="restart" required
+                                                                   class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
+                                                            <span>Restart this expired plan after verifying provider ownership has not changed.</span>
+                                                        </label>
+                                                        <button type="submit"
+                                                                class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                            <i data-lucide="refresh-cw" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                            Restart Expired Handoff Plan
+                                                        </button>
+                                                    </form>
+                                                {% else %}
+                                                    <p class="text-xs leading-5 text-status-warning-text">
+                                                        Ask the original requester to restart this plan. The next reviewer
+                                                        must independently acknowledge the new SHA.
+                                                    </p>
+                                                {% endif %}
+                                            </div>
+                                        {% endif %}
                                         <p class="border-t border-outline-subtle pt-3 text-xs leading-5 text-content-muted">
                                             {% if native_cycle.dry_run_passed %}Native dry-run passed; no live handoff was executed. {% endif %}
                                             {% if native_cycle.reference_recorded %}An external reference was recorded but is not consent. {% endif %}
