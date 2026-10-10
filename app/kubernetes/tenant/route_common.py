@@ -255,12 +255,13 @@ def _tenant_section_redirect(section: str):
                 }[context['tenant_detail_open_section']],
                 **{f'registry_{key}': value for key, value in context['registry_state'].items() if value},
             ))
+        feedback = getattr(g, 'tenant_operational_feedback', None)
         rendered = render_template(
             'kubernetes/tenant/partials/_tenant_management_detail.html',
             can_manage=current_user.has_permission('tenant.manage'),
+            tenant_action_feedback=feedback,
             **context,
         )
-        feedback = getattr(g, 'tenant_operational_feedback', None)
         if feedback:
             rendered += render_template(
                 'components/operational_toast.html',
