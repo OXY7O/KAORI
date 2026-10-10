@@ -1,8 +1,11 @@
+{% import "components/table_label.html" as table_label %}
 {#
   Reusable metric grid for inventory resource posture sections.
   Each metric tuple: (icon, label, value, description, tone).
+  Optional parallel status_labels adds committed evidence/status labels without
+  changing the existing default rendering used by Kubernetes Tenant Estate.
 #}
-{% macro render(metrics, columns=3) -%}
+{% macro render(metrics, columns=3, status_labels=none) -%}
     {% set grid_classes = 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5' if columns == 5 else ('sm:grid-cols-2 xl:grid-cols-3' if columns == 3 else 'sm:grid-cols-2 xl:grid-cols-4') %}
     <div class="grid gap-px bg-outline-subtle {{ grid_classes }}">
         {% for icon, label, value, description, tone in metrics %}
@@ -11,7 +14,10 @@
                 <div class="min-w-0">
                     <p class="text-xs font-semibold leading-4 text-content-secondary">{{ label }}</p>
                     <p class="mt-2 text-xl font-semibold leading-7 text-content-primary">{{ value }}</p>
-                    <p class="mt-2 text-xs leading-5 text-content-muted">{{ description }}</p>
+                    {% if status_labels and loop.index0 < status_labels|length %}
+                        <div class="mt-2">{{ table_label.status_indicator_label(status_labels[loop.index0], tone) }}</div>
+                    {% endif %}
+                    <p class="mt-2 min-w-0 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ description }}</p>
                 </div>
                 <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {{ icon_surface }}"
                       aria-hidden="true">
