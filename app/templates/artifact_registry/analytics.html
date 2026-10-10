@@ -5,7 +5,13 @@
     {% import "components/operational_section_loading.html" as section_loading %}
     {% import "components/page_hero.html" as page_hero %}
     {% import "components/section_intro.html" as section_intro %}
-    <div id="artifact-registry-analytics-page" class="space-y-6">
+    {% import "analytics/components/_section_load_tracker.html" as section_tracker %}
+    <div id="artifact-registry-analytics-page"
+         class="space-y-6"
+         data-analytics-section-tracker-root
+         data-analytics-load-title="Loading Analytics Section"
+         data-analytics-load-description="Reading the requested committed Registry analytics snapshot."
+         data-analytics-refresh-description="Applying the selected Registry and Time Range.">
         <span id="artifact-registry-analytics-background-refresh-trigger"
               class="hidden"
               aria-hidden="true"
@@ -48,6 +54,9 @@
         {% if analytics.setup.is_blocked %}
             {% include "artifact_registry/components/_setup_blocker.html" %}
         {% else %}
+            {{ section_tracker.render('artifact-registry-analytics-load-tracker',
+                                      title='Loading Registry Analytics',
+                                      description='Preparing committed Registry analytics sections.') }}
             <span class="hidden"
                   aria-hidden="true"
                   hx-get="{{ url_for('artifact_registry.analytics_materialization_resolve', section=analytics.active_tab, provider_id=analytics.selected_provider_id, snapshot_window=analytics.snapshot_window, alert_q=analytics.alert_filters.search if analytics.active_tab == 'alerts' else none, alert_severity=analytics.alert_filters.severity if analytics.active_tab == 'alerts' else none, alert_state=analytics.alert_filters.state if analytics.active_tab == 'alerts' else none, alert_source=analytics.alert_filters.source if analytics.active_tab == 'alerts' else none, alert_page=analytics.alert_filters.page if analytics.active_tab == 'alerts' else none, alert_per_page=analytics.alert_filters.per_page if analytics.active_tab == 'alerts' else none) }}"
@@ -59,6 +68,8 @@
             {% include "artifact_registry/partials/_analytics_controls_readiness.html" %}
             {% if analytics.active_tab == 'overview' %}
             <section id="artifact-registry-analytics-summary"
+                     data-analytics-lazy-section="true"
+                     data-analytics-load-state="idle"
                      hx-get="{{ url_for('artifact_registry.analytics_section', section='summary', provider_id=analytics.selected_provider_id, snapshot_window=analytics.snapshot_window) }}"
                      hx-trigger="load"
                      hx-target="this"
@@ -112,6 +123,8 @@
                      class="{{ section_card.shell_classes() }}"
                      aria-label="{{ analytics.page_title }} workspace">
                 <div id="artifact-registry-analytics-active-section"
+                     data-analytics-lazy-section="true"
+                     data-analytics-load-state="idle"
                      hx-get="{{ url_for('artifact_registry.analytics_section', section=analytics.active_tab, provider_id=analytics.selected_provider_id, snapshot_window=analytics.snapshot_window, alert_q=analytics.alert_filters.search if analytics.active_tab == 'alerts' else none, alert_severity=analytics.alert_filters.severity if analytics.active_tab == 'alerts' else none, alert_state=analytics.alert_filters.state if analytics.active_tab == 'alerts' else none, alert_source=analytics.alert_filters.source if analytics.active_tab == 'alerts' else none, alert_page=analytics.alert_filters.page if analytics.active_tab == 'alerts' else none, alert_per_page=analytics.alert_filters.per_page if analytics.active_tab == 'alerts' else none) }}"
                      hx-trigger="load"
                      hx-target="this"
@@ -125,3 +138,6 @@
         {% endif %}
     </div>
 {% endblock dashboard_content %}
+{% block scripts %}
+    <script src="{{ url_for('static', filename='js/analytics/section_load_tracker.js') }}"></script>
+{% endblock scripts %}
