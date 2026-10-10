@@ -91,8 +91,9 @@
         {% endcall %}
     </div>
     <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[1100px] !table-fixed') }}">
+        <table class="{{ table_ui.table_classes('min-w-[1100px] !table-fixed' if operations_provider_rows else '!table-fixed') }}">
             <caption class="sr-only">Tenant provider authority registry.</caption>
+            {% if operations_provider_rows %}
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[22%]">Tenant</th>
@@ -102,6 +103,7 @@
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[15%]">Lifecycle</th>
                 </tr>
             </thead>
+            {% endif %}
             <tbody class="{{ table_ui.body_classes() }}">
                 {% for row in operations_provider_rows %}
                     {% set tenant = row.tenant %}
@@ -129,6 +131,9 @@
                             {% set empty_state_icon = "shield-check" %}
                             {% set empty_state_title = "No Provider Authority Records" %}
                             {% set empty_state_description = "Adjust filters or create/adopt a governed Tenant." %}
+                            {% set empty_state_label = '' %}
+                            {% set empty_state_min_height = 'min-h-[128px]' %}
+                            {% set empty_state_container_class = '!py-5' %}
                             {% include 'components/states/_empty_state.html' %}
                         </td>
                     </tr>
