@@ -47,16 +47,19 @@ def _context(monkeypatch, *, perms=ADMIN, lifecycle='ready', provider='native_ku
 def test_ready_platform_admin_defaults_to_release_open(monkeypatch):
     context = _context(monkeypatch)
     assert context['tenant_detail_open_section'] == 'release'
+    assert context['tenant_detail_release_expanded'] is False
 
 
 def test_post_keeps_current_governed_release_section(monkeypatch):
     context = _context(monkeypatch, selected='release')
     assert context['tenant_detail_open_section'] == 'release'
+    assert context['tenant_detail_release_expanded'] is True
 
 
 def test_readonly_viewer_does_not_open_release(monkeypatch):
     context = _context(monkeypatch, perms={'tenant.view'}, selected='release')
     assert context['tenant_detail_open_section'] == 'provider'
+    assert context['tenant_detail_release_expanded'] is False
 
 
 def test_released_generation_switches_to_handback_only_if_authorized(monkeypatch):
@@ -65,6 +68,7 @@ def test_released_generation_switches_to_handback_only_if_authorized(monkeypatch
         monkeypatch, lifecycle='released', selected='release', evidence=evidence,
     )
     assert context['tenant_detail_open_section'] == 'handback'
+    assert context['tenant_detail_release_expanded'] is False
     context = _context(
         monkeypatch, lifecycle='released', selected='handback', evidence=evidence,
         perms={'tenant.view'},
