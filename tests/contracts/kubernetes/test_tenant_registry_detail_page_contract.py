@@ -213,6 +213,7 @@ def test_independent_work_inbox_deep_link_targets_release_section():
     inbox = read('app/kubernetes/tenant/approval_inbox.py')
     assert '"tenant.tenant_detail"' in inbox
     assert '_anchor="tenant-release-governance"' in inbox
+    assert 'tenant_detail_section="release"' in inbox
     assert 'view="release"' not in inbox
 
 
@@ -280,5 +281,9 @@ def test_governance_sections_use_native_accessible_expandables_and_existing_cont
     assert 'tenant-release-stage-approval' in detail
     assert 'tenant-release-stage-finalize' in detail
     assert 'aria-label="Governed Release sequence"' in detail
+    assert 'id="tenant-release-workflow-details"' in detail
+    assert '{% if tenant_detail_release_expanded %}open{% endif %}' in detail
+    assert 'View full Release workflow and evidence' in detail
+    assert "tenant_detail_section" in detail
     assert 'max-h-72' not in detail
     assert "destructive_modal.render('tenant-decommission-modal'" in detail
