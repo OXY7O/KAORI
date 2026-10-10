@@ -1026,11 +1026,11 @@
                             <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                                   aria-hidden="true"><i data-lucide="arrow-left-right" class="h-4 w-4"></i></span>
                             <div class="min-w-0">
-                                <h3 class="text-sm font-semibold text-content-primary">Successor Handback &amp; Re-adopt</h3>
+                                <h3 class="text-sm font-semibold text-content-primary">Platform Admin Handback &amp; Re-adopt</h3>
                                 <p class="mt-1 text-xs leading-5 text-content-secondary">
                                     Released generation {{ tenant.generation }} is externally owned by
-                                    {{ released_native.successor_owner }}. The successor must explicitly relinquish
-                                    ownership before fresh Discovery can create a new generation.
+                                    {{ released_native.successor_owner }}. A Platform Admin must explicitly authorize
+                                    governance handback before fresh Discovery can create a new generation.
                                 </p>
                             </div>
                         </div>
@@ -1059,23 +1059,22 @@
                                   class="mt-4 space-y-3 rounded-lg border border-outline-subtle bg-surface-elevated p-3">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="hidden" name="release_plan_sha256" value="{{ released_native.plan_sha256 }}">
-                                <label class="block text-xs font-medium text-content-secondary">
-                                    Kubernetes successor credential (short-lived, not stored; HTTPS required)
-                                    <input name="kubernetes_successor_token" type="password" maxlength="16384"
-                                           autocomplete="off" spellcheck="false" required
-                                           class="mt-1 block h-9 w-full rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs text-content-primary">
-                                </label>
+                                <p class="text-xs leading-5 text-content-secondary">
+                                    This operation uses KAORI's existing Kubernetes X.509 kubeconfig to verify
+                                    Platform Admin provider identity and scoped get/patch permissions.
+                                    No successor token or private key input is required.
+                                </p>
                                 <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
                                     <input type="checkbox" name="confirm_successor_handback" value="handback" required
                                            class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
-                                    <span>As the authenticated external successor, I explicitly relinquish ownership
-                                        of the exact released resources for a future governed KAORI Re-adoption.
+                                    <span>As an authorized Platform Admin, I explicitly approve relinquishing
+                                        KAORI governance metadata on these exact Released resources for future Re-adoption.
                                         Their names, specs, CPU, memory and quotas must remain unchanged.</span>
                                 </label>
                                 <button type="submit"
                                         class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                                     <i data-lucide="arrow-left-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                    Verify Successor &amp; Hand Back
+                                    Verify Provider &amp; Hand Back as Platform Admin
                                 </button>
                             </form>
                         {% endif %}
