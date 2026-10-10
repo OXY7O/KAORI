@@ -59,7 +59,9 @@ def _review(monkeypatch, *, plan=None, response=None, cluster=None, token='provi
     provider = SimpleNamespace(authentication_api=lambda: api)
     monkeypatch.setattr(subject.runtime_adapter, 'build_client', lambda _: provider)
     receipt = subject.verify_native_successor_identity_for_review(
-        cluster=cluster or SimpleNamespace(id='cluster-1'),
+        cluster=cluster or SimpleNamespace(
+            id='cluster-1', kubernetes_connection=SimpleNamespace(verify_ssl=True)
+        ),
         plan=_plan() if plan is None else plan,
         provider_token=token,
     )
@@ -126,4 +128,14 @@ def test_rejects_invalid_token_before_provider_request(monkeypatch, token):
 
 def test_cluster_mismatch_blocks_even_a_valid_kubernetes_principal(monkeypatch):
     with pytest.raises(ValueError, match='fresh, exact'):
-        _review(monkeypatch, cluster=SimpleNamespace(id='cluster-2'))
+        _review(monkeypatch, cluster=SimpleNamespace(
+            id='cluster-2', kubernetes_connection=SimpleNamespace(verify_ssl=True)
+        ))
+
+
+def test_identity_review_refuses_insecure_provider_connection(monkeypatch):
+    cluster = SimpleNamespace(
+        id='cluster-1', kubernetes_connection=SimpleNamespace(verify_ssl=False)
+    )
+    with pytest.raises(ValueError, match='TLS verification'):
+        _review(monkeypatch, cluster=cluster)
