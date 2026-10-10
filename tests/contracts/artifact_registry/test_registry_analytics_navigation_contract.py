@@ -48,7 +48,7 @@ def test_registry_analytics_has_eight_authorized_page_level_views() -> None:
     shell = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
 
     views = catalog.split("'artifact_registry_analytics': (", 1)[1].split(
-        "    'artifact_registry_inventory': (", 1
+        "    'artifact_registry_security': (", 1
     )[0]
     expected = (
         ('overview', 'artifact_registry.analytics'),
