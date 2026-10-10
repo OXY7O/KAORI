@@ -4,6 +4,7 @@
 {% import "components/operational_callout.html" as operational_callout %}
 {% import "components/operational_metric_card.html" as metric_card %}
 {% import "components/operational_section_card.html" as section_card %}
+{% import "components/resource_posture_grid.html" as posture_grid %}
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/section_intro.html" as section_intro %}
 {% import "components/snapshot_context_bar.html" as snapshot_context_bar %}
@@ -182,20 +183,30 @@
             {{ section_intro.render('Security Snapshot',
                 'Committed vulnerability, supply-chain, and runtime exposure indicators for the selected Registry scope.',
                 'artifact-registry-security-summary-heading') }}
-            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
-                 aria-label="{{ security.title }} summary">
             {% if security.view == 'vulnerabilities' %}
-                {{ metric_card.render('Critical Findings', security.critical, 'Critical findings in the latest committed scan.', 'octagon-alert', source_label='Security Snapshot', scope_label=security.snapshot.scope_label) }}
-                {{ metric_card.render('High Findings', security.high, 'High findings in the latest committed scan.', 'triangle-alert', source_label='Security Snapshot', scope_label=security.snapshot.scope_label) }}
-                {{ metric_card.render('Affected Artifacts', security.affected_artifacts, 'Distinct artifact digests with critical or high findings.', 'package-search', source_label='Committed Registry', scope_label=security.snapshot.scope_label) }}
-                {{ metric_card.render('Runtime Exposed', security.runtime_exposed, 'Kubernetes bindings using critical/high-risk artifacts.', 'waypoints', source_label='Registry × Kubernetes', scope_label=security.snapshot.scope_label) }}
+                {% set security_metrics = [
+                    ('octagon-alert', 'Critical Findings', security.critical, 'Critical findings in the latest committed scan.', 'critical' if security.critical else 'info'),
+                    ('triangle-alert', 'High Findings', security.high, 'High findings in the latest committed scan.', 'warning' if security.high else 'info'),
+                    ('package-search', 'Affected Artifacts', security.affected_artifacts, 'Distinct artifact digests with critical or high findings.', 'warning' if security.affected_artifacts else 'info'),
+                    ('waypoints', 'Runtime Exposed', security.runtime_exposed, 'Kubernetes bindings using critical/high-risk artifacts.', 'critical' if security.runtime_exposed else 'info')
+                ] %}
             {% else %}
-                {{ metric_card.render('Signature Observed', security.signature_observed, 'Artifacts where the provider reports signature presence.', 'badge-check', source_label='Provider Evidence', scope_label=security.snapshot.scope_label) }}
-                {{ metric_card.render('SBOM Available', security.sbom_available, 'Artifacts with provider-observed SBOM availability.', 'file-check-2', source_label='Provider Evidence', scope_label=security.snapshot.scope_label) }}
-                {{ metric_card.render('Coverage Gaps', security.coverage_gaps, 'Artifacts missing signature or SBOM evidence.', 'scan-search', source_label='Committed Registry', scope_label=security.snapshot.scope_label) }}
-                {{ metric_card.render('Security Sources', security.source_count, 'Registry sources represented in the active security scope.', 'blocks', source_label='Registry Integration', scope_label=security.snapshot.scope_label) }}
+                {% set security_metrics = [
+                    ('badge-check', 'Signature Observed', security.signature_observed, 'Artifacts where the provider reports signature presence.', 'info'),
+                    ('file-check-2', 'SBOM Available', security.sbom_available, 'Artifacts with provider-observed SBOM availability.', 'info'),
+                    ('scan-search', 'Coverage Gaps', security.coverage_gaps, 'Artifacts missing signature or SBOM evidence.', 'warning' if security.coverage_gaps else 'info'),
+                    ('blocks', 'Security Sources', security.source_count, 'Registry sources represented in the active security scope.', 'info')
+                ] %}
             {% endif %}
-            </div>
+            {% call section_card.render(
+                'Security Evidence Summary',
+                'Committed scanner evidence for the active Registry scope.',
+                'shield-check',
+                body_classes='p-0',
+                aria_label=security.title ~ ' summary'
+            ) %}
+                {{ posture_grid.render(security_metrics, columns=4) }}
+            {% endcall %}
         </section>
         {% if security.view == 'supply_chain' %}
             <section class="space-y-4"
