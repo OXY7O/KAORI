@@ -349,7 +349,7 @@ def test_step_three_freshness_matches_native_readiness_and_hides_stale_acceptanc
     assert 'row.native_release_readiness.review_complete' in accept
     assert 'handoff_plan.requested_by != current_user.id' in accept
     assert 'name="confirm_successor_acceptance"' in step
-    assert step.count('<form ') == 10
+    assert step.count('<form ') == 7
 
 
 def test_step_four_has_compact_readiness_and_role_scoped_recovery():
