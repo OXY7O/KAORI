@@ -7,6 +7,7 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Mapping
 from decimal import Decimal
+from typing import Any
 
 from sqlalchemy.orm import joinedload
 
@@ -14,6 +15,7 @@ from app.kubernetes.tenant.capacity_allocation_state import (
     _aggregate_committed_allocation,
     _canonical_shared_allocation_quota,
 )
+from app.kubernetes.tenant.capacity import CapacityVector
 from app.kubernetes.tenant.capacity_governance_support import _vector_display
 from app.models.tenant import (
     Tenant,
@@ -26,10 +28,10 @@ _ZERO = Decimal("0")
 _HUNDRED = Decimal("100")
 
 _DIMENSIONS = (
-    ("cpu", "CPU Requests", "cpu", "cpu", "Compute request commitment"),
-    ("memory_bytes", "Memory Requests", "memory", "memory", "Compute request commitment"),
-    ("pods", "Pod Slots", "pods", "pods", "Logical Pod quota commitment"),
-    ("storage_bytes", "Logical Storage", "storage", "storage", "Explicit Tenant requests.storage budget; not backend free space"),
+    ("cpu", "CPU Requests", "cpu", "Compute request commitment"),
+    ("memory_bytes", "Memory Requests", "memory", "Compute request commitment"),
+    ("pods", "Pod Slots", "pods", "Logical Pod quota commitment"),
+    ("storage_bytes", "Logical Storage", "storage", "Explicit Tenant requests.storage budget; not backend free space"),
 )
 
 
@@ -38,26 +40,26 @@ def _share(value: Decimal, total: Decimal) -> str:
     return format(min(max(value * _HUNDRED / total, _ZERO), _HUNDRED).quantize(Decimal("0.1")), "f")
 
 
-def build_tenant_allocation_bars(summary: Mapping[str, object]) -> list[dict[str, object]]:
+def build_tenant_allocation_bars(summary: Mapping[str, Any]) -> list[dict[str, Any]]:
     """Render canonical #654 budget/commitment/headroom; never substitute zero for unknown."""
-    budget = summary.get("budget") or {}
-    available = budget.get("available") or {} if isinstance(budget, Mapping) else {}
-    committed = summary.get("committed") or {}
-    displays = summary.get("display") or {}
-    budget_display = displays.get("budget") or {}
-    committed_display = displays.get("committed") or {}
-    headroom_display = displays.get("headroom") or {}
-    result: list[dict[str, object]] = []
-    for key, label, display_key, _, explanation in _DIMENSIONS:
+    budget = summary.get("budget")
+    available = budget.get("available") if isinstance(budget, Mapping) else None
+    committed = summary.get("committed")
+    displays = summary.get("display")
+    budget_display = displays.get("budget") if isinstance(displays, Mapping) else None
+    committed_display = displays.get("committed") if isinstance(displays, Mapping) else None
+    headroom_display = displays.get("headroom") if isinstance(displays, Mapping) else None
+    result: list[dict[str, Any]] = []
+    for key, label, display_key, explanation in _DIMENSIONS:
         ceiling = available.get(key) if isinstance(available, Mapping) else None
         used = committed.get(key) if isinstance(committed, Mapping) else None
         record: dict[str, object] = {
             "key": key,
             "label": label,
             "explanation": explanation,
-            "budget": budget_display.get(display_key, "N/A"),
-            "committed": committed_display.get(display_key, "N/A"),
-            "headroom": headroom_display.get(display_key, "N/A"),
+            "budget": budget_display.get(display_key, "N/A") if isinstance(budget_display, Mapping) else "N/A",
+            "committed": committed_display.get(display_key, "N/A") if isinstance(committed_display, Mapping) else "N/A",
+            "headroom": headroom_display.get(display_key, "N/A") if isinstance(headroom_display, Mapping) else "N/A",
             "known": False,
             "percent": "0",
             "free_percent": "0",
@@ -80,9 +82,7 @@ def build_tenant_allocation_bars(summary: Mapping[str, object]) -> list[dict[str
             if consumed > total:
                 shortfall = consumed - total
                 # Canonical commitment units and display formatting remain #654-owned.
-                from app.kubernetes.tenant.capacity import CapacityVector
-
-                values = {dim[0]: None for dim in _DIMENSIONS}
+                values: dict[str, Decimal | None] = {dim[0]: None for dim in _DIMENSIONS}
                 values[key] = shortfall
                 record["shortfall"] = _vector_display(CapacityVector(
                     cpu=values["cpu"],
@@ -138,7 +138,9 @@ def _partition_tenant_contributions(
             "tenant": tenant,
             "namespace_count": len(rows),
             "allocation": _vector_display(vector),
-            "unknown": bool(unbounded),
+            "unknown": bool(unbounded) or any(
+                value is None for value in (vector.cpu, vector.memory_bytes, vector.pods, vector.storage_bytes)
+            ),
             "source": "Shared Tenant Quota" if quota else "Ambiguous Shared Quota" if str(tenant.id) in ambiguous else "Namespace Quotas",
             "namespaces": [
                 {
