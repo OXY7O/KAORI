@@ -123,8 +123,7 @@
                                 </span>
                                 <div class="min-w-0">
                                     <p class="truncate text-sm font-semibold text-content-primary"
-                                       title="{{ decision.namespace }}"
-                                       aria-label="{{ decision.namespace }}">{{ target_display }}</p>
+                                       title="{{ decision.namespace }}">{{ target_display }}</p>
                                     <p class="mt-1 truncate text-xs text-content-muted"
                                        title="{{ row.cluster.name }} · {{ row.cluster.environment|title }}">
                                         {{ row.cluster.name }} · {{ row.cluster.environment|title }}
@@ -134,10 +133,8 @@
                         </td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
                             <p class="truncate text-sm font-semibold text-content-primary"
-                               title="{{ profile_name }}"
-                               aria-label="{{ profile_name }}">{{ profile_display }}</p>
-                            <p class="mt-1 truncate text-xs text-content-muted"
-                               title="{{ 'Adopted · ' if adopted_profile else '' }}{{ row.profile.profile_class|replace('_', ' ')|title ~ ' · v' ~ (decision.resource_profile_version or row.profile.version) if row.profile else 'Observed / Legacy' }} · {{ decision.operation|replace('_', ' ')|title }}">
+                               title="{{ profile_name }}">{{ profile_display }}</p>
+                            <p class="mt-1 truncate text-xs text-content-muted">
                                 {% if adopted_profile %}Adopted · {% endif %}
                                 {% if row.profile %}
                                     {{ row.profile.profile_class|replace('_', ' ')|title }} · v{{ decision.resource_profile_version or row.profile.version }}
