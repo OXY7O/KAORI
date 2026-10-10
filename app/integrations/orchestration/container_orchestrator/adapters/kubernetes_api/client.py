@@ -6,6 +6,7 @@ from tempfile import NamedTemporaryFile
 from kubernetes import client, config
 from kubernetes.client import (
     AppsV1Api,
+    AuthenticationV1Api,
     AuthorizationV1Api,
     CoreV1Api,
     CustomObjectsApi,
@@ -108,6 +109,9 @@ class KubernetesClient:
 
     def version_api(self) -> VersionApi:
         return VersionApi(self._api_client())
+
+    def authentication_api(self) -> AuthenticationV1Api:
+        return AuthenticationV1Api(self._api_client())
 
     def authorization_api(self) -> AuthorizationV1Api:
         return AuthorizationV1Api(self._api_client())

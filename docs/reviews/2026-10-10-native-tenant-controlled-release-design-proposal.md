@@ -117,3 +117,40 @@ dry-run and the blocked gate projection without provider mutation.
 - Developer Check, Full Admission, CI/CD, staging-server UAT, main promotion and release remain **HOLD** pending explicit authorization. Passing static contracts alone is not UAT.
 
 **Decision requested of maintainer:** accept KAORI as the controlled Native provider executor and choose an *approved verifiable successor principal mapping* (with the one-click combined consent fast path only when the same independent reviewer is itself verified as the successor). Do **not** admit or turn on a live transfer based on this draft alone.
+
+
+## #1047 bounded Kubernetes TokenReview identity candidate (not admitted)
+
+The issue-linked review implementation `native_successor_identity.py` evaluates an
+alternative to guessing KAORI SSO → Kubernetes identity mapping. For a Native
+cluster, an explicit provider authentication token is checked against the
+**same connected Kubernetes API server** using its TokenReview endpoint. The
+API server, not a KAORI role or free-text handoff reference, asserts the
+authenticated username, stable principal UID, and group membership. The
+existing `successor_owner` value is interpreted **only for this candidate**
+as an exact non-system Kubernetes group and a valid provider label value.
+Unsupported group names, service accounts, missing UID, wrong cluster,
+stale/changed plan digest, and unauthenticated tokens fail closed.
+
+**This is an identity observation, not successor consent**: the review-only
+helper neither accepts the responsibility attestation nor creates an AuditEvent,
+stores tokens, adds an HTTP credential form, changes Kubernetes, or enables
+Release. Its outcome explicitly sets `identity_mapping_admitted=false`,
+`consent_verified=false`, and `release_authorized=false`. No KAORI
+application account is considered equivalent to the authenticated Kubernetes
+principal. No existing read-back or independent KAORI approval is promoted to
+consent.
+
+**Security decisions still required before adoption:** human review must
+accept the exact group/owner mapping, safe proof-of-possession and transport of
+short-lived provider credentials, TokenReview RBAC/audience/expiry semantics,
+consent intent and separation-of-duties attribution, revocation/freshness checks
+at each live mutation, fail-closed recovery and credential non-retention. In
+particular TokenReview provides point-in-time authentication; it does **not**
+prove independent acceptance, guarantee a future identity remains active, or
+on its own authorize `#1048` patches. The current provider executor and
+`#1049` finalizer remain explicitly blocked. No staging, production or live
+provider mutation follows from this candidate.
+
+Review-focused negative tests:
+`tests/kubernetes/tenant/test_native_successor_identity.py`.
