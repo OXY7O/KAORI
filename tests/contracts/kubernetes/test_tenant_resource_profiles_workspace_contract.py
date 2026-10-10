@@ -65,6 +65,84 @@ def test_resource_profiles_use_server_owned_kaori_content_tabs_and_snapshot_stat
     assert 'destructive_confirmation_modal.js' in page
 
 
+def test_namespace_registry_uses_compact_rows_and_committed_read_only_detail_dialog() -> None:
+    template = read('app/templates/kubernetes/tenant/partials/_namespace_registry.html')
+    model = read('app/models/tenant.py')
+    primitives = read('app/templates/components/table_primitives.html')
+    native = read('app/templates/components/status_detail_dialog.html')
+
+    # The canonical registry contract (filters, default-five pagination, shared
+    # table and empty/loading states) stays in charge of the list surface.
+    assert 'Namespace Registry' in template
+    assert "registry_ui.filter_form(" in template
+    assert "registry_ui.clear_filters_link(" in template
+    assert "registry_ui.footer('tenant.namespace_provisioning'" in template
+    assert "table_ui.table_classes('min-w-[1080px] !table-fixed')" in template
+    assert "namespace_pagination.per_page" in template
+    for name in ("namespace_tenant_id", "namespace_environment", "namespace_status", "namespace_search"):
+        assert name in template
+    for title, width in (
+        ("Namespace", 23),
+        ("Tenant / Environment", 20),
+        ("Allocation", 33),
+        ("State", 14),
+        ("Details", 10),
+    ):
+        assert f'w-[{width}%]">{title}</th>' in template
+    assert 'colspan="5"' in template
+    assert "components/states/_empty_state.html" in template
+
+    # Full profile names and reconciliation messages belong in the modal,
+    # not in a text-clipped status cell or a sixth authority column.
+    assert 'profile_name|truncate(45, True' in template
+    assert 'title="{{ profile_name }}"' in template
+    assert 'item.provisioning_message or' in template
+    assert "max-w-full truncate\" title=\"{{ item.provisioning_message" not in template
+    assert "item.ownership_status" in template
+    assert "item.resource_profile_version" in template
+    assert "item.environment.tenant.provider_key" in template
+    assert "item.environment.tenant.reconciliation_authority" in template
+    assert "provider_mirrored_policy" in template
+    assert "adopted_observed" in template
+    assert "KAORI Managed" in template
+
+    # Native-dialog identity is per committed Namespace ID; status detail is
+    # informational only and cannot invoke a provider or a mutation endpoint.
+    assert "dialog_id = 'tenant-namespace-evidence-' ~ item.id" in template
+    assert 'data-kaori-dialog-open' in template
+    assert 'data-dialog-target="{{ dialog_id }}"' in template
+    assert 'aria-haspopup="dialog"' in template
+    assert 'data-kaori-native-dialog' in template
+    assert 'aria-labelledby="{{ dialog_id }}-title"' in template
+    assert 'aria-describedby="{{ dialog_id }}-description"' in template
+    assert 'data-kaori-dialog-close' in template
+    assert 'kaori-native-dialog' in template
+    assert "text-right' if action else 'text-left'" in primitives
+    assert 'p-0 text-left shadow-2xl' in template
+    assert 'bg-surface-page p-4 text-left sm:p-6' in template
+    assert 'data-status-detail-dialog' in native
+    assert 'hx-post' not in template
+    assert '<form method="post"' not in template
+
+    # The four request dimensions read frozen Namespace quota, never current
+    # reusable profile values or raw provider JSON.
+    for key in ("requests.cpu", "requests.memory", "pods", "requests.storage"):
+        assert f"quota.get('{key}')" in template
+    assert 'item.allocation_quota_json or {}' in template
+    assert 'item.allocation_limit_defaults_json or {}' in template
+    assert 'item.allocation_storage_policy_json or {}' in template
+    assert "item.allocation_customized" in template
+    assert "item.provisioning_message" in template
+    assert "item.last_reconciled_at" in template
+    assert 'Quota &amp; LimitRange Details' in template
+    assert 'Provider Mirrored' in template
+    assert 'Control Unavailable' in template
+    assert "allocation_quota_json: Mapped[dict | None]" in model
+    assert "allocation_limit_defaults_json: Mapped[dict | None]" in model
+    assert "allocation_storage_policy_json: Mapped[dict | None]" in model
+
+
+
 def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None:
     form = read('app/templates/kubernetes/tenant/partials/_resource_profile_form.html')
     management = read('app/templates/kubernetes/tenant/partials/_resource_profile_management_dialogs.html')
