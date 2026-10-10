@@ -200,9 +200,32 @@ def _tenant_detail_context(tenant_id: str) -> dict[str, Any]:
             'handback' if 'handback' in allowed_sections else 'provider'
         )
     context['tenant_detail_open_section'] = active_section
-    context['tenant_detail_release_expanded'] = (
-        active_section == 'release' and requested_section == 'release'
+    # Wizard navigation is presentation only. No step is treated as approved,
+    # executable, or complete without the existing committed checks/services.
+    steps = ('scope', 'handoff', 'approval', 'finalize')
+    requested_step = str(
+        request.values.get('tenant_release_step')
+        or request.values.get('release_step')
+        or 'scope'
+    ).strip().lower()
+    context['tenant_release_step'] = (
+        requested_step if requested_step in steps else 'scope'
     )
+    context['tenant_release_step_index'] = steps.index(context['tenant_release_step']) + 1
+    registry_query = {
+        f'registry_{key}': value for key, value in state.items() if value
+    }
+    context['tenant_release_step_urls'] = {
+        step: url_for(
+            'tenant.tenant_detail',
+            tenant_id=tenant_id,
+            tenant_detail_section='release',
+            release_step=step,
+            _anchor='tenant-release-governance',
+            **registry_query,
+        )
+        for step in steps
+    }
 
     context['return_to_registry_url'] = url_for(
         'tenant.tenants',
@@ -220,6 +243,16 @@ def _tenant_section_redirect(section: str):
         if request.headers.get('HX-Request') != 'true':
             return redirect(url_for(
                 'tenant.tenant_detail', tenant_id=detail_id,
+                tenant_detail_section=context['tenant_detail_open_section'],
+                release_step=context['tenant_release_step']
+                if context['tenant_detail_open_section'] == 'release' else None,
+                _anchor={
+                    'release': 'tenant-release-governance',
+                    'handback': 'tenant-native-handback',
+                    'attachment': 'tenant-namespace-attachment',
+                    'provider': 'tenant-provider-authority',
+                    'lifecycle': 'tenant-lifecycle-actions',
+                }[context['tenant_detail_open_section']],
                 **{f'registry_{key}': value for key, value in context['registry_state'].items() if value},
             ))
         rendered = render_template(

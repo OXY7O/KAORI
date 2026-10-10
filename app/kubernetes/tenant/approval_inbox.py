@@ -77,6 +77,7 @@ def _present_handoff_request(
                 "tenant.tenant_detail",
                 tenant_id=tenant.id,
                 tenant_detail_section="release",
+                release_step="approval",
                 _anchor="tenant-release-governance",
             )
             if state == "Pending" else None

@@ -16,7 +16,7 @@ ADMIN = {'tenant.manage', 'integrations.manage', 'clusters.manage'}
 
 
 def _context(monkeypatch, *, perms=ADMIN, lifecycle='ready', provider='native_kubernetes',
-             selected='', evidence=None):
+             selected='', evidence=None, release_step='', submitted_step=''):
     tenant = SimpleNamespace(
         id='tenant-a', name='tenant-a', ownership_status='adopted',
         lifecycle_status=lifecycle, provider_key=provider,
@@ -34,7 +34,11 @@ def _context(monkeypatch, *, perms=ADMIN, lifecycle='ready', provider='native_ku
     )
     monkeypatch.setattr(
         route_common, 'request',
-        SimpleNamespace(values={'tenant_detail_section': selected}),
+        SimpleNamespace(values={
+            'tenant_detail_section': selected,
+            'release_step': release_step,
+            'tenant_release_step': submitted_step,
+        }),
     )
     monkeypatch.setattr(
         route_common, 'url_for',
@@ -47,13 +51,47 @@ def _context(monkeypatch, *, perms=ADMIN, lifecycle='ready', provider='native_ku
 def test_ready_platform_admin_defaults_to_release_open(monkeypatch):
     context = _context(monkeypatch)
     assert context['tenant_detail_open_section'] == 'release'
-    assert context['tenant_detail_release_expanded'] is False
+    assert context['tenant_release_step'] == 'scope'
+
+
+
+
+def test_release_wizard_accepts_bounded_url_step(monkeypatch):
+    ctx = _context(monkeypatch, selected='release', release_step='approval')
+    assert ctx['tenant_detail_open_section'] == 'release'
+    assert ctx['tenant_release_step'] == 'approval'
+    assert list(ctx['tenant_release_step_urls']) == [
+        'scope', 'handoff', 'approval', 'finalize',
+    ]
+
+
+def test_governance_post_keeps_selected_wizard_step(monkeypatch):
+    ctx = _context(
+        monkeypatch, selected='release', submitted_step='finalize',
+    )
+    assert ctx['tenant_detail_open_section'] == 'release'
+    assert ctx['tenant_release_step'] == 'finalize'
+
+
+def test_invalid_step_falls_back_to_scope_without_authorizing_release(monkeypatch):
+    ctx = _context(
+        monkeypatch, selected='release', release_step='<script>',
+    )
+    assert ctx['tenant_release_step'] == 'scope'
+
+
+def test_form_step_has_priority_over_old_url_for_htmx_response(monkeypatch):
+    ctx = _context(
+        monkeypatch, selected='release', release_step='scope',
+        submitted_step='handoff',
+    )
+    assert ctx['tenant_release_step'] == 'handoff'
 
 
 def test_post_keeps_current_governed_release_section(monkeypatch):
     context = _context(monkeypatch, selected='release')
     assert context['tenant_detail_open_section'] == 'release'
-    assert context['tenant_detail_release_expanded'] is True
+    assert context['tenant_release_step'] == 'scope'
 
 
 def test_readonly_viewer_does_not_open_release(monkeypatch):

@@ -24,8 +24,7 @@
                     <h1 id="tenant-detail-{{ tenant.id }}-title"
                         class="{{ page_hero.title_classes() }}">{{ tenant.name }}</h1>
                     <p class="mt-2 {{ page_hero.description_classes() }}">
-                        Govern Tenant ownership, Namespace allocations, provider handoff
-                        and lifecycle with committed, independently verified evidence.
+                        Manage Tenant governance and lifecycle.
                     </p>
                     {{ page_hero.persistent_metadata([
                         ('server', row.cluster.name if row.cluster else 'Cluster unavailable'),
@@ -77,91 +76,120 @@
         </div>
     </section>
 
-    <section id="tenant-detail-snapshot" class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-6"
-             aria-label="Tenant overview">
-        <div class="mb-4 flex flex-wrap items-start gap-3">
-            <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-kaori-soft text-sm font-semibold text-kaori-primary"
-                  aria-hidden="true">1</span>
-            <div class="min-w-0">
-                <h2 class="text-lg font-semibold text-content-primary">Tenant Overview</h2>
-                <p class="mt-1 text-sm leading-6 text-content-secondary">
-                    Identity, allocation scope and historical governance evidence for this Tenant.
-                </p>
-            </div>
+    <section id="tenant-detail-snapshot" class="min-w-0 space-y-4"
+             aria-labelledby="tenant-overview-heading">
+        <div class="min-w-0">
+            <h2 id="tenant-overview-heading" class="text-lg font-semibold text-content-primary">Tenant Overview</h2>
+            <p class="mt-1 text-sm leading-6 text-content-secondary">
+                Identity, governance responsibility and committed lifecycle evidence for this Tenant.
+            </p>
         </div>
-        <div class="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
-            <div class="min-w-0 overflow-hidden rounded-lg border border-outline-subtle">
-                <dl class="divide-y divide-outline-subtle">
-                    {% set tenant_identity_rows = [
-                        ('Tenant Name', tenant.name),
+        <div class="grid min-w-0 gap-4 lg:grid-cols-2">
+            <section class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+                     aria-labelledby="tenant-identity-heading">
+                <header class="flex items-start gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5">
+                    <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
+                        <i data-lucide="fingerprint" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h3 id="tenant-identity-heading" class="text-base font-semibold text-content-primary">Identity &amp; Origin</h3>
+                        <p class="mt-1 text-sm leading-5 text-content-secondary">
+                            Registered identity and the provider this Tenant belongs to.
+                        </p>
+                    </div>
+                </header>
+                <dl class="divide-y divide-outline-subtle px-4 sm:px-5">
+                    {% set identity_facts = [
+                        ('Tenant ID', tenant.id),
                         ('Cluster', row.cluster.name if row.cluster else 'Cluster unavailable'),
                         ('Provider', tenant.provider_key|replace('_', ' ')|title),
-                        ('Generation', tenant.generation),
-                        ('Ownership', tenant.ownership_status|replace('_', ' ')|title),
-                        ('Lifecycle', tenant.lifecycle_status|replace('_', ' ')|title)
+                        ('Generation', tenant.generation)
                     ] %}
-                    {% for label, value in tenant_identity_rows %}
-                        <div class="grid min-w-0 gap-1 px-4 py-2.5 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-3">
-                            <dt class="text-sm text-content-secondary">{{ label }}</dt>
-                            <dd class="break-words text-sm font-semibold text-content-primary">{{ value }}</dd>
+                    {% for label, value in identity_facts %}
+                        <div class="grid min-w-0 gap-1 py-3 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-3">
+                            <dt class="text-sm text-content-muted">{{ label }}</dt>
+                            <dd class="min-w-0 break-all text-sm font-semibold text-content-primary">{{ value }}</dd>
                         </div>
                     {% endfor %}
                     {% if tenant.created_at %}
-                        <div class="grid min-w-0 gap-1 px-4 py-2.5 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-3">
-                            <dt class="text-sm text-content-secondary">Created</dt>
-                            <dd class="text-sm font-semibold tabular-nums text-content-primary">{{ tenant.created_at.strftime('%Y-%m-%d %H:%M') }}</dd>
-                        </div>
-                    {% endif %}
-                    {% if tenant.updated_at %}
-                        <div class="grid min-w-0 gap-1 px-4 py-2.5 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-3">
-                            <dt class="text-sm text-content-secondary">Updated</dt>
-                            <dd class="text-sm font-semibold tabular-nums text-content-primary">{{ tenant.updated_at.strftime('%Y-%m-%d %H:%M') }}</dd>
+                        <div class="grid min-w-0 gap-1 py-3 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-3">
+                            <dt class="text-sm text-content-muted">Registered</dt>
+                            <dd class="text-sm font-semibold tabular-nums text-content-primary">
+                                {{ tenant.created_at.strftime('%Y-%m-%d %H:%M') }}
+                            </dd>
                         </div>
                     {% endif %}
                 </dl>
-            </div>
-            <div class="min-w-0 space-y-3">
-                <section class="rounded-lg border border-outline-subtle p-4" aria-label="Tenant description">
-                    <div class="flex items-center gap-2 text-sm font-semibold text-content-primary">
-                        <i data-lucide="file-text" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
-                        Description
-                    </div>
-                    <p class="mt-2 break-words text-sm leading-6 text-content-secondary">
-                        {{ tenant.description or 'This Tenant is governed by KAORI using committed evidence. Kubernetes or Capsule retains authority over provider resources.' }}
+                <div class="border-t border-outline-subtle bg-surface-elevated px-4 py-4 sm:px-5">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Description</p>
+                    <p class="mt-1 break-words text-sm leading-6 text-content-secondary">
+                        {{ tenant.description or 'No Tenant description has been recorded.' }}
                     </p>
-                </section>
-                <section class="rounded-lg border border-outline-subtle p-4" aria-label="Tenant quick links">
-                    <div class="flex items-center gap-2 text-sm font-semibold text-content-primary">
-                        <i data-lucide="link-2" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
-                        Quick Links
+                </div>
+            </section>
+
+            <section class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+                     aria-labelledby="tenant-governance-heading">
+                <header class="flex items-start gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5">
+                    <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
+                        <i data-lucide="shield-check" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h3 id="tenant-governance-heading" class="text-base font-semibold text-content-primary">Governance State</h3>
+                        <p class="mt-1 text-sm leading-5 text-content-secondary">
+                            Current lifecycle and reconciliation responsibility.
+                        </p>
                     </div>
-                    <div class="mt-3 grid gap-2 sm:grid-cols-2">
-                        <a href="{{ url_for('tenant.tenants', section='access-grants') }}"
-                           class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-outline-default px-3 text-sm font-semibold text-kaori-primary hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                            <i data-lucide="users" class="h-4 w-4" aria-hidden="true"></i>Access Grants
-                        </a>
-                        <a href="{{ url_for('tenant.resource_profiles') }}"
-                           class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-outline-default px-3 text-sm font-semibold text-kaori-primary hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                            <i data-lucide="layers-3" class="h-4 w-4" aria-hidden="true"></i>Resource Profiles
-                        </a>
-                        <a href="{{ url_for('tenant.tenants', section='registry') }}"
-                           class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-outline-default px-3 text-sm font-semibold text-kaori-primary hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                            <i data-lucide="building-2" class="h-4 w-4" aria-hidden="true"></i>Tenant Registry
-                        </a>
-                        <a href="{{ url_for('tenant.operations') }}"
-                           class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-outline-default px-3 text-sm font-semibold text-kaori-primary hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                            <i data-lucide="activity" class="h-4 w-4" aria-hidden="true"></i>Operations
-                        </a>
+                </header>
+                <dl class="divide-y divide-outline-subtle px-4 sm:px-5">
+                    <div class="grid min-w-0 gap-1 py-3 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-3">
+                        <dt class="text-sm text-content-muted">Ownership</dt>
+                        <dd class="break-words text-sm font-semibold text-content-primary">
+                            {{ tenant.ownership_status|replace('_', ' ')|title }}
+                        </dd>
                     </div>
-                </section>
-                {% set historical_namespace_count = row.namespace_history_count - row.namespace_count %}
-                {% if historical_namespace_count > 0 %}
-                    <p class="rounded-lg border border-outline-subtle bg-surface-elevated px-4 py-3 text-sm text-content-secondary">
-                        {{ historical_namespace_count }} historical Namespace record{{ '' if historical_namespace_count == 1 else 's' }}
-                        retained for audit and generation lineage.
-                    </p>
-                {% endif %}
-            </div>
+                    <div class="grid min-w-0 gap-1 py-3 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-3">
+                        <dt class="text-sm text-content-muted">Lifecycle</dt>
+                        <dd>
+                            {{ table_label.status_label(
+                                tenant.lifecycle_status|replace('_', ' ')|title,
+                                'success' if tenant.lifecycle_status == 'ready'
+                                else ('warning' if tenant.lifecycle_status == 'decommissioning' else 'info')
+                            ) }}
+                        </dd>
+                    </div>
+                    <div class="grid min-w-0 gap-1 py-3 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-3">
+                        <dt class="text-sm text-content-muted">Reconciliation</dt>
+                        <dd class="break-words text-sm font-semibold text-content-primary">
+                            {{ tenant.reconciliation_authority|replace('_', ' ')|title }}
+                        </dd>
+                    </div>
+                    {% if tenant.updated_at %}
+                        <div class="grid min-w-0 gap-1 py-3 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-3">
+                            <dt class="text-sm text-content-muted">Last updated</dt>
+                            <dd class="text-sm font-semibold tabular-nums text-content-primary">
+                                {{ tenant.updated_at.strftime('%Y-%m-%d %H:%M') }}
+                            </dd>
+                        </div>
+                    {% endif %}
+                </dl>
+                <div class="border-t border-outline-subtle bg-surface-elevated px-4 py-4 sm:px-5">
+                    <div class="flex items-start gap-2">
+                        <i data-lucide="database" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                        <p class="text-sm leading-6 text-content-secondary">
+                            KAORI presents committed governance evidence; Kubernetes or Capsule remains authoritative for provider resources.
+                        </p>
+                    </div>
+                    {% set historical_namespace_count = row.namespace_history_count - row.namespace_count %}
+                    {% if historical_namespace_count > 0 %}
+                        <p class="mt-2 text-sm leading-6 text-content-muted">
+                            {{ historical_namespace_count }} historical Namespace record{{ '' if historical_namespace_count == 1 else 's' }} retained for audit.
+                        </p>
+                    {% endif %}
+                </div>
+            </section>
         </div>
     </section>
 
@@ -190,43 +218,47 @@
                 </span>
             </summary>
             <div class="border-t border-outline-subtle ">
-                <div class="px-4 py-4 sm:px-5"
-                 aria-label="Release governance stages">
-                <ol class="grid grid-cols-2 gap-4 sm:grid-cols-4" aria-label="Governed Release sequence">
+                <nav class="border-t border-outline-subtle px-4 py-4 sm:px-6" aria-label="Release wizard steps">
+                <ol class="grid min-w-0 grid-cols-2 gap-2 lg:grid-cols-4">
                     {% set release_steps = [
-                        ('tenant-release-stage-readiness', 'Preflight', 'Review blockers'),
-                        ('tenant-release-stage-inventory', 'Provider Scope', 'Preserve resources'),
-                        ('tenant-release-stage-approval', 'Independent Approval', 'Separate reviewer'),
-                        ('tenant-release-stage-finalize', 'Verify & Finalize', 'Read-back before Release')
+                        ('scope', 'Review Scope', 'Preflight & blockers'),
+                        ('handoff', 'Provider Scope', 'Inventory & preservation'),
+                        ('approval', 'Approval & Handoff', 'Independent governance'),
+                        ('finalize', 'Verify & Finalize', 'Read-back & Release')
                     ] %}
-                    {% for step_id, label, caption in release_steps %}
+                    {% for step_key, label, helper in release_steps %}
+                        {% set selected = tenant_release_step == step_key %}
                         <li class="min-w-0">
-                            <a href="#{{ step_id }}"
-                               class="group/step flex min-w-0 items-start gap-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                                <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-outline-default bg-kaori-soft text-xs font-semibold tabular-nums text-kaori-primary group-hover/step:border-kaori-primary"
+                            <a href="{{ tenant_release_step_urls[step_key] }}"
+                               {% if selected %}aria-current="step"{% endif %}
+                               class="flex min-h-[4.5rem] min-w-0 items-start gap-3 rounded-lg border p-3 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus
+                                      {{ 'border-kaori-primary bg-kaori-soft' if selected else 'border-outline-subtle bg-surface-card hover:border-kaori-primary/40 hover:bg-surface-elevated' }}">
+                                <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold tabular-nums
+                                             {{ 'bg-kaori-primary text-white' if selected else 'bg-surface-elevated text-content-secondary' }}"
                                       aria-hidden="true">{{ loop.index }}</span>
                                 <span class="min-w-0">
-                                    <span class="block break-words text-xs font-semibold text-content-primary">{{ label }}</span>
-                                    <span class="mt-0.5 block break-words text-xs leading-5 text-content-secondary">{{ caption }}</span>
+                                    <span class="block text-sm font-semibold leading-5 text-content-primary">{{ label }}</span>
+                                    <span class="mt-1 block text-xs leading-5 text-content-secondary">{{ helper }}</span>
                                 </span>
                             </a>
                         </li>
                     {% endfor %}
                 </ol>
-            </div>
-            <details id="tenant-release-workflow-details"
-                     class="group/workflow border-t border-outline-subtle"
-                     {% if tenant_detail_release_expanded %}open{% endif %}>
-                <summary class="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-5 py-3 text-sm font-semibold text-kaori-primary hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus sm:px-6 [&::-webkit-details-marker]:hidden">
-                    <span class="inline-flex items-center gap-2">
-                        <i data-lucide="clipboard-list" class="h-4 w-4" aria-hidden="true"></i>
-                        View full Release workflow and evidence
-                    </span>
-                    <i data-lucide="chevron-down" class="h-4 w-4 shrink-0 transition-transform group-open/workflow:rotate-180" aria-hidden="true"></i>
-                </summary>
-                <div class="divide-y divide-outline-subtle" aria-label="Release governance workflow">
-                            {# The release review is an action; evidence and handoff are stable workflow steps, not tabs. #}
-                            <section id="tenant-release-stage-readiness" class="min-w-0 scroll-mt-24 space-y-4 px-5 py-5 sm:px-6 sm:py-6"
+            </nav>
+            <div class="min-w-0 border-t border-outline-subtle" aria-label="Release wizard active step">
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-outline-subtle bg-surface-elevated px-4 py-3 sm:px-6">
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary">
+                            Step {{ tenant_release_step_index }} of 4
+                        </p>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">
+                            Review the current committed evidence and continue when ready.
+                        </p>
+                    </div>
+                    {{ table_label.status_label('Provider-governed', 'info') }}
+                </div>
+                {% if tenant_release_step == 'scope' %}
+                    <section id="tenant-release-stage-readiness" class="min-w-0 scroll-mt-24 space-y-4 px-5 py-5 sm:px-6 sm:py-6"
                                      aria-label="Release readiness">
                                 <div class="flex flex-wrap items-start justify-between gap-3">
                                     <div class="min-w-0 flex-1">
@@ -246,6 +278,7 @@
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
                                             <input type="hidden" name="tenant_detail_section" value="release">
+                                            <input type="hidden" name="tenant_release_step" value="scope">
                                             {% for state_key, state_value in registry_state.items() %}
                                                 <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
                                             {% endfor %}
@@ -308,7 +341,8 @@
                                     </div>
                                 {% endif %}
                             </section>
-                            <section id="tenant-release-stage-inventory" class="min-w-0 scroll-mt-24 px-5 py-5 sm:px-6 sm:py-6"
+                {% elif tenant_release_step == 'handoff' %}
+                    <section id="tenant-release-stage-inventory" class="min-w-0 scroll-mt-24 px-5 py-5 sm:px-6 sm:py-6"
                                      aria-label="Provider handoff inventory">
                                 <div class="flex flex-wrap items-start justify-between gap-3">
                                     <div class="flex min-w-0 items-start gap-3">
@@ -367,7 +401,8 @@
                                     </p>
                                 {% endif %}
                             </section>
-                            <section id="tenant-release-stage-approval" class="min-w-0 scroll-mt-24 px-5 py-5 sm:px-6 sm:py-6"
+                {% elif tenant_release_step == 'approval' %}
+                    <section id="tenant-release-stage-approval" class="min-w-0 scroll-mt-24 px-5 py-5 sm:px-6 sm:py-6"
                                      aria-label="Governed handoff workflow">
                                 <div class="flex flex-wrap items-start justify-between gap-3">
                                     <div class="flex min-w-0 items-start gap-3">
@@ -423,6 +458,7 @@
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
                                             <input type="hidden" name="tenant_detail_section" value="release">
+                                            <input type="hidden" name="tenant_release_step" value="approval">
                                             {% for state_key, state_value in registry_state.items() %}
                                                 <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
                                             {% endfor %}
@@ -514,6 +550,7 @@
                                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
                                             <input type="hidden" name="tenant_detail_section" value="release">
+                                            <input type="hidden" name="tenant_release_step" value="approval">
                                             {% for state_key, state_value in registry_state.items() %}
                                                 <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
                                             {% endfor %}
@@ -563,6 +600,7 @@
                                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
                                             <input type="hidden" name="tenant_detail_section" value="release">
+                                            <input type="hidden" name="tenant_release_step" value="approval">
                                             {% for state_key, state_value in registry_state.items() %}
                                                 <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
                                             {% endfor %}
@@ -601,6 +639,7 @@
                                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
                                             <input type="hidden" name="tenant_detail_section" value="release">
+                                            <input type="hidden" name="tenant_release_step" value="approval">
                                             {% for state_key, state_value in registry_state.items() %}
                                                 <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
                                             {% endfor %}
@@ -658,6 +697,7 @@
                                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
                                             <input type="hidden" name="tenant_detail_section" value="release">
+                                            <input type="hidden" name="tenant_release_step" value="approval">
                                             {% for state_key, state_value in registry_state.items() %}
                                                 <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
                                             {% endfor %}
@@ -700,6 +740,7 @@
                                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
                                             <input type="hidden" name="tenant_detail_section" value="release">
+                                            <input type="hidden" name="tenant_release_step" value="approval">
                                             {% for state_key, state_value in registry_state.items() %}
                                                 <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
                                             {% endfor %}
@@ -766,6 +807,7 @@
                                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
                                             <input type="hidden" name="tenant_detail_section" value="release">
+                                            <input type="hidden" name="tenant_release_step" value="approval">
                                             {% for state_key, state_value in registry_state.items() %}
                                                 <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
                                             {% endfor %}
@@ -812,7 +854,8 @@
                                     </p>
                                 {% endif %}
                             </section>
-                            <section id="tenant-release-stage-finalize" class="min-w-0 scroll-mt-24 px-5 py-5 sm:px-6 sm:py-6"
+                {% else %}
+                    <section id="tenant-release-stage-finalize" class="min-w-0 scroll-mt-24 px-5 py-5 sm:px-6 sm:py-6"
                                      aria-label="Independent verification and release">
                                 <div class="flex min-w-0 items-start gap-3">
                                     
@@ -880,6 +923,7 @@
                                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
                                             <input type="hidden" name="tenant_detail_section" value="release">
+                                            <input type="hidden" name="tenant_release_step" value="finalize">
                                             {% for state_key, state_value in registry_state.items() %}
                                                 <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
                                             {% endfor %}
@@ -928,6 +972,7 @@
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
                                             <input type="hidden" name="tenant_detail_section" value="release">
+                                            <input type="hidden" name="tenant_release_step" value="finalize">
                                             {% for state_key, state_value in registry_state.items() %}
                                                 <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
                                             {% endfor %}
@@ -960,6 +1005,7 @@
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
                                             <input type="hidden" name="tenant_detail_section" value="release">
+                                            <input type="hidden" name="tenant_release_step" value="finalize">
                                             {% for state_key, state_value in registry_state.items() %}
                                                 <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
                                             {% endfor %}
@@ -990,8 +1036,45 @@
                                     </p>
                                 {% endif %}
                             </section>
-                        </div>
-            </details>
+                {% endif %}
+                <nav class="flex flex-wrap items-center justify-between gap-3 border-t border-outline-subtle px-4 py-4 sm:px-6"
+                     aria-label="Release wizard previous and next">
+                    <div>
+                        {% if tenant_release_step == 'handoff' %}
+                            <a href="{{ tenant_release_step_urls['scope'] }}" class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-outline-default px-4 text-sm font-semibold text-content-secondary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i> Previous: Review Scope
+                            </a>
+                        {% elif tenant_release_step == 'approval' %}
+                            <a href="{{ tenant_release_step_urls['handoff'] }}" class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-outline-default px-4 text-sm font-semibold text-content-secondary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i> Previous: Provider Scope
+                            </a>
+                        {% elif tenant_release_step == 'finalize' %}
+                            <a href="{{ tenant_release_step_urls['approval'] }}" class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-outline-default px-4 text-sm font-semibold text-content-secondary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i> Previous: Approval &amp; Handoff
+                            </a>
+                        {% endif %}
+                    </div>
+                    <div>
+                        {% if tenant_release_step == 'scope' %}
+                            <a href="{{ tenant_release_step_urls['handoff'] }}" class="inline-flex min-h-10 items-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                Next: Provider Scope <i data-lucide="arrow-right" class="h-4 w-4" aria-hidden="true"></i>
+                            </a>
+                        {% elif tenant_release_step == 'handoff' %}
+                            <a href="{{ tenant_release_step_urls['approval'] }}" class="inline-flex min-h-10 items-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                Next: Approval &amp; Handoff <i data-lucide="arrow-right" class="h-4 w-4" aria-hidden="true"></i>
+                            </a>
+                        {% elif tenant_release_step == 'approval' %}
+                            <a href="{{ tenant_release_step_urls['finalize'] }}" class="inline-flex min-h-10 items-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                Next: Verify &amp; Finalize <i data-lucide="arrow-right" class="h-4 w-4" aria-hidden="true"></i>
+                            </a>
+                        {% endif %}
+                    </div>
+                </nav>
+                <p class="border-t border-outline-subtle px-4 py-3 text-xs leading-5 text-content-muted sm:px-6">
+                    Moving between steps does not approve a plan or bypass blockers.
+                    Only authoritative provider checks, independent review and committed evidence permit Release.
+                </p>
+            </div>
                         <p class="mt-4 flex items-start gap-2 border-t border-outline-subtle pt-4 text-sm leading-6 text-content-muted">
                             <i data-lucide="shield-check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
                             Independent approval or an external reference alone cannot authorize provider handoff.

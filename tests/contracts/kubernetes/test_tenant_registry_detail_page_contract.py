@@ -79,9 +79,10 @@ def test_one_described_page_not_a_new_tabbed_application():
     common = read('app/kubernetes/tenant/route_common.py')
     assert 'id="tenant-detail-snapshot"' in detail
     assert 'Tenant Overview' in detail
-    assert 'Identity, allocation scope and historical governance evidence' in detail
-    assert 'Tenant Name' in detail
-    assert 'Quick Links' in detail
+    assert 'Identity, governance responsibility and committed lifecycle evidence' in detail
+    assert 'Identity &amp; Origin' in detail
+    assert 'Governance State' in detail
+    assert 'Quick Links' not in detail
     assert 'Description' in detail
     assert 'historical Namespace record' in detail
     assert 'row.namespace_history_count - row.namespace_count' in detail
@@ -131,7 +132,7 @@ def test_release_evidence_is_readable_full_width_without_nested_scroll():
         '04 · Verify and finalize',
         'aria-label="Release blockers"',
         'aria-label="Provider handoff inventory"',
-        'aria-label="Release governance workflow"',
+        'aria-label="Release wizard active step"',
     ):
         assert label in release
     assert 'divide-y divide-outline-subtle' in release
@@ -154,6 +155,9 @@ def test_exact_governance_forms_return_to_same_page_and_global_toast():
     assert detail.count('hx-post=') == 14
     assert 'name="tenant_detail_view"' not in detail
     assert detail.count('name="tenant_detail_section"') == 14
+    assert detail.count('name="tenant_release_step"') == 11
+    assert 'tenant_release_step_urls' in common
+    assert "context['tenant_release_step']" in common
     assert "context['tenant_detail_open_section'] = active_section" in common
     assert "detail_id = str(request.form.get('tenant_detail_id')" in common
     assert "'kubernetes/tenant/partials/_tenant_management_detail.html'" in common
@@ -214,6 +218,7 @@ def test_independent_work_inbox_deep_link_targets_release_section():
     assert '"tenant.tenant_detail"' in inbox
     assert '_anchor="tenant-release-governance"' in inbox
     assert 'tenant_detail_section="release"' in inbox
+    assert 'release_step="approval"' in inbox
     assert 'view="release"' not in inbox
 
 
@@ -241,7 +246,7 @@ def test_approved_kaori_hero_matches_reference_composition():
     assert detail.count('Back to Registry') == 1
 
 
-def test_overview_matches_two_column_identity_and_quick_links():
+def test_overview_matches_two_column_identity_and_governance():
     detail = read(DETAIL)
     assert 'sm:grid-cols-2 xl:grid-cols-4' in detail
     assert "('Active Namespaces', " not in detail  # actual summary includes icon
@@ -249,13 +254,13 @@ def test_overview_matches_two_column_identity_and_quick_links():
     assert 'row.environments|length' in detail
     assert 'tenant.reconciliation_authority' in detail
     assert 'tenant.lifecycle_status' in detail
-    assert 'lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]' in detail
-    assert "'Tenant Name', tenant.name" in detail
-    assert "'Cluster', row.cluster.name" in detail
-    assert "'Provider', tenant.provider_key" in detail
+    assert 'lg:grid-cols-2' in detail
+    assert "('Tenant ID', tenant.id)" in detail
+    assert "('Cluster', row.cluster.name" in detail
+    assert "('Provider', tenant.provider_key" in detail
     assert 'tenant.description or' in detail
-    assert "url_for('tenant.resource_profiles')" in detail
-    assert "url_for('tenant.operations')" in detail
+    assert "url_for('tenant.resource_profiles')" not in detail
+    assert "url_for('tenant.operations')" not in detail
     assert 'tenant.created_at.strftime(' in detail
     assert 'tenant.updated_at.strftime(' in detail
 
@@ -280,10 +285,50 @@ def test_governance_sections_use_native_accessible_expandables_and_existing_cont
     assert 'tenant-release-stage-inventory' in detail
     assert 'tenant-release-stage-approval' in detail
     assert 'tenant-release-stage-finalize' in detail
-    assert 'aria-label="Governed Release sequence"' in detail
-    assert 'id="tenant-release-workflow-details"' in detail
-    assert '{% if tenant_detail_release_expanded %}open{% endif %}' in detail
-    assert 'View full Release workflow and evidence' in detail
+    assert 'aria-label="Release wizard steps"' in detail
+    assert 'id="tenant-release-workflow-details"' not in detail
+    assert "{% if tenant_release_step == 'scope' %}" in detail
+    assert "{% elif tenant_release_step == 'handoff' %}" in detail
+    assert "{% elif tenant_release_step == 'approval' %}" in detail
+    assert 'aria-current="step"' in detail
+    assert 'View full Release workflow and evidence' not in detail
+    assert 'aria-label="Release wizard steps"' in detail
+    assert 'aria-label="Release wizard previous and next"' in detail
     assert "tenant_detail_section" in detail
     assert 'max-h-72' not in detail
     assert "destructive_modal.render('tenant-decommission-modal'" in detail
+
+
+
+def test_short_hero_subtitle_and_no_quick_links_regression():
+    detail = read(DETAIL)
+    assert 'Manage Tenant governance and lifecycle.' in detail
+    assert 'Govern Tenant ownership, Namespace allocations' not in detail
+    assert 'Quick Links' not in detail
+    assert 'Tenant ID' in detail
+    assert 'Identity &amp; Origin' in detail
+    assert 'Governance State' in detail
+    assert 'No Tenant description has been recorded.' in detail
+
+
+def test_release_wizard_only_one_step_renders_and_old_forms_are_preserved():
+    detail = read(DETAIL)
+    common = read('app/kubernetes/tenant/route_common.py')
+    assert 'aria-label="Release wizard steps"' in detail
+    assert 'aria-label="Release wizard active step"' in detail
+    assert detail.count('href="{{ tenant_release_step_urls[') >= 7
+    assert "requested_step if requested_step in steps else 'scope'" in common
+    assert "'scope', 'handoff', 'approval', 'finalize'" in common
+    assert "request.values.get('tenant_release_step')" in common
+    assert "request.values.get('release_step')" in common
+    assert "release_step=context['tenant_release_step']" in common
+    assert 'Moving between steps does not approve a plan or bypass blockers.' in detail
+    release = detail.split('id="tenant-release-governance"', 1)[1].split(
+        'id="tenant-native-handback"', 1
+    )[0]
+    assert release.count('<form ') == 11
+    assert release.count('name="tenant_release_step"') == 11
+    assert 'id="tenant-release-stage-readiness"' in release
+    assert 'id="tenant-release-stage-inventory"' in release
+    assert 'id="tenant-release-stage-approval"' in release
+    assert 'id="tenant-release-stage-finalize"' in release
