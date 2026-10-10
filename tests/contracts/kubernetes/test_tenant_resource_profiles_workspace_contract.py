@@ -441,7 +441,8 @@ def test_allocation_budget_registry_separates_snapshot_freshness_and_compute_bud
 
     # Separate snapshot state from committed computed budget availability.
     assert "item.snapshot_state in ['current', 'fresh']" in capacity
-    assert "'Compute budget available' if item.budget else 'Compute evidence required'" in capacity
+    assert "'Compute budget available' if item.budget else ('Capacity policy required' if not item.policy else 'Compute evidence required')" in capacity
+    assert 'Capacity policy required' in capacity
     assert "item.snapshot_state == 'current' else 'Compute evidence required'" not in capacity
     assert "'Compute budget available' if item.snapshot_state" not in capacity
     assert "Logical storage governed" in capacity
