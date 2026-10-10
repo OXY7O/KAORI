@@ -177,34 +177,32 @@
                                             <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
                                         </button>
                                     </header>
-                                    <div class="min-h-0 space-y-5 overflow-y-auto bg-surface-page p-4 text-left sm:p-6">
+                                    <div class="min-h-0 flex-1 space-y-4 overflow-y-auto bg-surface-page p-4 text-left sm:p-5">
                                         <section aria-label="Namespace identity and authority">
-                                            <div class="grid grid-cols-2 gap-x-4 gap-y-3 border-b border-outline-subtle pb-4 sm:grid-cols-4">
+                                            <dl class="grid grid-cols-2 gap-x-4 gap-y-3 rounded-xl border border-outline-subtle bg-surface-card px-4 py-3 sm:grid-cols-4">
                                                 <div class="min-w-0">
-                                                    <p class="text-xs text-content-muted">State</p>
-                                                    <div class="mt-1">{{ table_label.status_label(item.provisioning_status|replace('_', ' ')|title, state_tone) }}</div>
+                                                    <dt class="text-xs text-content-muted">State</dt>
+                                                    <dd class="mt-1">{{ table_label.status_label(item.provisioning_status|replace('_', ' ')|title, state_tone) }}</dd>
                                                 </div>
                                                 <div class="min-w-0">
-                                                    <p class="text-xs text-content-muted">Ownership</p>
-                                                    <p class="mt-1 text-sm font-semibold text-content-primary">{{ item.ownership_status|replace('_', ' ')|title }}</p>
+                                                    <dt class="text-xs text-content-muted">Ownership</dt>
+                                                    <dd class="mt-1 text-sm font-semibold text-content-primary">{{ item.ownership_status|replace('_', ' ')|title }}</dd>
                                                 </div>
                                                 <div class="min-w-0">
-                                                    <p class="text-xs text-content-muted">Provider</p>
-                                                    <p class="mt-1 break-words text-sm font-semibold text-content-primary">{{ provider_name }}</p>
+                                                    <dt class="text-xs text-content-muted">Provider</dt>
+                                                    <dd class="mt-1 break-words text-sm font-semibold text-content-primary">{{ provider_name }}</dd>
                                                 </div>
                                                 <div class="min-w-0">
-                                                    <p class="text-xs text-content-muted">Authority</p>
-                                                    <p class="mt-1 break-words text-sm font-semibold text-content-primary">{{ authority_name }}</p>
+                                                    <dt class="text-xs text-content-muted">Authority</dt>
+                                                    <dd class="mt-1 break-words text-sm font-semibold text-content-primary">{{ authority_name }}</dd>
                                                 </div>
-                                            </div>
+                                            </dl>
                                         </section>
                                         <section aria-labelledby="{{ dialog_id }}-allocation-title">
                                             <h3 id="{{ dialog_id }}-allocation-title" class="text-sm font-semibold text-content-primary">Committed Allocation</h3>
-                                            <p class="mt-1 text-xs leading-5 text-content-muted">
-                                                Effective Namespace snapshot, not live provider utilization.
-                                            </p>
-                                            <div class="mt-3 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
-                                                <div class="grid grid-cols-2 gap-x-4 gap-y-3 px-4 py-4 sm:grid-cols-4">
+                                            <p class="mt-1 text-xs leading-5 text-content-muted">Frozen Namespace requests · Not live utilization</p>
+                                            <div class="mt-3 rounded-xl border border-outline-subtle bg-surface-card px-4 py-3">
+                                                <dl class="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
                                                     {% for label, value in [
                                                         ('CPU Requests', quota.get('requests.cpu')),
                                                         ('Memory Requests', quota.get('requests.memory')),
@@ -212,27 +210,51 @@
                                                         ('Logical Storage', quota.get('requests.storage'))
                                                     ] %}
                                                         <div class="min-w-0">
-                                                            <p class="text-xs text-content-muted">{{ label }}</p>
-                                                            <p class="mt-1 break-words text-sm font-semibold tabular-nums text-content-primary">
+                                                            <dt class="text-xs text-content-muted">{{ label }}</dt>
+                                                            <dd class="mt-1 break-words text-sm font-semibold tabular-nums text-content-primary">
                                                                 {{ value if value is not none else 'Not declared' }}
-                                                            </p>
+                                                            </dd>
                                                         </div>
                                                     {% endfor %}
-                                                </div>
-                                                <div class="border-t border-outline-subtle bg-surface-elevated px-4 py-3">
-                                                    <p class="text-xs font-medium leading-5 text-content-secondary">
-                                                        {{ profile_name }}
-                                                    </p>
-                                                    <p class="mt-1 text-xs leading-5 text-content-muted">
-                                                        Source snapshot v{{ item.resource_profile_version or '—' }}
-                                                        {% if item.allocation_customized %} · Customized allocation{% endif %}
-                                                    </p>
-                                                    {% if allocation_control %}
-                                                        <p class="mt-1 break-words text-xs leading-5 text-content-secondary">
-                                                            Control: {{ allocation_control|replace('_', ' ')|title }}
+                                                </dl>
+                                                <div class="mt-3 flex flex-wrap items-start justify-between gap-x-4 gap-y-2 border-t border-outline-subtle pt-3">
+                                                    <div class="min-w-0 flex-1">
+                                                        <p class="text-xs text-content-muted">Source Profile</p>
+                                                        <p class="mt-1 break-words text-sm font-medium leading-5 text-content-primary">{{ profile_name }}</p>
+                                                    </div>
+                                                    <div class="min-w-0 sm:text-right">
+                                                        <p class="text-xs text-content-muted">Effective Snapshot</p>
+                                                        <p class="mt-1 text-sm font-semibold text-content-primary">
+                                                            v{{ item.resource_profile_version or '—' }}{% if item.allocation_customized %} · Customized{% endif %}
                                                         </p>
-                                                    {% endif %}
+                                                    </div>
                                                 </div>
+                                                {% if allocation_control %}
+                                                    <p class="mt-2 break-words text-xs leading-5 text-content-secondary">
+                                                        Control: {{ allocation_control|replace('_', ' ')|title }}
+                                                    </p>
+                                                {% endif %}
+                                            </div>
+                                        </section>
+                                        <section aria-labelledby="{{ dialog_id }}-reconciliation-title">
+                                            <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                                                <h3 id="{{ dialog_id }}-reconciliation-title"
+                                                    class="text-sm font-semibold text-content-primary">Reconciliation</h3>
+                                                {% if item.last_reconciled_at %}
+                                                    <p class="text-xs text-content-muted">Last reconciled: {{ item.last_reconciled_at }}</p>
+                                                {% endif %}
+                                            </div>
+                                            <div class="mt-3 border-l-2 border-kaori-primary/30 pl-3 text-left">
+                                                <p class="whitespace-pre-line break-words text-sm leading-6 text-content-secondary">{{ item.provisioning_message or 'Awaiting reconciliation evidence.' }}</p>
+                                                {% if adopted_observed %}
+                                                    <p class="mt-2 text-xs leading-5 text-content-muted">
+                                                        Observed allocation requires an explicit managed takeover.
+                                                    </p>
+                                                {% elif provider_mirrored %}
+                                                    <p class="mt-2 text-xs leading-5 text-content-muted">
+                                                        Capsule policy remains provider-owned and mirrored by KAORI.
+                                                    </p>
+                                                {% endif %}
                                             </div>
                                         </section>
                                         {% if limit_defaults or storage_policy %}
@@ -279,26 +301,6 @@
                                                 </div>
                                             </details>
                                         {% endif %}
-                                        <section aria-labelledby="{{ dialog_id }}-reconciliation-title">
-                                            <h3 id="{{ dialog_id }}-reconciliation-title" class="text-sm font-semibold text-content-primary">Reconciliation</h3>
-                                            <div class="mt-2 rounded-xl border border-outline-subtle bg-surface-card px-4 py-3">
-                                                <p class="whitespace-pre-wrap break-words text-sm leading-6 text-content-secondary">
-                                                    {{ item.provisioning_message or 'Awaiting reconciliation evidence.' }}
-                                                </p>
-                                                {% if item.last_reconciled_at %}
-                                                    <p class="mt-2 text-xs text-content-muted">Last reconciled: {{ item.last_reconciled_at }}</p>
-                                                {% endif %}
-                                                {% if adopted_observed %}
-                                                    <p class="mt-2 text-xs text-content-muted">
-                                                        Observed provider allocation remains separate from an explicit managed takeover.
-                                                    </p>
-                                                {% elif provider_mirrored %}
-                                                    <p class="mt-2 text-xs text-content-muted">
-                                                        Capsule-generated policy remains provider-owned and mirrored by KAORI.
-                                                    </p>
-                                                {% endif %}
-                                            </div>
-                                        </section>
                                     </div>
                                 </section>
                             </dialog>
