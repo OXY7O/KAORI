@@ -433,6 +433,11 @@ def governance() -> ResponseReturnValue:
             active_tab=request.args.get('tab', 'policies', type=str),
             page=request.args.get('page', 1, type=int) or 1,
             per_page=normalize_dashboard_page_size(request.args.get('per_page')),
+            search=request.args.get('q', '', type=str),
+            provider=request.args.get('provider', '', type=str),
+            retention=request.args.get('retention', '', type=str),
+            immutability=request.args.get('immutability', '', type=str),
+            state=request.args.get('state', '', type=str),
         ),
     )
 
@@ -492,6 +497,11 @@ def governance_sync() -> ResponseReturnValue:
     active_tab = request.form.get('tab', 'policies', type=str)
     page = request.form.get('page', 1, type=int) or 1
     per_page = normalize_dashboard_page_size(request.form.get('per_page'))
+    search = request.form.get('q', '', type=str)
+    provider = request.form.get('provider', '', type=str)
+    retention = request.form.get('retention', '', type=str)
+    immutability = request.form.get('immutability', '', type=str)
+    state = request.form.get('state', '', type=str)
     if is_htmx:
         rendered = ''.join(
             (
@@ -501,6 +511,11 @@ def governance_sync() -> ResponseReturnValue:
                         active_tab=active_tab,
                         page=page,
                         per_page=per_page,
+                        search=search,
+                        provider=provider,
+                        retention=retention,
+                        immutability=immutability,
+                        state=state,
                     ),
                 ),
                 render_template(
@@ -516,7 +531,17 @@ def governance_sync() -> ResponseReturnValue:
         return response
 
     return redirect(
-        url_for('artifact_registry.governance', tab=active_tab, page=page, per_page=per_page)
+        url_for(
+            'artifact_registry.governance',
+            tab=active_tab,
+            page=page,
+            per_page=per_page,
+            q=search or None,
+            provider=provider or None,
+            retention=retention or None,
+            immutability=immutability or None,
+            state=state or None,
+        )
     )
 
 

@@ -12,7 +12,7 @@
     <span id="artifact-registry-governance-background-refresh-trigger"
           class="htmx-indicator hidden"
           aria-hidden="true"
-          hx-get="{{ url_for('artifact_registry.governance', tab=governance.active_tab, page=governance.pagination.page, per_page=governance.pagination.per_page) }}"
+          hx-get="{{ url_for('artifact_registry.governance', tab=governance.active_tab, page=governance.pagination.page, per_page=governance.pagination.per_page, q=governance.filters.search, provider=governance.filters.provider, retention=governance.filters.retention, immutability=governance.filters.immutability, state=governance.filters.state) }}"
           hx-trigger="artifactRegistryGovernanceSyncFinished from:body"
           hx-target="#artifact-registry-governance-workspace"
           hx-swap="outerHTML"
@@ -85,6 +85,11 @@
                         <input type="hidden" name="tab" value="{{ governance.active_tab }}">
                         <input type="hidden" name="page" value="{{ governance.pagination.page }}">
                         <input type="hidden" name="per_page" value="{{ governance.pagination.per_page }}">
+                        <input type="hidden" name="q" value="{{ governance.filters.search }}">
+                        <input type="hidden" name="provider" value="{{ governance.filters.provider }}">
+                        <input type="hidden" name="retention" value="{{ governance.filters.retention }}">
+                        <input type="hidden" name="immutability" value="{{ governance.filters.immutability }}">
+                        <input type="hidden" name="state" value="{{ governance.filters.state }}">
                             <button type="submit"
                                     {% if governance.sync_state.is_active %}disabled{% endif %}
                                     class="{{ action_button.classes('primary') }}">
@@ -171,9 +176,81 @@
                 hx_select='#artifact-registry-governance-registry',
                 hx_push_url='true',
                 nowrap=true) }}
-            <div id="artifact-registry-governance-loading"
-                 class="htmx-indicator border-b border-outline-subtle px-5 py-2 text-xs text-content-muted">
-                Loading Governance evidence…
+            {% set governance_result_badge %}
+                {{ table_label.metadata_label(governance.pagination.total_items ~ (' Record' if governance.pagination.total_items == 1 else ' Records'), icon='list-filter') }}
+            {% endset %}
+            {% set governance_header_actions %}
+                {% if governance.has_filters %}
+                    {{ registry.clear_filters_link('artifact_registry.governance',
+                                                    'artifact-registry-governance-registry',
+                                                    'artifact-registry-governance-loading',
+                                                    governance.pagination.per_page,
+                                                    table_ui.action_classes(),
+                                                    query_params={'tab': governance.active_tab}) }}
+                {% endif %}
+            {% endset %}
+            {{ table_ui.inventory_block_header('shield-check' if governance.active_tab == 'policies' else 'git-compare-arrows',
+                                               'Project Policy Registry' if governance.active_tab == 'policies' else 'Replication Policy Registry',
+                                               'Committed retention and immutability evidence from Registry providers.' if governance.active_tab == 'policies' else 'Committed replication policies and provider-observed destinations.',
+                                               'artifact-registry-governance-loading',
+                                               'Refreshing Governance Evidence',
+                                               none,
+                                               none,
+                                               header_actions=governance_header_actions,
+                                               title_extra=governance_result_badge) }}
+            <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+                {% call registry.filter_form('artifact_registry.governance',
+                                             'artifact-registry-governance-registry',
+                                             'artifact-registry-governance-loading',
+                                             governance.pagination.per_page) %}
+                    <input type="hidden" name="tab" value="{{ governance.active_tab }}">
+                    <div class="min-w-0 flex-1">
+                        <label for="artifact-registry-governance-search" class="{{ table_ui.filter_label_classes() }}">Search</label>
+                        {{ table_ui.search_field('q',
+                                                governance.filters.search,
+                                                'Search project or provider…' if governance.active_tab == 'policies' else 'Search policy, provider, source or destination…',
+                                                'artifact-registry-governance-search') }}
+                    </div>
+                    <label>
+                        <span class="{{ table_ui.filter_label_classes() }}">Provider</span>
+                        <select name="provider" class="{{ table_ui.filter_select_classes() }}">
+                            <option value="">All Providers</option>
+                            {% for provider in governance.provider_options %}
+                                <option value="{{ provider }}" {% if governance.filters.provider == provider %}selected{% endif %}>{{ provider }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    {% if governance.active_tab == 'policies' %}
+                        <label>
+                            <span class="{{ table_ui.filter_label_classes() }}">Retention</span>
+                            <select name="retention" class="{{ table_ui.filter_select_classes() }}">
+                                <option value="">All Retention</option>
+                                {% for key, label in [('configured', 'Configured'), ('not_configured', 'Not Configured'), ('unavailable', 'Unavailable'), ('unsupported', 'Unsupported'), ('not_collected', 'Not Collected')] %}
+                                    <option value="{{ key }}" {% if governance.filters.retention == key %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label>
+                            <span class="{{ table_ui.filter_label_classes() }}">Immutability</span>
+                            <select name="immutability" class="{{ table_ui.filter_select_classes() }}">
+                                <option value="">All Immutability</option>
+                                {% for key, label in [('configured', 'Configured'), ('not_configured', 'Not Configured'), ('unavailable', 'Unavailable'), ('unsupported', 'Unsupported'), ('not_collected', 'Not Collected')] %}
+                                    <option value="{{ key }}" {% if governance.filters.immutability == key %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                    {% else %}
+                        <label>
+                            <span class="{{ table_ui.filter_label_classes() }}">State</span>
+                            <select name="state" class="{{ table_ui.filter_select_classes() }}">
+                                <option value="">All States</option>
+                                <option value="enabled" {% if governance.filters.state == 'enabled' %}selected{% endif %}>Enabled</option>
+                                <option value="disabled" {% if governance.filters.state == 'disabled' %}selected{% endif %}>Disabled</option>
+                                <option value="unknown" {% if governance.filters.state == 'unknown' %}selected{% endif %}>Unknown</option>
+                            </select>
+                        </label>
+                    {% endif %}
+                {% endcall %}
             </div>
             {% if governance.active_tab == 'policies' %}
                 <div class="overflow-x-auto">
@@ -202,8 +279,8 @@
                                     <td colspan="5" class="p-0">
                                         {% set empty_state_icon = 'shield-check' %}
                                         {% set empty_state_label = 'Committed Governance' %}
-                                        {% set empty_state_title = 'No Policy Evidence Collected' %}
-                                        {% set empty_state_description = 'No committed retention or immutability policy records are available in this scope. Run Governance Sync to collect provider evidence.' %}
+                                        {% set empty_state_title = 'No Policies Match Your Filters' if governance.has_filters else 'No Policy Evidence Collected' %}
+                                        {% set empty_state_description = 'Adjust or clear filters to review other committed policy evidence.' if governance.has_filters else 'No committed retention or immutability policy records are available in this scope. Run Governance Sync to collect provider evidence.' %}
                                         {% set empty_state_min_height = 'min-h-[190px]' %}
                                         {% include 'components/states/_empty_state.html' %}
                                     </td>
@@ -256,8 +333,8 @@
                                     <td colspan="7" class="p-0">
                                         {% set empty_state_icon = 'git-compare-arrows' %}
                                         {% set empty_state_label = 'Committed Governance' %}
-                                        {% set empty_state_title = 'No Replication Evidence Collected' %}
-                                        {% set empty_state_description = 'No committed replication policy records are available in this scope. Run Governance Sync to collect provider evidence.' %}
+                                        {% set empty_state_title = 'No Replication Policies Match Your Filters' if governance.has_filters else 'No Replication Evidence Collected' %}
+                                        {% set empty_state_description = 'Adjust or clear filters to review other committed replication evidence.' if governance.has_filters else 'No committed replication policy records are available in this scope. Run Governance Sync to collect provider evidence.' %}
                                         {% set empty_state_min_height = 'min-h-[190px]' %}
                                         {% include 'components/states/_empty_state.html' %}
                                     </td>

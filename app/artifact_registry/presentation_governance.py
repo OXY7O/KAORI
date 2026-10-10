@@ -88,6 +88,47 @@ def _governance_replication_rows(identity_by_id: dict[int, Any]) -> list[dict[st
     return rows
 
 
+def _filter_governance_rows(
+    rows: list[dict[str, Any]],
+    *,
+    active_tab: str,
+    search: str,
+    provider: str,
+    retention: str,
+    immutability: str,
+    state: str,
+) -> list[dict[str, Any]]:
+    search_key = search.strip().casefold()
+    provider_key = provider.strip().casefold()
+    filtered: list[dict[str, Any]] = []
+    for row in rows:
+        if provider_key and str(row['provider_label']).casefold() != provider_key:
+            continue
+        if active_tab == 'policies':
+            if retention and row['retention_label'].casefold().replace(' ', '_') != retention:
+                continue
+            if immutability and row['immutability_label'].casefold().replace(' ', '_') != immutability:
+                continue
+            searchable = (row['project'], row['provider_label'])
+        else:
+            enabled = row['enabled']
+            observed_state = 'enabled' if enabled is True else ('disabled' if enabled is False else 'unknown')
+            if state and observed_state != state:
+                continue
+            searchable = (
+                row['name'],
+                row['provider_label'],
+                row['trigger_type'],
+                row['source_registry'],
+                row['destination_registry'],
+                row['destination_namespace'],
+            )
+        if search_key and search_key not in ' '.join(str(value or '') for value in searchable).casefold():
+            continue
+        filtered.append(row)
+    return filtered
+
+
 def _governance_capability_counts(
     governance_states: dict[int, RegistryGovernanceState],
 ) -> dict[str, dict[str, int]]:
@@ -269,6 +310,11 @@ def build_governance(
     active_tab: str = 'policies',
     page: int = 1,
     per_page: int = 5,
+    search: str = '',
+    provider: str = '',
+    retention: str = '',
+    immutability: str = '',
+    state: str = '',
 ) -> dict[str, Any]:
     from app.artifact_registry.governance_job_adapter import build_registry_governance_sync_state
 
@@ -282,7 +328,34 @@ def build_governance(
     summary = _governance_summary(identities, identity_by_id, governance_states, project_rows)
     normalized_tab = active_tab if active_tab in {'policies', 'replication'} else 'policies'
     active_rows = project_rows if normalized_tab == 'policies' else replication_rows
-    page_rows, pagination = paginate_sequence(active_rows, page=page, per_page=per_page)
+    search_value = search.strip()
+    provider_value = provider.strip()
+    policy_states = {'configured', 'not_configured', 'unavailable', 'unsupported', 'not_collected'}
+    retention_value = retention.strip().lower() if normalized_tab == 'policies' else ''
+    immutability_value = immutability.strip().lower() if normalized_tab == 'policies' else ''
+    state_value = state.strip().lower() if normalized_tab == 'replication' else ''
+    if retention_value not in policy_states:
+        retention_value = ''
+    if immutability_value not in policy_states:
+        immutability_value = ''
+    if state_value not in {'enabled', 'disabled', 'unknown'}:
+        state_value = ''
+    filters_active = bool(search_value or provider_value or retention_value or immutability_value or state_value)
+    filtered_rows = _filter_governance_rows(
+        active_rows,
+        active_tab=normalized_tab,
+        search=search_value,
+        provider=provider_value,
+        retention=retention_value,
+        immutability=immutability_value,
+        state=state_value,
+    )
+    page_rows, pagination = paginate_sequence(filtered_rows, page=page, per_page=per_page)
+    filter_query = {'tab': normalized_tab, 'q': search_value, 'provider': provider_value}
+    if normalized_tab == 'policies':
+        filter_query.update({'retention': retention_value, 'immutability': immutability_value})
+    else:
+        filter_query['state'] = state_value
     return {
         'setup': overview['setup'],
         'provider_count': summary['provider_count'],
@@ -300,6 +373,15 @@ def build_governance(
         'active_tab': normalized_tab,
         'rows': page_rows,
         'pagination': pagination,
-        'filter_query': {'tab': normalized_tab},
+        'filter_query': filter_query,
+        'filters': {
+            'search': search_value,
+            'provider': provider_value,
+            'retention': retention_value,
+            'immutability': immutability_value,
+            'state': state_value,
+        },
+        'has_filters': filters_active,
+        'provider_options': sorted({str(row['provider_label']) for row in active_rows}, key=str.casefold),
         'sync_state': build_registry_governance_sync_state(),
     }

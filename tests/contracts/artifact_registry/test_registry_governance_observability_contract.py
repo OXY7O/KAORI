@@ -198,6 +198,57 @@ def test_governance_evidence_tabs_are_badgeless_full_kaori_tables() -> None:
     assert 'artifactRegistryGovernanceSyncFinished from:body' in workspace
 
 
+def test_governance_evidence_reuses_entire_canonical_table_workspace() -> None:
+    from jinja2 import Environment
+
+    workspace = (ROOT / 'app/templates/artifact_registry/partials/_governance_workspace.html').read_text()
+    routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
+    presentation = (ROOT / 'app/artifact_registry/presentation_governance.py').read_text()
+    Environment().parse(workspace)
+
+    evidence = workspace.split("content_tabs.render_links('registry-governance',", 1)[1]
+    assert 'table_ui.inventory_block_header(' in evidence
+    assert "'Project Policy Registry'" in evidence
+    assert "'Replication Policy Registry'" in evidence
+    assert 'title_extra=governance_result_badge' in evidence
+    assert 'header_actions=governance_header_actions' in evidence
+    assert "registry.clear_filters_link('artifact_registry.governance'," in evidence
+    assert 'table_ui.inventory_filter_bar_classes()' in evidence
+    assert "registry.filter_form('artifact_registry.governance'," in evidence
+    assert "table_ui.search_field('q'," in evidence
+    assert 'name="tab" value="{{ governance.active_tab }}"' in evidence
+    for value in ('provider', 'retention', 'immutability', 'state'):
+        assert f'name="{value}"' in evidence
+        assert f'governance.filters.{value}' in evidence
+    assert "'artifact-registry-governance-loading'" in evidence
+    assert 'governance.pagination.total_items' in evidence
+    assert "No Policies Match Your Filters" in evidence
+    assert "No Replication Policies Match Your Filters" in evidence
+    assert "Project Governance</h2>" not in evidence
+    assert "Resilience Evidence</p>" not in evidence
+
+    assert 'def _filter_governance_rows(' in presentation
+    assert 'filtered_rows = _filter_governance_rows(' in presentation
+    assert 'paginate_sequence(filtered_rows, page=page, per_page=per_page)' in presentation
+    assert "'filter_query': filter_query" in presentation
+    assert "'has_filters': filters_active" in presentation
+    assert "'provider_options': sorted(" in presentation
+    assert 'search_key not in' in presentation
+    assert "'retention_label'" in presentation
+    assert "'immutability_label'" in presentation
+    assert "observed_state = 'enabled' if enabled is True" in presentation
+    assert 'search=request.args.get(\'q\', \'\', type=str)' in routes
+    assert 'search = request.form.get(\'q\', \'\', type=str)' in routes
+    assert 'provider=provider,' in routes
+    assert 'retention=retention,' in routes
+    assert 'immutability=immutability,' in routes
+    assert 'state=state,' in routes
+    assert "governance.filters.search" in workspace
+    assert workspace.count("registry.footer('artifact_registry.governance'") == 2
+    assert workspace.count('[5, 10, 25, 50]') == 2
+    assert 'artifactRegistryGovernanceSyncFinished from:body' in workspace
+
+
 def test_governance_coverage_and_evidence_follow_canonical_section_layout() -> None:
     from jinja2 import Environment
 

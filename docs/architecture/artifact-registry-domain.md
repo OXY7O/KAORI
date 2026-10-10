@@ -269,17 +269,25 @@ card shells** provide operator context:
   for Registry Security, Runtime or Analytics.
 - **Governance Evidence** — Policies/Replication remain in one canonical
   section card with `content_tabs.render_links` (embedded, server/URL-owned
-  mode), matching Security Supply Chain. Following DevContainer feedback, tab
-  labels do not carry counts, and the selected view displays **only a full-width
-  standard KAORI table directly beneath the tabs**, without a second
-  Policy Evidence / Resilience Evidence headline or padded header. Both tables
-  now use `components/table.html` primitives for headings, rows and identity
-  cells plus the existing shared semantic status labels and full-width
-  `states/_empty_state.html` fallback. Policy and replication record counts
-  remain authoritative in their existing Hero/summary context, not repeated
-  in the tab labels. HTMX still targets/selects
-  `#artifact-registry-governance-registry`, with URL state, canonical 5-row
-  pagination and Governance Sync behavior unchanged.
+  mode), matching Security Supply Chain. Tab labels remain **without counts**.
+  Following explicit human clarification, each tab owns the **complete canonical
+  KAORI table workspace**, not an isolated bare table: shared
+  `table_ui.inventory_block_header` with Policy/Replication title, evidence
+  description, count metadata badge, Clear Filters action and a shared
+  loading bar; `registry.filter_form` with Search/Provider and tab-specific
+  Retention+Immutability or Replication State; then the full-width shared
+  `components/table.html` table, semantic status labels, canonical
+  `states/_empty_state.html` fallback and `registry.footer` pagination.
+  The previous redundant freeform Policy Evidence / Resilience Evidence
+  headers do not return. Search and filters operate against committed
+  provider-neutral rows before the existing sequence pagination; Policy/Retention/
+  Immutability/Replication Coverage in the summary still uses the unfiltered
+  estate totals. The current tab and active filters round-trip through GET,
+  HTMX updates, page size changes, Governance Sync and terminal refresh.
+  Switching tabs intentionally opens that tab's unfiltered page 1.
+  HTMX targets/selects only `#artifact-registry-governance-registry` and
+  canonical pagination remains 5/10/25/50 (default 5), without new live
+  provider requests or policy mutation.
 
 This replaces Governance's previous framed tab treatment without introducing
 another UI pattern, altering provider authority, changing content-tab semantics
