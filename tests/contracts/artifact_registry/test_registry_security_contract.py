@@ -223,11 +223,79 @@ def test_harbor_security_refresh_is_repository_resilient_without_overriding_prov
 def test_vulnerability_runtime_drilldown_preserves_artifact_context() -> None:
     presentation = read('app/artifact_registry/security/presentation.py')
     template = read('app/templates/artifact_registry/partials/_security_workspace.html')
+    modals = read('app/templates/artifact_registry/partials/_security_supply_chain_detail_modals.html')
 
     assert "'artifact_id': int(artifact.id)" in presentation
-    assert "url_for('artifact_registry.runtime', artifact_id=row.artifact_id)" in template
-    assert 'Open Runtime' in template
+    assert "url_for('artifact_registry.runtime', artifact_id=row.artifact_id)" in modals
+    assert 'Open Runtime Usage' in modals
     assert 'source_id=security.filters.source_id' in template
+    assert "supply_chain_detail.vulnerability(row, vulnerability_dialog_id)" in template
+
+
+
+def test_vulnerability_registry_compact_rows_preserve_complete_committed_evidence() -> None:
+    from jinja2 import Environment
+
+    workspace = read('app/templates/artifact_registry/partials/_security_workspace.html')
+    detail = read('app/templates/artifact_registry/partials/_security_supply_chain_detail_modals.html')
+    presentation = read('app/artifact_registry/security/presentation.py')
+
+    Environment().parse(workspace)
+    Environment().parse(detail)
+
+    # The vulnerability table alone uses a bounded six-column design.
+    vulns = workspace.split("table_ui.table_classes('min-w-[68rem] !table-fixed')", 1)[1].split(
+        "{% else %}\n                                        <table", 1
+    )[0]
+    assert 'w-[19%]">Finding</th>' in vulns
+    assert 'w-[21%]">Artifact</th>' in vulns
+    assert 'w-[23%]">Package / Fix</th>' in vulns
+    assert 'w-[14%]">Runtime Exposure</th>' in vulns
+    assert 'w-[13%]">Evidence</th>' in vulns
+    assert 'w-[10%]">Details</th>' in vulns
+    assert vulns.count('row.severity_label, severity_tone') == 1
+    assert 'row.installed_version' in vulns
+    assert 'row.fix_available' in vulns
+    assert "row.runtime_exposure_count" in vulns
+    assert "status_indicator_label('Not Observed', 'unknown')" in vulns
+    assert "row.freshness.label, row.freshness.tone" in vulns
+    assert 'title="{{ row.repository }}"' in vulns
+    assert 'title="{{ row.package }}"' in vulns
+    assert 'title="{{ row.vulnerability_id }}"' in vulns
+    assert "vulnerability_dialog_id = 'artifact-registry-vulnerability-detail-' ~ row.id" in vulns
+    assert 'data-kaori-dialog-open' in vulns
+    assert 'data-dialog-target="{{ vulnerability_dialog_id }}"' in vulns
+    assert 'supply_chain_detail.vulnerability(row, vulnerability_dialog_id)' in vulns
+    assert 'colspan="6"' in vulns
+    assert 'security.finding_empty_state.title' in vulns
+
+    # The shell is the existing approved, keyboard-closeable KAORI dialog.
+    assert '{% macro vulnerability(row, dialog_id)' in detail
+    assert "dialog_id," in detail
+    assert "data-artifact-registry-vulnerability-detail" in detail
+    assert 'data-kaori-native-dialog' in detail
+    assert 'data-kaori-dialog-close' in detail
+
+    # Full artifact and package identities never depend on the truncated table.
+    for field in (
+        'row.vulnerability_id', 'row.severity_label', 'row.package',
+        'row.installed_version', 'row.fixed_version', 'row.project',
+        'row.repository', 'row.digest', 'row.source_name', 'row.provider_label',
+        'row.observed_at|user_datetime', 'row.runtime_exposure_count',
+        'row.freshness.label',
+    ):
+        assert field in detail
+    assert 'No committed Kubernetes workload binding is currently observed' in detail
+    assert 'does not establish that the finding is remediated' in detail
+    assert "row.runtime_exposure_count" in detail
+    assert "url_for('artifact_registry.runtime', artifact_id=row.artifact_id)" in detail
+
+    # One modal per paginated finding; no provider calls or new scan logic.
+    assert "'id': int(item.id)" in presentation
+    assert "RegistryWorkloadBinding.query" in presentation
+    assert 'HarborClient' not in presentation
+    assert "registry.footer(" in workspace
+    assert '[5, 10, 25, 50]' in workspace
 
 
 def test_security_sync_revalidates_stale_targets_and_heartbeats_repository_discovery() -> None:
