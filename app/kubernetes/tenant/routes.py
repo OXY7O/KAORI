@@ -68,6 +68,9 @@ from app.kubernetes.tenant.native_successor_acceptance import (
     accept_native_successor_handoff_committed,
 )
 from app.kubernetes.tenant.native_handoff_executor import execute_native_handoff_committed
+from app.kubernetes.tenant.native_successor_handback import (
+    handback_native_successor_governance_committed,
+)
 from app.kubernetes.tenant.native_handoff_dry_run import (
     dry_run_native_release_handoff_committed,
 )
@@ -82,6 +85,7 @@ from app.kubernetes.tenant.release_handoff_approval import (
 )
 from app.kubernetes.tenant.release_preflight import (
     release_adopted_tenant_committed,
+    release_verified_native_tenant_committed,
     review_tenant_release_preflight_committed,
 )
 from app.kubernetes.tenant.release_successor_claim import (
@@ -1110,6 +1114,75 @@ def release_tenant_governance_route(tenant_id: str):
             message=f"Generation {result['generation']} released; {result['released_namespace_count']} namespaces retained.",
             detail='Provider resources remain externally managed. Re-adopt requires fresh provider discovery.',
             metadata={'tenant_id': tenant_id, 'operation': 'release_tenant_governance'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-managed-native')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+def finalize_verified_native_release_route(tenant_id: str):
+    """Finalizer only; all provider objects remain intact."""
+    try:
+        _csrf()
+        result = release_verified_native_tenant_committed(
+            tenant_id=tenant_id, actor_user_id=int(current_user.id),
+            plan_sha256=str(request.form.get('plan_sha256') or ''),
+            approved=request.form.get('confirm_native_release_finalization') == 'release',
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_native_release_finalization_blocked',
+            status='warning', title='Native Governance Release Blocked',
+            message=str(exc), detail='No Kubernetes objects were modified by this Release finalizer.',
+            metadata={'tenant_id': tenant_id, 'operation': 'native_release_finalization'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_native_governance_released',
+            status='success', title='Native Tenant Governance Released',
+            message=f"Generation {result['generation']} released; {result['released_namespace_count']} namespaces retained.",
+            detail='Provider ownership belongs to the verified successor. New adoption requires its explicit handback.',
+            metadata={'tenant_id': tenant_id, 'operation': 'native_release_finalization'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-handback')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+def verify_native_successor_handback_route(tenant_id: str):
+    """Successor explicitly relinquishes Native owner markers, not auto-adopt."""
+    try:
+        _csrf()
+        if not request.is_secure:
+            raise ValueError('Native successor credentials require verified HTTPS ingress.')
+        result = handback_native_successor_governance_committed(
+            tenant_id=tenant_id, actor_user_id=int(current_user.id),
+            release_plan_sha256=str(request.form.get('release_plan_sha256') or ''),
+            provider_token=str(request.form.get('kubernetes_successor_token') or ''),
+            confirmed=request.form.get('confirm_successor_handback') == 'handback',
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_successor_handback_blocked',
+            status='warning', title='Native Successor Handback Blocked',
+            message=str(exc),
+            detail='Check provider state before any retry; Released lineage is retained.',
+            metadata={'tenant_id': tenant_id, 'operation': 'native_successor_handback'},
+        )
+    else:
+        done = result['status'] == 'verified'
+        _record(
+            event_type='kubernetes_tenant_successor_handback_recorded',
+            status='success' if done else 'warning',
+            title='Successor Handback Verified' if done else 'Handback Recovery Required',
+            message=f"{result['verified_count']} of {result['expected_component_count']} resources verified.",
+            detail=(
+                'Use fresh Discovery to explicitly Re-adopt as a new Tenant generation.'
+                if done else 'Partial provider handback is not ready for Re-adopt.'
+            ),
+            metadata={'tenant_id': tenant_id, 'operation': 'native_successor_handback'},
         )
     return _tenant_section_redirect('registry')
 
