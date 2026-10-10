@@ -119,6 +119,18 @@ def _source_history(tenant_id: str, plan: dict[str, Any]) -> dict[str, Any]:
         )
     ):
         raise ValueError('An executor attempt may have mutated resources or its evidence is incomplete.')
+    # Both audit timestamps must be valid, ordered and in the past. A
+    # missing/rewritten receipt is not evidence of a failed-before-write run.
+    try:
+        began_at = datetime.fromisoformat(str(first.get('started_at') or ''))
+        failed_at = datetime.fromisoformat(str(last.get('checked_at') or ''))
+    except ValueError as exc:
+        raise ValueError('Executor audit chronology is incomplete.') from exc
+    if (
+        began_at.tzinfo is None or failed_at.tzinfo is None
+        or began_at > failed_at or failed_at > datetime.now(UTC)
+    ):
+        raise ValueError('Executor audit chronology is not trustworthy.')
     return {
         'digest': _sha(attempts),
         'executor_actor_id': started['actor_id'],
