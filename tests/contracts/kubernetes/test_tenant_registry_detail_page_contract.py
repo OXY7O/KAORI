@@ -420,7 +420,9 @@ def test_step_four_has_compact_readiness_and_role_scoped_recovery():
     assert 'name="confirm_handoff_restart"' in step
     assert 'value="restart" required' in step
     assert 'Restart Expired Handoff Plan' in step
-    assert 'Only the original requester with the required permissions can restart this plan' in step
+    assert 'This account is not the original requester' in step
+    assert 'row.release_handoff_plan.requested_by != current_user.id' in step
+    assert 'Restart requires the original requester with both Tenant and Integrations management permissions' in step
     assert 'Governed recovery review is required; automatic restart is prohibited.' in step
     assert "tenant_release_step_urls['scope']" in step
     assert "tenant_release_step_urls['approval']" in step
