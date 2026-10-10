@@ -382,3 +382,174 @@ def release_adopted_tenant_committed(
     ))
     db.session.commit()
     return result
+
+
+def release_verified_native_tenant_committed(
+    *, tenant_id: str, actor_user_id: int, plan_sha256: str, approved: bool,
+) -> dict[str, Any]:
+    """Finalize only fully verified #1048 Native handoff, preserving provider objects.
+
+    Reuses canonical Tenant/Namespace Released statuses and audit lineage.
+    An accepted external owner transfer is distinct from decommission.
+    """
+    if not approved:
+        raise ValueError('Explicit provider-preserving Native Release confirmation is required.')
+    # Delayed imports avoid a cycle: the executor uses canonical preflight
+    # dependency and provider evidence helpers from this module.
+    from app.kubernetes.tenant.native_handoff_dry_run import _read_resource
+    from app.kubernetes.tenant.native_handoff_readback import (
+        _latest_native_dry_run, verify_external_native_component,
+    )
+    from app.kubernetes.tenant.native_handoff_executor import latest_native_handoff_execution
+    from app.kubernetes.tenant.native_successor_acceptance import latest_native_successor_acceptance
+    from app.kubernetes.tenant.release_handoff_approval import (
+        _plan_hash, latest_release_handoff_approval, latest_release_handoff_plan,
+    )
+
+    plan = latest_release_handoff_plan(tenant_id)
+    approval = latest_release_handoff_approval(tenant_id)
+    acceptance = latest_native_successor_acceptance(tenant_id)
+    execution = latest_native_handoff_execution(tenant_id)
+    preview = _latest_native_dry_run(tenant_id)
+    if (
+        not plan or not approval or not acceptance or not execution or not preview
+        or plan.get('tenant_id') != tenant_id
+        or plan.get('plan_sha256') != plan_sha256 or _plan_hash(plan) != plan_sha256
+        or plan.get('provider') != 'native_kubernetes'
+        or approval.get('plan_sha256') != plan_sha256
+        or approval.get('status') != 'acknowledged_pending_provider_handoff'
+        or approval.get('approved_by') == plan.get('requested_by')
+        or acceptance.get('status') != 'verified_explicit_successor_acceptance'
+        or acceptance.get('plan_sha256') != plan_sha256
+        or acceptance.get('consent_verified') is not True
+        or acceptance.get('resource_authority_verified') is not True
+        or acceptance.get('provider_principal_uid') != execution.get('provider_principal_uid')
+        or execution.get('status') != 'provider_handoff_verified'
+        or execution.get('plan_sha256') != plan_sha256
+        or execution.get('provider_handoff_verified') is not True
+        or execution.get('external_successor_verified') is not True
+        or execution.get('handoff_fingerprint') != plan.get('handoff_fingerprint')
+        or preview.get('status') != 'dry_run_passed'
+        or preview.get('plan_sha256') != plan_sha256
+        or preview.get('handoff_fingerprint') != plan.get('handoff_fingerprint')
+    ):
+        raise ValueError('Fully verified Native successor consent and provider handoff are required.')
+    expected = preview.get('previewed_components')
+    transferred = execution.get('verified_components')
+    if (
+        not isinstance(expected, list) or not 0 < len(expected) <= 100
+        or not isinstance(transferred, list) or len(transferred) != len(expected)
+        or execution.get('expected_component_count') != len(expected)
+        or execution.get('verified_count') != len(expected)
+        or len({(x.get('namespace'), x.get('kind'), x.get('name'), x.get('uid')) for x in expected})
+        != len(expected)
+    ):
+        raise ValueError('Native provider handoff coverage is incomplete or ambiguous.')
+    tenant = Tenant.query.filter_by(id=tenant_id).with_for_update().one_or_none()
+    if (
+        tenant is None or tenant.lifecycle_status != TenantLifecycleStatus.READY.value
+        or tenant.provider_key != 'native_kubernetes'
+        or tenant.provider_state != 'native'
+        or tenant.reconciliation_authority != 'native_kubernetes'
+        or tenant.ownership_status != 'adopted'
+        or tenant.cluster_id != plan.get('cluster_id')
+        or tenant.generation != plan.get('generation')
+    ):
+        raise ValueError('Canonical Native Tenant authority changed before Release.')
+    rows = (
+        TenantNamespace.query.join(
+            TenantEnvironment, TenantNamespace.tenant_environment_id == TenantEnvironment.id
+        ).filter(TenantEnvironment.tenant_id == tenant_id)
+        .order_by(TenantNamespace.id.asc()).with_for_update().all()
+    )
+    if not rows or any(
+        row.provisioning_status != TenantNamespaceProvisioningStatus.READY.value
+        or row.ownership_status != 'adopted'
+        for row in rows
+    ):
+        raise ValueError('A Native Namespace is not an adopted Ready resource.')
+    counts = _release_dependency_counts(tenant_id)
+    if any(type(value) is not int or value != 0 for value in counts.values()):
+        raise ValueError('Active Tenant grants, credentials or dependencies prevent Release.')
+    current_plan = latest_release_handoff_plan(tenant_id)
+    current_execution = latest_native_handoff_execution(tenant_id)
+    if (
+        not current_plan or current_plan.get('plan_sha256') != plan_sha256
+        or not current_execution or current_execution.get('status') != 'provider_handoff_verified'
+        or current_execution.get('plan_sha256') != plan_sha256
+    ):
+        raise ValueError('Concurrent provider handoff state changed before Release.')
+    cluster = db.session.get(Cluster, tenant.cluster_id)
+    if cluster is None:
+        raise ValueError('Canonical Native provider cluster is unavailable.')
+    core = runtime_adapter.build_client(cluster).core_api()
+    actual: list[dict[str, Any]] = []
+    verified_ns: dict[str, dict[str, Any]] = {}
+    for item in expected:
+        live = _read_resource(core, item)
+        outcome = verify_external_native_component(
+            before=item, current=live,
+            successor_owner=str(plan['successor_owner']),
+        )
+        actual.append({**outcome, 'namespace': item.get('namespace')})
+        if item.get('kind') == 'Namespace':
+            verified_ns[item['name']] = outcome
+    if not verified_ns or len(verified_ns) != len(rows):
+        raise ValueError('Native Namespace inventory does not cover all adopted Tenant namespaces.')
+    for row in rows:
+        namespace = verified_ns.get(row.namespace)
+        if (
+            not namespace or namespace['uid'] != row.provider_reference
+            or row.cluster_id != tenant.cluster_id
+        ):
+            raise ValueError('Committed Namespace generation and provider UID differ from handoff.')
+    expected_keys = {(x.get('namespace'), x.get('kind'), x.get('name'), x.get('uid')) for x in expected}
+    actual_keys = {(x.get('namespace'), x.get('kind'), x.get('name'), x.get('uid')) for x in actual}
+    if actual_keys != expected_keys:
+        raise ValueError('Provider post-handoff read-back did not cover the exact approved scope.')
+
+    now = datetime.now(UTC)
+    result = {
+        'status': 'released', 'release_mode': 'managed_handoff',
+        'tenant_id': tenant.id, 'cluster_id': tenant.cluster_id,
+        'generation': tenant.generation, 'provider': tenant.provider_key,
+        'plan_sha256': plan_sha256, 'handoff_fingerprint': plan['handoff_fingerprint'],
+        'successor_owner': plan['successor_owner'],
+        'provider_principal_uid': acceptance['provider_principal_uid'],
+        'released_at': now.isoformat(),
+        'released_namespace_count': len(rows),
+        'verified_components': actual,
+        'provider_handoff_verified': True,
+        'successor_consent_verified': True,
+        'provider_resource_deleted': False,
+        'rbac_mutation_performed': False,
+        'secret_material_persisted': False,
+    }
+    for row in rows:
+        record_evidence = dict(row.provisioning_evidence_json or {})
+        record_evidence['release_governance'] = {
+            'status': 'released', 'release_mode': 'managed_handoff',
+            'tenant_id': tenant.id, 'generation': row.generation,
+            'provider_uid': row.provider_reference,
+            'provider_resource_version': verified_ns[row.namespace]['resource_version'],
+            'released_at': now.isoformat(),
+            'plan_sha256': plan_sha256,
+            'successor_owner': plan['successor_owner'],
+            'provider_handoff_verified': True,
+            'provider_preserved': True,
+        }
+        row.provisioning_evidence_json = record_evidence
+        row.provisioning_status = TenantNamespaceProvisioningStatus.RELEASED.value
+        row.provisioning_message = 'Governance Released after verified Native successor handoff; provider preserved.'
+    prior = dict(tenant.provider_evidence_json or {})
+    prior['release_governance'] = result
+    tenant.provider_evidence_json = prior
+    tenant.lifecycle_status = TenantLifecycleStatus.RELEASED.value
+    db.session.add(AuditEvent(
+        actor_user_id=actor_user_id, target_type='kubernetes_tenant_release',
+        target_id=tenant.id, action='tenant.release.native_verified_governance_released',
+        summary='Verified Native handoff; KAORI governance Released with all provider resources preserved.',
+        metadata_json=result,
+    ))
+    db.session.commit()
+    return result

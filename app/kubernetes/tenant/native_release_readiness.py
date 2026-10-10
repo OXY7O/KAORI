@@ -61,7 +61,8 @@ def project_native_release_readiness(
         and not _checked_recently(preflight.get("checked_at"))
     )
     readback_for_plan = bool(
-        readback and readback.get("plan_sha256") == plan_sha
+        (readback and readback.get("plan_sha256") == plan_sha)
+        or (handoff_execution and handoff_execution.get("plan_sha256") == plan_sha)
     )
     restart_required = bool(approval_expired and not readback_for_plan)
     preview_passed = bool(

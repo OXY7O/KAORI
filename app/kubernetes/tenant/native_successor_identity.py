@@ -14,6 +14,8 @@ from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import Any
 
+from kubernetes.client.rest import ApiException
+
 from kubernetes.client import (
     V1ResourceAttributes,
     V1SubjectAccessReview,
@@ -87,10 +89,14 @@ def verify_native_successor_identity_for_review(
     # The canonical cluster kubeconfig identifies the API server. TokenReview
     # authenticates the separately supplied successor token against that server.
     provider = runtime_adapter.build_client(cluster)
-    reply = provider.authentication_api().create_token_review(
-        V1TokenReview(spec=V1TokenReviewSpec(token=provider_token)),
-        _request_timeout=5,
-    )
+    try:
+        reply = provider.authentication_api().create_token_review(
+            V1TokenReview(spec=V1TokenReviewSpec(token=provider_token)),
+            _request_timeout=5,
+        )
+    except ApiException:
+        # Never surface a provider error body that could echo credential input.
+        raise ValueError('Kubernetes TokenReview unavailable or rejected the supplied principal.') from None
     status = _field(reply, 'status')
     principal = _field(status, 'user')
     username = str(_field(principal, 'username') or '')
@@ -134,6 +140,7 @@ def verify_native_successor_identity_for_review(
 
 def verify_native_successor_resource_authority(
     *, cluster: Any, plan: Mapping[str, Any], provider_token: str,
+    ownership_required: str = 'kaori_marker_correlated',
 ) -> dict[str, Any]:
     """TokenReview plus SubjectAccessReview against EACH exact scoped Native object.
 
@@ -149,6 +156,8 @@ def verify_native_successor_resource_authority(
     items = plan.get('handoff_components')
     if not isinstance(items, list) or not 0 < len(items) <= 100:
         raise ValueError('Native successor authorization scope is incomplete.')
+    if ownership_required not in {'kaori_marker_correlated', 'external_successor_correlated'}:
+        raise ValueError('Unsupported Native ownership authorization boundary.')
     selected = [item for item in items if item.get('handoff') == 'external_acceptance_required']
     if not selected:
         raise ValueError('No KAORI-correlated Native resources are approved for transfer.')
@@ -163,7 +172,7 @@ def verify_native_successor_resource_authority(
             or not isinstance(name, str) or not name
             or not isinstance(namespace, str) or not namespace
             or not item.get('uid') or not item.get('resource_version')
-            or item.get('ownership') != 'kaori_marker_correlated'
+            or item.get('ownership') != ownership_required
             or (kind == 'Namespace' and name != namespace)
         ):
             raise ValueError('Native successor authorization scope is malformed.')
@@ -197,9 +206,12 @@ def verify_native_successor_resource_authority(
                     resource_attributes=attrs,
                 ),
             )
-            result = provider.authorization_api().create_subject_access_review(
-                req, _request_timeout=5,
-            )
+            try:
+                result = provider.authorization_api().create_subject_access_review(
+                    req, _request_timeout=5,
+                )
+            except ApiException:
+                raise ValueError('Kubernetes SubjectAccessReview unavailable for the exact resource.') from None
             status = _field(result, 'status')
             if (
                 _field(status, 'allowed') is not True

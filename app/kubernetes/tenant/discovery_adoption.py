@@ -137,6 +137,8 @@ def _prepare_adoption(source: Mapping[str, Any]) -> _AdoptionContext:
 
 def _require_re_adoption_handback_for_managed_release(
     *, provider_evidence: Mapping[str, Any], release_evidence: Mapping[str, Any],
+    provider_uid: str | None = None, resource_version: str | None = None,
+    namespace: str | None = None,
 ) -> None:
     """Block former KAORI-controlled provider objects until successor handback.
 
@@ -150,13 +152,28 @@ def _require_re_adoption_handback_for_managed_release(
         or release_evidence.get('release_mode') == 'managed_handoff'
         or release_evidence.get('provider_handoff_verified') is True
     ):
-        raise ValueError(
-            'Previously managed Released resources require verified successor '
-            'handback before a new KAORI Adoption generation.'
+        handback = provider_evidence.get('handback_governance') or {}
+        versions = handback.get('provider_resource_versions') or {}
+        matching_rv = (
+            versions.get(namespace)
+            if namespace else handback.get('resource_version')
         )
+        if (
+            handback.get('status') != 'verified'
+            or handback.get('release_plan_sha256') != release_evidence.get('plan_sha256')
+            or handback.get('successor_owner') != release_evidence.get('successor_owner')
+            or not provider_uid or handback.get('provider_uid') != provider_uid
+            or not resource_version or matching_rv != resource_version
+        ):
+            raise ValueError(
+                'Previously managed Released resources require verified successor '
+                'handback before a new KAORI Adoption generation.'
+            )
 
 
-def _released_predecessor_evidence(tenant: Tenant, *, provider_uid: str) -> dict[str, Any] | None:
+def _released_predecessor_evidence(
+    tenant: Tenant, *, provider_uid: str, resource_version: str | None = None,
+) -> dict[str, Any] | None:
     """Correlate an adopted resource to exactly one prior Released generation."""
     previous = (
         Tenant.query.filter_by(cluster_id=tenant.cluster_id, slug=tenant.slug)
@@ -176,6 +193,9 @@ def _released_predecessor_evidence(tenant: Tenant, *, provider_uid: str) -> dict
     _require_re_adoption_handback_for_managed_release(
         provider_evidence=evidence,
         release_evidence=release,
+        provider_uid=provider_uid,
+        resource_version=resource_version,
+        namespace=str(tenant.provider_reference or ''),
     )
     return {
         'predecessor_tenant_id': previous.id,
@@ -187,7 +207,8 @@ def _released_predecessor_evidence(tenant: Tenant, *, provider_uid: str) -> dict
 
 
 def _verify_released_namespace_lineage(
-    *, cluster_id: str, namespace: str, provider_uid: str, tenant_slug: str
+    *, cluster_id: str, namespace: str, provider_uid: str, tenant_slug: str,
+    resource_version: str | None = None,
 ) -> None:
     """Refuse ambiguous Tenant reassignment or provider name reuse across Released history."""
     previous = (
@@ -204,6 +225,7 @@ def _verify_released_namespace_lineage(
     _require_re_adoption_handback_for_managed_release(
         provider_evidence=previous.provisioning_evidence_json or {},
         release_evidence=(previous.provisioning_evidence_json or {}).get('release_governance') or {},
+        provider_uid=provider_uid, resource_version=resource_version,
     )
 
 
@@ -221,6 +243,7 @@ def _native_namespace_record(
     _verify_released_namespace_lineage(
         cluster_id=str(context.cluster.id), namespace=context.resource_name,
         provider_uid=provider_uid, tenant_slug=context.tenant.slug,
+        resource_version=resource_version,
     )
     record = TenantNamespace()
     record.environment = environment
@@ -363,7 +386,9 @@ def _adopt_native(context: _AdoptionContext) -> tuple[TenantEnvironment, TenantN
         'provider_mutation_performed': False,
         'secret_material_persisted': False,
     }
-    lineage = _released_predecessor_evidence(tenant, provider_uid=provider_uid)
+    lineage = _released_predecessor_evidence(
+        tenant, provider_uid=provider_uid, resource_version=resource_version,
+    )
     if lineage is not None:
         tenant.provider_evidence_json['re_adoption_lineage'] = lineage
     db.session.add(tenant)
