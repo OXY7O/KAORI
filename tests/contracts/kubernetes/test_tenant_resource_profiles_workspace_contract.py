@@ -647,4 +647,4 @@ def test_capacity_governance_exposes_read_only_tenant_allocation_overview() -> N
     assert 'build_client(' not in projection
     assert 'read_namespace(' not in projection
     assert 'requests.get(' not in projection
-    assert 'view=\'capacity\'' not in page  # existing canonical HTMX tabs remain intact
+    assert "('capacity', 'Capacity Governance', 'gauge'" in page
