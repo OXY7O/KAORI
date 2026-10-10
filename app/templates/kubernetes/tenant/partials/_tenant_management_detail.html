@@ -245,27 +245,32 @@
 {% if can_manage and current_user.has_permission('integrations.manage')
                       and current_user.has_permission('clusters.manage')
                       and tenant.ownership_status == 'adopted' and tenant.lifecycle_status == 'ready' %}
-                    <details id="tenant-release-governance" name="tenant-governance"
-                    class="group min-w-0 scroll-mt-24 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
-                    aria-label="Release Governance" {% if tenant_detail_open_section == 'release' %}open{% endif %}>
-            <summary class="flex min-h-20 cursor-pointer list-none flex-wrap items-center gap-3 px-4 py-4 transition hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus sm:flex-nowrap sm:px-5 [&::-webkit-details-marker]:hidden">
-                <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-kaori-soft text-sm font-semibold text-kaori-primary"
-                      aria-hidden="true">2</span>
-                <span class="min-w-0 flex-1">
-                    <span class="flex items-center gap-2 text-base font-semibold text-content-primary">
-                        <i data-lucide="clipboard-check" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
-                        Release Governance
-                    </span>
-                    <span class="mt-1 block break-words text-sm leading-6 text-content-secondary">Review provider handoff evidence, independent approval and verified Release before relinquishing KAORI governance.</span>
+                    <section id="tenant-release-governance"
+                     class="min-w-0 scroll-mt-24 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
+                     aria-label="Release Governance">
+            <header class="flex flex-wrap items-center gap-3 px-4 py-4 sm:px-6 sm:py-5">
+                <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="clipboard-check" class="h-5 w-5"></i>
                 </span>
-                <span class="ml-auto inline-flex shrink-0 items-center gap-2">
-                    {% if row.release_preflight and row.release_preflight.blockers %}{{ table_label.status_label('Requires Review', 'warning') }}{% elif row.release_preflight %}{{ table_label.status_label('Reviewed', 'info') }}{% else %}{{ table_label.status_label('Review Required', 'warning') }}{% endif %}
-                    <i data-lucide="chevron-down"
-                       class="h-4 w-4 text-content-muted transition-transform group-open:rotate-180" aria-hidden="true"></i>
+                <div class="min-w-0 flex-1">
+                    <h2 class="text-lg font-semibold text-content-primary">Release Governance</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">
+                        Review scope, approve the handoff and verify provider evidence before Release.
+                    </p>
+                </div>
+                <span class="ml-auto shrink-0">
+                    {% if row.release_preflight and row.release_preflight.blockers %}
+                        {{ table_label.status_label('Requires Review', 'warning') }}
+                    {% elif row.release_preflight %}
+                        {{ table_label.status_label('Reviewed', 'info') }}
+                    {% else %}
+                        {{ table_label.status_label('Review Required', 'warning') }}
+                    {% endif %}
                 </span>
-            </summary>
-            <div class="border-t border-outline-subtle ">
-                <nav class="border-t border-outline-subtle px-4 py-4 sm:px-6" aria-label="Release wizard steps">
+            </header>
+            <div class="border-t border-outline-subtle">
+                <nav class="px-4 py-4 sm:px-6" aria-label="Release wizard steps">
                 <ol class="grid min-w-0 grid-cols-2 gap-2 lg:grid-cols-4">
                     {% set release_steps = [
                         ('scope', 'Review Scope', 'Preflight & blockers'),
@@ -1117,18 +1122,11 @@
                         {% endif %}
                     </div>
                 </nav>
-                <p class="border-t border-outline-subtle px-4 py-3 text-xs leading-5 text-content-muted sm:px-6">
-                    Moving between steps does not approve a plan or bypass blockers.
-                    Only authoritative provider checks, independent review and committed evidence permit Release.
-                </p>
+
             </div>
-                        <p class="mt-4 flex items-start gap-2 border-t border-outline-subtle pt-4 text-sm leading-6 text-content-muted">
-                            <i data-lucide="shield-check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
-                            Independent approval or an external reference alone cannot authorize provider handoff.
-                            Explicit Platform Admin acceptance and authoritative provider verification are still required.
-                        </p>
+
             </div>
-        </details>
+        </section>
                 {% endif %}
 {% if can_manage and current_user.has_permission('integrations.manage')
                       and current_user.has_permission('clusters.manage')
