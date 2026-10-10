@@ -457,6 +457,14 @@ def test_allocation_budget_registry_separates_snapshot_freshness_and_compute_bud
     assert "table_ui.action_classes()" in capacity
     assert "data-kaori-native-dialog" in capacity
     assert "data-kaori-dialog-open" in capacity
+    # Action cells are deliberately text-right for the registry button, but the
+    # nested native dialog must explicitly break text-align inheritance.
+    primitives = read('app/templates/components/table_primitives.html')
+    assert "{{ 'text-right' if action else 'text-left' }}" in primitives
+    modal = capacity.split('<dialog id="{{ dialog_id }}"', 1)[1].split('</dialog>', 1)[0]
+    assert 'p-0 text-left shadow-2xl' in modal
+    assert 'bg-surface-card px-4 py-4 text-left sm:gap-4' in modal
+    assert 'bg-surface-page p-4 text-left sm:p-5' in modal
     assert "registry_ui.footer" in capacity
     assert 'macro cluster_identity(' in table  # Reuse the existing identity primitive.
 
