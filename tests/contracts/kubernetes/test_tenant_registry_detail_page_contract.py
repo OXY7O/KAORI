@@ -454,6 +454,57 @@ def test_exact_governance_forms_return_to_same_page_and_global_toast():
     assert 'data-kaori-native-dialog' not in detail
 
 
+
+def test_release_wizard_navigation_is_fragment_get_with_history_and_plain_link_fallback():
+    detail = read(DETAIL)
+    routes = read('app/kubernetes/tenant/routes.py')
+    Environment().parse(detail)
+    # All four step tabs, footer Previous/Next, and internal recovery links
+    # preserve normal href while using scoped HTMX GET and canonical URLs.
+    assert detail.count('hx-get="{{ tenant_release_step_urls[') == 11
+    assert detail.count('hx-push-url="{{ tenant_release_step_urls[') == 11
+    assert detail.count('hx-select="#tenant-management-detail"') == 14
+    assert detail.count('hx-target="#tenant-management-detail"') == 14
+    assert detail.count('hx-select="#tenant-release-governance"') == 11
+    assert detail.count('hx-target="#tenant-release-governance"') == 11
+    assert detail.count('hx-swap="outerHTML show:none focus-scroll:false"') == 25
+    assert 'hx-history="false"' in detail  # Avoid restoring stale authorization evidence.
+    assert detail.count('href="{{ tenant_release_step_urls[') == 11
+    assert "request.headers.get('HX-Target') == 'tenant-release-governance'" in routes
+    assert "request.headers.get('HX-History-Restore-Request') != 'true'" in routes
+    assert "'kubernetes/tenant/partials/_tenant_management_detail.html'" in routes
+    assert "response.headers['Cache-Control'] = 'no-store, max-age=0'" in routes
+    assert "return render_template(\n        'kubernetes/tenant/tenant_detail.html'" in routes
+    assert 'data-kaori-tenant-detail-page' not in detail
+
+
+def test_release_action_feedback_reports_server_result_without_persisting_confirmation():
+    detail = read(DETAIL)
+    common = read('app/kubernetes/tenant/route_common.py')
+    Environment().parse(detail)
+    assert 'tenant_action_feedback=feedback' in common
+    assert "feedback = getattr(g, 'tenant_operational_feedback', None)" in common
+    assert 'toast_oob=True' in common
+    assert 'data-tenant-release-action-feedback' in detail
+    assert "tenant_action_feedback.get('status', 'info')" in detail
+    assert 'tenant_action_feedback.title' in detail
+    assert 'tenant_action_feedback.message' in detail
+    assert 'role="{{ \'alert\' if action_status == \'error\' else \'status\' }}"' in detail
+    assert 'data-release-confirmation-guidance' in detail
+    assert 'A checked box authorizes one submission, not a recorded approval.' in detail
+    assert 'The confirmation resets after submission.' in detail
+    assert 'hx-history="false"' in detail
+    assert detail.count('hx-disabled-elt="find button[type=\'submit\']"') == 14
+    assert detail.count('disabled:cursor-progress disabled:opacity-60') == 13
+    assert 'Processing Tenant request…' in detail
+    assert 'fixed bottom-4 right-4' in detail
+    assert detail.count('<form method="post"') == 14
+    assert detail.count('name="csrf_token"') == 14
+    assert detail.count('hx-post=') == 14
+    assert detail.count('name="tenant_release_step"') == 11
+
+
+
 def test_service_endpoints_and_independent_approval_remain_unchanged():
     detail = read(DETAIL)
     for name in (

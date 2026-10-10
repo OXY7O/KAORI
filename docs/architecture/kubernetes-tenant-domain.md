@@ -202,6 +202,50 @@ authn/RBAC and Release rules stay unchanged. Review-only merge to
 `kaori/review/staging-uat`; runtime tests, browser Visual QA, CI/CD,
 Developer Check, Full Admission, staging UAT and deployment HOLD.
 
+## Tenant Release wizard navigation and confirmation/result semantics (#1095; current UX authority)
+
+Human DevContainer review found that all four Release wizard step cards and
+Previous/Next links were plain full-page GET links, while mutation POSTs
+already used scoped HTMX fragment swaps. Because the entire committed
+Tenant Detail is re-rendered after every POST, native required checkboxes
+reset by design, leaving it unclear whether the operator had just
+**checked**, **submitted**, **received a rejection**, or **committed evidence**.
+
+Wizard step navigation now follows the existing KAORI HTMX model:
+`hx-get` + `hx-select="#tenant-release-governance"` +
+`hx-target="#tenant-release-governance"` +
+`hx-swap="outerHTML show:none focus-scroll:false"`, with `hx-push-url`
+set to the same canonical step URL as its preserved `href`. An authorized
+HTMX GET returns the existing committed Tenant Detail fragment, but HTMX
+swaps only the Release Governance card rather than the entire shell or
+Tenant Overview; ordinary GET and browser history
+restoration retain the original full-page route. `hx-history="false"`
+prevents caching historical tenant authorization evidence in HTMX snapshots:
+back/forward must request fresh committed state. No new routes, provider
+calls or wizard approval state are introduced, and no-JS navigation works.
+
+All 14 existing Tenant governance forms retain POST URLs, CSRF, field names,
+HTMX replacement and global Operational Toast. Native
+`hx-disabled-elt="find button[type='submit']"` prevents accidental
+double submissions during the request and the existing HTMX indicator
+is visible near the action viewport. The single server-recorded
+`g.tenant_operational_feedback` result is also passed into the existing
+Tenant Detail response and shown inline above the active Release step,
+with the same title/message as the original Operational Toast. It is a
+**request outcome**, never an inferred provider commit or approval stage.
+Confirmation checkboxes are explicitly **one-shot operator intent**:
+checking a box alone does not persist governance approval; re-render/reset
+after POST is intentional, and only server-reported results plus fresh
+committed evidence/Activity Audit establish what happened. Never carry
+checked consent across steps, browser history or expired plan SHA.
+
+This presentation correction does not alter separation of duties, current
+approval expiry/TLS requirements, Release execution, read-back, role guards,
+AuditEvents, governance admission, provider authority or any external
+object. Contract tests are authored; runtime tests, light/dark/mobile
+browser QA, CI/CD, Developer Check, Full Admission, UAT, promotion and
+deployment remain HOLD until separately authorized.
+
 ## Native Release expiry consistency and Step 4 recovery workspace (#1091; latest detail UI authority)
 
 DevContainer feedback confirmed an expired, independently acknowledged Native
