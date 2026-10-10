@@ -26,7 +26,7 @@
     {% endset %}
     {{ table_ui.inventory_block_header('library-big',
         'Resource Profile Registry',
-        'Compact contract registry. Open a profile to inspect allocation, lineage, dependencies, and allowed lifecycle actions.',
+        'Reusable allocation profiles. Open Manage for full contract details.',
         loading_id,
         'Refreshing Resource Profile Registry',
         none,
@@ -88,9 +88,18 @@
             <tbody class="{{ table_ui.body_classes() }}">
                 {% for profile in profiles %}
                     {% set usage = profile_dependencies.get(profile.id) %}
+                    {# Presentation-only identity: the immutable full name and description remain in Manage. #}
+                    {% set adopted_baseline = profile.name.startswith('Adopted ') %}
+                    {% set registry_name = profile.name[8:] if adopted_baseline else profile.name %}
+                    {% set name_parts = registry_name.rsplit(' · ', 1) %}
+                    {% if name_parts|length == 2 and name_parts[1]|length == 36 and name_parts[1].count('-') == 4 %}
+                        {% set registry_name = name_parts[0] ~ ' · ' ~ name_parts[1][:8] %}
+                    {% endif %}
+                    {% set registry_name = registry_name|truncate(44, True, '…') %}
+                    {% set registry_meta = ('Adopted baseline' if adopted_baseline else 'Profile') ~ ' · #' ~ profile.id %}
                     <tr class="{{ table_ui.row_classes() }}">
                         <td class="{{ table_ui.cell_classes() }} align-middle min-w-0">
-                            {{ table_ui.title_cell(profile.name, profile.description or 'Reusable allocation contract', 'layers-3') }}
+                            {{ table_ui.title_cell(registry_name, registry_meta, 'layers-3') }}
                         </td>
                         <td class="{{ table_ui.cell_classes() }} align-middle min-w-0">
                             <div class="flex flex-wrap items-center gap-2">
@@ -132,6 +141,7 @@
                             <button type="button"
                                     data-kaori-dialog-open
                                     data-dialog-target="resource-profile-manage-{{ profile.id }}"
+                                    aria-label="Manage Resource Profile {{ profile.name }}"
                                     class="{{ table_ui.action_classes() }}">
                                 <i data-lucide="settings-2" class="h-4 w-4" aria-hidden="true"></i>
                                 Manage
