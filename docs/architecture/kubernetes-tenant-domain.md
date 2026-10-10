@@ -162,6 +162,49 @@ source-of-truth, permission, audit or workflow standards. Browser desktop/
 mobile, light/dark, long metric values and toast Visual QA is pending;
 Developer Check, Full Admission, staging and deployment remain HOLD.
 
+## Tenant Release Step 3 — structured independent approval evidence (#1089; current presentation authority)
+
+Human DevContainer review of Release wizard **Step 3: Independent approval and handoff**
+found an acknowledged plan, external reference, long SHA-256, and Platform Admin
+verification stacked as nearly equal paragraphs. The canonical Step 3 now
+has a compact KAORI icon/title, a separation-of-duties note, and distinct
+committed evidence regions:
+
+- **Active handoff plan** is a single compact locked-plan status panel showing
+  the original pending/acknowledged/not-replaceable state, successor owner,
+  and change-record reference. It explains plan immutability and governed
+  restart without implying Release is authorized. Expired plans still
+  distinguish original requester and required fresh preflight.
+- The exact **Plan SHA-256** remains visible in a wrap-safe monospace value
+  directly beneath the plan; it is not ellipsized or substituted with a
+  status chip. A short acknowledgement line makes the outstanding external
+  owner acceptance, provider handoff and verified read-back explicit.
+- **External successor evidence** is a separate compact neutral panel
+  containing the original `External Reference Unverified` semantic warning,
+  full reference and an explicit boundary: this external evidence claim is
+  *not* additional approval, verified consent or provider ownership transfer.
+- For eligible distinct authorized Platform Admin operators, the exact
+  existing verification form is placed in a focused, labeled panel with a
+  concise registered X.509 connection/permission explanation, the original
+  required explicit checkbox authorization (plan SHA and exact resources),
+  and the unchanged submit action.
+
+The same committed plan/approval/claim attributes, requester/reviewer
+separation, endpoint actions, one-active-plan policy, successor identity
+checks, CSRF/HTMX, approval/dry-run/executor/read-back/restart conditionals
+and global toast remain authoritative. No new readiness algorithm,
+provider-side operation, identity mapping, credential or approval engine.
+The outer Release wizard continues to own one active URL-scoped step, while
+this content stays committed-state driven. All **10 Step 3 conditional forms**
+and **14 Tenant forms** remain present in source.
+
+This supersedes *only* Step 3 presentation from the earlier #1075/#1077
+four-step wizard, not its admission/security rules. Browser Visual QA for
+pending/expired/acknowledged, unverified/verified reference, native/Capsule,
+different requester/reviewer, light/dark, mobile and long digest is pending.
+CI/CD, Developer Check, Full Admission, staging UAT, main promotion and
+deployment remain HOLD until explicitly authorized.
+
 ## Tenant Release Step 2 — compact two-line resource summaries (#1085; latest detail UI authority)
 
 Human DevContainer review of the #1085 initial evidence-first design found
