@@ -116,6 +116,21 @@ Hero
 
 `Tenant Registry` is the default tab and uses the canonical KAORI server-backed registry contract: shared loading bar, Cluster/Environment/Lifecycle/Search filters, committed-state reads, semantic labels, responsive horizontal overflow, default 5-row pagination, 5/10/25/50 page sizes, and HTMX progressive enhancement with the Tenants route as the real navigation fallback.
 
+**Tenant Release Step 3 — independent approval evidence (#1089; current UI):**
+In the four-step Native/Capsule Release wizard, the independent-approval
+step now separates a compact locked-plan state and original Successor owner /
+Change record from an untruncated monospace Plan SHA-256, the
+independent-review acknowledgement, and the **External Reference Unverified**
+claim. A standalone focused Platform Admin verification form retains
+existing X.509 registered Kubernetes connection, permission proof and
+required explicit consent checkbox before submission. Treat independent
+review, external successor evidence, verified successor consent, provider
+handoff and read-back as **different states**; none are inferred from a
+plain-text reference. Preserve native/Capsule gating, original requester
+restart, audit, all Step 3 POST endpoints, 14 CSRF/HTMX forms, global toast,
+and provider-authoritative checks. The change is visual hierarchy and copy
+only. Tests/DevContainer human QA are pending; CI/CD admission stays HOLD.
+
 **Tenant Release Step 2 — compact resource summaries (#1085; latest UI):**
 
 DevContainer refinement removes repeated vertical gaps in Provider
