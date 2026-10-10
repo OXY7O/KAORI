@@ -94,6 +94,19 @@ def build_tenant_allocation_bars(summary: Mapping[str, Any]) -> list[dict[str, A
     return result
 
 
+def describe_tightest_headroom(
+    bars: list[dict[str, Any]], state: str
+) -> str | None:
+    """Describe the tightest already-governed allocation dimension; never classify admission."""
+    if state not in {"Near Capacity", "Critical", "Exhausted"}:
+        return None
+    governed = [bar for bar in bars if bar["known"] and bar["state"] == "Governed"]
+    if not governed:
+        return None
+    tightest = min(governed, key=lambda bar: Decimal(str(bar["free_percent"])))
+    return f"Lowest headroom: {tightest['label']} ({tightest['free_percent']}%)"
+
+
 def build_tenant_contribution_rows(cluster_id: str) -> list[dict[str, object]]:
     """Partition the same canonical ledger as #654, including shared-quota rules."""
     tenants = Tenant.query.filter_by(cluster_id=cluster_id).order_by(Tenant.name.asc(), Tenant.id.asc()).all()
