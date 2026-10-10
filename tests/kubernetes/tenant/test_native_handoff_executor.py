@@ -25,6 +25,8 @@ def resource(*, kind='Namespace', manager='kaori'):
         labels.update({
             'kaori.io/tenant-id': 'tenant-a',
             'kaori.io/environment': 'development',
+            'kaori.io/resource-profile': 'profile-uuid-v2',
+            'kaori.io/tenant-generation': '2',
             'kaori.io/profile-id': 'v2',
         })
     return SimpleNamespace(
@@ -74,7 +76,8 @@ def _canonical_preview(kind='ResourceQuota'):
         'retained_metadata_sha256': 'def',
         'label_keys_to_release': [
             'app.kubernetes.io/managed-by', 'kaori.io/tenant-id',
-            'kaori.io/environment', 'kaori.io/profile-id',
+            'kaori.io/environment', 'kaori.io/resource-profile',
+            'kaori.io/tenant-generation', 'kaori.io/profile-id',
         ],
     }
 
