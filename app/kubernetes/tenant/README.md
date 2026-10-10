@@ -121,8 +121,8 @@ still inherited an unrelated cluster-wide Provider Readiness Hero and
 presented a second management header/snapshot inside an oversized modal-style
 frame. The approved correction renders a single Tenant-specific Violet Hero
 (committed name, status, provider/cluster and generation) with **only Back to
-Registry** as its action. Global navbar breadcrumb and active capability tab
-now resolve Tenant Details under **Tenants** rather than Overview.
+Registry** as its action. The global navbar breadcrumb now ends with the actual committed Tenant
+name, while the active capability tab resolves to **Tenants**, not Overview.
 Distinct responsive summary cards and an in-page section rail replace the
 modal shell; long Release evidence and provider authority are ordinary cards.
 The entire Hero and workspace use one `#tenant-management-detail` HTMX swap
