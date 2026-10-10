@@ -116,7 +116,25 @@ Hero
 
 `Tenant Registry` is the default tab and uses the canonical KAORI server-backed registry contract: shared loading bar, Cluster/Environment/Lifecycle/Search filters, committed-state reads, semantic labels, responsive horizontal overflow, default 5-row pagination, 5/10/25/50 page sizes, and HTMX progressive enhancement with the Tenants route as the real navigation fallback.
 
-**Tenant Management single-page correction (#1071, current design):**
+**Tenant Details approved visual composition (#1073; current design):**
+Use existing full-size Violet two-column Hero with shared `page_hero.context_card`
+for a contextual Tenant Details right-side panel, two committed metrics,
+lifecycle status and the full-width Back to Registry. Under it show four
+responsive summary cards and a two-column Tenant Overview with identity,
+description, audit-lineage note and links to existing KAORI registry/services.
+Use five native keyboard-accessible expandable governance sections instead
+of a long wall of forms or secondary Content Tabs. Release opens with a
+four-stage preview but keeps the detailed independent approval, provider
+handoff and finalizer controls folded until requested. Independent Work
+Inbox links expand Release immediately. All 14 existing forms carry
+`tenant_detail_section`, their prior CSRF, exact resource identity and
+Registry state. After POST the active permitted section reopens and the
+global OOB toast remains visible; Decommission alone retains its short
+destructive confirmation modal. Normal detail GET is committed-only.
+Earlier stacked/modal/tabbed layouts were rejected during Human Visual QA.
+Runtime Visual QA/security gates remain pending; no staging release implied.
+
+**Tenant Management single-page correction (#1071, superseded historical design):**
 The user rejected both the oversized dashboard (#1067) and the secondary
 Content Tabs workflow (#1069). The current detail is one naturally scrolling
 page with the exact shared KAORI Violet Hero sizing, layout, intro/title,
