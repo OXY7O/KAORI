@@ -759,7 +759,7 @@
                                                               hx-select="#tenant-management-detail"
                                                               hx-swap="outerHTML show:none focus-scroll:false"
                                                               hx-indicator="#tenant-management-loading"
-                                                              class="mt-2 space-y-2 rounded-lg border border-outline-subtle bg-surface-card p-3">
+                                                              class="mt-2 space-y-3 rounded-lg border border-outline-subtle bg-surface-elevated/35 p-3 sm:p-4" aria-label="Platform Admin provider verification">
                                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
                                             <input type="hidden" name="tenant_detail_section" value="release">
@@ -768,13 +768,16 @@
                                                 <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
                                             {% endfor %}
                                                             <input type="hidden" name="plan_sha256" value="{{ handoff_plan.plan_sha256 }}">
-                                                            <p class="text-sm leading-6 text-content-secondary">
-                                                                KAORI uses its registered Kubernetes connection (X.509 kubeconfig).
-                                                                No successor credential, private key or separate Kubernetes user token is required.
-                                                                This action verifies provider identity and permissions, then records an explicit
-                                                                KAORI Platform Admin decision for the reviewed plan.
-                                                            </p>
-                                                            <label class="flex items-start gap-2 text-sm leading-6 text-content-secondary">
+                                                            <div class="flex min-w-0 items-start gap-2.5">
+                                                                <i data-lucide="shield-check" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                                                <div class="min-w-0">
+                                                                    <h5 class="text-sm font-semibold text-content-primary">Platform Admin verification</h5>
+                                                                    <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                                                        KAORI uses its registered Kubernetes X.509 connection to verify provider identity and scoped permissions before recording an explicit Platform Admin decision for the reviewed plan. No successor credential, private key or separate Kubernetes user token is required.
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            <label class="flex items-start gap-2 rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5 text-xs leading-5 text-content-secondary">
                                                                 <input name="confirm_successor_acceptance" type="checkbox"
                                                                        value="accept" required
                                                                        class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
