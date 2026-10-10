@@ -10,8 +10,9 @@
         'capsule-shared-allocation-drift-loading',
         'Refreshing Capsule Shared Allocation Drift') }}
     <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[1450px] !table-fixed') }}">
+        <table class="{{ table_ui.table_classes('min-w-[1450px] !table-fixed' if capsule_shared_drift_intents else '!table-fixed') }}">
             <caption class="sr-only">Capsule Tenant shared allocation drift and reconciliation actions.</caption>
+            {% if capsule_shared_drift_intents %}
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[19%]">Tenant</th>
@@ -20,6 +21,7 @@
                     <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[23%]">Action</th>
                 </tr>
             </thead>
+            {% endif %}
             <tbody class="{{ table_ui.body_classes() }}">
                 {% for intent in capsule_shared_drift_intents %}
                     {% set state = capsule_shared_drift_state.get(intent.id|string) or {} %}
@@ -98,6 +100,9 @@
                             {% set empty_state_icon = "circle-check" %}
                             {% set empty_state_title = "No Capsule Shared Allocation Drift" %}
                             {% set empty_state_description = "No governed Capsule GlobalResourceQuota currently differs from committed KAORI intent." %}
+                            {% set empty_state_label = '' %}
+                            {% set empty_state_min_height = 'min-h-[128px]' %}
+                            {% set empty_state_container_class = '!py-5' %}
                             {% include 'components/states/_empty_state.html' %}
                         </td>
                     </tr>
