@@ -120,7 +120,7 @@
                                 <div class="mt-2">{{ table_label.special_label('Provider Mirrored', 'info', 'refresh-cw') }}</div>
                             {% elif adopted_observed %}
                                 <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="Imported Provider Baseline">Imported Provider Baseline</p>
-                                <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="{{ (allocation_evidence.get(&quot;profile_lineage&quot;) or {}).get('label') or 'Observed provider allocation' }}">
+                                <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="{{ (allocation_evidence.get('profile_lineage') or {}).get('label') or 'Observed provider allocation' }}">
                                     {{ (allocation_evidence.get("profile_lineage") or {}).get('label') or 'Observed provider allocation' }}
                                 </p>
                                 {% if allocation_control == 'control_unavailable' %}
