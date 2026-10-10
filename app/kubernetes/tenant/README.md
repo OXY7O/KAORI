@@ -194,9 +194,11 @@ do not authorize a retry, even when Kubernetes labels currently show
 
 The bounded Step 4 workflow is:
 - Original requester: **Assess No-Transfer Provider State**. The server
-  checks exactly one failed-before-write executor sequence and rejects
-  ambiguous/partial same-plan read-back attempts (strictly canonical
-  no-transfer read-backs remain digest-bound), exact former dry-run identities/hashes,
+  checks every complete same-SHA, same-executor started/failed-before-write
+  pair in chronological order and rejects orphan, duplicate, changed actor,
+  partial/unknown/mutating receipts or non-canonical same-plan read-back.
+  All historical executor/read-back records are SHA256 digest-bound; exact
+  former dry-run identities/hashes,
   fresh provider inventory, metadata/spec/foreign-label preservation and
   dependency counts. Only read-only Kubernetes GETs occur; a SHA-bound
   assessment is committed to AuditEvent.
@@ -246,10 +248,10 @@ Contract/unit tests and browser QA are pending, as are CI/CD gates, Full
 Admission, staging/UAT and deployment; no production migration performed.
 
 **Read-only executor no-transfer assessment (#1110):**
-Step 4 distinguishes one canonical same-plan executor started/failed pair:
-the in-progress audit is written before provider mutation counters exist,
-while the failed completion explicitly reports zero verification and no
-mutation. Missing/extra receipts or unsafe read-back history remain blocked.
+Step 4 identifies one or more complete same-plan executor started/failed
+pairs. The initial audit is written before terminal mutation counters exist;
+every failure must explicitly report zero verification and no mutation.
+Orphan, inconsistent, mutating or incomplete history stays blocked.
 `no_transfer_assessment_candidate` is an **advisory committed UI signal**,
 not an approval, successful provider read-back, restart permission or
 automatic retry. Existing backend fail-closed guard continues to block
@@ -259,10 +261,27 @@ immutable audit evidence via the existing #1104 governed workflow before
 any new SHA/approval or Kubernetes mutation. The candidate hint is never
 a substitute for requester assessment or an independent recovery decision.
 No live provider checks were run for #1110; QA and gates HOLD.
-The assessment backend reports whether exact-plan executor receipt count is
-not two, or whether a same-plan read-back cannot prove zero transfer, without
-changing either gate. Operators must inspect Activity Audit and never
-infer safe restart from an advisory or a reported 0/2 count.
+The assessment backend rejects incomplete/odd executor receipts, unsafe
+pairs and any same-plan read-back not proving canonical no-transfer. The
+read-only historical predicate does not replace the fresh TLS-verified
+provider GET, independent decision or new-plan review. Operators must
+inspect Activity Audit and never infer safe restart from a 0/2 counter.
+
+**Bounded multi-attempt Native recovery (#1118):**
+DevContainer evidence contains two committed started/failed executor pairs
+under the same original Plan SHA, with zero verified components, explicit
+non-mutation terminal flags and four canonical read-back receipts. #1118
+allows *one or more* complete chronologically ordered failed-before-write
+pairs **only** for the same executor actor, original plan/fingerprint and
+approved scope. Every failed receipt requires zero verification and an
+explicit non-mutation result; every read-back must satisfy the original
+canonical predicate. All history stays SHA256 digest-bound, and new
+assessments record all failed event IDs and the total attempt count.
+Existing fresh authoritative Kubernetes GET, verified TLS, original dry-run
+UID/RV/spec/foreign metadata and dependencies, original requester,
+independent third-actor review and new-plan approval remain mandatory.
+Candidate status never grants restart, provider mutation or Release.
+Tests/CI/CD/UAT/deployment remain HOLD; this is source-only integration.
 
 **Native executor approved-component patch binding (#1102 corrective under #1048):**
 `dry_run_native_handoff_component` commits authoritative Kubernetes
