@@ -128,6 +128,35 @@ short names, dark/light, mobile overflow and keyboard Manage accessibility.
 
 
 
+### Namespace Provisioning Registry: readable profile display (#1035 follow-up)
+
+DevContainer feedback identified dense adopted Resource Profile names and
+three stacked authority lines in the Namespace Provisioning Registry. The
+current review-branch implementation already has the approved Namespace
+Registry five-column layout and **View More** native dialog; an older
+five-column screenshot with separate Provider/State columns must not
+override that implementation.
+
+The registry now reuses the existing Resource Profile Registry display-only
+contract: hide the leading `Adopted `, show `Baseline N` instead of
+`Baseline · N`, abbreviate a terminal full UUID suffix to eight characters,
+and bound the visible profile text to 42 characters. The untouched canonical
+name stays in the cell `title` and inside the read-only View More modal.
+The secondary row displays committed snapshot version and provider together
+with a shared KAORI metadata label for the existing control state. Absence
+of a pinned version is shown as **No pinned snapshot**, never `v—`.
+Provider-mirrored, awaiting-takeover, unavailable and KAORI-managed states
+remain distinct; the original code and provider authority are not changed.
+
+The Namespace, Tenant/Environment, Allocation, State and Details fixed-column
+layout, HTMX filters, five-row pagination, frozen quota values, full
+reconciliation message and modal traceability remain unchanged. No new
+provider request, mutation, backend interpretation, taxonomy or JS component
+is introduced. DevContainer Visual QA is still required for long Native and
+Capsule profile names, released records, missing snapshot version, responsive
+overflow, light/dark styling and duplicate Namespace identities. CI/CD,
+Full Admission, staging/UAT and main promotion remain on HOLD.
+
 ### Namespace Registry: compact row and committed evidence detail (#1035)
 
 Following human DevContainer review, the Namespace Registry retains the
