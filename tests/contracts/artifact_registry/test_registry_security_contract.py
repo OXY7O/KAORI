@@ -388,7 +388,7 @@ def test_security_sync_revalidates_stale_targets_and_heartbeats_repository_disco
     assert 'page_callback: Callable[[int], None] | None = None' in client
 
 
-def test_security_summary_uses_registry_section_intro_and_standalone_cards() -> None:
+def test_security_summary_uses_registry_section_intro_and_grouped_metrics() -> None:
     from jinja2 import Environment
 
     template = read('app/templates/artifact_registry/partials/_security_workspace.html')
@@ -398,10 +398,20 @@ def test_security_summary_uses_registry_section_intro_and_standalone_cards() -> 
     summary = template[start:end]
 
     assert 'artifact-registry-security-summary-heading' in template
-    assert 'grid gap-4 sm:grid-cols-2 xl:grid-cols-4' in summary
-    assert 'aria-label="{{ security.title }} summary"' in summary
-    assert summary.count('metric_card.render(') == 8  # 4 per mutually exclusive view
-    assert 'section_card.shell_classes()' not in summary
-    assert 'security.snapshot.scope_label' in summary
-    assert "status_indicator_label(" not in summary
+    assert "section_card.render(" in summary
+    assert "posture_grid.render(security_metrics, columns=4)" in summary
+    assert "body_classes='p-0'" in summary
+    assert "'Security Evidence Summary'" in summary
+    assert "security.view == 'vulnerabilities'" in summary
+    assert summary.count("security_metrics = [") == 2
+    for metric in (
+        'Critical Findings', 'High Findings', 'Affected Artifacts', 'Runtime Exposed',
+        'Signature Observed', 'SBOM Available', 'Coverage Gaps', 'Security Sources',
+    ):
+        assert metric in summary
+    assert "'critical' if security.critical else 'info'" in summary
+    assert "'warning' if security.high else 'info'" in summary
+    assert "'critical' if security.runtime_exposed else 'info'" in summary
+    assert "operational_metric_card" not in summary
     assert "registry.footer(" in template
+
