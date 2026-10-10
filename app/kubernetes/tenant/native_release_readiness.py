@@ -6,6 +6,7 @@ KAORI approval, a text reference, a provider label, or dry-run/read-back.
 """
 from __future__ import annotations
 
+import re
 from typing import Any, Mapping
 
 from app.kubernetes.tenant.release_handoff_approval import _checked_recently
@@ -23,14 +24,15 @@ def project_native_release_readiness(
     """Display checkpoints only; no provider calls, audit writes, or admission."""
     plan_sha = str((plan or {}).get("plan_sha256") or "")
     active_plan = bool(
-        len(plan_sha) == 64
+        bool(re.fullmatch(r'[0-9a-f]{64}', plan_sha))
         and plan
         and plan.get("status") == "pending_independent_approval"
         and _checked_recently(plan.get("requested_at"))
     )
     review_current = bool(
         preflight
-        and preflight.get("handoff_required_count", 0) > 0
+        and type(preflight.get("handoff_required_count")) is int
+        and preflight["handoff_required_count"] > 0
         and preflight.get("handoff_components")
         and _checked_recently(preflight.get("checked_at"))
     )
@@ -39,7 +41,7 @@ def project_native_release_readiness(
         and approval.get("plan_sha256") == plan_sha
         and approval.get("requested_by") == plan.get("requested_by")
         and approval.get("approved_by") != plan.get("requested_by")
-        and isinstance(approval.get("approved_by"), int)
+        and type(approval.get("approved_by")) is int
         and approval.get("status") == "acknowledged_pending_provider_handoff"
         and _checked_recently(approval.get("approved_at"))
     )
@@ -58,7 +60,7 @@ def project_native_release_readiness(
     # The existing native read-back deliberately observes without trusted
     # acceptance; never turn this into verified provider transfer.
     readback_observed = bool(
-        readback and readback.get("plan_sha256") == plan_sha
+        same_plan and readback and readback.get("plan_sha256") == plan_sha
         and readback.get("status") == "provider_handoff_observed_acceptance_unverified"
         and readback.get("external_successor_verified") is False
     )
