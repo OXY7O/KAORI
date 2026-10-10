@@ -11,6 +11,8 @@ from app.kubernetes.tenant.release_handoff_approval import (
     _plan_hash,
     _complete_provider_snapshot,
     _valid_reference,
+    _require_no_active_handoff_plan,
+    handoff_plan_preparation_state,
     approve_release_handoff_plan_committed,
     prepare_release_handoff_plan_committed,
 )
@@ -247,6 +249,8 @@ def test_prepare_handoff_commits_plan_without_provider_mutation(monkeypatch):
     monkeypatch.setattr(module, 'Tenant', SimpleNamespace(query=_TenantQuery()))
     monkeypatch.setattr(module, 'AuditEvent', lambda **kwargs: SimpleNamespace(**kwargs))
     monkeypatch.setattr(module, 'review_tenant_release_preflight_committed', lambda **_: _snapshot())
+    monkeypatch.setattr(module, 'latest_release_handoff_plan', lambda _: None)
+    monkeypatch.setattr(module, 'latest_release_handoff_approval', lambda _: None)
 
     result = prepare_release_handoff_plan_committed(
         tenant_id='tenant-a', actor_user_id=42,
@@ -322,3 +326,107 @@ def test_handoff_approval_rejects_changed_component_fingerprint_and_unknown_owne
     snapshot['handoff_fingerprint'] = handoff_fingerprint(snapshot['handoff_components'])
     with pytest.raises(ValueError, match='Unsupported or missing ownership'):
         _can_confirm_plan(snapshot)
+
+
+@pytest.mark.parametrize(('state', 'expected'), [
+    ('pending', 'pending'),
+    ('expired', 'expired'),
+    ('acknowledged', 'acknowledged'),
+    ('blocked', 'blocked'),
+])
+def test_handoff_prepare_policy_distinguishes_one_current_plan(state, expected):
+    now = datetime.now(UTC)
+    plan = _plan_from_snapshot(_snapshot())
+    approval = None
+    if state == 'expired':
+        plan['requested_at'] = (now - timedelta(hours=1)).isoformat()
+    elif state == 'acknowledged':
+        approval = {
+            'plan_sha256': plan['plan_sha256'],
+            'status': 'acknowledged_pending_provider_handoff',
+        }
+    elif state == 'blocked':
+        plan['status'] = 'unexpected'
+    assert handoff_plan_preparation_state(plan, approval) == expected
+
+
+def test_handoff_prepare_policy_allows_no_plan_and_ignores_foreign_old_approval():
+    plan = _plan_from_snapshot(_snapshot())
+    assert handoff_plan_preparation_state(None, None) == 'available'
+    assert handoff_plan_preparation_state(
+        plan, {'plan_sha256': 'b' * 64, 'status': 'acknowledged_pending_provider_handoff'}
+    ) == 'pending'
+
+
+@pytest.mark.parametrize(('state', 'message'), [
+    ('pending', 'awaiting independent approval'),
+    ('acknowledged', 'independently acknowledged'),
+    ('blocked', 'not eligible for replacement'),
+])
+def test_handoff_prepare_blocks_other_operator_and_requester_on_locked_plan(
+    monkeypatch, state, message
+):
+    from app.kubernetes.tenant import release_handoff_approval as module
+
+    plan = _plan_from_snapshot(_snapshot())
+    approval = None
+    if state == 'acknowledged':
+        approval = {
+            'plan_sha256': plan['plan_sha256'],
+            'status': 'acknowledged_pending_provider_handoff',
+        }
+    if state == 'blocked':
+        plan['status'] = 'unknown'
+    monkeypatch.setattr(module, 'latest_release_handoff_plan', lambda _: plan)
+    monkeypatch.setattr(module, 'latest_release_handoff_approval', lambda _: approval)
+    with pytest.raises(ValueError, match=message):
+        _require_no_active_handoff_plan(tenant_id='tenant-a')
+
+
+def test_expired_unacknowledged_plan_allows_fresh_prepare_after_locked_check(monkeypatch):
+    from app.kubernetes.tenant import release_handoff_approval as module
+
+    expired = _plan_from_snapshot(_snapshot())
+    expired['requested_at'] = (datetime.now(UTC) - timedelta(hours=1)).isoformat()
+    monkeypatch.setattr(module, 'latest_release_handoff_plan', lambda _: expired)
+    monkeypatch.setattr(module, 'latest_release_handoff_approval', lambda _: None)
+    _require_no_active_handoff_plan(tenant_id='tenant-a')
+
+
+def test_handoff_prepare_checks_active_plan_after_tenant_row_lock(monkeypatch):
+    from app.kubernetes.tenant import release_handoff_approval as module
+
+    tenant = SimpleNamespace(ownership_status='adopted', lifecycle_status='ready')
+    class _TenantQuery:
+        def filter_by(self, **kwargs):
+            return self
+
+        def with_for_update(self):
+            events.append('row-lock')
+            return self
+
+        def one_or_none(self):
+            return tenant
+
+    events = []
+    session = _FakeSession(tenant)
+    monkeypatch.setattr(module, 'db', SimpleNamespace(session=session))
+    monkeypatch.setattr(module, 'Tenant', SimpleNamespace(query=_TenantQuery()))
+    monkeypatch.setattr(module, 'AuditEvent', lambda **kwargs: SimpleNamespace(**kwargs))
+    monkeypatch.setattr(module, 'review_tenant_release_preflight_committed', lambda **_: _snapshot())
+
+    current = _plan_from_snapshot(_snapshot())
+    def latest(_):
+        events.append('check-current-plan')
+        return current
+    monkeypatch.setattr(module, 'latest_release_handoff_plan', latest)
+    monkeypatch.setattr(module, 'latest_release_handoff_approval', lambda _: None)
+
+    with pytest.raises(ValueError, match='awaiting independent approval'):
+        prepare_release_handoff_plan_committed(
+            tenant_id='tenant-a', actor_user_id=43,
+            successor_owner='another-owner', change_reference='CHG-2026-202',
+        )
+    assert events.index('row-lock') < events.index('check-current-plan')
+    assert session.commits == 0
+    assert not session.events
