@@ -107,6 +107,26 @@ def describe_tightest_headroom(
     return f"Lowest headroom: {tightest['label']} ({tightest['free_percent']}%)"
 
 
+def filter_tenant_contribution_rows(
+    rows: list[dict[str, Any]], query: str
+) -> list[dict[str, Any]]:
+    """Filter committed Tenant evidence without modifying its canonical allocation."""
+    needle = query.strip().casefold()
+    if not needle:
+        return rows
+    return [
+        row for row in rows
+        if needle in str(row["tenant"].name).casefold()
+        or needle in str(row["tenant"].id).casefold()
+        or needle in str(row["source"]).casefold()
+        or any(
+            needle in str(namespace["name"]).casefold()
+            or needle in str(namespace["environment"]).casefold()
+            for namespace in row["namespaces"]
+        )
+    ]
+
+
 def build_tenant_contribution_rows(cluster_id: str) -> list[dict[str, object]]:
     """Partition the same canonical ledger as #654, including shared-quota rules."""
     tenants = Tenant.query.filter_by(cluster_id=cluster_id).order_by(Tenant.name.asc(), Tenant.id.asc()).all()
