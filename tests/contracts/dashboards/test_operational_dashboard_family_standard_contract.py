@@ -580,3 +580,18 @@ def test_dashboard_unavailable_alert_evidence_does_not_prompt_scope_reselection(
         assert f"Committed Alert Intelligence case evidence is unavailable for this {expected_scope}." in source
         assert "unavailable_title='Select " not in source
         assert "unavailable_description='Select " not in source
+
+def test_top_consumer_missing_evidence_uses_snapshot_required_panel_in_reference_dashboards() -> None:
+    kubernetes = read('app/templates/kubernetes/dashboard/partials/_top_consumers.html')
+    object_storage = read('app/templates/storage/object_storage/dashboard/partials/_top_consumers.html')
+    registry = read('app/templates/artifact_registry/partials/_overview_top_consumers.html')
+
+    for source in (kubernetes, object_storage):
+        assert 'empty_state_label = "Snapshot Required"' in source
+        assert 'empty_state_variant = "panel"' in source
+        assert 'components/states/_empty_state.html' in source
+
+    assert 'empty_state_label = "Sync Required"' not in kubernetes
+    assert 'empty_state_label = "Source Required"' in registry
+    assert 'empty_state_label = "Sync Required"' in registry
+    assert 'empty_state_label = "No Quota Evidence"' in registry
