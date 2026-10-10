@@ -70,3 +70,30 @@ def test_canonical_release_executor_remains_blocked_on_managed_allocation():
     assert 'row.resource_profile_id is not None' in release
     assert "if latest['status'] != 'handoff_review_required' or latest['blockers']" in release
     assert 'review_tenant_release_preflight_committed(' in release
+
+
+def test_handoff_preparation_cannot_replace_a_current_approval_request() -> None:
+    service = read('app/kubernetes/tenant/release_handoff_approval.py')
+    context = read('app/kubernetes/tenant/registry_context.py')
+    modal = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
+
+    assert "def handoff_plan_preparation_state(" in service
+    assert "def _require_no_active_handoff_plan(" in service
+    lock = service.index("Tenant.query.filter_by(id=tenant_id).with_for_update()")
+    check = service.index("_require_no_active_handoff_plan(tenant_id=tenant_id)")
+    write = service.index("action='tenant.release.handoff_plan_prepared'")
+    assert lock < check < write
+    assert "state == 'pending'" in service
+    assert "state == 'acknowledged'" in service
+    assert "state == 'blocked'" in service
+    assert "latest_release_handoff_plan(tenant_id)" in service
+    assert "latest_release_handoff_approval(tenant_id)" in service
+
+    assert "handoff_plan_preparation_state(" in context
+    assert "row['release_handoff_preparation_state']" in context
+    assert "row.release_handoff_preparation_state in ['available', 'expired']" in modal
+    assert "The current handoff plan is locked." in modal
+    assert "Acknowledge as Independent Reviewer" in modal
+    assert "row.release_handoff_preparation_state == 'pending' and handoff_plan.requested_by != current_user.id" in modal
+    assert "External Reference Unverified" in modal
+    assert "not an additional approval" in modal
