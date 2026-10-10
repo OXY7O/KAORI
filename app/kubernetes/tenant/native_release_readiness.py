@@ -163,6 +163,16 @@ def project_native_release_readiness(
         and handoff_execution.get("verified_count") == handoff_execution.get("expected_component_count")
         and handoff_execution.get("verified_count", 0) > 0
     )
+    # Explicitly distinguish a recorded, incomplete executor attempt from
+    # ordinary pending provider handoff. This is display evidence only:
+    # 0 verified resources does not prove that 0 resources were mutated.
+    provider_handoff_recovery_required = bool(
+        plan and handoff_execution
+        and handoff_execution.get("plan_sha256") == plan_sha
+        and handoff_execution.get("handoff_fingerprint") == plan.get("handoff_fingerprint")
+        and handoff_execution.get("status") == "partial_handoff_recovery_required"
+        and handoff_execution.get("provider_handoff_verified") is False
+    )
     stages = (
         ("Release review", review_current,
          "Previous review expired; run a new authoritative provider review."
@@ -175,7 +185,11 @@ def project_native_release_readiness(
          if verified_acceptance else "Requires independent Platform Admin confirmation, Kubernetes SelfSubjectReview and scoped SelfSubjectAccessReview."),
         ("KAORI provider handoff", provider_transfer_verified,
          "Platform Admin Native provider handoff was committed with post-write read-back."
-         if provider_transfer_verified else "Execute accepted Native handoff and verify all provider objects; partial transfer requires recovery."),
+         if provider_transfer_verified else (
+             "An incomplete provider handoff attempt requires recovery review. Inspect the committed error and provider mutation evidence before any retry."
+             if provider_handoff_recovery_required
+             else "Execute accepted Native handoff and verify all provider objects; partial transfer requires recovery."
+         )),
         ("Released and Re-adopt", False,
          "Canonical Released commit and new-generation Re-adopt require verified handoff."),
     )
@@ -186,6 +200,7 @@ def project_native_release_readiness(
                 "display_status": (
                     "Expired" if label == "Release review" and review_expired
                     else "Recorded · Expired" if label == "Independent approval" and approval_expired
+                    else "Recovery Required" if label == "KAORI provider handoff" and provider_handoff_recovery_required
                     else "Evidence available" if complete else "Pending"
                 ),
             }
@@ -195,6 +210,7 @@ def project_native_release_readiness(
         "approval_complete": same_plan,
         "verified_successor_acceptance": verified_acceptance,
         "provider_transfer_verified": provider_transfer_verified,
+        "provider_handoff_recovery_required": provider_handoff_recovery_required,
         "approval_recorded": approval_recorded,
         "approval_expired": approval_expired,
         "review_expired": review_expired,
