@@ -766,7 +766,7 @@
                                             {% for checkpoint in native_cycle.stages %}
                                                 <li class="flex min-w-0 items-start gap-2 text-xs leading-5">
                                                     <i data-lucide="{{ 'check-circle-2' if checkpoint.complete else 'circle-dashed' }}"
-                                                       class="mt-0.5 h-3.5 w-3.5 shrink-0 {{ 'text-status-success-text' if checkpoint.complete else 'text-content-muted' }}"
+                                                       class="mt-0.5 h-3.5 w-3.5 shrink-0 {{ 'text-status-normal-text' if checkpoint.complete else 'text-content-muted' }}"
                                                        aria-hidden="true"></i>
                                                     <div class="min-w-0">
                                                         <p class="font-semibold text-content-primary">
