@@ -185,6 +185,25 @@ Overview section endpoints hydrate only the requested snapshot-backed section.
   Domain Readiness. It is not silently discarded or misrepresented as a source
   outage.
 
+## Shared section-request loading tracker (#1106)
+
+Analytics Overview retains the approved compact Violet tracker geometry and
+actual `Requested Sections` counter, now supplied by one shared Jinja macro
+(`analytics/components/_section_load_tracker.html`) and one JS controller
+(`js/analytics/section_load_tracker.js`). Kubernetes and Registry are both
+consumers. The tracker counts only real requested HTMX fragments (loading,
+loaded, failed); hidden inactive panels do not contribute until requested.
+HTMX filter changes trigger a separate refresh presentation. Tracker failure
+states must remain explicit; a completed/error tracker disappears after a
+bounded delay. Compatibility with the K8s `kaoriInitializeOverviewLoadTracker`
+hook and `data-overview-lazy-section` markers is retained.
+
+**Important:** this section-loading progress is never a Celery progress
+percentage and must not be displayed as JobExecution evidence. Worker
+materialization has its own canonical progress through JobExecution/readiness
+header and `analytics-batch`. No synchronous provider call occurs in the
+shared tracker.
+
 ## Operational validation
 
 After deployment:
