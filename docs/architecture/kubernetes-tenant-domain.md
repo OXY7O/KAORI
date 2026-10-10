@@ -1388,6 +1388,52 @@ Blocked and no historical AuditEvent or provider object is edited.
 Tests, Developer Check, Full Admission, Kubernetes UAT and CI/CD remain
 HOLD; source review is not formal admission.
 
+### Reviewed source-only Native residual cleanup executor (#1128)
+
+The earlier read-only assessment (#1129) is **not** a mutation token.
+The #1128 source-only recovery workstream implements a separate,
+append-only **Prepare → Independent Review → Execute → Read-back** contract,
+reusing existing Platform Admin permissions, TLS-verified Kubernetes
+`SelfSubjectReview` / named `SelfSubjectAccessReview`, and native JSON Patch
+helpers. Both requestor and independent reviewer must be authenticated
+KAORI Platform Admins, and their actor IDs must differ. An execution is
+allowed only under the reviewer's authenticated request identity with
+exact, unexpired reviewed plan SHA, fresh same-cluster provider assessment
+and unchanged UID/resourceVersion/component digest. There is **no
+registered HTTP route, background worker or UI entry point** for this
+new capability while the execution HOLD remains.
+
+The only potential mutation under an authorized future execution is the
+literal `kaori.io/resource-profile` label on the **two fully evidenced**
+historical resource components (or equivalently complete historical
+evidence scope) through UID/RV/value-tested `application/json-patch+json`.
+ResourceQuota/LimitRange are ordered before Namespace. Before every write,
+an admission dry-run and fresh GET must preserve spec/CPU/memory, immutable
+ownerReferences/finalizers, annotations and all non-profile labels.
+After every write and again across the complete scope, provider read-back
+must prove identical identities, preserved specs, no KAORI ownership
+markers and exact new RV. Missing/changed/quota/provider evidence fails
+closed; there is no forced retry after ambiguous/partial writes.
+
+Execution records an immutable **started** AuditEvent before any provider
+PATCH and a verified or partial-recovery receipt afterwards. A partial,
+failed or unfinished attempt blocks further automatic execution/replay.
+Only after *fully verified* provider coverage does KAORI atomically append
+a new recovery receipt and add `residual_recovery_governance` projections
+to Released Tenant and Namespace records; previous `release_governance`
+and `handback_governance` receipts remain unmodified. A future explicit
+Re-adopt may acknowledge the newer Namespace RV only when the existing
+verified Handback plus the exact new append-only recovery AuditEvent,
+receipt checksum, released Tenant/Namespace UID and provider RV all match.
+Discovery remains the gatekeeper and never auto-Adopts.
+
+**Authorization and validation HOLD:** This PR only introduces source,
+tests and docs on `kaori/review/staging-uat`. It neither executes any
+provider PATCH nor enables a route. Enabling the mutation entry point,
+Developer Check/Full Admission, formal Kubernetes UAT, reviewer
+approval and human acceptance requires a separately explicit HOLD lift.
+No direct changes to staging, main or external resources are permitted.
+
 The `successor_owner` label is an administrative governance marker, **not
 a Kubernetes IdP group, RBAC entitlement or credential recipient**.
 Historical bearer-token successor receipts and old acceptance UI are

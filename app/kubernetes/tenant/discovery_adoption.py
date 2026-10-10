@@ -140,35 +140,94 @@ def _require_re_adoption_handback_for_managed_release(
     provider_uid: str | None = None, resource_version: str | None = None,
     namespace: str | None = None,
 ) -> None:
-    """Block former KAORI-controlled provider objects until successor handback.
+    """Require exact original Handback, or verified append-only residue RV lineage.
 
-    The current observation-only Released path remains compatible. The future
-    managed-handoff finalizer must admit an authoritative successor relinquishment
-    before re-adoption; old release status, unchanged UID or marker removal alone
-    are never proof of consent.
+    An old successful Handback receipt is immutable. A newer metadata-only
+    correction may legitimately advance the provider resourceVersion; it is
+    accepted ONLY when a complete, committed verified recovery AuditEvent
+    agrees with both the historical release and new Namespace generation.
     """
     if (
-        provider_evidence.get('provider_mutation_performed') is not False
-        or release_evidence.get('release_mode') == 'managed_handoff'
-        or release_evidence.get('provider_handoff_verified') is True
+        provider_evidence.get('provider_mutation_performed') is False
+        and release_evidence.get('release_mode') != 'managed_handoff'
+        and release_evidence.get('provider_handoff_verified') is not True
     ):
-        handback = provider_evidence.get('handback_governance') or {}
-        versions = handback.get('provider_resource_versions') or {}
-        matching_rv = (
-            versions.get(namespace)
-            if namespace else handback.get('resource_version')
+        return
+    handback = provider_evidence.get('handback_governance') or {}
+    versions = handback.get('provider_resource_versions') or {}
+    handback_rv = (
+        versions.get(namespace) if namespace else handback.get('resource_version')
+    )
+    if (
+        handback.get('status') != 'verified'
+        or handback.get('release_plan_sha256') != release_evidence.get('plan_sha256')
+        or handback.get('successor_owner') != release_evidence.get('successor_owner')
+        or not provider_uid or handback.get('provider_uid') != provider_uid
+        or not resource_version
+    ):
+        raise ValueError(
+            'Previously managed Released resources require verified successor '
+            'handback before a new KAORI Adoption generation.'
         )
-        if (
-            handback.get('status') != 'verified'
-            or handback.get('release_plan_sha256') != release_evidence.get('plan_sha256')
-            or handback.get('successor_owner') != release_evidence.get('successor_owner')
-            or not provider_uid or handback.get('provider_uid') != provider_uid
-            or not resource_version or matching_rv != resource_version
-        ):
-            raise ValueError(
-                'Previously managed Released resources require verified successor '
-                'handback before a new KAORI Adoption generation.'
-            )
+    if handback_rv == resource_version:
+        return
+
+    recovery = provider_evidence.get('residual_recovery_governance') or {}
+    recovery_versions = recovery.get('provider_resource_versions') or {}
+    recovered_rv = (
+        recovery_versions.get(namespace) if namespace else recovery.get('resource_version')
+    )
+    # The database projection is not independently sufficient. Require the
+    # append-only terminal AuditEvent, its exact checksum and completed scope.
+    from app.kubernetes.tenant.native_handoff_dry_run import _stable_sha256
+    from app.kubernetes.tenant.native_residual_recovery_governance import (
+        latest_native_residual_cleanup_execution,
+    )
+
+    tenant_id = release_evidence.get('tenant_id')
+    receipt = (
+        latest_native_residual_cleanup_execution(tenant_id)
+        if isinstance(tenant_id, str) and tenant_id else None
+    )
+    if (
+        not isinstance(recovery, Mapping)
+        or recovery.get('status') != 'verified'
+        or recovery.get('provider_metadata_only_verified') is not True
+        or recovery.get('release_plan_sha256') != release_evidence.get('plan_sha256')
+        or recovery.get('successor_owner', release_evidence.get('successor_owner'))
+        != release_evidence.get('successor_owner')
+        or not recovery.get('handback_plan_sha256')
+        or recovery.get('provider_uid') != provider_uid
+        or recovered_rv != resource_version
+        or not isinstance(receipt, Mapping)
+        or receipt.get('status') != 'verified'
+        or receipt.get('tenant_id') != tenant_id
+        or receipt.get('release_plan_sha256') != release_evidence.get('plan_sha256')
+        or receipt.get('handback_plan_sha256') != recovery.get('handback_plan_sha256')
+        or receipt.get('successor_owner') != release_evidence.get('successor_owner')
+        or receipt.get('provider_specs_preserved') is not True
+        or receipt.get('errors') != []
+        or not isinstance(receipt.get('verified_components'), list)
+        or receipt.get('verified_count') != receipt.get('expected_component_count')
+        or receipt.get('verified_count') != len(receipt['verified_components'])
+        or receipt.get('re_adopt_admitted') is not False
+        or receipt.get('provider_mutation_performed') is not True
+        or not receipt.get('receipt_sha256')
+        or receipt.get('receipt_sha256') != recovery.get('receipt_sha256')
+        or _stable_sha256({k: v for k, v in receipt.items()
+                           if k != 'receipt_sha256'}) != receipt['receipt_sha256']
+    ):
+        raise ValueError('Verified post-Handback recovery evidence and current provider RV differ.')
+
+    covered = [
+        item for item in receipt.get('verified_components', [])
+        if isinstance(item, Mapping) and item.get('kind') == 'Namespace'
+        and item.get('uid') == provider_uid
+        and item.get('resource_version') == resource_version
+        and (namespace is None or item.get('name') == namespace)
+    ]
+    if len(covered) != 1:
+        raise ValueError('Recovered Namespace identity is not unique in immutable provider evidence.')
 
 
 def _released_predecessor_evidence(
