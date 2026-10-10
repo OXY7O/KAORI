@@ -46,13 +46,19 @@ def _present_handoff_request(
 ) -> dict[str, Any] | None:
     """Project one decision status from committed evidence (never infer approval)."""
     sha = str(plan.get("plan_sha256") or "")
-    if len(sha) != 64 or int(plan.get("requested_by") or 0) == user_id:
+    if len(sha) != 64 or str(plan.get("requested_by") or "") == str(user_id):
+        return None
+    if plan.get("status") != "pending_independent_approval":
         return None
     evidence = approvals.get(sha)
     if sha != current_sha:
         state = "Superseded"
     elif evidence and evidence.get("status") == "acknowledged_pending_provider_handoff":
-        state = "Approved" if int(evidence.get("approved_by") or 0) == user_id else "Resolved by another reviewer"
+        state = (
+            "Approved"
+            if str(evidence.get("approved_by") or "") == str(user_id)
+            else "Resolved by another reviewer"
+        )
     elif not _plan_is_current(plan.get("requested_at"), now):
         state = "Expired"
     else:
