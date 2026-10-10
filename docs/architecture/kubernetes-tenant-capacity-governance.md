@@ -247,8 +247,10 @@ constitutes a physical node-resource reservation.
 **Tenant Contributions is detail on demand:** the overview shows the committed
 Tenant count and opens the canonical native KAORI dialog. After DevContainer
 visual feedback, this detail workspace uses **one visual hierarchy**: concise
-cluster header, low-emphasis inline summary strip, compact search, a responsive
-stacked Tenant contribution list, and the canonical registry pagination footer.
+cluster header with a lightweight **Tenant Registry** navigation link on the
+right, low-emphasis inline summary strip, compact search and a responsive,
+vertically scrollable stacked Tenant contribution list. This modal intentionally
+has **no Rows selector or pagination footer**.
 Each list record groups Tenant name, ownership badge, stable ID and quota
 authority/provider with a simple keyboard-accessible Namespace disclosure;
 the four governed request amounts are displayed as a two-column metric grid.
@@ -261,16 +263,18 @@ Incomplete / ambiguous counts are evidence-quality indicators, never inferred
 admission verdicts.
 
 Summary metrics are computed once from the existing read-only per-Tenant #654
-partition before applying the search filter. Filter results and pagination operate
-only within the registry panel using the existing canonical five-row default,
-page-size selector, and native-dialog contract. The modal header, summary and
-dialog itself persist across HTMX pagination, search and Rows changes. The footer
-provides canonical pagination and a low-emphasis Tenant Registry text link.
+partition before applying the search filter. The route exposes **all committed
+Tenant records matching the search**; it does not invoke the page-size/pagination
+helper for this detail dialog. Fifty Tenant records therefore remain in one
+native-height-bounded, keyboard-scrollable content region. The header, summary
+and search remain outside the scrolling list; the modal body alone is swapped
+during HTMX searches. Matching and total counts are distinct, and the unchanged
+canonical five-row pagination remains in other KAORI registry surfaces.
 On narrower screens the summary uses two columns and the Tenant list stacks
 identity above its four allocation metrics without horizontal scrolling;
 the complete Tenant ID remains available via its `title` attribute.
-Cluster changes replace the entire selected overview and reset modal
-search/pagination.
+Cluster changes replace the entire selected overview and reset the
+modal search state.
 
 The contribution registry displays a stable Tenant ID alongside the Tenant
 name so same-named adopted and managed records remain distinguishable.
@@ -284,8 +288,9 @@ approval, or replacement of canonical budget/shortfall evidence.
 The integrated review branch is a **DevContainer Visual QA candidate**.
 Source changes and tests may be authored before gate authorization, but no
 CI/CD Developer Check, Full Admission, staging deployment, or production
-promotion is implied. Confirm keyboard/focus behavior, responsive dialog
-pagination and cluster-change semantics with a human before acceptance.
+promotion is implied. Confirm keyboard/focus behavior, the scrolling list with
+50 or more Tenants, responsive layout, HTMX search and cluster-change
+semantics with a human before acceptance.
 
 ### Review / quality evidence
 
@@ -293,9 +298,10 @@ pagination and cluster-change semantics with a human before acceptance.
   logical-storage-unconfigured visuals alongside the existing detail modal.
 - Prove aggregate and per-Tenant values against #654 for Native and Capsule
   shared allocations, including a shared Tenant with multiple Namespaces.
-- Check cluster selection, HTMX partial swap, pagination, expanded Namespace
-  identities, permission-scoped Analytics link, keyboard, accessible text,
-  light/dark and responsive layouts.
+- Check cluster selection, HTMX partial swap, scroll-only Tenant detail,
+  canonical pagination on other registry surfaces, expanded Namespace identities,
+  permission-scoped Analytics link, keyboard, accessible text, light/dark and
+  responsive layouts.
 - Human DevContainer visual acceptance is separate from Developer Check,
   Full Admission and provider UAT. No admission/deployment gate is implied by
   this read-only presentation.
