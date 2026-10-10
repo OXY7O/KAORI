@@ -327,13 +327,13 @@ def test_governance_scope_reuses_approved_tenant_estate_posture_pattern():
     assert "'Tenant Estate'," not in detail  # Never label one Tenant as fleet estate.
 
 
-def test_single_tenant_overview_and_authority_boundary_unchanged():
+def test_single_tenant_overview_and_authority_boundary_preserved():
     detail = read(DETAIL)
-    assert 'Identity &amp; Origin' in detail
-    assert 'Governance State' in detail
-    assert "('Tenant ID', tenant.id)" in detail
-    assert "('Cluster', row.cluster.name" in detail
-    assert "('Provider', tenant.provider_key" in detail
+    assert 'Identity &amp; Governance' in detail
+    assert 'data-kaori-tenant-record-sheet' in detail
+    assert "technical_value.render(tenant.id, monospace=true, size='body')" in detail
+    assert "row.cluster.name if row.cluster else 'Cluster unavailable'" in detail
+    assert "tenant.provider_key|replace('_', ' ')|title" in detail
     assert 'tenant.description or' in detail
     assert "url_for('tenant.resource_profiles')" not in detail
     assert "url_for('tenant.operations')" not in detail
@@ -394,8 +394,8 @@ def test_short_hero_subtitle_and_no_quick_links_regression():
     assert 'Govern Tenant ownership, Namespace allocations' not in detail
     assert 'Quick Links' not in detail
     assert 'Tenant ID' in detail
-    assert 'Identity &amp; Origin' in detail
-    assert 'Governance State' in detail
+    assert 'Identity &amp; Governance' in detail
+    assert 'data-kaori-tenant-record-sheet' in detail
     assert 'No Tenant description has been recorded.' in detail
 
 
