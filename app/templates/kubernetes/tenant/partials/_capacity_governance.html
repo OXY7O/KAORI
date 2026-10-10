@@ -254,14 +254,16 @@
                                         View More
                                     </button>
                                 </div>
+                                {# The Action table cell is text-right. Dialog contents must reset
+                                   inherited alignment without changing shared registry columns. #}
                                 <dialog id="{{ dialog_id }}"
                                         data-kaori-native-dialog
                                         aria-labelledby="{{ dialog_id }}-title"
                                         aria-describedby="{{ dialog_id }}-description"
-                                        class="kaori-native-dialog m-auto w-[calc(100vw-1.5rem)] max-w-4xl overflow-hidden rounded-2xl border border-outline-default bg-surface-card p-0 shadow-2xl sm:w-[calc(100vw-3rem)]">
+                                        class="kaori-native-dialog m-auto w-[calc(100vw-1.5rem)] max-w-4xl overflow-hidden rounded-2xl border border-outline-default bg-surface-card p-0 text-left shadow-2xl sm:w-[calc(100vw-3rem)]">
                                     <section class="flex max-h-[calc(100dvh-2rem)] min-h-0 flex-col overflow-hidden"
                                              role="document">
-                                        <header class="flex shrink-0 items-start gap-3 border-b border-outline-subtle bg-surface-card px-4 py-4 sm:gap-4 sm:px-6">
+                                        <header class="flex shrink-0 items-start gap-3 border-b border-outline-subtle bg-surface-card px-4 py-4 text-left sm:gap-4 sm:px-6">
                                             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
                                                   aria-hidden="true">
                                                 <i data-lucide="chart-no-axes-combined" class="h-5 w-5"></i>
@@ -287,7 +289,7 @@
                                                 <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
                                             </button>
                                         </header>
-                                        <div class="min-h-0 overflow-y-auto bg-surface-page p-4 sm:p-5">
+                                        <div class="min-h-0 overflow-y-auto bg-surface-page p-4 text-left sm:p-5">
                                             <section aria-label="Resource allocation comparison"
                                                      class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
                                                 <div class="hidden gap-4 border-b border-outline-subtle bg-surface-elevated px-4 py-3 text-xs font-semibold text-content-secondary sm:grid sm:grid-cols-[minmax(11rem,1.4fr)_repeat(3,minmax(0,1fr))]">
