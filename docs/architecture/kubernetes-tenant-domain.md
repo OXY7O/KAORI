@@ -68,31 +68,25 @@ staging UAT or production acceptance evidence.
 ## Tenant Registry — contextual lifecycle actions (#1022)
 
 Tenant Registry keeps the canonical committed-state table, filters and
-pagination while limiting each row's **Actions** cell to one labelled
-**Manage** link (read-only **View** for users without `tenant.manage`).
-Manage opens exactly one **full-width expandable management panel immediately
-below the registry**, outside the horizontal table scrolling container;
-no inline row expansion or native overlay dialog is used. Clicking a different
-Tenant replaces the currently selected panel; Close Management clears that
-selection without changing provider or database state.
+pagination while limiting each row's Actions cell to one **Manage/View**
+control. The operator-requested inline expansion was reverted after browser
+Visual QA showed unwanted page geometry and large blank scrolling regions.
+The original KAORI **native top-layer dialog** remains authoritative for
+management, independent of registry/table overflow. Its interior preserves
+the existing full-width Release Readiness → Handoff Inventory → Governed
+Handoff → Verification/Release flow, plus provider and lifecycle cards.
 
-The selected panel preserves Tenant/cluster/provider/generation identity
-in a compact header with lifecycle badge. A three-metric summary strip shows
-Namespace, Environment and Lifecycle counts/state. Cards use one full-width
-vertical flow: Release Governance, eligible Capsule Namespace Attachment,
-Provider Authority and Lifecycle Actions. Only internal form field groups may
-use responsive columns. The selection is a URL/HTMX workspace projection
-(`manage_tenant_id`) and must refer to a Tenant in the **current authorized
-paginated/filter registry rows**. It never changes backend authorization.
-The selected panel inherits `hx-vals` containing its ID and **prefixed**
-registry page/filters (`registry_*`) for each existing POST; `_tenant_section_redirect`
-reconstructs the same page/selected Tenant and appends the existing OOB toast.
-Prefixed values avoid shadowing provider form fields. Thus Review Release,
-handoff steps and other in-panel actions refresh committed evidence while
-keeping the management panel open. Filter or page changes may close it if the
-selected Tenant is no longer present, as expected. Native dialog focus and
-scroll locking are deliberately not used for this expandable workspace;
-the separate destructive decommission confirmation remains a modal.
+Existing authorized POSTs render a fresh Tenant workspace and OOB operational
+toast. Replacing that workspace previously destroyed its open native dialog.
+The shared `native_dialogs.js` now preserves only explicitly opted-in dialogs
+(`data-kaori-dialog-preserve-on-swap`) by snapshotting the active dialog ID
+before HTMX swaps `#tenant-admin-workspace`, then reopening the newly rendered
+dialog with normal focus handling after swap. Explicit user Close/Escape/backdrop
+and unrelated navigation remain ordinary dialog behavior; the separate
+destructive Decommission confirmation remains separate. The dialog inherits
+prefixed `registry_*` paging/filter state and Tenant identity via `hx-vals`
+so the exact selected dialog exists on the next committed-state response.
+No new backend mutation or provider governance path is introduced.
 
 The **Release Governance** card presents an ordered, full-width workflow
 instead of three controls that resemble interchangeable tabs. **Release
