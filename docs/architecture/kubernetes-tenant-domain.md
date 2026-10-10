@@ -161,3 +161,33 @@ provider read-back; attachment is **not** observation-only. Capsule's separate
 provider-mirrored attachment mode remains unchanged and must not be mistaken
 for Native managed allocation cutover. This is a presentation-only adjustment,
 not a relaxation of Tenant ownership, RBAC or provider authority.
+
+
+## Tenant registry table precision — Devcontainer Review (#1035)
+
+Kubernetes Tenant follows the existing fixed-column, truncation, and inspectable
+identity convention of the KAORI Kubernetes Storage Inventory and
+`docs/design/components/TABLE_AND_LABEL.md`.
+
+The Resource Profile, Tenant, Namespace, Membership, Group, Access Grant,
+Namespace Access, Operations (Provider Authority, Namespace, Access
+Reconciliation, Allocation Drift, all four Evidence modes), Capacity Budget,
+Discovery, Capsule Tenant Quota Drift, and Capsule Shared Allocation Drift tables
+now specify proportional header widths and explicit horizontal overflow
+boundaries. Dense identity and supporting values truncate in their own columns;
+full values remain inspectable through the existing `title` attribute and
+owned dialog/detail workflows where available. The action column reserves
+space for the actual action set and is **never** truncated to make text fit.
+The four conditional Operations Evidence table headers retain independent
+100%-width distributions.
+
+The existing Credential Registry, Cluster Estate, and Capacity Decisions tables
+already have locked fixed-column contracts and are intentionally unchanged.
+This refinement changes no committed Tenant data, permission gate, pagination,
+HTMX target, provider authority, or Kubernetes mutation semantics.
+
+This is application of an existing table pattern, **not** a new global UI
+standard. Pending checks: existing contract tests, formatter/static quality gates,
+responsive/light/dark Devcontainer Visual QA and human acceptance. Review
+integration target is `kaori/review/staging-uat`; CI/CD admission and
+staging/UAT/deployment are explicitly held.
