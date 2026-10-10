@@ -118,42 +118,42 @@
         </div>
     {% endif %}
     <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[980px]') }}">
+        <table class="{{ table_ui.table_classes('min-w-[1300px] !table-fixed') }}">
             <caption class="sr-only">Live read-only Tenant provider discovery.</caption>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
-                    <th class="{{ table_ui.header_cell_classes() }}">Provider Object</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Cluster</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Provider</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Live Status</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">KAORI Classification</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Governed Tenant</th>
-                    <th class="{{ table_ui.header_cell_classes(action=true) }}">Adoption</th>
+                    <th class="{{ table_ui.header_cell_classes() }} w-[18%]">Provider Object</th>
+                    <th class="{{ table_ui.header_cell_classes() }} w-[16%]">Cluster</th>
+                    <th class="{{ table_ui.header_cell_classes() }} w-[12%]">Provider</th>
+                    <th class="{{ table_ui.header_cell_classes() }} w-[12%]">Live Status</th>
+                    <th class="{{ table_ui.header_cell_classes() }} w-[14%]">KAORI Classification</th>
+                    <th class="{{ table_ui.header_cell_classes() }} w-[15%]">Governed Tenant</th>
+                    <th class="{{ table_ui.header_cell_classes(action=true) }} w-[13%]">Adoption</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
                 {% for row in tenant_discovery_rows %}
                     <tr class="{{ table_ui.row_classes() }}">
-                        <td class="{{ table_ui.cell_classes() }} align-middle">
+                        <td class="{{ table_ui.cell_classes() }} align-middle min-w-0">
                             {{ table_ui.title_cell(row.resource_name, row.resource_kind, 'boxes') }}
                         </td>
-                        <td class="{{ table_ui.cell_classes() }} align-middle">
+                        <td class="{{ table_ui.cell_classes() }} align-middle min-w-0">
                             {{ table_ui.cluster_identity(row.cluster.name, row.cluster.environment) }}
                         </td>
-                        <td class="{{ table_ui.cell_classes() }} align-middle">
-                            <p class="text-sm font-semibold text-content-primary">{{ row.provider_label }}</p>
-                            <p class="mt-1 text-xs text-content-muted">{{ 'Provider authority' if row.provider_key == 'capsule' else 'Kubernetes namespace' }}</p>
+                        <td class="{{ table_ui.cell_classes() }} align-middle min-w-0">
+                            <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ row.provider_label }}">{{ row.provider_label }}</p>
+                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="{{ 'Provider authority' if row.provider_key == 'capsule' else 'Kubernetes namespace' }}">{{ 'Provider authority' if row.provider_key == 'capsule' else 'Kubernetes namespace' }}</p>
                         </td>
-                        <td class="{{ table_ui.cell_classes() }} align-middle">
+                        <td class="{{ table_ui.cell_classes() }} align-middle min-w-0">
                             {{ table_label.status_label(row.provider_status, row.provider_tone) }}
                         </td>
-                        <td class="{{ table_ui.cell_classes() }} align-middle">
+                        <td class="{{ table_ui.cell_classes() }} align-middle min-w-0">
                             {{ table_label.status_label(row.management_status, row.management_tone) }}
                         </td>
-                        <td class="{{ table_ui.cell_classes() }} align-middle">
+                        <td class="{{ table_ui.cell_classes() }} align-middle min-w-0">
                             {% if row.tenant_name %}
-                                <p class="text-sm font-semibold text-content-primary">{{ row.tenant_name }}</p>
-                                <p class="mt-1 text-xs text-content-muted">Committed KAORI Tenant</p>
+                                <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ row.tenant_name }}">{{ row.tenant_name }}</p>
+                                <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="Committed KAORI Tenant">Committed KAORI Tenant</p>
                             {% else %}
                                 <span class="text-xs text-content-muted">Not governed</span>
                             {% endif %}
