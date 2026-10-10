@@ -422,8 +422,13 @@ def analytics_alerts_table() -> ResponseReturnValue:
 @artifact_registry_bp.get('/governance')
 @permission_required('artifact_registry.view')
 def governance() -> ResponseReturnValue:
+    template = (
+        'artifact_registry/partials/_governance_workspace.html'
+        if is_htmx_request(request.headers)
+        else 'artifact_registry/governance.html'
+    )
     return render_template(
-        'artifact_registry/governance.html',
+        template,
         governance=build_governance(
             active_tab=request.args.get('tab', 'policies', type=str),
             page=request.args.get('page', 1, type=int) or 1,
@@ -435,6 +440,7 @@ def governance() -> ResponseReturnValue:
 @artifact_registry_bp.post('/governance/sync')
 @permission_required('artifact_registry.sync')
 def governance_sync() -> ResponseReturnValue:
+    is_htmx = is_htmx_request(request.headers)
     try:
         outcome = dispatch_registered_job(
             job_key='artifact_registry.governance.sync',
@@ -464,7 +470,7 @@ def governance_sync() -> ResponseReturnValue:
             message = outcome.message
             detail = 'Committed Registry inventory and an eligible governance collector are required.'
 
-    record_operational_activity(
+    feedback = record_operational_activity(
         user_id=int(current_user.id),
         event_type='artifact_registry_governance_sync',
         status=status,
@@ -480,9 +486,38 @@ def governance_sync() -> ResponseReturnValue:
             'created': created,
             'accepted': accepted,
         },
-        queue_feedback=True,
+        queue_feedback=not is_htmx,
     )
-    return redirect(url_for('artifact_registry.governance'))
+
+    active_tab = request.form.get('tab', 'policies', type=str)
+    page = request.form.get('page', 1, type=int) or 1
+    per_page = normalize_dashboard_page_size(request.form.get('per_page'))
+    if is_htmx:
+        rendered = ''.join(
+            (
+                render_template(
+                    'artifact_registry/partials/_governance_workspace.html',
+                    governance=build_governance(
+                        active_tab=active_tab,
+                        page=page,
+                        per_page=per_page,
+                    ),
+                ),
+                render_template(
+                    'components/operational_toast.html',
+                    **feedback,
+                    toast_oob=True,
+                ),
+            )
+        )
+        response = make_response(rendered, 202 if accepted else (409 if status == 'warning' else 503))
+        response.headers['Cache-Control'] = 'no-store, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        return response
+
+    return redirect(
+        url_for('artifact_registry.governance', tab=active_tab, page=page, per_page=per_page)
+    )
 
 
 @artifact_registry_bp.get('/governance/sync/status/<string:public_id>')
