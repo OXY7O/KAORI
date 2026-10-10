@@ -212,12 +212,13 @@ reset by design, leaving it unclear whether the operator had just
 **checked**, **submitted**, **received a rejection**, or **committed evidence**.
 
 Wizard step navigation now follows the existing KAORI HTMX model:
-`hx-get` + `hx-select="#tenant-management-detail"` +
-`hx-target="#tenant-management-detail"` +
+`hx-get` + `hx-select="#tenant-release-governance"` +
+`hx-target="#tenant-release-governance"` +
 `hx-swap="outerHTML show:none focus-scroll:false"`, with `hx-push-url`
 set to the same canonical step URL as its preserved `href`. An authorized
-HTMX GET returns only the existing committed Tenant Detail fragment rather
-than reconstructing the entire shell; ordinary GET and browser history
+HTMX GET returns the existing committed Tenant Detail fragment, but HTMX
+swaps only the Release Governance card rather than the entire shell or
+Tenant Overview; ordinary GET and browser history
 restoration retain the original full-page route. `hx-history="false"`
 prevents caching historical tenant authorization evidence in HTMX snapshots:
 back/forward must request fresh committed state. No new routes, provider
