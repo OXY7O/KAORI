@@ -6,6 +6,7 @@ from types import SimpleNamespace
 import pytest
 
 from app.kubernetes.tenant.release_handoff_inventory import handoff_fingerprint
+from app.kubernetes.tenant.release_preflight import _release_blockers
 from app.kubernetes.tenant.release_handoff_approval import (
     _can_confirm_plan,
     _plan_hash,
@@ -80,6 +81,37 @@ def _plan_from_snapshot(snapshot: dict) -> dict:
 
 def test_handoff_plan_acceptance_requires_only_expected_handoff_blockers():
     _can_confirm_plan(_snapshot())
+
+
+def test_resource_profile_allocation_preflight_copy_is_approved_handoff_obligation():
+    """The actual managed-allocation blocker is not a new provider-identity failure."""
+    tenant = SimpleNamespace(
+        ownership_status='adopted', lifecycle_status='ready',
+        provider_state='native', provider_key='native_kubernetes',
+        reconciliation_authority='native_kubernetes',
+        provider_evidence_json={'provider_mutation_performed': False},
+    )
+    namespace = SimpleNamespace(
+        namespace='sandbox', provisioning_status='ready', ownership_status='adopted',
+        provisioning_evidence_json={'provider_mutation_performed': False},
+        resource_profile_id=12,
+    )
+    blockers = _release_blockers(tenant, [namespace], counts={})
+    assert len(blockers) == 1
+    assert 'has a KAORI-managed allocation linked to a Resource Profile.' in blockers[0]
+    assert 'independent approval and authoritative provider read-back' in blockers[0]
+    # Expected provider handoff is an obligation, not a waiver of any other gate.
+    _can_confirm_plan(_snapshot(blockers=blockers))
+
+    with pytest.raises(ValueError, match='Unresolved provider'):
+        _can_confirm_plan(_snapshot(blockers=[
+            *blockers, 'Namespace/sandbox provider UID mismatch.',
+        ]))
+    with pytest.raises(ValueError, match='Unresolved provider'):
+        _can_confirm_plan(_snapshot(blockers=[
+            'sandbox has a KAORI-managed allocation linked to a Resource Profile. '
+            'Provider evidence missing; investigate before approving.',
+        ]))
 
 
 def test_proven_namespace_mutation_requires_handoff_but_unknown_provenance_blocks_plan():

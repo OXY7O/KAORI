@@ -151,6 +151,21 @@ restart, audit, all Step 3 POST endpoints, 14 CSRF/HTMX forms, global toast,
 and provider-authoritative checks. The change is visual hierarchy and copy
 only. Tests/DevContainer human QA are pending; CI/CD admission stays HOLD.
 
+**Managed allocation blocker/admission copy compatibility (#1085 corrective):**
+The longer Resource Profile-linked allocation message from
+`release_preflight._release_blockers` must be recognized as the *known
+external handoff obligation* by
+`release_handoff_approval._EXPECTED_HANDOFF_FRAGMENTS`. Previously,
+the preflight copy changed while the admission allowlist still matched
+the obsolete text, creating a false-positive `Unresolved provider,
+identity or governance blockers prevent approval` on expired-plan
+restart. The narrow mapping is restored with a regression test that
+passes actual preflight output into `_can_confirm_plan` and rejects
+unrelated provider identity blockers. All existing independence,
+freshness, provenance, dependency, UID/RV and partial-readback guards
+remain intact. This is not a handoff or Release authorization; run
+DevContainer human review before any gate/promotion. CI/CD HOLD.
+
 **Tenant Release Step 2 — compact resource summaries (#1085; latest UI):**
 
 DevContainer refinement removes repeated vertical gaps in Provider
