@@ -114,24 +114,26 @@
                         </div>
                     </header>
                     <div class="min-w-0 px-5 py-5">
-                        <dl class="flex min-w-0 items-start gap-3">
-                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-elevated text-kaori-primary"
-                                 aria-hidden="true">
+                        <div class="flex min-w-0 items-start gap-3">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-elevated text-kaori-primary"
+                                  aria-hidden="true">
                                 <i data-lucide="server" class="h-5 w-5"></i>
-                            </div>
-                            <div class="min-w-0 flex-1">
-                                <dt class="text-xs font-medium text-content-muted">Registered Cluster</dt>
-                                <dd class="mt-1 break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">
-                                    {{ row.cluster.name if row.cluster else 'Cluster unavailable' }}
-                                </dd>
+                            </span>
+                            <dl class="min-w-0 flex-1">
+                                <div class="min-w-0">
+                                    <dt class="text-xs font-medium text-content-muted">Registered Cluster</dt>
+                                    <dd class="mt-1 break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">
+                                        {{ row.cluster.name if row.cluster else 'Cluster unavailable' }}
+                                    </dd>
+                                </div>
                                 <div class="mt-3 flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
                                     <dt class="text-xs text-content-muted">Provider</dt>
                                     <dd class="min-w-0 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">
                                         {{ tenant.provider_key|replace('_', ' ')|title }}
                                     </dd>
                                 </div>
-                            </div>
-                        </dl>
+                            </dl>
+                        </div>
                         <dl class="mt-5 min-w-0 border-t border-outline-subtle pt-4">
                             <dt class="text-xs font-medium text-content-muted">Tenant ID</dt>
                             <dd class="mt-1.5 min-w-0">
