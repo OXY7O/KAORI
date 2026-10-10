@@ -65,7 +65,31 @@ workflows with empty and populated datasets, browser refresh/back/forward,
 per-registry filters/Rows/HTMX, light/dark and mobile views. This is not
 staging UAT or production acceptance evidence.
 
-## Tenant Governance Scope and permanent Release wizard (#1077; current presentation authority)
+## Tenant Details Governance Scope — shared estate posture composition (#1079; current scope UI authority)
+
+Human visual reference: the existing **Kubernetes Tenant Overview → Governance
+Scope → Tenant Estate** section. Reuse exactly its approved **shared KAORI
+components**, not manual cards: `section_intro.render`, `operational_section_card.render`
+with `body_classes='p-0'`, and `resource_posture_grid.render(columns=4)`.
+The card owns the header icon, title, description, spacing and border, while
+the posture grid owns vertical separators, compact metric icons, responsive
+grid layout, tone treatment and light/dark compatibility.
+
+A single Tenant is **not the entire fleet**: use four committed values
+already available in Tenant Details — **Active Namespaces, Environments,
+Reconciliation Authority, Lifecycle** — rather than the aggregate overview's
+Tenants, Managed Clusters, Credentials and Findings values. The section card
+is titled **Tenant Governance** with a concise Tenant-specific description.
+Do not fabricate fleet-wide or live provider results, or duplicate the earlier
+two separate Resource Coverage/Governance Authority cards. Preserve the
+independent **Authority Boundary** info note and the governed Release wizard.
+
+This supersedes only the four-metric **presentation** in #1077, not its
+source-of-truth, permission, audit or workflow standards. Browser desktop/
+mobile, light/dark, long metric values and toast Visual QA is pending;
+Developer Check, Full Admission, staging and deployment remain HOLD.
+
+## Tenant Governance Scope and permanent Release wizard (#1077; historical Release/authority foundation; scope presentation superseded by #1079)
 
 Human Visual Review of #1075 rejected the generic four-KPI dashboard, the
 expandable Release shell with numeric badge 2, and the dense Review Scope
