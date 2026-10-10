@@ -111,39 +111,39 @@
         {% endcall %}
     </div>
     <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[1080px]') }}">
+        <table class="{{ table_ui.table_classes('min-w-[1300px] !table-fixed') }}">
             <caption class="sr-only">Tenant Access Grant registry.</caption>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Principal</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Tenant</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Profile</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Scope</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Reconciliation</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Actions</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[18%]">Principal</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">Tenant</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[13%]">Profile</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">Scope</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[15%]">Reconciliation</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[26%]">Actions</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
                 {% for grant in access_grant_rows %}
                     {% set reconciliation_tone = 'normal' if grant.reconciliation_status == 'ready' else ('critical' if grant.reconciliation_status == 'failed' else 'warning') %}
                     <tr class="{{ table_ui.row_classes() }}">
-                        <td class="{{ table_ui.cell_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
                             {{ table_ui.title_cell(grant.membership.subject_name, grant.membership.principal_type|replace('_', ' ') |title, 'key-round') }}
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">
-                            <p class="text-sm font-semibold text-content-primary">{{ grant.tenant.name }}</p>
-                            <p class="mt-1 text-xs text-content-muted">{{ grant.tenant.slug }}</p>
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
+                            <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ grant.tenant.name }}">{{ grant.tenant.name }}</p>
+                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="{{ grant.tenant.slug }}">{{ grant.tenant.slug }}</p>
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
                             <div class="flex flex-wrap items-center gap-2">
                                 {{ table_label.metadata_label(grant.access_profile|replace('_', ' ') |title) }}
                                 <span class="text-xs text-content-muted">v{{ grant.access_profile_version }}</span>
                             </div>
                             {{ table_label.status_label(grant.status|title, 'normal' if grant.status == 'active' else 'critical') }}
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">
-                            <p class="text-sm font-semibold text-content-primary">{{ grant.scope_type|title }}</p>
-                            <p class="mt-1 text-xs text-content-muted">
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
+                            <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ grant.scope_type|title }}">{{ grant.scope_type|title }}</p>
+                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate">
                                 {% if grant.environment %}
                                     {{ grant.environment.environment|title }}
                                 {% elif grant.namespace %}
@@ -153,7 +153,7 @@
                                 {% endif %}
                             </p>
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
                             <div class="flex items-center gap-1.5 whitespace-nowrap">
                                 {{ table_label.status_label(grant.reconciliation_status|title, reconciliation_tone) }}
                                 {{ info_tip.render(
