@@ -139,6 +139,44 @@ uses the same validated Registry read-contract eligibility as inventory and neve
 The default governance schedule is less frequent than inventory because policy state changes materially less
 often than artifact inventory.
 
+## Vulnerability Findings Registry: compact list and committed detail (#948)
+
+The Vulnerability Findings workspace keeps the existing Security Evidence
+interpretation block (#948) and distinguishes collected findings from scan
+coverage; a filtered or zero-result view never proves the Registry estate is
+fully scanned. The bounded HTMX Vulnerability Registry retains its canonical
+5-row default pagination, filter controls and source/permission scope.
+
+For operator scanability the table uses six aligned columns:
+**Finding (19%) / Artifact (21%) / Package & Fix (23%) /
+Runtime Exposure (14%) / Evidence (13%) / Details (10%)**.
+Finding contains one CVE identifier and one severity badge, not redundant
+severity prose and duplicate severity badges. Artifact displays repository and
+project without a truncated raw digest. Package shows its name, installed
+version and provider-observed fix availability; full fixed-version evidence
+moves to the detail. Evidence shows Registry source and freshness; timestamp,
+provider and immutable digest remain available in the read-only modal.
+
+Each committed `RegistryVulnerability.id` generates one native **View More**
+modal for that page of findings. The modal reuses the existing KAORI Registry
+security shell and exposes the full CVE/severity, package and installed/fixed
+versions, project/repository/digest, provider/source, scan timestamp,
+freshness, and correlation count. A per-artifact **Open Runtime Usage** link
+appears only when committed `RegistryWorkloadBinding` evidence exists and
+is routed by immutable artifact ID. **Not Observed** has neutral/unknown
+presentation, not a success/healthy implication: no committed workload
+binding does **not** mean remediated, no vulnerability, or no exposure outside
+the materialized correlation scope. Neither the table nor the dialog requests
+a live scanner/provider report, triggers provider scans or mutates findings.
+Harbor remains provider-authoritative; KAORI normalizes and correlates.
+
+Developer Check and local Visual QA should confirm long CVE IDs, package
+versions, repository names, digest wrapping, current/stale scan evidence,
+Critical/High severity, both runtime binding paths, 5/50-page navigation,
+responsive light/dark layouts and keyboard dialog focus. CI/CD,
+Full Admission, staging UAT/deployment and promotion remain **HOLD** pending
+explicit human acceptance.
+
 ## Runtime Correlation Contract
 
 Runtime correlation is a database-only materialization. It joins committed Registry artifacts with the
