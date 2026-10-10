@@ -76,6 +76,7 @@ def _present_handoff_request(
             url_for(
                 "tenant.tenant_detail",
                 tenant_id=tenant.id,
+                view="release",
             )
             if state == "Pending" else None
         ),
