@@ -110,11 +110,11 @@
                             </p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} align-middle min-w-0">
-                            <p class="text-xs font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ profile.quota_hard_json.get(&quot;requests.cpu&quot;) or 'Not Managed' }} CPU · {{ profile.quota_hard_json.get(&quot;requests.memory&quot;) or 'Not Managed' }} memory">
+                            <p class="text-xs font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ profile.quota_hard_json.get('requests.cpu') or 'Not Managed' }} CPU · {{ profile.quota_hard_json.get('requests.memory') or 'Not Managed' }} memory">
                                 {{ profile.quota_hard_json.get("requests.cpu") or 'Not Managed' }} CPU ·
                                 {{ profile.quota_hard_json.get("requests.memory") or 'Not Managed' }} memory
                             </p>
-                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="{{ profile.quota_hard_json.get(&quot;pods&quot;) or 'Not Managed' }} pods · {{ profile.quota_hard_json.get(&quot;requests.storage&quot;) or 'Not Managed' }} storage">
+                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="{{ profile.quota_hard_json.get('pods') or 'Not Managed' }} pods · {{ profile.quota_hard_json.get('requests.storage') or 'Not Managed' }} storage">
                                 {{ profile.quota_hard_json.get("pods") or 'Not Managed' }} pods ·
                                 {{ profile.quota_hard_json.get("requests.storage") or 'Not Managed' }} storage
                             </p>
