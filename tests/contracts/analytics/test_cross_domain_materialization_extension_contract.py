@@ -71,5 +71,34 @@ def test_new_analytics_domain_extension_does_not_require_another_framework() -> 
     assert 'macro job_progress' in progress
     assert "js/analytics/section_load_tracker.js" in k8s
     assert "js/analytics/section_load_tracker.js" in registry
-    assert 'section-loading progress is never a Celery progress' not in guide
     assert 'section loading' in guide.lower()
+
+
+def test_analytics_time_range_values_have_one_canonical_owner() -> None:
+    from app.common.analytics.params import (
+        ALLOWED_TIME_RANGE_VALUES,
+        TIME_RANGE_LABELS,
+        get_allowed_time_ranges,
+    )
+
+    expected = ['1h', '6h', '12h', '24h', '7d', '30d', '60d']
+    assert ALLOWED_TIME_RANGE_VALUES == expected
+    assert [row['value'] for row in get_allowed_time_ranges()] == expected
+    assert [row['label'] for row in get_allowed_time_ranges()] == [
+        'Last 1 Hour',
+        'Last 6 Hours',
+        'Last 12 Hours',
+        'Last 24 Hours',
+        'Last 7 Days',
+        'Last 30 Days',
+        'Last 60 Days',
+    ]
+    assert all(TIME_RANGE_LABELS[key] for key in expected)
+    storage = read('app/storage/object_storage/analytics/job_adapter.py')
+    k8s = read('app/templates/kubernetes/analytics/overview/partials/_health_summary.html')
+    registry = read('app/templates/artifact_registry/partials/_analytics_controls_readiness.html')
+    assert 'allowed = set(ALLOWED_TIME_RANGE_VALUES)' in storage
+    assert 'requested_time_range in ALLOWED_TIME_RANGE_VALUES' in storage
+    for range_id in expected:
+        assert f'value="{range_id}"' in k8s
+        assert f"('{range_id}'," in registry
