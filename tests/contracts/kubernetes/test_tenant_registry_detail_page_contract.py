@@ -1,7 +1,7 @@
-"""Tenant Registry → one standard KAORI detail page (#1071).
+"""Tenant Registry → approved two-column KAORI Hero and governed accordion (#1073).
 
-Supersedes rejected modal relocation (#1065), sticky dashboard (#1067) and
-secondary Content Tabs (#1069). Governance services are unchanged.
+Reuses canonical page_hero context panel and the approved visual reference;
+all existing governance services, CSRF forms and provider authority are unchanged.
 """
 from pathlib import Path
 
@@ -56,7 +56,13 @@ def test_single_hero_uses_unmodified_shared_kaori_template_and_spacing():
     assert 'class="{{ page_hero.title_classes() }}"' in detail
     assert 'page_hero.description_classes()' in detail
     assert 'page_hero.persistent_metadata([' in detail
-    assert 'class="{{ page_hero.primary_action_classes() }}"' in detail
+    assert 'page_hero.context_card(' in detail
+    assert "'Tenant governance context'" in detail
+    assert "'Tenant Details'" in detail
+    assert "'Back to Registry'" in detail
+    assert 'hero_tenant_metrics' in detail
+    assert 'page_hero.context_panel_classes()' in hero
+    assert 'page_hero.context_metric_card_classes()' not in detail
     assert 'data-kaori-hero-profile="transactional-admin"' in detail
     assert detail.count('Back to Registry') == 1
     assert '!min-h-0 !p-4' not in detail
@@ -64,8 +70,8 @@ def test_single_hero_uses_unmodified_shared_kaori_template_and_spacing():
     assert '<div class="space-y-6" data-tenant-workspace=' in base
     assert 'data-kaori-capability-navigation=' in layout
     assert 'data-kaori-native-dialog' not in detail
-    assert 'page_hero.context_card' not in detail
-    assert 'Tenant at a glance' not in detail
+    assert detail.count('page_hero.context_card(') == 1
+    assert 'Tenant Overview' in detail
 
 
 def test_one_described_page_not_a_new_tabbed_application():
@@ -73,8 +79,10 @@ def test_one_described_page_not_a_new_tabbed_application():
     common = read('app/kubernetes/tenant/route_common.py')
     assert 'id="tenant-detail-snapshot"' in detail
     assert 'Tenant Overview' in detail
-    assert 'Current identity, ownership and allocation scope' in detail
-    assert 'Managed resource scope' in detail
+    assert 'Identity, allocation scope and historical governance evidence' in detail
+    assert 'Tenant Name' in detail
+    assert 'Quick Links' in detail
+    assert 'Description' in detail
     assert 'historical Namespace record' in detail
     assert 'row.namespace_history_count - row.namespace_count' in detail
     assert 'aria-label="Tenant management sections"' in detail
@@ -145,6 +153,8 @@ def test_exact_governance_forms_return_to_same_page_and_global_toast():
     assert detail.count('hx-select="#tenant-management-detail"') == 14
     assert detail.count('hx-post=') == 14
     assert 'name="tenant_detail_view"' not in detail
+    assert detail.count('name="tenant_detail_section"') == 14
+    assert "context['tenant_detail_open_section'] = active_section" in common
     assert "detail_id = str(request.form.get('tenant_detail_id')" in common
     assert "'kubernetes/tenant/partials/_tenant_management_detail.html'" in common
     assert "'tenant.tenant_detail', tenant_id=detail_id" in common
@@ -210,3 +220,65 @@ def test_tenant_templates_parse_under_jinja2():
     environment = Environment(autoescape=True)
     for path in (REGISTRY, PAGE, DETAIL):
         environment.parse(read(path))
+
+
+
+def test_approved_kaori_hero_matches_reference_composition():
+    detail = read(DETAIL)
+    hero = read('app/templates/components/page_hero.html')
+    assert 'page_hero.context_card(' in detail
+    assert "'Tenant Details'" in detail
+    assert "'Governed Resource State'" in detail
+    assert "'Active Namespaces'" in detail
+    assert "'Ownership'" in detail
+    assert 'return_to_registry_url' in detail
+    assert 'context_panel_classes()' in hero
+    assert 'context_metric_card_classes()' in hero
+    assert 'context_single_action_classes()' in hero
+    assert 'class="{{ page_hero.layout_classes() }}"' in detail
+    assert 'class="{{ page_hero.content_classes() }}"' in detail
+    assert detail.count('Back to Registry') == 1
+
+
+def test_overview_matches_two_column_identity_and_quick_links():
+    detail = read(DETAIL)
+    assert 'sm:grid-cols-2 xl:grid-cols-4' in detail
+    assert "('Active Namespaces', " not in detail  # actual summary includes icon
+    assert "'Active Namespaces', row.namespace_count" in detail
+    assert 'row.environments|length' in detail
+    assert 'tenant.reconciliation_authority' in detail
+    assert 'tenant.lifecycle_status' in detail
+    assert 'lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]' in detail
+    assert "'Tenant Name', tenant.name" in detail
+    assert "'Cluster', row.cluster.name" in detail
+    assert "'Provider', tenant.provider_key" in detail
+    assert 'tenant.description or' in detail
+    assert "url_for('tenant.resource_profiles')" in detail
+    assert "url_for('tenant.operations')" in detail
+    assert 'tenant.created_at.strftime(' in detail
+    assert 'tenant.updated_at.strftime(' in detail
+
+
+def test_governance_sections_use_native_accessible_expandables_and_existing_controls():
+    detail = read(DETAIL)
+    names = (
+        'tenant-release-governance', 'tenant-native-handback',
+        'tenant-namespace-attachment', 'tenant-provider-authority',
+        'tenant-lifecycle-actions',
+    )
+    assert detail.count('name="tenant-governance"') == len(names)
+    assert detail.count('tenant_detail_open_section ==') == len(names)
+    assert detail.count('group-open:rotate-180') == len(names)
+    for id_ in names:
+        assert f'<details id="{id_}" name="tenant-governance"' in detail
+    assert '<summary class="flex min-h-20 cursor-pointer' in detail
+    for name in ('Release Governance', 'Platform Admin Handback',
+                 'Namespace Attachment', 'Provider Authority', 'Lifecycle Actions'):
+        assert name in detail
+    assert 'tenant-release-stage-readiness' in detail
+    assert 'tenant-release-stage-inventory' in detail
+    assert 'tenant-release-stage-approval' in detail
+    assert 'tenant-release-stage-finalize' in detail
+    assert 'aria-label="Governed Release sequence"' in detail
+    assert 'max-h-72' not in detail
+    assert "destructive_modal.render('tenant-decommission-modal'" in detail
