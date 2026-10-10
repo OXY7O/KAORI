@@ -1203,3 +1203,39 @@ def test_capacity_governance_exposes_read_only_tenant_allocation_overview() -> N
     assert 'read_namespace(' not in projection
     assert 'requests.get(' not in projection
     assert "('capacity', 'Capacity Governance', 'gauge'" in page
+
+
+
+def test_tenant_operations_empty_registries_keep_canonical_pagination_without_horizontal_scroll() -> None:
+    from jinja2 import Environment
+
+    # The #959 footer must survive zero results; no phantom wide table headers,
+    # redundant "No Data" badge or minimum-width horizontal scrollbar at zero.
+    registry_specs = (
+        ("_operations_evidence_registry.html", "operations_evidence_rows"),
+        ("_capsule_tenant_quota_drift.html", "capsule_tenant_quota_drifted"),
+        ("_capsule_shared_allocation_drift.html", "capsule_shared_drift_intents"),
+        ("_operations_drift_registry.html", "operations_drift_rows"),
+        ("_operations_access_reconciliation_registry.html", "operations_access_rows"),
+        ("_operations_provider_registry.html", "operations_provider_rows"),
+    )
+    for filename, rows in registry_specs:
+        template = read("app/templates/kubernetes/tenant/partials/" + filename)
+        Environment().parse(template)
+        assert f"if {rows} else '!table-fixed'" in template
+        assert f"{{% if {rows} %}}" in template
+        assert template.index(f"{{% if {rows} %}}") < template.index("<thead")
+        assert "{% set empty_state_label = '' %}" in template
+        assert "{% set empty_state_min_height = 'min-h-[128px]' %}" in template
+        assert "{% set empty_state_container_class = '!py-5' %}" in template
+        assert "components/states/_empty_state.html" in template
+        assert "registry_ui.footer('tenant.operations'" in template
+        assert "table_ui.table_classes(" in template
+        assert "overflow-x-auto" in template
+
+    # Data-empty must not globally disable the canonical shared table/footer.
+    table = read("app/templates/components/table.html")
+    footer = read("app/templates/components/table_registry.html")
+    assert "macro table_classes" in table
+    assert "macro footer(" in footer
+    assert "data-kaori-canonical-registry-rows" in footer
