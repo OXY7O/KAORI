@@ -10,14 +10,14 @@
         'capsule-shared-allocation-drift-loading',
         'Refreshing Capsule Shared Allocation Drift') }}
     <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[1050px]') }}">
+        <table class="{{ table_ui.table_classes('min-w-[1450px] !table-fixed') }}">
             <caption class="sr-only">Capsule Tenant shared allocation drift and reconciliation actions.</caption>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Tenant</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Authority / Source</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Allocation Drift</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Action</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[19%]">Tenant</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[23%]">Authority / Source</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[35%]">Allocation Drift</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[23%]">Action</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
@@ -26,13 +26,13 @@
                     {% set drift = state.get('drift') or {} %}
                     {% set source = drift.get('provider_source') or (intent.reconciliation_evidence_json or {}).get('provider_source') or {} %}
                     <tr class="{{ table_ui.row_classes() }}">
-                        <td class="{{ table_ui.cell_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
                             {{ table_ui.title_cell(intent.tenant.name, 'Tenant-level shared allocation', 'layers-3') }}
-                            <p class="mt-1 text-xs text-content-muted">Intent {{ intent.public_id }}</p>
+                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="Intent {{ intent.public_id }}">Intent {{ intent.public_id }}</p>
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
                             {{ table_label.special_label('Capsule GlobalResourceQuota', 'info', 'shield-check') }}
-                            <p class="mt-2 text-xs text-content-muted">
+                            <p class="mt-2 text-xs text-content-muted min-w-0 max-w-full truncate" title="{{ source.get('kind') |default('GlobalResourceQuota', true) }}/{{ source.get('name') |default(intent.resource_name, true) }}">
                                 {{ source.get("kind") |default('GlobalResourceQuota', true) }}/{{ source.get("name") |default(intent.resource_name, true) }}
                             </p>
                             <p class="mt-1 max-w-[360px] break-all text-xs leading-5 text-content-muted">
@@ -40,7 +40,7 @@
                                 · resourceVersion {{ source.get("resource_version") |default('Unknown', true) }}
                             </p>
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
                             {{ table_label.special_label('Drifted', 'warning', 'triangle-alert') }}
                             {% if drift.get('differences') %}
                                 <div class="mt-2 space-y-1.5">
@@ -52,16 +52,16 @@
                                         </p>
                                     {% endfor %}
                                     {% if drift.get('differences', [])|length > 4 %}
-                                        <p class="text-xs text-content-muted">+{{ drift.get('differences', []) |length - 4 }} more changed dimensions</p>
+                                        <p class="text-xs text-content-muted min-w-0 max-w-full truncate" title="+{{ drift.get('differences', []) |length - 4 }} more changed dimensions">+{{ drift.get('differences', []) |length - 4 }} more changed dimensions</p>
                                     {% endif %}
                                 </div>
                             {% elif drift.get('observed_matches_desired') %}
-                                <p class="mt-2 text-xs leading-5 text-status-success-text">
+                                <p class="mt-2 text-xs leading-5 text-status-success-text min-w-0 max-w-full truncate" title="Provider values now match KAORI intent; explicit reconciliation confirmation is still required.">
                                     Provider values now match KAORI intent; explicit reconciliation confirmation is still required.
                                 </p>
                             {% endif %}
                             {% if state.get('blocked_reason') %}
-                                <p class="mt-2 max-w-[420px] text-xs leading-5 text-status-warning-text">{{ state.get("blocked_reason") }}</p>
+                                <p class="mt-2 text-xs leading-5 text-status-warning-text min-w-0 max-w-full truncate" title="{{ state.get('blocked_reason') }}">{{ state.get("blocked_reason") }}</p>
                             {% endif %}
                         </td>
                         <td class="{{ table_ui.cell_classes(action=true) }}">
@@ -86,7 +86,7 @@
                                 </div>
                             {% else %}
                                 {{ table_label.special_label('Control Unavailable', 'warning', 'shield-alert') }}
-                                <p class="mt-2 max-w-[280px] text-right text-xs leading-5 text-content-muted">
+                                <p class="mt-2 text-right text-xs leading-5 text-content-muted min-w-0 max-w-full truncate" title="{{ state.get('blocked_reason') or 'Capsule reconciliation is unavailable.' }}">
                                     {{ state.get("blocked_reason") or 'Capsule reconciliation is unavailable.' }}
                                 </p>
                             {% endif %}
