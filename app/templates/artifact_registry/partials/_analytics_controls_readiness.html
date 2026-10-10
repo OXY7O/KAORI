@@ -2,31 +2,77 @@
 {% import "components/table_label.html" as table_label %}
 {% import "kubernetes/analytics/components/_analysis_workspace.html" as analytics_workspace %}
 {% set readiness = analytics.data_readiness %}
+{% set page_endpoint = 'artifact_registry.analytics' if analytics.active_tab == 'overview' else 'artifact_registry.analytics_' ~ analytics.active_tab %}
+{% set worker_status %}
+    {% if readiness.is_active %}
+        {% include "artifact_registry/partials/_analytics_collect_live_state.html" %}
+    {% endif %}
+{% endset %}
 <div id="artifact-registry-analytics-controls-readiness">
     {% call shared_readiness.frame(
         'Analytics Controls & Data Readiness',
-        'Review Registry scope, committed data freshness, and worker materialization readiness.',
+        'Filter Registry scope and committed snapshot age; worker materialization readiness remains visible above.',
         'sliders-horizontal',
         'artifact-registry-analytics-refresh-indicator',
         eyebrow='Registry Analytics',
-        loading=readiness.is_active
+        loading=readiness.is_active,
+        header_content=worker_status if readiness.is_active else ''
         ) %}
-        <div class="grid gap-4 sm:grid-cols-2">
-            <div class="block">
-                <span class="{{ analytics_workspace.control_label_classes() }}">Registry Scope</span>
-                <div class="{{ analytics_workspace.control_select_classes() }}"
-                     aria-label="Registry scope">
-                    All Eligible Registry Providers
-                </div>
+        <form id="artifact-registry-analytics-filter"
+              method="get"
+              action="{{ url_for(page_endpoint) }}"
+              hx-get="{{ url_for(page_endpoint) }}"
+              hx-trigger="change delay:120ms"
+              hx-target="#artifact-registry-analytics-page"
+              hx-select="#artifact-registry-analytics-page"
+              hx-swap="outerHTML"
+              hx-push-url="true"
+              hx-sync="#artifact-registry-analytics-page:replace"
+              hx-indicator="#artifact-registry-analytics-refresh-indicator"
+              data-analytics-preserve-tab>
+            {% if analytics.active_tab == 'alerts' %}
+                <input type="hidden" name="alert_q" value="{{ analytics.alert_filters.search }}">
+                <input type="hidden" name="alert_severity" value="{{ analytics.alert_filters.severity }}">
+                <input type="hidden" name="alert_state" value="{{ analytics.alert_filters.state }}">
+                <input type="hidden" name="alert_source" value="{{ analytics.alert_filters.source }}">
+                <input type="hidden" name="alert_page" value="1">
+                <input type="hidden" name="alert_per_page" value="{{ analytics.alert_filters.per_page }}">
+            {% endif %}
+            <div class="grid gap-4 sm:grid-cols-2">
+                <label for="artifact-registry-analytics-provider" class="block">
+                    <span class="{{ analytics_workspace.control_label_classes() }}">Registry Scope</span>
+                    <select id="artifact-registry-analytics-provider"
+                            name="provider_id"
+                            class="{{ analytics_workspace.control_select_classes() }}">
+                        <option value="">All Registry Providers</option>
+                        {% for source in analytics.provider_options %}
+                            <option value="{{ source.id }}"
+                                    {% if analytics.selected_provider_id == source.id %}selected{% endif %}>
+                                {{ source.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label for="artifact-registry-analytics-window" class="block">
+                    <span class="{{ analytics_workspace.control_label_classes() }}">Analysis Window</span>
+                    <select id="artifact-registry-analytics-window"
+                            name="snapshot_window"
+                            class="{{ analytics_workspace.control_select_classes() }}">
+                        {% for value, label in [
+                            ('current', 'Latest Committed Snapshot'),
+                            ('24h', 'Snapshot Updated Within 24 Hours'),
+                            ('7d', 'Snapshot Updated Within 7 Days'),
+                            ('30d', 'Snapshot Updated Within 30 Days')
+                        ] %}
+                            <option value="{{ value }}"
+                                    {% if analytics.snapshot_window == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </label>
             </div>
-            <div class="block">
-                <span class="{{ analytics_workspace.control_label_classes() }}">Analysis Window</span>
-                <div class="{{ analytics_workspace.control_select_classes() }}"
-                     aria-label="Analysis window">
-                    Current Committed Snapshot
-                </div>
-            </div>
-        </div>
+        </form>
         <div class="space-y-3">
             <div class="grid gap-4 lg:grid-cols-2">
                 {{ shared_readiness.source_card(
@@ -52,11 +98,6 @@
                     coverage=readiness.current_count ~ '/' ~ readiness.eligible_count ~ ' Current'
                 ) }}
             </div>
-            {% if readiness.is_active %}
-                <div class="border-t border-outline-subtle pt-4">
-                    {% include "artifact_registry/partials/_analytics_collect_live_state.html" %}
-                </div>
-            {% endif %}
             {% if readiness.current_count < readiness.eligible_count or readiness.execution_tone == 'critical' or readiness.collection_warning %}
                 <div class="divide-y divide-outline-subtle overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover">
                     {% if readiness.current_count < readiness.eligible_count %}

@@ -3,7 +3,7 @@
 {% import "components/table_primitives.html" as table_ui %}
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {# Canonical Analytics Controls & Data Readiness shell shared across capabilities. #}
-{% macro frame(title, description, icon, indicator_id, eyebrow='Analysis Controls', loading=false) -%}
+{% macro frame(title, description, icon, indicator_id, eyebrow='Analysis Controls', loading=false, header_content='') -%}
     <section class="{{ analysis_surface.snapshot_shell_classes() }}"
              data-analytics-controls-readiness>
         <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
@@ -18,6 +18,7 @@
                 </div>
             </div>
             {{ loading_bar.render(indicator_id, active=loading, label='Refreshing analytics data') }}
+            {% if header_content %}{{ header_content }}{% endif %}
         </header>
         <div class="space-y-5 p-5 sm:p-6">{{ caller() }}</div>
     </section>

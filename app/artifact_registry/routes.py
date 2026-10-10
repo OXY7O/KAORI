@@ -373,6 +373,8 @@ def _render_registry_analytics_page(section: str) -> ResponseReturnValue:
         'artifact_registry/analytics.html',
         analytics=build_analytics_shell(
             active_tab=section,
+            provider_id=request.args.get('provider_id', type=int),
+            snapshot_window=request.args.get('snapshot_window', 'current', type=str),
             alert_search=request.args.get('alert_q', '', type=str),
             alert_severity=request.args.get('alert_severity', 'all', type=str),
             alert_state=request.args.get('alert_state', 'all', type=str),
@@ -390,7 +392,10 @@ def analytics() -> ResponseReturnValue:
     if legacy_tab in _REGISTRY_ANALYTICS_DETAIL_ROUTES:
         alert_args = {
             key: value
-            for key in ('alert_q', 'alert_severity', 'alert_state', 'alert_source', 'alert_page', 'alert_per_page')
+            for key in (
+                'provider_id', 'snapshot_window', 'alert_q', 'alert_severity',
+                'alert_state', 'alert_source', 'alert_page', 'alert_per_page',
+            )
             if (value := request.args.get(key))
         }
         return redirect(url_for(_REGISTRY_ANALYTICS_DETAIL_ROUTES[legacy_tab], **alert_args))
@@ -443,8 +448,24 @@ def analytics_insights() -> ResponseReturnValue:
 @permission_required('artifact_registry.view')
 def analytics_materialization_resolve() -> ResponseReturnValue:
     """K8s-style on-demand preparation: only the worker collects provider evidence."""
-    readiness = build_registry_analytics_readiness()
-    if should_request_registry_analytics_materialization(readiness):
+    section = request.args.get('section', 'overview', type=str)
+    if section not in _REGISTRY_ANALYTICS_DETAIL_ROUTES:
+        section = 'overview'
+    provider_id = request.args.get('provider_id', type=int)
+    window = request.args.get('snapshot_window', 'current', type=str)
+    alert_params = {
+        'alert_search': request.args.get('alert_q', '', type=str),
+        'alert_severity': request.args.get('alert_severity', 'all', type=str),
+        'alert_state': request.args.get('alert_state', 'all', type=str),
+        'alert_source': request.args.get('alert_source', 'all', type=str),
+        'alert_page': request.args.get('alert_page', 1, type=int) or 1,
+        'alert_per_page': request.args.get('alert_per_page', 5, type=int) or 5,
+    }
+    analytics = build_analytics_shell(
+        active_tab=section, provider_id=provider_id, snapshot_window=window, **alert_params
+    )
+    # The canonical worker materializes the entire fleet regardless of the viewer's filter.
+    if should_request_registry_analytics_materialization(build_registry_analytics_readiness()):
         try:
             result = dispatch_registered_job(
                 job_key='artifact_registry.analytics.materialize',
@@ -463,19 +484,24 @@ def analytics_materialization_resolve() -> ResponseReturnValue:
             ValueError,
         ) as exc:
             db.session.rollback()
-            readiness['collection_warning'] = (
+            analytics['data_readiness']['collection_warning'] = (
                 'The analytics worker could not be started. Check the registered '
                 f'analytics-batch worker and JobExecution diagnostics ({type(exc).__name__}).'
             )
         else:
             if not result.accepted:
-                readiness['collection_warning'] = result.message
+                analytics['data_readiness']['collection_warning'] = result.message
             else:
-                readiness = build_registry_analytics_readiness()
+                analytics = build_analytics_shell(
+                    active_tab=section,
+                    provider_id=provider_id,
+                    snapshot_window=window,
+                    **alert_params,
+                )
     response = make_response(
         render_template(
             'artifact_registry/partials/_analytics_controls_readiness.html',
-            analytics={'data_readiness': readiness},
+            analytics=analytics,
         )
     )
     response.headers['Cache-Control'] = 'no-store, max-age=0'
@@ -514,6 +540,8 @@ def analytics_section(section: str) -> ResponseReturnValue:
         abort(404)
     context = build_analytics(
         active_tab='growth' if section == 'summary' else section,
+        provider_id=request.args.get('provider_id', type=int),
+        snapshot_window=request.args.get('snapshot_window', 'current', type=str),
         alert_search=request.args.get('alert_q', '', type=str),
         alert_severity=request.args.get('alert_severity', 'all', type=str),
         alert_state=request.args.get('alert_state', 'all', type=str),
@@ -539,6 +567,8 @@ def analytics_alerts_table() -> ResponseReturnValue:
 
     context = build_analytics(
         active_tab='alerts',
+        provider_id=request.args.get('provider_id', type=int),
+        snapshot_window=request.args.get('snapshot_window', 'current', type=str),
         alert_search=request.args.get('alert_q', '', type=str),
         alert_severity=request.args.get('alert_severity', 'all', type=str),
         alert_state=request.args.get('alert_state', 'all', type=str),

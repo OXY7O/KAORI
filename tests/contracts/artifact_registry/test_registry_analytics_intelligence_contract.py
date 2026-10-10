@@ -195,9 +195,25 @@ def test_registry_analytics_readiness_reuses_k8s_shared_controls_without_buttons
     assert 'Analytics Controls & Data Readiness' in registry
     assert 'Registry Scope' in registry
     assert 'Analysis Window' in registry
-    assert 'All Eligible Registry Providers' in registry
-    assert 'Current Committed Snapshot' in registry
+    assert 'All Registry Providers' in registry
+    assert 'Latest Committed Snapshot' in registry
+    assert '<select id="artifact-registry-analytics-provider"' in registry
+    assert '<select id="artifact-registry-analytics-window"' in registry
+    assert 'name="provider_id"' in registry
+    assert 'name="snapshot_window"' in registry
+    assert "for source in analytics.provider_options" in registry
+    assert 'hx-trigger="change delay:120ms"' in registry
+    assert 'hx-push-url="true"' in registry
+    assert 'hx-indicator="#artifact-registry-analytics-refresh-indicator"' in registry
     assert 'loading=readiness.is_active' in registry
+    assert "header_content=worker_status if readiness.is_active else ''" in registry
+    assert 'header_content' in common
+    assert '{% if header_content %}{{ header_content }}{% endif %}' in common
+    assert (
+        registry.index("header_content=worker_status")
+        < registry.index('<form id="artifact-registry-analytics-filter"')
+    )
+    assert registry.count('include "artifact_registry/partials/_analytics_collect_live_state.html"') == 1
     assert 'Collect Analytics Data' not in registry
     assert 'Configure Collection' not in registry
     assert 'hx-post=' not in registry
@@ -205,7 +221,9 @@ def test_registry_analytics_readiness_reuses_k8s_shared_controls_without_buttons
     assert 'hx-trigger="every 1s"' in live
     assert 'progress_bar.job_progress(' in live
     assert "{% if readiness.is_active %}" in registry
-    assert "hx-get=\"{{ url_for('artifact_registry.analytics_materialization_resolve') }}\"" in page
+    assert "url_for('artifact_registry.analytics_materialization_resolve', section=analytics.active_tab" in page
+    assert "provider_id=analytics.selected_provider_id" in page
+    assert "snapshot_window=analytics.snapshot_window" in page
     assert 'hx-trigger="load once"' in page
     assert 'hx-indicator="#artifact-registry-analytics-refresh-indicator"' in page
     assert 'hx-select="#artifact-registry-analytics-page"' in page
@@ -217,6 +235,7 @@ def test_kubernetes_and_registry_render_shared_readiness_without_duplicate_shell
 
     env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')))
     env.filters['user_datetime'] = lambda value, default='Unavailable': str(value or default)
+    env.globals['url_for'] = lambda endpoint, **kwargs: f'/{endpoint.replace(".", "/")}'
 
     kubernetes = env.from_string(
         '''
@@ -242,6 +261,11 @@ def test_kubernetes_and_registry_render_shared_readiness_without_duplicate_shell
         'artifact_registry/partials/_analytics_controls_readiness.html'
     ).render(
         analytics={
+            'active_tab': 'overview',
+            'provider_options': [],
+            'selected_provider_id': None,
+            'snapshot_window': 'current',
+            'alert_filters': {},
             'data_readiness': {
                 'eligible_count': 1,
                 'registered_count': 1,
@@ -265,6 +289,80 @@ def test_kubernetes_and_registry_render_shared_readiness_without_duplicate_shell
     assert 'Analytics Controls & Data Readiness' in registry
     assert 'Collect Analytics Data' not in registry
     assert 'Configure Collection' not in registry
+
+
+def test_registry_analytics_scope_and_committed_snapshot_window_are_real_filters() -> None:
+    from datetime import UTC, datetime, timedelta
+    from types import SimpleNamespace
+
+    from app.artifact_registry.analytics_job_adapter import (
+        analytics_snapshot_matches_window,
+        normalize_registry_analytics_window,
+    )
+    from app.artifact_registry.presentation_analytics import _registry_analytics_scope
+
+    now = datetime(2026, 10, 10, 12, tzinfo=UTC)
+    identities = [SimpleNamespace(id=4), SimpleNamespace(id=9)]
+    assert _registry_analytics_scope(4, identities) == 4
+    assert _registry_analytics_scope(9, identities) == 9
+    assert _registry_analytics_scope(999, identities) is None
+    assert _registry_analytics_scope(None, identities) is None
+
+    recent = SimpleNamespace(generated_at=now - timedelta(hours=12))
+    older = SimpleNamespace(generated_at=now - timedelta(days=5))
+    stale = SimpleNamespace(generated_at=now - timedelta(days=35))
+    assert normalize_registry_analytics_window('bogus') == 'current'
+    assert normalize_registry_analytics_window('7d') == '7d'
+    assert analytics_snapshot_matches_window(stale, 'current', now=now)
+    assert analytics_snapshot_matches_window(recent, '24h', now=now)
+    assert not analytics_snapshot_matches_window(older, '24h', now=now)
+    assert analytics_snapshot_matches_window(older, '7d', now=now)
+    assert not analytics_snapshot_matches_window(stale, '30d', now=now)
+    assert analytics_snapshot_matches_window(
+        SimpleNamespace(generated_at=(now - timedelta(days=2)).replace(tzinfo=None)),
+        '7d',
+        now=now,
+    )
+    readiness_source = (
+        ROOT / 'app/artifact_registry/analytics_job_adapter.py'
+    ).read_text()
+    assert 'No Snapshots in Window' in readiness_source
+    assert 'has_older_evidence' in readiness_source
+
+
+def test_registry_analytics_selector_preserves_scope_through_routes_and_alerts() -> None:
+    routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
+    presentation = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
+    shell = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
+    section = (
+        ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html'
+    ).read_text()
+    controls = (
+        ROOT / 'app/templates/artifact_registry/partials/_analytics_controls_readiness.html'
+    ).read_text()
+
+    assert routes.count("provider_id=request.args.get('provider_id', type=int)") >= 3
+    assert routes.count("snapshot_window=request.args.get('snapshot_window', 'current', type=str)") >= 3
+    assert "analytics = build_analytics_shell(" in routes
+    assert "'alert_search': request.args.get('alert_q', '', type=str)" in routes
+    assert "'alert_page': request.args.get('alert_page', 1, type=int) or 1" in routes
+    assert "snapshot_window=window, **alert_params" in routes
+    assert "should_request_registry_analytics_materialization(build_registry_analytics_readiness())" in routes
+    assert "'provider_id', 'snapshot_window', 'alert_q'" in routes
+    assert "selected_provider_id = _registry_analytics_scope(provider_id, identities)" in presentation
+    assert "bundle = _collect_analytics_rows(identities, snapshot_window=selected_window)" in presentation
+    assert "analytics_snapshot_matches_window(snapshot, snapshot_window)" in presentation
+    assert "selected_provider_id" in presentation
+    assert "snapshot_window" in presentation
+    assert "hx-push-url=\"true\"" in controls
+    assert "action=\"{{ url_for(page_endpoint) }}\"" in controls
+    assert "provider_id=analytics.selected_provider_id" in shell
+    assert "snapshot_window=analytics.snapshot_window" in shell
+    assert 'name="provider_id" value="{{ analytics.selected_provider_id or \'\' }}"' in section
+    assert 'name="snapshot_window" value="{{ analytics.snapshot_window }}"' in section
+    assert "'snapshot_window': analytics.snapshot_window" in section
+    assert "artifact-registry-analytics-collect-live-state" not in controls
+    assert "header_content=worker_status if readiness.is_active else ''" in controls
 
 
 def test_registry_analytics_materialization_is_bounded_and_worker_owned() -> None:

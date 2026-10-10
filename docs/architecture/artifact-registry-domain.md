@@ -537,7 +537,19 @@ contextual warnings. The existing K8s capacity `controls_readiness` macro
 delegates to this shared shell without changing its public signature,
 cluster/time-range controls, Metrics Source-specific card, or snapshot
 interpretation. Registry renders the shared source card with its own genuine
-provider/snapshot evidence and an explicit read-only Fleet/Current window.
+provider/snapshot evidence and genuine dropdown controls:
+**Registry Scope** (all active Registry integrations or one named provider) and
+**Analysis Window** (latest committed snapshot or a 24-hour/7-day/30-day
+snapshot-generation lookback). Unlike the previous static labels, the
+selectors use the K8s filter-form conventions (HTMX change/URL state/loading)
+and filter both committed analytical summary and domain results before
+aggregation/pagination. The analysis window refers only to the age of the
+most recent committed **materialization**, never to invented provider
+telemetry windows or resampled raw metrics; out-of-range snapshots are
+explicitly excluded. When snapshots exist outside the selected lookback,
+readiness reports **No Snapshots in Window** rather than incorrectly claiming
+Registry analytics were never collected. Alerts source and record filters
+preserve the selected provider/window through pagination and browser history.
 Neither domain introduces a false Metrics Source readiness claim for Registry.
 
 The Registry panel **does not contain manual Collect/Configure buttons**.
@@ -552,8 +564,14 @@ canonical JobExecution deduplication and a registered-worker preflight.
 The top-level page GET stays a fast committed-state shell; the background
 request may schedule work but never performs synchronous live provider queries.
 JobPolicy scheduling continues independently, with no write-on-page-read
-policy creation. UI loading, scoped JobExecution progress and terminal page
-refresh read the committed snapshots; a later failed job retains old evidence.
+policy creation. UI loading and scoped JobExecution progress now appear in the **shared
+Controls & Data Readiness header** using its original loading bar and
+an optional header-content slot (Kubernetes does not change behavior).
+Previously duplicated worker progress below the source/snapshot cards is
+removed. Resolver requests retain the selected Registry provider/window,
+but canonical on-demand dispatch assesses **global fleet readiness** because
+the existing worker collects fleet-wide. Terminal page refresh reads the
+committed scoped snapshots; a later failed job retains old evidence.
 Queue/preflight errors are displayed as warnings, never as successful refresh.
 Manual execution remains available through existing Platform Operations Jobs
 rather than a second domain-specific collection button.
