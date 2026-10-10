@@ -5,6 +5,8 @@
 {% import "analytics/components/_record_pagination.html" as record_pagination %}
 {% set alert_filters_active = alert_table and (alert_table.search or alert_table.severity != 'all' or alert_table.state != 'all') %}
 <section id="object-storage-alert-records"
+         data-analytics-lazy-section="true"
+         data-analytics-load-state="idle"
          class="{{ analysis_surface.evidence_shell_classes() if analysis_surface is defined else table_ui.block_classes() }}">
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">

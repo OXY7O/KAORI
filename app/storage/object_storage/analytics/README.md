@@ -5,6 +5,40 @@ Object Storage systems. MinIO is the first qualified Object Storage provider and
 Metrics Source is the only operational metrics category; concrete products are resolved by the source contract and are not part of the domain
 contract.
 
+## Shared Analytics loading and controls (#1114)
+
+Object Storage Analytics uses the same approved Violet **Analytics Controls &
+Data Readiness** header as K8s/Registry through
+`analytics/components/_controls_readiness.html::frame`. System/Time Range,
+Forecast History Window, and Alert Source selectors remain domain-owned and
+fully functional. Their HTMX request indicator is a **filter refresh**, not
+JobExecution progress; existing Inventory, Metrics Contract, Worker Snapshot,
+Forecast, and Alertmanager/Alert Source evidence retain independent provenance
+and semantics.
+
+The shared top **Analytics Section Loading** tracker uses
+`analytics/components/_section_load_tracker.html` and
+`js/analytics/section_load_tracker.js` once per page, under
+`data-analytics-section-tracker-root`. Unlike Kubernetes's demand-loaded
+Overview panels, Object Storage Overview/Capacity/Performance/Forecast/
+Top Consumers/Alerts currently render their main committed snapshot workspaces
+in the initial server response. These panels **must not** count as requested
+HTMX sections. Only actual standalone Bucket Records, Bucket Forecast Records,
+and Provider Alert Records fragment requests are marked
+`data-analytics-lazy-section="true"`. Their stable panel IDs let the shared
+controller reconcile HTMX outerHTML replacement; the initial server-rendered
+panel state remains `idle` to avoid a fabricated 1/1 load notification.
+
+System/time-range/alert-source changes use a distinct **Applying Filter**
+top tracker state while the canonical control header's HTMX progress indicator
+remains in place. Errors/timeouts become explicit and recover after a bounded
+delay. The top tracker never displays worker percentage; JobExecution and
+`analytics-batch` remain under canonical Platform Operations job progress.
+No new Metrics Source/Alertmanager requests or provider mutations are caused
+by the UI tracker. A future change to true lazy Overview content requires a
+separate scoped issue with fast-shell read-model, fragment endpoints and
+real data-loading evidence; don't turn static tabs into fake HTMX requests.
+
 ## Evidence ownership
 
 - Committed Object Storage Inventory is authoritative for current-state asset,

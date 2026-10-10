@@ -6,6 +6,8 @@
 {% set forecast_table = bucket_forecast_table|default(none, true) %}
 {% set filters_active = forecast_table and (forecast_table.search or forecast_table.watch != 'all' or forecast_table.history_state != 'all') %}
 <section id="object-storage-bucket-forecast-table-panel"
+         data-analytics-lazy-section="true"
+         data-analytics-load-state="idle"
          class="border-t border-outline-subtle bg-surface-card"
          data-kaori-object-storage-bucket-forecast-table>
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
