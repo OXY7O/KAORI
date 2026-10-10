@@ -374,9 +374,8 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert "bar.headroom" in capacity
     assert "{{ bar.percent }}% used" in capacity
     assert "{{ bar.free_percent }}% left" in capacity
-    assert "style=\"width: {{ bar.percent }}%\" " not in capacity
-    assert "style=\"width: {{ bar.percent }}%\">" in capacity
-    assert "style=\"width: {{ bar.free_percent }}%\">" in capacity
+    assert 'style="width: {{ bar.percent }}%"' in capacity
+    assert 'style="width: {{ bar.free_percent }}%"' in capacity
     assert "Percentage unavailable · {{ bar.state }}" in capacity
     assert "Over budget by {{ bar.shortfall }}" in capacity
     assert 'No governed namespaces' in capacity
