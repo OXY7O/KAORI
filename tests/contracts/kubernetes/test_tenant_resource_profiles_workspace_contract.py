@@ -197,7 +197,7 @@ def test_resource_profile_registry_uses_canonical_htmx_filters_and_pagination() 
     assert 'Allocation' in registry
     assert 'Usage' in registry
     assert '>Action</th>' in registry
-    assert "table_ui.table_classes('min-w-[900px]')" in registry
+    assert "table_ui.table_classes('min-w-[1150px] !table-fixed')" in registry
     assert 'resource-profile-manage-' in registry
     assert 'data-dialog-target="resource-profile-manage-{{ profile.id }}"' in registry
     assert 'Versioned Controls' in registry
