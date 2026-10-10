@@ -116,7 +116,27 @@ Hero
 
 `Tenant Registry` is the default tab and uses the canonical KAORI server-backed registry contract: shared loading bar, Cluster/Environment/Lifecycle/Search filters, committed-state reads, semantic labels, responsive horizontal overflow, default 5-row pagination, 5/10/25/50 page sizes, and HTMX progressive enhancement with the Tenants route as the real navigation fallback.
 
-**Tenant Overview and Release wizard (#1075; current revision):**
+**Governance Scope and Release Review refresh (#1077; current UX):**
+The four separate Tenant KPI tiles are replaced by a grouped
+**Governance Scope** (Resource Coverage and Governance Authority) composed
+only of committed Namespace/Environment, reconciliation and lifecycle
+data. A separate neutral **Authority Boundary** info box explains that
+KAORI presents committed evidence while Kubernetes/Capsule remains
+provider-authoritative; the historical Namespace count remains available.
+
+Release Governance is **always visible**, with an icon header rather than
+numbered outer disclosure. The four existing Release wizard steps remain
+URL-addressable; the Review Scope step presents a short readiness
+summary, original Review Release action and an optional exact
+**View recorded conditions** list. This reduces initial text density
+without deleting blocker evidence. Two redundant instructional footnotes
+were removed from the interface without changing any authority gate.
+Other governance sections remain conditional expandables. Same 14
+CSRF/HTMX actions, reviewed handoff, committed audit and toast; no new
+provider mutations. Browser Visual QA and execution/security gates
+remain pending.
+
+**Tenant Overview and Release wizard (#1075; historical revision):**
 Keep the existing KAORI two-column Violet Hero/context card, but shorten its
 subtitle to "Manage Tenant governance and lifecycle." Replace the old
 identity table + Description/Quick Links with distinct **Identity & Origin**

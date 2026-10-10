@@ -126,13 +126,15 @@ def test_release_evidence_is_readable_full_width_without_nested_scroll():
         'id="tenant-native-handback"', 1
     )[0]
     for label in (
-        '01 · Preflight and blockers',
+        'Scope readiness',
         '02 · Provider handoff scope',
         '03 · Independent approval and handoff',
         '04 · Verify and finalize',
         'aria-label="Release blockers"',
         'aria-label="Provider handoff inventory"',
         'aria-label="Release wizard active step"',
+        'aria-label="Scope review coverage"',
+        'View recorded conditions',
     ):
         assert label in release
     assert 'divide-y divide-outline-subtle' in release
@@ -246,15 +248,19 @@ def test_approved_kaori_hero_matches_reference_composition():
     assert detail.count('Back to Registry') == 1
 
 
-def test_overview_matches_two_column_identity_and_governance():
+def test_overview_matches_grouped_governance_scope_and_authority_note():
     detail = read(DETAIL)
-    assert 'sm:grid-cols-2 xl:grid-cols-4' in detail
-    assert "('Active Namespaces', " not in detail  # actual summary includes icon
-    assert "'Active Namespaces', row.namespace_count" in detail
+    assert 'Governance Scope' in detail
+    assert 'Resource Coverage' in detail
+    assert 'Governance Authority' in detail
+    assert 'lg:grid-cols-2' in detail
+    assert "row.namespace_count" in detail
     assert 'row.environments|length' in detail
     assert 'tenant.reconciliation_authority' in detail
     assert 'tenant.lifecycle_status' in detail
-    assert 'lg:grid-cols-2' in detail
+    assert "tenant_summary_cards" not in detail
+    assert 'Identity &amp; Origin' in detail
+    assert 'Governance State' in detail
     assert "('Tenant ID', tenant.id)" in detail
     assert "('Cluster', row.cluster.name" in detail
     assert "('Provider', tenant.provider_key" in detail
@@ -263,15 +269,28 @@ def test_overview_matches_two_column_identity_and_governance():
     assert "url_for('tenant.operations')" not in detail
     assert 'tenant.created_at.strftime(' in detail
     assert 'tenant.updated_at.strftime(' in detail
+    assert 'role="note" aria-label="Authority Boundary"' in detail
+    assert 'KAORI presents committed governance evidence; Kubernetes or Capsule remains authoritative for provider resources.' in detail
+    assert detail.count(
+        'KAORI presents committed governance evidence; Kubernetes or Capsule remains authoritative for provider resources.'
+    ) == 1
 
 
-def test_governance_sections_use_native_accessible_expandables_and_existing_controls():
+
+def test_release_is_permanent_and_other_governance_sections_remain_accessible():
     detail = read(DETAIL)
+    release = detail.split('id="tenant-release-governance"', 1)[1].split(
+        'id="tenant-native-handback"', 1
+    )[0]
     names = (
-        'tenant-release-governance', 'tenant-native-handback',
-        'tenant-namespace-attachment', 'tenant-provider-authority',
-        'tenant-lifecycle-actions',
+        'tenant-native-handback', 'tenant-namespace-attachment',
+        'tenant-provider-authority', 'tenant-lifecycle-actions',
     )
+    assert '<section id="tenant-release-governance"' in detail
+    assert '<details id="tenant-release-governance"' not in detail
+    assert '<summary' not in release.split('aria-label="Release wizard steps"', 1)[0]
+    assert 'data-lucide="clipboard-check" class="h-5 w-5"' in release
+    assert 'aria-label="Release Governance"' in release
     assert detail.count('name="tenant-governance"') == len(names)
     assert detail.count('tenant_detail_open_section ==') == len(names)
     assert detail.count('group-open:rotate-180') == len(names)
@@ -291,8 +310,6 @@ def test_governance_sections_use_native_accessible_expandables_and_existing_cont
     assert "{% elif tenant_release_step == 'handoff' %}" in detail
     assert "{% elif tenant_release_step == 'approval' %}" in detail
     assert 'aria-current="step"' in detail
-    assert 'View full Release workflow and evidence' not in detail
-    assert 'aria-label="Release wizard steps"' in detail
     assert 'aria-label="Release wizard previous and next"' in detail
     assert "tenant_detail_section" in detail
     assert 'max-h-72' not in detail
@@ -322,7 +339,8 @@ def test_release_wizard_only_one_step_renders_and_old_forms_are_preserved():
     assert "request.values.get('tenant_release_step')" in common
     assert "request.values.get('release_step')" in common
     assert "release_step=context['tenant_release_step']" in common
-    assert 'Moving between steps does not approve a plan or bypass blockers.' in detail
+    assert 'Moving between steps does not approve a plan or bypass blockers.' not in detail
+    assert 'Independent approval or an external reference alone cannot authorize provider handoff.' not in detail
     release = detail.split('id="tenant-release-governance"', 1)[1].split(
         'id="tenant-native-handback"', 1
     )[0]
@@ -332,3 +350,27 @@ def test_release_wizard_only_one_step_renders_and_old_forms_are_preserved():
     assert 'id="tenant-release-stage-inventory"' in release
     assert 'id="tenant-release-stage-approval"' in release
     assert 'id="tenant-release-stage-finalize"' in release
+
+
+
+def test_review_scope_is_scan_friendly_but_keeps_authoritative_blockers():
+    detail = read(DETAIL)
+    review = detail.split('id="tenant-release-stage-readiness"', 1)[1].split(
+        "{% elif tenant_release_step == 'handoff' %}", 1
+    )[0]
+    assert 'Scope readiness' in review
+    assert 'Review coverage' in review
+    assert 'Provider resources' in review
+    assert 'Allocation ownership' in review
+    assert 'Governance dependencies' in review
+    assert 'condition{{' in review
+    assert 'View recorded conditions' in review
+    assert 'aria-label="Release blockers"' in review
+    assert 'row.release_preflight.blockers|length' in review
+    assert 'for blocker in row.release_preflight.blockers' in review
+    assert '{{ blocker }}' in review
+    assert 'review_tenant_release_route' in review
+    assert review.count('<form ') == 1
+    assert 'Latest Release Review' not in review
+    assert 'list-disc space-y-2' not in review
+    assert 'row.release_preflight.status' in review

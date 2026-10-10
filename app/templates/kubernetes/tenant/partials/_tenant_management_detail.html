@@ -52,27 +52,70 @@
         </div>
     </section>
 
-    <section class="min-w-0" aria-label="Tenant committed summary">
-        <div class="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {% set tenant_summary_cards = [
-                ('boxes', 'Active Namespaces', row.namespace_count, 'Committed active resources'),
-                ('layers-3', 'Environments', row.environments|length, row.environments|join(' · ') if row.environments else 'None registered'),
-                ('shield-check', 'Reconciliation Authority', tenant.reconciliation_authority|replace('_', ' ')|title, 'Provider remains authoritative'),
-                ('circle-check', 'Lifecycle', tenant.lifecycle_status|replace('_', ' ')|title, 'Committed governance state')
-            ] %}
-            {% for icon, label, value, helper in tenant_summary_cards %}
-                <div class="flex min-w-0 items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-4 shadow-sm">
-                    <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                          aria-hidden="true">
-                        <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
-                    </span>
-                    <div class="min-w-0 flex-1">
-                        <p class="text-xs font-semibold text-content-muted">{{ label }}</p>
-                        <p class="mt-1 break-words text-base font-semibold text-content-primary">{{ value }}</p>
-                        <p class="mt-1 break-words text-xs leading-5 text-content-secondary">{{ helper }}</p>
-                    </div>
+    <section class="min-w-0 space-y-3" aria-labelledby="tenant-governance-scope-title">
+        <div class="flex flex-wrap items-end justify-between gap-2">
+            <div class="min-w-0">
+                <h2 id="tenant-governance-scope-title" class="text-base font-semibold text-content-primary">Governance Scope</h2>
+                <p class="mt-1 text-sm leading-5 text-content-secondary">
+                    Governed resource coverage and current authority from committed Tenant state.
+                </p>
+            </div>
+            <span class="inline-flex items-center gap-1.5 text-xs font-medium text-content-muted">
+                <i data-lucide="database" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                Committed evidence
+            </span>
+        </div>
+        <div class="grid min-w-0 gap-3 lg:grid-cols-2">
+            <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5"
+                     aria-labelledby="tenant-resource-coverage-title">
+                <div class="flex items-center gap-2">
+                    <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true"><i data-lucide="boxes" class="h-4 w-4"></i></span>
+                    <h3 id="tenant-resource-coverage-title" class="text-sm font-semibold text-content-primary">Resource Coverage</h3>
                 </div>
-            {% endfor %}
+                <dl class="mt-4 grid grid-cols-2 gap-4 divide-x divide-outline-subtle">
+                    <div class="min-w-0">
+                        <dt class="text-xs font-medium text-content-muted">Active Namespaces</dt>
+                        <dd class="mt-1 text-xl font-semibold tabular-nums text-content-primary">{{ row.namespace_count }}</dd>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Managed allocation scope</p>
+                    </div>
+                    <div class="min-w-0 pl-4">
+                        <dt class="text-xs font-medium text-content-muted">Environments</dt>
+                        <dd class="mt-1 text-xl font-semibold tabular-nums text-content-primary">{{ row.environments|length }}</dd>
+                        <p class="mt-1 break-words text-xs leading-5 text-content-secondary">
+                            {{ row.environments|join(' · ') if row.environments else 'None registered' }}
+                        </p>
+                    </div>
+                </dl>
+            </section>
+            <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5"
+                     aria-labelledby="tenant-authority-scope-title">
+                <div class="flex items-center gap-2">
+                    <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true"><i data-lucide="shield-check" class="h-4 w-4"></i></span>
+                    <h3 id="tenant-authority-scope-title" class="text-sm font-semibold text-content-primary">Governance Authority</h3>
+                </div>
+                <dl class="mt-4 grid grid-cols-2 gap-4 divide-x divide-outline-subtle">
+                    <div class="min-w-0">
+                        <dt class="text-xs font-medium text-content-muted">Reconciliation</dt>
+                        <dd class="mt-1 break-words text-base font-semibold text-content-primary">
+                            {{ tenant.reconciliation_authority|replace('_', ' ')|title }}
+                        </dd>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Authoritative boundary</p>
+                    </div>
+                    <div class="min-w-0 pl-4">
+                        <dt class="text-xs font-medium text-content-muted">Lifecycle</dt>
+                        <dd class="mt-1">
+                            {{ table_label.status_label(
+                                tenant.lifecycle_status|replace('_', ' ')|title,
+                                'success' if tenant.lifecycle_status == 'ready'
+                                else ('warning' if tenant.lifecycle_status == 'decommissioning' else 'info')
+                            ) }}
+                        </dd>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Committed Tenant state</p>
+                    </div>
+                </dl>
+            </section>
         </div>
     </section>
 
@@ -175,50 +218,59 @@
                         </div>
                     {% endif %}
                 </dl>
-                <div class="border-t border-outline-subtle bg-surface-elevated px-4 py-4 sm:px-5">
-                    <div class="flex items-start gap-2">
-                        <i data-lucide="database" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
-                        <p class="text-sm leading-6 text-content-secondary">
-                            KAORI presents committed governance evidence; Kubernetes or Capsule remains authoritative for provider resources.
-                        </p>
-                    </div>
-                    {% set historical_namespace_count = row.namespace_history_count - row.namespace_count %}
-                    {% if historical_namespace_count > 0 %}
-                        <p class="mt-2 text-sm leading-6 text-content-muted">
-                            {{ historical_namespace_count }} historical Namespace record{{ '' if historical_namespace_count == 1 else 's' }} retained for audit.
-                        </p>
-                    {% endif %}
-                </div>
+                {% set historical_namespace_count = row.namespace_history_count - row.namespace_count %}
+                {% if historical_namespace_count > 0 %}
+                    <p class="border-t border-outline-subtle px-4 py-3 text-sm leading-6 text-content-muted sm:px-5">
+                        {{ historical_namespace_count }} historical Namespace record{{ '' if historical_namespace_count == 1 else 's' }} retained for audit.
+                    </p>
+                {% endif %}
             </section>
         </div>
     </section>
+
+    <aside class="flex min-w-0 items-start gap-3 rounded-xl border border-outline-subtle bg-surface-elevated px-4 py-3 sm:px-5"
+           role="note" aria-label="Authority Boundary">
+        <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"
+              aria-hidden="true"><i data-lucide="info" class="h-4 w-4"></i></span>
+        <div class="min-w-0">
+            <h3 class="text-sm font-semibold text-content-primary">Authority Boundary</h3>
+            <p class="mt-1 text-sm leading-6 text-content-secondary">
+                KAORI presents committed governance evidence; Kubernetes or Capsule remains authoritative for provider resources.
+            </p>
+        </div>
+    </aside>
 
     <div class="min-w-0 space-y-6" role="region" aria-label="Tenant management sections">
 
 {% if can_manage and current_user.has_permission('integrations.manage')
                       and current_user.has_permission('clusters.manage')
                       and tenant.ownership_status == 'adopted' and tenant.lifecycle_status == 'ready' %}
-                    <details id="tenant-release-governance" name="tenant-governance"
-                    class="group min-w-0 scroll-mt-24 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
-                    aria-label="Release Governance" {% if tenant_detail_open_section == 'release' %}open{% endif %}>
-            <summary class="flex min-h-20 cursor-pointer list-none flex-wrap items-center gap-3 px-4 py-4 transition hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus sm:flex-nowrap sm:px-5 [&::-webkit-details-marker]:hidden">
-                <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-kaori-soft text-sm font-semibold text-kaori-primary"
-                      aria-hidden="true">2</span>
-                <span class="min-w-0 flex-1">
-                    <span class="flex items-center gap-2 text-base font-semibold text-content-primary">
-                        <i data-lucide="clipboard-check" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
-                        Release Governance
-                    </span>
-                    <span class="mt-1 block break-words text-sm leading-6 text-content-secondary">Review provider handoff evidence, independent approval and verified Release before relinquishing KAORI governance.</span>
+                    <section id="tenant-release-governance"
+                     class="min-w-0 scroll-mt-24 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
+                     aria-label="Release Governance">
+            <header class="flex flex-wrap items-center gap-3 px-4 py-4 sm:px-6 sm:py-5">
+                <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="clipboard-check" class="h-5 w-5"></i>
                 </span>
-                <span class="ml-auto inline-flex shrink-0 items-center gap-2">
-                    {% if row.release_preflight and row.release_preflight.blockers %}{{ table_label.status_label('Requires Review', 'warning') }}{% elif row.release_preflight %}{{ table_label.status_label('Reviewed', 'info') }}{% else %}{{ table_label.status_label('Review Required', 'warning') }}{% endif %}
-                    <i data-lucide="chevron-down"
-                       class="h-4 w-4 text-content-muted transition-transform group-open:rotate-180" aria-hidden="true"></i>
+                <div class="min-w-0 flex-1">
+                    <h2 class="text-lg font-semibold text-content-primary">Release Governance</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">
+                        Review scope, approve the handoff and verify provider evidence before Release.
+                    </p>
+                </div>
+                <span class="ml-auto shrink-0">
+                    {% if row.release_preflight and row.release_preflight.blockers %}
+                        {{ table_label.status_label('Requires Review', 'warning') }}
+                    {% elif row.release_preflight %}
+                        {{ table_label.status_label('Reviewed', 'info') }}
+                    {% else %}
+                        {{ table_label.status_label('Review Required', 'warning') }}
+                    {% endif %}
                 </span>
-            </summary>
-            <div class="border-t border-outline-subtle ">
-                <nav class="border-t border-outline-subtle px-4 py-4 sm:px-6" aria-label="Release wizard steps">
+            </header>
+            <div class="border-t border-outline-subtle">
+                <nav class="px-4 py-4 sm:px-6" aria-label="Release wizard steps">
                 <ol class="grid min-w-0 grid-cols-2 gap-2 lg:grid-cols-4">
                     {% set release_steps = [
                         ('scope', 'Review Scope', 'Preflight & blockers'),
@@ -258,17 +310,54 @@
                     {{ table_label.status_label('Provider-governed', 'info') }}
                 </div>
                 {% if tenant_release_step == 'scope' %}
-                    <section id="tenant-release-stage-readiness" class="min-w-0 scroll-mt-24 space-y-4 px-5 py-5 sm:px-6 sm:py-6"
-                                     aria-label="Release readiness">
-                                <div class="flex flex-wrap items-start justify-between gap-3">
-                                    <div class="min-w-0 flex-1">
-                                        <h4 class="text-base font-semibold text-content-primary">01 · Preflight and blockers</h4>
-                                        <p class="mt-1 text-sm leading-6 text-content-secondary">
-                                            Check committed dependencies and blockers before preparing provider handoff.
+                    <section id="tenant-release-stage-readiness"
+                             class="min-w-0 scroll-mt-24 px-4 py-5 sm:px-6 sm:py-6"
+                             aria-label="Release readiness">
+                        <div class="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(16rem,0.8fr)]">
+                            <div class="min-w-0 space-y-4">
+                                <div class="flex flex-wrap items-center gap-3">
+                                    <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                                          aria-hidden="true"><i data-lucide="scan-search" class="h-5 w-5"></i></span>
+                                    <div class="min-w-0">
+                                        <h3 class="text-lg font-semibold text-content-primary">Scope readiness</h3>
+                                        <p class="mt-1 text-sm leading-5 text-content-secondary">
+                                            Review committed dependencies before provider handoff.
                                         </p>
                                     </div>
-                                    <div aria-label="Release review actions">
-                                        <form method="post"
+                                </div>
+                                <div class="rounded-xl border border-outline-subtle bg-surface-elevated px-4 py-4 sm:px-5">
+                                    <div class="flex flex-wrap items-center gap-3">
+                                        <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"
+                                              aria-hidden="true">
+                                            <i data-lucide="{{ 'shield-alert' if row.release_preflight and row.release_preflight.blockers else 'clipboard-check' }}"
+                                               class="h-5 w-5"></i>
+                                        </span>
+                                        <div class="min-w-0 flex-1">
+                                            {% if row.release_preflight and row.release_preflight.blockers %}
+                                                <p class="text-xl font-semibold tabular-nums text-content-primary">
+                                                    {{ row.release_preflight.blockers|length }} condition{{ '' if row.release_preflight.blockers|length == 1 else 's' }} to resolve
+                                                </p>
+                                                <p class="mt-1 text-sm text-content-secondary">Release remains blocked.</p>
+                                            {% elif row.release_preflight %}
+                                                <p class="text-base font-semibold text-content-primary">No dependency blockers recorded</p>
+                                                <p class="mt-1 text-sm text-content-secondary">Provider handoff verification is still required.</p>
+                                            {% else %}
+                                                <p class="text-base font-semibold text-content-primary">Review not recorded</p>
+                                                <p class="mt-1 text-sm text-content-secondary">Run preflight to inspect committed conditions.</p>
+                                            {% endif %}
+                                        </div>
+                                        {% if row.release_preflight %}
+                                            {{ table_label.status_label(
+                                                row.release_preflight.status|replace('_', ' ')|title,
+                                                'warning' if row.release_preflight.blockers else 'info'
+                                            ) }}
+                                        {% else %}
+                                            {{ table_label.status_label('Pending', 'info') }}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div aria-label="Release review actions">
+                                    <form method="post"
                                               action="{{ url_for('tenant.review_tenant_release_route', tenant_id=tenant.id) }}"
                                               hx-post="{{ url_for('tenant.review_tenant_release_route', tenant_id=tenant.id) }}"
                                               hx-target="#tenant-management-detail"
@@ -283,64 +372,58 @@
                                                 <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
                                             {% endfor %}
                                             <button type="submit"
-                                                    class="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-outline-subtle bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                    class="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-kaori-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus sm:w-auto">
                                                 <i data-lucide="clipboard-check" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                                 Review Release
                                             </button>
                                         </form>
+                                </div>
+                            </div>
+                            <aside class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card px-4 py-4 sm:px-5"
+                                   aria-label="Scope review coverage">
+                                <h4 class="text-sm font-semibold text-content-primary">Review coverage</h4>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Checks recorded against this Tenant.</p>
+                                <div class="mt-4 grid gap-3">
+                                    <div class="flex items-center gap-3 text-sm text-content-secondary">
+                                        <i data-lucide="boxes" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                        Provider resources
+                                    </div>
+                                    <div class="flex items-center gap-3 text-sm text-content-secondary">
+                                        <i data-lucide="scale" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                        Allocation ownership
+                                    </div>
+                                    <div class="flex items-center gap-3 text-sm text-content-secondary">
+                                        <i data-lucide="git-branch" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                        Governance dependencies
                                     </div>
                                 </div>
-                                {% if row.release_preflight %}
-                                    <div class="mt-5 space-y-3" aria-label="Committed Release readiness">
-                                        <div class="flex flex-wrap items-start justify-between gap-3 border-t border-outline-subtle pt-4">
-                                            <div class="min-w-0 flex-1">
-                                                <p class="text-xs font-semibold text-content-primary">Latest Release Review</p>
-                                                <p class="mt-1.5 text-sm leading-6 text-content-secondary">
-                                                    {% if row.release_preflight.blockers %}
-                                                        Release requires {{ row.release_preflight.blockers|length }} governance condition{{ '' if row.release_preflight.blockers|length == 1 else 's' }} to be resolved.
-                                                    {% else %}
-                                                        No dependency blockers recorded; provider validation and approval are still required.
-                                                    {% endif %}
-                                                </p>
-                                            </div>
-                                            {{ table_label.status_label(
-                                                row.release_preflight.status|replace('_', ' ')|title,
-                                                'warning' if row.release_preflight.blockers else 'info'
-                                            ) }}
-                                        </div>
-                                        {% if row.release_preflight.blockers %}
-                                            <div class="rounded-xl border border-status-warning-border bg-status-warning-soft p-4"
-                                                 aria-label="Release blockers">
-                                                <div class="flex flex-wrap items-center justify-between gap-3">
-                                                    <p class="flex min-w-0 items-center gap-2 text-xs font-semibold text-status-warning-text">
-                                                        <i data-lucide="shield-alert" class="h-4 w-4 shrink-0" aria-hidden="true"></i>
-                                                        Release blockers
-                                                    </p>
-                                                    <span class="text-xs font-semibold text-status-warning-text">{{ row.release_preflight.blockers|length }} conditions</span>
-                                                </div>
-                                                <ul class="mt-3 list-disc space-y-2 pl-5 text-sm leading-6 text-content-secondary">
-                                                    {% for blocker in row.release_preflight.blockers %}
-                                                        <li class="break-words pl-0.5">{{ blocker }}</li>
-                                                    {% endfor %}
-                                                </ul>
-                                            </div>
-                                        {% else %}
-                                            <p class="text-sm leading-6 text-content-secondary">
-                                                No current dependency blockers, but Release execution is not yet admitted.
-                                                A fresh provider read and explicit authorization are still required.
-                                            </p>
-                                        {% endif %}
-                                    </div>
-                                {% else %}
-                                    <div class="mt-4 border-t border-outline-subtle pt-4">
-                                        <p class="text-xs font-semibold text-content-primary">Latest Release Review</p>
-                                        <p class="mt-1.5 text-sm leading-6 text-content-secondary">
-                                            Run Review Release to inspect committed dependencies and provider readiness.
-                                            No Release execution is implied.
-                                        </p>
-                                    </div>
-                                {% endif %}
-                            </section>
+                            </aside>
+                        </div>
+                        {% if row.release_preflight and row.release_preflight.blockers %}
+                            <details class="group/evidence mt-5 overflow-hidden rounded-xl border border-status-warning-border bg-surface-card"
+                                     aria-label="Release blockers">
+                                <summary class="flex min-h-12 cursor-pointer list-none flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-content-primary hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus sm:px-5 [&::-webkit-details-marker]:hidden">
+                                    <span class="inline-flex items-center gap-2">
+                                        <i data-lucide="shield-alert" class="h-4 w-4 text-status-warning-text" aria-hidden="true"></i>
+                                        View recorded conditions
+                                        <span class="rounded-full bg-status-warning-soft px-2 py-0.5 text-xs font-semibold tabular-nums text-status-warning-text">
+                                            {{ row.release_preflight.blockers|length }}
+                                        </span>
+                                    </span>
+                                    <i data-lucide="chevron-down" class="h-4 w-4 text-content-muted transition-transform group-open/evidence:rotate-180" aria-hidden="true"></i>
+                                </summary>
+                                <ol class="grid gap-0 border-t border-outline-subtle px-4 sm:grid-cols-2 sm:gap-x-6 sm:px-5">
+                                    {% for blocker in row.release_preflight.blockers %}
+                                        <li class="flex min-w-0 items-start gap-3 border-b border-outline-subtle py-3 last:border-b-0">
+                                            <span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-status-warning-soft text-xs font-semibold tabular-nums text-status-warning-text"
+                                                  aria-hidden="true">{{ loop.index }}</span>
+                                            <span class="min-w-0 break-words text-sm leading-6 text-content-secondary">{{ blocker }}</span>
+                                        </li>
+                                    {% endfor %}
+                                </ol>
+                            </details>
+                        {% endif %}
+                    </section>
                 {% elif tenant_release_step == 'handoff' %}
                     <section id="tenant-release-stage-inventory" class="min-w-0 scroll-mt-24 px-5 py-5 sm:px-6 sm:py-6"
                                      aria-label="Provider handoff inventory">
@@ -1070,18 +1153,11 @@
                         {% endif %}
                     </div>
                 </nav>
-                <p class="border-t border-outline-subtle px-4 py-3 text-xs leading-5 text-content-muted sm:px-6">
-                    Moving between steps does not approve a plan or bypass blockers.
-                    Only authoritative provider checks, independent review and committed evidence permit Release.
-                </p>
+
             </div>
-                        <p class="mt-4 flex items-start gap-2 border-t border-outline-subtle pt-4 text-sm leading-6 text-content-muted">
-                            <i data-lucide="shield-check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
-                            Independent approval or an external reference alone cannot authorize provider handoff.
-                            Explicit Platform Admin acceptance and authoritative provider verification are still required.
-                        </p>
+
             </div>
-        </details>
+        </section>
                 {% endif %}
 {% if can_manage and current_user.has_permission('integrations.manage')
                       and current_user.has_permission('clusters.manage')

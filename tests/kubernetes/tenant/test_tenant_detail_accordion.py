@@ -1,4 +1,4 @@
-"""Tenant Management accordion state is authorized and survives HTMX refresh.
+"""Other Tenant governance panels remain scoped; Release itself is always visible.
 
 No Kubernetes read or write is permitted during normal Tenant detail GET.
 """
@@ -97,7 +97,7 @@ def test_post_keeps_current_governed_release_section(monkeypatch):
 def test_readonly_viewer_does_not_open_release(monkeypatch):
     context = _context(monkeypatch, perms={'tenant.view'}, selected='release')
     assert context['tenant_detail_open_section'] == 'provider'
-    assert context['tenant_detail_release_expanded'] is False
+    assert context['tenant_release_step'] == 'scope'
 
 
 def test_released_generation_switches_to_handback_only_if_authorized(monkeypatch):
@@ -106,7 +106,7 @@ def test_released_generation_switches_to_handback_only_if_authorized(monkeypatch
         monkeypatch, lifecycle='released', selected='release', evidence=evidence,
     )
     assert context['tenant_detail_open_section'] == 'handback'
-    assert context['tenant_detail_release_expanded'] is False
+    assert context['tenant_release_step'] == 'scope'
     context = _context(
         monkeypatch, lifecycle='released', selected='handback', evidence=evidence,
         perms={'tenant.view'},
