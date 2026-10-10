@@ -253,7 +253,7 @@ def test_namespace_registry_uses_compact_rows_and_committed_read_only_detail_dia
 
     # The canonical registry contract (filters, default-five pagination, shared
     # table and empty/loading states) stays in charge of the list surface.
-    assert 'Namespace Registry' in template
+    assert 'Namespace Provisioning Registry' in template
     assert "registry_ui.filter_form(" in template
     assert "registry_ui.clear_filters_link(" in template
     assert "registry_ui.footer('tenant.namespace_provisioning'" in template
@@ -262,10 +262,10 @@ def test_namespace_registry_uses_compact_rows_and_committed_read_only_detail_dia
     for name in ("namespace_tenant_id", "namespace_environment", "namespace_status", "namespace_search"):
         assert name in template
     for title, width in (
-        ("Namespace", 23),
-        ("Tenant / Environment", 20),
-        ("Allocation", 33),
-        ("State", 14),
+        ("Namespace", 25),
+        ("Tenant / Environment", 18),
+        ("Allocation", 32),
+        ("State", 15),
         ("Details", 10),
     ):
         assert f'w-[{width}%]">{title}</th>' in template
@@ -277,7 +277,11 @@ def test_namespace_registry_uses_compact_rows_and_committed_read_only_detail_dia
     assert 'profile_display|truncate(42, True' in template
     assert 'title="{{ profile_name }}"' in template
     assert '{{ profile_display }}</p>' in template
-    assert 'table_label.metadata_label(control_label)' in template
+    assert 'Control: {{ control_label }}' in template
+    assert 'title="Control: {{ control_label }}"' in template
+    assert "table_label.status_label(item.ownership_status|replace('_', ' ')|title, 'normal' if item.ownership_status == 'managed' else 'info')" in template
+    assert 'Gen {{ item.generation }}' in template
+    assert "'Snapshot v' ~ item.resource_profile_version if item.resource_profile_version else 'No pinned snapshot'" in template
     assert "No pinned snapshot" in template
     assert 'item.provisioning_message or' in template
     assert "max-w-full truncate\" title=\"{{ item.provisioning_message" not in template
@@ -336,6 +340,37 @@ def test_namespace_registry_uses_compact_rows_and_committed_read_only_detail_dia
     assert "allocation_limit_defaults_json: Mapped[dict | None]" in model
     assert "allocation_storage_policy_json: Mapped[dict | None]" in model
 
+
+
+
+
+def test_namespace_provisioning_rows_separate_identity_allocation_and_state() -> None:
+    template = read('app/templates/kubernetes/tenant/partials/_namespace_registry.html')
+    source = template.split('{% for item in namespaces %}', 1)[1].split('<dialog id="{{ dialog_id }}"', 1)[0]
+
+    # Operator scanning: identity + ownership/generation; pinned source/provider;
+    # canonical state + existing control distinction. No clipped provider message.
+    assert source.count('title="{{ item.namespace }}"') == 1
+    assert 'item.ownership_status == \'managed\'' in source
+    assert "table_label.status_label(item.ownership_status" in source
+    assert "Gen {{ item.generation }}" in source
+    assert "profile_display" in source
+    assert 'title="{{ profile_name }}"' in source
+    assert "item.resource_profile_version else 'No pinned snapshot'" in source
+    assert "{{ provider_name }}" in source
+    assert 'title="Control: {{ control_label }}"' in source
+    assert "table_label.status_label(item.provisioning_status" in source
+    assert "provisioning_message" not in source
+
+    # The rest of the modal is still authoritative for full allocation,
+    # reconciliation explanation and provider identity; no new mutation path.
+    assert 'data-kaori-native-dialog' in template
+    assert '{{ profile_name }}</p>' in template
+    assert 'item.provisioning_message or' in template
+    assert 'item.allocation_quota_json or {}' in template
+    assert "registry_ui.footer('tenant.namespace_provisioning'" in template
+    assert "registry_ui.filter_form(" in template
+    assert "hx-post" not in template
 
 
 def test_namespace_registry_uses_existing_compact_profile_naming_rules() -> None:
