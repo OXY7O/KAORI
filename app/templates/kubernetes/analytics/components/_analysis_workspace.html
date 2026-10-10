@@ -6,13 +6,13 @@
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "analytics/components/_controls_readiness.html" as shared_readiness %}
 {% macro control_label_classes() -%}
-    {{ table_ui.filter_label_classes() }}
+    {{ shared_readiness.control_label_classes() }}
 {%- endmacro %}
 {% macro control_select_classes() -%}
-    {{ table_ui.filter_select_classes() }}
+    {{ shared_readiness.control_select_classes() }}
 {%- endmacro %}
 {% macro filter_layout_classes() -%}
-    {{ table_ui.filter_layout_classes() }}
+    {{ shared_readiness.filter_layout_classes() }}
 {%- endmacro %}
 {% macro control_group(title, description, group_id, columns='sm:grid-cols-2') -%}
     <section class="min-w-0 bg-surface-card p-4" aria-labelledby="{{ group_id }}">
@@ -52,7 +52,7 @@
     {% call shared_readiness.frame(title, description, icon, indicator_id, eyebrow=eyebrow) %}
         {{ outer_caller() }}
         <div class="space-y-3">
-            <div class="grid gap-4 lg:grid-cols-2">
+            {% call shared_readiness.readiness_grid() %}
                 {{ metrics_source_status_panel.render(status) }}
                 {{ snapshot_card('Latest Data Snapshot',
                                     'Committed worker data used by this page.',
@@ -63,7 +63,7 @@
                 snapshot.expires_at|default(none)|user_datetime('Not Scheduled') if snapshot else 'Not Scheduled',
                 snapshot.latest_worker_attempt_at|default(snapshot.last_attempt_at|default(snapshot.latest_job_started_at|default(none)))|user_datetime('Unavailable') if snapshot else 'Unavailable'
                 ) }}
-            </div>
+            {% endcall %}
             {% if snapshot and (snapshot.stale|default(false) or snapshot.source_warning|default(none) or snapshot.last_error|default(none)) %}
                 <div class="divide-y divide-outline-subtle overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover">
                     {% if snapshot.stale|default(false) %}
