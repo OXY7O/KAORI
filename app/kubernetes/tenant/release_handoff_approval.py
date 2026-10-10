@@ -346,3 +346,125 @@ def approve_release_handoff_plan_committed(
     ))
     db.session.commit()
     return accepted
+
+
+def restart_expired_native_release_handoff_plan_committed(
+    *, tenant_id: str, actor_user_id: int, plan_sha256: str, confirmed: bool,
+) -> dict[str, Any]:
+    """Explicitly supersede an *expired* approved Native plan, without provider mutation.
+
+    The requester must independently prepare another review cycle using fresh
+    authoritative provider evidence; old approval, claims and previews remain
+    immutable audit history, never inherited by the replacement SHA.
+    """
+    if not confirmed:
+        raise ValueError('An explicit expired-handoff restart confirmation is required.')
+    plan = latest_release_handoff_plan(tenant_id)
+    approval = latest_release_handoff_approval(tenant_id)
+    if (
+        not plan or not approval
+        or plan.get('status') != 'pending_independent_approval'
+        or plan.get('tenant_id') != tenant_id
+        or plan.get('plan_sha256') != plan_sha256
+        or len(plan_sha256) != 64
+        or _plan_hash(plan) != plan_sha256
+        or approval.get('status') != 'acknowledged_pending_provider_handoff'
+        or approval.get('plan_sha256') != plan_sha256
+        or approval.get('requested_by') != plan.get('requested_by')
+        or type(approval.get('approved_by')) is not int
+        or approval.get('approved_by') == plan.get('requested_by')
+        or approval.get('handoff_fingerprint') != plan.get('handoff_fingerprint')
+        or approval.get('provider_handoff_verified') is not False
+        or approval.get('release_authorized') is not False
+    ):
+        raise ValueError('The exact independently acknowledged Native plan is required.')
+    if plan.get('requested_by') != actor_user_id:
+        raise ValueError('Only the original requester can restart an acknowledged handoff plan.')
+    # Invalid or future timestamps are corrupt evidence, not a safe expiry.
+    for field_value in (plan.get('requested_at'), approval.get('approved_at')):
+        try:
+            timestamp = datetime.fromisoformat(str(field_value or ''))
+        except ValueError as exc:
+            raise ValueError('Handoff approval timestamp is invalid; manual review required.') from exc
+        if timestamp.tzinfo is None or timestamp > datetime.now(UTC):
+            raise ValueError('Handoff approval timestamp is not trustworthy.')
+    if _checked_recently(plan.get('requested_at')) and _checked_recently(approval.get('approved_at')):
+        raise ValueError('This handoff plan is still current; restart is not permitted.')
+
+    # Even observed external ownership markers are NOT enough for Release; a
+    # read-back against this plan indicates a transfer/recovery may be underway.
+    from app.kubernetes.tenant.native_handoff_readback import latest_native_handoff_readback
+
+    prior_readback = latest_native_handoff_readback(tenant_id)
+    if prior_readback and prior_readback.get('plan_sha256') == plan_sha256:
+        raise ValueError('Provider handoff read-back exists; resolve recovery before restarting.')
+
+    # This authorized provider read commits a new snapshot. Never restart based
+    # on expired UID/resourceVersion or the old dry-run/approval alone.
+    fresh = review_tenant_release_preflight_committed(
+        tenant_id=tenant_id, actor_user_id=actor_user_id,
+    )
+    _can_confirm_plan(fresh)
+    if (
+        fresh.get('tenant_id') != tenant_id
+        or fresh.get('cluster_id') != plan.get('cluster_id')
+        or fresh.get('generation') != plan.get('generation')
+        or fresh.get('provider') != 'native_kubernetes'
+        or fresh.get('handoff_fingerprint') != plan.get('handoff_fingerprint')
+        or fresh.get('live_provider_identity') != plan.get('provider_identity')
+    ):
+        raise ValueError('Provider inventory changed; restart requires an independent recovery review.')
+
+    tenant = Tenant.query.filter_by(id=tenant_id).with_for_update().one_or_none()
+    if (
+        tenant is None or tenant.provider_key != 'native_kubernetes'
+        or tenant.reconciliation_authority != 'native_kubernetes'
+        or tenant.lifecycle_status != TenantLifecycleStatus.READY.value
+        or tenant.ownership_status != 'adopted'
+        or tenant.cluster_id != plan.get('cluster_id')
+        or tenant.generation != plan.get('generation')
+    ):
+        raise ValueError('Native Tenant identity or lifecycle changed during restart.')
+    current = latest_release_handoff_plan(tenant_id)
+    acknowledged = latest_release_handoff_approval(tenant_id)
+    if (
+        not current or not acknowledged
+        or current.get('plan_sha256') != plan_sha256
+        or acknowledged.get('plan_sha256') != plan_sha256
+        or acknowledged.get('status') != 'acknowledged_pending_provider_handoff'
+    ):
+        raise ValueError('Another handoff operation replaced the expired plan.')
+    current_readback = latest_native_handoff_readback(tenant_id)
+    if current_readback and current_readback.get('plan_sha256') == plan_sha256:
+        raise ValueError('Concurrent provider handoff observation blocks plan restart.')
+    if _checked_recently(current.get('requested_at')) and _checked_recently(acknowledged.get('approved_at')):
+        raise ValueError('The current handoff is not expired.')
+
+    restarted_at = datetime.now(UTC).isoformat()
+    contract = {key: current.get(key) for key in _PLAN_HASH_FIELDS}
+    contract['requested_at'] = restarted_at
+    renewed_sha = _plan_hash(contract)
+    if renewed_sha == plan_sha256:
+        raise ValueError('A distinct, fresh handoff plan identity is required.')
+    receipt = {
+        **contract,
+        'plan_sha256': renewed_sha,
+        'status': 'pending_independent_approval',
+        'handoff_components': fresh['handoff_components'],
+        'dependency_counts': fresh['dependency_counts'],
+        'blockers': fresh['blockers'],
+        'supersedes_plan_sha256': plan_sha256,
+        'restart_reason': 'approved_evidence_expired',
+        'provider_mutation_performed': False,
+        'provider_handoff_verified': False,
+        'release_authorized': False,
+        'secret_material_persisted': False,
+    }
+    db.session.add(AuditEvent(
+        actor_user_id=actor_user_id, target_type=_PLAN_TARGET, target_id=tenant_id,
+        action='tenant.release.handoff_plan_restarted',
+        summary='Restarted expired approved Native handoff plan after matching provider read-back.',
+        metadata_json=receipt,
+    ))
+    db.session.commit()
+    return receipt

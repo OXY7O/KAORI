@@ -121,3 +121,60 @@ def test_stale_handoff_plan_cannot_appear_as_completed_approval():
     assert not status["approval_complete"]
     assert not status["dry_run_passed"]
     assert status["completed_count"] == 1
+
+
+def test_expired_review_and_approved_plan_report_recorded_but_inactive():
+    snapshot = evidence()
+    snapshot["preflight"]["checked_at"] = "2020-01-01T00:00:00+00:00"
+    snapshot["plan"]["requested_at"] = "2020-01-01T00:00:00+00:00"
+    snapshot["approval"]["approved_at"] = "2020-01-01T00:00:00+00:00"
+    output = project_native_release_readiness(**snapshot)
+    assert output["completed_count"] == 0
+    assert output["approval_recorded"] is True
+    assert output["approval_complete"] is False
+    assert output["review_expired"] is True
+    assert output["restart_required"] is True
+    assert output["stages"][0]["display_status"] == "Expired"
+    assert output["stages"][1]["display_status"] == "Recorded · Expired"
+    assert output["execute_admitted"] is False
+    assert output["release_admitted"] is False
+
+
+def test_prior_handoff_readback_blocks_expired_plan_restart():
+    snapshot = evidence()
+    snapshot["plan"]["requested_at"] = "2020-01-01T00:00:00+00:00"
+    snapshot["approval"]["approved_at"] = "2020-01-01T00:00:00+00:00"
+    snapshot["readback"] = {
+        "plan_sha256": "a" * 64,
+        "status": "partial_handoff_recovery_required",
+        "external_successor_verified": False,
+    }
+    projection = project_native_release_readiness(**snapshot)
+    assert projection["approval_expired"] is True
+    assert projection["restart_blocked_by_readback"] is True
+    assert projection["restart_required"] is False
+    assert projection["release_admitted"] is False
+
+
+def test_current_independent_review_never_offers_restart():
+    projection = project_native_release_readiness(**evidence())
+    assert projection["approval_recorded"] is True
+    assert projection["approval_expired"] is False
+    assert projection["restart_required"] is False
+
+
+def test_existing_ui_restart_is_explicit_and_scoped_by_original_requester():
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[3]
+    source = (root / "app/templates/kubernetes/tenant/partials/_tenant_registry.html").read_text()
+    route = (root / "app/kubernetes/tenant/routes.py").read_text()
+    assert "native_cycle.approval_expired" in source
+    assert "native_cycle.restart_blocked_by_readback" in source
+    assert "row.release_handoff_plan.requested_by == current_user.id" in source
+    assert "name=\"confirm_handoff_restart\"" in source
+    assert "Restart Expired Handoff Plan" in source
+    assert "restart_expired_tenant_release_handoff_route" in source
+    assert "@permission_required('tenant.manage')" in route
+    assert "@permission_required('integrations.manage')" in route
+    assert "restart_expired_native_release_handoff_plan_committed(" in route

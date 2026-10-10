@@ -36,15 +36,32 @@ def project_native_release_readiness(
         and preflight.get("handoff_components")
         and _checked_recently(preflight.get("checked_at"))
     )
-    same_plan = bool(
-        active_plan and approval
+    approval_recorded = bool(
+        plan and approval
+        and bool(re.fullmatch(r'[0-9a-f]{64}', plan_sha))
+        and plan.get("status") == "pending_independent_approval"
         and approval.get("plan_sha256") == plan_sha
         and approval.get("requested_by") == plan.get("requested_by")
         and approval.get("approved_by") != plan.get("requested_by")
         and type(approval.get("approved_by")) is int
         and approval.get("status") == "acknowledged_pending_provider_handoff"
+    )
+    same_plan = bool(
+        active_plan and approval_recorded
         and _checked_recently(approval.get("approved_at"))
     )
+    approval_expired = bool(approval_recorded and not same_plan)
+    review_expired = bool(
+        preflight
+        and type(preflight.get("handoff_required_count")) is int
+        and preflight.get("handoff_required_count", 0) > 0
+        and preflight.get("handoff_components")
+        and not _checked_recently(preflight.get("checked_at"))
+    )
+    readback_for_plan = bool(
+        readback and readback.get("plan_sha256") == plan_sha
+    )
+    restart_required = bool(approval_expired and not readback_for_plan)
     preview_passed = bool(
         same_plan and dry_run
         and dry_run.get("plan_sha256") == plan_sha
@@ -66,9 +83,11 @@ def project_native_release_readiness(
     )
     stages = (
         ("Release review", review_current,
-         "Current provider inventory and dependency evidence must be reviewed."),
+         "Previous review expired; run a new authoritative provider review."
+         if review_expired else "Current provider inventory and dependency evidence must be reviewed."),
         ("Independent approval", same_plan,
-         "A different authorized KAORI operator acknowledges this exact plan."),
+         "Independent review is recorded but the plan/approval expired; only the original requester may restart after fresh provider checks."
+         if approval_expired else "A different authorized KAORI operator acknowledges this exact plan."),
         ("Verified successor acceptance", False,
          "No approved Kubernetes/IdP principal mapping and consent verifier is integrated."),
         ("KAORI provider handoff", False,
@@ -78,11 +97,23 @@ def project_native_release_readiness(
     )
     return {
         "stages": [
-            {"label": label, "complete": complete, "detail": detail}
+            {
+                "label": label, "complete": complete, "detail": detail,
+                "display_status": (
+                    "Expired" if label == "Release review" and review_expired
+                    else "Recorded · Expired" if label == "Independent approval" and approval_expired
+                    else "Evidence available" if complete else "Pending"
+                ),
+            }
             for label, complete, detail in stages
         ],
         "review_complete": review_current,
         "approval_complete": same_plan,
+        "approval_recorded": approval_recorded,
+        "approval_expired": approval_expired,
+        "review_expired": review_expired,
+        "restart_required": restart_required,
+        "restart_blocked_by_readback": bool(approval_expired and readback_for_plan),
         "dry_run_passed": preview_passed,
         "reference_recorded": reference_recorded,
         "readback_observed_unverified": readback_observed,

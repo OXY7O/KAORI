@@ -74,6 +74,7 @@ from app.kubernetes.tenant.overview import dispatch_tenant_inventory_sync
 from app.kubernetes.tenant.release_handoff_approval import (
     approve_release_handoff_plan_committed,
     prepare_release_handoff_plan_committed,
+    restart_expired_native_release_handoff_plan_committed,
 )
 from app.kubernetes.tenant.release_preflight import (
     release_adopted_tenant_committed,
@@ -811,6 +812,40 @@ def prepare_tenant_release_handoff_route(tenant_id: str):
             message=f"Successor {result['successor_owner']} · {result['change_reference']}",
             detail='Independent approval and provider ownership transfer are still required.',
             metadata={'tenant_id': tenant_id, 'operation': 'prepare_release_handoff'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/restart-expired')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+def restart_expired_tenant_release_handoff_route(tenant_id: str):
+    """Explicit requester-only renewal; no Kubernetes mutations or Release."""
+    try:
+        _csrf()
+        result = restart_expired_native_release_handoff_plan_committed(
+            tenant_id=tenant_id,
+            actor_user_id=int(current_user.id),
+            plan_sha256=str(request.form.get('plan_sha256') or ''),
+            confirmed=request.form.get('confirm_handoff_restart') == 'restart',
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_release_handoff_restart_blocked',
+            status='warning',
+            title='Handoff Restart Blocked',
+            message=str(exc),
+            detail='Existing approval history and provider resources are unchanged.',
+            metadata={'tenant_id': tenant_id, 'operation': 'restart_expired_release_handoff'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_release_handoff_restarted',
+            status='info',
+            title='Expired Handoff Plan Restarted',
+            message=f"New plan {result['plan_sha256'][:12]} requires a fresh independent review.",
+            detail='Previous approval and external reference are historical only; no provider transfer occurred.',
+            metadata={'tenant_id': tenant_id, 'operation': 'restart_expired_release_handoff'},
         )
     return _tenant_section_redirect('registry')
 
