@@ -1,16 +1,21 @@
 from __future__ import annotations
 
 import json
+
 from typing import Any
 
+from celery.exceptions import CeleryError
 from flask import Blueprint, abort, jsonify, make_response, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
+from kombu.exceptions import OperationalError as KombuOperationalError
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.rbac.decorators import permission_required
 from app.artifact_registry.analytics_job_adapter import (
     build_registry_analytics_readiness,
     get_registry_analytics_job,
+    should_request_registry_analytics_materialization,
 )
 from app.artifact_registry.governance_job_adapter import (
     build_registry_governance_sync_state,
@@ -43,7 +48,9 @@ from app.dashboards.common.operational import (
     normalize_operational_tab,
 )
 from app.extensions import limiter
+from app.extensions.db import db
 from app.platform_operations.jobs.dispatcher import JobWorkerUnavailable, dispatch_registered_job
+from app.platform_operations.jobs.service import JobQuotaExceeded
 from app.platform_operations.notifications.service import record_operational_activity
 
 artifact_registry_bp = Blueprint('artifact_registry', __name__, url_prefix='/artifact-registry')
@@ -432,71 +439,47 @@ def analytics_insights() -> ResponseReturnValue:
     return _render_registry_analytics_page('insights')
 
 
-@artifact_registry_bp.post('/analytics/collect')
+@artifact_registry_bp.get('/analytics/materialization/resolve')
 @permission_required('artifact_registry.view')
-@permission_required('jobs.execute')
-def analytics_collect() -> ResponseReturnValue:
-    active_tab = request.form.get('section', 'overview', type=str)
-    if active_tab not in _REGISTRY_ANALYTICS_DETAIL_ROUTES and active_tab != 'overview':
-        active_tab = 'overview'
-    try:
-        outcome = dispatch_registered_job(
-            job_key='artifact_registry.analytics.materialize',
-            trigger_type='manual',
-            requested_by_user_id=int(current_user.id),
-        )
-    except JobWorkerUnavailable as exc:
-        accepted, job, created = False, None, False
-        status, title = 'error', 'Analytics Worker Unavailable'
-        message = str(exc)
-        detail = 'Confirm that the analytics-batch worker is available and advertises the Registry task.'
-    else:
-        accepted, job, created = outcome.accepted, outcome.job, bool(outcome.accepted and outcome.created)
-        if accepted:
-            status = 'success' if created else 'info'
-            title = 'Analytics Collection Queued' if created else 'Analytics Collection Already Active'
-            message = outcome.message
-            detail = 'An analytics-batch worker commits Registry evidence before the UI can read it.'
+def analytics_materialization_resolve() -> ResponseReturnValue:
+    """K8s-style on-demand preparation: only the worker collects provider evidence."""
+    readiness = build_registry_analytics_readiness()
+    if should_request_registry_analytics_materialization(readiness):
+        try:
+            result = dispatch_registered_job(
+                job_key='artifact_registry.analytics.materialize',
+                trigger_type='on_demand',
+                requested_by_user_id=None,
+            )
+        except (
+            JobWorkerUnavailable,
+            JobQuotaExceeded,
+            CeleryError,
+            KombuOperationalError,
+            LookupError,
+            OSError,
+            RuntimeError,
+            SQLAlchemyError,
+            ValueError,
+        ) as exc:
+            db.session.rollback()
+            readiness['collection_warning'] = (
+                'The analytics worker could not be started. Check the registered '
+                f'analytics-batch worker and JobExecution diagnostics ({type(exc).__name__}).'
+            )
         else:
-            status, title = 'warning', 'Analytics Collection Blocked'
-            message = outcome.message
-            detail = 'An enabled and Ready Registry provider is required for analytics collection.'
-
-    page_endpoint = (
-        'artifact_registry.analytics'
-        if active_tab == 'overview'
-        else _REGISTRY_ANALYTICS_DETAIL_ROUTES[active_tab]
+            if not result.accepted:
+                readiness['collection_warning'] = result.message
+            else:
+                readiness = build_registry_analytics_readiness()
+    response = make_response(
+        render_template(
+            'artifact_registry/partials/_analytics_controls_readiness.html',
+            analytics={'data_readiness': readiness},
+        )
     )
-    feedback = record_operational_activity(
-        user_id=int(current_user.id),
-        event_type='artifact_registry_analytics_materialize',
-        status=status,
-        title=title,
-        message=message,
-        detail=detail,
-        action_url=url_for(page_endpoint),
-        action_label='Open Registry Analytics',
-        action_icon='chart-column',
-        metadata={
-            'job_key': 'artifact_registry.analytics.materialize',
-            'job_public_id': job.public_id if job is not None else None,
-            'created': created,
-            'accepted': accepted,
-        },
-        queue_feedback=not is_htmx_request(request.headers),
-    )
-    if is_htmx_request(request.headers):
-        rendered = ''.join((
-            render_template(
-                'artifact_registry/partials/_analytics_controls_readiness.html',
-                analytics=build_analytics_shell(active_tab=active_tab),
-            ),
-            render_template('components/operational_toast.html', **feedback, toast_oob=True),
-        ))
-        response = make_response(rendered, 202 if accepted else 200)
-        response.headers['Cache-Control'] = 'no-store, max-age=0'
-        return response
-    return redirect(url_for(page_endpoint))
+    response.headers['Cache-Control'] = 'no-store, max-age=0'
+    return response
 
 
 @artifact_registry_bp.get('/analytics/collect/status/<string:public_id>')

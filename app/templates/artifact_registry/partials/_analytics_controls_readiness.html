@@ -1,127 +1,92 @@
-{% import "components/action_button.html" as action_button %}
-{% import "components/loading_bar.html" as loading_bar %}
+{% import "analytics/components/_controls_readiness.html" as shared_readiness %}
 {% import "components/table_label.html" as table_label %}
 {% import "kubernetes/analytics/components/_analysis_workspace.html" as analytics_workspace %}
 {% set readiness = analytics.data_readiness %}
-<section id="artifact-registry-analytics-controls-readiness"
-         class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
-         data-analytics-controls-readiness
-         aria-labelledby="artifact-registry-analytics-controls-heading">
-    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                      aria-hidden="true">
-                    <i data-lucide="sliders-horizontal" class="h-5 w-5"></i>
-                </span>
-                <div class="min-w-0">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Analytics Controls</p>
-                    <h2 id="artifact-registry-analytics-controls-heading"
-                        class="text-base font-semibold text-content-primary">Analytics Controls & Data Readiness</h2>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">
-                        Collect committed Registry analytics on the analytics-batch worker, then review data freshness and source coverage.
-                    </p>
+<div id="artifact-registry-analytics-controls-readiness">
+    {% call shared_readiness.frame(
+        'Analytics Controls & Data Readiness',
+        'Review Registry scope, committed data freshness, and worker materialization readiness.',
+        'sliders-horizontal',
+        'artifact-registry-analytics-refresh-indicator',
+        eyebrow='Registry Analytics',
+        loading=readiness.is_active
+        ) %}
+        <div class="grid gap-4 sm:grid-cols-2">
+            <div class="block">
+                <span class="{{ analytics_workspace.control_label_classes() }}">Registry Scope</span>
+                <div class="{{ analytics_workspace.control_select_classes() }}"
+                     aria-label="Registry scope">
+                    All Eligible Registry Providers
                 </div>
             </div>
-            <div class="flex shrink-0 flex-wrap items-center gap-2">
-                {% if current_user.has_permission('jobs.execute') and current_user.has_permission('artifact_registry.view') %}
-                    <form method="post"
-                          action="{{ url_for('artifact_registry.analytics_collect') }}"
-                          hx-post="{{ url_for('artifact_registry.analytics_collect') }}"
-                          hx-target="#artifact-registry-analytics-controls-readiness"
-                          hx-indicator="#artifact-registry-analytics-collect-indicator"
-                          hx-swap="outerHTML"
-                          hx-disabled-elt="find button">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <input type="hidden" name="section" value="{{ analytics.active_tab }}">
-                        <button type="submit"
-                                {% if not readiness.can_collect %}disabled{% endif %}
-                                class="{{ action_button.classes('primary') }}">
-                            <i data-lucide="refresh-cw"
-                               class="h-4 w-4 {% if readiness.is_active %}animate-spin{% endif %}"
-                               aria-hidden="true"></i>
-                            {{ 'Collecting Analytics' if readiness.is_active else 'Collect Analytics Data' }}
-                        </button>
-                    </form>
-                {% endif %}
-                {% if current_user.has_permission('jobs.view') %}
-                    <a href="{{ url_for('jobs.configuration', job_key='artifact_registry.analytics.materialize') }}"
-                       class="{{ action_button.classes('secondary') }}">
-                        <i data-lucide="calendar-clock" class="h-4 w-4" aria-hidden="true"></i>
-                        Configure Collection
-                    </a>
-                {% endif %}
+            <div class="block">
+                <span class="{{ analytics_workspace.control_label_classes() }}">Analysis Window</span>
+                <div class="{{ analytics_workspace.control_select_classes() }}"
+                     aria-label="Analysis window">
+                    Current Committed Snapshot
+                </div>
             </div>
         </div>
-        {{ loading_bar.render('artifact-registry-analytics-collect-indicator', label='Collecting analytics data') }}
-    </header>
-    <div class="space-y-4 p-5 sm:p-6">
-        <div class="grid gap-4 lg:grid-cols-2">
-            <article class="min-w-0 rounded-lg border border-outline-subtle bg-surface-card p-4"
-                     aria-label="Registry source readiness">
-                <div class="flex flex-wrap items-start justify-between gap-3">
-                    <div class="flex min-w-0 items-start gap-3">
-                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                              aria-hidden="true"><i data-lucide="database" class="h-4 w-4"></i></span>
-                        <div class="min-w-0">
-                            <h3 class="text-sm font-semibold text-content-primary">Registry Source Readiness</h3>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">
-                                Provider-neutral committed inventory and optional worker-bound Metrics / Alert Sources.
-                            </p>
+        <div class="space-y-3">
+            <div class="grid gap-4 lg:grid-cols-2">
+                {{ shared_readiness.source_card(
+                    'Registry Source Readiness',
+                    'Provider-neutral Registry integration scope and committed analytics coverage.',
+                    'Eligible' if readiness.eligible_count else 'Blocked',
+                    'normal' if readiness.eligible_count else 'warning',
+                    'Ready Providers',
+                    readiness.eligible_count ~ ' / ' ~ readiness.registered_count,
+                    'Snapshot Coverage',
+                    readiness.covered_count ~ ' / ' ~ readiness.eligible_count,
+                    icon='database'
+                ) }}
+                {{ shared_readiness.snapshot_card(
+                    'Latest Data Snapshot',
+                    'Committed worker data used by this page.',
+                    readiness.label,
+                    readiness.tone,
+                    readiness.latest_generated_at|user_datetime('Unavailable') if readiness.latest_generated_at else 'Unavailable',
+                    'Registry Analytics',
+                    readiness.latest_expiry_at|user_datetime('Not Scheduled') if readiness.latest_expiry_at else 'Not Scheduled',
+                    readiness.last_attempt_label,
+                    coverage=readiness.current_count ~ '/' ~ readiness.eligible_count ~ ' Current'
+                ) }}
+            </div>
+            {% if readiness.is_active %}
+                <div class="border-t border-outline-subtle pt-4">
+                    {% include "artifact_registry/partials/_analytics_collect_live_state.html" %}
+                </div>
+            {% endif %}
+            {% if readiness.current_count < readiness.eligible_count or readiness.execution_tone == 'critical' or readiness.collection_warning %}
+                <div class="divide-y divide-outline-subtle overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover">
+                    {% if readiness.current_count < readiness.eligible_count %}
+                        <div class="flex items-start gap-3 px-4 py-3">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-status-warning-soft text-status-warning"
+                                  aria-hidden="true">
+                                <i data-lucide="history" class="h-4 w-4"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-content-primary">Committed Snapshot Needs Refresh</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ readiness.helper }}</p>
+                            </div>
                         </div>
-                    </div>
-                    {{ table_label.status_label('Eligible' if readiness.eligible_count else 'Blocked',
-                                                'normal' if readiness.eligible_count else 'warning',
-                                                size='compact') }}
+                    {% endif %}
+                    {% if readiness.execution_tone == 'critical' or readiness.collection_warning %}
+                        <div class="flex items-start gap-3 px-4 py-3">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-status-critical-soft text-status-critical"
+                                  aria-hidden="true">
+                                <i data-lucide="circle-alert" class="h-4 w-4"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-content-primary">Latest Worker Attempt</p>
+                                <p class="mt-1 break-words text-xs leading-5 text-content-muted">
+                                    {{ readiness.collection_warning or readiness.execution_helper }}
+                                </p>
+                            </div>
+                        </div>
+                    {% endif %}
                 </div>
-                <dl class="mt-4 grid gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle sm:grid-cols-2">
-                    <div class="bg-surface-card px-3 py-3">
-                        <dt class="text-xs font-semibold text-content-muted">Ready Providers</dt>
-                        <dd class="mt-1 text-sm font-semibold text-content-primary">
-                            {{ readiness.eligible_count }} / {{ readiness.registered_count }}
-                        </dd>
-                    </div>
-                    <div class="bg-surface-card px-3 py-3">
-                        <dt class="text-xs font-semibold text-content-muted">Snapshot Coverage</dt>
-                        <dd class="mt-1 text-sm font-semibold text-content-primary">
-                            {{ readiness.covered_count }} / {{ readiness.eligible_count }}
-                        </dd>
-                    </div>
-                </dl>
-            </article>
-            {{ analytics_workspace.snapshot_card(
-                'Latest Data Snapshot',
-                'Current committed Registry analytics evidence.',
-                readiness.label,
-                readiness.tone,
-                readiness.latest_generated_at|user_datetime('Not Materialized') if readiness.latest_generated_at else 'Not Materialized',
-                'Registry Analytics',
-                readiness.latest_expiry_at|user_datetime('Not Scheduled') if readiness.latest_expiry_at else 'Not Scheduled',
-                readiness.last_attempt_label,
-                coverage=readiness.current_count ~ '/' ~ readiness.eligible_count ~ ' Current'
-            ) }}
+            {% endif %}
         </div>
-        {% if readiness.current_count < readiness.eligible_count or readiness.execution_tone == 'critical' %}
-            <p class="text-xs leading-5 text-content-muted">{{ readiness.helper }}</p>
-        {% endif %}
-        <div class="border-t border-outline-subtle pt-4">
-            {% include "artifact_registry/partials/_analytics_collect_live_state.html" %}
-        </div>
-        <dl class="grid gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle sm:grid-cols-3">
-            <div class="bg-surface-card px-3 py-3">
-                <dt class="text-xs font-semibold text-content-muted">Automatic Collection</dt>
-                <dd class="mt-1 text-sm font-semibold text-content-primary">
-                    {{ readiness.automatic_label }} · {{ readiness.interval_label }}
-                </dd>
-            </div>
-            <div class="bg-surface-card px-3 py-3">
-                <dt class="text-xs font-semibold text-content-muted">Last Successful</dt>
-                <dd class="mt-1 text-sm font-semibold text-content-primary">{{ readiness.last_success_label }}</dd>
-            </div>
-            <div class="bg-surface-card px-3 py-3">
-                <dt class="text-xs font-semibold text-content-muted">Next Scheduled</dt>
-                <dd class="mt-1 text-sm font-semibold text-content-primary">{{ readiness.next_run_label }}</dd>
-            </div>
-        </dl>
-    </div>
-</section>
+    {% endcall %}
+</div>
