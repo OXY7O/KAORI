@@ -113,6 +113,41 @@ HTMX, plan fingerprint, independent actor, Native dry-run, provider read-back,
 successor-reference and destructive Release guard. An internal acknowledgment,
 unverified external reference or dry-run is **not** proof of a successor's
 acceptance or authority to mark provider-mutated resources Released.
+### One active Release handoff plan and reviewer authority (#1045)
+
+One Adopted Ready Tenant has at most one currently actionable handoff plan.
+Under the existing **Tenant row lock**, the Prepare service checks the latest
+committed plan and independent approval before writing another AuditEvent:
+**pending within the 15-minute window** blocks all duplicate prepares,
+regardless of who submits the request; **acknowledged** blocks re-preparation
+while external provider handoff is pending. It cannot silently turn the
+independent reviewer into a new requester. A correctly formed **expired and
+unacknowledged** plan may be replaced only through a fresh canonical provider
+preflight. Unexpected statuses, malformed or future timestamp evidence fail
+closed. No new backend approval executor, bypass, automatic plan amendment or
+privileged Super Admin exception is introduced. Restarting an acknowledged
+handoff requires a separate governed authority/workstream, not this UI.
+
+The Registry computes `release_handoff_preparation_state` using the exact
+same service predicate as the backend. The **Prepare Handoff** form is shown
+only for an available or expired/unacknowledged plan; a pending/acknowledged
+plan shows a locked successor/change summary. The independent reviewer sees
+**Acknowledge as Independent Reviewer** only while the current plan is
+pending and the viewer is a different actor with existing permissions.
+A requester cannot approve their own plan and another authorized operator
+cannot replace it by posting directly to the Prepare route. This retains
+#1040 Work Inbox one-plan/first-wins resolution semantics.
+
+The **External Reference Unverified** receipt is a non-authoritative claim
+recorded after independent KAORI acknowledgment. It is **not** a second
+independent approval and does not certify successor consent, provider handoff
+or Release eligibility. The existing Native dry-run/read-back are likewise
+limited evidence; a trusted external acceptance verification/executor remains
+separately governed. The modal now visually places Ready/other lifecycle state
+next to Tenant identity, while top-right and bottom Close targets retain
+comfortable KAORI hit areas and inset padding. No Release/provider mutation
+is introduced by these changes.
+
 ### Multi-approver Work Inbox projection (#1040)
 
 The existing Platform Operations **Work Inbox** projects the *same* Tenant
