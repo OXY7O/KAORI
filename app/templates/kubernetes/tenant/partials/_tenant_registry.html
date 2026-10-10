@@ -103,17 +103,17 @@
         {% endcall %}
     </div>
     <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[1300px] !table-fixed') }}">
+        <table class="{{ table_ui.table_classes('min-w-[1040px] !table-fixed') }}">
             <caption class="sr-only">Tenant Registry from committed KAORI Tenant state.</caption>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[21%]">Tenant</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">Cluster</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[20%]">Tenant</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[19%]">Cluster</th>
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[12%]">Environment</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[11%]">Namespaces</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[16%]">Provider Authority</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[9%]">Namespaces</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[15%]">Provider Authority</th>
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[13%]">Lifecycle</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[13%]">Actions</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[12%]">Actions</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
@@ -142,14 +142,10 @@
                             <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="{{ row.environments|length }} environment{{ '' if row.environments|length == 1 else 's' }}">{{ row.environments|length }} environment{{ '' if row.environments|length == 1 else 's' }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} align-middle min-w-0">
-                            <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ row.namespace_count }}">{{ row.namespace_count }}</p>
                             {% set historical_namespace_count = row.namespace_history_count - row.namespace_count %}
-                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate">
-                                {% if historical_namespace_count > 0 %}
-                                    {{ historical_namespace_count }} historical namespace record{{ '' if historical_namespace_count == 1 else 's' }} retained
-                                {% else %}
-                                    Active managed namespaces
-                                {% endif %}
+                            <p class="min-w-0 max-w-full truncate text-sm font-semibold text-content-primary"
+                               title="{{ row.namespace_count }} active Namespace{{ '' if row.namespace_count == 1 else 's' }}{% if historical_namespace_count > 0 %} · {{ historical_namespace_count }} historical record{{ '' if historical_namespace_count == 1 else 's' }} retained{% endif %}">
+                                {{ row.namespace_count }} <span class="text-xs font-normal text-content-muted">active</span>
                             </p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} align-middle min-w-0">
@@ -161,7 +157,10 @@
                                 {{ table_label.status_label(tenant.lifecycle_status|replace('_', ' ') |title,
                                 'normal' if tenant.lifecycle_status == 'ready' else ('critical' if tenant.lifecycle_status in ['degraded', 'decommissioning'] else 'unknown')
                                 ) }}
-                                <span class="block text-xs text-content-muted">{{ tenant.ownership_status|replace('_', ' ') |title }} · Gen {{ tenant.generation }} · Immutable</span>
+                                <span class="block min-w-0 max-w-full truncate text-xs text-content-muted"
+                                      title="{{ tenant.ownership_status|replace('_', ' ') |title }} · Gen {{ tenant.generation }} · Immutable">
+                                    {{ tenant.ownership_status|replace('_', ' ') |title }} · Gen {{ tenant.generation }} · Immutable
+                                </span>
                             </div>
                         </td>
                         <td class="{{ table_ui.cell_classes(action=true) }} align-middle">
@@ -266,6 +265,12 @@
                     <div class="min-w-0 px-3 py-3.5 sm:px-5">
                         <p class="text-[11px] font-medium text-content-muted">Namespaces</p>
                         <p class="mt-1 text-sm font-semibold text-content-primary">{{ row.namespace_count }} active</p>
+                        {% set historical_namespace_count = row.namespace_history_count - row.namespace_count %}
+                        {% if historical_namespace_count > 0 %}
+                            <p class="mt-1 text-xs leading-5 text-content-muted">
+                                {{ historical_namespace_count }} historical Namespace record{{ '' if historical_namespace_count == 1 else 's' }} retained
+                            </p>
+                        {% endif %}
                     </div>
                     <div class="min-w-0 px-3 py-3.5 sm:px-5">
                         <p class="text-[11px] font-medium text-content-muted">Environments</p>
