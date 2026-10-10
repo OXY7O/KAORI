@@ -173,10 +173,15 @@ def test_governance_coverage_and_evidence_follow_canonical_section_layout() -> N
     coverage = workspace.split("section_intro.render('Governance Coverage',", 1)[1].split(
         "section_intro.render('Governance Evidence',", 1
     )[0]
-    assert 'class="{{ section_card.shell_classes() }}"' in coverage
-    assert 'class="grid gap-3 bg-surface-subtle p-4 sm:grid-cols-2 xl:grid-cols-4"' in coverage
+    # KPI cards match standalone Security/Runtime/Analytics summary geometry,
+    # without a second outer border or surface frame.
+    assert 'class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"' in coverage
+    assert 'flex h-full min-w-0 flex-col rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm' in coverage
+    assert 'class="grid gap-3 bg-surface-subtle p-4 sm:grid-cols-2 xl:grid-cols-4"' not in coverage
+    assert 'class="{{ section_card.shell_classes() }}"' not in coverage
     assert 'for item in governance.posture_cards' in coverage
     assert 'item.status_label, item.tone' in coverage
+    assert "item.label" in coverage and "item.value" in coverage and "item.detail" in coverage
     assert "min-w-0 rounded-lg border border-outline-subtle" in coverage
 
     # URL/HTMX-owned tabs reuse the shared content-tabs contract rather than
