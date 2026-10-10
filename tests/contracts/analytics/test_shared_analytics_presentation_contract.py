@@ -15,9 +15,10 @@ def _environment() -> Environment:
         undefined=StrictUndefined,
         autoescape=True,
     )
-    env.filters['user_datetime'] = lambda value, default='Unavailable': (
-        str(value) if value else default
-    )
+    def _user_datetime(value: object, default: str = 'Unavailable') -> str:
+        return str(value) if value else default
+
+    env.filters['user_datetime'] = _user_datetime
 
     def _url_for(endpoint: str, **kwargs: object) -> str:
         return '/analytics/' + endpoint.replace('.', '/')
