@@ -538,15 +538,18 @@ delegates to this shared shell without changing its public signature,
 cluster/time-range controls, Metrics Source-specific card, or snapshot
 interpretation. Registry renders the shared source card with its own genuine
 provider/snapshot evidence and genuine dropdown controls:
-**Registry Scope** (all active Registry integrations or one named provider) and
-**Analysis Window** (latest committed snapshot or a 24-hour/7-day/30-day
-snapshot-generation lookback). Unlike the previous static labels, the
-selectors use the K8s filter-form conventions (HTMX change/URL state/loading)
-and filter both committed analytical summary and domain results before
-aggregation/pagination. The analysis window refers only to the age of the
-most recent committed **materialization**, never to invented provider
-telemetry windows or resampled raw metrics; out-of-range snapshots are
-explicitly excluded. When snapshots exist outside the selected lookback,
+**Registry** (all active Registry integrations or one named provider) and
+**Time Range**, matching K8s Overview wording and order: Last 1 Hour,
+Last 6 Hours, Last 12 Hours, Last 24 Hours, Last 7 Days, Last 30 Days,
+and Last 60 Days. The default is **Last 24 Hours** like K8s; an additional
+**Latest Snapshot (Any Age)** choice retains explicit compatibility with
+legacy `snapshot_window=current` bookmarks. The existing HTMX filter and
+loading convention applies to all committed analytical summaries and
+domain sections before aggregation/pagination. K8s time ranges describe
+materialized provider metrics, but Registry currently keeps only the most
+recent materialized snapshot per provider: here Time Range filters its
+`generated_at` timestamp, **not historical provider telemetry**. No
+unsupported historical trend is invented. When snapshots exist outside the selected lookback,
 readiness reports **No Snapshots in Window** rather than incorrectly claiming
 Registry analytics were never collected. Alerts source and record filters
 preserve the selected provider/window through pagination and browser history.

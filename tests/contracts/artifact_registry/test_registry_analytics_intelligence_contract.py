@@ -193,10 +193,14 @@ def test_registry_analytics_readiness_reuses_k8s_shared_controls_without_buttons
     assert 'shared_readiness.source_card(' in registry
     assert 'shared_readiness.snapshot_card(' in registry
     assert 'Analytics Controls & Data Readiness' in registry
-    assert 'Registry Scope' in registry
-    assert 'Analysis Window' in registry
-    assert 'All Registry Providers' in registry
-    assert 'Latest Committed Snapshot' in registry
+    assert 'Registry</span>' in registry
+    assert 'Time Range</span>' in registry
+    assert 'All Registries' in registry
+    assert 'Last 24 Hours' in registry
+    assert 'Last 60 Days' in registry
+    assert 'Latest Snapshot (Any Age)' in registry
+    assert 'Registry Source Status' in registry
+    assert 'Latest Analytics Data Snapshot' in registry
     assert '<select id="artifact-registry-analytics-provider"' in registry
     assert '<select id="artifact-registry-analytics-window"' in registry
     assert 'name="provider_id"' in registry
@@ -311,9 +315,30 @@ def test_registry_analytics_scope_and_committed_snapshot_window_are_real_filters
     recent = SimpleNamespace(generated_at=now - timedelta(hours=12))
     older = SimpleNamespace(generated_at=now - timedelta(days=5))
     stale = SimpleNamespace(generated_at=now - timedelta(days=35))
-    assert normalize_registry_analytics_window('bogus') == 'current'
+    assert normalize_registry_analytics_window('bogus') == '24h'
     assert normalize_registry_analytics_window('7d') == '7d'
+    assert normalize_registry_analytics_window('current') == 'current'
+    for value, offset in (
+        ('1h', timedelta(hours=1)),
+        ('6h', timedelta(hours=6)),
+        ('12h', timedelta(hours=12)),
+        ('24h', timedelta(hours=24)),
+        ('7d', timedelta(days=7)),
+        ('30d', timedelta(days=30)),
+        ('60d', timedelta(days=60)),
+    ):
+        assert analytics_snapshot_matches_window(
+            SimpleNamespace(generated_at=now - offset + timedelta(minutes=1)),
+            value,
+            now=now,
+        )
+        assert not analytics_snapshot_matches_window(
+            SimpleNamespace(generated_at=now - offset - timedelta(minutes=1)),
+            value,
+            now=now,
+        )
     assert analytics_snapshot_matches_window(stale, 'current', now=now)
+    assert not analytics_snapshot_matches_window(stale, '24h', now=now)
     assert analytics_snapshot_matches_window(recent, '24h', now=now)
     assert not analytics_snapshot_matches_window(older, '24h', now=now)
     assert analytics_snapshot_matches_window(older, '7d', now=now)
@@ -358,6 +383,8 @@ def test_registry_analytics_selector_preserves_scope_through_routes_and_alerts()
     assert "action=\"{{ url_for(page_endpoint) }}\"" in controls
     assert "provider_id=analytics.selected_provider_id" in shell
     assert "snapshot_window=analytics.snapshot_window" in shell
+    assert "snapshot_window: str = '24h'" in presentation
+    assert "request.args.get('snapshot_window', '24h', type=str)" in routes
     assert 'name="provider_id" value="{{ analytics.selected_provider_id or \'\' }}"' in section
     assert 'name="snapshot_window" value="{{ analytics.snapshot_window }}"' in section
     assert "'snapshot_window': analytics.snapshot_window" in section
