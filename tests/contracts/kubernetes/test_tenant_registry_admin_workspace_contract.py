@@ -443,6 +443,7 @@ def test_tenant_identity_is_immutable_and_htmx_feedback_uses_oob_toast() -> None
     routes = tenant_routes_source()
     service = tenant_service_source()
     registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
+    detail = read('app/templates/kubernetes/tenant/partials/_tenant_management_detail.html')
     setup = read('app/templates/kubernetes/tenant/partials/_tenant_setup_workspace.html')
     readme = read('app/kubernetes/tenant/README.md')
 
@@ -460,21 +461,21 @@ def test_tenant_identity_is_immutable_and_htmx_feedback_uses_oob_toast() -> None
     assert 'governed namespace deprovisioning must complete' in setup.lower()
     assert 'Immutable' in registry
     assert 'square-pen' not in registry
-    assert 'Decommission' in registry
-    assert 'destructive_confirmation_modal.html' in registry
-    assert 'data-destructive-modal-open' in registry
-    assert 'Freeze Mutations' in registry
-    assert 'Remove Namespaces' in registry
-    assert 'Verify & Retain' in registry
-    assert "presentation='steps'" in registry
-    assert 'Governed teardown. Provider verification is required.' in registry
-    assert 'Block new Tenant changes.' in registry
-    assert 'Disable credentials and grants.' in registry
-    assert 'Delete managed namespaces.' in registry
-    assert 'Commit after verified cleanup.' in registry
-    assert 'Delete managed namespaces and verify absence.' not in registry
-    assert 'Commit Decommissioned after verified cleanup.' not in registry
-    assert 'If deletion is blocked, KAORI keeps the Tenant in Decommissioning for retry.' in registry
+    assert 'Decommission' in detail
+    assert 'destructive_confirmation_modal.html' in detail
+    assert 'data-destructive-modal-open' in detail
+    assert 'Freeze Mutations' in detail
+    assert 'Remove Namespaces' in detail
+    assert 'Verify & Retain' in detail
+    assert "presentation='steps'" in detail
+    assert 'Governed teardown. Provider verification is required.' in detail
+    assert 'Block new Tenant changes.' in detail
+    assert 'Disable credentials and grants.' in detail
+    assert 'Delete managed namespaces.' in detail
+    assert 'Commit after verified cleanup.' in detail
+    assert 'Delete managed namespaces and verify absence.' not in detail
+    assert 'Commit Decommissioned after verified cleanup.' not in detail
+    assert 'If deletion is blocked, KAORI keeps the Tenant in Decommissioning for retry.' in detail
 
     assert 'g.tenant_operational_feedback = feedback' in routes
     assert 'toast_oob=True' in routes
@@ -689,15 +690,16 @@ def test_governed_tenant_decommission_is_async_provider_verified_and_fail_closed
 def test_tenant_registry_distinguishes_active_namespaces_from_retained_history() -> None:
     registry_context = read('app/kubernetes/tenant/registry_context.py')
     registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
+    detail = read('app/templates/kubernetes/tenant/partials/_tenant_management_detail.html')
 
     assert 'namespace_history_count_map' in registry_context
-    assert (
-        'TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value'
-        in registry_context
-    )
+    assert 'TenantNamespace.provisioning_status.notin_(' in registry_context
+    assert 'TenantNamespaceProvisioningStatus.DEPROVISIONED.value' in registry_context
+    assert 'TenantNamespaceProvisioningStatus.RELEASED.value' in registry_context
     assert "row['namespace_history_count'] = namespace_history_count_map.get(item.id, 0)" in registry_context
-    assert 'historical namespace record' in registry
-    assert 'Active managed namespaces' in registry
+    assert 'historical Namespace record' in detail
+    assert 'row.namespace_count' in registry
+    assert 'row.namespace_history_count - row.namespace_count' in detail
 
 
 def test_destructive_modal_supports_structured_impact_summary() -> None:
@@ -1100,6 +1102,7 @@ def test_live_provider_connectivity_uses_compact_non_snapshot_copy() -> None:
 def test_tenant_status_actions_use_semantic_labels() -> None:
     discovery = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
     registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
+    detail = read('app/templates/kubernetes/tenant/partials/_tenant_management_detail.html')
 
     assert "special_label('Already Managed', 'normal', 'shield-check')" in discovery
     assert 'Review Adoption' in discovery
@@ -1108,12 +1111,12 @@ def test_tenant_status_actions_use_semantic_labels() -> None:
     assert 'tenant-discovery-status-tip' in discovery
     assert 'status_detail_dialog' not in discovery
 
-    assert "special_label('History Retained', 'unknown', 'archive')" in registry
-    assert "special_label('Blocked', 'critical', 'shield-alert')" in registry
+    assert "'Released · Provider Retained'" in detail
+    assert "table_label.status_label('Blocked', 'warning')" in detail
     assert 'tenant-registry-status-tip' in registry
     assert 'Blocked — Tenant stays valid; teardown fails closed until blockers clear.' in registry
     assert 'status_detail_dialog' not in registry
-    assert "special_label('Unavailable', 'unknown', 'circle-slash-2')" in registry
+    assert "special_label('Unavailable', 'unknown', 'circle-slash-2')" in detail
 
 
 def test_tenant_setup_explains_capsule_adoption_boundary() -> None:
@@ -1368,11 +1371,13 @@ def test_governance_flows_use_shared_numbered_sequence_without_arrow_connectors(
 
 def test_tenant_registry_blocked_state_uses_shared_header_guidance() -> None:
     registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
+    detail = read('app/templates/kubernetes/tenant/partials/_tenant_management_detail.html')
 
     assert 'tenant-registry-status-tip' in registry
     assert 'Lifecycle describes committed Tenant state' in registry
     assert 'Blocked — Tenant stays valid; teardown fails closed until blockers clear.' in registry
-    assert "special_label('Blocked', 'critical', 'shield-alert')" in registry
+    assert 'Decommission blockers' in detail
+    assert "table_label.status_label('Blocked', 'warning')" in detail
     assert 'tenant-decommission-blocked-' not in registry
     assert 'Current Snapshot' not in registry
     assert 'Governed Flow' not in registry
@@ -1855,14 +1860,14 @@ def test_capsule_tenant_resource_quotas_are_bidirectionally_governed_without_nat
 
 
 def test_tenant_decommission_steps_use_one_divided_sequence_container() -> None:
-    registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
+    detail = read('app/templates/kubernetes/tenant/partials/_tenant_management_detail.html')
     modal = read('app/templates/components/destructive_confirmation_modal.html')
 
-    assert "presentation='steps'" in registry
-    assert 'Delete managed namespaces.' in registry
-    assert 'Commit after verified cleanup.' in registry
-    assert 'Delete managed namespaces and verify absence.' not in registry
-    assert 'Commit Decommissioned after verified cleanup.' not in registry
+    assert "presentation='steps'" in detail
+    assert 'Delete managed namespaces.' in detail
+    assert 'Commit after verified cleanup.' in detail
+    assert 'Delete managed namespaces and verify absence.' not in detail
+    assert 'Commit Decommissioned after verified cleanup.' not in detail
 
     assert (
         'grid gap-px overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle md:grid-cols-2 xl:grid-cols-4'

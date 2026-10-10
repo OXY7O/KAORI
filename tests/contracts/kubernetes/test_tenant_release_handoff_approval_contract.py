@@ -11,7 +11,7 @@ def test_release_handoff_plan_is_committed_and_never_claims_provider_transfer():
     service = read('app/kubernetes/tenant/release_handoff_approval.py')
     route = read('app/kubernetes/tenant/routes.py')
     context = read('app/kubernetes/tenant/registry_context.py')
-    ui = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
+    ui = read('app/templates/kubernetes/tenant/partials/_tenant_management_detail.html')
     handoff = read('app/kubernetes/tenant/release_handoff_inventory.py')
 
     assert 'def prepare_release_handoff_plan_committed(' in service
@@ -75,7 +75,7 @@ def test_canonical_release_executor_remains_blocked_on_managed_allocation():
 def test_handoff_preparation_cannot_replace_a_current_approval_request() -> None:
     service = read('app/kubernetes/tenant/release_handoff_approval.py')
     context = read('app/kubernetes/tenant/registry_context.py')
-    modal = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
+    modal = read('app/templates/kubernetes/tenant/partials/_tenant_management_detail.html')
 
     assert "def handoff_plan_preparation_state(" in service
     assert "def _require_no_active_handoff_plan(" in service

@@ -74,10 +74,8 @@ def _present_handoff_request(
         "change_reference": str(plan.get("change_reference") or ""),
         "action_url": (
             url_for(
-                "tenant.tenants",
-                section="registry",
-                search=tenant.name,
-                manage_tenant_id=tenant.id,
+                "tenant.tenant_detail",
+                tenant_id=tenant.id,
             )
             if state == "Pending" else None
         ),

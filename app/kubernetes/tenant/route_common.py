@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from flask import Blueprint, g, make_response, redirect, render_template, request, url_for
+from flask import Blueprint, abort, g, make_response, redirect, render_template, request, url_for
 from flask_login import current_user
 from flask_wtf.csrf import validate_csrf
 from wtforms.validators import ValidationError
@@ -136,8 +136,71 @@ def _tenant_admin_section(value: str | None) -> str:
     return normalized if normalized in _TENANT_ADMIN_SECTIONS else 'registry'
 
 
+_REGISTRY_DETAIL_KEYS = (
+    'page', 'per_page', 'search', 'cluster_id', 'environment', 'lifecycle_status',
+)
+
+
+def _tenant_detail_context(tenant_id: str) -> dict[str, Any]:
+    """One exact committed Tenant for the detail page or HTMX refresh.
+
+    Preserve only explicitly named Registry query fields, never an arbitrary
+    return URL. The detail is not bound to a paginated/filtered Registry row.
+    """
+    context = get_tenant_registry_context(tenant_id=tenant_id, per_page=1)
+    rows = context['tenant_rows']
+    if not rows:
+        abort(404)
+    state: dict[str, str] = {
+        key: str(request.values.get(f'registry_{key}') or '').strip()[:256]
+        for key in _REGISTRY_DETAIL_KEYS
+    }
+    for key, fallback in (('page', 1), ('per_page', 5)):
+        try:
+            number = int(state[key])
+        except ValueError:
+            number = fallback
+        state[key] = str(number if number > 0 else fallback)
+    state['per_page'] = str(
+        int(state['per_page']) if int(state['per_page']) in {5, 10, 25, 50} else 5
+    )
+    context['row'] = rows[0]
+    context['registry_state'] = state
+    context['return_to_registry_url'] = url_for(
+        'tenant.tenants',
+        section='registry',
+        **{f'registry_{key}': value for key, value in state.items() if value},
+    )
+    return context
+
+
 def _tenant_section_redirect(section: str):
     resolved_section = _tenant_admin_section(section)
+    detail_id = str(request.form.get('tenant_detail_id') or '').strip()
+    if resolved_section == 'registry' and detail_id:
+        context = _tenant_detail_context(detail_id)
+        if request.headers.get('HX-Request') != 'true':
+            return redirect(url_for(
+                'tenant.tenant_detail', tenant_id=detail_id,
+                **{f'registry_{key}': value for key, value in context['registry_state'].items() if value},
+            ))
+        rendered = render_template(
+            'kubernetes/tenant/partials/_tenant_management_detail.html',
+            can_manage=current_user.has_permission('tenant.manage'),
+            **context,
+        )
+        feedback = getattr(g, 'tenant_operational_feedback', None)
+        if feedback:
+            rendered += render_template(
+                'components/operational_toast.html',
+                **feedback,
+                toast_oob=True,
+            )
+        response = make_response(rendered)
+        response.headers['Cache-Control'] = 'no-store, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        return response
+
     if request.headers.get('HX-Request') != 'true':
         return redirect(url_for('tenant.tenants', section=resolved_section))
 

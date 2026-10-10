@@ -14,7 +14,7 @@ def test_released_generation_is_not_decommissioned_or_deleted_in_provider() -> N
     discovery = read('app/kubernetes/tenant/discovery_service.py')
     adoption = read('app/kubernetes/tenant/discovery_adoption.py')
     route = read('app/kubernetes/tenant/routes.py')
-    ui = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
+    ui = read('app/templates/kubernetes/tenant/partials/_tenant_management_detail.html')
 
     assert "RELEASED = 'released'" in model
     assert "'decommissioned', 'released'" in model

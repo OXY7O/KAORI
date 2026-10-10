@@ -10,7 +10,7 @@ def read(path: str) -> str:
 def test_existing_release_preflight_reuses_provider_handoff_normalizer_and_commits_evidence():
     service = read('app/kubernetes/tenant/release_preflight.py')
     normalizer = read('app/kubernetes/tenant/release_handoff_inventory.py')
-    registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
+    registry = read('app/templates/kubernetes/tenant/partials/_tenant_management_detail.html')
 
     assert 'def review_tenant_release_preflight_committed(' in service
     assert 'observe_native_namespace_allocation(' in service

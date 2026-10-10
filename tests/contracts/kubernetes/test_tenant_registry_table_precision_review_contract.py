@@ -96,25 +96,26 @@ def test_tooltip_expressions_are_not_html_entity_encoded_inside_jinja() -> None:
 
 
 
-def test_tenant_registry_keeps_compact_namespace_summary_and_modal_history() -> None:
+def test_tenant_registry_keeps_compact_namespace_summary_and_full_page_history() -> None:
     template = _template("_tenant_registry")
     table = template.split("<table", 1)[1].split("</table>", 1)[0]
-    modal = template.split("data-tenant-registry-actions-dialog", 1)[1]
+    detail = (ROOT / "app/templates/kubernetes/tenant/partials/_tenant_management_detail.html").read_text()
 
-    # Desktop viewport within the approved Kubernetes Tenant workspace no longer
-    # has to scroll because of a fixed 1300px minimum from a prior review.
+    # The Registry stays compact; full committed history resides in a detail
+    # page, not below the table or behind the native dialog top layer.
     assert "min-w-[1300px]" not in table
     assert "min-w-[1040px] !table-fixed" in table
     assert 'w-[9%]">Namespaces</th>' in table
     assert "historical Namespace record" not in table
     assert "Active managed namespaces" not in table
     assert 'row.namespace_count }} <span class="text-xs font-normal' in table
-    assert "historical Namespace record" in modal
-    assert "row.namespace_history_count - row.namespace_count" in modal
-    assert "aria-label=\"Tenant management sections\"" in modal
-    assert "data-kaori-dialog-preserve-on-swap" in template
-    assert 'data-kaori-dialog-open' in template
-    assert "data-destructive-modal-open" in template
+    assert "historical Namespace record" in detail
+    assert "row.namespace_history_count - row.namespace_count" in detail
+    assert 'aria-label="Tenant management sections"' in detail
+    assert 'tenant.tenant_detail' in template
+    assert "data-kaori-dialog-preserve-on-swap" not in template
+    assert 'data-kaori-dialog-open' not in template
+    assert "data-destructive-modal-open" in detail
 
 
 def test_tenant_registry_lifecycle_and_actions_fit_the_compact_layout() -> None:
