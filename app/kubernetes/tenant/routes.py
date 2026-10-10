@@ -929,18 +929,16 @@ def record_tenant_release_successor_reference_route(tenant_id: str):
 @tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/successor-accept')
 @permission_required('tenant.manage')
 @permission_required('integrations.manage')
+@permission_required('clusters.manage')
 def accept_native_successor_handoff_route(tenant_id: str):
-    """One explicit provider-authenticated successor consent, no provider write."""
+    """Platform Admin intent plus configured Kubernetes provider identity/RBAC."""
     try:
         _csrf()
-        if not request.is_secure:
-            raise ValueError('Native successor credentials require verified HTTPS ingress.')
         if request.form.get('confirm_successor_acceptance') != 'accept':
-            raise ValueError('The authenticated successor must explicitly accept responsibility.')
+            raise ValueError('Independent Platform Admin must explicitly accept the governance handoff.')
         result = accept_native_successor_handoff_committed(
             tenant_id=tenant_id, actor_user_id=int(current_user.id),
             plan_sha256=str(request.form.get('plan_sha256') or ''),
-            provider_token=str(request.form.get('kubernetes_successor_token') or ''),
             confirmed=True,
         )
     except (ApiException, ValueError) as exc:
@@ -954,12 +952,12 @@ def accept_native_successor_handoff_route(tenant_id: str):
     else:
         _record(
             event_type='kubernetes_tenant_successor_acceptance_verified',
-            status='success', title='Native Successor Acceptance Verified',
+            status='success', title='Platform Admin Handoff Accepted',
             message=(
-                f"Kubernetes principal {result['provider_username']} accepted "
-                f"{result['scope_count']} provider objects."
+                f"KAORI Platform Admin approved {result['scope_count']} resource(s); "
+                f"provider connection: {result['provider_username']}."
             ),
-            detail='TokenReview and SubjectAccessReview recorded; provider transfer requires an explicit next step.',
+            detail='Existing kubeconfig identity and scoped permissions verified. Provider handoff remains a separate explicit action.',
             metadata={'tenant_id': tenant_id, 'operation': 'successor_acceptance'},
         )
     return _tenant_section_redirect('registry')
