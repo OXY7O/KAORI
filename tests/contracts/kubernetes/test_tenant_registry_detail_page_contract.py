@@ -79,9 +79,8 @@ def test_one_described_page_not_a_new_tabbed_application():
     common = read('app/kubernetes/tenant/route_common.py')
     assert 'id="tenant-detail-snapshot"' in detail
     assert 'Tenant Overview' in detail
-    assert 'Provider binding, governance responsibility and audit lineage' in detail
-    assert 'Identity &amp; Origin' in detail
-    assert 'Governance &amp; Responsibility' in detail
+    assert 'Identity, provider binding and governance details' in detail
+    assert 'Identity &amp; Governance' in detail
     assert 'Quick Links' not in detail
     assert 'Description' in detail
     assert 'historical Namespace record' in detail
@@ -107,31 +106,39 @@ def test_tenant_overview_record_sheet_preserves_committed_identity_and_audit():
         'aria-label="Authority Boundary"', 1
     )[0]
     Environment().parse(detail)
-    assert 'data-kaori-tenant-record-sheet' in overview
+
+    # The existing KAORI shell keeps one compact, responsive record surface.
+    assert overview.count('data-kaori-tenant-record-sheet') == 1
     assert 'section_intro.render(' in overview
-    assert 'lg:grid-cols-2' in overview
-    assert 'lg:border-r' in overview
-    assert 'sm:grid-cols-3' in overview
-    assert 'Registered Cluster' in overview
-    assert 'row.cluster.name if row.cluster else' in overview
-    assert "tenant.provider_key|replace('_', ' ')|title" in overview
+    assert 'Identity &amp; Governance' in overview
+    assert 'sm:grid-cols-2' in overview
+    assert 'xl:grid-cols-4' in overview
+    assert 'sm:grid-cols-[6rem_minmax(0,1fr)]' in overview
+    assert overview.count('<dl ') == 3
+    assert overview.count('<dt ') == 10
+    assert 'Record History' not in overview
+    assert 'Governance &amp; Responsibility' not in overview
+    assert 'Identity &amp; Origin' not in overview
+
+    # Exact provenance, provider governance and lifecycle are committed facts.
     assert "technical_value.render(tenant.id, monospace=true, size='body')" in overview
     assert '{% import "components/technical_value.html" as technical_value %}' in detail
-    assert 'break-words' in overview
-    assert '[overflow-wrap:anywhere]' in overview
-    assert 'min-w-0' in overview
-    assert 'Reconciliation Authority' in overview
-    assert "tenant.reconciliation_authority|replace('_', ' ')|title" in overview
+    assert 'row.cluster.name if row.cluster else' in overview
+    assert "tenant.provider_key|replace('_', ' ')|title" in overview
     assert "tenant.ownership_status|replace('_', ' ')|title" in overview
-    assert 'table_label.status_label(' in overview
+    assert "tenant.reconciliation_authority|replace('_', ' ')|title" in overview
     assert "tenant.lifecycle_status == 'ready'" in overview
-    assert 'row.namespace_history_count - row.namespace_count' in overview
-    assert 'not part of the active Namespace count' in overview
-    for label in ('Generation', 'Registered', 'Last Updated', 'Record History'):
-        assert label in overview
+    assert 'table_label.status_label(' in overview
+    assert '{{ tenant.generation }}' in overview
     assert "tenant.created_at.strftime('%Y-%m-%d %H:%M')" in overview
     assert "tenant.updated_at.strftime('%Y-%m-%d %H:%M')" in overview
     assert "else 'Not recorded'" in overview
+
+    # Full long text, readable optional history, no invented action/empty band.
+    assert '[overflow-wrap:anywhere]' in overview
+    assert 'min-w-0' in overview
+    assert 'row.namespace_history_count - row.namespace_count' in overview
+    assert 'not part of the active Namespace count' in overview
     assert "tenant.description or 'No Tenant description has been recorded.'" in overview
     assert 'whitespace-pre-wrap' in overview
     assert 'Quick Links' not in overview
