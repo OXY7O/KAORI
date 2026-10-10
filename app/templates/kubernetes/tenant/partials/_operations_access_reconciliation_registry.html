@@ -106,8 +106,9 @@
         {% endcall %}
     </div>
     <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[1100px] !table-fixed') }}">
+        <table class="{{ table_ui.table_classes('min-w-[1100px] !table-fixed' if operations_access_rows else '!table-fixed') }}">
             <caption class="sr-only">Tenant Access Grant reconciliation registry.</caption>
+            {% if operations_access_rows %}
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[22%]">Principal</th>
@@ -117,6 +118,7 @@
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[21%]">Reconciliation</th>
                 </tr>
             </thead>
+            {% endif %}
             <tbody class="{{ table_ui.body_classes() }}">
                 {% for grant in operations_access_rows %}
                     {% set recon_tone = 'normal' if grant.reconciliation_status == 'ready' else ('critical' if grant.reconciliation_status == 'failed' else 'warning') %}
@@ -143,6 +145,9 @@
                             {% set empty_state_icon = "git-compare-arrows" %}
                             {% set empty_state_title = "No Access Reconciliation Records" %}
                             {% set empty_state_description = "Adjust filters or create a governed Access Grant." %}
+                            {% set empty_state_label = '' %}
+                            {% set empty_state_min_height = 'min-h-[128px]' %}
+                            {% set empty_state_container_class = '!py-5' %}
                             {% include 'components/states/_empty_state.html' %}
                         </td>
                     </tr>
