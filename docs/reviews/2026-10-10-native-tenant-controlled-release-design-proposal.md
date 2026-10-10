@@ -1,7 +1,7 @@
 # Native Tenant KAORI-controlled Release / Re-adopt — design proposal
 
-**Status:** PROPOSAL — human architecture/security acceptance required. **NOT** an approved provider-mutation or lifecycle authority.
-**Decision requested:** KAORI executes the Native Kubernetes provider handoff after valid independent review and verifiable successor consent; operators should not run kubectl patches by hand.
+**Status:** ARCHITECTURE DECISION ACCEPTED (2026-10-10) for TokenReview + SubjectAccessReview + explicit successor acceptance and KAORI-controlled Native provider handoff. **Runtime/security UAT and Full Admission remain HOLD**; this is not a staging/production execution clearance.
+**Accepted approach:** KAORI executes the Native Kubernetes provider handoff after valid independent review and verified successor consent; operators do not need manual kubectl patches.
 **Source authority:** #991 (under #982), #690 / #114 identity governance, #996 external identity observation, existing Native handoff #1009, current `docs/architecture/kubernetes-tenant-domain.md`, and `docs/reviews/2026-10-09-tenant-adopt-release-acceptance-matrix.md`.
 **Workstreams:** #1047 trust/identity (this proposal) → #1048 provider executor → #1049 Released/re-adopt finalization. **Capsule stays out of scope.**
 
@@ -189,3 +189,36 @@ it possible to repeat provider preflight/review safely, but it is *not* a
 substitute for the missing accepted #1047 trusted successor attestation, the
 #1048 live transfer executor, or the #1049 verified Released finalizer/
 successor-authorized new-generation Re-adoption.
+
+
+## Accepted design → review-branch implementation status (2026-10-10)
+
+The user accepted the exact authentication and authority mechanism:
+**Kubernetes TokenReview + resource-scoped SubjectAccessReview + explicit
+successor consent**. Issues #1047/#1048/#1049 deliver isolated code review
+slices targeting `kaori/review/staging-uat`, not staging or main.
+`native_successor_acceptance.py` commits the trusted plan-bound consent;
+`native_handoff_executor.py` dispatches explicit UID/RV-conditioned Native
+metadata-only provider patches and read-back; `release_preflight.py` now
+supports verified managed Release without changing Kubernetes; and
+`native_successor_handback.py` supports authenticated return of successor
+ownership metadata before independent new-generation Re-adopt through current
+Discovery. No new Capsule mutation or duplicate lifecycle model exists.
+
+The historical PROPOSAL paragraphs above describe the original blocked
+state. The accepted contract resolves that identity authority **for this
+review-only Native implementation**, not for generic KAORI SSO principals.
+The canonical architecture decision is documented in
+`docs/architecture/kubernetes-tenant-access-governance.md` and
+`docs/architecture/kubernetes-tenant-domain.md`.
+
+Validation still outstanding before security admission: actual Kubernetes
+TokenReview audiences and IdP UID/group semantics; SubjectAccessReview
+permissions against namespaced and cluster-scoped objects; verified HTTPS
+proxy behavior; duplicate/revoked/expired token trials; dry-run webhooks;
+provider UID/resourceVersion concurrent mutations, partial recovery;
+provider resource spec/foreign metadata preservation; absence of unwanted
+RBAC/credential changes; Released capacity/sync exclusion; explicit new
+Discovery and generation lineage; mobile/dark-mode Visual QA; complete
+Developer Check/Full Admission and Human Acceptance. The implementation is
+**not** a claim that end-to-end UAT has passed, and CI/CD gates remain HOLD.
