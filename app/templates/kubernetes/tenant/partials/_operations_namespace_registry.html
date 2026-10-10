@@ -96,37 +96,37 @@
         {% endcall %}
     </div>
     <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[940px]') }}">
+        <table class="{{ table_ui.table_classes('min-w-[1100px] !table-fixed') }}">
             <caption class="sr-only">Tenant Namespace provisioning evidence.</caption>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Namespace</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Tenant / Environment</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Resource Profile</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Provider</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">State</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[23%]">Namespace</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[20%]">Tenant / Environment</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[27%]">Resource Profile</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[15%]">Provider</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[15%]">State</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
                 {% for item in operations_namespace_rows %}
                     {% set state_tone = 'normal' if item.provisioning_status == 'ready' else ('critical' if item.provisioning_status == 'failed' else 'warning') %}
                     <tr class="{{ table_ui.row_classes() }}">
-                        <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(item.namespace, item.ownership_status|replace('_', ' ') |title ~ ' ownership', 'folder-tree') }}</td>
-                        <td class="{{ table_ui.cell_classes() }}">
-                            <p class="text-sm font-semibold text-content-primary">{{ item.environment.tenant.name }}</p>
-                            <p class="mt-1 text-xs text-content-muted">{{ item.environment.environment|title }}</p>
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">{{ table_ui.title_cell(item.namespace, item.ownership_status|replace('_', ' ') |title ~ ' ownership', 'folder-tree') }}</td>
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
+                            <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ item.environment.tenant.name }}">{{ item.environment.tenant.name }}</p>
+                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="{{ item.environment.environment|title }}">{{ item.environment.environment|title }}</p>
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">
-                            <p class="text-sm font-semibold text-content-primary">{{ item.resource_profile.name if item.resource_profile else 'No profile' }}</p>
-                            <p class="mt-1 text-xs text-content-muted">Snapshot v{{ item.resource_profile_version or '—' }}</p>
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
+                            <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ item.resource_profile.name if item.resource_profile else 'No profile' }}">{{ item.resource_profile.name if item.resource_profile else 'No profile' }}</p>
+                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="Snapshot v{{ item.resource_profile_version or '—' }}">Snapshot v{{ item.resource_profile_version or '—' }}</p>
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">
-                            <p class="text-sm font-semibold text-content-primary">{{ item.environment.tenant.provider_key|replace('_', ' ') |title }}</p>
-                            <p class="mt-1 text-xs text-content-muted">{{ item.environment.tenant.reconciliation_authority|replace('_', ' ') |title }} authority</p>
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
+                            <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ item.environment.tenant.provider_key|replace('_', ' ') |title }}">{{ item.environment.tenant.provider_key|replace('_', ' ') |title }}</p>
+                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="{{ item.environment.tenant.reconciliation_authority|replace('_', ' ') |title }} authority">{{ item.environment.tenant.reconciliation_authority|replace('_', ' ') |title }} authority</p>
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
                             {{ table_label.status_label(item.provisioning_status|replace('_', ' ') |title, state_tone) }}
-                            <p class="mt-1 max-w-[300px] text-xs leading-5 text-content-muted">{{ item.provisioning_message or 'Awaiting reconciliation evidence.' }}</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted min-w-0 max-w-full truncate" title="{{ item.provisioning_message or 'Awaiting reconciliation evidence.' }}">{{ item.provisioning_message or 'Awaiting reconciliation evidence.' }}</p>
                         </td>
                     </tr>
                 {% else %}
