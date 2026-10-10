@@ -202,7 +202,10 @@ def test_registry_analytics_readiness_reuses_k8s_shared_controls_without_buttons
     assert 'Latest Snapshot (Any Age)' in registry
     assert 'Registry Source Status' in registry
     assert 'icon=none' in registry
-    assert "bg-status-' ~ dot_tone" in common
+    assert "'bg-status-normal'" in common
+    assert "'bg-status-warning'" in common
+    assert "'bg-status-critical'" in common
+    assert "'bg-status-unknown'" in common
     assert "analytics.snapshot_window == 'current'" in registry
     assert 'Latest Analytics Data Snapshot' in registry
     assert '<select id="artifact-registry-analytics-provider"' in registry

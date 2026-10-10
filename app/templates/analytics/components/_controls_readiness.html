@@ -87,8 +87,8 @@
                         <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
                     </span>
                 {% else %}
-                    {% set dot_tone = 'normal' if status_tone == 'normal' else ('warning' if status_tone == 'warning' else ('critical' if status_tone == 'critical' else 'unknown')) %}
-                    <span class="mt-1 h-2.5 w-2.5 shrink-0 rounded-full {{ 'bg-status-' ~ dot_tone }}"
+                    {% set dot_class = 'bg-status-normal' if status_tone == 'normal' else ('bg-status-warning' if status_tone == 'warning' else ('bg-status-critical' if status_tone == 'critical' else 'bg-status-unknown')) %}
+                    <span class="mt-1 h-2.5 w-2.5 shrink-0 rounded-full {{ dot_class }}"
                           aria-hidden="true"></span>
                 {% endif %}
                 <div class="min-w-0 flex-1">
