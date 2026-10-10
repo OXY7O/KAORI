@@ -152,7 +152,7 @@ def _inventory_snapshot_context(overview: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _inventory_fleet_readings(overview: dict[str, Any]) -> list[dict[str, str]]:
+def _inventory_fleet_readings(overview: dict[str, Any]) -> list[dict[str, Any]]:
     provider_count = int(overview['provider_count'])
     snapshot_count = int(overview['snapshot_count'])
     exception_count = (
@@ -200,18 +200,24 @@ def _inventory_fleet_readings(overview: dict[str, Any]) -> list[dict[str, str]]:
     return [
         {
             'title': coverage_title,
+            'label': 'Committed Providers',
+            'value': f'{snapshot_count}/{provider_count}',
             'description': coverage_description,
             'icon': 'database-backup',
             'tone': coverage_tone,
         },
         {
             'title': exception_title,
+            'label': 'Snapshot Attention',
+            'value': exception_count,
             'description': exception_description,
             'icon': 'triangle-alert',
             'tone': exception_tone,
         },
         {
             'title': visibility_title,
+            'label': 'Project Visibility',
+            'value': f'{visibility_observed}/{project_count}',
             'description': visibility_description,
             'icon': 'globe-2',
             'tone': visibility_tone,
@@ -229,11 +235,16 @@ def _inventory_base_context() -> dict[str, Any]:
         'artifact_count': counts['artifacts'],
     }
     resource_catalog = _inventory_resource_catalog(overview)
+    fleet_readings = _inventory_fleet_readings(overview)
     return {
         'setup': overview['setup'],
         'overview': overview,
         'snapshot_context': _inventory_snapshot_context(overview),
-        'fleet_readings': _inventory_fleet_readings(overview),
+        'fleet_readings': fleet_readings,
+        'fleet_posture_metrics': [
+            (reading['icon'], reading['label'], reading['value'], reading['description'], reading['tone'])
+            for reading in fleet_readings
+        ],
         'asset_catalog': list(resource_catalog.values()),
         'resource_catalog': resource_catalog,
     }

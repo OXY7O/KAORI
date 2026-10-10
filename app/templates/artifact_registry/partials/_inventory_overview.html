@@ -1,6 +1,8 @@
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/inventory_asset_card.html" as inventory_asset_card %}
-{% import "components/operational_callout.html" as operational_callout %}
+{% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/resource_posture_grid.html" as posture_grid %}
+{% import "components/table_label.html" as table_label %}
 {% import "components/section_intro.html" as section_intro %}
 {% import "components/snapshot_context_bar.html" as snapshot_context_bar %}
 <div id="artifact-registry-inventory-workspace" class="space-y-6">
@@ -58,32 +60,41 @@
             {{ section_intro.render('Fleet Inventory Posture',
                         'Review committed provider coverage, snapshot exceptions, and project visibility across Registry inventory.',
                         'registry-fleet-posture-heading') }}
-            <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {% for reading in inventory.fleet_readings %}
-                    {{ operational_callout.render(reading.title,
-                                        reading.description,
-                                        icon=reading.icon,
-                                        tone=reading.tone,
-                                        variant='neutral',
-                                        extra_classes='w-full') }}
-                {% endfor %}
-            </div>
+            {% call operational_section_card.render(
+                'Registry Fleet Evidence',
+                'Committed provider, snapshot, and project visibility evidence for this Registry scope.',
+                'database-backup',
+                body_classes='p-0'
+                ) %}
+                {{ posture_grid.render(inventory.fleet_posture_metrics, columns=3) }}
+            {% endcall %}
         </section>
-        <section class="space-y-4" aria-labelledby="registry-asset-catalog-heading">
-            {{ section_intro.render('Registry Asset Catalog',
-                        'Open committed Projects, Repositories, and Artifacts from provider-neutral Registry snapshots.',
-                        'registry-asset-catalog-heading') }}
-            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {% for asset in inventory.asset_catalog %}
-                    {{ inventory_asset_card.render(asset.title,
-                                        asset.count,
-                                        asset.description,
-                                        url_for(asset.endpoint) ,
-                    asset.icon,
-                    action_label=asset.action_label
-                    ) }}
-                {% endfor %}
-            </div>
+        <section class="space-y-4" aria-labelledby="registry-assets-heading">
+            {{ section_intro.render('Inventory Assets',
+                        'Open an asset inventory from the current committed Registry snapshots.',
+                        'registry-assets-heading') }}
+            {% set asset_badge %}
+                {{ table_label.metadata_label(inventory.asset_catalog|length ~ ' Asset Types', icon='layers-3') }}
+            {% endset %}
+            {% call operational_section_card.render(
+                'Registry Asset Catalog',
+                'Open one Registry asset inventory to review projects, repositories, or artifacts from committed snapshots.',
+                'layout-grid',
+                id='registry-asset-catalog',
+                header_badge=asset_badge,
+                body_classes='p-5'
+                ) %}
+                <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                    {% for asset in inventory.asset_catalog %}
+                        {{ inventory_asset_card.render(asset.title,
+                                            asset.count,
+                                            asset.description,
+                                            url_for(asset.endpoint),
+                                            asset.icon,
+                                            action_label=asset.action_label) }}
+                    {% endfor %}
+                </div>
+            {% endcall %}
         </section>
     {% endif %}
 </div>

@@ -191,7 +191,7 @@ same nested-card geometry for every domain.
 | Workspace | Hero / evidence authority | Summary / section-intro treatment | Navigation / table pattern | Audit decision |
 | --- | --- | --- | --- | --- |
 | Overview | Operational Dashboard Hero and committed operational signals | Four KPI cells use shared divider grid **inside existing** Operational Signal Overview shell, with no extra card shell | Dashboard four operational workspace views | **Align** bounded lazy KPI content only under #1087; preserve #911/#923 shell |
-| Inventory | Shared Hero / committed snapshot context | External **Operational Posture** intro; existing grouped posture metrics; Registry Inventory intro | Bounded Inventory table, HTMX filters and 5-row pagination | **Retain** — grouped posture contract intentionally differs from summary KPI cards (#931) |
+| Inventory | Shared Hero / committed snapshot context | Overview **Fleet Inventory Posture** external intro + grouped three-metric estate shell; **Inventory Assets** intro + Kubernetes-style **Registry Asset Catalog** panel; resource pages retain Operational Posture intro + grouped resource metrics | Shared Projects/Repositories/Artifacts navigation cards; bounded resource inventory tables, HTMX filters and 5-row pagination | **Align** #946 follow-up to the accepted grouped Registry summary and Kubernetes catalog family without provider/data changes |
 | Security | Shared Hero / Security Sync / committed scan evidence | External **Security Snapshot** intro + shared grouped four-metric posture grid, independently scoped for Vulnerabilities / Supply Chain | Small content-tabs family for Supply Chain; shared vulnerability/evidence registry and 5-row footer | **Align** summary composition under #1087; preserve #948 scanner semantics |
 | Runtime Usage | Shared Hero / committed correlation snapshot | External **Runtime Correlation** intro + four-cell grouped committed correlation grid | Runtime Bindings section intro and bounded table; committed correlation, 5-row footer | **Align** summary composition under #1087, retain #897 correlation semantics |
 | Governance | Shared Hero / Governance Sync / committed policy evidence | External **Governance Coverage** intro with one grouped operational estate shell and four evidence metrics; original Committed/Observed status badges retained | External Governance Evidence intro; standard URL/HTMX content tabs for Policies/Replication; 5-row footer | **Align** to Kubernetes Tenant Estate's shared posture-grid archetype under #950 |
@@ -207,11 +207,20 @@ same nested-card geometry for every domain.
   with no new nested shell. Inventory stays grouped within its existing
   `operational_section_card`; Security, Runtime, Governance, and Analytics
   use the same shared grouped presentation. Governance/Analytics retain their
-  committed status labels. No extra card borders within metric cells.
-- The **Inventory Operational Posture** is intentionally a coordinated
-  evidence panel with a common operational meaning; it continues using its
-  approved `operational_section_card` and `posture_grid`. The Overview
-  dashboard continues using the canonical Operational Dashboard composition.
+  committed status labels. No extra card borders within metric cells. The
+  Inventory Overview Fleet posture now uses the same grouped grid for three
+  committed metrics; the Inventory resource-detail pages retain their grouped
+  four-metric posture.
+- The **Inventory Operational Posture** on resource pages and **Fleet Inventory
+  Posture** on the Inventory Overview are coordinated evidence panels using the
+  approved `operational_section_card` and `posture_grid`, retaining provider,
+  snapshot exception, and visibility semantics. The Inventory Overview catalog
+  follows the Kubernetes asset navigation shell with a section intro,
+  `Registry Asset Catalog` header/badge, and shared destination cards. This
+  intentionally revises #946's earlier flat-catalog rule after explicit human
+  visual feedback; do not change Object Storage or introduce new wrappers in
+  unrelated Registry pages. The Overview dashboard continues using the
+  canonical Operational Dashboard composition.
 - **Navigation follows interaction scope**, not cosmetic uniformity. The
   two-view Governance and closely related Supply Chain content use
   `content_tabs.render_links`; the seven-domain Analytics workspace retains
