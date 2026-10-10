@@ -138,3 +138,88 @@ def test_shared_object_storage_templates_parse_and_worker_remains_domain_owned()
     assert 'enqueue_canonical_job(' in job_adapter
     assert 'analytics-batch' in job_adapter
     assert 'MetricsConsumer' not in _source(STORAGE / 'index.html')
+
+def test_object_storage_controls_render_independently_in_all_six_views() -> None:
+    """Catch missing macro imports that Jinja parsing alone cannot detect."""
+    from jinja2 import StrictUndefined
+
+    environment = Environment(
+        loader=FileSystemLoader(str(TEMPLATES)), undefined=StrictUndefined
+    )
+    environment.filters['user_datetime'] = lambda value, fallback='Unavailable': (
+        str(value) if value else fallback
+    )
+    environment.globals['url_for'] = lambda endpoint: '/analytics/' + endpoint
+
+    context = {
+        'page': {'title': 'Object Storage Analytics'},
+        'systems': [{'id': 1, 'name': 'MinIO Test'}],
+        'system': {'id': 1},
+        'allowed_time_ranges': [{'value': '24h', 'label': 'Last 24 Hours'}],
+        'forecast_history_windows': [{'value': '7d', 'label': 'Last 7 Days'}],
+        'selected_time_range': '24h',
+        'selected_alert_source': 'auto',
+        'selected_forecast_history_window': '7d',
+        'inventory_observed_at': None,
+        'query_diagnostics': [],
+        'dependency_blocker': None,
+        'analytics_materialization': {
+            'tone': 'warning',
+            'label': 'Not Materialized',
+            'generated_at': None,
+            'stale': False,
+            'refresh_dispatched': False,
+            'dispatch_error': None,
+        },
+        'metrics_readiness': {
+            'tone': 'warning',
+            'label': 'Unverified',
+            'profile_label': 'Harbor / MinIO profile',
+        },
+        'metrics_source': {
+            'tone': 'warning',
+            'label': 'Unverified',
+            'provider_label': 'Prometheus',
+            'instance_name': None,
+        },
+        'forecast_materialization': {
+            'tone': 'warning',
+            'label': 'Not Materialized',
+            'method': 'Not Available',
+        },
+        'alert_source': {
+            'tone': 'warning',
+            'label': 'Unavailable',
+            'resolved_label': 'No Source',
+            'instance_name': None,
+            'fallback_reason': None,
+            'connected': False,
+            'detail': 'Source is not configured',
+        },
+        'alertmanager': {
+            'tone': 'warning',
+            'label': 'Unavailable',
+            'profile': 'Not Configured',
+            'instance_name': None,
+        },
+    }
+    for page_key in (
+        'overview', 'capacity', 'performance', 'forecast', 'top_consumers', 'alerts'
+    ):
+        html = environment.get_template(
+            'storage/object_storage/analytics/partials/_controls.html'
+        ).render(page_key=page_key, **context)
+
+        assert 'Analytics Controls & Data Readiness' in html
+        assert 'data-analytics-controls-readiness' in html
+        assert 'object-storage-analytics-refresh-indicator' in html
+        assert 'MinIO Test' in html
+        if page_key == 'alerts':
+            assert 'Alertmanager Lifecycle' in html
+            assert 'name="source"' in html
+        elif page_key == 'forecast':
+            assert 'Forecast Worker Snapshot' in html
+            assert 'name="history_window"' in html
+        else:
+            assert 'Metrics Contract At Collection' in html
+            assert 'name="time_range"' in html
