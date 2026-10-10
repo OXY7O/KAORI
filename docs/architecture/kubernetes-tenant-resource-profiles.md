@@ -101,6 +101,55 @@ short names, dark/light, mobile overflow and keyboard Manage accessibility.
 
 
 
+### Resource Profile Registry and Manage workspace review (#1035, #775)
+
+The registry retains the approved KAORI five-row HTMX inventory table and the
+bounded fixed-column contract. The requested columns are balanced as
+**Profile 29% / Contract 21% / Allocation 26% / Usage 15% / Action 9%**;
+this reserves action width while preventing editable/state badges and governed
+quota evidence from colliding. The Contract column shows only the semantic
+Class and Enabled/Disabled labels; the editability and version remain plain
+supporting metadata rather than a third prominent badge.
+
+Allocation is a **two-column, four-dimension evidence grid** (CPU, memory, Pod,
+logical storage) with explicit labels and visible `Not Managed` values. It
+never truncates a compound quota string in a narrow cell, substitutes zero for
+missing authority, or changes the committed resource data. The Usage column
+shows Namespace and Capacity Decision counts plus any pending rollout warning.
+The full canonical profile name and description remain in the Manage detail
+workspace, not in the compact registry.
+
+The Resource Profile **Manage dialog is a configuration workflow**, not an
+overflowing dump of forms. Its reading sequence is:
+1. concise header distinguishing editable Custom versus immutable built-in
+   preset semantics, with safe close behavior;
+2. full committed profile identity and complete multi-line description;
+3. compact class/version/dependency evidence strip;
+4. primary configuration (Identity & State for Custom and Basic Resources for
+   both classes); then keyboard-accessible native disclosure controls for
+   Storage Guardrails, Object Limits and Container Defaults;
+5. existing Advanced Controls form grouped by its established sub-sections;
+6. separate Tenant-scoped Attached Namespace Rollout with explicit target
+   selector, provider eligibility, and expandable per-Namespace admission/read-back
+   explanation;
+7. shared sticky-safe action footer preserving Save New Version / Save Changes,
+   Close, and governed Delete eligibility.
+
+Custom Description is a full-width multi-line form control (`profile_description`)
+without modifying the POST field contract. Built-in preset name and description
+remain committed hidden form values, not editable visual form fields. Optional
+disclosures remain normal HTML form descendants so existing submitted control
+ownership masks and provider/rollout gates remain authoritative. Rollout is a
+separate POST from Save New Version and never silently mutates existing Namespace
+snapshots. No new JS, design tokens, data model, admission arithmetic or provider
+write path is introduced.
+
+Local DevContainer Visual QA must cover the registry at desktop/mobile widths,
+unmanaged quota dimensions, long adopted profile names, Custom editing and
+preset governance disclosures, long descriptions, keyboard/focus, dark/light,
+and Native/Capsule rollout eligibility. This candidate is **not** CI/CD or
+Full Admission approval; maintain the existing HOLD.
+
 ## Managed adoption and legacy allocation governance cutover
 
 #777 supersedes evidence-only onboarding for new managed adoptions. The explicit human **Adopt & Manage** submission is the governance boundary: live state is re-read, capacity/authority checks run, equivalent provider values are written only through the admitted authority, and read-back must succeed before KAORI commits managed allocation control.
