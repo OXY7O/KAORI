@@ -107,6 +107,13 @@ def handback_native_successor_governance_committed(
         live = _read_resource(core, item)
         _validate_released_component(item=item, live=live, successor_owner=owner)
         live_before.append((item, live))
+    # Retain external Namespace ownership until quota and LimitRange controls
+    # have been safely relinquished. This constrains partial-failure exposure.
+    order = {'ResourceQuota': 0, 'LimitRange': 1, 'Namespace': 2}
+    live_before.sort(key=lambda pair: (
+        str(pair[0].get('namespace') or ''),
+        order.get(str(pair[0].get('kind')), 99), str(pair[0].get('name')),
+    ))
     # Construct an ephemeral *handback* scope from genuine successor-owned live
     # objects, not from fictional KAORI marker correlation.
     contract = {
