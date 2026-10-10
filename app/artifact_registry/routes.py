@@ -8,6 +8,10 @@ from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
 from app.access.rbac.decorators import permission_required
+from app.artifact_registry.analytics_job_adapter import (
+    build_registry_analytics_readiness,
+    get_registry_analytics_job,
+)
 from app.artifact_registry.governance_job_adapter import (
     build_registry_governance_sync_state,
     get_registry_governance_sync_job,
@@ -426,6 +430,97 @@ def analytics_alerts() -> ResponseReturnValue:
 @permission_required('artifact_registry.view')
 def analytics_insights() -> ResponseReturnValue:
     return _render_registry_analytics_page('insights')
+
+
+@artifact_registry_bp.post('/analytics/collect')
+@permission_required('artifact_registry.view')
+@permission_required('jobs.execute')
+def analytics_collect() -> ResponseReturnValue:
+    active_tab = request.form.get('section', 'overview', type=str)
+    if active_tab not in _REGISTRY_ANALYTICS_DETAIL_ROUTES and active_tab != 'overview':
+        active_tab = 'overview'
+    try:
+        outcome = dispatch_registered_job(
+            job_key='artifact_registry.analytics.materialize',
+            trigger_type='manual',
+            requested_by_user_id=int(current_user.id),
+        )
+    except JobWorkerUnavailable as exc:
+        accepted, job, created = False, None, False
+        status, title = 'error', 'Analytics Worker Unavailable'
+        message = str(exc)
+        detail = 'Confirm that the analytics-batch worker is available and advertises the Registry task.'
+    else:
+        accepted, job, created = outcome.accepted, outcome.job, bool(outcome.accepted and outcome.created)
+        if accepted:
+            status = 'success' if created else 'info'
+            title = 'Analytics Collection Queued' if created else 'Analytics Collection Already Active'
+            message = outcome.message
+            detail = 'An analytics-batch worker commits Registry evidence before the UI can read it.'
+        else:
+            status, title = 'warning', 'Analytics Collection Blocked'
+            message = outcome.message
+            detail = 'An enabled and Ready Registry provider is required for analytics collection.'
+
+    page_endpoint = (
+        'artifact_registry.analytics'
+        if active_tab == 'overview'
+        else _REGISTRY_ANALYTICS_DETAIL_ROUTES[active_tab]
+    )
+    feedback = record_operational_activity(
+        user_id=int(current_user.id),
+        event_type='artifact_registry_analytics_materialize',
+        status=status,
+        title=title,
+        message=message,
+        detail=detail,
+        action_url=url_for(page_endpoint),
+        action_label='Open Registry Analytics',
+        action_icon='chart-column',
+        metadata={
+            'job_key': 'artifact_registry.analytics.materialize',
+            'job_public_id': job.public_id if job is not None else None,
+            'created': created,
+            'accepted': accepted,
+        },
+        queue_feedback=not is_htmx_request(request.headers),
+    )
+    if is_htmx_request(request.headers):
+        rendered = ''.join((
+            render_template(
+                'artifact_registry/partials/_analytics_controls_readiness.html',
+                analytics=build_analytics_shell(active_tab=active_tab),
+            ),
+            render_template('components/operational_toast.html', **feedback, toast_oob=True),
+        ))
+        response = make_response(rendered, 202 if accepted else 200)
+        response.headers['Cache-Control'] = 'no-store, max-age=0'
+        return response
+    return redirect(url_for(page_endpoint))
+
+
+@artifact_registry_bp.get('/analytics/collect/status/<string:public_id>')
+@permission_required('artifact_registry.view')
+def analytics_collect_status(public_id: str) -> ResponseReturnValue:
+    job = get_registry_analytics_job(public_id)
+    if job is None:
+        abort(404)
+    response = make_response(
+        render_template(
+            'artifact_registry/partials/_analytics_collect_live_state.html',
+            analytics_readiness=build_registry_analytics_readiness(),
+        )
+    )
+    response.headers['Cache-Control'] = 'no-store, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    if not job.is_active:
+        response.headers['HX-Trigger-After-Swap'] = json.dumps(
+            {
+                'artifactRegistryAnalyticsMaterializationFinished': True,
+                'kaori:notifications-changed': True,
+            }
+        )
+    return response
 
 
 @artifact_registry_bp.get('/analytics/section/<string:section>')

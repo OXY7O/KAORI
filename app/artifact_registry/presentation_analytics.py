@@ -5,6 +5,7 @@ from typing import Any
 
 from sqlalchemy import func
 
+from app.artifact_registry.analytics_job_adapter import build_registry_analytics_readiness
 from app.artifact_registry.presentation_common import _fmt_bytes, _providers
 from app.artifact_registry.presentation_overview import build_overview
 from app.common.pagination import paginate_sequence
@@ -77,6 +78,7 @@ def build_analytics_shell(
         'page_title': page_title,
         'page_description': page_description,
         'page_icon': page_icon,
+        'data_readiness': build_registry_analytics_readiness(),
         'alert_filters': {
             'search': alert_search,
             'severity': alert_severity,
