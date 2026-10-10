@@ -33,6 +33,7 @@
                   hx-sync="this:replace"
                   class="flex w-full flex-wrap items-end gap-2 sm:w-auto">
                 <input type="hidden" name="view" value="capacity">
+                {% if capacity_filters.search %}<input type="hidden" name="capacity_search" value="{{ capacity_filters.search }}">{% endif %}
                 <label class="min-w-[12rem] flex-1 sm:flex-initial">
                     <span class="{{ table_ui.filter_label_classes() }}">Cluster</span>
                     <select name="allocation_cluster_id" class="{{ table_ui.filter_select_classes() }} w-full">
@@ -209,7 +210,8 @@
                     overview_id,
                     overview_loading_id,
                     allocation_tenant_pagination,
-                    {'view': 'capacity', 'allocation_cluster_id': allocation_cluster_id},
+                    {'view': 'capacity', 'allocation_cluster_id': allocation_cluster_id,
+                     'capacity_search': capacity_filters.search},
                     allocation_tenant_pagination.allowed_per_page,
                     resource_label='Tenants',
                     rows_aria_label='Tenant allocation rows per page',
