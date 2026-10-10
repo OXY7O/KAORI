@@ -128,6 +128,45 @@ short names, dark/light, mobile overflow and keyboard Manage accessibility.
 
 
 
+### Namespace Registry: compact row and committed evidence detail (#1035)
+
+Following human DevContainer review, the Namespace Registry retains the
+existing KAORI server-rendered fixed-width table, HTMX Tenant/Environment/State
+filters and search, five-row default pagination, empty/loading contracts and
+Violet light/dark patterns. The row is organized around **Namespace (23%)**,
+**Tenant / Environment (20%)**, **Allocation (33%)**, **State (14%)**, and
+**Details (10%)**. The Namespace cell identifies ownership and record
+generation; Allocation shows a concise profile title, pinned snapshot version,
+provider and control-state line. The state cell shows the canonical
+provisioning badge without truncating reconciliation explanation in the table.
+
+A single **View More** action opens a keyboard-accessible native KAORI dialog,
+uniquely identified by committed Namespace record ID (not Namespace name).
+The read-only detail workspace groups full Namespace/Tenant identity,
+ownership, Native/Capsule provider reconciliation authority, provisioning
+state, full profile/provenance and committed snapshot version. **CPU requests,
+memory requests, Pod slots, and logical storage** use the Namespace's
+**frozen `allocation_quota_json`**, never the mutable reusable Resource
+Profile and never a fresh live provider query. Missing dimensions are
+**Not declared**, never invented zero. An optional native disclosure shows
+the committed PVC min/max and Container LimitRange defaults when present;
+full provider reconciliation messages, last-reconciled evidence and
+Native-adopted / Capsule-provider-mirrored distinctions remain readable.
+
+The nested native dialog explicitly resets inherited table Action-cell
+`text-right` with `text-left` on modal root/body, consistent with the
+accepted #1053 alignment correction. Details offer no provider mutation,
+approval or automatic sync action. Authority, mixed Capsule ownership,
+adopted-but-observed provenance, and released history are not collapsed into
+a new inferred status. No schema, backend read model, quota arithmetic,
+HTMX endpoint, profile version, or provider behavior changes.
+
+DevContainer Visual QA must verify long and duplicate Namespace names,
+distinct record generations, managed versus adopted/observed/mirrored rows,
+Released/Failed/Ready states, incomplete quota evidence, keyboard/focus,
+mobile overflow, light/dark mode, and filter/pagination modal lifecycle.
+CI/CD and Full Admission remain HOLD until explicitly requested.
+
 ### Resource Profile Registry and Manage workspace review (#1035, #775)
 
 The registry retains the approved KAORI five-row HTMX inventory table and the
