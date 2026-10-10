@@ -595,3 +595,25 @@ def test_top_consumer_missing_evidence_uses_snapshot_required_panel_in_reference
     assert 'empty_state_label = "Source Required"' in registry
     assert 'empty_state_label = "Sync Required"' in registry
     assert 'empty_state_label = "No Quota Evidence"' in registry
+
+def test_dashboard_health_registries_preserve_zero_result_pagination_and_compact_empty_state() -> None:
+    for path, width, empty_title in (
+        ('app/templates/kubernetes/dashboard/partials/_cluster_health.html', '1040', 'No Cluster Health Data'),
+        ('app/templates/storage/object_storage/dashboard/partials/_system_health.html', '1040', 'No Object Storage Health Data'),
+        ('app/templates/artifact_registry/partials/_overview_provider_health.html', '1120', 'No Registry Provider Health Data'),
+    ):
+        source = read(path)
+        assert "<div class=\"{{ 'overflow-x-auto' if pagination.total_items > 0 else '' }}\">" in source
+        assert f"table_ui.table_classes('min-w-[{width}px]' if pagination.total_items > 0 else '')" in source
+        assert '{% if pagination.total_items > 0 %}\\n            <thead' in source
+        assert '</thead>\\n            {% endif %}' in source
+        assert 'empty_state_label = "No Data"' in source
+        assert f'empty_state_title = "{empty_title}"' in source
+        assert 'empty_state_min_height = "min-h-[160px]"' in source
+        assert 'components/states/_empty_state.html' in source
+        assert 'pagination_ui.page_size_classes()' in source
+        assert 'for size in pagination.allowed_per_page' in source
+        assert 'pagination_ui.numeric_pages(' in source
+        assert 'pagination_ui.navigation_classes(disabled=true)' in source
+        assert '{% if pagination.total_items > 0 %}\\n        <footer' not in source
+        assert '</footer>\\n{% endcall %}' in source
