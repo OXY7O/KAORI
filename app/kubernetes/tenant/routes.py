@@ -342,7 +342,7 @@ def tenant_detail(tenant_id: str):
     # browser history restores still return the complete page as a fallback.
     if (
         request.headers.get('HX-Request') == 'true'
-        and request.headers.get('HX-Target') == 'tenant-management-detail'
+        and request.headers.get('HX-Target') == 'tenant-release-governance'
         and request.headers.get('HX-History-Restore-Request') != 'true'
     ):
         response = make_response(render_template(
