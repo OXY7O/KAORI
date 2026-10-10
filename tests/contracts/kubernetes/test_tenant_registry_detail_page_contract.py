@@ -346,7 +346,7 @@ def test_native_platform_admin_acceptance_requires_verified_cluster_tls_in_ui():
 
     # The existing acceptance POST must only render in the positive TLS
     # branch. The backend continues to fail closed independently.
-    before_acceptance = approval.split('<form method="post"\n                                                              action="{{ url_for(\'tenant.accept_native_successor_handoff_route', 1)[0]
+    before_acceptance = approval.split("tenant.accept_native_successor_handoff_route", 1)[0]
     assert 'aria-label="Kubernetes verified TLS prerequisite"' in before_acceptance
     assert 'if not row.cluster or not row.cluster.kubernetes_connection' in before_acceptance
     assert '{% else %}' in before_acceptance
