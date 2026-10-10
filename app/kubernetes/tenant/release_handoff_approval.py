@@ -356,6 +356,45 @@ def approve_release_handoff_plan_committed(
     return accepted
 
 
+def _confirm_safe_native_restart_history(tenant_id: str, plan: dict[str, Any]) -> bool:
+    """Return whether canonical zero-transfer observations need a fresh recheck.
+
+    Unknown, partial, full or conflicting read-backs and every committed
+    executor attempt remain blocked, including older events for this plan.
+    History alone never authorizes restart; the caller verifies live provider
+    preflight with exact original identity, fingerprint and dependencies.
+    """
+    from app.kubernetes.tenant.native_handoff_executor import native_handoff_execution_history
+    from app.kubernetes.tenant.native_handoff_readback import native_handoff_readback_history
+    from app.kubernetes.tenant.native_handoff_recovery import readback_proves_handoff_not_started
+
+    plan_sha = plan['plan_sha256']
+    executions = native_handoff_execution_history(tenant_id)
+    if any(
+        not isinstance(receipt, dict)
+        or not isinstance(receipt.get('plan_sha256'), str)
+        or len(receipt['plan_sha256']) != 64
+        or receipt['plan_sha256'] == plan_sha
+        for receipt in executions
+    ):
+        raise ValueError('Provider handoff execution exists or its history is incomplete; recovery review required.')
+
+    observations = native_handoff_readback_history(tenant_id)
+    same_plan = []
+    for receipt in observations:
+        if (
+            not isinstance(receipt, dict)
+            or not isinstance(receipt.get('plan_sha256'), str)
+            or len(receipt['plan_sha256']) != 64
+        ):
+            raise ValueError('Provider read-back history is incomplete; recovery review required.')
+        if receipt['plan_sha256'] == plan_sha:
+            same_plan.append(receipt)
+            if not readback_proves_handoff_not_started(receipt, plan=plan):
+                raise ValueError('Provider handoff read-back requires independent recovery review before restarting.')
+    return bool(same_plan)
+
+
 def restart_expired_native_release_handoff_plan_committed(
     *, tenant_id: str, actor_user_id: int, plan_sha256: str, confirmed: bool,
 ) -> dict[str, Any]:
@@ -399,13 +438,10 @@ def restart_expired_native_release_handoff_plan_committed(
     if _checked_recently(plan.get('requested_at')) and _checked_recently(approval.get('approved_at')):
         raise ValueError('This handoff plan is still current; restart is not permitted.')
 
-    # Even observed external ownership markers are NOT enough for Release; a
-    # read-back against this plan indicates a transfer/recovery may be underway.
-    from app.kubernetes.tenant.native_handoff_readback import latest_native_handoff_readback
-
-    prior_readback = latest_native_handoff_readback(tenant_id)
-    if prior_readback and prior_readback.get('plan_sha256') == plan_sha256:
-        raise ValueError('Provider handoff read-back exists; resolve recovery before restarting.')
+    # A canonical 0-transfer observation MAY permit an *attempt* at a fresh
+    # provider preflight. All executor activity, partial/full or corrupt
+    # observations (including older receipts) fail closed.
+    prior_zero_transfer = _confirm_safe_native_restart_history(tenant_id, plan)
 
     # This authorized provider read commits a new snapshot. Never restart based
     # on expired UID/resourceVersion or the old dry-run/approval alone.
@@ -442,9 +478,10 @@ def restart_expired_native_release_handoff_plan_committed(
         or acknowledged.get('status') != 'acknowledged_pending_provider_handoff'
     ):
         raise ValueError('Another handoff operation replaced the expired plan.')
-    current_readback = latest_native_handoff_readback(tenant_id)
-    if current_readback and current_readback.get('plan_sha256') == plan_sha256:
-        raise ValueError('Concurrent provider handoff observation blocks plan restart.')
+    # Recheck entire committed history after the row lock. If a concurrent
+    # observer/executor recorded unsafe evidence, do not supersede this plan.
+    if _confirm_safe_native_restart_history(tenant_id, current) != prior_zero_transfer:
+        raise ValueError('Provider handoff history changed during restart; recovery review required.')
     if _checked_recently(current.get('requested_at')) and _checked_recently(acknowledged.get('approved_at')):
         raise ValueError('The current handoff is not expired.')
 
@@ -463,6 +500,7 @@ def restart_expired_native_release_handoff_plan_committed(
         'blockers': fresh['blockers'],
         'supersedes_plan_sha256': plan_sha256,
         'restart_reason': 'approved_evidence_expired',
+        'restart_zero_transfer_readback_reverified': prior_zero_transfer,
         'provider_mutation_performed': False,
         'provider_handoff_verified': False,
         'release_authorized': False,
