@@ -212,6 +212,18 @@ provider handoff has not begun, never for partial/full handoff.
 Contract/unit tests and browser QA are pending, as are CI/CD gates, Full
 Admission, staging/UAT and deployment; no production migration performed.
 
+**Read-only executor no-transfer assessment (#1110):**
+Step 4 distinguishes a same-plan failure with consistent, explicitly
+no-mutation 0-verified receipts from incomplete or conflicting history.
+`no_transfer_assessment_candidate` is an **advisory committed UI signal**,
+not an approval, successful provider read-back, restart permission or
+automatic retry. Existing backend fail-closed guard continues to block
+same-plan executor attempts. Operator must verify original provider scope,
+UID/resourceVersion, full spec and retained metadata, dependencies and
+immutable audit evidence via a separate governed recovery workflow before
+any new SHA/approval or Kubernetes mutation. No live provider checks were
+run for this implementation; QA and gates HOLD.
+
 **Native executor approved-component patch binding (#1102 corrective under #1048):**
 `dry_run_native_handoff_component` commits authoritative Kubernetes
 **preview evidence**, not a governance ownership decision. Executor patches
