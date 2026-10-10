@@ -98,6 +98,9 @@
                                               hx-indicator="#tenant-management-loading">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                                            {% for state_key, state_value in registry_state.items() %}
+                                                <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
+                                            {% endfor %}
                                             <button type="submit"
                                                     class="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-outline-subtle bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                                                 <i data-lucide="clipboard-check" class="h-3.5 w-3.5" aria-hidden="true"></i>
@@ -271,6 +274,9 @@
                                               class="space-y-2">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                                            {% for state_key, state_value in registry_state.items() %}
+                                                <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
+                                            {% endfor %}
                                             <label class="block text-xs font-medium text-content-secondary">
                                                 Successor owner reference
                                                 <input name="successor_owner" type="text"
@@ -358,6 +364,9 @@
                                                           class="mt-2 space-y-2 rounded-lg border border-outline-subtle bg-surface-card p-2">
                                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                                            {% for state_key, state_value in registry_state.items() %}
+                                                <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
+                                            {% endfor %}
                                                         <input type="hidden" name="plan_sha256" value="{{ handoff_plan.plan_sha256 }}">
                                                         <label class="block text-xs font-medium text-content-secondary">
                                                             External successor reference (unverified evidence, not approval)
@@ -403,6 +412,9 @@
                                                               class="mt-2 space-y-2 rounded-lg border border-outline-subtle bg-surface-card p-3">
                                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                                            {% for state_key, state_value in registry_state.items() %}
+                                                <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
+                                            {% endfor %}
                                                             <input type="hidden" name="plan_sha256" value="{{ handoff_plan.plan_sha256 }}">
                                                             <p class="text-xs leading-5 text-content-secondary">
                                                                 KAORI uses its registered Kubernetes connection (X.509 kubeconfig).
@@ -437,6 +449,9 @@
                                                           class="mt-2 space-y-2 rounded-lg border border-outline-subtle bg-surface-card p-2">
                                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                                            {% for state_key, state_value in registry_state.items() %}
+                                                <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
+                                            {% endfor %}
                                                         <input type="hidden" name="plan_sha256" value="{{ handoff_plan.plan_sha256 }}">
                                                         <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
                                                             <input type="checkbox" name="confirm_native_handoff_dry_run"
@@ -490,6 +505,9 @@
                                                               class="mt-2 space-y-2 rounded-lg border border-outline-subtle bg-surface-card p-3">
                                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                                            {% for state_key, state_value in registry_state.items() %}
+                                                <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
+                                            {% endfor %}
                                                             <input type="hidden" name="plan_sha256" value="{{ handoff_plan.plan_sha256 }}">
                                                             <p class="text-xs leading-5 text-content-secondary">
                                                                 KAORI will recheck its configured Kubernetes kubeconfig
@@ -528,6 +546,9 @@
                                                           class="mt-2 space-y-2 rounded-lg border border-outline-subtle bg-surface-card p-2">
                                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                                            {% for state_key, state_value in registry_state.items() %}
+                                                <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
+                                            {% endfor %}
                                                         <input type="hidden" name="plan_sha256" value="{{ handoff_plan.plan_sha256 }}">
                                                         <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
                                                             <input type="checkbox" name="confirm_native_handoff_readback"
@@ -590,6 +611,9 @@
                                                       class="space-y-2 border-t border-outline-subtle pt-3">
                                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                                            {% for state_key, state_value in registry_state.items() %}
+                                                <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
+                                            {% endfor %}
                                                     <input type="hidden" name="plan_sha256"
                                                            value="{{ handoff_plan.plan_sha256 }}">
                                                     <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
@@ -700,6 +724,9 @@
                                                           class="space-y-2">
                                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                                            {% for state_key, state_value in registry_state.items() %}
+                                                <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
+                                            {% endfor %}
                                                         <input type="hidden" name="plan_sha256" value="{{ row.release_handoff_plan.plan_sha256 }}">
                                                         <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
                                                             <input type="checkbox" name="confirm_handoff_restart" value="restart" required
@@ -744,6 +771,9 @@
                                           class="mt-4 flex min-w-0 flex-col gap-3 rounded-xl border border-outline-subtle bg-surface-elevated p-4">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                                            {% for state_key, state_value in registry_state.items() %}
+                                                <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
+                                            {% endfor %}
                                         <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
                                             <input type="checkbox" name="confirm_release_governance"
                                                    value="approved" required
@@ -772,6 +802,9 @@
                                           class="mt-4 space-y-3 rounded-lg border border-outline-subtle bg-surface-card p-3">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                                            {% for state_key, state_value in registry_state.items() %}
+                                                <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
+                                            {% endfor %}
                                         <input type="hidden" name="plan_sha256" value="{{ row.release_handoff_plan.plan_sha256 }}">
                                         <p class="text-xs font-semibold text-content-primary">Verified Native Transfer · Ready for Governance Release</p>
                                         <p class="text-xs leading-5 text-content-secondary">
@@ -853,6 +886,9 @@
                                   class="mt-4 space-y-3 rounded-lg border border-outline-subtle bg-surface-elevated p-3">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                                            {% for state_key, state_value in registry_state.items() %}
+                                                <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
+                                            {% endfor %}
                                 <input type="hidden" name="release_plan_sha256" value="{{ released_native.plan_sha256 }}">
                                 <p class="text-xs leading-5 text-content-secondary">
                                     This operation uses KAORI's existing Kubernetes X.509 kubeconfig to verify
@@ -904,6 +940,9 @@
                                               class="mt-4 grid min-w-0 gap-3 rounded-xl border border-outline-subtle bg-surface-elevated p-3.5 sm:grid-cols-2">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                                            {% for state_key, state_value in registry_state.items() %}
+                                                <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
+                                            {% endfor %}
                                             <label class="block text-xs font-medium text-content-secondary">
                                                 Destination environment
                                                 <select name="environment_id" required
@@ -1007,6 +1046,9 @@
                                           class="inline-flex">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                                            {% for state_key, state_value in registry_state.items() %}
+                                                <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
+                                            {% endfor %}
                                         <button id="tenant-decommission-submit-{{ tenant.id }}"
                                                 type="submit"
                                                 class="hidden"
