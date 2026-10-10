@@ -116,19 +116,19 @@ Hero
 
 `Tenant Registry` is the default tab and uses the canonical KAORI server-backed registry contract: shared loading bar, Cluster/Environment/Lifecycle/Search filters, committed-state reads, semantic labels, responsive horizontal overflow, default 5-row pagination, 5/10/25/50 page sizes, and HTMX progressive enhancement with the Tenants route as the real navigation fallback.
 
-**Tenant Overview — unified committed record sheet (#1081; current detail presentation):**
-Replace the two uneven #1075 Overview panels with a single bordered Tenant
-record surface below the shared #1079 Governance Scope: two responsive
-columns for **Identity & Origin** (cluster, provider, exact copyable-in-browser
-Tenant ID) and **Governance & Responsibility** (ownership, lifecycle,
-reconciliation authority); then one full-width **Record History** band
-(generation, registered and updated timestamps) and a full-width untruncated
-Description. The existing technical-value macro wraps long identities,
-semantic labels preserve lifecycle tones, and historical Namespace records
-are clearly **not active**. Unknown timestamps stay `Not recorded`. No
-duplicate KPI row, Quick Links, new provider request, new component taxonomy
-or authority change. All 14 forms, Release wizard and standalone
-**Authority Boundary** persist. DevContainer Visual QA / CI/CD gates HOLD.
+**Tenant Overview — compact committed record (#1081; current detail presentation):**
+DevContainer feedback supersedes the former #1081 two-subpanel + Record
+History band layout. Reuse one existing bordered Violet KAORI surface with
+a **small Identity & Governance header**; show exact wrapped/monospace Tenant
+ID on one line/row, then a responsive 4/2/1-column plain facts grid:
+Cluster, Provider, Ownership, Lifecycle, Reconciliation Authority, Generation,
+Registered, Last Updated. Keep canonical semantic lifecycle status and
+`Not recorded` date fallbacks, with the small historical Namespace footnote
+only if applicable. Put the full Description in a single inline-label bottom
+row, safe for long text/newlines and without whitespace indentation artifacts.
+Do not repeat #1079's KPI cards, reintroduce Quick Links, or introduce a new
+UI system/provider request. Preserve all 14 forms, Release wizard and the
+standalone Authority Boundary note. DevContainer Visual QA / CI/CD HOLD.
 
 **Tenant Governance Scope — canonical shared posture card (#1079; current UI):**
 Match the existing Tenant Overview `Governance Scope → Tenant Estate`
