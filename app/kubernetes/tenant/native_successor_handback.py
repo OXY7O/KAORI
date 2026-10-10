@@ -16,7 +16,9 @@ from app.kubernetes.tenant.native_handoff_dry_run import (
     _resource_metadata, _retained_provider_metadata, _spec, _stable_sha256,
 )
 from app.kubernetes.tenant.native_handoff_readback import _latest_native_dry_run
-from app.kubernetes.tenant.native_successor_identity import verify_native_successor_resource_authority
+from app.kubernetes.tenant.native_platform_admin_authority import (
+    require_platform_admin_actor, verify_native_provider_admin_authority,
+)
 from app.kubernetes.tenant.release_handoff_approval import _plan_hash
 from app.kubernetes.tenant.release_preflight import _release_dependency_counts
 from app.models import Cluster
@@ -54,11 +56,12 @@ def _validate_released_component(
 
 def handback_native_successor_governance_committed(
     *, tenant_id: str, actor_user_id: int, release_plan_sha256: str,
-    provider_token: str, confirmed: bool,
+    confirmed: bool,
 ) -> dict[str, Any]:
     """Relinquish a verified successor-owned Native generation for future Discovery."""
     if not confirmed:
-        raise ValueError('External successor must explicitly authorize governance handback.')
+        raise ValueError('Platform Admin must explicitly authorize governance handback.')
+    require_platform_admin_actor(actor_user_id)
     tenant = db.session.get(Tenant, tenant_id)
     if (
         tenant is None or tenant.lifecycle_status != TenantLifecycleStatus.RELEASED.value
@@ -139,12 +142,17 @@ def handback_native_successor_governance_committed(
         ],
     }
     contract['plan_sha256'] = _plan_hash(contract)
-    authority = verify_native_successor_resource_authority(
-        cluster=cluster, plan=contract, provider_token=provider_token,
-        ownership_required='external_successor_correlated',
+    authority = verify_native_provider_admin_authority(
+        cluster=cluster, components=contract['handoff_components'],
     )
     if authority.get('resource_authority_verified') is not True:
-        raise ValueError('Authenticated successor Kubernetes handback authority was not proven.')
+        raise ValueError('The configured Kubernetes provider connection lacks handback authority.')
+    if (
+        release.get('authority_mode') != 'platform_admin_governed'
+        or authority.get('provider_username') != release.get('provider_username')
+        or authority.get('provider_credential_id') != release.get('provider_credential_id')
+    ):
+        raise ValueError('Platform Admin provider identity changed after the verified Release.')
     locked = Tenant.query.filter_by(id=tenant_id).with_for_update().one_or_none()
     if (
         locked is None or locked.lifecycle_status != TenantLifecycleStatus.RELEASED.value
@@ -159,7 +167,10 @@ def handback_native_successor_governance_committed(
         metadata_json={
             'status': 'in_progress', 'tenant_id': tenant_id,
             'release_plan_sha256': release_plan_sha256,
-            'provider_principal_uid': authority['provider_principal_uid'],
+            'provider_username': authority['provider_username'],
+            'provider_credential_id': authority['provider_credential_id'],
+            'authority_mode': 'platform_admin_governed',
+            'accepted_by_platform_admin': actor_user_id,
             'handback_plan_sha256': contract['plan_sha256'],
             'secret_material_persisted': False,
         },
@@ -223,7 +234,10 @@ def handback_native_successor_governance_committed(
         'release_plan_sha256': release_plan_sha256,
         'handback_plan_sha256': contract['plan_sha256'],
         'successor_owner': owner,
-        'provider_principal_uid': authority['provider_principal_uid'],
+        'provider_username': authority['provider_username'],
+        'provider_credential_id': authority['provider_credential_id'],
+        'authority_mode': 'platform_admin_governed',
+        'accepted_by_platform_admin': actor_user_id,
         'verified_components': verified,
         'verified_count': len(verified),
         'expected_component_count': len(items),
@@ -231,6 +245,7 @@ def handback_native_successor_governance_committed(
         'provider_resource_deleted': False,
         'provider_specs_preserved': True if complete else False,
         'successor_handback_verified': complete,
+        'platform_admin_handback_authorized': True,
         'adoption_automatic': False,
         'secret_material_persisted': False,
         'checked_at': datetime.now(UTC).isoformat(),
@@ -287,7 +302,7 @@ def handback_native_successor_governance_committed(
             if complete else 'tenant.release.native_successor_handback_recovery_required'
         ),
         summary=(
-            'External Native owner relinquished metadata; fresh Discovery/Re-adopt is now eligible.'
+            'Platform Admin relinquished Native governance metadata; fresh Discovery/Re-adopt is eligible.'
             if complete else 'Incomplete Native successor handback; recovery required before Re-adopt.'
         ),
         metadata_json=receipt,
