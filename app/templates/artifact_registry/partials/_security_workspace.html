@@ -473,17 +473,13 @@
                                                     {% set vulnerability_dialog_id = 'artifact-registry-vulnerability-detail-' ~ row.id %}
                                                     <tr class="{{ table_ui.row_classes() }}">
                                                         <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
-                                                            <p class="min-w-0 truncate text-sm font-semibold text-content-primary"
-                                                               title="{{ row.vulnerability_id }}">{{ row.vulnerability_id }}</p>
+                                                            {{ table_ui.title_cell(row.vulnerability_id, '', 'shield-alert') }}
                                                             <div class="mt-1.5">
                                                                 {{ table_label.status_indicator_label(row.severity_label, severity_tone) }}
                                                             </div>
                                                         </td>
                                                         <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
-                                                            <p class="min-w-0 truncate text-sm font-semibold text-content-primary"
-                                                               title="{{ row.repository }}">{{ row.repository }}</p>
-                                                            <p class="mt-1 min-w-0 truncate text-xs text-content-muted"
-                                                               title="Project: {{ row.project }}">Project: {{ row.project }}</p>
+                                                            {{ table_ui.title_cell(row.repository, 'Project: ' ~ row.project, 'package-search') }}
                                                         </td>
                                                         <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
                                                             <p class="min-w-0 truncate text-sm font-semibold text-content-primary"
@@ -502,9 +498,8 @@
                                                             {% endif %}
                                                         </td>
                                                         <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
-                                                            <p class="min-w-0 truncate text-sm font-semibold text-content-primary"
-                                                               title="{{ row.source_name }}">{{ row.source_name }}</p>
-                                                            <div class="mt-1">
+                                                            {{ table_ui.title_cell(row.source_name, '', 'blocks') }}
+                                                            <div class="mt-1.5">
                                                                 {{ table_label.status_indicator_label(row.freshness.label, row.freshness.tone) }}
                                                             </div>
                                                         </td>
