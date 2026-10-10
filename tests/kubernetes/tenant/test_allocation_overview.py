@@ -80,6 +80,31 @@ def test_unknown_and_overcommitted_budget_does_not_claim_free_capacity() -> None
     assert zero["state"] == "Exhausted"
 
 
+def test_budget_detail_percentages_remain_presentation_only_and_bound_unknown_states() -> None:
+    normal = build_tenant_allocation_bars(_summary())
+    assert [(bar["label"], bar["percent"], bar["free_percent"]) for bar in normal[:3]] == [
+        ("CPU Requests", "60.0", "40.0"),
+        ("Memory Requests", "40.0", "60.0"),
+        ("Pod Slots", "24.0", "76.0"),
+    ]
+    assert normal[3]["known"] is False
+    assert normal[3]["state"] == "Not Governed"
+
+    overcommitted = build_tenant_allocation_bars(_summary(cpu_budget="5", cpu_used="6"))[0]
+    assert overcommitted["state"] == "Overcommitted"
+    assert overcommitted["percent"] == "100.0"
+    assert overcommitted["free_percent"] == "0.0"
+    assert overcommitted["shortfall"] == "1.00 cores"
+
+    unknown = build_tenant_allocation_bars(_summary(cpu_budget=None))[0]
+    assert unknown["known"] is False
+    assert unknown["state"] == "Unknown"
+
+    exhausted = build_tenant_allocation_bars(_summary(cpu_budget="0", cpu_used="0"))[0]
+    assert exhausted["known"] is False
+    assert exhausted["state"] == "Exhausted"
+
+
 def test_created_and_adopted_tenants_share_one_canonical_ledger() -> None:
     created = SimpleNamespace(id="created", name="Created", provider_key="native_kubernetes", ownership_status="managed")
     adopted = SimpleNamespace(id="adopted", name="Adopted", provider_key="native_kubernetes", ownership_status="adopted")
