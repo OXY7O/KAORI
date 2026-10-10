@@ -59,6 +59,19 @@ def test_handback_requires_exact_successor_marker_and_unchanged_provider_spec():
         )
 
 
+@pytest.mark.parametrize('marker', [
+    'kaori.io/resource-profile', 'kaori.io/tenant-generation',
+    'kaori.io/profile-id',
+])
+def test_handback_refuses_residual_owned_marker_after_release(marker):
+    live = resource()
+    live.metadata.labels[marker] = 'leftover'
+    with pytest.raises(ValueError, match='no longer owned'):
+        _validate_released_component(
+            item=preview(), live=live, successor_owner='platform-team',
+        )
+
+
 def test_handback_requires_explicit_confirmation():
     with pytest.raises(ValueError, match='explicitly authorize'):
         handback_native_successor_governance_committed(

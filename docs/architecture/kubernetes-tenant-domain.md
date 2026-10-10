@@ -1322,6 +1322,31 @@ of Kubernetes RBAC or a resource deletion.**
    the previous Released generation remains immutable. Prior approval is
    never automatically reused or treated as current authorization.
 
+**Native ownership marker consistency (#1126).** Native Provisioning and
+Allocation Cutover write the canonical `kaori.io/resource-profile` label.
+The existing Native handoff marker contract must classify it as KAORI-owned,
+along with `app.kubernetes.io/managed-by`, `kaori.io/tenant-id`,
+`kaori.io/environment`, and historical `kaori.io/tenant-generation` /
+`kaori.io/profile-id` labels. Only after the original KAORI ownership,
+UID/resourceVersion, exact approved plan and provider identity are verified,
+the Native executor removes those KAORI-owned keys that are present and
+sets the approved successor manager. No Kubernetes spec, CPU/memory,
+quota, unrelated label (including plain `environment`), annotation,
+RBAC or provider authority is changed. Dry-run, read-back and Handback
+fail closed when an old KAORI ownership marker remains.
+
+This source correction applies only to **future authorized** Native
+handoffs. For already `Released` / `Handback Verified` objects such as
+`tenant-uat-demo` and its ResourceQuota, existing historical
+`kaori.io/resource-profile` residue must stay **Blocked** in Discovery.
+A separate, explicitly approved, provider-authoritative and auditable
+metadata remediation is required: verify exact immutable release/handback
+lineage, UID/RV, all affected provider components, nonownership metadata
+and specs, perform a narrowly scoped conditional mutation with read-back,
+then commit new evidence without rewriting any historical receipt.
+Never automatically patch, repeat Handback, force Re-adopt, or remove
+provider labels manually. All runtime mutation/security gates remain HOLD.
+
 The `successor_owner` label is an administrative governance marker, **not
 a Kubernetes IdP group, RBAC entitlement or credential recipient**.
 Historical bearer-token successor receipts and old acceptance UI are

@@ -33,6 +33,8 @@ def _resource(kind: str = 'Namespace', *, uid: str = 'uid-7', rv: str = '19'):
                 'app.kubernetes.io/managed-by': 'kaori',
                 'kaori.io/tenant-id': 'tenant-1',
                 'kaori.io/environment': 'dev',
+                'kaori.io/resource-profile': 'resource-profile-v2',
+                'kaori.io/tenant-generation': '4',
                 'kaori.io/profile-id': 'profile-v2',
                 'example.com/other': 'preserved',
             },
@@ -117,9 +119,26 @@ def test_native_handoff_simulates_all_component_types_without_persisting(kind):
         'app.kubernetes.io/managed-by',
         'kaori.io/tenant-id',
         'kaori.io/environment',
+        'kaori.io/resource-profile',
+        'kaori.io/tenant-generation',
         'kaori.io/profile-id',
     ]
     assert len([c for c in core.calls if c[0] == 'patch']) == 1
+    assert core.obj == before
+
+
+@pytest.mark.parametrize('kind', ['Namespace', 'ResourceQuota', 'LimitRange'])
+def test_handoff_dry_run_releases_real_profile_label_without_legacy_alias(kind):
+    core = _CoreApi(kind)
+    core.obj.metadata.labels.pop('kaori.io/profile-id')
+    core.obj.metadata.labels.pop('kaori.io/tenant-generation')
+    before = deepcopy(core.obj)
+    receipt = dry_run_native_handoff_component(
+        core, _component(kind), tenant_id='tenant-1',
+    )
+    assert 'kaori.io/resource-profile' in receipt['label_keys_to_release']
+    assert receipt['spec_unchanged'] is True
+    assert receipt['live_provider_unchanged'] is True
     assert core.obj == before
 
 

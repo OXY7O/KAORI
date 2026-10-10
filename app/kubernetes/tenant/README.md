@@ -602,6 +602,28 @@ Tenant identity is immutable after creation in the normal operator workflow.
 
 #734 still prohibits a database-only lifecycle flag change from being presented as provider decommission; the final lifecycle transition now occurs only after the #735 provider verification path succeeds.
 
+### Native Release ownership marker alignment (#1126)
+
+Provisioning and Allocation Cutover write `kaori.io/resource-profile`.
+Native Release handoff treats this as KAORI-owned metadata, not a foreign
+label; the same existing conditional UID/RV Patch and verified read-back
+applies to `app.kubernetes.io/managed-by`, `kaori.io/tenant-id`,
+`kaori.io/environment`, and legacy `kaori.io/tenant-generation` /
+`kaori.io/profile-id` keys. No blanket removal of provider labels.
+Resource specs, CPU/memory, quota, foreign labels such as
+`environment=uat`, annotations, credentials and RBAC remain unchanged.
+Handback requires clean successor-owned resources and removes only the
+verified successor manager; it cannot approve retained KAORI markers.
+
+For already `Released` / `Handback Verified` objects carrying the
+old `kaori.io/resource-profile` residue, the source fix **does not**
+retroactively remove live provider labels. Keep Discovery blocked until
+a separately approved, provider-authoritative, auditable metadata
+recovery with UID/RV CAS, read-back and new lineage evidence is admitted.
+Do not manually edit labels, retry verified Handback or force Adopt.
+No Kubernetes mutation or quality gates are authorized by this source
+change; tests/CI/formal UAT remain HOLD.
+
 ### Provider Discovery and Adoption
 
 #736 owns the two-way Tenant Registry path. Discovery is an explicit live-provider exception to normal committed-state reads: it reads Native Kubernetes namespaces and Capsule Tenant CRs on the Discovery request, shows provider status, correlates objects already governed by KAORI, and classifies candidates as **Managed**, **Discovered**, or **Blocked**. It does not wait for the Overview inventory worker sync. Discovery itself never mutates provider state.

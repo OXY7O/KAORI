@@ -180,6 +180,32 @@ def test_native_discovery_blocks_orphaned_or_foreign_ownership_before_adoption(l
     assert reason in explanation
 
 
+def test_post_handback_discovery_requires_resource_profile_marker_absent():
+    from app.kubernetes.tenant.discovery_service import _native_management
+
+    # Handback removes the successor owner, but orphaned KAORI profile
+    # governance still blocks Discovery until separately verified.
+    status, reason = _native_management(
+        namespace='tenant-uat-demo',
+        labels={
+            'environment': 'uat',
+            'kaori.io/resource-profile': 'profile-v4',
+        },
+        managed_record=None,
+    )
+    assert status == 'Blocked'
+    assert 'ownership markers' in reason
+    status, _ = _native_management(
+        namespace='tenant-uat-demo',
+        labels={
+            'environment': 'uat',
+            'kubernetes.io/metadata.name': 'tenant-uat-demo',
+        },
+        managed_record=None,
+    )
+    assert status == 'Discovered'
+
+
 def test_native_discovery_without_claims_remains_a_review_candidate():
     from app.kubernetes.tenant.discovery_service import _native_management
 

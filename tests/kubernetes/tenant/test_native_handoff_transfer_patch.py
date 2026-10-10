@@ -20,6 +20,8 @@ def _resource():
                 'app.kubernetes.io/managed-by': 'kaori',
                 'kaori.io/tenant-id': 'tenant-1',
                 'kaori.io/environment': 'development',
+                'kaori.io/resource-profile': 'profile-v4',
+                'kaori.io/tenant-generation': '4',
                 'kaori.io/profile-id': 'profile-4',
                 'example.com/external': 'preserved',
             },
@@ -58,7 +60,10 @@ def test_successor_patch_is_only_cas_owner_transfer_metadata(kind):
         'value': 'platform-team',
     }
     removed = [op['path'] for op in ops if op['op'] == 'remove']
-    assert len(removed) == 4
+    assert len(removed) == 6
+    assert '/metadata/labels/kaori.io~1resource-profile' in removed
+    assert '/metadata/labels/kaori.io~1tenant-generation' in removed
+    assert '/metadata/labels/example.com~1external' not in removed
     assert all(op['path'].startswith('/metadata/') for op in ops)
     assert all(op['op'] in {'test', 'remove', 'add'} for op in ops)
     assert not any('spec' in op['path'] for op in ops)

@@ -38,6 +38,8 @@ def _receipt(before):
 
 def test_native_external_handoff_receipt_proves_only_matching_provider_state():
     baseline = _resource()
+    # Real provisioning label must be excluded from retained foreign metadata.
+    baseline.metadata.labels['kaori.io/resource-profile'] = 'profile-v4'
     transferred = _resource(manager='platform-team', rv='22')
     output = verify_external_native_component(
         before=_receipt(baseline), current=transferred, successor_owner='platform-team'
@@ -51,6 +53,8 @@ def test_native_external_handoff_receipt_proves_only_matching_provider_state():
     lambda obj: setattr(obj.metadata, 'uid', 'different'),
     lambda obj: setattr(obj.metadata, 'resource_version', '21'),
     lambda obj: obj.metadata.labels.update({'kaori.io/tenant-id': 'tenant-a'}),
+    lambda obj: obj.metadata.labels.update({'kaori.io/resource-profile': 'profile-v4'}),
+    lambda obj: obj.metadata.labels.update({'kaori.io/tenant-generation': '4'}),
     lambda obj: obj.metadata.labels.update({'app.kubernetes.io/managed-by': 'unknown'}),
     lambda obj: obj.metadata.annotations.update({'foreign': 'unexpected'}),
     lambda obj: obj.metadata.labels.update({'example.com/retained': 'modified'}),

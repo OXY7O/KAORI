@@ -28,10 +28,15 @@ from app.models.tenant import Tenant, TenantLifecycleStatus
 
 _TARGET = 'kubernetes_tenant_release_native_handoff_dry_run'
 _CONTENT_TYPE = 'application/json-patch+json'
+# Match the exact KAORI-owned labels written by provisioning/cutover and
+# rejected by Discovery. Retain the legacy keys for historical governance,
+# but never blanket-remove kaori.io/* or external provider metadata.
 _MARKER_KEYS = (
     'app.kubernetes.io/managed-by',
     'kaori.io/tenant-id',
     'kaori.io/environment',
+    'kaori.io/resource-profile',
+    'kaori.io/tenant-generation',
     'kaori.io/profile-id',
 )
 _MAX_COMPONENTS = 100
