@@ -151,7 +151,9 @@ def test_contribution_filter_disambiguates_tenants_with_the_same_display_name() 
 
 
 def test_contribution_summary_uses_unfiltered_committed_tenant_rows() -> None:
-    created = SimpleNamespace(id="created", name="Created", provider_key="native_kubernetes", ownership_status="managed")
+    created = SimpleNamespace(
+        id="created", name="Created", provider_key="native_kubernetes", ownership_status="managed"
+    )
     shared = SimpleNamespace(id="capsule", name="Capsule", provider_key="capsule", ownership_status="adopted")
     ambiguous = SimpleNamespace(id="ambiguous", name="Unknown", provider_key="capsule", ownership_status="adopted")
     rows = _partition_tenant_contributions(
