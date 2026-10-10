@@ -573,7 +573,11 @@
                                     {% if current_user.has_permission('integrations.manage') and row.release_handoff_plan %}
                                         {% set current_handoff_plan = row.release_handoff_plan %}
                                         {% set current_handoff_approval = row.release_handoff_approval %}
-                                        {% if current_handoff_approval and current_handoff_approval.plan_sha256 == current_handoff_plan.plan_sha256 %}
+                                        {% if tenant.provider_key == 'native_kubernetes' and row.get('native_release_readiness') and row.native_release_readiness.approval_expired %}
+                                            {{ table_label.status_label('Approval Expired', 'warning') }}
+                                        {% elif tenant.provider_key == 'native_kubernetes' and row.get('native_release_readiness') and row.native_release_readiness.review_expired %}
+                                            {{ table_label.status_label('Review Expired', 'warning') }}
+                                        {% elif current_handoff_approval and current_handoff_approval.plan_sha256 == current_handoff_plan.plan_sha256 %}
                                             {{ table_label.status_label('Transfer Pending', 'warning') }}
                                         {% else %}
                                             {{ table_label.status_label('Approval Pending', 'warning') }}
@@ -593,6 +597,29 @@
                                             <i data-lucide="shield-alert" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
                                             <span>One active plan per Tenant. The requester and independent reviewer must be different authorized operators. Review does not transfer provider ownership or authorize Release.</span>
                                         </p>
+                                        {% if tenant.provider_key == 'native_kubernetes' and row.get('native_release_readiness')
+                                              and (row.native_release_readiness.approval_expired or row.native_release_readiness.review_expired) %}
+                                            <div class="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-lg border border-status-warning-border bg-status-warning-soft px-3 py-3"
+                                                 role="status" aria-label="Expired Native handoff evidence">
+                                                <div class="flex min-w-0 flex-1 items-start gap-2">
+                                                    <i data-lucide="clock-alert" class="mt-0.5 h-4 w-4 shrink-0 text-status-warning-text" aria-hidden="true"></i>
+                                                    <div class="min-w-0">
+                                                        <p class="text-xs font-semibold text-status-warning-text">Approval is no longer current</p>
+                                                        <p class="mt-0.5 text-xs leading-5 text-content-secondary">
+                                                            {% if row.native_release_readiness.approval_expired %}
+                                                                The recorded independent approval or plan expired. Platform Admin acceptance is unavailable until the original requester restarts the plan and a different operator reviews the new SHA.
+                                                            {% else %}
+                                                                The provider Release review expired. Refresh the provider scope before proceeding.
+                                                            {% endif %}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <a href="{{ tenant_release_step_urls['finalize'] }}"
+                                                   class="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                    View recovery steps <i data-lucide="arrow-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                </a>
+                                            </div>
+                                        {% endif %}
                                         {% if row.release_handoff_preparation_state == 'available'
                                               or (row.release_handoff_preparation_state == 'expired'
                                                   and handoff_plan and handoff_plan.requested_by == current_user.id) %}
@@ -751,7 +778,10 @@
                                                             Existing kubeconfig verified through SelfSubjectReview and scoped SelfSubjectAccessReview. Provider transfer is still separate.
                                                         </p>
                                                     {% elif row.release_handoff_preparation_state == 'acknowledged'
-                                                            and handoff_plan.requested_by != current_user.id %}
+                                                            and handoff_plan.requested_by != current_user.id
+                                                            and row.get('native_release_readiness')
+                                                            and row.native_release_readiness.approval_complete
+                                                            and row.native_release_readiness.review_complete %}
                                                         <form method="post"
                                                               action="{{ url_for('tenant.accept_native_successor_handoff_route', tenant_id=tenant.id) }}"
                                                               hx-post="{{ url_for('tenant.accept_native_successor_handoff_route', tenant_id=tenant.id) }}"
