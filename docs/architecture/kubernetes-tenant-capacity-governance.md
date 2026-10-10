@@ -191,6 +191,44 @@ changes and Namespace allocation increases still require the same #654
 preflight and provider reconciliation/write-readback governance. Projected
 transaction impact for Create/Adopt is scoped separately under #125.
 
+### Tenant Allocation Overview UX refinement (#1038)
+
+The cluster selector uses the existing HTMX partial-response pattern to refresh the
+selected overview immediately on change; the non-JavaScript form fallback remains
+available. The permission-guarded Capacity Analytics destination uses the shared
+KAORI secondary action contract. No live provider or Prometheus query is added.
+
+The compact budget guidance is an accessible disclosure rather than an always-open
+paragraph: **CPU, memory and Pod request budget = Ready-worker allocatable −
+platform reserve − safety headroom − unmanaged commitment**. Logical
+`requests.storage` is a separately governed policy ceiling, not physical
+storage availability. `ResourceQuota` enforces Kubernetes quota and never
+constitutes a physical node-resource reservation.
+
+**Tenant Contributions is detail on demand:** the overview shows the committed
+Tenant count and opens the canonical native KAORI dialog. A large, responsive
+dialog retains the committed Tenant/Namespace and Native/Capsule evidence,
+search, 5-row default pagination, selectable page size, accessibility semantics
+and Tenant Registry navigation. The dialog's nested HTMX target is restricted to
+its registry section: pagination, search and page-size changes must **not**
+replace or close the parent dialog or the outer Capacity Overview. Cluster
+changes intentionally replace the outer overview and reset pagination.
+
+The contribution registry displays a stable Tenant ID alongside the Tenant
+name so same-named adopted and managed records remain distinguishable.
+The read-model search matches Tenant name/ID, Namespace, Environment, and
+allocation authority, but does **not** alter committed #654 aggregation.
+Near Capacity, Critical and Exhausted overview headers may identify the
+**lowest proportional governed headroom** from already computed presentation
+bars. This is display context only, not a separate capacity-state rule, admission
+approval, or replacement of canonical budget/shortfall evidence.
+
+The integrated review branch is a **DevContainer Visual QA candidate**.
+Source changes and tests may be authored before gate authorization, but no
+CI/CD Developer Check, Full Admission, staging deployment, or production
+promotion is implied. Confirm keyboard/focus behavior, responsive dialog
+pagination and cluster-change semantics with a human before acceptance.
+
 ### Review / quality evidence
 
 - Verify positive, zero-budget, overcommitted, unknown/missing, unbounded and
