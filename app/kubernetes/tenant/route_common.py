@@ -200,6 +200,9 @@ def _tenant_detail_context(tenant_id: str) -> dict[str, Any]:
             'handback' if 'handback' in allowed_sections else 'provider'
         )
     context['tenant_detail_open_section'] = active_section
+    context['tenant_detail_release_expanded'] = (
+        active_section == 'release' and requested_section == 'release'
+    )
 
     context['return_to_registry_url'] = url_for(
         'tenant.tenants',
