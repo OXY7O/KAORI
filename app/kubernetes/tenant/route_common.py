@@ -246,6 +246,13 @@ def _tenant_section_redirect(section: str):
                 tenant_detail_section=context['tenant_detail_open_section'],
                 release_step=context['tenant_release_step']
                 if context['tenant_detail_open_section'] == 'release' else None,
+                _anchor={
+                    'release': 'tenant-release-governance',
+                    'handback': 'tenant-native-handback',
+                    'attachment': 'tenant-namespace-attachment',
+                    'provider': 'tenant-provider-authority',
+                    'lifecycle': 'tenant-lifecycle-actions',
+                }[context['tenant_detail_open_section']],
                 **{f'registry_{key}': value for key, value in context['registry_state'].items() if value},
             ))
         rendered = render_template(
