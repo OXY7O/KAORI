@@ -206,7 +206,12 @@ def test_redesigned_contributions_modal_keeps_summary_and_footer_separate_from_s
     assert dialog.index('id="{{ contributions_body_id }}"') < dialog.index(
         "registry_ui.footer('tenant.resource_profiles'"
     )
-    assert "table_ui.table_classes('min-w-[900px] !table-fixed')" in dialog
+    assert "<table" not in dialog
+    assert "<thead" not in dialog
+    assert "min-w-[900px]" not in dialog
+    assert 'aria-label="Committed Tenant contributions"' in dialog
+    assert "md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]" in dialog
+    assert "overflow-y-auto overscroll-contain" in dialog
     assert "data-kaori-native-dialog" in dialog
     assert "data-kaori-dialog-close" in dialog
     assert "table_label.status_label(row.tenant.ownership_status|title" in dialog
@@ -217,6 +222,37 @@ def test_redesigned_contributions_modal_keeps_summary_and_footer_separate_from_s
         "filter_tenant_contribution_rows(tenant_rows, allocation_search)"
     )
     assert "committed contribution ledger" in docs
+
+
+def test_tenant_contributions_stacked_list_exposes_request_metrics_and_namespace_details() -> None:
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[3]
+    page = (root / "app/templates/kubernetes/tenant/partials/_tenant_allocation_overview.html").read_text(
+        encoding="utf-8"
+    )
+    dialog = page[page.index('<dialog id="{{ contributions_dialog_id }}"'):].split("</dialog>", 1)[0]
+    assert "<ol " in dialog and "<li " in dialog
+    assert "<article " in dialog and "<dl " in dialog
+    assert "min-w-[900px]" not in dialog
+    assert "overflow-x-auto" not in dialog
+    assert "allocation_tenant_summary.tenants" in dialog
+    assert "allocation_tenant_summary.attention" in dialog
+    assert 'row.tenant.id|string|truncate(24' in dialog
+    assert "title=\"Tenant ID: {{ row.tenant.id }}\"" in dialog
+    assert "row.source" in dialog
+    assert "row.tenant.provider_key" in dialog
+    assert "View {{ row.namespace_count }} Namespace" in dialog
+    assert '<details class="group mt-2">' in dialog
+    for dimension in ("CPU Requests", "Memory Requests", "Pod Slots", "Logical Storage"):
+        assert dimension in dialog
+    for key in ("cpu", "memory", "pods", "storage"):
+        assert "row.allocation." + key in dialog
+    assert "registry_ui.filter_form" in dialog
+    assert "registry_ui.footer" in dialog
+    assert "data-kaori-native-dialog" in dialog
+    assert "data-kaori-dialog-open" in page
+    assert "data-kaori-dialog-close" in dialog
 
 
 def test_allocation_modal_htmx_contract_preserves_dialog_across_pagination() -> None:
