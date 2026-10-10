@@ -75,42 +75,42 @@
         {% endcall %}
     </div>
     <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[940px]') }}">
+        <table class="{{ table_ui.table_classes('min-w-[1350px] !table-fixed') }}">
             <caption class="sr-only">Tenant operational evidence.</caption>
             <thead class="{{ table_ui.head_classes() }}">
                 {% if operations_evidence_filters.evidence_type == 'audit' %}
                     <tr>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Principal</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Tenant</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Request</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Namespace</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Correlation / Outcome</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Observed</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[19%]">Principal</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[16%]">Tenant</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[16%]">Request</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">Namespace</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[20%]">Correlation / Outcome</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[15%]">Observed</th>
                     </tr>
                 {% elif operations_evidence_filters.evidence_type == 'managed-resource' %}
                     <tr>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Resource</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Tenant / Namespace</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Mode</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">State</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Updated</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[26%]">Resource</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[27%]">Tenant / Namespace</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[15%]">Mode</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[15%]">State</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[17%]">Updated</th>
                     </tr>
                 {% elif operations_evidence_filters.evidence_type == 'domain-reservation' %}
                     <tr>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Hostname</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Tenant / Environment</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Match</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">State</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Updated</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[27%]">Hostname</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[25%]">Tenant / Environment</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[15%]">Match</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[15%]">State</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[18%]">Updated</th>
                     </tr>
                 {% elif operations_evidence_filters.evidence_type == 'exposure-policy' %}
                     <tr>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Namespace</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Tenant</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Profile</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Allowed Exposure</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">State</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Updated</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[20%]">Namespace</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[18%]">Tenant</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[18%]">Profile</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[20%]">Allowed Exposure</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[12%]">State</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[12%]">Updated</th>
                     </tr>
                 {% endif %}
             </thead>
@@ -120,77 +120,77 @@
                         {% set correlation_tone = 'normal' if item.correlation_status == 'matched' else 'warning' %}
                         {% set outcome_tone = 'normal' if item.outcome == 'success' else ('critical' if item.outcome == 'failure' else 'unknown') %}
                         <tr class="{{ table_ui.row_classes() }}">
-                            <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(item.principal_username, item.identity_class|title, 'user-round-search') }}</td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                <p class="text-sm font-semibold text-content-primary">{{ item.tenant.name if item.tenant else 'Uncorrelated' }}</p>
-                                <p class="mt-1 text-xs text-content-muted">{{ item.principal_kind|replace('_', ' ') |title }}</p>
+                            <td class="{{ table_ui.cell_classes() }} min-w-0">{{ table_ui.title_cell(item.principal_username, item.identity_class|title, 'user-round-search') }}</td>
+                            <td class="{{ table_ui.cell_classes() }} min-w-0">
+                                <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ item.tenant.name if item.tenant else 'Uncorrelated' }}">{{ item.tenant.name if item.tenant else 'Uncorrelated' }}</p>
+                                <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="{{ item.principal_kind|replace('_', ' ') |title }}">{{ item.principal_kind|replace('_', ' ') |title }}</p>
                             </td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                <p class="text-sm font-semibold text-content-primary">{{ item.verb|upper }} {{ item.resource or 'resource' }}</p>
-                                <p class="mt-1 text-xs text-content-muted">{{ item.resource_name or 'Unnamed resource' }}</p>
+                            <td class="{{ table_ui.cell_classes() }} min-w-0">
+                                <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ item.verb|upper }} {{ item.resource or 'resource' }}">{{ item.verb|upper }} {{ item.resource or 'resource' }}</p>
+                                <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="{{ item.resource_name or 'Unnamed resource' }}">{{ item.resource_name or 'Unnamed resource' }}</p>
                             </td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                <p class="text-sm text-content-primary">{{ item.kubernetes_namespace or 'Cluster scope' }}</p>
+                            <td class="{{ table_ui.cell_classes() }} min-w-0">
+                                <p class="text-sm text-content-primary min-w-0 max-w-full truncate" title="{{ item.kubernetes_namespace or 'Cluster scope' }}">{{ item.kubernetes_namespace or 'Cluster scope' }}</p>
                             </td>
-                            <td class="{{ table_ui.cell_classes() }}">
+                            <td class="{{ table_ui.cell_classes() }} min-w-0">
                                 <div class="flex flex-wrap gap-1.5">
                                     {{ table_label.status_label(item.correlation_status|title, correlation_tone) }}
                                     {{ table_label.status_label(item.outcome|title, outcome_tone) }}
                                 </div>
                             </td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                <p class="text-xs text-content-secondary">{{ item.event_at|user_datetime }}</p>
+                            <td class="{{ table_ui.cell_classes() }} min-w-0">
+                                <p class="text-xs text-content-secondary min-w-0 max-w-full truncate" title="{{ item.event_at|user_datetime }}">{{ item.event_at|user_datetime }}</p>
                             </td>
                         </tr>
                     {% elif operations_evidence_filters.evidence_type == 'managed-resource' %}
                         {% set state_tone = 'normal' if item.status == 'ready' else ('critical' if item.status == 'failed' else 'warning') %}
                         <tr class="{{ table_ui.row_classes() }}">
-                            <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(item.resource_name, item.resource_kind|upper, 'package-check') }}</td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                <p class="text-sm font-semibold text-content-primary">{{ item.tenant.name }}</p>
-                                <p class="mt-1 text-xs text-content-muted">{{ item.namespace.namespace }}</p>
+                            <td class="{{ table_ui.cell_classes() }} min-w-0">{{ table_ui.title_cell(item.resource_name, item.resource_kind|upper, 'package-check') }}</td>
+                            <td class="{{ table_ui.cell_classes() }} min-w-0">
+                                <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ item.tenant.name }}">{{ item.tenant.name }}</p>
+                                <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="{{ item.namespace.namespace }}">{{ item.namespace.namespace }}</p>
                             </td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                <p class="text-sm text-content-primary">{{ item.mode|replace('_', ' ') |title }}</p>
+                            <td class="{{ table_ui.cell_classes() }} min-w-0">
+                                <p class="text-sm text-content-primary min-w-0 max-w-full truncate" title="{{ item.mode|replace('_', ' ') |title }}">{{ item.mode|replace('_', ' ') |title }}</p>
                             </td>
-                            <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(item.status|title, state_tone) }}</td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                <p class="text-xs text-content-secondary">{{ item.updated_at|user_datetime }}</p>
+                            <td class="{{ table_ui.cell_classes() }} min-w-0">{{ table_label.status_label(item.status|title, state_tone) }}</td>
+                            <td class="{{ table_ui.cell_classes() }} min-w-0">
+                                <p class="text-xs text-content-secondary min-w-0 max-w-full truncate" title="{{ item.updated_at|user_datetime }}">{{ item.updated_at|user_datetime }}</p>
                             </td>
                         </tr>
                     {% elif operations_evidence_filters.evidence_type == 'domain-reservation' %}
                         <tr class="{{ table_ui.row_classes() }}">
-                            <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(item.hostname_pattern, 'Reserved domain contract', 'globe-lock') }}</td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                <p class="text-sm font-semibold text-content-primary">{{ item.tenant.name }}</p>
-                                <p class="mt-1 text-xs text-content-muted">{{ item.environment.environment|title }}</p>
+                            <td class="{{ table_ui.cell_classes() }} min-w-0">{{ table_ui.title_cell(item.hostname_pattern, 'Reserved domain contract', 'globe-lock') }}</td>
+                            <td class="{{ table_ui.cell_classes() }} min-w-0">
+                                <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ item.tenant.name }}">{{ item.tenant.name }}</p>
+                                <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="{{ item.environment.environment|title }}">{{ item.environment.environment|title }}</p>
                             </td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                <p class="text-sm text-content-primary">{{ item.match_mode|title }}</p>
+                            <td class="{{ table_ui.cell_classes() }} min-w-0">
+                                <p class="text-sm text-content-primary min-w-0 max-w-full truncate" title="{{ item.match_mode|title }}">{{ item.match_mode|title }}</p>
                             </td>
-                            <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(item.status|title, 'normal' if item.status == 'active' else 'critical') }}</td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                <p class="text-xs text-content-secondary">{{ item.updated_at|user_datetime }}</p>
+                            <td class="{{ table_ui.cell_classes() }} min-w-0">{{ table_label.status_label(item.status|title, 'normal' if item.status == 'active' else 'critical') }}</td>
+                            <td class="{{ table_ui.cell_classes() }} min-w-0">
+                                <p class="text-xs text-content-secondary min-w-0 max-w-full truncate" title="{{ item.updated_at|user_datetime }}">{{ item.updated_at|user_datetime }}</p>
                             </td>
                         </tr>
                     {% elif operations_evidence_filters.evidence_type == 'exposure-policy' %}
                         <tr class="{{ table_ui.row_classes() }}">
-                            <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(item.namespace.namespace, 'Exposure policy', 'network') }}</td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                <p class="text-sm font-semibold text-content-primary">{{ item.tenant.name }}</p>
-                                <p class="mt-1 text-xs text-content-muted">{{ item.namespace.environment.environment|title }}</p>
+                            <td class="{{ table_ui.cell_classes() }} min-w-0">{{ table_ui.title_cell(item.namespace.namespace, 'Exposure policy', 'network') }}</td>
+                            <td class="{{ table_ui.cell_classes() }} min-w-0">
+                                <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ item.tenant.name }}">{{ item.tenant.name }}</p>
+                                <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="{{ item.namespace.environment.environment|title }}">{{ item.namespace.environment.environment|title }}</p>
                             </td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                <p class="text-sm font-semibold text-content-primary">{{ item.profile_key|replace('_', ' ') |title }}</p>
+                            <td class="{{ table_ui.cell_classes() }} min-w-0">
+                                <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ item.profile_key|replace('_', ' ') |title }}">{{ item.profile_key|replace('_', ' ') |title }}</p>
                             </td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                <p class="text-xs leading-5 text-content-secondary">
+                            <td class="{{ table_ui.cell_classes() }} min-w-0">
+                                <p class="text-xs leading-5 text-content-secondary min-w-0 max-w-full truncate" title="ClusterIP {{ 'Yes' if item.allow_cluster_ip else 'No' }} · Ingress {{ 'Yes' if item.allow_ingress else 'No' }} · LB {{ 'Yes' if item.allow_load_balancer else 'No' }}">
                                     ClusterIP {{ 'Yes' if item.allow_cluster_ip else 'No' }} · Ingress {{ 'Yes' if item.allow_ingress else 'No' }} · LB {{ 'Yes' if item.allow_load_balancer else 'No' }}
                                 </p>
                             </td>
-                            <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(item.status|title, 'normal' if item.status == 'active' else 'unknown') }}</td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                <p class="text-xs text-content-secondary">{{ item.updated_at|user_datetime }}</p>
+                            <td class="{{ table_ui.cell_classes() }} min-w-0">{{ table_label.status_label(item.status|title, 'normal' if item.status == 'active' else 'unknown') }}</td>
+                            <td class="{{ table_ui.cell_classes() }} min-w-0">
+                                <p class="text-xs text-content-secondary min-w-0 max-w-full truncate" title="{{ item.updated_at|user_datetime }}">{{ item.updated_at|user_datetime }}</p>
                             </td>
                         </tr>
                     {% endif %}
