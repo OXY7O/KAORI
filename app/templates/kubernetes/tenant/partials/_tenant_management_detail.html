@@ -53,6 +53,12 @@
         <div class="min-w-0 bg-surface-card px-4 py-3">
             <dt class="text-xs font-medium text-content-muted">Namespaces</dt>
             <dd class="mt-1 text-base font-semibold tabular-nums text-content-primary">{{ row.namespace_count }} active</dd>
+            {% set historical_namespace_count = row.namespace_history_count - row.namespace_count %}
+            {% if historical_namespace_count > 0 %}
+                <p class="mt-1 text-xs text-content-muted">
+                    {{ historical_namespace_count }} historical Namespace record{{ '' if historical_namespace_count == 1 else 's' }} retained
+                </p>
+            {% endif %}
         </div>
         <div class="min-w-0 bg-surface-card px-4 py-3">
             <dt class="text-xs font-medium text-content-muted">Environments</dt>
