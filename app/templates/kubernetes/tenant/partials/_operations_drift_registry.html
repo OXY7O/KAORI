@@ -75,8 +75,9 @@
         {% endcall %}
     </div>
     <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[1420px] !table-fixed') }}">
+        <table class="{{ table_ui.table_classes('min-w-[1420px] !table-fixed' if operations_drift_rows else '!table-fixed') }}">
             <caption class="sr-only">Tenant Namespace and allocation provider drift.</caption>
+            {% if operations_drift_rows %}
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[17%]">Namespace</th>
@@ -86,6 +87,7 @@
                     <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[20%]">Action</th>
                 </tr>
             </thead>
+            {% endif %}
             <tbody class="{{ table_ui.body_classes() }}">
                 {% for item in operations_drift_rows %}
                     {% set allocation_state = operations_allocation_drift_state.get(item.id|string) or {} %}
@@ -205,6 +207,9 @@
                             {% set empty_state_icon = "circle-check" %}
                             {% set empty_state_title = "No Namespace or Allocation Drift" %}
                             {% set empty_state_description = "No committed Namespace currently requires provider or allocation drift recovery." %}
+                            {% set empty_state_label = '' %}
+                            {% set empty_state_min_height = 'min-h-[128px]' %}
+                            {% set empty_state_container_class = '!py-5' %}
                             {% include 'components/states/_empty_state.html' %}
                         </td>
                     </tr>
