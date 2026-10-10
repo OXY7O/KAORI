@@ -79,6 +79,35 @@ Discovery must subsequently offer **explicit Re-adopt** only after fresh provide
 
 Recommended modal UX reuses Violet and existing Release Governance, Work Inbox and toast patterns. It should show exactly which gate is missing, a single primary action when eligible, detailed provider evidence in existing modal panels, non-destructive confirmation, partial failure/retry guidance, and committed progress without live provider polling on normal Registry reads. Default 5-row paging, light/dark, responsive and accessible keyboard/focus remain standard.
 
+## Current safe DevContainer readiness projection (#1047)
+
+The Tenant Management native dialog now presents five committed-evidence
+checkpoints for adopted Native resources requiring provider handoff:
+Release review, independent approval, verified successor acceptance,
+KAORI provider transfer, and final Released / Re-adopt. The read model
+`app/kubernetes/tenant/native_release_readiness.py` does not query Kubernetes,
+issue external requests, mutate objects or confer any admission authority.
+It checks committed plan/approval fingerprints, current 15-minute evidence
+and Native dry-run status. External Reference Unverified and observed provider
+markers **never** fulfill the trusted consent gate. The current #1047
+identity-mapping contract remains UNAPPROVED, so the live executor, finalizer
+and automatic Re-adopt checkpoints remain explicitly incomplete.
+
+For the observation-only Release path, the existing native dialog offers
+its ordinary Release action only if the latest Release preflight has no
+blockers. Previously the control could be shown while all known provider
+mutation blockers made the POST fail. This is a UI affordance correction,
+not a Relaxed admission: the `release_preflight.py` backend remains the
+only authority and continues failing closed.
+
+**Do not claim the full lifecycle can yet pass UAT.** The gap is not a
+missing click: #1047 must first admit a trusted Kubernetes/IdP successor
+principal mapping; #1048 must execute and prove provider transfer; #1049
+must then commit provider-preserving Released and validate new-generation
+Adoption, including capacity and provider dependency cleanup. Current
+DevContainer can exercise Adoption, pending/acknowledged approval,
+dry-run and the blocked gate projection without provider mutation.
+
 ## Admission and handoff checkpoints
 
 - **This proposal only:** documentation and issue decomposition; no feature flag, live patch, application permission, migration, Release bypass or provider mutation.
