@@ -18,11 +18,14 @@ def test_overview_controls_and_readiness_follow_shared_analytics_standard() -> N
     hero = read('partials/_hero.html')
 
     assert 'class="space-y-6"' in source
-    assert 'data-analytics-controls-readiness' in source
-    assert 'Analytics Overview</p>' in source
-    assert 'Analytics Controls &amp; Data Readiness' in source
+    assert 'shared_readiness.frame(' in source
+    assert "eyebrow='Analytics Overview'" in source
+    assert "'Analytics Controls & Data Readiness'" in source
     assert 'id="analytics-overview-filter"' in source
-    assert 'analytics_workspace.control_select_classes()' in source
+    assert 'shared_readiness.selector(' in source
+    assert 'shared_readiness.controls_grid()' in source
+    assert 'shared_readiness.readiness_grid()' in source
+    assert 'payload.allowed_time_ranges' in source
     assert 'analytics_workspace.metrics_source_card(payload.metrics_source)' in source
     assert 'embedded=true' not in source
     assert 'payload.last_analyzed_at' not in source
@@ -38,7 +41,10 @@ def test_metrics_source_status_uses_one_canonical_card_contract() -> None:
     )
 
     assert 'macro render(status' in source
-    assert 'data-analytics-metrics-source-status' in source
+    assert 'shared_readiness.source_card(' in source
+    assert "metric_source_state=status.state" in source
+    assert "first_icon='zap'" in source
+    assert "second_icon='clock-3'" in source
     assert 'Metrics Source Status' in source
     assert 'Query Ready' in source
     assert 'Query Degraded' in source
@@ -51,7 +57,8 @@ def test_metrics_source_status_uses_one_canonical_card_contract() -> None:
 def test_operational_health_summary_has_separate_vertical_rhythm() -> None:
     source = read('partials/_health_summary.html')
 
-    assert source.count('<section class="{{ overview_surface.snapshot_shell_classes() }}"') == 2
+    assert source.count('<section class="{{ overview_surface.snapshot_shell_classes() }}"') == 1
+    assert 'shared_readiness.frame(' in source
     assert 'class="space-y-6"' in source
     assert 'Operational Health Summary' in source
     assert '6 Health Signals' in source
@@ -267,7 +274,7 @@ def test_overview_readiness_and_interpretation_surface_hierarchy_is_canonical() 
     surfaces = Path('app/templates/analytics/components/_analysis_surfaces.html').read_text(encoding='utf-8')
 
     assert 'analytics_workspace.metrics_source_card(payload.metrics_source)' in health
-    assert 'analytics_workspace.snapshot_card(' in health
+    assert 'shared_readiness.snapshot_card(' in health
     assert 'overview_surface.attention_strip_classes()' in health
     assert 'overview_surface.interpretation_grid_classes()' in health
     assert 'bg-surface-card' in surfaces
