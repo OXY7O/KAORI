@@ -116,7 +116,21 @@ Hero
 
 `Tenant Registry` is the default tab and uses the canonical KAORI server-backed registry contract: shared loading bar, Cluster/Environment/Lifecycle/Search filters, committed-state reads, semantic labels, responsive horizontal overflow, default 5-row pagination, 5/10/25/50 page sizes, and HTMX progressive enhancement with the Tenants route as the real navigation fallback.
 
-**Governance Scope and Release Review refresh (#1077; current UX):**
+**Tenant Governance Scope — canonical shared posture card (#1079; current UI):**
+Match the existing Tenant Overview `Governance Scope → Tenant Estate`
+layout using `section_intro`, `operational_section_card.render` and
+`resource_posture_grid.render(columns=4)`. The single header panel
+is titled **Tenant Governance**; its four shared posture cells read
+**Active Namespaces, Environments, Reconciliation Authority and Lifecycle**
+from committed Tenant evidence. This replaces the two independent
+Resource Coverage/Governance Authority cards from #1077, not the
+provider-authoritative boundary note or any governance action.
+Do not mix fleet-wide Tenant/Credential/Finding counts into one-Tenant
+detail. The shared component owns responsive separators, metrics/icon
+layout and light/dark styles. Runtime browser Visual QA and quality gates
+remain pending.
+
+**Governance Scope and Release Review refresh (#1077; historical workflow authority; scope presentation superseded by #1079):**
 The four separate Tenant KPI tiles are replaced by a grouped
 **Governance Scope** (Resource Coverage and Governance Authority) composed
 only of committed Namespace/Environment, reconciliation and lifecycle
