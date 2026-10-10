@@ -4,7 +4,7 @@
     {% elif page_key == 'forecast' %}
         Select the Object Storage system and history window, then review committed metrics and forecast worker readiness.
     {% else %}
-        Set the Object Storage system and Time Range, then confirm Metrics Source and committed analytics readiness.
+        Set the Object Storage system and Time Range, then confirm Metrics Source and committed analytics readiness. Pages read worker-materialized analytics snapshots.
     {% endif %}
 {% endset %}
 {% call shared_readiness.frame(
@@ -12,7 +12,7 @@
     storage_readiness_description|trim,
     'sliders-horizontal',
     'object-storage-analytics-refresh-indicator',
-    eyebrow='Storage Analysis'
+    eyebrow='Analytics Overview' if page_key == 'overview' else page.title
 ) %}
 
         <form id="object-storage-analytics-controls"
