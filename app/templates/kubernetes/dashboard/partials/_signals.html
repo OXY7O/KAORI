@@ -1,6 +1,14 @@
 {% import "components/peer_content_grid.html" as peer_content_grid %}
 <div id="kubernetes-dashboard-section-signals" class="space-y-5">
-    <div class="{{ peer_content_grid.layout_classes() }}">
+    {% if not dashboard.selected_cluster_id %}
+        {% set blocked_state_icon = "bell-ring" %}
+        {% set blocked_state_label = "Cluster Required" %}
+        {% set blocked_state_title = "Select Cluster" %}
+        {% set blocked_state_description = "Select a cluster to review committed alert cases, controlled response, and scoped recommendations." %}
+        {% set blocked_state_tone = "warning" %}
+        {% include 'components/states/_blocked_state.html' %}
+    {% else %}
+        <div class="{{ peer_content_grid.layout_classes() }}">
         <div class="{{ peer_content_grid.column_classes('primary') }}">
             {% include "kubernetes/dashboard/partials/_alerts_summary.html" %}
         </div>
@@ -8,5 +16,6 @@
             {% include "kubernetes/dashboard/partials/_alert_response_guidance.html" %}
         </div>
     </div>
-    {% include "kubernetes/dashboard/partials/_recommended_actions.html" %}
+        {% include "kubernetes/dashboard/partials/_recommended_actions.html" %}
+    {% endif %}
 </div>
