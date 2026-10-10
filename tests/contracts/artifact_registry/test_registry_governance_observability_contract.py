@@ -152,3 +152,54 @@ def test_governance_sync_matches_security_htmx_workspace_contract() -> None:
     assert 'hx-post' not in live
     assert "artifact_registry.inventory.sync" not in post_handler
     assert "HarborClient" not in post_handler
+
+
+
+def test_governance_coverage_and_evidence_follow_canonical_section_layout() -> None:
+    from jinja2 import Environment
+
+    workspace = (ROOT / 'app/templates/artifact_registry/partials/_governance_workspace.html').read_text()
+    tabs = (ROOT / 'app/templates/components/content_tabs.html').read_text()
+    intro = (ROOT / 'app/templates/components/section_intro.html').read_text()
+
+    Environment().parse(workspace)
+    # Both descriptive headings are plain section intros, not nested card headers.
+    assert '{% import "components/section_intro.html" as section_intro %}' in workspace
+    assert "section_intro.render('Governance Coverage'," in workspace
+    assert "section_intro.render('Governance Evidence'," in workspace
+    assert 'artifact-registry-governance-coverage-heading' in workspace
+    assert 'artifact-registry-governance-evidence-heading' in workspace
+
+    coverage = workspace.split("section_intro.render('Governance Coverage',", 1)[1].split(
+        "section_intro.render('Governance Evidence',", 1
+    )[0]
+    assert 'class="{{ section_card.shell_classes() }}"' in coverage
+    assert 'class="grid gap-3 bg-surface-subtle p-4 sm:grid-cols-2 xl:grid-cols-4"' in coverage
+    assert 'for item in governance.posture_cards' in coverage
+    assert 'item.status_label, item.tone' in coverage
+    assert "min-w-0 rounded-lg border border-outline-subtle" in coverage
+
+    # URL/HTMX-owned tabs reuse the shared content-tabs contract rather than
+    # framed workspace tabs or bespoke client-side tab state.
+    assert '{% import "components/content_tabs.html" as content_tabs %}' in workspace
+    assert 'framed_workspace_tabs' not in workspace
+    assert "content_tabs.render_links('registry-governance'," in workspace
+    assert 'embedded=true' in workspace
+    assert "hx_target='#artifact-registry-governance-registry'" in workspace
+    assert "hx_select='#artifact-registry-governance-registry'" in workspace
+    assert "hx_push_url='true'" in workspace
+    assert "hx_target='#artifact-registry-governance-registry'" in workspace
+    assert "url_for('artifact_registry.governance', tab='policies', page=1" in workspace
+    assert "url_for('artifact_registry.governance', tab='replication', page=1" in workspace
+    assert "macro render_links(" in tabs
+    assert "macro render(" in intro
+
+    # Existing committed policy/replication views, active row page sizes and
+    # independent sync progress must not be affected by the presentation change.
+    assert 'id="artifact-registry-governance-registry"' in workspace
+    assert 'governance.active_tab == \'policies\'' in workspace
+    assert 'governance.rows' in workspace
+    assert workspace.count("registry.footer('artifact_registry.governance'") == 2
+    assert workspace.count('[5, 10, 25, 50]') == 2
+    assert "artifactRegistryGovernanceSyncFinished from:body" in workspace
+    assert "url_for('artifact_registry.governance_sync')" in workspace
