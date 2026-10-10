@@ -118,7 +118,7 @@ def test_runtime_usage_preserves_digest_first_and_explicit_tag_confidence() -> N
     assert 'row.match.description' in workspace
 
 
-def test_runtime_summary_reuses_shared_section_intro_and_standalone_metrics() -> None:
+def test_runtime_summary_reuses_shared_section_intro_and_grouped_metrics() -> None:
     from jinja2 import Environment
 
     template = (ROOT / 'app/templates/artifact_registry/partials/_runtime_workspace.html').read_text()
@@ -128,8 +128,13 @@ def test_runtime_summary_reuses_shared_section_intro_and_standalone_metrics() ->
     summary = template[start:end]
 
     assert 'artifact-registry-runtime-summary-heading' in template
-    assert 'grid gap-4 sm:grid-cols-2 xl:grid-cols-4' in summary
-    assert summary.count('metric_card.render(') == 4
-    assert 'section_card.shell_classes()' not in summary
-    assert 'runtime.scope.label' in summary
+    assert 'section_card.render(' in summary
+    assert "'Runtime Evidence Summary'" in summary
+    assert "body_classes='p-0'" in summary
+    assert 'posture_grid.render(runtime_metrics, columns=4)' in summary
+    for name in ('Runtime Bindings', 'Digest Matched', 'Tag Matched', 'Security Exposed'):
+        assert name in summary
+    assert "'warning' if runtime.tag_matches else 'info'" in summary
+    assert "'critical' if runtime.security_exposed else 'info'" in summary
+    assert 'metric_card.render(' not in summary
     assert 'registry.footer(' in template
