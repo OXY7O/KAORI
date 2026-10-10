@@ -60,6 +60,7 @@ def history(plan_data, *, mutate=False):
         'plan_sha256': plan_data['plan_sha256'],
         'handoff_fingerprint': plan_data['handoff_fingerprint'],
         'release_authorized': False,
+        'started_at': (datetime.now(UTC) - timedelta(seconds=2)).isoformat(),
     }
     failed = {
         'status': 'partial_handoff_recovery_required',
@@ -72,6 +73,7 @@ def history(plan_data, *, mutate=False):
         'verified_count': 0, 'expected_component_count': 1,
         'verified_components': [], 'provider_mutation_performed': mutate,
         'provider_handoff_verified': False, 'release_authorized': False,
+        'checked_at': datetime.now(UTC).isoformat(),
     }
     return [
         SimpleNamespace(
@@ -123,6 +125,15 @@ def test_unsafe_or_ambiguous_history_is_never_recoverable(monkeypatch, alteratio
         rows[-1].metadata_json['plan_sha256'] = None
     set_history(monkeypatch, rows)
     with pytest.raises(ValueError):
+        recovery._source_history(p['tenant_id'], p)
+
+
+def test_executor_chronology_must_be_valid_and_monotonic(monkeypatch):
+    p = plan()
+    events = history(p)
+    events[1].metadata_json['checked_at'] = '2020-01-01T00:00:00+00:00'
+    set_history(monkeypatch, events)
+    with pytest.raises(ValueError, match='chronology'):
         recovery._source_history(p['tenant_id'], p)
 
 
