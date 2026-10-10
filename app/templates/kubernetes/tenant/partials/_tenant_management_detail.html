@@ -47,7 +47,8 @@
         </div>
     </section>
 
-    <dl class="grid min-w-0 grid-cols-2 gap-px overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle sm:grid-cols-4"
+    <dl id="tenant-detail-snapshot"
+        class="grid min-w-0 grid-cols-2 gap-px overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle sm:grid-cols-4"
         aria-label="Tenant committed facts">
         <div class="min-w-0 bg-surface-card px-4 py-3">
             <dt class="text-xs font-medium text-content-muted">Namespaces</dt>
@@ -83,7 +84,7 @@
         hx_sync='this:replace'
     ) }}
 
-    <div class="min-w-0" role="region" aria-label="Tenant management workspace">
+    <div class="min-w-0" role="region" aria-label="Tenant management sections">
     {% if active_tenant_detail_view == 'overview' %}
         <section class="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1.25fr)_minmax(18rem,0.75fr)]"
                  aria-label="Tenant overview">
