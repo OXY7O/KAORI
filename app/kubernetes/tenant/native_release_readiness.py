@@ -91,7 +91,9 @@ def project_native_release_readiness(
         and successor_acceptance.get("provider_identity") == plan.get("provider_identity")
         and successor_acceptance.get("successor_owner") == plan.get("successor_owner")
         and successor_acceptance.get("reviewed_by") == approval.get("approved_by")
-        and successor_acceptance.get("status") == "verified_explicit_successor_acceptance"
+        and successor_acceptance.get("status") == "platform_admin_handoff_accepted"
+        and successor_acceptance.get("authority_mode") == "platform_admin_governed"
+        and successor_acceptance.get("verified_provider_identity") is True
         and successor_acceptance.get("consent_verified") is True
         and successor_acceptance.get("resource_authority_verified") is True
         and _checked_recently(successor_acceptance.get("accepted_at"))
@@ -114,9 +116,9 @@ def project_native_release_readiness(
         ("Independent approval", same_plan,
          "Independent review is recorded but the plan/approval expired; only the original requester may restart after fresh provider checks."
          if approval_expired else "A different authorized KAORI operator acknowledges this exact plan."),
-        ("Verified successor acceptance", verified_acceptance,
-         "Authenticated Kubernetes principal explicitly accepted this exact plan and passed scoped access review."
-         if verified_acceptance else "Kubernetes TokenReview, scoped SubjectAccessReview and explicit successor consent are required."),
+        ("Platform Admin governance acceptance", verified_acceptance,
+         "Authorized Platform Admin accepted this exact plan; kubeconfig identity and scoped permissions were verified."
+         if verified_acceptance else "Requires independent Platform Admin confirmation, Kubernetes SelfSubjectReview and scoped SelfSubjectAccessReview."),
         ("KAORI provider handoff", provider_transfer_verified,
          "Exact Native provider handoff was committed with post-write read-back."
          if provider_transfer_verified else "Execute accepted Native handoff and verify all provider objects; partial transfer requires recovery."),
