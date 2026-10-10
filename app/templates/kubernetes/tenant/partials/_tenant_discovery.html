@@ -34,7 +34,7 @@
                 [
                 'Live Status — current provider observation.',
                 'Managed — already correlated to committed KAORI ownership.',
-                'Discovered — candidate for explicit governed Adoption.',
+                'Discovered — candidate for governed Tenant Adoption or existing-Tenant Namespace Attachment.',
                 'Blocked — adoption fails closed until eligibility is resolved.',
                 'Provider Missing — KAORI ownership exists but the provider object is absent.'
                 ],
@@ -42,7 +42,7 @@
     {% endset %}
     {{ table_ui.inventory_block_header('radar',
         'Tenant Discovery',
-        'Live, read-only provider discovery. Review a candidate before explicitly adopting it into KAORI governance.',
+        'Live provider discovery: Adopt new Tenants with correlated Namespaces, or attach a newly discovered Namespace to its existing governed Tenant.',
         loading_id,
         'Reading live Tenant provider state',
         none,
@@ -128,7 +128,7 @@
                     <th class="{{ table_ui.header_cell_classes() }} w-[12%]">Live Status</th>
                     <th class="{{ table_ui.header_cell_classes() }} w-[14%]">KAORI Classification</th>
                     <th class="{{ table_ui.header_cell_classes() }} w-[15%]">Governed Tenant</th>
-                    <th class="{{ table_ui.header_cell_classes(action=true) }} w-[13%]">Adoption</th>
+                    <th class="{{ table_ui.header_cell_classes(action=true) }} w-[13%]">Review</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
@@ -165,6 +165,7 @@
                                 {% elif row.management_status == 'Managed' %}
                                     {{ table_label.special_label('Already Managed', 'normal', 'shield-check') }}
                                 {% elif row.management_status == 'Discovered' and can_manage %}
+                                    {% set is_capsule_attachment = row.provider_key == 'capsule' and row.resource_kind == 'Capsule Namespace' and row.tenant_id %}
                                     <button type="button"
                                             data-tenant-adoption-load
                                             hx-get="{{ url_for('tenant.tenant_adoption_preflight_route', cluster_id=row.cluster_id, provider_key=row.provider_key, resource_name=row.resource_name, capsule_tenant_name=row.capsule_tenant_name or '') }}"
@@ -173,9 +174,9 @@
                                             hx-indicator="#tenant-discovery-loading"
                                             hx-disabled-elt="this"
                                             class="{{ table_ui.action_classes() }}"
-                                            title="Load live provider authority and allocation evidence for adoption review.">
-                                        <i data-lucide="clipboard-check" class="h-4 w-4" aria-hidden="true"></i>
-                                        Review Adoption
+                                            title="{{ 'Verify provider membership, UID and resourceVersion before attaching this Namespace to its existing Capsule Tenant.' if is_capsule_attachment else 'Review provider authority and allocation evidence before adopting this Tenant.' }}">
+                                        <i data-lucide="{{ 'link-2' if is_capsule_attachment else 'clipboard-check' }}" class="h-4 w-4" aria-hidden="true"></i>
+                                        {{ 'Review Attachment' if is_capsule_attachment else 'Review Adoption' }}
                                     </button>
                                 {% elif row.management_status == 'Discovered' %}
                                     {{ table_label.special_label('Candidate', 'info', 'radar') }}

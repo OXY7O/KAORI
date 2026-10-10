@@ -97,6 +97,25 @@ Capacity Analytics remains a separate committed evidence authority. Tenant sync 
 - Capsule-only advanced mutations require admitted compatible capability evidence.
 - Native Recovery remains an explicit governed authority transfer, never an automatic fallback.
 
+### Capsule Namespace onboarding: Adopt vs Attach (#1124)
+
+Use **Tenant → Tenants → Discovery** as the only primary entry point for
+onboarding. **Review Adoption** imports a new Capsule Tenant and all
+Namespaces already proven to belong to it; no separate Namespace-attach
+step is needed. If the Capsule provider later creates an additional
+Namespace under that Tenant, Discovery presents the *ungoverned,
+correlated* Capsule Namespace candidate as **Review Attachment** and
+uses the same existing read-only preflight, UID/resourceVersion checks,
+Environment selection, and canonical `/discovery/adopt` service.
+Already governed or blocked Namespaces cannot be attached again.
+
+Tenant Management no longer presents the unconditional **Available →
+Attach Capsule Namespace** accordion; that controls onboarding rather
+than Release/governance. Attachment does not modify Capsule CR, Namespace
+quota, RBAC or provider-owned values. It adds a verified KAORI mirror
+record only, never new implicit access grants. Source-only UI changes
+and regression test contracts are authored; runtime/gate verification HOLD.
+
 ## Tenants workspace composition
 
 The Tenants destination keeps a small page-level governance summary visible above one tabbed workspace:

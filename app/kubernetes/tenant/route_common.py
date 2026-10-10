@@ -183,13 +183,6 @@ def _tenant_detail_context(tenant_id: str) -> dict[str, Any]:
         and (tenant.provider_evidence_json or {}).get('release_governance', {}).get('release_mode') == 'managed_handoff'
     ):
         allowed_sections.add('handback')
-    if (
-        can_manage and tenant.provider_key == 'capsule'
-        and tenant.provider_state == 'capsule'
-        and tenant.lifecycle_status == 'ready'
-        and rows[0].get('capsule_environment_options')
-    ):
-        allowed_sections.add('attachment')
     requested_section = str(request.values.get('tenant_detail_section') or '').strip()
     if requested_section in allowed_sections:
         active_section = requested_section
@@ -249,7 +242,6 @@ def _tenant_section_redirect(section: str):
                 _anchor={
                     'release': 'tenant-release-governance',
                     'handback': 'tenant-native-handback',
-                    'attachment': 'tenant-namespace-attachment',
                     'provider': 'tenant-provider-authority',
                     'lifecycle': 'tenant-lifecycle-actions',
                 }[context['tenant_detail_open_section']],
