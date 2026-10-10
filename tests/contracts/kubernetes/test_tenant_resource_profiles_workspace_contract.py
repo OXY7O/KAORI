@@ -133,7 +133,8 @@ def test_capacity_decisions_registry_is_compact_and_exposes_read_only_evidence()
     assert 'id="{{ dialog_id }}-contract-title"' in template
     assert 'id="{{ dialog_id }}-record-title"' in template
     assert 'aria-labelledby="{{ dialog_id }}-admission-title"' in template
-    assert "template"  # Existing committed read-only detail contract
+    assert '{{ target_display }}' in template
+    assert '{{ profile_display }}' in template
     assert 'hx-post' not in template
     assert '<form method="post"' not in template
     assert 'class TenantCapacityDecision(db.Model)' in model
