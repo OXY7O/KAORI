@@ -25,6 +25,8 @@ def project_native_release_readiness(
     handoff_execution: Mapping[str, Any] | None = None,
     readback_history: list[Mapping[str, Any]] | None = None,
     execution_history: list[Mapping[str, Any]] | None = None,
+    no_transfer_assessment: Mapping[str, Any] | None = None,
+    no_transfer_decision: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Display checkpoints only; no provider calls, audit writes, or admission."""
     plan_sha = str((plan or {}).get("plan_sha256") or "")
@@ -129,6 +131,29 @@ def project_native_release_readiness(
         )
     )
     restart_required = bool(approval_expired and not restart_blocked)
+    # Committed UI hints for the independent recovery workflow. Backend must
+    # still verify ALL historical events and fresh live Kubernetes state.
+    no_transfer_assessment_current = bool(
+        approval_expired and plan and no_transfer_assessment
+        and no_transfer_assessment.get('status') == 'verified_no_transfer_pending_independent_review'
+        and no_transfer_assessment.get('plan_sha256') == plan_sha
+        and no_transfer_assessment.get('handoff_fingerprint') == plan.get('handoff_fingerprint')
+        and no_transfer_assessment.get('assessed_by') == plan.get('requested_by')
+        and _checked_recently(no_transfer_assessment.get('assessed_at'))
+    )
+    no_transfer_authorized_current = bool(
+        no_transfer_assessment_current and no_transfer_decision
+        and no_transfer_decision.get('status') == 'authorized_for_requester_restart'
+        and no_transfer_decision.get('plan_sha256') == plan_sha
+        and no_transfer_decision.get('handoff_fingerprint') == plan.get('handoff_fingerprint')
+        and no_transfer_decision.get('assessment_sha256') == no_transfer_assessment.get('assessment_sha256')
+        and no_transfer_decision.get('history_digest') == no_transfer_assessment.get('history_digest')
+        and no_transfer_decision.get('provider_proof_sha256') == no_transfer_assessment.get('provider_proof_sha256')
+        and no_transfer_decision.get('authorized_by') not in {
+            plan.get('requested_by'), no_transfer_assessment.get('executor_actor_id'),
+        }
+        and _checked_recently(no_transfer_decision.get('authorized_at'))
+    )
     preview_passed = bool(
         same_plan and dry_run
         and dry_run.get("plan_sha256") == plan_sha
@@ -242,6 +267,8 @@ def project_native_release_readiness(
         "review_expired": review_expired,
         "restart_required": restart_required,
         "no_transfer_assessment_candidate": no_transfer_assessment_candidate,
+        "no_transfer_assessment_current": no_transfer_assessment_current,
+        "no_transfer_authorized_current": no_transfer_authorized_current,
         "restart_blocked_by_readback": bool(approval_expired and restart_blocked),
         "restart_zero_transfer_recheck_required": bool(approval_expired and zero_transfer_observed and not restart_blocked),
         "dry_run_passed": preview_passed,
