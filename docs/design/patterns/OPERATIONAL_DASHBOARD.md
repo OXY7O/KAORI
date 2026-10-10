@@ -77,7 +77,7 @@ Kubernetes maps the health table to clusters and Object Storage maps it to regis
 ## Visual contract
 
 - Use `components/page_hero.html` and the `operational_dashboard(...)` profile renderer for the Hero.
-- Use `components/operational_metric_card.html` for KPI cards and `components/operational_signal_overview.html` for the shared scope/status/update/selector shell around them.
+- Artifact Registry's four bounded KPI indicators reuse `components/resource_posture_grid.html` **inside the existing** `components/operational_signal_overview.html` scope/status/update/selector shell with a zero-padding body. This is the user-approved grouped KPI rendering for the Artifact Registry consumer; it does not alter the shared Operational Dashboard navigation, scope, evidence or other domain consumers.
 - Operational Signal KPI cards use the fixed context badge **Active Scope**. The selected cluster, system, or provider identity is rendered once in the shared scope row/selector and is not repeated as a dynamic KPI-card badge.
 - Consume `components/operational_dashboard_workspace.html` for canonical four-tab navigation, URL state, keyboard behavior, and panel geometry. It delegates tab rendering to `components/workspace_tabs.html` with semantic key `integrated-workspace`.
 - Use `components/operational_section_card.html` for repeated section shells and `components/operational_evidence_tile.html` for the repeated Inventory Snapshot / Data Freshness evidence-tile geometry.
