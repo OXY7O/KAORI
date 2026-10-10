@@ -194,15 +194,17 @@ same nested-card geometry for every domain.
 | Inventory | Shared Hero / committed snapshot context | External **Operational Posture** intro; existing grouped posture metrics; Registry Inventory intro | Bounded Inventory table, HTMX filters and 5-row pagination | **Retain** — grouped posture contract intentionally differs from summary KPI cards (#931) |
 | Security | Shared Hero / Security Sync / committed scan evidence | External **Security Snapshot** intro and four independent `operational_metric_card` metrics per active security view | Small content-tabs family for Supply Chain; shared vulnerability/evidence registry and 5-row footer | **Align** section-intro hierarchy only (#1087, existing #948 authority) |
 | Runtime Usage | Shared Hero / committed correlation snapshot | External **Runtime Correlation** intro and four independent `operational_metric_card` metrics | Runtime Bindings section intro and bounded table; committed correlation, 5-row footer | **Align** section-intro hierarchy only (#1087, existing #897 authority) |
-| Governance | Shared Hero / Governance Sync / committed policy evidence | External **Governance Coverage** intro and four independent posture cards carrying provider-semantic badges; no enclosing outer card | External Governance Evidence intro; standard URL/HTMX content tabs for Policies/Replication; 5-row footer | **Restore** independent cards under #950; preserve content tabs |
+| Governance | Shared Hero / Governance Sync / committed policy evidence | External **Governance Coverage** intro with one grouped operational estate shell and four evidence metrics; original Committed/Observed status badges retained | External Governance Evidence intro; standard URL/HTMX content tabs for Policies/Replication; 5-row footer | **Align** to Kubernetes Tenant Estate's shared posture-grid archetype under #950 |
 | Analytics | Shared Hero / committed analytical materialization | External **Registry Analytical Posture** intro and four independent summary cards, without a page-local uppercase eyebrow | Seven analytics-domain framed tabs remain appropriate for operational-domain navigation; lazy bounded HTMX summary/sections | **Align** summary intro only (#1087, existing #899 authority) |
 
 #### Component and composition rules applied in this audit
 
-- A major **summary / KPI group** on Security, Runtime, Governance or Analytics
-  uses a plain `section_intro` outside a `grid gap-4 sm:grid-cols-2
-  xl:grid-cols-4` of **standalone** evidence cards. A second enclosing card
-  border is not justified by shared evidence alone.
+- **Summary grouping follows semantic ownership**, not a single layout rule.
+  Security, Runtime and Analytics retain `section_intro` plus a 2/4-column
+  grid of standalone evidence cards. Governance Coverage is a cohesive estate-
+  level posture summary: it uses `operational_section_card` containing the
+  existing `resource_posture_grid` with four committed metrics, mirroring
+  Kubernetes Tenant Overview. Avoid double-nested standalone cards.
 - The **Inventory Operational Posture** is intentionally a coordinated
   evidence panel with a common operational meaning; it continues using its
   approved `operational_section_card` and `posture_grid`. The Overview
@@ -219,8 +221,8 @@ same nested-card geometry for every domain.
   not decorative visual repetition. Avoid creating new page-local CSS/JS,
   tokens, wrappers or one-off card families.
 
-**Implementation separation:** #950 covers only the Governance standalone
-card rollback; #1087 covers Security/Runtime/Analytics summary intro
+**Implementation separation:** #950 owns the Governance Coverage composition
+(including the later grouped-grid feedback); #1087 covers Security/Runtime/Analytics summary intro
 normalization and this cross-page audit. Existing #911, #931, #948, #897 and
 #899 remain authoritative for their specific capability data or backend
 behaviors. Work is grouped only for fast DevContainer review at
@@ -228,7 +230,8 @@ behaviors. Work is grouped only for fast DevContainer review at
 promotion or main promotion occurs without explicit approval.
 
 **Developer / human Visual QA:** verify summary headings, four independent
-cards with consistent gaps/heights, no double borders, mobile stacked cards,
+Security/Runtime/Analytics cards and the distinct grouped Governance estate
+metrics with consistent gaps/heights, no double borders, mobile stacked cards,
 Violet light/dark contrasts, meaningful per-metric badges, Security
 Vulnerabilities/Supply Chain view switching, Policies/Replication HTMX,
 Analytics framed seven-domain URL transitions, 5-row pagination, and zero/
@@ -241,13 +244,16 @@ The Governance evidence area now follows the established Security/Supply
 Chain section hierarchy. Two **plain section-intro headings outside their
 card shells** provide operator context:
 
-- **Governance Coverage** — four **independent** policy, retention,
-  immutability, and replication KPI cards form a responsive 2/4-column grid,
-  consistent with Registry Security, Runtime Usage, and Analytics summary.
-  The earlier nested outer container is removed following DevContainer
-  feedback: it added a competing border and surface layer without conveying
-  meaningful grouping. The plain section intro remains outside the cards;
-  counts, statuses and evidence interpretation are unchanged.
+- **Governance Coverage** — following further human feedback and the existing
+  Kubernetes Tenant Governance Scope reference, one shared
+  `operational_section_card` encloses a `resource_posture_grid` of four
+  coherent estate-level evidence metrics. Icons summarize category/tone;
+  the optional original Committed/Observed/Partial/Not Collected label is
+  retained using the existing status-indicator component. The section intro
+  stays **outside** the grouped shell. There are no nested independent cards;
+  all values, evidence statuses and provider-authoritative meanings remain
+  unchanged. This grouped archetype is purpose-specific, not a global rule
+  for Registry Security, Runtime or Analytics.
 - **Governance Evidence** — the Policies/Replication records remain in their
   own canonical section card. The navigation uses existing
   `content_tabs.render_links` (embedded, server/URL-owned mode), matching
@@ -258,11 +264,38 @@ card shells** provide operator context:
 This replaces Governance's previous framed tab treatment without introducing
 another UI pattern, altering provider authority, changing content-tab semantics
 or making live Registry API requests. Default pagination remains 5.
-DevContainer Visual QA should verify standalone headings, grouped card border,
-active/inactive tab contrast, light/dark and mobile layouts, Policies/
+DevContainer Visual QA should verify external headings, grouped-grid dividers,
+status badges and icon tones, active/inactive tab contrast, light/dark and mobile
+layouts, Policies/
 Replication transitions, back/forward navigation, sync completion refresh,
 and the shared pagination footer. CI/CD, Full Admission, staging/UAT and
 promotion remain **HOLD**.
+
+### Governance Coverage grouped posture implementation (#950 latest human feedback)
+
+The Kubernetes Tenant Governance Scope screenshot is the approved reference
+for **one estate-level grouped evidence summary**: a plain outer section
+heading, a standard `operational_section_card` with an icon-accented
+header, and a `resource_posture_grid` body with thin dividers between
+metric cells. Registry Governance Coverage now reuses these exact shared
+components rather than introducing a new metric-card CSS pattern.
+
+The existing Governance presenter still provides exactly four committed
+posture records in Policy/Retention/Immutability/Replication order. All
+`label`, `value`, `detail`, `tone`, and `status_label` fields remain
+authoritative. An optional `status_labels=none` argument extends the
+existing posture-grid component so this Registry view can display the same
+canonical Committed/Observed badges without changing the default five-metric
+Tenant Estate rendering. Badge semantics and warning/unknown tone are never
+inferred from metric counts by the UI. No collector, provider, data contract,
+JobExecution, HTMX, pagination or Registry tab behavior changes.
+
+The shared grouped grid is responsive: one cell per row on narrow widths,
+two from `sm`, four at `xl` for Governance; values and supporting descriptions
+wrap within their cells. Human Visual QA must verify the four-status matrix,
+dark/light contrast, viewport width, no extra nested card border, long
+provider details, and Policies/Replication navigation. CI/CD and deployments
+remain HOLD.
 
 ## Vulnerability Findings Registry: compact list and committed detail (#948)
 
