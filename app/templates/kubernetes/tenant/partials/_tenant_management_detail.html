@@ -1,0 +1,1086 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/destructive_confirmation_modal.html" as destructive_modal %}
+{% set tenant = row.tenant %}
+<div id="tenant-management-detail"
+     class="min-w-0 space-y-4"
+     data-tenant-management-detail="{{ tenant.id }}">
+    <div id="tenant-management-loading" class="htmx-indicator text-xs text-content-muted" role="status" aria-live="polite">Updating Tenant governance…</div>
+<section class="flex min-w-0 flex-col overflow-hidden rounded-xl border border-outline-default bg-surface-card" aria-label="Tenant management detail">
+            <header class="shrink-0 border-b border-outline-subtle bg-surface-card px-6 py-5 sm:px-7">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true">
+                            <i data-lucide="building-2" class="h-5 w-5"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold text-kaori-primary">Tenant Management</p>
+                            <div class="mt-1 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
+                                <h2 id="tenant-registry-actions-{{ tenant.id }}-title"
+                                    class="min-w-0 break-words text-lg font-semibold leading-6 text-content-primary">{{ tenant.name }}</h2>
+                                {{ table_label.status_label(
+                                    tenant.lifecycle_status|replace('_', ' ')|title,
+                                    'normal' if tenant.lifecycle_status == 'ready'
+                                    else ('critical' if tenant.lifecycle_status in ['degraded', 'decommissioning'] else 'unknown')
+                                ) }}
+                            </div>
+                            <p id="tenant-registry-actions-{{ tenant.id }}-description"
+                               class="mt-1 break-words text-xs leading-5 text-content-secondary">
+                                {{ row.cluster.name if row.cluster else 'Cluster unavailable' }} ·
+                                {{ tenant.provider_key|replace('_', ' ')|title }} ·
+                                Gen {{ tenant.generation }} · {{ tenant.ownership_status|title }}
+                            </p>
+                        </div>
+                    </div>
+                    <a href="{{ return_to_registry_url }}"
+                       class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                        <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
+                        <span>Back to Registry</span>
+                    </a>
+                </div>
+            </header>
+            <div class="min-h-0 flex-1 bg-surface-page">
+                <div class="grid grid-cols-3 divide-x divide-outline-subtle border-b border-outline-subtle bg-surface-card">
+                    <div class="min-w-0 px-3 py-3.5 sm:px-5">
+                        <p class="text-[11px] font-medium text-content-muted">Namespaces</p>
+                        <p class="mt-1 text-sm font-semibold text-content-primary">{{ row.namespace_count }} active</p>
+                        {% set historical_namespace_count = row.namespace_history_count - row.namespace_count %}
+                        {% if historical_namespace_count > 0 %}
+                            <p class="mt-1 text-xs leading-5 text-content-muted">
+                                {{ historical_namespace_count }} historical Namespace record{{ '' if historical_namespace_count == 1 else 's' }} retained
+                            </p>
+                        {% endif %}
+                    </div>
+                    <div class="min-w-0 px-3 py-3.5 sm:px-5">
+                        <p class="text-[11px] font-medium text-content-muted">Environments</p>
+                        <p class="mt-1 text-sm font-semibold text-content-primary">{{ row.environments|length }}</p>
+                    </div>
+                    <div class="min-w-0 px-3 py-3.5 sm:px-5">
+                        <p class="text-[11px] font-medium text-content-muted">Lifecycle</p>
+                        <p class="mt-1 truncate text-sm font-semibold text-content-primary">{{ tenant.lifecycle_status|replace('_', ' ')|title }}</p>
+                    </div>
+                </div>
+                <div class="min-w-0 space-y-5 px-4 py-5 sm:px-6 sm:py-6" aria-label="Tenant management sections">
+                {% if can_manage and current_user.has_permission('integrations.manage')
+                      and current_user.has_permission('clusters.manage')
+                      and tenant.ownership_status == 'adopted' and tenant.lifecycle_status == 'ready' %}
+                    <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5" aria-label="Release governance">
+                        <div class="flex items-start gap-3">
+                            <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                                <i data-lucide="clipboard-check" class="h-4 w-4"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <h3 class="text-sm font-semibold text-content-primary">Release Governance</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                    Review dependencies and provider handoff evidence before releasing governance.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="mt-4 space-y-4" aria-label="Release governance workflow">
+                            {# The release review is an action; evidence and handoff are stable workflow steps, not tabs. #}
+                            <section class="min-w-0 space-y-3 rounded-xl border border-outline-subtle bg-surface-elevated p-4"
+                                     aria-label="Release readiness">
+                                <div class="flex flex-wrap items-start justify-between gap-3">
+                                    <div class="min-w-0 flex-1">
+                                        <h4 class="text-sm font-semibold text-content-primary">Release Readiness</h4>
+                                        <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                            Check committed dependencies and blockers before preparing provider handoff.
+                                        </p>
+                                    </div>
+                                    <div aria-label="Release review actions">
+                                        <form method="post"
+                                              action="{{ url_for('tenant.review_tenant_release_route', tenant_id=tenant.id) }}"
+                                              hx-post="{{ url_for('tenant.review_tenant_release_route', tenant_id=tenant.id) }}"
+                                              hx-target="#tenant-management-detail"
+                                              hx-select="#tenant-management-detail"
+                                              hx-swap="outerHTML show:none focus-scroll:false"
+                                              hx-indicator="#tenant-management-loading">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                                            <button type="submit"
+                                                    class="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-outline-subtle bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                <i data-lucide="clipboard-check" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                Review Release
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                                {% if row.release_preflight %}
+                                    <div class="mt-5 space-y-3" aria-label="Committed Release readiness">
+                                        <div class="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-outline-subtle bg-surface-elevated p-4">
+                                            <div class="min-w-0 flex-1">
+                                                <p class="text-xs font-semibold text-content-primary">Latest Release Review</p>
+                                                <p class="mt-1.5 text-xs leading-5 text-content-secondary">
+                                                    {% if row.release_preflight.blockers %}
+                                                        Release requires {{ row.release_preflight.blockers|length }} governance condition{{ '' if row.release_preflight.blockers|length == 1 else 's' }} to be resolved.
+                                                    {% else %}
+                                                        No dependency blockers recorded; provider validation and approval are still required.
+                                                    {% endif %}
+                                                </p>
+                                            </div>
+                                            {{ table_label.status_label(
+                                                row.release_preflight.status|replace('_', ' ')|title,
+                                                'warning' if row.release_preflight.blockers else 'info'
+                                            ) }}
+                                        </div>
+                                        {% if row.release_preflight.blockers %}
+                                            <div class="rounded-xl border border-status-warning-border bg-status-warning-soft p-4"
+                                                 aria-label="Release blockers">
+                                                <div class="flex flex-wrap items-center justify-between gap-3">
+                                                    <p class="flex min-w-0 items-center gap-2 text-xs font-semibold text-status-warning-text">
+                                                        <i data-lucide="shield-alert" class="h-4 w-4 shrink-0" aria-hidden="true"></i>
+                                                        Release blockers
+                                                    </p>
+                                                    <span class="text-xs font-semibold text-status-warning-text">{{ row.release_preflight.blockers|length }} conditions</span>
+                                                </div>
+                                                <ul class="mt-3 list-disc space-y-2 pl-5 text-xs leading-5 text-content-secondary">
+                                                    {% for blocker in row.release_preflight.blockers %}
+                                                        <li class="break-words pl-0.5">{{ blocker }}</li>
+                                                    {% endfor %}
+                                                </ul>
+                                            </div>
+                                        {% else %}
+                                            <p class="text-xs leading-5 text-content-secondary">
+                                                No current dependency blockers, but Release execution is not yet admitted.
+                                                A fresh provider read and explicit authorization are still required.
+                                            </p>
+                                        {% endif %}
+                                    </div>
+                                {% else %}
+                                    <div class="mt-5 rounded-xl border border-outline-subtle bg-surface-elevated p-4">
+                                        <p class="text-xs font-semibold text-content-primary">Latest Release Review</p>
+                                        <p class="mt-1.5 text-xs leading-5 text-content-secondary">
+                                            Run Review Release to inspect committed dependencies and provider readiness.
+                                            No Release execution is implied.
+                                        </p>
+                                    </div>
+                                {% endif %}
+                            </section>
+                            <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-elevated p-4"
+                                     aria-label="Provider handoff inventory">
+                                <div class="flex flex-wrap items-start justify-between gap-3">
+                                    <div class="flex min-w-0 items-start gap-3">
+                                        <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-card text-xs font-semibold text-kaori-primary" aria-hidden="true">1</span>
+                                        <div class="min-w-0">
+                                            <h4 class="text-sm font-semibold text-content-primary">Handoff Inventory</h4>
+                                            <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                                Inspect provider objects and ownership evidence requiring handoff.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {% if row.release_preflight %}
+                                        {{ table_label.status_label((row.release_preflight.handoff_required_count|string) ~ ' to review',
+                                                                    'warning' if row.release_preflight.handoff_required_count else 'info') }}
+                                    {% else %}
+                                        {{ table_label.status_label('Awaiting Review', 'unknown') }}
+                                    {% endif %}
+                                </div>
+                                {% if row.release_preflight and row.release_preflight.handoff_components %}
+                                    <div class="mt-3 max-h-72 space-y-3 overflow-y-auto border-t border-outline-subtle pt-3">
+                                        {% for item in row.release_preflight.handoff_components %}
+                                            <div class="space-y-1 rounded-lg border border-outline-subtle bg-surface-card p-2">
+                                                <div class="flex flex-wrap items-start gap-1.5">
+                                                    {{ table_label.status_label(
+                                                        'Handoff Required' if item.handoff == 'external_acceptance_required'
+                                                        else 'Ownership Conflict' if item.handoff == 'owner_review_required'
+                                                        else 'Observed',
+                                                        'warning' if item.handoff != 'observe_only' else 'info'
+                                                    ) }}
+                                                    <span class="break-all text-xs font-semibold text-content-primary">
+                                                        {{ item.kind }}/{{ item.name }}
+                                                    </span>
+                                                </div>
+                                                <p class="break-all font-mono text-xs text-content-muted">
+                                                    {% if item.namespace %}{{ item.namespace }} · {% endif %}
+                                                    UID {{ item.uid }} · RV {{ item.resource_version }}
+                                                </p>
+                                                <p class="text-xs leading-5 text-content-secondary">
+                                                    {{ item.ownership|replace('_', ' ')|title }}
+                                                    {% if item.managed_by %}· Manager {{ item.managed_by }}{% endif %}
+                                                </p>
+                                            </div>
+                                        {% endfor %}
+                                        <p class="text-xs leading-5 text-content-muted">
+                                            Handoff inventory is read-only provider evidence. Release never transfers or deletes
+                                            provider-owned controls without verified handoff.
+                                        </p>
+                                    </div>
+                                {% elif row.release_preflight %}
+                                    <p class="mt-3 rounded-lg border border-outline-subtle bg-surface-card p-3 text-xs leading-5 text-content-secondary">
+                                        No provider objects require handoff in the latest review. This does not authorize Release.
+                                    </p>
+                                {% else %}
+                                    <p class="mt-3 rounded-lg border border-outline-subtle bg-surface-card p-3 text-xs leading-5 text-content-secondary">
+                                        Run Review Release to load the committed provider handoff inventory.
+                                    </p>
+                                {% endif %}
+                            </section>
+                            <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-elevated p-4"
+                                     aria-label="Governed handoff workflow">
+                                <div class="flex flex-wrap items-start justify-between gap-3">
+                                    <div class="flex min-w-0 items-start gap-3">
+                                        <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-card text-xs font-semibold text-kaori-primary" aria-hidden="true">2</span>
+                                        <div class="min-w-0">
+                                            <h4 class="text-sm font-semibold text-content-primary">Governed Handoff</h4>
+                                            <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                                Prepare a successor record and obtain independent acknowledgment.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {% if current_user.has_permission('integrations.manage') and row.release_handoff_plan %}
+                                        {% set current_handoff_plan = row.release_handoff_plan %}
+                                        {% set current_handoff_approval = row.release_handoff_approval %}
+                                        {% if current_handoff_approval and current_handoff_approval.plan_sha256 == current_handoff_plan.plan_sha256 %}
+                                            {{ table_label.status_label('Transfer Pending', 'warning') }}
+                                        {% else %}
+                                            {{ table_label.status_label('Approval Pending', 'warning') }}
+                                        {% endif %}
+                                    {% elif row.release_preflight and row.release_preflight.handoff_required_count %}
+                                        {{ table_label.status_label('Handoff Required', 'warning') }}
+                                    {% else %}
+                                        {{ table_label.status_label('Not Prepared', 'unknown') }}
+                                    {% endif %}
+                                </div>
+                                {% if row.release_preflight and row.release_preflight.handoff_required_count and current_user.has_permission('integrations.manage') %}
+                                    {% set handoff_plan = row.release_handoff_plan %}
+                                    {% set handoff_approval = row.release_handoff_approval %}
+                                    {% set plan_accepted = handoff_plan and handoff_approval and handoff_approval.plan_sha256 == handoff_plan.plan_sha256 %}
+                                    <div class="mt-4 space-y-4 border-t border-outline-subtle pt-4" data-release-handoff-approval>
+                                        <p class="text-xs leading-5 text-content-secondary">
+                                            One active handoff plan per Tenant. The requester prepares the plan;
+                                            a different authorized operator acknowledges it. Neither action
+                                            transfers provider ownership or unlocks Release.
+                                        </p>
+                                        {% if row.release_handoff_preparation_state == 'available'
+                                              or (row.release_handoff_preparation_state == 'expired'
+                                                  and handoff_plan and handoff_plan.requested_by == current_user.id) %}
+                                            {% if row.release_handoff_preparation_state == 'expired' %}
+                                                <p class="rounded-lg border border-status-warning-border bg-status-warning-soft p-3 text-xs leading-5 text-status-warning-text">
+                                                    Previous plan expired without approval. A fresh request requires
+                                                    a new provider preflight and an independent reviewer.
+                                                </p>
+                                            {% endif %}
+                                        <form method="post"
+                                              action="{{ url_for('tenant.prepare_tenant_release_handoff_route', tenant_id=tenant.id) }}"
+                                              hx-post="{{ url_for('tenant.prepare_tenant_release_handoff_route', tenant_id=tenant.id) }}"
+                                              hx-target="#tenant-management-detail"
+                                              hx-select="#tenant-management-detail"
+                                              hx-swap="outerHTML show:none focus-scroll:false"
+                                              hx-indicator="#tenant-management-loading"
+                                              class="space-y-2">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                                            <label class="block text-xs font-medium text-content-secondary">
+                                                Successor owner reference
+                                                <input name="successor_owner" type="text"
+                                                       minlength="3" maxlength="120"
+                                                       pattern="[A-Za-z0-9][A-Za-z0-9_.@:/-]{2,119}"
+                                                       value="{{ handoff_plan.successor_owner if handoff_plan else '' }}"
+                                                       placeholder="platform-team" required
+                                                       autocomplete="off"
+                                                       class="mt-1 block h-9 w-full rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs text-content-primary">
+                                            </label>
+                                            <label class="block text-xs font-medium text-content-secondary">
+                                                Change record reference
+                                                <input name="change_reference" type="text"
+                                                       minlength="3" maxlength="120"
+                                                       pattern="[A-Za-z0-9][A-Za-z0-9_.@:/-]{2,119}"
+                                                       value="{{ handoff_plan.change_reference if handoff_plan else '' }}"
+                                                       placeholder="CHG-2026-001" required
+                                                       autocomplete="off"
+                                                       class="mt-1 block h-9 w-full rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs text-content-primary">
+                                            </label>
+                                            <button type="submit"
+                                                    class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                <i data-lucide="clipboard-list" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                Prepare Handoff
+                                            </button>
+                                        </form>
+                                        {% else %}
+                                            <div class="rounded-lg border border-outline-subtle bg-surface-card p-3 text-xs leading-5 text-content-secondary"
+                                                 role="status">
+                                                <p class="font-semibold text-content-primary">
+                                                    {{ 'Awaiting Independent Review' if row.release_handoff_preparation_state == 'pending'
+                                                       else ('Independent Review Recorded' if row.release_handoff_preparation_state == 'acknowledged'
+                                                             else 'Plan Not Eligible for Replacement') }}
+                                                </p>
+                                                {% if row.release_handoff_preparation_state == 'expired' %}
+                                                    <p class="mt-1">
+                                                        The plan expired without approval. Only its original requester
+                                                        may prepare a fresh version; changing the requester requires
+                                                        explicit reassignment. This account cannot replace the plan.
+                                                    </p>
+                                                {% else %}
+                                                    <p class="mt-1">The current handoff plan is locked. Preparing another plan
+                                                        would invalidate the review target. Acknowledged handoff requires
+                                                        an explicitly governed restart before replacement.</p>
+                                                {% endif %}
+                                                {% if handoff_plan %}
+                                                    <dl class="mt-3 grid min-w-0 gap-3 sm:grid-cols-2">
+                                                        <div class="min-w-0">
+                                                            <dt class="font-medium">Successor owner</dt>
+                                                            <dd class="mt-1 break-words text-content-primary">{{ handoff_plan.successor_owner }}</dd>
+                                                        </div>
+                                                        <div class="min-w-0">
+                                                            <dt class="font-medium">Change record</dt>
+                                                            <dd class="mt-1 break-words text-content-primary">{{ handoff_plan.change_reference }}</dd>
+                                                        </div>
+                                                    </dl>
+                                                {% endif %}
+                                            </div>
+                                        {% endif %}
+                                        {% if handoff_plan %}
+                                            <p class="break-all font-mono text-xs text-content-muted">
+                                                Plan SHA-256: {{ handoff_plan.plan_sha256 }}
+                                            </p>
+                                            {% if plan_accepted %}
+                                                <p class="text-xs leading-5 text-content-secondary">
+                                                    Independently acknowledged. External owner acceptance,
+                                                    provider handoff and read-back remain outstanding.
+                                                </p>
+                                                {% set successor_claim = row.release_successor_claim %}
+                                                {% if successor_claim and successor_claim.plan_sha256 == handoff_plan.plan_sha256 %}
+                                                    <p class="text-xs leading-5 text-content-secondary">
+                                                        {{ table_label.status_label('External Reference Unverified', 'warning') }}
+                                                        {{ successor_claim.successor_reference }} · Recorded as an external
+                                                        evidence claim, not an additional approval. Successor acceptance
+                                                        remains unverified and provider ownership is unchanged.
+                                                    </p>
+                                                {% else %}
+                                                    <form method="post"
+                                                          action="{{ url_for('tenant.record_tenant_release_successor_reference_route', tenant_id=tenant.id) }}"
+                                                          hx-post="{{ url_for('tenant.record_tenant_release_successor_reference_route', tenant_id=tenant.id) }}"
+                                                          hx-target="#tenant-management-detail"
+                                                          hx-select="#tenant-management-detail"
+                                                          hx-swap="outerHTML show:none focus-scroll:false"
+                                                          hx-indicator="#tenant-management-loading"
+                                                          class="mt-2 space-y-2 rounded-lg border border-outline-subtle bg-surface-card p-2">
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                                                        <input type="hidden" name="plan_sha256" value="{{ handoff_plan.plan_sha256 }}">
+                                                        <label class="block text-xs font-medium text-content-secondary">
+                                                            External successor reference (unverified evidence, not approval)
+                                                            <input name="successor_reference" type="text"
+                                                                   minlength="3" maxlength="120" required
+                                                                   autocomplete="off"
+                                                                   pattern="[A-Za-z0-9][A-Za-z0-9_.@:/-]{2,119}"
+                                                                   placeholder="EXT-ACK-2026-123"
+                                                                   class="mt-1 block h-9 w-full rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs text-content-primary">
+                                                        </label>
+                                                        <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                                                            <input name="confirm_successor_reference" type="checkbox" value="record" required
+                                                                   class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
+                                                            <span>Record a reference for external verification only.
+                                                                This is not proof of acceptance or authorization to transfer.</span>
+                                                        </label>
+                                                        <button type="submit"
+                                                                class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                            Record External Reference
+                                                        </button>
+                                                    </form>
+                                                {% endif %}
+                                                {% if tenant.provider_key == 'native_kubernetes' %}
+                                                    {% set native_acceptance = row.release_successor_acceptance %}
+                                                    {% if native_acceptance and native_acceptance.plan_sha256 == handoff_plan.plan_sha256
+                                                          and native_acceptance.consent_verified and native_acceptance.authority_mode == 'platform_admin_governed' %}
+                                                        <p class="rounded-lg border border-outline-subtle bg-surface-card p-3 text-xs leading-5 text-content-secondary"
+                                                           role="status">
+                                                            {{ table_label.status_label('Platform Admin Approved', 'success') }}
+                                                            {{ native_acceptance.provider_username }} ·
+                                                            {{ native_acceptance.scope_count }} scoped objects ·
+                                                            Existing kubeconfig verified through SelfSubjectReview and scoped SelfSubjectAccessReview. Provider transfer is still separate.
+                                                        </p>
+                                                    {% elif row.release_handoff_preparation_state == 'acknowledged'
+                                                            and handoff_plan.requested_by != current_user.id %}
+                                                        <form method="post"
+                                                              action="{{ url_for('tenant.accept_native_successor_handoff_route', tenant_id=tenant.id) }}"
+                                                              hx-post="{{ url_for('tenant.accept_native_successor_handoff_route', tenant_id=tenant.id) }}"
+                                                              hx-target="#tenant-management-detail"
+                                                              hx-select="#tenant-management-detail"
+                                                              hx-swap="outerHTML show:none focus-scroll:false"
+                                                              hx-indicator="#tenant-management-loading"
+                                                              class="mt-2 space-y-2 rounded-lg border border-outline-subtle bg-surface-card p-3">
+                                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                                                            <input type="hidden" name="plan_sha256" value="{{ handoff_plan.plan_sha256 }}">
+                                                            <p class="text-xs leading-5 text-content-secondary">
+                                                                KAORI uses its registered Kubernetes connection (X.509 kubeconfig).
+                                                                No successor credential, private key or separate Kubernetes user token is required.
+                                                                This action verifies provider identity and permissions, then records an explicit
+                                                                KAORI Platform Admin decision for the reviewed plan.
+                                                            </p>
+                                                            <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                                                                <input name="confirm_successor_acceptance" type="checkbox"
+                                                                       value="accept" required
+                                                                       class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
+                                                                <span>As a Platform Admin with an independent review already recorded, I explicitly
+                                                                    authorize the governance handoff for this plan SHA and its exact resources.
+                                                                    I understand that Kubernetes resource values must remain unchanged.</span>
+                                                            </label>
+                                                            <button type="submit"
+                                                                    class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                                <i data-lucide="shield-check" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                                Verify Provider &amp; Accept as Platform Admin
+                                                            </button>
+                                                        </form>
+                                                    {% endif %}
+                                                {% endif %}
+                                                {% if tenant.provider_key == 'native_kubernetes' and handoff_approval.approved_by != current_user.id %}
+                                                    <form method="post"
+                                                          action="{{ url_for('tenant.dry_run_native_release_handoff_route', tenant_id=tenant.id) }}"
+                                                          hx-post="{{ url_for('tenant.dry_run_native_release_handoff_route', tenant_id=tenant.id) }}"
+                                                          hx-target="#tenant-management-detail"
+                                                          hx-select="#tenant-management-detail"
+                                                          hx-swap="outerHTML show:none focus-scroll:false"
+                                                          hx-indicator="#tenant-management-loading"
+                                                          class="mt-2 space-y-2 rounded-lg border border-outline-subtle bg-surface-card p-2">
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                                                        <input type="hidden" name="plan_sha256" value="{{ handoff_plan.plan_sha256 }}">
+                                                        <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                                                            <input type="checkbox" name="confirm_native_handoff_dry_run"
+                                                                   value="approved" required
+                                                                   class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
+                                                            <span>Run Kubernetes server-side dry-run only; no provider metadata
+                                                                or quota/limit values will be persisted.</span>
+                                                        </label>
+                                                        <button type="submit"
+                                                                class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                            <i data-lucide="scan-eye" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                            Preview Native Transfer
+                                                        </button>
+                                                    </form>
+                                                {% endif %}
+                                                {% if tenant.provider_key == 'native_kubernetes' %}
+                                                    {% set live_handoff = row.release_native_handoff_execution %}
+                                                    {% set verified_consent = row.release_successor_acceptance %}
+                                                    {% if live_handoff and live_handoff.plan_sha256 == handoff_plan.plan_sha256 %}
+                                                        <p class="rounded-lg border border-outline-subtle bg-surface-card p-3 text-xs leading-5 text-content-secondary" role="status">
+                                                            {{ table_label.status_label(
+                                                                'Provider Transfer Verified' if live_handoff.status == 'provider_handoff_verified' else 'Recovery Required',
+                                                                'success' if live_handoff.status == 'provider_handoff_verified' else 'warning'
+                                                            ) }}
+                                                            {{ live_handoff.verified_count|default(0) }} /
+                                                            {{ live_handoff.expected_component_count|default(0) }} provider objects.
+                                                            {% if live_handoff.status != 'provider_handoff_verified' %}
+                                                                Do not retry automatically or finalize Release.
+                                                            {% endif %}
+                                                        </p>
+                                                    {% endif %}
+                                                    {% if verified_consent and verified_consent.plan_sha256 == handoff_plan.plan_sha256
+                                                          and verified_consent.consent_verified
+                                                          and verified_consent.accepted_by == current_user.id
+                                                          and row.release_native_handoff_dry_run
+                                                          and row.release_native_handoff_dry_run.status == 'dry_run_passed'
+                                                          and row.release_native_handoff_dry_run.plan_sha256 == handoff_plan.plan_sha256
+                                                          and (not live_handoff or live_handoff.plan_sha256 != handoff_plan.plan_sha256
+                                                               or live_handoff.status == 'partial_handoff_recovery_required')
+                                                          and row.native_release_readiness
+                                                          and row.native_release_readiness.approval_complete
+                                                          and row.native_release_readiness.verified_successor_acceptance
+                                                          and row.native_release_readiness.dry_run_passed %}
+                                                        <form method="post"
+                                                              action="{{ url_for('tenant.execute_native_release_handoff_route', tenant_id=tenant.id) }}"
+                                                              hx-post="{{ url_for('tenant.execute_native_release_handoff_route', tenant_id=tenant.id) }}"
+                                                              hx-target="#tenant-management-detail"
+                                                              hx-select="#tenant-management-detail"
+                                                              hx-swap="outerHTML show:none focus-scroll:false"
+                                                              hx-indicator="#tenant-management-loading"
+                                                              class="mt-2 space-y-2 rounded-lg border border-outline-subtle bg-surface-card p-3">
+                                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                                                            <input type="hidden" name="plan_sha256" value="{{ handoff_plan.plan_sha256 }}">
+                                                            <p class="text-xs leading-5 text-content-secondary">
+                                                                KAORI will recheck its configured Kubernetes kubeconfig
+                                                                identity and permission for each resource before executing.
+                                                                No successor token or private key is required.
+                                                            </p>
+                                                            <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                                                                <input name="confirm_native_handoff_execution" type="checkbox"
+                                                                       value="transfer" required
+                                                                       class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
+                                                                <span>As a Platform Admin, I authorize exact Native governance metadata transfer
+                                                                    after current provider checks. CPU, memory, quota and workloads remain untouched.
+                                                                    Recovery is required on any partial failure.</span>
+                                                            </label>
+                                                            <button type="submit"
+                                                                    class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                                <i data-lucide="arrow-right-left" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                                {{ 'Resume Verified Native Handoff' if live_handoff and live_handoff.status == 'partial_handoff_recovery_required' else 'Execute Native Handoff' }}
+                                                            </button>
+                                                        </form>
+                                                    {% endif %}
+                                                {% endif %}
+                                                {% if tenant.provider_key == 'native_kubernetes'
+                                                      and successor_claim
+                                                      and successor_claim.plan_sha256 == handoff_plan.plan_sha256
+                                                      and row.release_native_handoff_dry_run
+                                                      and row.release_native_handoff_dry_run.status == 'dry_run_passed'
+                                                      and row.release_native_handoff_dry_run.plan_sha256 == handoff_plan.plan_sha256 %}
+                                                    <form method="post"
+                                                          action="{{ url_for('tenant.inspect_native_external_handoff_route', tenant_id=tenant.id) }}"
+                                                          hx-post="{{ url_for('tenant.inspect_native_external_handoff_route', tenant_id=tenant.id) }}"
+                                                          hx-target="#tenant-management-detail"
+                                                          hx-select="#tenant-management-detail"
+                                                          hx-swap="outerHTML show:none focus-scroll:false"
+                                                          hx-indicator="#tenant-management-loading"
+                                                          class="mt-2 space-y-2 rounded-lg border border-outline-subtle bg-surface-card p-2">
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                                                        <input type="hidden" name="plan_sha256" value="{{ handoff_plan.plan_sha256 }}">
+                                                        <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                                                            <input type="checkbox" name="confirm_native_handoff_readback"
+                                                                   value="inspect" required
+                                                                   class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
+                                                            <span>Read provider ownership after an external operator handoff.
+                                                                This does not prove successor consent or authorize Release.</span>
+                                                        </label>
+                                                        <button type="submit"
+                                                                class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                            <i data-lucide="scan-eye" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                            Verify Provider Read-Back
+                                                        </button>
+                                                    </form>
+                                                {% endif %}
+                                                {% set handoff_readback = row.release_native_handoff_readback %}
+                                                {% if handoff_readback and handoff_readback.plan_sha256 == handoff_plan.plan_sha256 %}
+                                                    <p class="text-xs leading-5 text-content-secondary">
+                                                        {{ table_label.status_label('Acceptance Unverified', 'warning') }}
+                                                        {{ handoff_readback.observed_count }} provider resources read back.
+                                                        External acceptance and governance Release remain blocked.
+                                                    </p>
+                                                {% endif %}
+                                                {% set dry_run = row.release_native_handoff_dry_run %}
+                                                {% if dry_run and dry_run.plan_sha256 == handoff_plan.plan_sha256 %}
+                                                    <details class="mt-2 rounded-lg border border-outline-subtle bg-surface-card p-2">
+                                                        <summary class="cursor-pointer text-xs font-semibold text-content-primary">
+                                                            Native Dry-Run · {{ dry_run.status|replace('_', ' ')|title }}
+                                                        </summary>
+                                                        <p class="mt-2 text-xs leading-5 text-content-secondary">
+                                                            {{ dry_run.previewed_components|length }} /
+                                                            {{ dry_run.expected_component_count }} components previewed.
+                                                            Provider mutation: none. Release is still blocked.
+                                                        </p>
+                                                        {% for component in dry_run.previewed_components %}
+                                                            <p class="mt-1 break-all font-mono text-xs text-content-muted">
+                                                                {{ component.kind }}/{{ component.name }} · {{ component.uid }}
+                                                            </p>
+                                                        {% endfor %}
+                                                        {% for issue in dry_run.errors %}
+                                                            <p class="mt-1 break-all text-xs text-content-muted">{{ issue }}</p>
+                                                        {% endfor %}
+                                                    </details>
+                                                {% endif %}
+                                            {% elif row.release_handoff_preparation_state == 'pending' and handoff_plan.requested_by != current_user.id %}
+                                                <p class="rounded-lg border border-outline-subtle bg-surface-card p-3 text-xs leading-5 text-content-secondary"
+                                                   role="status">
+                                                    <span class="font-semibold text-content-primary">Independent approval available.</span>
+                                                    Your account has Tenant Manage and Integrations Manage permissions
+                                                    and is different from the operator who prepared this plan.
+                                                    Review the committed plan and provider evidence before acknowledgment.
+                                                </p>
+                                                <form method="post"
+                                                      action="{{ url_for('tenant.approve_tenant_release_handoff_route', tenant_id=tenant.id) }}"
+                                                      hx-post="{{ url_for('tenant.approve_tenant_release_handoff_route', tenant_id=tenant.id) }}"
+                                                      hx-target="#tenant-management-detail"
+                                                      hx-select="#tenant-management-detail"
+                                                      hx-swap="outerHTML show:none focus-scroll:false"
+                                                      hx-indicator="#tenant-management-loading"
+                                                      class="space-y-2 border-t border-outline-subtle pt-3">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                                                    <input type="hidden" name="plan_sha256"
+                                                           value="{{ handoff_plan.plan_sha256 }}">
+                                                    <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                                                        <input type="checkbox" name="confirm_handoff_approval"
+                                                               value="approved" required
+                                                               class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
+                                                        <span>I reviewed the successor, change record and provider evidence.
+                                                            No ownership transfer has been performed.</span>
+                                                    </label>
+                                                    <button type="submit"
+                                                            class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                        <i data-lucide="user-check" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                        Acknowledge as Independent Reviewer
+                                                    </button>
+                                                </form>
+                                            {% elif row.release_handoff_preparation_state == 'expired' %}
+                                                <p class="rounded-lg border border-status-warning-border bg-status-warning-soft p-3 text-xs leading-5 text-status-warning-text"
+                                                   role="status">
+                                                    This plan has expired. Do not acknowledge this stale evidence;
+                                                    prepare a fresh plan and request independent review.
+                                                </p>
+                                            {% elif row.release_handoff_preparation_state == 'pending' %}
+                                                <p class="rounded-lg border border-status-warning-border bg-status-warning-soft p-3 text-xs leading-5 text-status-warning-text"
+                                                   role="status">
+                                                    <span class="font-semibold">Awaiting Independent Approver.</span>
+                                                    You prepared this plan, so this account cannot approve it—even with Super Admin.
+                                                    A different KAORI user with Tenant Manage and Integrations Manage permissions
+                                                    must sign in, open this same Tenant in the Registry, and acknowledge the
+                                                    current plan. External successor handoff and provider read-back are still separate.
+                                                </p>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                {% elif row.release_preflight and row.release_preflight.handoff_required_count %}
+                                    <p class="mt-3 rounded-lg border border-outline-subtle bg-surface-card p-3 text-xs leading-5 text-content-secondary">
+                                        Preparing handoff requires Integrations Manage permission. Provider inventory remains read-only.
+                                    </p>
+                                {% else %}
+                                    <p class="mt-3 rounded-lg border border-outline-subtle bg-surface-card p-3 text-xs leading-5 text-content-secondary">
+                                        {{ 'Run Review Release to determine whether handoff is required.' if not row.release_preflight else 'No governed handoff required by the latest review.' }}
+                                    </p>
+                                {% endif %}
+                            </section>
+                            <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-elevated p-4"
+                                     aria-label="Independent verification and release">
+                                <div class="flex min-w-0 items-start gap-3">
+                                    <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-card text-xs font-semibold text-kaori-primary" aria-hidden="true">3</span>
+                                    <div class="min-w-0">
+                                        <h4 class="text-sm font-semibold text-content-primary">Independent Verification &amp; Release</h4>
+                                        <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                            Internal approval and external successor evidence are not provider ownership transfer.
+                                            Final Release requires fresh authoritative verification.
+                                        </p>
+                                    </div>
+                                </div>
+                                {% if row.get('native_release_readiness') %}
+                                    {% set native_cycle = row.native_release_readiness %}
+                                    <div class="mt-4 space-y-3 rounded-xl border border-outline-subtle bg-surface-card p-4"
+                                         aria-label="Native Kubernetes full-cycle readiness">
+                                        <div class="flex flex-wrap items-center justify-between gap-2">
+                                            <h5 class="text-xs font-semibold text-content-primary">Native Release &amp; Re-adopt Readiness</h5>
+                                            {{ table_label.status_label(
+                                                (native_cycle.completed_count|string) ~ ' of ' ~ (native_cycle.total_count|string) ~ ' active checkpoints',
+                                                'warning'
+                                            ) }}
+                                        </div>
+                                        <ol class="space-y-2">
+                                            {% for checkpoint in native_cycle.stages %}
+                                                <li class="flex min-w-0 items-start gap-2 text-xs leading-5">
+                                                    <i data-lucide="{{ 'check-circle-2' if checkpoint.complete else 'circle-dashed' }}"
+                                                       class="mt-0.5 h-3.5 w-3.5 shrink-0 {{ 'text-status-normal-text' if checkpoint.complete else 'text-content-muted' }}"
+                                                       aria-hidden="true"></i>
+                                                    <div class="min-w-0">
+                                                        <p class="font-semibold text-content-primary">
+                                                            {{ checkpoint.label }} — {{ checkpoint.display_status }}
+                                                        </p>
+                                                        <p class="text-content-secondary">{{ checkpoint.detail }}</p>
+                                                    </div>
+                                                </li>
+                                            {% endfor %}
+                                        </ol>
+                                        {% if native_cycle.approval_expired %}
+                                            <div class="space-y-3 rounded-lg border border-status-warning-border bg-status-warning-soft p-3"
+                                                 role="status">
+                                                <p class="text-xs font-semibold text-status-warning-text">
+                                                    Independent approval recorded, but its evidence has expired.
+                                                </p>
+                                                <p class="text-xs leading-5 text-content-secondary">
+                                                    The original approval remains in the audit history; it is not valid for execution.
+                                                    Restarting creates a new plan SHA and requires a fresh independent reviewer.
+                                                </p>
+                                                {% if native_cycle.restart_blocked_by_readback %}
+                                                    <p class="text-xs leading-5 text-status-warning-text">
+                                                        Provider handoff read-back exists for this plan. Review partial-transfer recovery;
+                                                        restarting is blocked until the current provider state is resolved.
+                                                    </p>
+                                                {% elif native_cycle.restart_required and row.release_handoff_plan
+                                                          and row.release_handoff_plan.requested_by == current_user.id
+                                                          and current_user.has_permission('tenant.manage')
+                                                          and current_user.has_permission('integrations.manage') %}
+                                                    <form method="post"
+                                                          action="{{ url_for('tenant.restart_expired_tenant_release_handoff_route', tenant_id=tenant.id) }}"
+                                                          hx-post="{{ url_for('tenant.restart_expired_tenant_release_handoff_route', tenant_id=tenant.id) }}"
+                                                          hx-target="#tenant-management-detail"
+                                                          hx-select="#tenant-management-detail"
+                                                          hx-swap="outerHTML show:none focus-scroll:false"
+                                                          hx-indicator="#tenant-management-loading"
+                                                          class="space-y-2">
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                                                        <input type="hidden" name="plan_sha256" value="{{ row.release_handoff_plan.plan_sha256 }}">
+                                                        <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                                                            <input type="checkbox" name="confirm_handoff_restart" value="restart" required
+                                                                   class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
+                                                            <span>Restart this expired plan after verifying provider ownership has not changed.</span>
+                                                        </label>
+                                                        <button type="submit"
+                                                                class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                            <i data-lucide="refresh-cw" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                            Restart Expired Handoff Plan
+                                                        </button>
+                                                    </form>
+                                                {% else %}
+                                                    <p class="text-xs leading-5 text-status-warning-text">
+                                                        Ask the original requester to restart this plan. The next reviewer
+                                                        must independently acknowledge the new SHA.
+                                                    </p>
+                                                {% endif %}
+                                            </div>
+                                        {% endif %}
+                                        <p class="border-t border-outline-subtle pt-3 text-xs leading-5 text-content-muted">
+                                            {% if native_cycle.dry_run_passed %}Native dry-run passed; no live handoff was executed. {% endif %}
+                                            {% if native_cycle.reference_recorded %}An external reference was recorded but is not consent. {% endif %}
+                                            {% if native_cycle.readback_observed_unverified %}Provider changes were observed without verified successor acceptance. {% endif %}
+                                            Live Native handoff and Managed Release require explicit successor consent,
+                                            conditional provider mutation and authoritative read-back. Runtime security/UAT
+                                            admission is still required before staging promotion.
+                                            Kubernetes remains authoritative.
+                                        </p>
+                                    </div>
+                                {% endif %}
+                                {% if row.release_preflight and row.release_preflight.status == 'handoff_review_required'
+                                      and not row.release_preflight.blockers
+                                      and current_user.has_permission('integrations.manage') %}
+                                    <form method="post"
+                                          action="{{ url_for('tenant.release_tenant_governance_route', tenant_id=tenant.id) }}"
+                                          hx-post="{{ url_for('tenant.release_tenant_governance_route', tenant_id=tenant.id) }}"
+                                          hx-target="#tenant-management-detail"
+                                          hx-select="#tenant-management-detail"
+                                          hx-swap="outerHTML show:none focus-scroll:false"
+                                          hx-indicator="#tenant-management-loading"
+                                          class="mt-4 flex min-w-0 flex-col gap-3 rounded-xl border border-outline-subtle bg-surface-elevated p-4">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                                        <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                                            <input type="checkbox" name="confirm_release_governance"
+                                                   value="approved" required
+                                                   class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
+                                            <span>Release governance, keep provider resources. Requires fresh verified preflight.</span>
+                                        </label>
+                                        <button type="submit"
+                                                class="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                            <i data-lucide="unlink" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                            Release Governance
+                                        </button>
+                                    </form>
+                                {% endif %}
+                                {% if row.release_native_handoff_execution
+                                      and row.release_native_handoff_execution.status == 'provider_handoff_verified'
+                                      and row.release_handoff_plan
+                                      and row.release_handoff_plan.plan_sha256 == row.release_native_handoff_execution.plan_sha256
+                                      and current_user.has_permission('integrations.manage') %}
+                                    <form method="post"
+                                          action="{{ url_for('tenant.finalize_verified_native_release_route', tenant_id=tenant.id) }}"
+                                          hx-post="{{ url_for('tenant.finalize_verified_native_release_route', tenant_id=tenant.id) }}"
+                                          hx-target="#tenant-management-detail"
+                                          hx-select="#tenant-management-detail"
+                                          hx-swap="outerHTML show:none focus-scroll:false"
+                                          hx-indicator="#tenant-management-loading"
+                                          class="mt-4 space-y-3 rounded-lg border border-outline-subtle bg-surface-card p-3">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                                        <input type="hidden" name="plan_sha256" value="{{ row.release_handoff_plan.plan_sha256 }}">
+                                        <p class="text-xs font-semibold text-content-primary">Verified Native Transfer · Ready for Governance Release</p>
+                                        <p class="text-xs leading-5 text-content-secondary">
+                                            A new authoritative provider read-back must preserve every Namespace,
+                                            ResourceQuota, LimitRange and CPU/memory value before governance can be Released.
+                                        </p>
+                                        <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                                            <input name="confirm_native_release_finalization" type="checkbox"
+                                                   value="release" required class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
+                                            <span>Finalize KAORI governance Release only after complete provider handoff and zero dependencies.
+                                                Preserve the external Kubernetes resources.</span>
+                                        </label>
+                                        <button type="submit"
+                                                class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                            <i data-lucide="unlink" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                            Finalize Verified Native Release
+                                        </button>
+                                    </form>
+                                {% endif %}
+                                {% if (not row.release_preflight or row.release_preflight.blockers)
+                                      and not (row.release_native_handoff_execution
+                                          and row.release_native_handoff_execution.status == 'provider_handoff_verified') %}
+                                    <p class="mt-3 text-xs leading-5 text-content-muted">
+                                        Release remains blocked. Resolve recorded conditions and independently verify the successor.
+                                    </p>
+                                {% endif %}
+                            </section>
+                        </div>
+                        <p class="mt-4 flex items-start gap-2 border-t border-outline-subtle pt-4 text-xs leading-5 text-content-muted">
+                            <i data-lucide="shield-check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                            Internal approval or an external reference does not prove successor acceptance.
+                            Provider ownership remains authoritative.
+                        </p>
+                    </section>
+                {% endif %}
+                {% if can_manage and current_user.has_permission('integrations.manage')
+                      and current_user.has_permission('clusters.manage')
+                      and tenant.provider_key == 'native_kubernetes' and tenant.lifecycle_status == 'released'
+                      and tenant.provider_evidence_json and tenant.provider_evidence_json.release_governance
+                      and tenant.provider_evidence_json.release_governance.release_mode == 'managed_handoff' %}
+                    {% set released_native = tenant.provider_evidence_json.release_governance %}
+                    {% set handback_receipt = row.release_successor_handback %}
+                    <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5"
+                             aria-label="Native successor handback">
+                        <div class="flex items-start gap-3">
+                            <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true"><i data-lucide="arrow-left-right" class="h-4 w-4"></i></span>
+                            <div class="min-w-0">
+                                <h3 class="text-sm font-semibold text-content-primary">Platform Admin Handback &amp; Re-adopt</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                    Released generation {{ tenant.generation }} is externally owned by
+                                    {{ released_native.successor_owner }}. A Platform Admin must explicitly authorize
+                                    governance handback before fresh Discovery can create a new generation.
+                                </p>
+                            </div>
+                        </div>
+                        {% if handback_receipt %}
+                            <div class="mt-4 rounded-lg border border-outline-subtle bg-surface-elevated p-3 text-xs leading-5 text-content-secondary">
+                                {{ table_label.status_label(
+                                    'Handback Verified' if handback_receipt.status == 'verified' else 'Recovery Required',
+                                    'success' if handback_receipt.status == 'verified' else 'warning'
+                                ) }}
+                                {{ handback_receipt.verified_count|default(0) }} /
+                                {{ handback_receipt.expected_component_count|default(0) }} resources retained.
+                                {% if handback_receipt.status == 'verified' %}
+                                    Run fresh Discovery, then explicitly Adopt as a new Tenant/Namespace generation.
+                                {% else %}
+                                    Partial or incomplete handback requires provider recovery review; no automatic retry.
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <form method="post"
+                                  action="{{ url_for('tenant.verify_native_successor_handback_route', tenant_id=tenant.id) }}"
+                                  hx-post="{{ url_for('tenant.verify_native_successor_handback_route', tenant_id=tenant.id) }}"
+                                  hx-target="#tenant-management-detail"
+                                  hx-select="#tenant-management-detail"
+                                  hx-swap="outerHTML show:none focus-scroll:false"
+                                  hx-indicator="#tenant-management-loading"
+                                  class="mt-4 space-y-3 rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                                <input type="hidden" name="release_plan_sha256" value="{{ released_native.plan_sha256 }}">
+                                <p class="text-xs leading-5 text-content-secondary">
+                                    This operation uses KAORI's existing Kubernetes X.509 kubeconfig to verify
+                                    Platform Admin provider identity and scoped get/patch permissions.
+                                    No successor token or private key input is required.
+                                </p>
+                                <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                                    <input type="checkbox" name="confirm_successor_handback" value="handback" required
+                                           class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
+                                    <span>As an authorized Platform Admin, I explicitly approve relinquishing
+                                        KAORI governance metadata on these exact Released resources for future Re-adoption.
+                                        Their names, specs, CPU, memory and quotas must remain unchanged.</span>
+                                </label>
+                                <button type="submit"
+                                        class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                    <i data-lucide="arrow-left-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                    Verify Provider &amp; Hand Back as Platform Admin
+                                </button>
+                            </form>
+                        {% endif %}
+                    </section>
+                {% endif %}
+                {% if can_manage and tenant.provider_key == 'capsule' and tenant.provider_state == 'capsule'
+                      and tenant.lifecycle_status == 'ready' and row.capsule_environment_options %}
+                    <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4" aria-label="Namespace attachment">
+                        <div class="flex items-start gap-3">
+                            <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                                <i data-lucide="link-2" class="h-4 w-4"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <h3 class="text-sm font-semibold text-content-primary">Namespace Attachment</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">Attach an existing Capsule Namespace to this Tenant.</p>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                                    <details class="group min-w-0"
+                                             data-capsule-namespace-attach>
+                                        <summary class="inline-flex min-h-9 max-w-full cursor-pointer items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold text-kaori-primary transition hover:border-brand-outline hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                            <i data-lucide="link" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                            Attach Capsule Namespace
+                                        </summary>
+                                        <form method="post"
+                                              action="{{ url_for('tenant.attach_existing_capsule_namespace_route') }}"
+                                              hx-post="{{ url_for('tenant.attach_existing_capsule_namespace_route') }}"
+                                              hx-target="#tenant-management-detail"
+                                              hx-select="#tenant-management-detail"
+                                              hx-swap="outerHTML show:none focus-scroll:false"
+                                              hx-indicator="#tenant-management-loading"
+                                              class="mt-4 grid min-w-0 gap-3 rounded-xl border border-outline-subtle bg-surface-elevated p-3.5 sm:grid-cols-2">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                                            <label class="block text-xs font-medium text-content-secondary">
+                                                Destination environment
+                                                <select name="environment_id" required
+                                                        class="mt-1 h-9 w-full rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs text-content-primary">
+                                                    {% for environment in row.capsule_environment_options %}
+                                                        <option value="{{ environment.id }}">{{ environment.environment|title }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </label>
+                                            <label class="block text-xs font-medium text-content-secondary">
+                                                Existing Capsule Namespace
+                                                <input type="text" name="namespace" required maxlength="253"
+                                                       placeholder="team-a-dev" autocomplete="off"
+                                                       class="mt-1 h-9 w-full rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs text-content-primary">
+                                            </label>
+                                            <label class="block text-xs font-medium text-content-secondary">
+                                                Namespace UID from Discovery
+                                                <input type="text" name="namespace_uid" required maxlength="128"
+                                                       placeholder="Provider namespace UID" autocomplete="off"
+                                                       class="mt-1 h-9 w-full rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs text-content-primary">
+                                            </label>
+                                            <label class="block text-xs font-medium text-content-secondary">
+                                                Namespace resourceVersion from Discovery
+                                                <input type="text" name="namespace_resource_version" required maxlength="128"
+                                                       placeholder="Provider resourceVersion" autocomplete="off"
+                                                       class="mt-1 h-9 w-full rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs text-content-primary">
+                                            </label>
+                                            <p class="text-xs leading-5 text-content-muted sm:col-span-2">
+                                                Both provider UID and resourceVersion must match fresh Discovery.
+                                                The canonical attachment service verifies Capsule ownership,
+                                                quota and RBAC boundaries without provider mutation.
+                                            </p>
+                                            <button type="submit"
+                                                    class="inline-flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus sm:col-span-2">
+                                                <i data-lucide="link-2" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                Attach Observed Namespace
+                                            </button>
+                                        </form>
+                                    </details>
+
+                        </div>
+                        <p class="mt-3 text-xs leading-5 text-content-muted">
+                            Requires matching provider UID and resourceVersion.
+                        </p>
+                    </section>
+                {% endif %}
+                    <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5"
+                             aria-label="Provider authority">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="shield-check" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                            <h3 class="text-sm font-semibold text-content-primary">Provider Authority</h3>
+                        </div>
+                        <dl class="mt-4 grid min-w-0 gap-4 sm:grid-cols-2">
+                            <div>
+                                <dt class="text-[11px] font-medium text-content-muted">Provider</dt>
+                                <dd class="mt-1 break-words text-xs font-semibold text-content-primary">
+                                    {{ tenant.provider_key|replace('_', ' ')|title }}
+                                </dd>
+                            </div>
+                            <div>
+                                <dt class="text-[11px] font-medium text-content-muted">Reconciliation</dt>
+                                <dd class="mt-1 break-words text-xs font-semibold text-content-primary">
+                                    {{ tenant.reconciliation_authority|replace('_', ' ')|title }}
+                                </dd>
+                            </div>
+                        </dl>
+                        <p class="mt-3 border-t border-outline-subtle pt-3 text-xs leading-5 text-content-muted">
+                            Kubernetes or Capsule enforces provider state. KAORI presents committed governance evidence.
+                        </p>
+                    </section>
+                {% set decommission = row.decommission_preflight %}
+                <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5" aria-label="Tenant lifecycle actions">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                        <div class="flex min-w-0 flex-1 items-start gap-3">
+                            <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-status-warning-soft text-status-warning-text" aria-hidden="true">
+                                <i data-lucide="shield-alert" class="h-4 w-4"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <h3 class="text-sm font-semibold text-content-primary">Lifecycle Actions</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                    Decommission is destructive. Release preserves provider resources.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% if not can_manage %}
+                        <p class="mt-3 rounded-lg bg-surface-elevated p-3 text-xs leading-5 text-content-muted">
+                            Read-only access. Tenant management permission is required for changes.
+                        </p>
+                    {% endif %}
+                    {% if can_manage and decommission.executable or tenant.lifecycle_status in ['decommissioned', 'released'] or not decommission.blockers %}
+                        <div class="mt-4">
+                                {% if can_manage and decommission.executable %}
+                                    <form method="post"
+                                          action="{{ url_for('tenant.decommission_tenant_route', tenant_id=tenant.id) }}"
+                                          hx-post="{{ url_for('tenant.decommission_tenant_route', tenant_id=tenant.id) }}"
+                                          hx-target="#tenant-management-detail"
+                                          hx-select="#tenant-management-detail"
+                                          hx-swap="outerHTML show:none focus-scroll:false"
+                                          hx-indicator="#tenant-management-loading"
+                                          class="inline-flex">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                                        <button id="tenant-decommission-submit-{{ tenant.id }}"
+                                                type="submit"
+                                                class="hidden"
+                                                aria-hidden="true"
+                                                tabindex="-1">Submit Tenant decommission</button>
+                                        <button type="button"
+                                                data-destructive-modal-open
+                                                data-destructive-modal-id="tenant-decommission-modal"
+                                                data-destructive-submit-button-id="tenant-decommission-submit-{{ tenant.id }}"
+                                                data-destructive-target="{{ tenant.name }}"
+                                                data-destructive-scope="{{ row.cluster.name if row.cluster else tenant.cluster_id }} · {{ decommission.credential_count }} credential{{ '' if decommission.credential_count == 1 else 's' }} · {{ decommission.access_grant_count }} grant{{ '' if decommission.access_grant_count == 1 else 's' }} · {{ decommission.namespace_count }} namespace{{ '' if decommission.namespace_count == 1 else 's' }} · Gen {{ tenant.generation }}"
+                                                class="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-outline-subtle bg-surface-card px-3 text-xs font-semibold text-status-critical-text transition hover:bg-status-critical-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                            <i data-lucide="{{ 'rotate-ccw' if tenant.lifecycle_status == 'decommissioning' else 'archive-x' }}"
+                                               class="h-3.5 w-3.5"
+                                               aria-hidden="true"></i>
+                                            {{ 'Retry' if tenant.lifecycle_status == 'decommissioning' else 'Decommission' }}
+                                        </button>
+                                    </form>
+                                {% elif tenant.lifecycle_status in ['decommissioned', 'released'] %}
+                                    {{ table_label.special_label('Released · Provider Retained' if tenant.lifecycle_status == 'released' else 'History Retained', 'unknown', 'archive') }}
+                                {% elif decommission.blockers %}
+                                    {# Blockers appear together in the warning panel below. #}
+                                {% else %}
+                                    {{ table_label.special_label('Unavailable', 'unknown', 'circle-slash-2') }}
+                                {% endif %}
+
+                        </div>
+                    {% endif %}
+                    {% if decommission.blockers %}
+                        <div class="mt-4 rounded-xl border border-status-warning-border bg-status-warning-soft p-4"
+                             aria-label="Decommission blockers">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <p class="flex items-center gap-2 text-xs font-semibold text-status-warning-text">
+                                    <i data-lucide="triangle-alert" class="h-4 w-4" aria-hidden="true"></i>
+                                    Decommission blocked
+                                </p>
+                                {{ table_label.status_label('Blocked', 'warning') }}
+                            </div>
+                            <ul class="mt-3 list-disc space-y-2 pl-5 text-xs leading-5 text-content-secondary">
+                                {% for blocker in decommission.blockers %}
+                                    <li class="break-words pl-0.5">{{ blocker }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+                </section>
+                </div>
+            </div>
+            <footer class="flex shrink-0 items-center justify-between gap-4 border-t border-outline-subtle bg-surface-card px-6 py-4 sm:px-7">
+                <p class="hidden text-xs leading-5 text-content-muted sm:block">
+                    Actions retain KAORI approval, evidence and provider safeguards.
+                </p>
+                <a href="{{ return_to_registry_url }}"
+                   class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-xs font-semibold text-content-secondary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus sm:ml-auto">
+                    <i data-lucide="arrow-left" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                    Back to Tenant Registry
+                </a>
+            </footer>
+        </section>
+{{ destructive_modal.render('tenant-decommission-modal',
+'Decommission Tenant',
+'Selected Tenant',
+'Commit only after verified cleanup. Tenant history and audit evidence remain.',
+'tenant-decommission-submit',
+action_label='Start Decommission',
+notice='Governed teardown. Provider verification is required.',
+scope_value='Governed Tenant boundary',
+impact_items=[
+('snowflake', 'Freeze Mutations', 'Block new Tenant changes.') ,
+('key-round', 'Revoke Access', 'Disable credentials and grants.'),
+('boxes', 'Remove Namespaces', 'Delete managed namespaces.'),
+('shield-check', 'Verify & Retain', 'Commit after verified cleanup.')
+],
+warning='If deletion is blocked, KAORI keeps the Tenant in Decommissioning for retry.',
+presentation='steps'
+) }}
+</div>
