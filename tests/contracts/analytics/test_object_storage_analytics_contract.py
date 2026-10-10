@@ -658,7 +658,8 @@ def test_object_storage_alerts_use_independent_alert_and_metric_evidence_paths()
     assert 'Automatic · Alertmanager Preferred' in controls
     assert 'Alertmanager Lifecycle' in controls
     assert 'Metrics Snapshot Source' in controls
-    assert 'Analytics Worker Snapshot' in controls
+    assert 'Latest Analytics Data Snapshot' in controls
+    assert 'shared_readiness.snapshot_card(' in controls
     assert 'Metrics Only' in records
     assert 'Silenced' in records
     assert 'Inhibited' in records
