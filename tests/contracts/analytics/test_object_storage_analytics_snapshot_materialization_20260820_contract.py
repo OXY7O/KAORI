@@ -133,7 +133,9 @@ def test_ui_explains_snapshot_authority_and_three_stage_readiness() -> None:
     readiness = read('app/templates/storage/object_storage/analytics/partials/_metrics_readiness.html')
 
     assert 'Pages read worker-materialized analytics snapshots' in controls
-    assert 'Analytics Worker Snapshot' in controls
+    assert 'Latest Analytics Data Snapshot' in controls
+    assert 'shared_readiness.snapshot_card(' in controls
+    assert 'shared_readiness.source_card(' in controls
     assert "analytics/components/_controls_readiness.html" in controls
     assert "shared_readiness.frame(" in controls
     assert "'object-storage-analytics-refresh-indicator'" in controls
