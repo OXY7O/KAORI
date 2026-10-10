@@ -65,7 +65,46 @@ workflows with empty and populated datasets, browser refresh/back/forward,
 per-registry filters/Rows/HTMX, light/dark and mobile views. This is not
 staging UAT or production acceptance evidence.
 
-## Tenant Overview compact committed record (#1081; current detail UI authority)
+## Tenant Overview — integrated authority & lifecycle (#1081 follow-up; latest detail presentation authority)
+
+Human DevContainer feedback supersedes three distracting standalone surfaces
+without weakening governance:
+
+- **Provider Authority:** remove the separate read-only disclosure because
+  Provider and Reconciliation Authority are already committed facts in
+  Tenant Overview. Keep the original `#tenant-provider-authority` anchor on
+  the existing Overview Reconciliation Authority row for inbound links.
+  Provider execution/enforcement remains Kubernetes/Capsule authoritative.
+- **Authority Boundary:** relocate the **single unchanged authoritative
+  statement** into one compact neutral `role=note` row *inside* the Overview
+  record sheet. No standalone callout, duplicated provider text, or implied
+  transfer of authority.
+- **Lifecycle Actions:** relocate the protected lifecycle disclosure *inside*
+  the bottom of the same Overview record. Its `#tenant-lifecycle-actions`
+  deep link and `tenant_detail_open_section=lifecycle` auto-open behavior
+  remain; no second tall numbered card. Preserve Decommission and Retry
+  authorization, all recorded preflight blockers, exact CSRF/HTMX payload,
+  destructive confirmation modal, and read-only semantics. A normal page
+  render does not start lifecycle mutation.
+
+The Hero subtitle is now **“Manage Tenant governance, provider authority,
+and lifecycle with committed evidence.”** #1079 Governance Scope KPI section,
+Native Release wizard, optional Platform Admin Handback, Capsule Namespace
+Attachment, 14 total governance forms, global Operational Toast and provider
+read/write boundaries are unchanged. The two optional standalone Handback/
+Attachment accordions still use the existing `tenant-governance` native
+disclosure group; the Overview lifecycle control no longer participates
+in that separate accordion group.
+
+This is a presentation/placement change, not new lifecycle policy. Source
+tests cover one provider boundary statement, no duplicate Provider Authority
+card, one lifecycle disclosure within Overview, exact form/modal/blocker
+preservation, anchor stability and revised section order. Browser light/dark,
+desktop/mobile, read-only, blocked/executable, released/decommissioned states
+need human DevContainer Visual QA; CI/CD, Developer Check, Full Admission,
+staging UAT, main promotion and deployment remain HOLD.
+
+## Tenant Overview compact committed record (#1081; historical compact foundation, integrated placement supersedes boundary/footer arrangement)
 
 DevContainer review of the initial #1081 record sheet found that the two inner
 sub-panel headers, dedicated Record History band and tall Description band
