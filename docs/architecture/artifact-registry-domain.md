@@ -174,6 +174,39 @@ the materialized correlation scope. Neither the table nor the dialog requests
 a live scanner/provider report, triggers provider scans or mutates findings.
 Harbor remains provider-authoritative; KAORI normalizes and correlates.
 
+### Vulnerability View More: Supply Chain evidence hierarchy (#948 follow-up)
+
+After DevContainer visual feedback, the native Vulnerability detail modal reuses
+the **existing Supply Chain evidence-card hierarchy** rather than presenting one
+large generic information card. The shared KAORI security `shell` remains
+authoritative for the hero/header, accessible close/focus, scrollable body,
+responsive width and evidence footer. Within it, three focused cards present:
+
+1. **Finding & Remediation:** heading icon, canonical severity and runtime
+   binding state, full-width affected package, then side-by-side installed and
+   fixed version on wider screens, followed by the provider-observed fix note.
+2. **Affected Artifact:** project/repository plus a full-width, immutable
+   digest band with fingerprint icon.
+3. **Runtime & Scan Evidence:** committed binding count, freshness, provider,
+   source and observed timestamp, ending with either a link to Runtime Usage
+   or an explicit neutral statement about missing committed correlations.
+
+All variable-width values are inside `min-w-0` content slots with
+`[overflow-wrap:anywhere]`; opaque versions and digests additionally use
+`break-all`. Responsive definition-list grids start as a single column
+and only switch to two columns at `sm`, with package, digest and timestamp
+available across a complete row. Long package names, unbroken repository
+identifiers, versions and digest strings **must never overlap other columns,
+modal controls or the footer**. Values are not truncated in the detail view.
+The existing canonical scanner evidence, provider authority, runtime
+interpretation, conditional Runtime Usage navigation and read-only behavior
+are unchanged. No new design-system component or provider request was added.
+
+Visual QA must explicitly test one-character-wide/no-space long strings,
+short and long digests, long fixed-version labels, mobile and desktop widths,
+modal scroll, light/dark colors, keyboard focus and both runtime-binding
+states. CI/CD, Full Admission, UAT and promotion remain HOLD.
+
 Developer Check and local Visual QA should confirm long CVE IDs, package
 versions, repository names, digest wrapping, current/stale scan evidence,
 Critical/High severity, both runtime binding paths, 5/50-page navigation,
