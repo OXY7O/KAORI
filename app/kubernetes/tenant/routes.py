@@ -935,11 +935,20 @@ def inspect_native_external_handoff_route(tenant_id: str):
             metadata={'tenant_id': tenant_id, 'operation': 'native_external_handoff_readback'},
         )
     else:
+        partial = result['status'] != 'provider_handoff_observed_acceptance_unverified'
         _record(
             event_type='kubernetes_tenant_native_handoff_readback_observed',
-            status='info', title='Native Provider Handoff Observed',
-            message=f"{result['observed_count']} provider components retained.",
-            detail='External successor consent remains unverified. Release remains blocked.',
+            status='warning' if partial else 'info',
+            title='Native Handoff Recovery Required' if partial else 'Native Provider Handoff Observed',
+            message=(
+                f"{result['recovery']['transferred_count']} of "
+                f"{result['recovery']['transferred_count'] + result['recovery']['pending_count']} "
+                'provider components show successor markers.'
+            ),
+            detail=(
+                'Incomplete provider transfer requires explicit recovery; do not retry blindly or Release.'
+                if partial else 'External successor consent remains unverified. Release remains blocked.'
+            ),
             metadata={'tenant_id': tenant_id, 'operation': 'native_external_handoff_readback'},
         )
     return _tenant_section_redirect('registry')
