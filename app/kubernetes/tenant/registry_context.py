@@ -382,6 +382,33 @@ def get_tenant_registry_context(
                 for event in rows
             })
 
+    # For restart eligibility, latest alone may hide an older partial
+    # transfer behind a later no-transfer observation. Read committed history
+    # for this paginated Tenant set; never call the Kubernetes provider on GET.
+    readback_histories: dict[str, list[dict[str, Any]]] = {}
+    execution_histories: dict[str, list[dict[str, Any]]] = {}
+    if tenant_ids and include_decommission_preflight:
+        history_rows = (
+            db.session.query(AuditEvent)
+            .filter(
+                AuditEvent.target_id.in_(tenant_ids),
+                AuditEvent.target_type.in_((
+                    'kubernetes_tenant_release_native_handoff_readback',
+                    'kubernetes_tenant_release_native_handoff_execution',
+                )),
+            )
+            .order_by(AuditEvent.id.desc()).all()
+        )
+        for event in history_rows:
+            destination = (
+                readback_histories
+                if event.target_type == 'kubernetes_tenant_release_native_handoff_readback'
+                else execution_histories
+            )
+            destination.setdefault(str(event.target_id), []).append(
+                dict(event.metadata_json or {})
+            )
+
     # The read model uses the same eligibility predicate as the locked
     # preparation service. No provider read or independent plan decision here.
     from app.kubernetes.tenant.release_handoff_approval import handoff_plan_preparation_state
@@ -424,6 +451,8 @@ def get_tenant_registry_context(
                     dry_run=row['release_native_handoff_dry_run'],
                     readback=row['release_native_handoff_readback'],
                     handoff_execution=row['release_native_handoff_execution'],
+                    readback_history=readback_histories.get(str(item.id), []),
+                    execution_history=execution_histories.get(str(item.id), []),
                 )
         tenant_rows.append(row)
 
