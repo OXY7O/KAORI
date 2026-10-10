@@ -111,13 +111,22 @@ def test_exact_failed_before_write_history_is_eligible_for_assessment(monkeypatc
 
 
 def repeated_history(plan_data):
-    """Two independently committed failures for the same original Plan SHA."""
+    """Two ordered failed-before-write attempts, including all immutable events."""
     first = history(plan_data)
     second = history(plan_data)
     second[0].id, second[1].id = 5, 6
-    # A second start must strictly follow the first completed failure.
+    anchor = datetime.now(UTC)
+    first[0].metadata_json['started_at'] = (
+        anchor - timedelta(seconds=4)
+    ).isoformat()
+    first[1].metadata_json['checked_at'] = (
+        anchor - timedelta(seconds=3)
+    ).isoformat()
     second[0].metadata_json['started_at'] = (
-        datetime.now(UTC) - timedelta(seconds=1)
+        anchor - timedelta(seconds=2)
+    ).isoformat()
+    second[1].metadata_json['checked_at'] = (
+        anchor - timedelta(seconds=1)
     ).isoformat()
     return first + second
 

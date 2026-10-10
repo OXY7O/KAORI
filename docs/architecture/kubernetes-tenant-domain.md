@@ -303,11 +303,12 @@ Tenant GETs consume committed KAORI state only.
 
 1. **Requester assessment** (original plan `requested_by` actor):
    require one exact SHA/fingerprint/generation Native plan, originally
-   independently approved but now expired, immutable historical executor
-   sequence exactly `native_handoff_started` then
-   `native_handoff_recovery_required`, same executor actor, 0 verified,
-   `provider_mutation_performed=False`, zero verified components and no
-   unverified/partial external read-back or ambiguous attempt for the same SHA.
+   independently approved but now expired. For #1118, verify one or more
+   complete ordered `native_handoff_started` →
+   `native_handoff_recovery_required` pairs with the **same** executor actor
+   throughout, 0 verified and `provider_mutation_performed=False` for
+   every terminal receipt. Any orphan/duplicate/out-of-order/unknown/mutated
+   attempt or non-canonical same-plan read-back remains blocked.
    Any same-plan external read-back must independently satisfy the existing
    full canonical `provider_handoff_not_started` receipt contract, and its
    immutable content is included in the recovery source-history digest. Any
@@ -319,8 +320,8 @@ Tenant GETs consume committed KAORI state only.
    original UID/resourceVersion, every KAORI marker, specification SHA256
    and retained foreign metadata hash. Require all components
    `pending_provider_transfer`. Persist immutable SHA-bound assessment,
-   audit history digest, source failed event, assessment actor and
-   provider proof hash. **No provider PATCH**.
+   audit history digest, every failed event ID and attempt count,
+   assessment actor and provider proof hash. **No provider PATCH**.
 2. **Independent recovery decision**: a different authorized operator must
    be neither the original requester/assessor nor the original failed
    executor actor. The decision binds the assessment SHA, history digest,
@@ -427,13 +428,13 @@ executor attempt.
 
 The committed-readiness projection now exposes advisory
 `no_transfer_assessment_candidate` only if there is current-plan executor
-history with exactly one initial `in_progress` receipt and one terminal
-`partial_handoff_recovery_required` receipt in newest-first committed order.
+history with one or more complete `in_progress` →
+`partial_handoff_recovery_required` pairs in newest-first committed order.
 The start record does not yet contain mutation/verified outcome fields;
 the final failure must explicitly report zero verified, no mutation, no
 provider verification or Release, with an exact plan SHA/fingerprint.
-Any malformed/extra/missing executor events, non-canonical same-plan
-read-back or known/unknown provider effects suppress the advisory. The Step 4
+Any orphan, malformed, mismatched or incomplete executor event, non-canonical
+same-plan read-back or known/unknown provider effect suppresses the advisory. The Step 4
 recovery panel explains candidate versus blocked evidence alongside the
 separate #1104 governed requester assessment, independent decision and
 requester-only fresh-plan restart controls. The **candidate itself** offers
@@ -449,6 +450,35 @@ Only the original requester may attempt a fresh Plan SHA after the service
 revalidates the proof and audit history. Historical AuditEvents must never
 be erased, nor may their observations be reinterpreted as Released.
 Developer Check, CI/CD, Full Admission, UAT and deployment remain HOLD.
+
+## Bounded multi-attempt no-transfer recovery (#1118)
+
+DevContainer evidence established two historical started/failed-before-write
+Native executor attempts on the exact original Plan SHA: both terminal
+receipts report 0 verified and no provider mutation; four original
+read-backs independently returned `readback_proves_handoff_not_started=True`.
+Those observations are **historical only**, not current provider authorization.
+
+The approved #1118 source-only contract extends #1104's historical parser
+from one pair to one or more complete chronological pairs. Every start/failure
+must match the same original plan SHA/fingerprint, tenant/generation, selected
+scope and single executor actor. Every terminal failure must contain verified
+zero, empty verified components, explicit false mutation/verification/Release,
+and a real error record. Any missing, repeated, out-of-order, mixed-actor,
+partial, successful, or otherwise ambiguous attempt fails closed. The
+original read-back predicate applies to **all** same-plan observations,
+including those between attempts. SHA256 history binds every event's ID,
+actor, action and metadata. Assessment also records all failed event IDs
+and attempt count, and the original-requester restart revalidates them.
+
+Source-only admission does not authorize a Kubernetes PATCH or Release.
+Fresh provider-authoritative preflight and TLS-verified GET of original
+UID/RV/spec/foreign metadata, complete dry-run evidence and dependency
+checks remain mandatory before immutable assessment; independent third
+actor authorization remains required before a new requester-owned SHA
+can be reviewed. No old approval/dry-run/consent is inherited.
+No provider mutation, workflow deployment or CI/CD gate was executed.
+Tests, Developer Check, Full Admission and formal UAT remain HOLD.
 
 ## Native handoff approved component versus preview evidence binding (#1102; #1048 authority)
 
