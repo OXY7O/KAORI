@@ -165,28 +165,17 @@
                             </div>
                         </td>
                         <td class="{{ table_ui.cell_classes(action=true) }} align-middle">
-                            {% set tenant_management_url = url_for('tenant.tenants',
-                                section='registry', manage_tenant_id=tenant.id,
-                                page=tenant_pagination.page, per_page=tenant_pagination.per_page,
-                                search=tenant_registry_filters.search,
-                                cluster_id=tenant_registry_filters.cluster_id,
-                                environment=tenant_registry_filters.environment,
-                                lifecycle_status=tenant_registry_filters.lifecycle_status) %}
                             <div class="flex justify-end">
-                                <a href="{{ tenant_management_url }}"
-                                   hx-get="{{ tenant_management_url }}"
-                                   hx-target="#tenant-admin-workspace"
-                                   hx-select="#tenant-admin-workspace"
-                                   hx-swap="outerHTML show:#tenant-registry-management-panel:top focus-scroll:false"
-                                   hx-push-url="true"
-                                   hx-indicator="#tenant-admin-loading"
-                                   aria-controls="tenant-registry-management-panel"
-                                   aria-expanded="{{ 'true' if managed_tenant_id == tenant.id|string else 'false' }}"
-                                   aria-label="{{ 'Manage' if can_manage else 'View actions for' }} {{ tenant.name }}"
-                                   class="{{ table_ui.action_classes() }} shrink-0">
+                                <button type="button"
+                                        data-kaori-dialog-open
+                                        data-dialog-target="tenant-registry-actions-{{ tenant.id }}"
+                                        aria-haspopup="dialog"
+                                        aria-controls="tenant-registry-actions-{{ tenant.id }}"
+                                        aria-label="{{ 'Manage' if can_manage else 'View actions for' }} {{ tenant.name }}"
+                                        class="{{ table_ui.action_classes() }} shrink-0">
                                     <i data-lucide="{{ 'settings-2' if can_manage else 'eye' }}" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                     {{ 'Manage' if can_manage else 'View' }}
-                                </a>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -214,33 +203,29 @@
             control_name='tenant-registry') }}
 </section>
 
-{# Only one management panel is rendered, outside the overflowing table.
-   Selection is scoped to the current authorized paginated Tenant row set. #}
-<div id="tenant-registry-management-panel" class="scroll-mt-5">
+{# Native top-layer dialog follows the canonical Credential Lifecycle More pattern (#964).
+   Keep the dialog outside the scrolling table to avoid clipping/wrapped row actions. #}
 {% for row in tenant_rows %}
     {% set tenant = row.tenant %}
-    {% if managed_tenant_id == tenant.id|string %}
-    {% set tenant_management_close_url = url_for('tenant.tenants',
-        section='registry', page=tenant_pagination.page, per_page=tenant_pagination.per_page,
-        search=tenant_registry_filters.search, cluster_id=tenant_registry_filters.cluster_id,
-        environment=tenant_registry_filters.environment,
-        lifecycle_status=tenant_registry_filters.lifecycle_status) %}
-    <section data-tenant-registry-management-panel
-             aria-labelledby="tenant-registry-actions-{{ tenant.id }}-title"
-             aria-describedby="tenant-registry-actions-{{ tenant.id }}-description"
-             hx-vals='{{ {
-                 "manage_tenant_id": tenant.id,
-                 "registry_page": tenant_pagination.page,
-                 "registry_per_page": tenant_pagination.per_page,
-                 "registry_search": tenant_registry_filters.search,
-                 "registry_cluster_id": tenant_registry_filters.cluster_id,
-                 "registry_environment": tenant_registry_filters.environment,
-                 "registry_lifecycle_status": tenant_registry_filters.lifecycle_status
-             } | tojson }}'
-             class="mt-4 min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
-        <div class="min-w-0">
-
-            <header class="border-b border-outline-subtle bg-surface-card px-5 py-4 sm:px-6">
+    <dialog id="tenant-registry-actions-{{ tenant.id }}"
+            data-kaori-native-dialog
+            data-tenant-registry-actions-dialog
+            data-tenant-registry-dialog
+            hx-vals='{{ {
+                "manage_tenant_id": tenant.id,
+                "registry_page": tenant_pagination.page,
+                "registry_per_page": tenant_pagination.per_page,
+                "registry_search": tenant_registry_filters.search,
+                "registry_cluster_id": tenant_registry_filters.cluster_id,
+                "registry_environment": tenant_registry_filters.environment,
+                "registry_lifecycle_status": tenant_registry_filters.lifecycle_status
+            } | tojson }}'
+            aria-labelledby="tenant-registry-actions-{{ tenant.id }}-title"
+            aria-describedby="tenant-registry-actions-{{ tenant.id }}-description"
+            class="kaori-native-dialog m-auto w-[calc(100vw-1.5rem)] max-w-5xl overflow-hidden rounded-2xl border border-outline-default bg-surface-card p-0 shadow-2xl sm:w-[calc(100vw-3rem)]">
+        <section class="flex max-h-[calc(100dvh-2rem)] min-h-0 flex-col overflow-hidden"
+                 role="document">
+            <header class="shrink-0 border-b border-outline-subtle bg-surface-card px-5 py-4 sm:px-6">
                 <div class="flex items-start justify-between gap-4">
                     <div class="flex min-w-0 items-start gap-3">
                         <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
@@ -266,19 +251,15 @@
                             else ('critical' if tenant.lifecycle_status in ['degraded', 'decommissioning'] else 'unknown')
                         ) }}
                     </div>
-                    <a href="{{ tenant_management_close_url }}"
-                       hx-get="{{ tenant_management_close_url }}"
-                       hx-target="#tenant-admin-workspace"
-                       hx-select="#tenant-admin-workspace"
-                       hx-swap="outerHTML show:none focus-scroll:false"
-                       hx-push-url="true"
-                       aria-label="Close management panel for {{ tenant.name }}"
-                       class="{{ table_ui.action_classes() }} shrink-0">
+                    <button type="button"
+                            data-kaori-dialog-close
+                            aria-label="Close actions for {{ tenant.name }}"
+                            class="{{ table_ui.action_classes() }} shrink-0">
                         <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
-                    </a>
+                    </button>
                 </div>
             </header>
-            <div class="min-w-0 bg-surface-page">
+            <div class="min-h-0 flex-1 overflow-y-auto bg-surface-page">
                 <div class="grid grid-cols-3 divide-x divide-outline-subtle border-b border-outline-subtle bg-surface-card">
                     <div class="min-w-0 px-3 py-3.5 sm:px-5">
                         <p class="text-[11px] font-medium text-content-muted">Namespaces</p>
@@ -887,6 +868,7 @@
                                                 aria-hidden="true"
                                                 tabindex="-1">Submit Tenant decommission</button>
                                         <button type="button"
+                                                data-kaori-dialog-close
                                                 data-destructive-modal-open
                                                 data-destructive-modal-id="tenant-decommission-modal"
                                                 data-destructive-submit-button-id="tenant-decommission-submit-{{ tenant.id }}"
@@ -929,25 +911,18 @@
                 </section>
                 </div>
             </div>
-            <footer class="flex items-center justify-between gap-3 border-t border-outline-subtle bg-surface-card px-5 py-3 sm:px-6">
+            <footer class="flex shrink-0 items-center justify-between gap-3 border-t border-outline-subtle bg-surface-card px-5 py-3 sm:px-6">
                 <p class="hidden text-xs leading-5 text-content-muted sm:block">
                     Actions retain KAORI approval, evidence and provider safeguards.
                 </p>
-                <a href="{{ tenant_management_close_url }}"
-                   hx-get="{{ tenant_management_close_url }}"
-                   hx-target="#tenant-admin-workspace"
-                   hx-select="#tenant-admin-workspace"
-                   hx-swap="outerHTML show:none focus-scroll:false"
-                   hx-push-url="true"
-                   class="{{ table_ui.action_classes() }} ml-auto">
-                    Close Management
-                </a>
+                <button type="button" data-kaori-dialog-close
+                        class="{{ table_ui.action_classes() }} ml-auto">
+                    Close
+                </button>
             </footer>
-        </div>
-    </section>
-    {% endif %}
+        </section>
+    </dialog>
 {% endfor %}
-</div>
 {{ destructive_modal.render('tenant-decommission-modal',
 'Decommission Tenant',
 'Selected Tenant',
