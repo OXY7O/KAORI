@@ -365,16 +365,20 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert 'class="{{ table_ui.action_classes() }}"' in capacity
     assert 'View More' in capacity
     assert 'aria-label="Resource allocation comparison"' in capacity
-    assert 'grid grid-cols-3 gap-3 sm:grid-cols-[minmax(9rem,1.1fr)_repeat(3,minmax(0,1fr))]' in capacity
+    assert "capacity_budget_bars.get(item.cluster.id|string, [])" in capacity
+    assert 'sm:grid-cols-[minmax(11rem,1.4fr)_repeat(3,minmax(0,1fr))]' in capacity
     assert 'col-span-3 min-w-0 sm:col-span-1' in capacity
     assert 'lg:grid-cols-3' not in capacity
-    assert "('CPU Requests', 'Compute', item.display.budget.cpu, item.display.committed.cpu, item.display.headroom.cpu)" in capacity
-    assert "('Memory Requests', 'Compute', item.display.budget.memory, item.display.committed.memory, item.display.headroom.memory)" in capacity
-    assert "('Pod Slots', 'Pod quota', item.display.budget.pods, item.display.committed.pods, item.display.headroom.pods)" in capacity
-    assert "('Logical Storage', 'Policy ceiling', item.display.budget.storage, item.display.committed.storage, item.display.headroom.storage)" in capacity
-    assert "('Budget', budget)" in capacity
-    assert "('Committed', committed)" in capacity
-    assert "('Headroom', headroom)" in capacity
+    assert "bar.budget" in capacity
+    assert "bar.committed" in capacity
+    assert "bar.headroom" in capacity
+    assert "{{ bar.percent }}% used" in capacity
+    assert "{{ bar.free_percent }}% left" in capacity
+    assert "style=\"width: {{ bar.percent }}%\" " not in capacity
+    assert "style=\"width: {{ bar.percent }}%\">" in capacity
+    assert "style=\"width: {{ bar.free_percent }}%\">" in capacity
+    assert "Percentage unavailable · {{ bar.state }}" in capacity
+    assert "Over budget by {{ bar.shortfall }}" in capacity
     assert 'No governed namespaces' in capacity
     assert "dialog_id = 'capacity-budget-details-'" in capacity
     assert 'space-y-3 p-4' not in capacity
@@ -397,7 +401,7 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert '2048 GiB = 2 TiB' in capacity
     assert 'Compute evidence required' in capacity
     assert 'Logical storage governed' in capacity
-    assert "('Logical Storage', 'Policy ceiling', item.display.budget.storage, item.display.committed.storage, item.display.headroom.storage)" in capacity
+    assert "bar.key == 'storage_bytes'" in capacity
     assert 'Storage is logical admission capacity.' in capacity
     assert 'Governed request budgets and remaining headroom.' in capacity
     assert capacity.count('Logical budget only.') == 1
@@ -408,8 +412,8 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert 'class="flex min-h-10 w-full items-center gap-2' in capacity
     assert 'name="tenant_storage_budget_gib"' in capacity
     assert "form_field.help('Enter GiB" not in capacity
-    assert 'item.display.budget.pods' in capacity
-    assert 'item.display.headroom.storage' in capacity
+    assert 'capacity_budget_bars.get(item.cluster.id|string, [])' in capacity
+    assert 'bar.percent' in capacity
     assert "action_button.classes('primary')" in capacity
     assert "action_button.classes('primary', full=true)" not in capacity
     assert 'components/info_tip.html' in capacity
@@ -432,6 +436,8 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert 'paginate_sequence' in routes
     assert "context['capacity_pagination']" in routes
     assert "context['capacity_filters']" in routes
+    assert "context['capacity_budget_bars'] = {" in routes
+    assert "str(item['cluster'].id): build_tenant_allocation_bars(item)" in routes
 
 
 def test_allocation_budget_registry_separates_snapshot_freshness_and_compute_budget() -> None:
@@ -455,16 +461,24 @@ def test_allocation_budget_registry_separates_snapshot_freshness_and_compute_bud
     assert "registry_ui.footer" in capacity
     assert 'macro cluster_identity(' in table  # Reuse the existing identity primitive.
 
-    # The new read-only resource-first layout never changes dimensions or units.
+    # Canonical committed budget percentages are supplied by existing presentation bars,
+    # never recomputed or inferred from formatted display strings in the template.
     dialog = capacity.split('aria-label="Resource allocation comparison"', 1)[1].split('</section>', 1)[0]
-    assert 'grid grid-cols-3' in dialog
+    assert "capacity_budget_bars.get(item.cluster.id|string, [])" in dialog
+    assert 'grid grid-cols-3 gap-x-4 gap-y-3' in dialog
     assert 'col-span-3 min-w-0 sm:col-span-1' in dialog
     assert 'sm:sr-only' in dialog
-    assert 'break-words text-sm font-semibold tabular-nums' in dialog
-    assert dialog.count('item.display.budget.') == 4
-    assert dialog.count('item.display.committed.') == 4
-    assert dialog.count('item.display.headroom.') == 4
+    assert "bar.label" in dialog
+    assert "bar.budget" in dialog
+    assert "bar.committed" in dialog
+    assert "bar.headroom" in dialog
+    assert "{{ bar.percent }}% used" in dialog
+    assert "{{ bar.free_percent }}% left" in dialog
+    assert 'role="img"' in dialog
+    assert "Percentage unavailable · {{ bar.state }}" in dialog
+    assert "Over budget by {{ bar.shortfall }}" in dialog
     assert 'overflow-x-auto' not in dialog
+    assert "data-kaori-dialog-close" in capacity
     assert "Storage is logical admission capacity." in capacity
     assert "Allocation Budget registry and detail visual hierarchy" in docs
 
