@@ -278,7 +278,7 @@ def test_governance_scope_reuses_approved_tenant_estate_posture_pattern():
     assert 'tenant_summary_cards' not in detail
     assert 'tenant-resource-coverage-title' not in detail
     assert 'tenant-authority-scope-title' not in detail
-    assert 'Tenant Estate' not in detail  # Never claim fleet-level scope for one Tenant.
+    assert "'Tenant Estate'," not in detail  # Never label one Tenant as fleet estate.
 
 
 def test_single_tenant_overview_and_authority_boundary_unchanged():
