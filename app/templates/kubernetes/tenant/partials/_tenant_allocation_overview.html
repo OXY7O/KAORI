@@ -1,7 +1,6 @@
 {% import "components/action_button.html" as action_button %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
-{% import "components/table_registry.html" as registry_ui %}
 {% set overview_id = 'tenant-allocation-overview' %}
 {% set overview_loading_id = 'tenant-allocation-overview-loading' %}
 {% set contributions_dialog_id = 'tenant-allocation-contributions-dialog' %}
@@ -202,12 +201,20 @@
                                 Governed Namespace requests; Capsule shared quota counted once per Tenant.
                             </p>
                         </div>
-                        <button type="button"
-                                data-kaori-dialog-close
-                                class="{{ table_ui.action_classes() }} shrink-0"
-                                aria-label="Close Tenant Contributions">
-                            <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
-                        </button>
+                        <div class="flex shrink-0 items-center gap-2">
+                            <a href="{{ url_for('tenant.tenants', section='registry') }}"
+                               class="inline-flex min-h-9 items-center gap-1.5 rounded-md px-1 text-xs font-semibold text-kaori-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
+                               aria-label="Open Tenant Registry">
+                                Tenant Registry
+                                <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                            </a>
+                            <button type="button"
+                                    data-kaori-dialog-close
+                                    class="{{ table_ui.action_classes() }} shrink-0"
+                                    aria-label="Close Tenant Contributions">
+                                <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
+                            </button>
+                        </div>
                     </header>
                     <section class="shrink-0 border-b border-outline-subtle bg-surface-elevated px-4 py-3 sm:px-6"
                              aria-label="Committed Tenant allocation summary">
@@ -233,32 +240,39 @@
                              class="flex min-h-0 flex-1 flex-col overflow-hidden"
                              aria-label="Tenant contribution registry">
                         <div class="shrink-0 border-b border-outline-subtle px-4 py-3 sm:px-6">
-                            {% call registry_ui.filter_form('tenant.resource_profiles',
-                                        contributions_body_id, contributions_loading_id,
-                                        allocation_tenant_pagination.per_page,
-                                        classes='w-full',
-                                        page_param='allocation_page',
-                                        per_page_param='allocation_per_page') %}
+                            <form method="get"
+                                  action="{{ url_for('tenant.resource_profiles') }}"
+                                  hx-get="{{ url_for('tenant.resource_profiles') }}"
+                                  hx-trigger="change, input changed delay:450ms"
+                                  hx-target="#{{ contributions_body_id }}"
+                                  hx-select="#{{ contributions_body_id }}"
+                                  hx-swap="outerHTML"
+                                  hx-indicator="#{{ contributions_loading_id }}"
+                                  hx-sync="closest section:replace"
+                                  role="search"
+                                  class="w-full">
                                 <input type="hidden" name="view" value="capacity">
                                 <input type="hidden" name="allocation_cluster_id" value="{{ allocation_cluster_id }}">
                                 {% if capacity_filters.search %}
                                     <input type="hidden" name="capacity_search" value="{{ capacity_filters.search }}">
                                 {% endif %}
-                                <div class="min-w-0 flex-1">
-                                    <label for="tenant-contributions-search" class="{{ table_ui.filter_label_classes() }}">
-                                        Search Tenant or Namespace
-                                    </label>
-                                    {{ table_ui.search_field('allocation_search', allocation_search,
-                                                            'Search Tenant, Namespace, or ID', id='tenant-contributions-search') }}
-                                </div>
-                            {% endcall %}
-                            {% if allocation_search %}
-                                <p class="mt-2 text-xs text-content-muted" role="status">
-                                    {{ allocation_tenant_pagination.total_items }} matching Tenant record{{ '' if allocation_tenant_pagination.total_items == 1 else 's' }}
-                                </p>
-                            {% endif %}
+                                <label for="tenant-contributions-search" class="{{ table_ui.filter_label_classes() }}">
+                                    Search Tenant or Namespace
+                                </label>
+                                {{ table_ui.search_field('allocation_search', allocation_search,
+                                                        'Search Tenant, Namespace, or ID', id='tenant-contributions-search') }}
+                            </form>
+                            <p class="mt-2 text-xs text-content-muted" role="status">
+                                {% if allocation_search %}
+                                    {{ allocation_tenant_matches }} matching Tenant{{ '' if allocation_tenant_matches == 1 else 's' }} of {{ allocation_tenant_total }}
+                                {% else %}
+                                    {{ allocation_tenant_total }} committed Tenant{{ '' if allocation_tenant_total == 1 else 's' }} · Scroll to view all
+                                {% endif %}
+                            </p>
                         </div>
-                        <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+                        <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus"
+                             tabindex="0"
+                             aria-label="Scroll through Tenant contributions">
                             {% if allocation_tenant_rows %}
                                 <ol class="divide-y divide-outline-subtle" aria-label="Committed Tenant contributions">
                                     {% for row in allocation_tenant_rows %}
@@ -337,31 +351,6 @@
                                     </p>
                                 </div>
                             {% endif %}
-                        </div>
-                        <div class="flex shrink-0 flex-col gap-2 border-t border-outline-subtle px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
-                            <div class="min-w-0 flex-1 [&>footer]:border-0 [&>footer]:bg-transparent [&>footer]:p-0">
-                                {% if allocation_tenant_pagination and allocation_tenant_pagination.total_items > 0 %}
-                                    {{ registry_ui.footer('tenant.resource_profiles',
-                                        contributions_body_id,
-                                        contributions_loading_id,
-                                        allocation_tenant_pagination,
-                                        {'view': 'capacity', 'allocation_cluster_id': allocation_cluster_id,
-                                         'capacity_search': capacity_filters.search, 'allocation_search': allocation_search},
-                                        allocation_tenant_pagination.allowed_per_page,
-                                        resource_label='Tenants',
-                                        rows_aria_label='Tenant allocation rows per page',
-                                        control_name='tenant-allocation',
-                                        page_param='allocation_page',
-                                        per_page_param='allocation_per_page') }}
-                                {% else %}
-                                    <p class="text-xs text-content-muted">No allocation records to display</p>
-                                {% endif %}
-                            </div>
-                            <a href="{{ url_for('tenant.tenants', section='registry') }}"
-                               class="inline-flex min-h-9 shrink-0 items-center gap-1.5 self-start rounded-md text-xs font-semibold text-kaori-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus lg:self-auto">
-                                Tenant Registry
-                                <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                            </a>
                         </div>
                     </section>
                 </section>
