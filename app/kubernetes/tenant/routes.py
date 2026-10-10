@@ -764,6 +764,7 @@ def attach_existing_capsule_namespace_route():
 
 @tenant_bp.post('/tenants/<string:tenant_id>/release-preflight')
 @permission_required('tenant.manage')
+@permission_required('clusters.manage')
 def review_tenant_release_route(tenant_id: str):
     try:
         _csrf()
@@ -794,6 +795,7 @@ def review_tenant_release_route(tenant_id: str):
 @tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/prepare')
 @permission_required('tenant.manage')
 @permission_required('integrations.manage')
+@permission_required('clusters.manage')
 def prepare_tenant_release_handoff_route(tenant_id: str):
     try:
         _csrf()
@@ -827,6 +829,7 @@ def prepare_tenant_release_handoff_route(tenant_id: str):
 @tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/restart-expired')
 @permission_required('tenant.manage')
 @permission_required('integrations.manage')
+@permission_required('clusters.manage')
 def restart_expired_tenant_release_handoff_route(tenant_id: str):
     """Explicit requester-only renewal; no Kubernetes mutations or Release."""
     try:
@@ -861,6 +864,7 @@ def restart_expired_tenant_release_handoff_route(tenant_id: str):
 @tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/approve')
 @permission_required('tenant.manage')
 @permission_required('integrations.manage')
+@permission_required('clusters.manage')
 def approve_tenant_release_handoff_route(tenant_id: str):
     try:
         _csrf()
@@ -896,6 +900,7 @@ def approve_tenant_release_handoff_route(tenant_id: str):
 @tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/successor-reference')
 @permission_required('tenant.manage')
 @permission_required('integrations.manage')
+@permission_required('clusters.manage')
 def record_tenant_release_successor_reference_route(tenant_id: str):
     try:
         _csrf()
@@ -966,6 +971,7 @@ def accept_native_successor_handoff_route(tenant_id: str):
 @tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/native-dry-run')
 @permission_required('tenant.manage')
 @permission_required('integrations.manage')
+@permission_required('clusters.manage')
 def dry_run_native_release_handoff_route(tenant_id: str):
     try:
         _csrf()
@@ -1040,6 +1046,7 @@ def execute_native_release_handoff_route(tenant_id: str):
 @tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/native-readback')
 @permission_required('tenant.manage')
 @permission_required('integrations.manage')
+@permission_required('clusters.manage')
 def inspect_native_external_handoff_route(tenant_id: str):
     """Explicit provider read-back after external owner actions, no Release."""
     try:
@@ -1083,6 +1090,7 @@ def inspect_native_external_handoff_route(tenant_id: str):
 @tenant_bp.post('/tenants/<string:tenant_id>/release-governance')
 @permission_required('tenant.manage')
 @permission_required('integrations.manage')
+@permission_required('clusters.manage')
 def release_tenant_governance_route(tenant_id: str):
     try:
         _csrf()
