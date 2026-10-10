@@ -150,3 +150,22 @@ def test_platform_admin_receipt_bound_to_exact_plan_and_provider_identity(monkey
         acceptance.require_current_native_acceptance(
             tenant_id='tenant-a', plan=p, approval={'approved_by': 43},
         )
+
+
+def test_platform_admin_human_requires_all_three_existing_permissions(monkeypatch):
+    actor = SimpleNamespace(has_permission=lambda value: value != 'clusters.manage')
+    monkeypatch.setattr(
+        authority.db, 'session',
+        SimpleNamespace(get=lambda _model, _id: actor),
+    )
+    with pytest.raises(ValueError, match='Platform Admin permissions'):
+        authority.require_platform_admin_actor(43)
+
+
+def test_valid_existing_platform_admin_permissions_are_accepted(monkeypatch):
+    actor = SimpleNamespace(has_permission=lambda _: True)
+    monkeypatch.setattr(
+        authority.db, 'session',
+        SimpleNamespace(get=lambda _model, _id: actor),
+    )
+    authority.require_platform_admin_actor(43)
