@@ -218,3 +218,37 @@ def test_approval_remains_available_only_to_independent_actor() -> None:
     assert "Acknowledge as Independent Reviewer" in source
     assert "handoff_plan.requested_by != current_user.id" in source
     assert "current_user.has_permission('integrations.manage')" in source
+
+
+def test_header_and_footer_actions_have_usable_spacing_and_lifecycle_alignment() -> None:
+    modal = _template().split('data-tenant-registry-actions-dialog', 1)[1]
+    header = modal.split('<header ', 1)[1].split('</header>', 1)[0]
+    footer = modal.split('<footer ', 1)[1].split('</footer>', 1)[0]
+
+    assert 'px-6 py-5 sm:px-7' in header
+    assert 'px-6 py-4 sm:px-7' in footer
+    assert 'flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5' in header
+    assert 'table_label.status_label(' in header
+    assert header.index('tenant-registry-actions-{{ tenant.id }}-title') < header.index(
+        'table_label.status_label('
+    )
+    assert '!min-h-10 !min-w-10' in header
+    assert 'aria-label="Close actions for {{ tenant.name }}"' in header
+    assert 'aria-label="Close Tenant Management"' in footer
+    assert '!min-h-10 ml-auto px-4' in footer
+
+
+def test_active_handoff_plan_shows_fixed_requester_and_review_role_not_prepare_button() -> None:
+    modal = _template().split('data-tenant-registry-actions-dialog', 1)[1]
+    handoff = modal.split('aria-label="Governed handoff workflow"', 1)[1].split(
+        'aria-label="Independent verification and release"', 1
+    )[0]
+    assert "row.release_handoff_preparation_state in ['available', 'expired']" in handoff
+    assert 'One active handoff plan per Tenant.' in handoff
+    assert 'The current handoff plan is locked.' in handoff
+    assert 'handoff_plan.successor_owner' in handoff
+    assert 'handoff_plan.change_reference' in handoff
+    assert 'Acknowledge as Independent Reviewer' in handoff
+    assert "row.release_handoff_preparation_state == 'pending'" in handoff
+    assert 'not an additional approval' in handoff
+    assert 'Successor acceptance' in handoff or 'Successor owner' in handoff
