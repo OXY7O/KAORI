@@ -239,12 +239,60 @@ def test_resource_profile_registry_shows_compact_identity_and_full_detail_in_man
 
     # Modal is the full authority for both editable Custom and locked KAORI presets.
     assert 'id="resource-profile-manage-{{ profile.id }}-title"' in dialogs
-    assert '{{ profile.name }}</h2>' in dialogs
+    assert 'title="{{ profile.name }}">{{ profile.name }}</h3>' in dialogs
     assert 'aria-label="Resource Profile description"' in dialogs
-    assert '<p class="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-content-secondary">{{ profile.description }}</p>' in dialogs
-    assert "name=\"profile_description\"" in dialogs
+    assert '<p class="whitespace-pre-wrap break-words text-sm leading-6 text-content-secondary">{{ profile.description }}</p>' in dialogs
+    assert '<textarea name="profile_description"' in dialogs
+    assert "{{ profile.description or '' }}</textarea>" in dialogs
     assert "value=\"{{ profile.description or '' }}\"" in dialogs
     assert "data-kaori-native-dialog" in dialogs
+
+
+def test_resource_profile_workspace_redesign_preserves_governance_and_modal_workflow() -> None:
+    registry = read('app/templates/kubernetes/tenant/partials/_resource_profile_registry.html')
+    dialogs = read('app/templates/kubernetes/tenant/partials/_resource_profile_management_dialogs.html')
+
+    # One coherent fixed-column contract; no truncated resource evidence.
+    for label, width in [('Profile', 29), ('Contract', 21), ('Allocation', 26), ('Usage', 15), ('Action', 9)]:
+        assert f'w-[{width}%]">{label}' in registry
+    assert "table_ui.table_classes('min-w-[1150px] !table-fixed')" in registry
+    assert 'grid grid-cols-2 gap-x-3 gap-y-2' in registry
+    assert "('CPU', profile.quota_hard_json.get('requests.cpu') or 'Not Managed')" in registry
+    assert "('Memory', profile.quota_hard_json.get('requests.memory') or 'Not Managed')" in registry
+    assert "('Pods', profile.quota_hard_json.get('pods') or 'Not Managed')" in registry
+    assert "('Storage', profile.quota_hard_json.get('requests.storage') or 'Not Managed')" in registry
+    assert "registry_ui.footer" in registry
+    assert "data-kaori-dialog-open" in registry
+
+    # Actual full identity is a managed detail surface, not a repeated header wall.
+    assert "Manage Resource Profile' if editable else 'Resource Profile Details" in dialogs
+    assert "aria-label=\"Resource Profile identity\"" in dialogs
+    assert "title=\"{{ profile.name }}\">{{ profile.name }}</h3>" in dialogs
+    assert "<textarea name=\"profile_description\"" in dialogs
+    assert "sm:col-span-2" in dialogs
+    assert "Profile Configuration" in dialogs
+    assert "Namespace References" in dialogs
+    assert "Capacity Decisions" in dialogs
+
+    # Native progressive disclosures and original form contracts apply to both
+    # editable Custom profiles and fixed built-in presets.
+    assert dialogs.count("Namespace quotas and PVC limits") == 2
+    assert dialogs.count("Services, ConfigMaps and Secrets") == 2
+    assert dialogs.count("LimitRange request and limit defaults") == 2
+    assert dialogs.count('<details class="group overflow-hidden rounded-xl') == 6
+    assert dialogs.count('id="resource-profile-update-form-{{ profile.id }}"') == 2
+    assert dialogs.count('advanced_profile_controls.render(') == 2
+    assert "name=\"control_contract_present\"" in dialogs
+    assert "name=\"advanced_control_contract_present\"" in dialogs
+
+    # Rollout remains an explicit, Tenant-scoped POST with separate eligibility.
+    assert 'aria-labelledby="resource-profile-rollout-{{ profile.id }}-heading"' in dialogs
+    assert 'name="tenant_id" required' in dialogs
+    assert "target.provider_key != 'native_kubernetes'" in dialogs
+    assert 'How rollout is applied' in dialogs
+    assert 'One Tenant at a time' in dialogs
+    assert "form=\"resource-profile-update-form-{{ profile.id }}\"" in dialogs
+    assert "url_for('tenant.rollout_resource_profile_route', profile_id=profile.id)" in dialogs
 
 
 def test_resource_profile_workflow_uses_numbered_contract_stages_without_arrow_flow() -> None:
