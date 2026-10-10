@@ -375,6 +375,37 @@ def test_zero_verified_objects_never_implies_zero_provider_mutation():
 
 
 
+
+def test_no_transfer_assessment_is_advisory_and_never_unlocks_restart():
+    snapshot = evidence()
+    snapshot['plan']['handoff_fingerprint'] = 'scope-fp'
+    snapshot['approval']['approved_at'] = '2020-01-01T00:00:00+00:00'
+    snapshot['execution_history'] = [{
+        'plan_sha256': 'a' * 64, 'handoff_fingerprint': 'scope-fp',
+        'status': 'partial_handoff_recovery_required',
+        'provider_mutation_performed': False,
+        'provider_handoff_verified': False, 'release_authorized': False,
+        'verified_count': 0, 'verified_components': [],
+    }]
+    result = project_native_release_readiness(**snapshot)
+    assert result['no_transfer_assessment_candidate'] is True
+    assert result['restart_blocked_by_readback'] is True
+    assert result['restart_required'] is False
+    assert result['release_admitted'] is False
+
+    snapshot['execution_history'][0]['provider_mutation_performed'] = True
+    assert project_native_release_readiness(**snapshot)['no_transfer_assessment_candidate'] is False
+    snapshot['execution_history'][0]['provider_mutation_performed'] = False
+    snapshot['execution_history'].append({
+        **snapshot['execution_history'][0], 'verified_count': 1,
+    })
+    assert project_native_release_readiness(**snapshot)['no_transfer_assessment_candidate'] is False
+    snapshot['execution_history'][-1]['verified_count'] = 0
+    snapshot['execution_history'][-1]['handoff_fingerprint'] = 'wrong-fingerprint'
+    assert project_native_release_readiness(**snapshot)['no_transfer_assessment_candidate'] is False
+
+
+
 def test_legacy_bearer_acceptance_not_used_by_new_platform_admin_readiness():
     snapshot = evidence()
     snapshot['successor_acceptance'] = {
