@@ -180,6 +180,61 @@ def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None
     assert 'read-only:shadow-none' in form_field
 
 
+def test_create_profile_resource_sections_are_collapsed_native_disclosures() -> None:
+    form = read('app/templates/kubernetes/tenant/partials/_resource_profile_form.html')
+    controls = read('app/templates/kubernetes/tenant/partials/_resource_profile_advanced_controls.html')
+    script = read('app/static/js/tenant_resource_profile_presets.js')
+
+    # The visible first-open experience is Identity & Lineage; all four core
+    # resource groups begin closed, matching existing native Advanced Controls.
+    assert 'Identity &amp; Lineage' in form
+    assert form.index('resource-profile-identity-heading') < form.index('resource-profile-compute-heading')
+    marker = '<details class="group overflow-hidden rounded-xl border border-outline-subtle bg-surface-card transition"'
+    sections = form.split(marker)[1:]
+    assert len(sections) == 4
+    for section, title, heading in zip(
+        sections,
+        ('Basic Resources', 'Storage Guardrails', 'Object Limits', 'Container Defaults'),
+        (
+            'resource-profile-compute-heading',
+            'resource-profile-storage-heading',
+            'resource-profile-object-heading',
+            'resource-profile-container-heading',
+        ),
+        strict=True,
+    ):
+        opening = section.split('>', 1)[0]
+        assert ' open' not in opening
+        assert 'data-tenant-resource-section' in opening
+        assert f'aria-labelledby="{heading}"' in opening
+        assert '<summary ' in section
+        assert section.index('<summary ') < section.index('Section help')
+        assert f'id="{heading}"' in section
+        assert f'>{title}</h3>' in section
+        assert 'group-open:rotate-180' in section
+        assert 'border-t border-outline-subtle' in section
+        assert '</details>' in section
+
+    # Moving form controls into closed details must not alter submitted intent,
+    # preset switching, or the canonical Managed / Unmanaged ownership mask.
+    assert form.count('data-tenant-resource-field-wrap') == 5
+    assert form.count('data-tenant-resource-field="{{ field }}"') == 5
+    assert form.count('data-tenant-resource-control="{{ field }}"') == 5
+    assert 'name="control_contract_present"' in form
+    assert 'name="advanced_control_contract_present"' in form
+    assert 'name="profile_class"' in form
+    assert 'name="base_preset_class"' in form
+    assert 'data-tenant-resource-profile-form' in form
+    assert "scope.querySelectorAll('[data-tenant-resource-profile-form]').forEach(initProfileForm)" in script
+    assert "form.querySelector('[data-tenant-profile-class]')" in script
+    assert "collectFields(form, 'data-tenant-resource-field')" in script
+    assert "collectFields(form, 'data-tenant-resource-control')" in script
+    assert "syncManagedState()" in script
+    assert 'data-tenant-advanced-controls' in controls
+    assert '<details ' in controls
+
+
+
 def test_resource_profile_registry_uses_canonical_htmx_filters_and_pagination() -> None:
     registry = read('app/templates/kubernetes/tenant/partials/_resource_profile_registry.html')
     service = tenant_service_source()
