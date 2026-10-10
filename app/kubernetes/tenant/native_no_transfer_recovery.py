@@ -361,7 +361,7 @@ def authorize_native_no_transfer_recovery_committed(
     *, tenant_id: str, actor_user_id: int, plan_sha256: str,
     assessment_sha256: str, confirmed: bool,
 ) -> dict[str, Any]:
-    """Independent third-party decision: neither requester, assessor nor executor."""
+    """Second-person decision after canonical no-transfer proof, never Release."""
     if not confirmed:
         raise ValueError('Explicit independent recovery authorization is required.')
     plan = _require_expired_plan(tenant_id, plan_sha256)
@@ -374,13 +374,22 @@ def authorize_native_no_transfer_recovery_committed(
         or assessed.get('assessment_sha256') != assessment_sha256
         or _sha({k: v for k, v in assessed.items() if k != 'assessment_sha256'}) != assessment_sha256
         or not _checked_recently(assessed.get('assessed_at'))
+        or assessed.get('assessed_by') != plan['requested_by']
     ):
         raise ValueError('Current exact provider recovery assessment is required.')
-    if actor_user_id in {
-        plan['requested_by'], assessed['assessed_by'], assessed['executor_actor_id'],
-    }:
-        raise ValueError('Independent recovery reviewer must differ from requester, assessor and executor.')
-    if _source_history(tenant_id, plan)['digest'] != assessed['history_digest']:
+    # The requester cannot authorize their own assessment. The original
+    # failed executor may review only within this strictly verified no-transfer
+    # path; the assessment and complete canonical source history remain
+    # authoritative, and unknown/partial transfer cannot reach this decision.
+    if actor_user_id in {plan['requested_by'], assessed['assessed_by']}:
+        raise ValueError('Independent recovery reviewer must differ from requester and assessor.')
+    history = _source_history(tenant_id, plan)
+    if (
+        history['digest'] != assessed['history_digest']
+        or history['executor_actor_id'] != assessed.get('executor_actor_id')
+        or history['failed_event_ids'] != assessed.get('failed_event_ids')
+        or history['attempt_count'] != assessed.get('attempt_count')
+    ):
         raise ValueError('Provider execution/read-back history changed after assessment.')
     existing = latest_no_transfer_decision(tenant_id)
     if existing and existing.get('assessment_sha256') == assessment_sha256:
@@ -442,7 +451,7 @@ def require_authorized_no_transfer_restart(
         or decision.get('provider_proof_sha256') != assessed.get('provider_proof_sha256')
         or decision.get('assessed_by') != plan['requested_by']
         or decision.get('authorized_by') in {
-            plan['requested_by'], assessed.get('executor_actor_id'),
+            plan['requested_by'], assessed.get('assessed_by'),
         }
         or not _checked_recently(assessed.get('assessed_at'))
         or not _checked_recently(decision.get('authorized_at'))
