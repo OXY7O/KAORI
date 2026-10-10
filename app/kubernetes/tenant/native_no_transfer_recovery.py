@@ -18,7 +18,9 @@ from app.extensions.db import db
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
 from app.kubernetes.tenant.native_handoff_dry_run import _read_resource
 from app.kubernetes.tenant.native_handoff_executor import _approved_component_for_preview, _component_key
-from app.kubernetes.tenant.native_handoff_recovery import summarize_native_handoff_recovery
+from app.kubernetes.tenant.native_handoff_recovery import (
+    readback_proves_handoff_not_started, summarize_native_handoff_recovery,
+)
 from app.kubernetes.tenant.native_handoff_readback import _latest_native_dry_run
 from app.kubernetes.tenant.release_handoff_approval import (
     _can_confirm_plan, _checked_recently, _plan_hash,
@@ -86,8 +88,11 @@ def _source_history(tenant_id: str, plan: dict[str, Any]) -> dict[str, Any]:
             attempts.append(item)
         else:
             observations.append(item)
-    if len(attempts) != 2 or observations:
-        raise ValueError('Provider history is ambiguous or includes external read-back; recovery is blocked.')
+    if len(attempts) != 2 or any(
+        not readback_proves_handoff_not_started(row['metadata'], plan=plan)
+        for row in observations
+    ):
+        raise ValueError('Provider history is ambiguous or includes unverified/partial read-back; recovery is blocked.')
     started, failure = attempts
     first, last = started['metadata'], failure['metadata']
     if (
@@ -132,7 +137,7 @@ def _source_history(tenant_id: str, plan: dict[str, Any]) -> dict[str, Any]:
     ):
         raise ValueError('Executor audit chronology is not trustworthy.')
     return {
-        'digest': _sha(attempts),
+        'digest': _sha({'executor_attempts': attempts, 'external_readbacks': observations}),
         'executor_actor_id': started['actor_id'],
         'failed_event_id': failure['event_id'],
     }
