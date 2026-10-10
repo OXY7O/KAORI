@@ -196,8 +196,12 @@ def _tenant_detail_context(tenant_id: str) -> dict[str, Any]:
     query = {
         f'registry_{key}': value for key, value in state.items() if value
     }
+    context['tenant_detail_tab_urls'] = {
+        key: url_for('tenant.tenant_detail', tenant_id=tenant_id, view=key, **query)
+        for key, _, _ in views
+    }
     context['tenant_detail_tabs'] = [
-        (key, label, icon, url_for('tenant.tenant_detail', tenant_id=tenant_id, view=key, **query))
+        (key, label, icon, context['tenant_detail_tab_urls'][key])
         for key, label, icon in views
     ]
     requested_view = str(request.values.get('tenant_detail_view')
