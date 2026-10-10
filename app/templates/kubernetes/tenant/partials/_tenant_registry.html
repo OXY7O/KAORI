@@ -649,6 +649,13 @@
                                                     </details>
                                                 {% endif %}
                                             {% elif handoff_plan.requested_by != current_user.id %}
+                                                <p class="rounded-lg border border-outline-subtle bg-surface-card p-3 text-xs leading-5 text-content-secondary"
+                                                   role="status">
+                                                    <span class="font-semibold text-content-primary">Independent approval available.</span>
+                                                    Your account has Tenant Manage and Integrations Manage permissions
+                                                    and is different from the operator who prepared this plan.
+                                                    Review the committed plan and provider evidence before acknowledgment.
+                                                </p>
                                                 <form method="post"
                                                       action="{{ url_for('tenant.approve_tenant_release_handoff_route', tenant_id=tenant.id) }}"
                                                       hx-post="{{ url_for('tenant.approve_tenant_release_handoff_route', tenant_id=tenant.id) }}"
@@ -670,12 +677,17 @@
                                                     <button type="submit"
                                                             class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                                                         <i data-lucide="user-check" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                                        Acknowledge Handoff
+                                                        Acknowledge as Independent Reviewer
                                                     </button>
                                                 </form>
                                             {% else %}
-                                                <p class="text-xs leading-5 text-content-muted">
-                                                    A different authorized operator must review this plan.
+                                                <p class="rounded-lg border border-status-warning-border bg-status-warning-soft p-3 text-xs leading-5 text-status-warning-text"
+                                                   role="status">
+                                                    <span class="font-semibold">Awaiting Independent Approver.</span>
+                                                    You prepared this plan, so this account cannot approve it—even with Super Admin.
+                                                    A different KAORI user with Tenant Manage and Integrations Manage permissions
+                                                    must sign in, open this same Tenant in the Registry, and acknowledge the
+                                                    current plan. External successor handoff and provider read-back are still separate.
                                                 </p>
                                             {% endif %}
                                         {% endif %}
