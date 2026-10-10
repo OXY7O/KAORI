@@ -119,7 +119,7 @@ def test_namespace_registry_uses_compact_rows_and_committed_read_only_detail_dia
     assert 'kaori-native-dialog' in template
     assert "text-right' if action else 'text-left'" in primitives
     assert 'p-0 text-left shadow-2xl' in template
-    assert 'bg-surface-page p-4 text-left sm:p-6' in template
+    assert 'bg-surface-page p-4 text-left sm:p-5' in template
     assert 'data-status-detail-dialog' in native
     assert 'hx-post' not in template
     assert '<form method="post"' not in template
@@ -135,6 +135,18 @@ def test_namespace_registry_uses_compact_rows_and_committed_read_only_detail_dia
     assert "item.provisioning_message" in template
     assert "item.last_reconciled_at" in template
     assert 'Quota &amp; LimitRange Details' in template
+    # Alignment and semantics: indentation in the Jinja source must not
+    # appear as literal leading spaces in provider reconciliation messages.
+    assert 'p-0 text-left shadow-2xl' in template
+    assert 'bg-surface-page p-4 text-left sm:p-5' in template
+    assert '<p class="whitespace-pre-line break-words text-sm leading-6 text-content-secondary">{{ item.provisioning_message or' in template
+    assert 'whitespace-pre-wrap break-words text-sm leading-6 text-content-secondary' not in template
+    assert 'aria-label="Namespace identity and authority"' in template
+    assert 'Source Profile</p>' in template
+    assert 'Effective Snapshot</p>' in template
+    assert 'border-l-2 border-kaori-primary/30 pl-3 text-left' in template
+    assert template.index('Committed Allocation</h3>') < template.index('Reconciliation</h3>') < template.index('Quota &amp; LimitRange Details')
+    assert 'Not declared' in template
     assert 'Provider Mirrored' in template
     assert 'Control Unavailable' in template
     assert "allocation_quota_json: Mapped[dict | None]" in model
