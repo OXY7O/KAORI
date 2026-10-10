@@ -182,26 +182,26 @@
 {% if can_manage and current_user.has_permission('integrations.manage')
                       and current_user.has_permission('clusters.manage')
                       and tenant.ownership_status == 'adopted' and tenant.lifecycle_status == 'ready' %}
-                    <section id="tenant-release-governance" class="min-w-0 scroll-mt-24 rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5" aria-label="Release governance">
+                    <section id="tenant-release-governance" class="min-w-0 scroll-mt-24 space-y-5" aria-label="Release governance">
                         <div class="flex items-start gap-3">
                             <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
                                 <i data-lucide="clipboard-check" class="h-4 w-4"></i>
                             </span>
                             <div class="min-w-0">
-                                <h3 class="text-sm font-semibold text-content-primary">Release Governance</h3>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                <h2 class="text-xl font-semibold tracking-tight text-content-primary">Release Governance</h2>
+                                <p class="mt-1 text-sm leading-6 text-content-secondary">
                                     Review dependencies and provider handoff evidence before releasing governance.
                                 </p>
                             </div>
                         </div>
-                        <div class="mt-4 space-y-4" aria-label="Release governance workflow">
+                        <div class="space-y-4" aria-label="Release governance workflow">
                             {# The release review is an action; evidence and handoff are stable workflow steps, not tabs. #}
-                            <section class="min-w-0 space-y-3 rounded-xl border border-outline-subtle bg-surface-elevated p-4"
+                            <section class="min-w-0 space-y-4 rounded-xl border border-outline-subtle bg-surface-card p-4 shadow-sm sm:p-5"
                                      aria-label="Release readiness">
                                 <div class="flex flex-wrap items-start justify-between gap-3">
                                     <div class="min-w-0 flex-1">
-                                        <h4 class="text-sm font-semibold text-content-primary">Release Readiness</h4>
-                                        <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                        <h4 class="text-base font-semibold text-content-primary">01 · Preflight and blockers</h4>
+                                        <p class="mt-1 text-sm leading-6 text-content-secondary">
                                             Check committed dependencies and blockers before preparing provider handoff.
                                         </p>
                                     </div>
@@ -229,10 +229,10 @@
                                 </div>
                                 {% if row.release_preflight %}
                                     <div class="mt-5 space-y-3" aria-label="Committed Release readiness">
-                                        <div class="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-outline-subtle bg-surface-elevated p-4">
+                                        <div class="flex flex-wrap items-start justify-between gap-3 border-t border-outline-subtle pt-4">
                                             <div class="min-w-0 flex-1">
                                                 <p class="text-xs font-semibold text-content-primary">Latest Release Review</p>
-                                                <p class="mt-1.5 text-xs leading-5 text-content-secondary">
+                                                <p class="mt-1.5 text-sm leading-6 text-content-secondary">
                                                     {% if row.release_preflight.blockers %}
                                                         Release requires {{ row.release_preflight.blockers|length }} governance condition{{ '' if row.release_preflight.blockers|length == 1 else 's' }} to be resolved.
                                                     {% else %}
@@ -255,37 +255,37 @@
                                                     </p>
                                                     <span class="text-xs font-semibold text-status-warning-text">{{ row.release_preflight.blockers|length }} conditions</span>
                                                 </div>
-                                                <ul class="mt-3 list-disc space-y-2 pl-5 text-xs leading-5 text-content-secondary">
+                                                <ul class="mt-3 list-disc space-y-2 pl-5 text-sm leading-6 text-content-secondary">
                                                     {% for blocker in row.release_preflight.blockers %}
                                                         <li class="break-words pl-0.5">{{ blocker }}</li>
                                                     {% endfor %}
                                                 </ul>
                                             </div>
                                         {% else %}
-                                            <p class="text-xs leading-5 text-content-secondary">
+                                            <p class="text-sm leading-6 text-content-secondary">
                                                 No current dependency blockers, but Release execution is not yet admitted.
                                                 A fresh provider read and explicit authorization are still required.
                                             </p>
                                         {% endif %}
                                     </div>
                                 {% else %}
-                                    <div class="mt-5 rounded-xl border border-outline-subtle bg-surface-elevated p-4">
+                                    <div class="mt-4 border-t border-outline-subtle pt-4">
                                         <p class="text-xs font-semibold text-content-primary">Latest Release Review</p>
-                                        <p class="mt-1.5 text-xs leading-5 text-content-secondary">
+                                        <p class="mt-1.5 text-sm leading-6 text-content-secondary">
                                             Run Review Release to inspect committed dependencies and provider readiness.
                                             No Release execution is implied.
                                         </p>
                                     </div>
                                 {% endif %}
                             </section>
-                            <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-elevated p-4"
+                            <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4 shadow-sm sm:p-5"
                                      aria-label="Provider handoff inventory">
                                 <div class="flex flex-wrap items-start justify-between gap-3">
                                     <div class="flex min-w-0 items-start gap-3">
                                         <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-card text-xs font-semibold text-kaori-primary" aria-hidden="true">1</span>
                                         <div class="min-w-0">
-                                            <h4 class="text-sm font-semibold text-content-primary">Handoff Inventory</h4>
-                                            <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                            <h4 class="text-base font-semibold text-content-primary">02 · Provider handoff scope</h4>
+                                            <p class="mt-1 text-sm leading-6 text-content-secondary">
                                                 Inspect provider objects and ownership evidence requiring handoff.
                                             </p>
                                         </div>
@@ -298,9 +298,9 @@
                                     {% endif %}
                                 </div>
                                 {% if row.release_preflight and row.release_preflight.handoff_components %}
-                                    <div class="mt-3 max-h-72 space-y-3 overflow-y-auto border-t border-outline-subtle pt-3">
+                                    <div class="mt-4 divide-y divide-outline-subtle border-t border-outline-subtle">
                                         {% for item in row.release_preflight.handoff_components %}
-                                            <div class="space-y-1 rounded-lg border border-outline-subtle bg-surface-card p-2">
+                                            <div class="min-w-0 space-y-2 py-3">
                                                 <div class="flex flex-wrap items-start gap-1.5">
                                                     {{ table_label.status_label(
                                                         'Handoff Required' if item.handoff == 'external_acceptance_required'
@@ -316,35 +316,35 @@
                                                     {% if item.namespace %}{{ item.namespace }} · {% endif %}
                                                     UID {{ item.uid }} · RV {{ item.resource_version }}
                                                 </p>
-                                                <p class="text-xs leading-5 text-content-secondary">
+                                                <p class="text-sm leading-6 text-content-secondary">
                                                     {{ item.ownership|replace('_', ' ')|title }}
                                                     {% if item.managed_by %}· Manager {{ item.managed_by }}{% endif %}
                                                 </p>
                                             </div>
                                         {% endfor %}
-                                        <p class="text-xs leading-5 text-content-muted">
+                                        <p class="text-sm leading-6 text-content-muted">
                                             Handoff inventory is read-only provider evidence. Release never transfers or deletes
                                             provider-owned controls without verified handoff.
                                         </p>
                                     </div>
                                 {% elif row.release_preflight %}
-                                    <p class="mt-3 rounded-lg border border-outline-subtle bg-surface-card p-3 text-xs leading-5 text-content-secondary">
+                                    <p class="mt-3 rounded-lg border border-outline-subtle bg-surface-card p-3 text-sm leading-6 text-content-secondary">
                                         No provider objects require handoff in the latest review. This does not authorize Release.
                                     </p>
                                 {% else %}
-                                    <p class="mt-3 rounded-lg border border-outline-subtle bg-surface-card p-3 text-xs leading-5 text-content-secondary">
+                                    <p class="mt-3 rounded-lg border border-outline-subtle bg-surface-card p-3 text-sm leading-6 text-content-secondary">
                                         Run Review Release to load the committed provider handoff inventory.
                                     </p>
                                 {% endif %}
                             </section>
-                            <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-elevated p-4"
+                            <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4 shadow-sm sm:p-5"
                                      aria-label="Governed handoff workflow">
                                 <div class="flex flex-wrap items-start justify-between gap-3">
                                     <div class="flex min-w-0 items-start gap-3">
                                         <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-card text-xs font-semibold text-kaori-primary" aria-hidden="true">2</span>
                                         <div class="min-w-0">
-                                            <h4 class="text-sm font-semibold text-content-primary">Governed Handoff</h4>
-                                            <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                            <h4 class="text-base font-semibold text-content-primary">03 · Independent approval and handoff</h4>
+                                            <p class="mt-1 text-sm leading-6 text-content-secondary">
                                                 Prepare a successor record and obtain independent acknowledgment.
                                             </p>
                                         </div>
@@ -368,7 +368,7 @@
                                     {% set handoff_approval = row.release_handoff_approval %}
                                     {% set plan_accepted = handoff_plan and handoff_approval and handoff_approval.plan_sha256 == handoff_plan.plan_sha256 %}
                                     <div class="mt-4 space-y-4 border-t border-outline-subtle pt-4" data-release-handoff-approval>
-                                        <p class="text-xs leading-5 text-content-secondary">
+                                        <p class="text-sm leading-6 text-content-secondary">
                                             One active handoff plan per Tenant. The requester prepares the plan;
                                             a different authorized operator acknowledges it. Neither action
                                             transfers provider ownership or unlocks Release.
@@ -423,7 +423,7 @@
                                             </button>
                                         </form>
                                         {% else %}
-                                            <div class="rounded-lg border border-outline-subtle bg-surface-card p-3 text-xs leading-5 text-content-secondary"
+                                            <div class="rounded-lg border border-outline-subtle bg-surface-card p-3 text-sm leading-6 text-content-secondary"
                                                  role="status">
                                                 <p class="font-semibold text-content-primary">
                                                     {{ 'Awaiting Independent Review' if row.release_handoff_preparation_state == 'pending'
@@ -460,13 +460,13 @@
                                                 Plan SHA-256: {{ handoff_plan.plan_sha256 }}
                                             </p>
                                             {% if plan_accepted %}
-                                                <p class="text-xs leading-5 text-content-secondary">
+                                                <p class="text-sm leading-6 text-content-secondary">
                                                     Independently acknowledged. External owner acceptance,
                                                     provider handoff and read-back remain outstanding.
                                                 </p>
                                                 {% set successor_claim = row.release_successor_claim %}
                                                 {% if successor_claim and successor_claim.plan_sha256 == handoff_plan.plan_sha256 %}
-                                                    <p class="text-xs leading-5 text-content-secondary">
+                                                    <p class="text-sm leading-6 text-content-secondary">
                                                         {{ table_label.status_label('External Reference Unverified', 'warning') }}
                                                         {{ successor_claim.successor_reference }} · Recorded as an external
                                                         evidence claim, not an additional approval. Successor acceptance
@@ -497,7 +497,7 @@
                                                                    placeholder="EXT-ACK-2026-123"
                                                                    class="mt-1 block h-9 w-full rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs text-content-primary">
                                                         </label>
-                                                        <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                                                        <label class="flex items-start gap-2 text-sm leading-6 text-content-secondary">
                                                             <input name="confirm_successor_reference" type="checkbox" value="record" required
                                                                    class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
                                                             <span>Record a reference for external verification only.
@@ -513,7 +513,7 @@
                                                     {% set native_acceptance = row.release_successor_acceptance %}
                                                     {% if native_acceptance and native_acceptance.plan_sha256 == handoff_plan.plan_sha256
                                                           and native_acceptance.consent_verified and native_acceptance.authority_mode == 'platform_admin_governed' %}
-                                                        <p class="rounded-lg border border-outline-subtle bg-surface-card p-3 text-xs leading-5 text-content-secondary"
+                                                        <p class="rounded-lg border border-outline-subtle bg-surface-card p-3 text-sm leading-6 text-content-secondary"
                                                            role="status">
                                                             {{ table_label.status_label('Platform Admin Approved', 'success') }}
                                                             {{ native_acceptance.provider_username }} ·
@@ -537,13 +537,13 @@
                                                 <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
                                             {% endfor %}
                                                             <input type="hidden" name="plan_sha256" value="{{ handoff_plan.plan_sha256 }}">
-                                                            <p class="text-xs leading-5 text-content-secondary">
+                                                            <p class="text-sm leading-6 text-content-secondary">
                                                                 KAORI uses its registered Kubernetes connection (X.509 kubeconfig).
                                                                 No successor credential, private key or separate Kubernetes user token is required.
                                                                 This action verifies provider identity and permissions, then records an explicit
                                                                 KAORI Platform Admin decision for the reviewed plan.
                                                             </p>
-                                                            <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                                                            <label class="flex items-start gap-2 text-sm leading-6 text-content-secondary">
                                                                 <input name="confirm_successor_acceptance" type="checkbox"
                                                                        value="accept" required
                                                                        class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
@@ -575,7 +575,7 @@
                                                 <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
                                             {% endfor %}
                                                         <input type="hidden" name="plan_sha256" value="{{ handoff_plan.plan_sha256 }}">
-                                                        <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                                                        <label class="flex items-start gap-2 text-sm leading-6 text-content-secondary">
                                                             <input type="checkbox" name="confirm_native_handoff_dry_run"
                                                                    value="approved" required
                                                                    class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
@@ -593,7 +593,7 @@
                                                     {% set live_handoff = row.release_native_handoff_execution %}
                                                     {% set verified_consent = row.release_successor_acceptance %}
                                                     {% if live_handoff and live_handoff.plan_sha256 == handoff_plan.plan_sha256 %}
-                                                        <p class="rounded-lg border border-outline-subtle bg-surface-card p-3 text-xs leading-5 text-content-secondary" role="status">
+                                                        <p class="rounded-lg border border-outline-subtle bg-surface-card p-3 text-sm leading-6 text-content-secondary" role="status">
                                                             {{ table_label.status_label(
                                                                 'Provider Transfer Verified' if live_handoff.status == 'provider_handoff_verified' else 'Recovery Required',
                                                                 'success' if live_handoff.status == 'provider_handoff_verified' else 'warning'
@@ -632,12 +632,12 @@
                                                 <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
                                             {% endfor %}
                                                             <input type="hidden" name="plan_sha256" value="{{ handoff_plan.plan_sha256 }}">
-                                                            <p class="text-xs leading-5 text-content-secondary">
+                                                            <p class="text-sm leading-6 text-content-secondary">
                                                                 KAORI will recheck its configured Kubernetes kubeconfig
                                                                 identity and permission for each resource before executing.
                                                                 No successor token or private key is required.
                                                             </p>
-                                                            <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                                                            <label class="flex items-start gap-2 text-sm leading-6 text-content-secondary">
                                                                 <input name="confirm_native_handoff_execution" type="checkbox"
                                                                        value="transfer" required
                                                                        class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
@@ -674,7 +674,7 @@
                                                 <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
                                             {% endfor %}
                                                         <input type="hidden" name="plan_sha256" value="{{ handoff_plan.plan_sha256 }}">
-                                                        <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                                                        <label class="flex items-start gap-2 text-sm leading-6 text-content-secondary">
                                                             <input type="checkbox" name="confirm_native_handoff_readback"
                                                                    value="inspect" required
                                                                    class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
@@ -690,7 +690,7 @@
                                                 {% endif %}
                                                 {% set handoff_readback = row.release_native_handoff_readback %}
                                                 {% if handoff_readback and handoff_readback.plan_sha256 == handoff_plan.plan_sha256 %}
-                                                    <p class="text-xs leading-5 text-content-secondary">
+                                                    <p class="text-sm leading-6 text-content-secondary">
                                                         {{ table_label.status_label('Acceptance Unverified', 'warning') }}
                                                         {{ handoff_readback.observed_count }} provider resources read back.
                                                         External acceptance and governance Release remain blocked.
@@ -702,7 +702,7 @@
                                                         <summary class="cursor-pointer text-xs font-semibold text-content-primary">
                                                             Native Dry-Run · {{ dry_run.status|replace('_', ' ')|title }}
                                                         </summary>
-                                                        <p class="mt-2 text-xs leading-5 text-content-secondary">
+                                                        <p class="mt-2 text-sm leading-6 text-content-secondary">
                                                             {{ dry_run.previewed_components|length }} /
                                                             {{ dry_run.expected_component_count }} components previewed.
                                                             Provider mutation: none. Release is still blocked.
@@ -718,7 +718,7 @@
                                                     </details>
                                                 {% endif %}
                                             {% elif row.release_handoff_preparation_state == 'pending' and handoff_plan.requested_by != current_user.id %}
-                                                <p class="rounded-lg border border-outline-subtle bg-surface-card p-3 text-xs leading-5 text-content-secondary"
+                                                <p class="rounded-lg border border-outline-subtle bg-surface-card p-3 text-sm leading-6 text-content-secondary"
                                                    role="status">
                                                     <span class="font-semibold text-content-primary">Independent approval available.</span>
                                                     Your account has Tenant Manage and Integrations Manage permissions
@@ -741,7 +741,7 @@
                                             {% endfor %}
                                                     <input type="hidden" name="plan_sha256"
                                                            value="{{ handoff_plan.plan_sha256 }}">
-                                                    <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                                                    <label class="flex items-start gap-2 text-sm leading-6 text-content-secondary">
                                                         <input type="checkbox" name="confirm_handoff_approval"
                                                                value="approved" required
                                                                class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
@@ -773,22 +773,22 @@
                                         {% endif %}
                                     </div>
                                 {% elif row.release_preflight and row.release_preflight.handoff_required_count %}
-                                    <p class="mt-3 rounded-lg border border-outline-subtle bg-surface-card p-3 text-xs leading-5 text-content-secondary">
+                                    <p class="mt-3 rounded-lg border border-outline-subtle bg-surface-card p-3 text-sm leading-6 text-content-secondary">
                                         Preparing handoff requires Integrations Manage permission. Provider inventory remains read-only.
                                     </p>
                                 {% else %}
-                                    <p class="mt-3 rounded-lg border border-outline-subtle bg-surface-card p-3 text-xs leading-5 text-content-secondary">
+                                    <p class="mt-3 rounded-lg border border-outline-subtle bg-surface-card p-3 text-sm leading-6 text-content-secondary">
                                         {{ 'Run Review Release to determine whether handoff is required.' if not row.release_preflight else 'No governed handoff required by the latest review.' }}
                                     </p>
                                 {% endif %}
                             </section>
-                            <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-elevated p-4"
+                            <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4 shadow-sm sm:p-5"
                                      aria-label="Independent verification and release">
                                 <div class="flex min-w-0 items-start gap-3">
                                     <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-card text-xs font-semibold text-kaori-primary" aria-hidden="true">3</span>
                                     <div class="min-w-0">
-                                        <h4 class="text-sm font-semibold text-content-primary">Independent Verification &amp; Release</h4>
-                                        <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                        <h4 class="text-base font-semibold text-content-primary">04 · Verify and finalize</h4>
+                                        <p class="mt-1 text-sm leading-6 text-content-secondary">
                                             Internal approval and external successor evidence are not provider ownership transfer.
                                             Final Release requires fresh authoritative verification.
                                         </p>
@@ -826,7 +826,7 @@
                                                 <p class="text-xs font-semibold text-status-warning-text">
                                                     Independent approval recorded, but its evidence has expired.
                                                 </p>
-                                                <p class="text-xs leading-5 text-content-secondary">
+                                                <p class="text-sm leading-6 text-content-secondary">
                                                     The original approval remains in the audit history; it is not valid for execution.
                                                     Restarting creates a new plan SHA and requires a fresh independent reviewer.
                                                 </p>
@@ -854,7 +854,7 @@
                                                 <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
                                             {% endfor %}
                                                         <input type="hidden" name="plan_sha256" value="{{ row.release_handoff_plan.plan_sha256 }}">
-                                                        <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                                                        <label class="flex items-start gap-2 text-sm leading-6 text-content-secondary">
                                                             <input type="checkbox" name="confirm_handoff_restart" value="restart" required
                                                                    class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
                                                             <span>Restart this expired plan after verifying provider ownership has not changed.</span>
@@ -873,7 +873,7 @@
                                                 {% endif %}
                                             </div>
                                         {% endif %}
-                                        <p class="border-t border-outline-subtle pt-3 text-xs leading-5 text-content-muted">
+                                        <p class="border-t border-outline-subtle pt-3 text-sm leading-6 text-content-muted">
                                             {% if native_cycle.dry_run_passed %}Native dry-run passed; no live handoff was executed. {% endif %}
                                             {% if native_cycle.reference_recorded %}An external reference was recorded but is not consent. {% endif %}
                                             {% if native_cycle.readback_observed_unverified %}Provider changes were observed without verified successor acceptance. {% endif %}
@@ -901,7 +901,7 @@
                                             {% for state_key, state_value in registry_state.items() %}
                                                 <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
                                             {% endfor %}
-                                        <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                                        <label class="flex items-start gap-2 text-sm leading-6 text-content-secondary">
                                             <input type="checkbox" name="confirm_release_governance"
                                                    value="approved" required
                                                    class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
@@ -935,11 +935,11 @@
                                             {% endfor %}
                                         <input type="hidden" name="plan_sha256" value="{{ row.release_handoff_plan.plan_sha256 }}">
                                         <p class="text-xs font-semibold text-content-primary">Verified Native Transfer · Ready for Governance Release</p>
-                                        <p class="text-xs leading-5 text-content-secondary">
+                                        <p class="text-sm leading-6 text-content-secondary">
                                             A new authoritative provider read-back must preserve every Namespace,
                                             ResourceQuota, LimitRange and CPU/memory value before governance can be Released.
                                         </p>
-                                        <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                                        <label class="flex items-start gap-2 text-sm leading-6 text-content-secondary">
                                             <input name="confirm_native_release_finalization" type="checkbox"
                                                    value="release" required class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
                                             <span>Finalize KAORI governance Release only after complete provider handoff and zero dependencies.
@@ -955,13 +955,13 @@
                                 {% if (not row.release_preflight or row.release_preflight.blockers)
                                       and not (row.release_native_handoff_execution
                                           and row.release_native_handoff_execution.status == 'provider_handoff_verified') %}
-                                    <p class="mt-3 text-xs leading-5 text-content-muted">
+                                    <p class="mt-3 text-sm leading-6 text-content-muted">
                                         Release remains blocked. Resolve recorded conditions and independently verify the successor.
                                     </p>
                                 {% endif %}
                             </section>
                         </div>
-                        <p class="mt-4 flex items-start gap-2 border-t border-outline-subtle pt-4 text-xs leading-5 text-content-muted">
+                        <p class="mt-4 flex items-start gap-2 border-t border-outline-subtle pt-4 text-sm leading-6 text-content-muted">
                             <i data-lucide="shield-check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
                             Internal approval or an external reference does not prove successor acceptance.
                             Provider ownership remains authoritative.
