@@ -238,8 +238,15 @@ action remains in the top-right header.
 
 The dialog retains `data-kaori-native-dialog`, labelled heading/description,
 close control, existing access semantics, light/dark tokens and responsive
-scroll container. This is presentation only—no provider read, new endpoint,
-schema, admission calculation or namespace mutation. Local DevContainer
+scroll container. **The enclosing shared registry Action cell uses
+`text-right`**, and CSS text alignment is inherited by nested descendants.
+The modal explicitly resets `text-left` at the native-dialog root and
+reinforces it in header and body, while retaining the canonical right-aligned
+registry action button. This addresses the off-center eyebrow and description
+seen in repeated DevContainer screenshots; moving flex items alone cannot
+correct inherited `text-align`. Keep this regression covered by the existing
+resource-profile workspace contract test. This is presentation only—no provider
+read, new endpoint, schema, admission calculation or namespace mutation. Local DevContainer
 Visual QA must verify metric legibility at desktop/mobile sizes and status
 cases where snapshot freshness and compute availability differ. No CI/CD
 gate or deployment is authorized by this integrated review candidate.
