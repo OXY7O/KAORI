@@ -326,6 +326,70 @@ def test_release_step_three_separates_plan_review_external_claim_and_platform_ad
 
 
 
+
+def test_step_three_freshness_matches_native_readiness_and_hides_stale_acceptance():
+    detail = read(DETAIL)
+    step = detail.split('id="tenant-release-stage-approval"', 1)[1].split(
+        'id="tenant-release-stage-finalize"', 1
+    )[0]
+    Environment().parse(detail)
+
+    assert "row.get('native_release_readiness')" in step
+    assert 'row.native_release_readiness.approval_expired' in step
+    assert 'row.native_release_readiness.review_expired' in step
+    assert "table_label.status_label('Approval Expired', 'warning')" in step
+    assert "table_label.status_label('Review Expired', 'warning')" in step
+    assert 'role="status" aria-label="Expired Native handoff evidence"' in step
+    assert "tenant_release_step_urls['finalize']" in step
+    assert 'View recovery steps' in step
+    # Backend already checks both freshness conditions; UI must not offer the
+    # successor-acceptance form based only on plan-SHA match.
+    accept = step.split("tenant.accept_native_successor_handoff_route", 1)[0]
+    assert 'row.native_release_readiness.approval_complete' in accept
+    assert 'row.native_release_readiness.review_complete' in accept
+    assert 'handoff_plan.requested_by != current_user.id' in accept
+    assert 'name="confirm_successor_acceptance"' in step
+    assert step.count('<form ') == 10
+
+
+def test_step_four_has_compact_readiness_and_role_scoped_recovery():
+    detail = read(DETAIL)
+    step = detail.split('id="tenant-release-stage-finalize"', 1)[1].split(
+        "{% if row.release_preflight and row.release_preflight.status == 'handoff_review_required'", 1
+    )[0]
+    Environment().parse(detail)
+    assert 'Verify &amp; Finalize' in step
+    assert 'aria-label="Native Kubernetes full-cycle readiness"' in step
+    assert 'lg:grid-cols-5' in step
+    assert 'aria-label="Native Release checkpoints"' in step
+    assert 'native_cycle.stages' in step
+    assert '{{ checkpoint.label }}' in step
+    assert 'checkpoint.display_status' in step
+    assert 'Next required action' in step
+    assert 'role="status" aria-label="Expired handoff recovery"' in step
+    assert 'native_cycle.approval_expired' in step
+    assert 'native_cycle.review_expired' in step
+    assert 'native_cycle.restart_blocked_by_readback' in step
+    assert 'native_cycle.restart_required' in step
+    assert 'row.release_handoff_plan.requested_by == current_user.id' in step
+    assert "current_user.has_permission('tenant.manage')" in step
+    assert "current_user.has_permission('integrations.manage')" in step
+    assert 'restart_expired_tenant_release_handoff_route' in step
+    assert 'name="confirm_handoff_restart"' in step
+    assert 'value="restart" required' in step
+    assert 'Restart Expired Handoff Plan' in step
+    assert 'Ask the original requester to restart this plan' in step
+    assert 'Resolve partial-transfer recovery before restarting' in step
+    assert "tenant_release_step_urls['scope']" in step
+    assert "tenant_release_step_urls['approval']" in step
+    assert 'External reference' not in step  # Not acceptance evidence.
+    assert 'Kubernetes stays authoritative' in step
+    assert step.count('<form ') == 1
+    assert detail.count('<form ') == 14
+    assert detail.count('name="csrf_token"') == 14
+
+
+
 def test_exact_governance_forms_return_to_same_page_and_global_toast():
     detail = read(DETAIL)
     common = read('app/kubernetes/tenant/route_common.py')
