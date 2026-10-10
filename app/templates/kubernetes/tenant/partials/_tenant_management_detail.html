@@ -1051,71 +1051,86 @@
                                 {% endif %}
                             </section>
                 {% else %}
-                    <section id="tenant-release-stage-finalize" class="min-w-0 scroll-mt-24 px-5 py-5 sm:px-6 sm:py-6"
-                                     aria-label="Independent verification and release">
-                                <div class="flex min-w-0 items-start gap-3">
-                                    
-                                    <div class="min-w-0">
-                                        <h4 class="text-base font-semibold text-content-primary">04 · Verify and finalize</h4>
-                                        <p class="mt-1 text-sm leading-6 text-content-secondary">
-                                            Internal approval and external successor evidence are not provider ownership transfer.
-                                            Final Release requires fresh authoritative verification.
-                                        </p>
-                                    </div>
-                                </div>
-                                {% if row.get('native_release_readiness') %}
-                                    {% set native_cycle = row.native_release_readiness %}
-                                    <div class="mt-4 space-y-3 rounded-xl border border-outline-subtle bg-surface-card p-4"
-                                         aria-label="Native Kubernetes full-cycle readiness">
-                                        <div class="flex flex-wrap items-center justify-between gap-2">
-                                            <h5 class="text-xs font-semibold text-content-primary">Native Release &amp; Re-adopt Readiness</h5>
-                                            {{ table_label.status_label(
-                                                (native_cycle.completed_count|string) ~ ' of ' ~ (native_cycle.total_count|string) ~ ' active checkpoints',
-                                                'warning'
-                                            ) }}
+                    <section id="tenant-release-stage-finalize"
+                             class="min-w-0 scroll-mt-24 px-4 py-4 sm:px-6 sm:py-5"
+                             aria-label="Independent verification and release">
+                        <header class="flex min-w-0 items-start gap-2.5">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true"><i data-lucide="clipboard-check" class="h-4 w-4"></i></span>
+                            <div class="min-w-0">
+                                <h4 class="text-base font-semibold text-content-primary">Verify &amp; Finalize</h4>
+                                <p class="mt-0.5 text-xs leading-5 text-content-secondary">
+                                    Check committed readiness, resolve blocked evidence and verify provider handoff before Release.
+                                </p>
+                            </div>
+                        </header>
+                        {% if row.get('native_release_readiness') %}
+                            {% set native_cycle = row.native_release_readiness %}
+                            <div class="mt-4 grid min-w-0 gap-3 lg:grid-cols-5"
+                                 aria-label="Native Kubernetes full-cycle readiness">
+                                <section class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card lg:col-span-3"
+                                         aria-labelledby="tenant-native-readiness-heading">
+                                    <div class="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b border-outline-subtle px-3 py-2.5 sm:px-4">
+                                        <div class="flex min-w-0 items-center gap-2">
+                                            <i data-lucide="list-checks" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                            <h5 id="tenant-native-readiness-heading" class="text-sm font-semibold text-content-primary">Native Release Readiness</h5>
                                         </div>
-                                        <ol class="space-y-2">
-                                            {% for checkpoint in native_cycle.stages %}
-                                                <li class="flex min-w-0 items-start gap-2 text-xs leading-5">
-                                                    <i data-lucide="{{ 'check-circle-2' if checkpoint.complete else 'circle-dashed' }}"
-                                                       class="mt-0.5 h-3.5 w-3.5 shrink-0 {{ 'text-status-normal-text' if checkpoint.complete else 'text-content-muted' }}"
-                                                       aria-hidden="true"></i>
-                                                    <div class="min-w-0">
-                                                        <p class="font-semibold text-content-primary">
-                                                            {{ checkpoint.label }} — {{ checkpoint.display_status }}
-                                                        </p>
-                                                        <p class="text-content-secondary">{{ checkpoint.detail }}</p>
+                                        {{ table_label.status_label(
+                                            (native_cycle.completed_count|string) ~ ' / ' ~ (native_cycle.total_count|string) ~ ' checkpoints',
+                                            'success' if native_cycle.completed_count == native_cycle.total_count else 'warning'
+                                        ) }}
+                                    </div>
+                                    <ol class="divide-y divide-outline-subtle" aria-label="Native Release checkpoints">
+                                        {% for checkpoint in native_cycle.stages %}
+                                            <li class="flex min-w-0 items-start gap-2.5 px-3 py-2.5 sm:px-4">
+                                                <i data-lucide="{{ 'check-circle-2' if checkpoint.complete else ('clock-alert' if 'Expired' in checkpoint.display_status else 'circle-dashed') }}"
+                                                   class="mt-0.5 h-4 w-4 shrink-0 {{ 'text-status-normal-text' if checkpoint.complete else ('text-status-warning-text' if 'Expired' in checkpoint.display_status else 'text-content-muted') }}"
+                                                   aria-hidden="true"></i>
+                                                <div class="min-w-0 flex-1">
+                                                    <div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                                                        <p class="min-w-0 text-xs font-semibold leading-5 text-content-primary">{{ checkpoint.label }}</p>
+                                                        {{ table_label.status_label(
+                                                            checkpoint.display_status,
+                                                            'success' if checkpoint.complete else ('warning' if 'Expired' in checkpoint.display_status else 'info')
+                                                        ) }}
                                                     </div>
-                                                </li>
-                                            {% endfor %}
-                                        </ol>
-                                        {% if native_cycle.approval_expired %}
-                                            <div class="space-y-3 rounded-lg border border-status-warning-border bg-status-warning-soft p-3"
-                                                 role="status">
-                                                <p class="text-xs font-semibold text-status-warning-text">
-                                                    Independent approval recorded, but its evidence has expired.
+                                                    <p class="mt-0.5 break-words text-xs leading-5 text-content-secondary">{{ checkpoint.detail }}</p>
+                                                </div>
+                                            </li>
+                                        {% endfor %}
+                                    </ol>
+                                </section>
+                                <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-3 sm:p-4 lg:col-span-2"
+                                         aria-labelledby="tenant-native-next-action-heading">
+                                    <div class="flex min-w-0 items-center gap-2">
+                                        <i data-lucide="route" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                        <h5 id="tenant-native-next-action-heading" class="text-sm font-semibold text-content-primary">Next required action</h5>
+                                    </div>
+                                    {% if native_cycle.approval_expired %}
+                                        <div class="mt-3 min-w-0" role="status" aria-label="Expired handoff recovery">
+                                            {{ table_label.status_label('Approval Expired', 'warning') }}
+                                            <p class="mt-2 text-xs leading-5 text-content-secondary">
+                                                Independent approval recorded, but its evidence has expired. Historical approval is retained for audit; it cannot authorize Platform Admin acceptance or Release.
+                                            </p>
+                                            <p class="mt-2 text-xs leading-5 text-content-secondary">
+                                                Restarting creates a new plan SHA and requires a fresh independent reviewer.
+                                            </p>
+                                            {% if native_cycle.restart_blocked_by_readback %}
+                                                <p class="mt-3 border-t border-outline-subtle pt-2.5 text-xs leading-5 text-status-warning-text">
+                                                    Provider handoff read-back exists for this plan. Resolve partial-transfer recovery before restarting; no automatic retry.
                                                 </p>
-                                                <p class="text-sm leading-6 text-content-secondary">
-                                                    The original approval remains in the audit history; it is not valid for execution.
-                                                    Restarting creates a new plan SHA and requires a fresh independent reviewer.
-                                                </p>
-                                                {% if native_cycle.restart_blocked_by_readback %}
-                                                    <p class="text-xs leading-5 text-status-warning-text">
-                                                        Provider handoff read-back exists for this plan. Review partial-transfer recovery;
-                                                        restarting is blocked until the current provider state is resolved.
-                                                    </p>
-                                                {% elif native_cycle.restart_required and row.release_handoff_plan
-                                                          and row.release_handoff_plan.requested_by == current_user.id
-                                                          and current_user.has_permission('tenant.manage')
-                                                          and current_user.has_permission('integrations.manage') %}
-                                                    <form method="post"
+                                            {% elif native_cycle.restart_required and row.release_handoff_plan
+                                                      and row.release_handoff_plan.requested_by == current_user.id
+                                                      and current_user.has_permission('tenant.manage')
+                                                      and current_user.has_permission('integrations.manage') %}
+<form method="post"
                                                           action="{{ url_for('tenant.restart_expired_tenant_release_handoff_route', tenant_id=tenant.id) }}"
                                                           hx-post="{{ url_for('tenant.restart_expired_tenant_release_handoff_route', tenant_id=tenant.id) }}"
                                                           hx-target="#tenant-management-detail"
                                                           hx-select="#tenant-management-detail"
                                                           hx-swap="outerHTML show:none focus-scroll:false"
                                                           hx-indicator="#tenant-management-loading"
-                                                          class="space-y-2">
+                                                          class="mt-3 space-y-3 border-t border-outline-subtle pt-3">
                                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
                                             <input type="hidden" name="tenant_detail_section" value="release">
@@ -1135,25 +1150,50 @@
                                                             Restart Expired Handoff Plan
                                                         </button>
                                                     </form>
-                                                {% else %}
-                                                    <p class="text-xs leading-5 text-status-warning-text">
-                                                        Ask the original requester to restart this plan. The next reviewer
-                                                        must independently acknowledge the new SHA.
-                                                    </p>
-                                                {% endif %}
-                                            </div>
-                                        {% endif %}
-                                        <p class="border-t border-outline-subtle pt-3 text-sm leading-6 text-content-muted">
-                                            {% if native_cycle.dry_run_passed %}Native dry-run passed; no live handoff was executed. {% endif %}
-                                            {% if native_cycle.reference_recorded %}An external reference was recorded but is not consent. {% endif %}
-                                            {% if native_cycle.readback_observed_unverified %}Provider changes were observed without verified successor acceptance. {% endif %}
-                                            Live Native handoff and Managed Release require explicit successor consent,
-                                            conditional provider mutation and authoritative read-back. Runtime security/UAT
-                                            admission is still required before staging promotion.
-                                            Kubernetes remains authoritative.
-                                        </p>
-                                    </div>
-                                {% endif %}
+                                            {% else %}
+                                                <p class="mt-3 border-t border-outline-subtle pt-2.5 text-xs leading-5 text-status-warning-text">
+                                                    Ask the original requester to restart this plan. The next reviewer must independently acknowledge the new SHA.
+                                                </p>
+                                            {% endif %}
+                                        </div>
+                                    {% elif native_cycle.review_expired %}
+                                        <div class="mt-3 space-y-2" role="status">
+                                            {{ table_label.status_label('Review Expired', 'warning') }}
+                                            <p class="text-xs leading-5 text-content-secondary">The provider inventory review is no longer current. Obtain fresh committed preflight evidence before continuing.</p>
+                                            <a href="{{ tenant_release_step_urls['scope'] }}" class="inline-flex min-h-9 items-center gap-1.5 text-xs font-semibold text-kaori-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                Open Review Scope <i data-lucide="arrow-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                            </a>
+                                        </div>
+                                    {% elif not native_cycle.approval_complete %}
+                                        <div class="mt-3 space-y-2" role="status">
+                                            {{ table_label.status_label('Approval Pending', 'warning') }}
+                                            <p class="text-xs leading-5 text-content-secondary">A different authorized operator must acknowledge the current plan before Platform Admin verification.</p>
+                                            <a href="{{ tenant_release_step_urls['approval'] }}" class="inline-flex min-h-9 items-center gap-1.5 text-xs font-semibold text-kaori-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                Open Approval &amp; Handoff <i data-lucide="arrow-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                            </a>
+                                        </div>
+                                    {% else %}
+                                        <div class="mt-3 space-y-2">
+                                            {{ table_label.status_label('Verification Required', 'info') }}
+                                            <p class="text-xs leading-5 text-content-secondary">Independent approval is current. Verify successor identity, authorized provider handoff and read-back before Release.</p>
+                                            <a href="{{ tenant_release_step_urls['approval'] }}" class="inline-flex min-h-9 items-center gap-1.5 text-xs font-semibold text-kaori-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                Open Handoff Controls <i data-lucide="arrow-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                </section>
+                            </div>
+                            <p class="mt-3 flex min-w-0 items-start gap-2 text-xs leading-5 text-content-muted"
+                               role="note">
+                                <i data-lucide="info" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                <span>
+                                    {% if native_cycle.dry_run_passed %}Native dry-run passed; no live handoff was executed. {% endif %}
+                                    {% if native_cycle.reference_recorded %}An external reference was recorded but is not consent. {% endif %}
+                                    {% if native_cycle.readback_observed_unverified %}Provider changes were observed without verified successor acceptance. {% endif %}
+                                    Provider handoff requires explicit successor consent, conditional mutation and authoritative read-back. Security/UAT admission remains required; Kubernetes stays authoritative.
+                                </span>
+                            </p>
+                        {% endif %}
                                 {% if row.release_preflight and row.release_preflight.status == 'handoff_review_required'
                                       and not row.release_preflight.blockers
                                       and current_user.has_permission('integrations.manage') %}
