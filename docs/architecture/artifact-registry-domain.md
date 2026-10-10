@@ -267,12 +267,19 @@ card shells** provide operator context:
   all values, evidence statuses and provider-authoritative meanings remain
   unchanged. This grouped archetype is purpose-specific, not a global rule
   for Registry Security, Runtime or Analytics.
-- **Governance Evidence** — the Policies/Replication records remain in their
-  own canonical section card. The navigation uses existing
-  `content_tabs.render_links` (embedded, server/URL-owned mode), matching
-  the Security Supply Chain workspace. HTMX updates still target and select
-  only `#artifact-registry-governance-registry`, with the active URL and
-  pagination kept by the existing route and shared footer.
+- **Governance Evidence** — Policies/Replication remain in one canonical
+  section card with `content_tabs.render_links` (embedded, server/URL-owned
+  mode), matching Security Supply Chain. Following DevContainer feedback, tab
+  labels do not carry counts, and the selected view displays **only a full-width
+  standard KAORI table directly beneath the tabs**, without a second
+  Policy Evidence / Resilience Evidence headline or padded header. Both tables
+  now use `components/table.html` primitives for headings, rows and identity
+  cells plus the existing shared semantic status labels and full-width
+  `states/_empty_state.html` fallback. Policy and replication record counts
+  remain authoritative in their existing Hero/summary context, not repeated
+  in the tab labels. HTMX still targets/selects
+  `#artifact-registry-governance-registry`, with URL state, canonical 5-row
+  pagination and Governance Sync behavior unchanged.
 
 This replaces Governance's previous framed tab treatment without introducing
 another UI pattern, altering provider authority, changing content-tab semantics

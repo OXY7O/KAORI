@@ -7,6 +7,7 @@
 {% import "components/snapshot_context_bar.html" as snapshot_context_bar %}
 {% import "components/table_registry.html" as registry %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/table.html" as table_ui %}
 <div id="artifact-registry-governance-workspace" class="space-y-6">
     <span id="artifact-registry-governance-background-refresh-trigger"
           class="htmx-indicator hidden"
@@ -161,8 +162,8 @@
         <section id="artifact-registry-governance-registry"
                  class="{{ section_card.shell_classes() }}">
             {{ content_tabs.render_links('registry-governance', [
-                ('policies', 'Policies', 'shield-check', url_for('artifact_registry.governance', tab='policies', page=1, per_page=governance.pagination.per_page), governance.project_count),
-                ('replication', 'Replication', 'git-compare-arrows', url_for('artifact_registry.governance', tab='replication', page=1, per_page=governance.pagination.per_page), governance.replication_count)
+                ('policies', 'Policies', 'shield-check', url_for('artifact_registry.governance', tab='policies', page=1, per_page=governance.pagination.per_page)),
+                ('replication', 'Replication', 'git-compare-arrows', url_for('artifact_registry.governance', tab='replication', page=1, per_page=governance.pagination.per_page))
             ], governance.active_tab, 'Registry Governance Sections',
                 embedded=true,
                 data_namespace='registry-governance',
@@ -175,34 +176,37 @@
                 Loading Governance evidence…
             </div>
             {% if governance.active_tab == 'policies' %}
-                <header class="border-b border-outline-subtle px-5 py-4">
-                    <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Policy Evidence</p>
-                    <h2 class="mt-1 text-base font-semibold text-content-primary">Project Governance</h2>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Provider-native retention and immutability are normalized as committed read-only posture. KAORI does not mutate provider policy here.</p>
-                </header>
                 <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-outline-subtle text-sm">
-                        <thead class="bg-surface-hover text-left text-xs font-semibold text-content-muted">
+                    <table class="{{ table_ui.table_classes('min-w-[60rem]') }}">
+                        <caption class="sr-only">Committed Registry project retention and immutability policy evidence.</caption>
+                        <thead class="{{ table_ui.head_classes() }}">
                             <tr>
-                                <th class="px-5 py-3">Project</th>
-                                <th class="px-5 py-3">Provider</th>
-                                <th class="px-5 py-3">Retention</th>
-                                <th class="px-5 py-3">Immutability</th>
-                                <th class="px-5 py-3">Observed</th>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Project</th>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Provider</th>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Retention</th>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Immutability</th>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Observed</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-outline-subtle">
+                        <tbody class="{{ table_ui.body_classes() }}">
                             {% for row in governance.rows %}
-                                <tr>
-                                    <td class="px-5 py-3 font-semibold text-content-primary">{{ row.project }}</td>
-                                    <td class="px-5 py-3 text-content-secondary">{{ row.provider_label }}</td>
-                                    <td class="px-5 py-3">{{ table_label.status_indicator_label(row.retention_label, row.retention_tone) }}</td>
-                                    <td class="px-5 py-3">{{ table_label.status_indicator_label(row.immutability_label, row.immutability_tone) }}</td>
-                                    <td class="px-5 py-3 text-content-muted">{{ row.observed_at|user_datetime }}</td>
+                                <tr class="{{ table_ui.row_classes() }}">
+                                    <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(row.project, '', 'folder-kanban') }}</td>
+                                    <td class="{{ table_ui.cell_classes() }}"><span class="text-sm text-content-secondary">{{ row.provider_label }}</span></td>
+                                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(row.retention_label, row.retention_tone) }}</td>
+                                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(row.immutability_label, row.immutability_tone) }}</td>
+                                    <td class="{{ table_ui.cell_classes() }}"><span class="text-xs font-medium text-content-secondary whitespace-nowrap">{{ row.observed_at|user_datetime }}</span></td>
                                 </tr>
                             {% else %}
                                 <tr>
-                                    <td colspan="5" class="px-5 py-8 text-center text-content-muted">No committed policy evidence yet. Run Governance Sync.</td>
+                                    <td colspan="5" class="p-0">
+                                        {% set empty_state_icon = 'shield-check' %}
+                                        {% set empty_state_label = 'Committed Governance' %}
+                                        {% set empty_state_title = 'No Policy Evidence Collected' %}
+                                        {% set empty_state_description = 'No committed retention or immutability policy records are available in this scope. Run Governance Sync to collect provider evidence.' %}
+                                        {% set empty_state_min_height = 'min-h-[190px]' %}
+                                        {% include 'components/states/_empty_state.html' %}
+                                    </td>
                                 </tr>
                             {% endfor %}
                         </tbody>
@@ -217,43 +221,46 @@
                                     resource_label='Projects',
                                     control_name='artifact-registry-governance-policies') }}
             {% else %}
-                <header class="border-b border-outline-subtle px-5 py-4">
-                    <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Resilience Evidence</p>
-                    <h2 class="mt-1 text-base font-semibold text-content-primary">Replication</h2>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Review committed provider replication policy evidence without triggering or changing provider replication.</p>
-                </header>
                 <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-outline-subtle text-sm">
-                        <thead class="bg-surface-hover text-left text-xs font-semibold text-content-muted">
+                    <table class="{{ table_ui.table_classes('min-w-[76rem]') }}">
+                        <caption class="sr-only">Committed Registry replication policies and observed source and destination evidence.</caption>
+                        <thead class="{{ table_ui.head_classes() }}">
                             <tr>
-                                <th class="px-5 py-3">Policy</th>
-                                <th class="px-5 py-3">Provider</th>
-                                <th class="px-5 py-3">State</th>
-                                <th class="px-5 py-3">Trigger</th>
-                                <th class="px-5 py-3">Source</th>
-                                <th class="px-5 py-3">Destination</th>
-                                <th class="px-5 py-3">Observed</th>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Policy</th>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Provider</th>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">State</th>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Trigger</th>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Source</th>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Destination</th>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Observed</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-outline-subtle">
+                        <tbody class="{{ table_ui.body_classes() }}">
                             {% for row in governance.rows %}
-                                <tr>
-                                    <td class="px-5 py-3 font-semibold text-content-primary">{{ row.name }}</td>
-                                    <td class="px-5 py-3 text-content-secondary">{{ row.provider_label }}</td>
-                                    <td class="px-5 py-3">{{ table_label.status_indicator_label('Enabled' if row.enabled else ('Disabled' if row.enabled is not none else 'Unknown') , 'normal' if row.enabled else ('info' if row.enabled is false else 'unknown')) }}</td>
-                                    <td class="px-5 py-3 text-content-secondary">{{ row.trigger_type or 'Not Observed' }}</td>
-                                    <td class="px-5 py-3 text-content-secondary">{{ row.source_registry or 'Provider Default' }}</td>
-                                    <td class="px-5 py-3 text-content-secondary">
-                                        <p>{{ row.destination_registry or 'Not Observed' }}</p>
+                                <tr class="{{ table_ui.row_classes() }}">
+                                    <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(row.name, '', 'git-compare-arrows') }}</td>
+                                    <td class="{{ table_ui.cell_classes() }}"><span class="text-sm text-content-secondary">{{ row.provider_label }}</span></td>
+                                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label('Enabled' if row.enabled else ('Disabled' if row.enabled is not none else 'Unknown'), 'normal' if row.enabled else ('info' if row.enabled is false else 'unknown')) }}</td>
+                                    <td class="{{ table_ui.cell_classes() }}"><span class="text-sm text-content-secondary">{{ row.trigger_type or 'Not Observed' }}</span></td>
+                                    <td class="{{ table_ui.cell_classes() }}"><span class="text-sm text-content-secondary break-all">{{ row.source_registry or 'Provider Default' }}</span></td>
+                                    <td class="{{ table_ui.cell_classes() }}">
+                                        <p class="text-sm text-content-secondary break-all">{{ row.destination_registry or 'Not Observed' }}</p>
                                         {% if row.destination_namespace %}
-                                            <p class="mt-0.5 text-xs text-content-muted">{{ row.destination_namespace }}</p>
+                                            <p class="mt-0.5 text-xs text-content-muted break-all">{{ row.destination_namespace }}</p>
                                         {% endif %}
                                     </td>
-                                    <td class="px-5 py-3 text-content-muted">{{ row.observed_at|user_datetime }}</td>
+                                    <td class="{{ table_ui.cell_classes() }}"><span class="text-xs font-medium text-content-secondary whitespace-nowrap">{{ row.observed_at|user_datetime }}</span></td>
                                 </tr>
                             {% else %}
                                 <tr>
-                                    <td colspan="7" class="px-5 py-8 text-center text-content-muted">No committed replication policy evidence yet. Run Governance Sync to refresh provider evidence.</td>
+                                    <td colspan="7" class="p-0">
+                                        {% set empty_state_icon = 'git-compare-arrows' %}
+                                        {% set empty_state_label = 'Committed Governance' %}
+                                        {% set empty_state_title = 'No Replication Evidence Collected' %}
+                                        {% set empty_state_description = 'No committed replication policy records are available in this scope. Run Governance Sync to collect provider evidence.' %}
+                                        {% set empty_state_min_height = 'min-h-[190px]' %}
+                                        {% include 'components/states/_empty_state.html' %}
+                                    </td>
                                 </tr>
                             {% endfor %}
                         </tbody>
