@@ -1,22 +1,14 @@
 {% extends "kubernetes/tenant/base.html" %}
-{% block tenant_content %}
-    <nav aria-label="Tenant breadcrumbs" class="flex flex-wrap items-center gap-2 text-xs text-content-muted">
-        <a href="{{ url_for('tenant.tenants', section='registry') }}"
-           class="rounded text-content-secondary underline-offset-4 hover:text-kaori-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-            Tenants
-        </a>
-        <i data-lucide="chevron-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
-        <a href="{{ return_to_registry_url }}"
-           class="rounded text-content-secondary underline-offset-4 hover:text-kaori-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-            Tenant Registry
-        </a>
-        <i data-lucide="chevron-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
-        <span class="max-w-full break-words font-semibold text-content-primary" aria-current="page">{{ row.tenant.name }}</span>
-    </nav>
-    <div class="min-w-0 space-y-4">
+{# Detail owns its complete Hero and committed-state workspace. The generic
+   capability Hero/provider metrics belong to Tenant overview, not this page. #}
+{% block title %}{{ row.tenant.name }} · Tenant Details{% endblock title %}
+{% block dashboard_content %}
+    <div class="min-w-0 space-y-6"
+         data-tenant-workspace="tenants"
+         data-kaori-tenant-detail-page>
         {% include "kubernetes/tenant/partials/_tenant_management_detail.html" %}
     </div>
-{% endblock tenant_content %}
+{% endblock dashboard_content %}
 {% block tenant_scripts %}
     <script src="{{ url_for('static', filename='js/destructive_confirmation_modal.js') }}"></script>
 {% endblock tenant_scripts %}

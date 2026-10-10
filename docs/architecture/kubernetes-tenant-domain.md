@@ -65,6 +65,47 @@ workflows with empty and populated datasets, browser refresh/back/forward,
 per-registry filters/Rows/HTMX, light/dark and mobile views. This is not
 staging UAT or production acceptance evidence.
 
+## Tenant Details native KAORI workspace — human Visual Review correction (#1067)
+
+Follow-up to #1065 and inherited #734 architecture. The first detail implementation
+carried the **generic** Tenant Management Hero, an overview Provider Readiness
+card, a duplicate in-page Tenant heading/breadcrumb/back button, and a
+three-column dialog snapshot framed as one enormous white modal. The global
+capability router also defaulted the detail endpoint to **Overview**, even
+though the workflow belongs to **Tenants**. This duplicated authority and
+misrepresented the navigation state.
+
+The corrected design has a **single, Tenant-specific transactional Violet Hero**
+using the approved shared `page_hero` helpers. Its h1 is the committed Tenant
+name and it shows lifecycle, cluster, provider and generation. The Hero's
+**only action** is Back to the filtered Tenant Registry. The generic
+cluster-wide Provider Readiness aside is intentionally absent: it belongs on
+the Tenant capability overview and collection surfaces, not an individual
+Tenant detail. There is no secondary page breadcrumb; the **global navbar**
+resolves `tenant.tenant_detail` as Kubernetes → Tenant → Tenants →
+**the actual committed Tenant name** (the generic endpoint label remains
+Tenant Details as a canonical fallback). Both the capability navigation and sidebar map this route to
+the **Tenants** active key rather than defaulting to Overview.
+
+Below the Hero, standalone committed-state cards summarize Namespace count,
+environments, ownership and reconciliation authority. On desktop, a narrow
+sticky section navigation lives beside the full-width Release Governance,
+Native Handback, Capsule Attachment, Provider Authority and Lifecycle cards;
+mobile layouts flow linearly. The working area has **no modal shell**, duplicate
+page header, fixed-height scroll trap, close footer or generic top-layer dialog.
+Short destructive Decommission confirmation remains the existing shared modal
+component, with unchanged CSRF and safety checks.
+
+The **Hero and body share the same `#tenant-management-detail` HTMX target**,
+so any POST that changes lifecycle/status replaces current committed detail
+evidence including the Hero; normal HTML POST still redirects to this detail
+page. Existing OOB Operational Toast remains in the global app toast stack;
+no custom stacking-context/z-index escalation is added. Read-only GET
+is provider-independent. The current 14 governance forms, independent
+reviewer, SHA/UID/RV validation, provider read-back and audit authority are
+all unchanged. Runtime browser Visual QA, pytest and Full Admission are
+pending; no staging/main or Kubernetes deployment was authorized.
+
 ## Tenant Registry → dedicated Tenant Management detail (#1065, supersedes #1022 presentation)
 
 Tenant Registry retains the canonical committed-state summary table, Cluster /

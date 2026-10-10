@@ -8,6 +8,7 @@ from flask_login import current_user
 from kubernetes.client.rest import ApiException
 
 from app.access.rbac.decorators import any_permission_required, permission_required
+from app.common.navigation import build_navigation_breadcrumb
 from app.common.pagination import paginate_sequence
 from app.common.presentation import present_user_datetime
 from app.kubernetes.tenant import routes_access as _routes_access
@@ -338,6 +339,11 @@ def tenant_detail(tenant_id: str):
     """Dedicated committed-only Tenant workflow; no provider read on GET."""
     context = _tenant_workspace_context(include_sync=False)
     context.update(_tenant_detail_context(tenant_id))
+    # Reuse the canonical topbar hierarchy, but identify the actual committed
+    # Tenant instead of falling back to a generic/incorrect Overview label.
+    breadcrumb = build_navigation_breadcrumb('tenant.tenant_detail')
+    breadcrumb[-1]['label'] = context['row']['tenant'].name
+    context['navigation_breadcrumb'] = breadcrumb
     return render_template(
         'kubernetes/tenant/tenant_detail.html',
         tenant_page='tenants',

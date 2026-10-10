@@ -51,7 +51,7 @@ def test_tenant_generated_credential_material_preserves_tenants_navigation_and_b
 
     assert "'tenant.generate_credential_material_route': 'tenants'" in workspace_navigation
     assert "'tenant.generate_credential_material_route': 'Access Material'" in breadcrumb_source
-    assert "request.endpoint in ['tenant.tenants', 'tenant.generate_credential_material_route']" in sidebar_tenant
+    assert "request.endpoint in ['tenant.tenants', 'tenant.tenant_detail', 'tenant.generate_credential_material_route']" in sidebar_tenant
     assert "def generate_credential_material_route(credential_id: int):" in route
     assert "tenant_page='tenants'" in route
     assert "data-kaori-hero-profile=\"transactional-admin\"" in material
@@ -249,3 +249,29 @@ def test_tenant_readiness_matches_runtime_fallback_and_blocker_distinguishes_val
     assert 'Open Cluster Integrations' in onboarding
     assert 'Validate Cluster' in onboarding
     assert 'Confirm Ready' in onboarding
+
+
+def test_tenant_detail_uses_tenants_active_capability_and_contextual_topbar():
+    source = _read('app/common/workspace_navigation.py')
+    breadcrumb = _read('app/common/navigation.py')
+    sidebar = _read('app/templates/components/navigation/tenant_menu.html')
+    page = _read('app/templates/kubernetes/tenant/tenant_detail.html')
+    partial = _read('app/templates/kubernetes/tenant/partials/_tenant_management_detail.html')
+    assert "'tenant.tenant_detail': 'tenants'" in source
+    assert "'tenant.tenant_detail': 'Tenant Details'" in breadcrumb
+    assert "elif endpoint == 'tenant.tenant_detail':" in breadcrumb
+    assert "'tenant.tenant_detail'" in sidebar
+    assert '{% block dashboard_content %}' in page
+    assert '{% block tenant_content %}' not in page
+    assert 'data-kaori-hero-profile="transactional-admin"' in partial
+    assert partial.count('Back to Registry') == 1
+
+
+def test_tenant_detail_runtime_navigation_projection_is_tenants_not_overview():
+    from app.common.navigation import build_navigation_breadcrumb
+    from app.common.workspace_navigation import _capability_active_key
+
+    assert _capability_active_key('kubernetes_tenant', 'tenant.tenant_detail') == 'tenants'
+    assert [item['label'] for item in build_navigation_breadcrumb('tenant.tenant_detail')] == [
+        'Kubernetes', 'Tenant', 'Tenants', 'Tenant Details',
+    ]

@@ -81,6 +81,7 @@ _ENDPOINT_LABELS: dict[str, str] = {
     'governance.tls_certificates': 'TLS Certificates',
     'tenant.index': 'Overview',
     'tenant.tenants': 'Tenants',
+    'tenant.tenant_detail': 'Tenant Details',
     'tenant.generate_credential_material_route': 'Access Material',
     'tenant.resource_profiles': 'Resource Profiles',
     'tenant.namespace_provisioning': 'Namespace Provisioning',
@@ -265,6 +266,13 @@ def build_navigation_breadcrumb(
             BreadcrumbItem('Kubernetes', 'boxes'),
             BreadcrumbItem('Operations'),
             BreadcrumbItem(_leaf(endpoint, fallback)),
+        ]
+    elif endpoint == 'tenant.tenant_detail':
+        items = [
+            BreadcrumbItem('Kubernetes', 'boxes'),
+            BreadcrumbItem('Tenant'),
+            BreadcrumbItem('Tenants'),
+            BreadcrumbItem('Tenant Details'),
         ]
     elif endpoint.startswith(('governance.', 'tenant.')):
         domain_key = endpoint.split('.', 1)[0]
