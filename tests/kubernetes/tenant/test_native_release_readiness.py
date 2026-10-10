@@ -376,34 +376,73 @@ def test_zero_verified_objects_never_implies_zero_provider_mutation():
 
 
 
+def canonical_failed_before_write_receipts():
+    """Newest-first committed metadata from the real Native executor."""
+    return [
+        {
+            'plan_sha256': 'a' * 64, 'handoff_fingerprint': 'scope-fp',
+            'status': 'partial_handoff_recovery_required',
+            'provider_mutation_performed': False,
+            'provider_handoff_verified': False, 'release_authorized': False,
+            'expected_component_count': 2, 'verified_count': 0,
+            'verified_components': [], 'errors': ['ResourceQuota/quota: ValueError'],
+            'checked_at': datetime.now(UTC).isoformat(),
+        },
+        {
+            'plan_sha256': 'a' * 64, 'handoff_fingerprint': 'scope-fp',
+            'status': 'in_progress', 'release_authorized': False,
+            'started_at': datetime.now(UTC).isoformat(),
+        },
+    ]
+
+
 def test_no_transfer_assessment_is_advisory_and_never_unlocks_restart():
     snapshot = evidence()
     snapshot['plan']['handoff_fingerprint'] = 'scope-fp'
     snapshot['approval']['approved_at'] = '2020-01-01T00:00:00+00:00'
-    snapshot['execution_history'] = [{
-        'plan_sha256': 'a' * 64, 'handoff_fingerprint': 'scope-fp',
-        'status': 'partial_handoff_recovery_required',
-        'provider_mutation_performed': False,
-        'provider_handoff_verified': False, 'release_authorized': False,
-        'verified_count': 0, 'verified_components': [],
-    }]
+    snapshot['execution_history'] = canonical_failed_before_write_receipts()
     result = project_native_release_readiness(**snapshot)
     assert result['no_transfer_assessment_candidate'] is True
     assert result['restart_blocked_by_readback'] is True
     assert result['restart_required'] is False
+    assert result['execute_admitted'] is False
     assert result['release_admitted'] is False
 
-    snapshot['execution_history'][0]['provider_mutation_performed'] = True
+    # One terminal receipt is not a completed attempt, and duplicates cannot
+    # be interpreted as a provably unique failed-before-write sequence.
+    snapshot['execution_history'] = canonical_failed_before_write_receipts()[:1]
     assert project_native_release_readiness(**snapshot)['no_transfer_assessment_candidate'] is False
-    snapshot['execution_history'][0]['provider_mutation_performed'] = False
-    snapshot['execution_history'].append({
-        **snapshot['execution_history'][0], 'verified_count': 1,
-    })
-    assert project_native_release_readiness(**snapshot)['no_transfer_assessment_candidate'] is False
-    snapshot['execution_history'][-1]['verified_count'] = 0
-    snapshot['execution_history'][-1]['handoff_fingerprint'] = 'wrong-fingerprint'
+    snapshot['execution_history'] = canonical_failed_before_write_receipts()
+    snapshot['execution_history'].append(snapshot['execution_history'][0].copy())
     assert project_native_release_readiness(**snapshot)['no_transfer_assessment_candidate'] is False
 
+    for bad_field, bad_value in (
+        ('provider_mutation_performed', True),
+        ('verified_count', 1),
+        ('handoff_fingerprint', 'wrong-fingerprint'),
+        ('release_authorized', True),
+    ):
+        snapshot['execution_history'] = canonical_failed_before_write_receipts()
+        snapshot['execution_history'][0][bad_field] = bad_value
+        assert project_native_release_readiness(**snapshot)['no_transfer_assessment_candidate'] is False
+
+    snapshot['execution_history'] = canonical_failed_before_write_receipts()
+    snapshot['execution_history'][1]['provider_mutation_performed'] = None
+    assert project_native_release_readiness(**snapshot)['no_transfer_assessment_candidate'] is False
+    snapshot['execution_history'] = canonical_failed_before_write_receipts()
+    snapshot['readback_history'] = [{
+        'plan_sha256': 'a' * 64,
+        'status': 'provider_handoff_observed_acceptance_unverified',
+    }]
+    assert project_native_release_readiness(**snapshot)['no_transfer_assessment_candidate'] is False
+
+    # Older/current foreign plan events do not erase this plan's history.
+    snapshot['readback_history'] = []
+    snapshot['execution_history'] = canonical_failed_before_write_receipts()
+    snapshot['execution_history'].append({
+        'plan_sha256': 'b' * 64, 'status': 'provider_handoff_verified',
+    })
+    assert project_native_release_readiness(**snapshot)['no_transfer_assessment_candidate'] is True
 
 
 def test_legacy_bearer_acceptance_not_used_by_new_platform_admin_readiness():
@@ -423,13 +462,7 @@ def test_governed_recovery_projection_coexists_with_read_only_candidate():
     snapshot = evidence()
     snapshot['plan']['handoff_fingerprint'] = 'scope-fp'
     snapshot['approval']['approved_at'] = '2020-01-01T00:00:00+00:00'
-    snapshot['execution_history'] = [{
-        'plan_sha256': 'a' * 64, 'handoff_fingerprint': 'scope-fp',
-        'status': 'partial_handoff_recovery_required',
-        'provider_mutation_performed': False,
-        'provider_handoff_verified': False, 'release_authorized': False,
-        'verified_count': 0, 'verified_components': [],
-    }]
+    snapshot['execution_history'] = canonical_failed_before_write_receipts()
     snapshot['no_transfer_assessment'] = {
         'status': 'verified_no_transfer_pending_independent_review',
         'plan_sha256': 'a' * 64, 'handoff_fingerprint': 'scope-fp',

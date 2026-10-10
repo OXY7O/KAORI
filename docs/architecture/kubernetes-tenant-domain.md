@@ -427,10 +427,13 @@ executor attempt.
 
 The committed-readiness projection now exposes advisory
 `no_transfer_assessment_candidate` only if there is current-plan executor
-history, every same-plan receipt has an exact plan SHA/fingerprint,
-`status` limited to failed/in-progress attempts, explicit false mutation,
-provider-verified and release-authorized flags, and zero verified components.
-Any inconsistent/unknown/partial-positive history fails closed. The Step 4
+history with exactly one initial `in_progress` receipt and one terminal
+`partial_handoff_recovery_required` receipt in newest-first committed order.
+The start record does not yet contain mutation/verified outcome fields;
+the final failure must explicitly report zero verified, no mutation, no
+provider verification or Release, with an exact plan SHA/fingerprint.
+Any malformed/extra/missing executor events, non-canonical same-plan
+read-back or known/unknown provider effects suppress the advisory. The Step 4
 recovery panel explains candidate versus blocked evidence alongside the
 separate #1104 governed requester assessment, independent decision and
 requester-only fresh-plan restart controls. The **candidate itself** offers
