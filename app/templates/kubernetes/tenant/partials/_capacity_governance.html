@@ -206,14 +206,14 @@
             {% endcall %}
         </div>
         <div class="overflow-x-auto">
-            <table class="{{ table_ui.table_classes('min-w-[760px]') }}">
+            <table class="{{ table_ui.table_classes('min-w-[980px] !table-fixed') }}">
                 <caption class="sr-only">Tenant Allocation Budget by Ready Kubernetes cluster.</caption>
                 <thead class="{{ table_ui.head_classes() }}">
                     <tr>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Cluster</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Evidence</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">State</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Details</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[30%]">Cluster</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[38%]">Evidence</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">State</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[18%]">Details</th>
                     </tr>
                 </thead>
                 <tbody class="{{ table_ui.body_classes() }}">
@@ -221,10 +221,10 @@
                         {% set state_tone = 'normal' if item.state == 'Healthy' else ('warning' if item.state in ['Near Capacity', 'Unknown'] else 'critical') %}
                         {% set dialog_id = 'capacity-budget-details-' ~ item.cluster.id %}
                         <tr class="{{ table_ui.row_classes() }}">
-                            <td class="{{ table_ui.cell_classes() }} align-middle">
+                            <td class="{{ table_ui.cell_classes() }} align-middle min-w-0">
                                 {{ table_ui.cluster_identity(item.cluster.name, item.cluster.environment) }}
                             </td>
-                            <td class="{{ table_ui.cell_classes() }} align-middle">
+                            <td class="{{ table_ui.cell_classes() }} align-middle min-w-0">
                                 <div class="flex flex-wrap items-center gap-2">
                                     {{ table_label.status_label('Current' if item.snapshot_state == 'current' else item.snapshot_state|title,
                                                                         'normal' if item.snapshot_state == 'current' else 'warning') }}
@@ -239,7 +239,7 @@
                                     {% endif %}
                                 </p>
                             </td>
-                            <td class="{{ table_ui.cell_classes() }} align-middle">{{ table_label.status_label(item.state, state_tone) }}</td>
+                            <td class="{{ table_ui.cell_classes() }} align-middle min-w-0">{{ table_label.status_label(item.state, state_tone) }}</td>
                             <td class="{{ table_ui.cell_classes(action=true) }} align-middle">
                                 <div class="ml-auto w-fit">
                                     <button type="button"
@@ -269,13 +269,13 @@
                                                     </span>
                                                     <div class="min-w-0">
                                                         <div class="flex flex-wrap items-center gap-2">
-                                                            <p class="text-xs font-semibold text-kaori-primary">Allocation Budget</p>
+                                                            <p class="text-xs font-semibold text-kaori-primary min-w-0 max-w-full truncate" title="Allocation Budget">Allocation Budget</p>
                                                             {{ table_label.status_label(item.state, state_tone) }}
                                                         </div>
                                                         <h2 id="{{ dialog_id }}-title"
                                                             class="mt-1 text-lg font-semibold text-content-primary">{{ item.cluster.name }}</h2>
                                                         <p id="{{ dialog_id }}-description"
-                                                           class="mt-1 text-xs leading-5 text-content-muted">
+                                                           class="mt-1 text-xs leading-5 text-content-muted min-w-0 max-w-full truncate" title="Budget, committed allocation, and remaining headroom.">
                                                             Budget, committed allocation, and remaining headroom.
                                                         </p>
                                                     </div>
@@ -334,7 +334,7 @@
                                                         {% endif %}
                                                     </p>
                                                 </div>
-                                                <p class="text-xs text-content-muted">Storage is logical admission capacity.</p>
+                                                <p class="text-xs text-content-muted min-w-0 max-w-full truncate" title="Storage is logical admission capacity.">Storage is logical admission capacity.</p>
                                             </div>
                                         </div>
                                         <footer class="flex shrink-0 items-center justify-end border-t border-outline-subtle bg-surface-card px-5 py-3 sm:px-6">
