@@ -146,10 +146,14 @@ def test_object_storage_controls_render_independently_in_all_six_views() -> None
     environment = Environment(
         loader=FileSystemLoader(str(TEMPLATES)), undefined=StrictUndefined
     )
-    environment.filters['user_datetime'] = lambda value, fallback='Unavailable': (
-        str(value) if value else fallback
-    )
-    environment.globals['url_for'] = lambda endpoint: '/analytics/' + endpoint
+    def _user_datetime(value: object, fallback: str = 'Unavailable') -> str:
+        return str(value) if value else fallback
+
+    def _url_for(endpoint: str) -> str:
+        return '/analytics/' + endpoint
+
+    environment.filters['user_datetime'] = _user_datetime
+    environment.globals['url_for'] = _url_for
 
     context = {
         'page': {'title': 'Object Storage Analytics'},
