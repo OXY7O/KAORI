@@ -156,6 +156,50 @@ The logical budget does not claim physical reservation or backend free space. It
 
 Physical/usable storage capacity remains a separate evidence problem. Kubernetes Storage Analytics workstream #782 owns future correlation across StorageClass, PV, PVC, Tenant/Namespace, and authoritative storage-backend capacity. Until that evidence exists, KAORI must not derive physical storage headroom from node filesystem metrics, PV totals, or PVC quota.
 
+## Capacity Decisions registry and detail evidence (#775)
+
+The **Namespace Provisioning → Capacity Decisions** view uses the canonical
+KAORI inventory table, HTMX decision/search filters, five-row default
+pagination, empty/loading treatment and shared Violet design tokens.
+Human DevContainer feedback found long Namespace/profile names and repeated
+reconciliation text difficult to scan. The compact table now presents
+**Target (24%) / Contract (27%) / Admission (22%) / Recorded (17%) /
+Details (10%)**. Target and profile names are visually truncated in the
+table only, with full title values available on hover. Operation and pinned
+Resource Profile version remain visible. **Allow/Block** and canonical
+**capacity state** are distinct status labels; neither is inferred from the
+other. Recorded time and dataset cutoff retain the existing user's date/time
+presentation.
+
+Each row has a native **View More** dialog identified by the committed
+`TenantCapacityDecision.id`, not the Namespace (which can repeat across
+history). Modal content is read-only committed admission evidence:
+full Namespace and cluster context; the exact Allow/Block and capacity-state
+decision; the complete `evidence_json.reason` (when present); contract,
+version, operation and explicitly recorded allocation scope; recorded and
+cutoff times; the committed capacity source dataset/snapshot state;
+and expandable correlation/snapshot IDs for traceability. Legacy records
+without some evidence values show **Not recorded** rather than invented
+capacity claims. A blocked decision clearly does not authorize provider
+allocation mutation. No raw evidence JSON is dumped into the modal, and
+no runtime provider, Prometheus, snapshot refresh, mutation or admission
+re-evaluation is introduced.
+
+The modal root/header/body explicitly set `text-left` to prevent the
+registry's shared right-aligned Action cell from shifting modal prose, per
+existing #1053 UI correction. It inherits KAORI native dialog open/close,
+focus behavior, accessible heading/description, responsive scroll and
+light/dark tokens. The optional Traceability detail is a native
+keyboard-accessible disclosure. This presentation does not change #654
+admission arithmetic, committed decisions, provider authority or #113
+frozen Namespace effective allocation.
+
+Local DevContainer Developer Check and human Visual QA must verify mixed
+Allow/Block and Healthy/Unknown/Overcommitted cases; duplicate/long names,
+full reasons, nullable legacy evidence, screen width and dark mode,
+keyboard/focus and HTMX pagination. CI/CD, Full Admission, staging deployment
+and main promotion remain **HOLD** until explicitly authorized.
+
 ## Tenant Allocation Overview (#1034)
 
 The read-only **Resource Profiles → Capacity Governance → Tenant Allocation Overview**
