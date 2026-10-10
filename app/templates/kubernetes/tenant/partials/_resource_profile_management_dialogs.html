@@ -96,8 +96,8 @@
                         <input type="hidden" name="advanced_control_contract_present" value="1">
                         <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
                             <h3 class="text-sm font-semibold text-content-primary">Identity &amp; State</h3>
-                            <div class="mt-4 grid gap-4 lg:grid-cols-3">
-                                <label class="block">
+                            <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+                                <label class="block min-w-0">
                                     {{ form_field.label_row("Profile Name") }}
                                     <input name="profile_name"
                                            required
@@ -114,12 +114,12 @@
                                         <option value="disabled" {% if not profile.enabled %}selected{% endif %}>Disabled</option>
                                     </select>
                                 </label>
-                                <label class="block">
+                                <label class="block min-w-0 sm:col-span-2">
                                     {{ form_field.label_row("Description") }}
-                                    <input name="profile_description"
-                                           value="{{ profile.description or '' }}"
-                                           placeholder="Optional allocation intent"
-                                           class="{{ form_field.input_classes() }}">
+                                    <textarea name="profile_description"
+                                              rows="3"
+                                              placeholder="Optional allocation intent"
+                                              class="{{ form_field.input_classes() }} !h-auto min-h-24 resize-y py-2">{{ profile.description or '' }}</textarea>
                                 </label>
                             </div>
                         </section>
