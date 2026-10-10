@@ -184,10 +184,13 @@ The Governance evidence area now follows the established Security/Supply
 Chain section hierarchy. Two **plain section-intro headings outside their
 card shells** provide operator context:
 
-- **Governance Coverage** — a single canonical `section_card` wraps the
-  existing four policy, retention, immutability, and replication coverage
-  cards in a responsive 2/4-column grid, so they no longer float as separate
-  page-level surfaces. Counts, statuses and meanings are unchanged.
+- **Governance Coverage** — four **independent** policy, retention,
+  immutability, and replication KPI cards form a responsive 2/4-column grid,
+  consistent with Registry Security, Runtime Usage, and Analytics summary.
+  The earlier nested outer container is removed following DevContainer
+  feedback: it added a competing border and surface layer without conveying
+  meaningful grouping. The plain section intro remains outside the cards;
+  counts, statuses and evidence interpretation are unchanged.
 - **Governance Evidence** — the Policies/Replication records remain in their
   own canonical section card. The navigation uses existing
   `content_tabs.render_links` (embedded, server/URL-owned mode), matching
