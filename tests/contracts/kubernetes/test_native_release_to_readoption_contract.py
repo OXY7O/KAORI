@@ -11,7 +11,7 @@ def source(path: str) -> str:
 
 def test_canonical_native_handoff_release_handback_are_separate_explicit_routes():
     routes = source('app/kubernetes/tenant/routes.py')
-    html = source('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
+    html = source('app/templates/kubernetes/tenant/partials/_tenant_management_detail.html')
     assert "def accept_native_successor_handoff_route(" in routes
     assert "def execute_native_release_handoff_route(" in routes
     assert "def finalize_verified_native_release_route(" in routes
