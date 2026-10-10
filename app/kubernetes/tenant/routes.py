@@ -356,7 +356,7 @@ def resource_profiles():
     context['allocation_cluster_id'] = str(selected['cluster'].id) if selected else ''
     context['allocation_overview'] = None
     context['allocation_tenant_rows'] = []
-    context['allocation_tenant_pagination'] = None
+    context['allocation_tenant_matches'] = 0
     context['allocation_tenant_total'] = 0
     context['allocation_tenant_summary'] = {'tenants': 0, 'namespaces': 0, 'shared': 0, 'attention': 0}
     allocation_search = str(request.args.get('allocation_search') or '').strip()
@@ -374,11 +374,8 @@ def resource_profiles():
         context['allocation_tenant_total'] = len(tenant_rows)
         context['allocation_tenant_summary'] = summarize_tenant_contributions(tenant_rows)
         tenant_rows = filter_tenant_contribution_rows(tenant_rows, allocation_search)
-        context['allocation_tenant_rows'], context['allocation_tenant_pagination'] = paginate_sequence(
-            tenant_rows,
-            page=request.args.get('allocation_page', 1, type=int) or 1,
-            per_page=request.args.get('allocation_per_page', 5, type=int) or 5,
-        )
+        context['allocation_tenant_rows'] = tenant_rows
+        context['allocation_tenant_matches'] = len(tenant_rows)
     if capacity_search:
         needle = capacity_search.lower()
         capacity_rows = [
