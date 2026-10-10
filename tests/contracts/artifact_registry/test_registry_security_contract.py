@@ -259,9 +259,19 @@ def test_vulnerability_registry_compact_rows_preserve_complete_committed_evidenc
     assert "row.runtime_exposure_count" in vulns
     assert "status_indicator_label('Not Observed', 'unknown')" in vulns
     assert "row.freshness.label, row.freshness.tone" in vulns
-    assert 'title="{{ row.repository }}"' in vulns
+    # Restore existing icon-bearing title_cell (not a new styling component).
+    # Every registry identity renders one semantic icon without duplicating
+    # the severity or freshness evidence labels.
+    assert "table_ui.title_cell(row.vulnerability_id, '', 'shield-alert')" in vulns
+    assert "table_ui.title_cell(row.repository, 'Project: ' ~ row.project, 'package-search')" in vulns
+    assert "table_ui.title_cell(row.source_name, '', 'blocks')" in vulns
+    assert vulns.count("table_ui.title_cell(row.vulnerability_id, '', 'shield-alert')") == 1
+    assert vulns.count("table_ui.title_cell(row.repository, 'Project: ' ~ row.project, 'package-search')") == 1
+    assert vulns.count("table_ui.title_cell(row.source_name, '', 'blocks')") == 1
     assert 'title="{{ row.package }}"' in vulns
-    assert 'title="{{ row.vulnerability_id }}"' in vulns
+    assert "macro title_cell(name, supporting_text='', icon='')" in read(
+        'app/templates/components/table_primitives.html'
+    )
     assert "vulnerability_dialog_id = 'artifact-registry-vulnerability-detail-' ~ row.id" in vulns
     assert 'data-kaori-dialog-open' in vulns
     assert 'data-dialog-target="{{ vulnerability_dialog_id }}"' in vulns
