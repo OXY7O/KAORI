@@ -179,6 +179,14 @@ def handoff_plan_preparation_state(
         return 'acknowledged'
     if plan.get('status') != 'pending_independent_approval':
         return 'blocked'
+    # Treat malformed/future timestamps as inconsistent committed evidence,
+    # not as an expired request that any operator may replace.
+    try:
+        requested_at = datetime.fromisoformat(str(plan.get('requested_at') or ''))
+    except ValueError:
+        return 'blocked'
+    if requested_at.tzinfo is None or requested_at > datetime.now(UTC):
+        return 'blocked'
     return 'pending' if _checked_recently(plan.get('requested_at')) else 'expired'
 
 
