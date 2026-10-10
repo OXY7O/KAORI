@@ -173,14 +173,38 @@ def _query_text(name: str) -> str:
 
 
 def _registry_section_context() -> dict[str, Any]:
-    return get_tenant_registry_context(
-        page=_query_int('page'),
-        per_page=_query_int('per_page', 5),
-        search=_query_text('search'),
-        cluster_id=_query_text('cluster_id'),
-        environment=_query_text('environment'),
-        lifecycle_status=_query_text('lifecycle_status'),
+    # Registry form POSTs inherit only prefixed context values from the selected
+    # expandable panel. Keep those distinct from provider mutation form fields.
+    def field(name: str, default: str = '') -> str:
+        return str(
+            request.values.get(f'registry_{name}')
+            or request.values.get(name)
+            or default
+        )
+
+    def number(name: str, default: int) -> int:
+        try:
+            value = int(field(name, str(default)))
+        except ValueError:
+            return default
+        return value if value > 0 else default
+
+    context = get_tenant_registry_context(
+        page=number('page', 1),
+        per_page=number('per_page', 5),
+        search=field('search'),
+        cluster_id=field('cluster_id'),
+        environment=field('environment'),
+        lifecycle_status=field('lifecycle_status'),
     )
+    # Never render an arbitrary off-page Tenant solely because a caller supplied
+    # its ID. The selected Tenant must belong to the current authorized registry.
+    requested = str(request.values.get('manage_tenant_id') or '').strip()
+    context['managed_tenant_id'] = (
+        requested if any(str(row['tenant'].id) == requested for row in context['tenant_rows'])
+        else ''
+    )
+    return context
 
 
 def _discovery_section_context() -> dict[str, Any]:
