@@ -213,6 +213,9 @@ def test_redesigned_contributions_modal_keeps_summary_and_footer_separate_from_s
     assert "role=\"status\"" in dialog
     assert "Tenant Registry" in dialog
     assert "summarize_tenant_contributions(tenant_rows)" in routes
+    assert routes.index("summarize_tenant_contributions(tenant_rows)") < routes.index(
+        "filter_tenant_contribution_rows(tenant_rows, allocation_search)"
+    )
     assert "committed contribution ledger" in docs
 
 
