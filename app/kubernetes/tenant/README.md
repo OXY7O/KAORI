@@ -116,6 +116,21 @@ Hero
 
 `Tenant Registry` is the default tab and uses the canonical KAORI server-backed registry contract: shared loading bar, Cluster/Environment/Lifecycle/Search filters, committed-state reads, semantic labels, responsive horizontal overflow, default 5-row pagination, 5/10/25/50 page sizes, and HTMX progressive enhancement with the Tenants route as the real navigation fallback.
 
+**Tenant Details Visual QA correction (#1067):** the first full page
+still inherited an unrelated cluster-wide Provider Readiness Hero and
+presented a second management header/snapshot inside an oversized modal-style
+frame. The approved correction renders a single Tenant-specific Violet Hero
+(committed name, status, provider/cluster and generation) with **only Back to
+Registry** as its action. Global navbar breadcrumb and active capability tab
+now resolve Tenant Details under **Tenants** rather than Overview.
+Distinct responsive summary cards and an in-page section rail replace the
+modal shell; long Release evidence and provider authority are ordinary cards.
+The entire Hero and workspace use one `#tenant-management-detail` HTMX swap
+target so status remains current after mutations. OOB toast remains global.
+The Decommission confirmation modal is intentionally retained unchanged.
+No service, permission, Kubernetes provider execution or audit protocol
+is altered by this presentation work.
+
 **Dedicated Tenant Management (#1065):** a Registry row's single
 `Manage/View` action navigates to `/kubernetes/tenant/tenants/<tenant-id>/manage`,
 a full-width, responsive, committed-state Tenant detail page. It retains
