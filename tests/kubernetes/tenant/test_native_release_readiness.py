@@ -12,6 +12,7 @@ def evidence(*, reviewed: bool = True, approved: bool = True, dry_run: bool = Tr
         "plan_sha256": "a" * 64,
         "status": "pending_independent_approval",
         "requested_by": 11,
+        "requested_at": now,
     }
     review = {
         "handoff_required_count": 2,
@@ -111,3 +112,12 @@ def test_no_live_provider_or_database_mutation_in_normal_read_model():
     assert "project_native_release_readiness(" in context
     assert "Native Release &amp; Re-adopt Readiness" in template
     assert "and not row.release_preflight.blockers" in template
+
+
+def test_stale_handoff_plan_cannot_appear_as_completed_approval():
+    snapshot = evidence()
+    snapshot["plan"]["requested_at"] = "2020-01-01T00:00:00+00:00"
+    status = project_native_release_readiness(**snapshot)
+    assert not status["approval_complete"]
+    assert not status["dry_run_passed"]
+    assert status["completed_count"] == 1
