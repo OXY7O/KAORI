@@ -2,14 +2,14 @@
 {% set center = activity_center|default({}) %}
 {% set inbox_items = center.get('inbox_items', []) %}
 {% set tenant_approval_items = center.get('tenant_approval_inbox_items', []) %}
-{% set inbox_unread_count = center.get('inbox_unread_count', 0) %}
+{% set notification_inbox_unread_count = center.get('notification_inbox_unread_count', 0) %}
 <div class="space-y-2" data-notification-deck-inbox-body>
     <div class="flex items-center justify-between gap-3 px-1 pb-1">
         <div>
             <p class="text-xs font-semibold text-content-primary">Assigned Work</p>
-            <p class="mt-0.5 text-xs text-content-muted">Alert cases and accepted-risk ownership delegated to you.</p>
+            <p class="mt-0.5 text-xs text-content-muted">Assigned reviews, verification and operational work.</p>
         </div>
-        {% if inbox_unread_count %}
+        {% if notification_inbox_unread_count %}
             <form method="POST"
                   action="{{ url_for('notifications.mark_all_read', surface='panel', view='inbox', scope='inbox') }}">
                 {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
