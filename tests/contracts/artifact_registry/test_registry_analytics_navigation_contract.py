@@ -62,7 +62,7 @@ def test_registry_analytics_has_eight_authorized_page_level_views() -> None:
     )
     assert views.count('CapabilityViewDefinition(') == 8
     for key, endpoint in expected:
-        assert f"CapabilityViewDefinition('{key}'," in views
+        assert f"'{key}'," in views
         assert f"'{endpoint}'" in views
         assert "('artifact_registry.view',)" in views
         if key != 'overview':
@@ -107,7 +107,10 @@ def test_registry_analytics_legacy_links_redirect_and_preserve_alert_filters() -
     assert "def build_analytics_shell(" in presentation
     assert "active_tab: str = 'overview'" in presentation
     assert "_REGISTRY_ANALYTICS_PAGE_DETAILS = {" in presentation
-    assert "normalized_tab = active_tab if active_tab in _REGISTRY_ANALYTICS_PAGE_DETAILS else 'overview'" in presentation
+    assert (
+        "normalized_tab = active_tab if active_tab in _REGISTRY_ANALYTICS_PAGE_DETAILS else 'overview'"
+        in presentation
+    )
     assert "RegistryAnalyticsSnapshot.query" in presentation
     assert "MetricsConsumer" not in presentation
     assert "url_for('artifact_registry.analytics_alerts_table')" in sections

@@ -533,14 +533,30 @@ _CAPABILITY_VIEWS: dict[str, tuple[CapabilityViewDefinition, ...]] = {
         ),
     ),
     'artifact_registry_analytics': (
-        CapabilityViewDefinition('overview', 'Overview', 'layout-dashboard', 'artifact_registry.analytics', ('artifact_registry.view',)),
-        CapabilityViewDefinition('growth', 'Growth', 'trending-up', 'artifact_registry.analytics_growth', ('artifact_registry.view',)),
-        CapabilityViewDefinition('capacity', 'Capacity', 'gauge', 'artifact_registry.analytics_capacity', ('artifact_registry.view',)),
-        CapabilityViewDefinition('usage', 'Usage', 'activity', 'artifact_registry.analytics_usage', ('artifact_registry.view',)),
-        CapabilityViewDefinition('risk', 'Risk', 'shield-alert', 'artifact_registry.analytics_risk', ('artifact_registry.view',)),
-        CapabilityViewDefinition('governance', 'Governance', 'scale', 'artifact_registry.analytics_governance', ('artifact_registry.view',)),
-        CapabilityViewDefinition('alerts', 'Alerts & Anomalies', 'triangle-alert', 'artifact_registry.analytics_alerts', ('artifact_registry.view',)),
-        CapabilityViewDefinition('insights', 'Insights', 'sparkles', 'artifact_registry.analytics_insights', ('artifact_registry.view',)),
+        CapabilityViewDefinition(
+            'overview', 'Overview', 'layout-dashboard', 'artifact_registry.analytics', ('artifact_registry.view',)
+        ),
+        CapabilityViewDefinition(
+            'growth', 'Growth', 'trending-up', 'artifact_registry.analytics_growth', ('artifact_registry.view',)
+        ),
+        CapabilityViewDefinition(
+            'capacity', 'Capacity', 'gauge', 'artifact_registry.analytics_capacity', ('artifact_registry.view',)
+        ),
+        CapabilityViewDefinition(
+            'usage', 'Usage', 'activity', 'artifact_registry.analytics_usage', ('artifact_registry.view',)
+        ),
+        CapabilityViewDefinition(
+            'risk', 'Risk', 'shield-alert', 'artifact_registry.analytics_risk', ('artifact_registry.view',)
+        ),
+        CapabilityViewDefinition(
+            'governance', 'Governance', 'scale', 'artifact_registry.analytics_governance', ('artifact_registry.view',)
+        ),
+        CapabilityViewDefinition(
+            'alerts', 'Alerts & Anomalies', 'triangle-alert', 'artifact_registry.analytics_alerts', ('artifact_registry.view',)
+        ),
+        CapabilityViewDefinition(
+            'insights', 'Insights', 'sparkles', 'artifact_registry.analytics_insights', ('artifact_registry.view',)
+        ),
     ),
     'artifact_registry_security': (
         CapabilityViewDefinition(

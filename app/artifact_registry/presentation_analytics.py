@@ -12,14 +12,32 @@ from app.models.registry import RegistryAnalyticsSnapshot
 
 
 _REGISTRY_ANALYTICS_PAGE_DETAILS = {
-    'overview': ('Analytics Overview', 'Review committed Registry trends, risk, usage, governance, and operational alerts.', 'layout-dashboard'),
+    'overview': (
+        'Analytics Overview',
+        'Review committed Registry trends, risk, usage, governance, and operational alerts.',
+        'layout-dashboard',
+    ),
     'growth': ('Growth Analytics', 'Review artifact growth, inventory deltas, and storage expansion.', 'trending-up'),
     'capacity': ('Capacity Analytics', 'Review quotas, headroom, and materialized capacity forecasts.', 'gauge'),
-    'usage': ('Usage Analytics', 'Review pull activity, runtime-used artifacts, and demand concentration.', 'activity'),
-    'risk': ('Risk Analytics', 'Correlate committed security findings and Kubernetes runtime exposure.', 'shield-alert'),
+    'usage': (
+        'Usage Analytics', 'Review pull activity, runtime-used artifacts, and demand concentration.', 'activity'
+    ),
+    'risk': (
+        'Risk Analytics',
+        'Correlate committed security findings and Kubernetes runtime exposure.',
+        'shield-alert',
+    ),
     'governance': ('Governance Analytics', 'Analyze retention, immutability, and replication coverage gaps.', 'scale'),
-    'alerts': ('Alerts & Anomalies', 'Review committed Registry alerts and source/fallback evidence.', 'triangle-alert'),
-    'insights': ('Derived Insights', 'Review analytical signals and centrally owned Intelligence recommendations.', 'sparkles'),
+    'alerts': (
+        'Alerts & Anomalies',
+        'Review committed Registry alerts and source/fallback evidence.',
+        'triangle-alert',
+    ),
+    'insights': (
+        'Derived Insights',
+        'Review analytical signals and centrally owned Intelligence recommendations.',
+        'sparkles',
+    ),
 }
 
 
