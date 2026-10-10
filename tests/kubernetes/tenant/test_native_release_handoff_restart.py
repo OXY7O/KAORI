@@ -142,6 +142,10 @@ def prepare(monkeypatch, *, expired=True, actor=42, readback=None, mutate=None, 
         lambda **_: mutate(existing) if mutate else existing,
     )
     from app.kubernetes.tenant import native_handoff_executor, native_handoff_readback
+    if callable(readback):
+        readback = readback(data)
+    if callable(executions):
+        executions = executions(data)
     if readback == 'zero':
         readback_receipts = [canonical_no_transfer_readback(data)]
     elif readback == 'current':
@@ -248,28 +252,33 @@ def test_zero_transfer_receipt_does_not_bypass_fresh_identity_comparison(monkeyp
     ('release_authorized', True),
 ])
 def test_corrupt_or_transferred_receipts_never_allow_restart(monkeypatch, field, value):
-    old = snapshot()
-    data = plan(old)
-    receipt = canonical_no_transfer_readback(data)
-    receipt[field] = value
+    def bad_receipt(data):
+        receipt = canonical_no_transfer_readback(data)
+        receipt[field] = value
+        return receipt
+
     with pytest.raises(ValueError, match='recovery review'):
-        prepare(monkeypatch, readback=receipt)
+        prepare(monkeypatch, readback=bad_receipt)
 
 
 def test_previous_partial_observation_cannot_be_hidden_by_latest_zero(monkeypatch):
-    data = plan(snapshot())
-    zero = canonical_no_transfer_readback(data)
-    partial = {**zero, 'status': 'partial_handoff_recovery_required'}
+    def history(data):
+        zero = canonical_no_transfer_readback(data)
+        partial = {**zero, 'status': 'partial_handoff_recovery_required'}
+        return [zero, partial]
+
     with pytest.raises(ValueError, match='recovery review'):
-        prepare(monkeypatch, readback=[zero, partial])
+        prepare(monkeypatch, readback=history)
 
 
 def test_any_same_plan_executor_attempt_blocks_restart_even_after_zero(monkeypatch):
-    data = plan(snapshot())
     with pytest.raises(ValueError, match='execution exists'):
         prepare(
             monkeypatch, readback='zero',
-            executions=[{'plan_sha256': data['plan_sha256'], 'status': 'partial_handoff_recovery_required'}],
+            executions=lambda data: [{
+                'plan_sha256': data['plan_sha256'],
+                'status': 'partial_handoff_recovery_required',
+            }],
         )
 
 
