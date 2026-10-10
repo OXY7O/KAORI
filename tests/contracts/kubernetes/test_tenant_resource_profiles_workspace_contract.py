@@ -140,6 +140,49 @@ def test_capacity_decisions_registry_is_compact_and_exposes_read_only_evidence()
     assert "evidence_json: Mapped[dict]" in model
 
 
+def test_capacity_decision_compact_names_preserve_canonical_identity_and_distinctions() -> None:
+    from jinja2 import Environment
+
+    source = read('app/templates/kubernetes/tenant/partials/_capacity_decisions.html')
+    # Exercise the exact display-only Jinja transformations, not a duplicate
+    # Python abbreviation algorithm that could drift from the rendered table.
+    start = source.index("{% set target_parts = decision.namespace.split(':') %}")
+    end = source.index("{% set dialog_id = 'tenant-capacity-decision-' ~ decision.id %}", start)
+    view = Environment(autoescape=True).from_string(
+        source[start:end] + '{{ target_display }}||{{ profile_display }}'
+    )
+
+    def names(target: str, profile: str) -> tuple[str, str]:
+        rendered = view.render(decision={'namespace': target}, profile_name=profile)
+        first, second = rendered.split('||')
+        return first.strip(), second.strip()
+
+    assert names('gajah', 'Platform Medium') == ('gajah', 'Platform Medium')
+    assert names('tenant-uat-demo', 'Adopted tenant-uat-demo Baseline · 4') == (
+        'tenant-uat-demo', 'tenant-uat-demo Baseline 4'
+    )
+    assert names('tenant-uat-demo', 'Adopted tenant-uat-demo Baseline · 3') == (
+        'tenant-uat-demo', 'tenant-uat-demo Baseline 3'
+    )
+    assert names(
+        '@tenant:kaori-demo:resource-quotas',
+        'Adopted kaori-demo Allocation · e36817ba-f3d5-433b-a26e-e8106bf28abb',
+    ) == ('kaori-demo · Resource Quotas', 'kaori-demo Allocation · e36817ba')
+    assert names('@tenant:kaori-demo:other', 'Platform Small')[0] == '@tenant:kaori-demo:other'
+    long_label, long_profile = names('x' * 80, 'Unrecognized contract ' + 'y' * 80)
+    assert len(long_label) <= 34
+    assert len(long_profile) <= 36
+
+    # Full canonical values remain available without any new provider lookup.
+    assert 'title="{{ decision.namespace }}"' in source
+    assert 'title="{{ profile_name }}"' in source
+    assert '{{ decision.namespace }}</h2>' in source
+    assert '{{ profile_name }}</dd>' in source
+    assert 'decision.resource_profile_version or row.profile.version' in source
+    assert 'data-kaori-native-dialog' in source
+    assert "registry_ui.footer('tenant.namespace_provisioning'" in source
+
+
 def test_capacity_decision_modal_uses_single_evidence_surface_and_quiet_traceability() -> None:
     template = read('app/templates/kubernetes/tenant/partials/_capacity_decisions.html')
     start = template.index('<dialog id="{{ dialog_id }}"')
