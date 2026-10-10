@@ -178,3 +178,48 @@ def test_existing_ui_restart_is_explicit_and_scoped_by_original_requester():
     assert "@permission_required('tenant.manage')" in route
     assert "@permission_required('integrations.manage')" in route
     assert "restart_expired_native_release_handoff_plan_committed(" in route
+
+
+def test_platform_admin_handoff_counts_only_current_provider_evidence():
+    snapshot = evidence()
+    snapshot['plan'].update({
+        'handoff_fingerprint': 'scope-hash', 'provider_identity': ['immutable-uid'],
+        'successor_owner': 'platform-team',
+    })
+    snapshot['approval']['status'] = 'acknowledged_pending_provider_handoff'
+    snapshot['successor_acceptance'] = {
+        'status': 'platform_admin_handoff_accepted',
+        'authority_mode': 'platform_admin_governed',
+        'plan_sha256': 'a' * 64, 'handoff_fingerprint': 'scope-hash',
+        'provider_identity': ['immutable-uid'], 'successor_owner': 'platform-team',
+        'reviewed_by': 12, 'verified_provider_identity': True,
+        'consent_verified': True, 'resource_authority_verified': True,
+        'accepted_at': datetime.now(UTC).isoformat(),
+    }
+    snapshot['handoff_execution'] = {
+        'status': 'provider_handoff_verified', 'authority_mode': 'platform_admin_governed',
+        'plan_sha256': 'a' * 64, 'handoff_fingerprint': 'scope-hash',
+        'provider_authority_verified': True, 'external_successor_verified': False,
+        'provider_handoff_verified': True,
+        'verified_count': 2, 'expected_component_count': 2,
+    }
+    result = project_native_release_readiness(**snapshot)
+    assert result['verified_successor_acceptance'] is True
+    assert result['provider_transfer_verified'] is True
+    assert result['completed_count'] == 4
+    snapshot['successor_acceptance']['authority_mode'] = 'external_bearer_successor'
+    changed = project_native_release_readiness(**snapshot)
+    assert changed['verified_successor_acceptance'] is False
+
+
+def test_legacy_bearer_acceptance_not_used_by_new_platform_admin_readiness():
+    snapshot = evidence()
+    snapshot['successor_acceptance'] = {
+        'plan_sha256': 'a' * 64,
+        'status': 'verified_explicit_successor_acceptance',
+        'consent_verified': True, 'resource_authority_verified': True,
+        'accepted_at': datetime.now(UTC).isoformat(),
+    }
+    result = project_native_release_readiness(**snapshot)
+    assert result['verified_successor_acceptance'] is False
+    assert result['stages'][2]['complete'] is False
