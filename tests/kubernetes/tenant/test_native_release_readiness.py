@@ -73,6 +73,52 @@ def test_external_reference_is_not_successor_acceptance():
     assert status["execute_admitted"] is False
 
 
+
+def test_external_readback_ui_requires_fresh_same_plan_evidence_without_authorizing_release():
+    snapshot = evidence()
+    now = datetime.now(UTC).isoformat()
+    snapshot['plan'].update({
+        'handoff_fingerprint': 'scope-fp', 'successor_owner': 'platform-team',
+    })
+    snapshot['approval']['handoff_fingerprint'] = 'scope-fp'
+    snapshot['successor_claim'] = {
+        'plan_sha256': 'a' * 64, 'status': 'external_reference_unverified',
+        'recorded_at': now, 'successor_owner': 'platform-team',
+    }
+    snapshot['dry_run'].update({
+        'handoff_fingerprint': 'scope-fp', 'release_authorized': False,
+    })
+
+    result = project_native_release_readiness(**snapshot)
+    assert result['external_reference_current'] is True
+    assert result['external_readback_prerequisites_current'] is True
+    assert result['verified_successor_acceptance'] is False
+    assert result['execute_admitted'] is False
+    assert result['release_admitted'] is False
+
+    # Historical "Approved" and "Dry-Run Passed" do not authorize a read
+    # after independent evidence expires (the DevContainer failure).
+    snapshot['approval']['approved_at'] = '2020-01-01T00:00:00+00:00'
+    expired = project_native_release_readiness(**snapshot)
+    assert expired['approval_expired'] is True
+    assert expired['external_readback_prerequisites_current'] is False
+    snapshot['approval']['approved_at'] = now
+
+    snapshot['successor_claim']['recorded_at'] = '2020-01-01T00:00:00+00:00'
+    assert not project_native_release_readiness(**snapshot)['external_readback_prerequisites_current']
+    snapshot['successor_claim']['recorded_at'] = now
+    snapshot['successor_claim']['successor_owner'] = 'untrusted-claim'
+    assert not project_native_release_readiness(**snapshot)['external_readback_prerequisites_current']
+    snapshot['successor_claim']['successor_owner'] = 'platform-team'
+
+    snapshot['dry_run']['checked_at'] = '2020-01-01T00:00:00+00:00'
+    assert not project_native_release_readiness(**snapshot)['external_readback_prerequisites_current']
+    snapshot['dry_run']['checked_at'] = now
+    snapshot['dry_run']['handoff_fingerprint'] = 'different-scope'
+    assert not project_native_release_readiness(**snapshot)['external_readback_prerequisites_current']
+
+
+
 def test_observed_provider_readback_is_not_successor_consent():
     snapshot = evidence()
     snapshot["readback"] = {
