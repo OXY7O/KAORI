@@ -337,8 +337,25 @@ def tenants():
 @any_permission_required('tenant.view', 'tenant.manage')
 def tenant_detail(tenant_id: str):
     """Dedicated committed-only Tenant workflow; no provider read on GET."""
+    detail_context = _tenant_detail_context(tenant_id)
+    # Wizard HTMX GETs exchange only the Tenant Detail. Plain links and
+    # browser history restores still return the complete page as a fallback.
+    if (
+        request.headers.get('HX-Request') == 'true'
+        and request.headers.get('HX-Target') == 'tenant-management-detail'
+        and request.headers.get('HX-History-Restore-Request') != 'true'
+    ):
+        response = make_response(render_template(
+            'kubernetes/tenant/partials/_tenant_management_detail.html',
+            can_manage=current_user.has_permission('tenant.manage'),
+            **detail_context,
+        ))
+        response.headers['Cache-Control'] = 'no-store, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        return response
+
     context = _tenant_workspace_context(include_sync=False)
-    context.update(_tenant_detail_context(tenant_id))
+    context.update(detail_context)
     # Reuse the canonical topbar hierarchy, but identify the actual committed
     # Tenant instead of falling back to a generic/incorrect Overview label.
     breadcrumb = build_navigation_breadcrumb('tenant.tenant_detail')
