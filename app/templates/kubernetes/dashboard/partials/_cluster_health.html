@@ -15,8 +15,9 @@
     loading_bar_label='Cluster Health Loading',
     body_classes='p-0'
     ) %}
-    <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[1040px]') }}">
+    <div class="{{ 'overflow-x-auto' if pagination.total_items > 0 else '' }}">
+        <table class="{{ table_ui.table_classes('min-w-[1040px]' if pagination.total_items > 0 else '') }}">
+            {% if pagination.total_items > 0 %}
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
                     <th class="{{ table_ui.header_cell_classes() }}">Cluster</th>
@@ -28,6 +29,7 @@
                     <th class="{{ table_ui.header_cell_classes(action=true) }}">Snapshot Sources</th>
                 </tr>
             </thead>
+            {% endif %}
             <tbody class="{{ table_ui.body_classes() }}">
                 {% if dashboard.cluster_health_snapshot %}
                     {% for row in dashboard.cluster_health_snapshot %}
@@ -93,8 +95,8 @@
                         <td colspan="7" class="px-5 py-4">
                             {% set empty_state_icon = "database" %}
                             {% set empty_state_label = "No Data" %}
-                            {% set empty_state_title = "No Cluster Inventory Data" %}
-                            {% set empty_state_description = "Add a cluster and run inventory sync to populate the health summary." %}
+                            {% set empty_state_title = "No Cluster Health Data" %}
+                            {% set empty_state_description = "No cluster health rows match this scope yet. Check the selected cluster and committed inventory snapshot coverage." %}
                             {% set empty_state_min_height = "min-h-[160px]" %}
                             {% include 'components/states/_empty_state.html' %}
                         </td>
@@ -103,7 +105,6 @@
             </tbody>
         </table>
     </div>
-    {% if pagination.total_items > 0 %}
         <footer class="flex flex-col gap-3 border-t border-outline-subtle px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
             <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <p class="text-xs text-content-muted">
@@ -179,5 +180,4 @@
                 {% endif %}
             </div>
         </footer>
-    {% endif %}
 {% endcall %}
