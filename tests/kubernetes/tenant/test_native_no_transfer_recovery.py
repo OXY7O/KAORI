@@ -57,6 +57,8 @@ def plan():
 def history(plan_data, *, mutate=False):
     started = {
         'status': 'in_progress',
+        'tenant_id': plan_data['tenant_id'],
+        'generation': plan_data['generation'],
         'plan_sha256': plan_data['plan_sha256'],
         'handoff_fingerprint': plan_data['handoff_fingerprint'],
         'release_authorized': False,
@@ -104,6 +106,151 @@ def test_exact_failed_before_write_history_is_eligible_for_assessment(monkeypatc
     assert len(result['digest']) == 64
     assert result['executor_actor_id'] == 43
     assert result['failed_event_id'] == 2
+    assert result['failed_event_ids'] == [2]
+    assert result['attempt_count'] == 1
+
+
+def repeated_history(plan_data):
+    """Two independently committed failures for the same original Plan SHA."""
+    first = history(plan_data)
+    second = history(plan_data)
+    second[0].id, second[1].id = 5, 6
+    # A second start must strictly follow the first completed failure.
+    second[0].metadata_json['started_at'] = (
+        datetime.now(UTC) - timedelta(seconds=1)
+    ).isoformat()
+    return first + second
+
+
+def test_multiple_failed_before_write_attempts_bind_every_immutable_event(monkeypatch):
+    p = plan()
+    rows = repeated_history(p)
+    set_history(monkeypatch, rows)
+    result = recovery._source_history(p['tenant_id'], p)
+    assert result['attempt_count'] == 2
+    assert result['failed_event_ids'] == [2, 6]
+    assert result['failed_event_id'] == 6
+    assert result['executor_actor_id'] == 43
+    assert len(result['digest']) == 64
+
+    # Even a formerly safe earlier receipt remains inside the history digest.
+    old_digest = result['digest']
+    rows[1].metadata_json['errors'] = ['ResourceQuota/quota: TypeError']
+    set_history(monkeypatch, rows)
+    assert recovery._source_history(p['tenant_id'], p)['digest'] != old_digest
+
+
+@pytest.mark.parametrize('alteration', [
+    'orphan_start', 'orphan_failure', 'success', 'mutated_earlier',
+    'mutated_later', 'verified_earlier', 'unknown_earlier', 'different_actor',
+    'different_sha', 'different_fingerprint', 'overlapping_time',
+    'reordered', 'missing_terminal_fields', 'start_with_terminal_mutation',
+])
+def test_multiple_attempt_history_rejects_unsafe_sequence(monkeypatch, alteration):
+    p = plan()
+    rows = repeated_history(p)
+    if alteration == 'orphan_start':
+        rows.pop()
+    elif alteration == 'orphan_failure':
+        rows.pop(2)
+    elif alteration == 'success':
+        rows[1].action = 'tenant.release.native_handoff_verified'
+        rows[1].metadata_json['status'] = 'provider_handoff_verified'
+    elif alteration == 'mutated_earlier':
+        rows[1].metadata_json['provider_mutation_performed'] = True
+    elif alteration == 'mutated_later':
+        rows[3].metadata_json['provider_mutation_performed'] = True
+    elif alteration == 'verified_earlier':
+        rows[1].metadata_json['verified_count'] = 1
+    elif alteration == 'unknown_earlier':
+        rows[1].metadata_json.pop('provider_mutation_performed')
+    elif alteration == 'different_actor':
+        rows[2].actor_user_id = 44
+        rows[3].actor_user_id = 44
+    elif alteration == 'different_sha':
+        rows[2].metadata_json['plan_sha256'] = 'b' * 64
+    elif alteration == 'different_fingerprint':
+        rows[3].metadata_json['handoff_fingerprint'] = 'other-scope'
+    elif alteration == 'overlapping_time':
+        rows[2].metadata_json['started_at'] = rows[1].metadata_json['checked_at']
+    elif alteration == 'reordered':
+        rows[2], rows[3] = rows[3], rows[2]
+    elif alteration == 'missing_terminal_fields':
+        rows[3].metadata_json.pop('verified_components')
+    elif alteration == 'start_with_terminal_mutation':
+        rows[2].metadata_json['provider_mutation_performed'] = None
+    set_history(monkeypatch, rows)
+    with pytest.raises(ValueError):
+        recovery._source_history(p['tenant_id'], p)
+
+
+def test_multi_attempt_history_includes_safe_readbacks_and_rejects_later_drift(monkeypatch):
+    p = plan()
+    rows = repeated_history(p)
+    # Include read-backs before, between, and after the actual executor pairs.
+    for event_id in (0, 3, 4, 7):
+        rows.append(SimpleNamespace(
+            id=event_id, actor_user_id=42,
+            target_type=recovery._READBACK_TARGET,
+            action='tenant.release.native_provider_handoff_recovery_observed',
+            metadata_json={
+                'plan_sha256': p['plan_sha256'],
+                'status': 'provider_handoff_not_started',
+            },
+        ))
+    rows.sort(key=lambda row: row.id)
+    monkeypatch.setattr(
+        recovery, 'readback_proves_handoff_not_started',
+        lambda item, *, plan: item.get('status') == 'provider_handoff_not_started',
+    )
+    set_history(monkeypatch, rows)
+    first = recovery._source_history(p['tenant_id'], p)
+    assert first['attempt_count'] == 2
+    assert first['failed_event_ids'] == [2, 6]
+    assert len(first['digest']) == 64
+
+    # A previously canonical read-back turning partial invalidates all pairs.
+    rows[-1].metadata_json['status'] = 'partial_handoff_recovery_required'
+    set_history(monkeypatch, rows)
+    with pytest.raises(ValueError, match='same-plan provider read-back'):
+        recovery._source_history(p['tenant_id'], p)
+
+
+def test_restart_rechecks_complete_multi_attempt_lineage(monkeypatch):
+    p, a, _ = setup_authorize(monkeypatch)
+    a['failed_event_ids'] = [2, 6]
+    a['attempt_count'] = 2
+    a['failed_event_id'] = 6
+    a['assessment_sha256'] = recovery._sha({
+        key: value for key, value in a.items()
+        if key != 'assessment_sha256'
+    })
+    decision = {
+        'status': 'authorized_for_requester_restart',
+        'plan_sha256': p['plan_sha256'],
+        'handoff_fingerprint': p['handoff_fingerprint'],
+        'assessment_sha256': a['assessment_sha256'],
+        'history_digest': a['history_digest'],
+        'provider_proof_sha256': a['provider_proof_sha256'],
+        'assessed_by': p['requested_by'], 'authorized_by': 44,
+        'authorized_at': datetime.now(UTC).isoformat(),
+    }
+    monkeypatch.setattr(recovery, 'latest_no_transfer_decision', lambda *_: decision)
+    source = {
+        'digest': a['history_digest'], 'executor_actor_id': 43,
+        'failed_event_id': 6, 'failed_event_ids': [2, 6],
+        'attempt_count': 2,
+    }
+    monkeypatch.setattr(recovery, '_source_history', lambda *_: source)
+    assert recovery.require_authorized_no_transfer_restart(
+        tenant_id=p['tenant_id'], plan=p, actor_user_id=42,
+    ) == decision
+
+    source['failed_event_ids'] = [6]
+    with pytest.raises(ValueError, match='Provider execution evidence changed'):
+        recovery.require_authorized_no_transfer_restart(
+            tenant_id=p['tenant_id'], plan=p, actor_user_id=42,
+        )
 
 
 @pytest.mark.parametrize('alteration', ['mutated', 'missing_failure', 'readback', 'verified_one', 'unknown'])
@@ -203,7 +350,8 @@ def assessed(p, *, stale=False):
         'handoff_fingerprint': p['handoff_fingerprint'],
         'assessed_by': 42, 'executor_actor_id': 43,
         'history_digest': 'f' * 64, 'provider_proof_sha256': 'e' * 64,
-        'failed_event_id': 2, 'assessed_at': now,
+        'failed_event_id': 2, 'failed_event_ids': [2],
+        'attempt_count': 1, 'assessed_at': now,
     }
     row['assessment_sha256'] = recovery._sha(row)
     return row
@@ -298,7 +446,8 @@ def test_decision_requires_same_fresh_actor_separated_evidence(monkeypatch):
         recovery, '_source_history',
         lambda *args: {
             'digest': a['history_digest'], 'executor_actor_id': 43,
-            'failed_event_id': 2,
+            'failed_event_id': 2, 'failed_event_ids': [2],
+            'attempt_count': 1,
         },
     )
     assert recovery.require_authorized_no_transfer_restart(
