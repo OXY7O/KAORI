@@ -348,6 +348,47 @@ tests, contract tests and staging/UAT evidence are pending. CI/CD,
 Developer Check, Full Admission, promotion and deployment remain HOLD
 until separately authorized.
 
+## Native handoff approved component versus preview evidence binding (#1102; #1048 authority)
+
+During DevContainer testing of the approved Native Release flow, the
+KAORI-controlled provider executor recorded a failure on the first
+ResourceQuota as `ValueError`, 0/2 verified and
+`provider_mutation_performed=False`. The current execution code passed a
+canonical `dry_run_native_handoff_component` receipt to
+`build_native_successor_handoff_patch`, but the dry-run receipt intentionally
+does **not** contain the approved `handoff` or `ownership` classification.
+The downstream `build_native_handoff_patch` correctly rejects missing
+authority before a live PATCH. The exact live error message remains
+sanitized in the AuditEvent; this is a source-level causal finding.
+
+The Native executor now resolves the **approved original plan component**
+for each exact preview key (namespace, kind, name, UID), and requires
+a unique match, `handoff=external_acceptance_required`,
+`ownership=kaori_marker_correlated`, matching resourceVersion, and
+canonical dry-run operation/live-unchanged flags. It validates all such
+plan-preview pairs **before** committing `in_progress` and before any
+Kubernetes mutation. The approved plan component is the *only* input to
+the existing successor PATCH builder; the preview receipt remains the
+provider-state proof for classification, spec/foreign metadata hashes,
+post-change verification and read-back. This is **authority binding**, not
+permission elevation or fallback to user-provided ownership labels.
+
+All original security boundaries remain: actor-restricted accepted X.509
+identity, fresh SHA/fingerprint and independent approval, Kubernetes
+SelfSubjectReview and scoped SelfSubjectAccessReview, conditional UID/RV
+JSON PATCH, metadata-only changes, spec/foreign metadata preservation,
+provider read-back, partial-transfer audit lineage, no Released commit on
+executor failure. Previously recorded `partial_handoff_recovery_required`
+is NOT reset by deploying a code fix. The actual provider state must be
+independently inspected before existing governed recovery can be authorized;
+old approval expiry and actor separation still apply.
+
+Source-only regression tests were authored for realistic preview receipts
+without governance fields across Namespace/ResourceQuota/LimitRange, exact
+plan authority match, and fail-closed stale/foreign/duplicate components.
+Runtime test execution, provider/UAT, Developer Check, Full Admission,
+CI/CD, main promotion and deployment remain HOLD pending explicit approval.
+
 ## Current Native executor recovery as Release wizard priority (#1091 follow-up)
 
 DevContainer human feedback confirmed the original requester, independent reviewer
