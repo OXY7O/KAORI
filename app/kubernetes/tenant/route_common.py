@@ -166,6 +166,43 @@ def _tenant_detail_context(tenant_id: str) -> dict[str, Any]:
     )
     context['row'] = rows[0]
     context['registry_state'] = state
+    # A detail POST reopens its governed section after the HTMX swap. If a
+    # lifecycle transition makes it ineligible, use the next permitted view;
+    # do not trust arbitrary form text to disclose an administrative panel.
+    tenant = rows[0]['tenant']
+    can_manage = current_user.has_permission('tenant.manage')
+    can_integrate = current_user.has_permission('integrations.manage')
+    can_cluster = current_user.has_permission('clusters.manage')
+    admin = can_manage and can_integrate and can_cluster
+    allowed_sections = {'provider', 'lifecycle'}
+    if admin and tenant.ownership_status == 'adopted' and tenant.lifecycle_status == 'ready':
+        allowed_sections.add('release')
+    if (
+        admin and tenant.provider_key == 'native_kubernetes'
+        and tenant.lifecycle_status == 'released'
+        and (tenant.provider_evidence_json or {}).get('release_governance', {}).get('release_mode') == 'managed_handoff'
+    ):
+        allowed_sections.add('handback')
+    if (
+        can_manage and tenant.provider_key == 'capsule'
+        and tenant.provider_state == 'capsule'
+        and tenant.lifecycle_status == 'ready'
+        and rows[0].get('capsule_environment_options')
+    ):
+        allowed_sections.add('attachment')
+    requested_section = str(request.values.get('tenant_detail_section') or '').strip()
+    if requested_section in allowed_sections:
+        active_section = requested_section
+    elif requested_section == 'release' and 'handback' in allowed_sections:
+        active_section = 'handback'
+    else:
+        active_section = 'release' if 'release' in allowed_sections else (
+            'handback' if 'handback' in allowed_sections else 'provider'
+        )
+    context['tenant_detail_open_section'] = active_section
+    context['tenant_detail_release_expanded'] = (
+        active_section == 'release' and requested_section == 'release'
+    )
 
     context['return_to_registry_url'] = url_for(
         'tenant.tenants',

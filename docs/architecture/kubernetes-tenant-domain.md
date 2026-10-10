@@ -65,7 +65,56 @@ workflows with empty and populated datasets, browser refresh/back/forward,
 per-registry filters/Rows/HTMX, light/dark and mobile views. This is not
 staging UAT or production acceptance evidence.
 
-## Tenant Management single-page UX correction (#1071; current authority)
+## Tenant Details approved KAORI Hero/context and accordion design (#1073; current authority)
+
+The latest user-provided KAORI reference was a **Delete ConfigMap** two-column
+violet Hero. Only its **composition** is authoritative: the existing
+`page_hero.shell_classes()` + `layout_classes()` + `intro()` on the left
+and `page_hero.context_card()` on the right with title, status, two metric
+tiles and a full-width bottom action. The operator rejected mockups that
+copied Delete ConfigMap content or invented non-standard Hero panels.
+
+The current Tenant Details implementation reuses those **shared macros**
+without new CSS/hero variants. Left: committed Tenant identity, governance
+description, cluster, provider, generation. Right: contextual **Tenant
+Details / Governed Resource State** card, actual lifecycle status,
+committed Active Namespace count and Ownership, and one **Back to Registry**
+action. No fabricated example timestamps, fake provider status or unsupported
+access authority. Tenant created/updated timestamps, when present, use the
+actual model fields and stay in the overview detail rather than the Hero.
+
+Below the Hero are **four responsive compact committed summary cards**
+(Active Namespaces, Environments, Reconciliation Authority, Lifecycle) and
+a clear **two-column Tenant Overview** (identity/history facts beside
+description and links to existing KAORI pages). All long workflows remain
+on this one routable Tenant page, but present as accessible native
+`details/summary` governance sections: **Release Governance**, Native
+Platform Admin Handback/Re-adopt, Capsule Namespace Attachment, Provider
+Authority, Lifecycle. Inapplicable mutation sections stay absent because
+the original permissions and provider/lifecycle checks remain authoritative.
+
+Release shows a **four-stage stepper preview by default**. Its full
+independent review, provider inventory and finalizer forms are in a
+secondary on-demand native disclosure, avoiding an immediate wall of
+nested forms and tiny text. Work Inbox deep-links to the expanded
+Release workflow, and a committed `tenant_detail_section` form field
+preserves the currently operated accordion after all 14 POSTs. The
+server validates the section against current KAORI actor permissions,
+provider and Tenant lifecycle; Released transitions fall forward to
+Handback where eligible, otherwise to Provider. The regular HTMX swap
+refreshes the Hero/accordion and global OOB Operational Toast without
+placing the workspace inside a modal. Only the existing short destructive
+Decommission confirmation remains modal.
+
+No new provider requests on a normal GET, new permissions, credential
+fields, ResourceQuota/LimitRange mutations, or release shortcuts. All
+approved #1047-#1049 security/governance boundaries remain in services.
+Previous #1071/#1069/#1067/#1065 layouts are historical, not active design
+authority. Browser responsive/light-dark Visual QA, tests, Developer Check,
+Full Admission and Kubernetes UAT must be accepted separately; CI/CD and
+deployment stay HOLD.
+
+## Tenant Management single-page UX correction (#1071; superseded by #1073)
 
 The previous Native Tenant detail layout iterated through a relocated dialog
 (#1065), a large custom Hero / sticky sidebar / four-KPI dashboard (#1067),
