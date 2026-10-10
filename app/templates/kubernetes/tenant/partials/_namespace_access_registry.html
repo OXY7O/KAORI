@@ -111,10 +111,10 @@
                                 {{ table_ui.title_cell(access.get('service_account_name') , 'Access evidence unavailable', 'triangle-alert') }}
                             </td>
                             <td class="{{ table_ui.cell_classes() }} min-w-0">
-                                <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ access.get(&quot;tenant_name&quot;) }}">{{ access.get("tenant_name") }}</p>
+                                <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ access.get('tenant_name') }}">{{ access.get("tenant_name") }}</p>
                             </td>
                             <td colspan="4" class="{{ table_ui.cell_classes() }}">
-                                <p class="text-xs leading-5 text-content-muted min-w-0 max-w-full truncate" title="{{ access.get(&quot;error&quot;) }}">{{ access.get("error") }}</p>
+                                <p class="text-xs leading-5 text-content-muted min-w-0 max-w-full truncate" title="{{ access.get('error') }}">{{ access.get("error") }}</p>
                             </td>
                             <td class="{{ table_ui.cell_classes(action=true) }}">
                                 {{ table_label.status_label('Evidence Unavailable', 'warning') }}
@@ -125,29 +125,29 @@
                         <tr class="{{ table_ui.row_classes() }}">
                             <td class="{{ table_ui.cell_classes() }} min-w-0">{{ table_ui.namespace_identity(access.get('namespace') ) }}</td>
                             <td class="{{ table_ui.cell_classes() }} min-w-0">
-                                <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ access.get(&quot;tenant_name&quot;) }}">{{ access.get("tenant_name") }}</p>
-                                <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="{{ access.get(&quot;environment&quot;) |title }}">{{ access.get("environment") |title }}</p>
+                                <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ access.get('tenant_name') }}">{{ access.get("tenant_name") }}</p>
+                                <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="{{ access.get('environment') |title }}">{{ access.get("environment") |title }}</p>
                             </td>
                             <td class="{{ table_ui.cell_classes() }} min-w-0">
-                                <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ access.get(&quot;cluster_name&quot;) }}">{{ access.get("cluster_name") }}</p>
+                                <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ access.get('cluster_name') }}">{{ access.get("cluster_name") }}</p>
                             </td>
                             <td class="{{ table_ui.cell_classes() }} min-w-0">
-                                <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ access.get(&quot;service_account_name&quot;) }}">{{ access.get("service_account_name") }}</p>
-                                <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="{{ access.get(&quot;credential_type&quot;) |replace('_', ' ')|title }}">{{ access.get("credential_type") |replace('_', ' ')|title }}</p>
+                                <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ access.get('service_account_name') }}">{{ access.get("service_account_name") }}</p>
+                                <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="{{ access.get('credential_type') |replace('_', ' ')|title }}">{{ access.get("credential_type") |replace('_', ' ')|title }}</p>
                             </td>
                             <td class="{{ table_ui.cell_classes() }} min-w-0">
                                 {{ table_label.metadata_label(access.get('access_profile') |replace('_', ' ')|title) }}
-                                <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="{{ access.get(&quot;approved_access_methods&quot;) |join(', ')|replace('_', ' ')|title }}">
+                                <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="{{ access.get('approved_access_methods') |join(', ')|replace('_', ' ')|title }}">
                                     {{ access.get("approved_access_methods") |join(', ')|replace('_', ' ')|title }}
                                 </p>
                             </td>
                             <td class="{{ table_ui.cell_classes() }} min-w-0">
                                 {{ table_label.status_label(access.get('credential_status') |replace('_', ' ')|title, credential_tone) }}
-                                <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="{{ access.get(&quot;purpose&quot;) }}">{{ access.get("purpose") }}</p>
+                                <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="{{ access.get('purpose') }}">{{ access.get("purpose") }}</p>
                             </td>
                             <td class="{{ table_ui.cell_classes(action=true) }}">
-                                <p class="text-xs font-semibold text-content-secondary min-w-0 max-w-full truncate" title="Review {{ access.get(&quot;renewal_due_at&quot;) |user_datetime }}">Review {{ access.get("renewal_due_at") |user_datetime }}</p>
-                                <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="Valid until {{ access.get(&quot;valid_until&quot;) |user_datetime }}">Valid until {{ access.get("valid_until") |user_datetime }}</p>
+                                <p class="text-xs font-semibold text-content-secondary min-w-0 max-w-full truncate" title="Review {{ access.get('renewal_due_at') |user_datetime }}">Review {{ access.get("renewal_due_at") |user_datetime }}</p>
+                                <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="Valid until {{ access.get('valid_until') |user_datetime }}">Valid until {{ access.get("valid_until") |user_datetime }}</p>
                             </td>
                         </tr>
                     {% endif %}
