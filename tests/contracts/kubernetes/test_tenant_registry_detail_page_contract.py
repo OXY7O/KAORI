@@ -40,25 +40,68 @@ def test_compact_registry_has_one_full_page_detail_link_not_a_management_dialog(
     assert 'registry_ui.footer(' in registry
 
 
-def test_detail_page_uses_approved_tenant_shell_and_return_breadcrumb():
+def test_detail_owns_single_kaori_hero_and_only_back_action():
     page = read(PAGE)
     detail = read(DETAIL)
     assert '{% extends "kubernetes/tenant/base.html" %}' in page
-    assert 'aria-label="Tenant breadcrumbs"' in page
-    assert 'aria-current="page"' in page
-    assert 'return_to_registry_url' in page
-    assert 'partials/_tenant_management_detail.html' in page
-    assert 'id="tenant-management-detail"' in detail
+    assert '{% block dashboard_content %}' in page
+    assert '{% block tenant_content %}' not in page
+    assert 'data-kaori-tenant-detail-page' in page
+    assert 'aria-label="Tenant breadcrumbs"' not in page
+    assert 'page_hero.shell_classes()' in detail
+    assert 'page_hero.intro(' in detail
+    assert 'data-kaori-hero-profile="transactional-admin"' in detail
+    assert 'id="tenant-detail-{{ tenant.id }}-title"' in detail
+    assert 'page_hero.context_status_badge(' in detail
+    assert detail.count('Back to Registry') == 1
+    assert 'return_to_registry_url' in detail
+    assert 'page_hero.context_card' not in detail
+    assert 'Open Cluster Integrations' not in detail
+    assert 'tenant_page_title' not in detail
     assert 'data-tenant-management-detail="{{ tenant.id }}"' in detail
-    assert 'Back to Tenant Registry' in detail
-    assert 'Back to Registry' in detail
-    assert 'grid grid-cols-3 divide-x' in detail
+
+
+def test_detail_is_a_responsive_workspace_not_a_relocated_modal():
+    detail = read(DETAIL)
+    assert 'id="tenant-management-detail"' in detail
+    assert 'data-kaori-tenant-detail-workspace' in detail
+    assert 'id="tenant-detail-snapshot"' in detail
+    assert 'Tenant at a glance' in detail
+    assert 'sm:grid-cols-2 xl:grid-cols-4' in detail
+    assert 'aria-label="Tenant detail sections"' in detail
+    assert 'xl:sticky xl:top-4' in detail
+    assert 'xl:grid-cols-[15rem_minmax(0,1fr)]' in detail
     assert 'aria-label="Tenant management sections"' in detail
-    assert 'overflow-y-auto bg-surface-page' not in detail
+    assert 'role="region"' in detail
+    assert 'aria-label="Release governance"' in detail
+    assert 'aria-label="Tenant lifecycle actions"' in detail
+    assert '<main ' not in detail
+    assert 'grid grid-cols-3 divide-x' not in detail
     assert 'max-h-[calc(100dvh-2rem)]' not in detail
     assert 'data-kaori-native-dialog' not in detail
     assert 'data-kaori-dialog-auto-open' not in detail
     assert 'data-kaori-dialog-preserve-on-swap' not in detail
+    assert 'Back to Tenant Registry' not in detail
+    assert 'tenant-registry-actions-' not in detail
+    assert '<footer ' not in detail
+    assert '<dialog' not in detail
+
+
+def test_global_navigation_sets_tenants_active_and_correct_detail_breadcrumb():
+    capability = read('app/common/workspace_navigation.py')
+    sidebar = read('app/templates/components/navigation/tenant_menu.html')
+    breadcrumb = read('app/common/navigation.py')
+    assert "'tenant.tenant_detail': 'tenants'" in capability
+    assert "'tenant.tenant_detail'" in sidebar
+    assert "'tenant.tenant_detail': 'Tenant Details'" in breadcrumb
+    detail_branch = breadcrumb.split("elif endpoint == 'tenant.tenant_detail':", 1)[1].split(
+        "elif endpoint.startswith", 1
+    )[0]
+    assert "BreadcrumbItem('Kubernetes', 'boxes')" in detail_branch
+    assert "BreadcrumbItem('Tenant')" in detail_branch
+    assert "BreadcrumbItem('Tenants')" in detail_branch
+    assert "BreadcrumbItem('Tenant Details')" in detail_branch
+
 
 
 def test_detail_route_reads_one_exact_tenant_without_live_provider_or_filter_leak():
@@ -162,3 +205,21 @@ def test_tenant_detail_templates_parse_under_real_jinja_parser():
     env = Environment(autoescape=True)
     for path in (REGISTRY, PAGE, DETAIL):
         env.parse(read(path))
+
+
+
+def test_detail_hero_refreshes_with_governance_htmx_and_global_toast():
+    page = read(PAGE)
+    detail = read(DETAIL)
+    common = read('app/kubernetes/tenant/route_common.py')
+    hero = detail.index('data-kaori-hero-profile="transactional-admin"')
+    summary = detail.index('id="tenant-detail-snapshot"')
+    release = detail.index('aria-label="Release governance"')
+    assert hero < summary < release
+    assert detail.index('id="tenant-management-detail"') < hero
+    assert "data-kaori-tenant-detail-page" in page
+    assert "hx-target=\"#tenant-management-detail\"" in detail
+    assert "hx-select=\"#tenant-management-detail\"" in detail
+    assert "'kubernetes/tenant/partials/_tenant_management_detail.html'" in common
+    assert "toast_oob=True" in common
+    assert 'data-kaori-native-dialog' not in detail
