@@ -80,7 +80,10 @@ Violet Hero macros and page spacing as other current Tenant pages:
 `content_classes()`, `intro()`, `title_classes()`,
 `description_classes()`, `persistent_metadata()`, and
 `primary_action_classes()`. There are no local Hero height/padding
-overrides. Only **Back to filtered Registry** is an action in the Hero.
+overrides. The HTMX loading indicator is positioned absolutely (out of normal
+document flow): its default opacity-hidden state previously consumed line
+height plus layout spacing, creating a false vertical gap between the primary
+capability navigation and the Tenant Hero. Only **Back to filtered Registry** is an action in the Hero.
 The main capability navigation stays **Tenants** active and global navbar
 breadcrumb ends at the committed Tenant name.
 
