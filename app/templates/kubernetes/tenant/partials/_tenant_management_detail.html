@@ -1243,6 +1243,15 @@
                                             <p class="text-xs leading-5 text-content-secondary">
                                                 Zero verified objects does not prove zero resources changed. Do not blindly repeat Resume Verified Native Handoff; check the attempt evidence and exact provider ownership markers first.
                                             </p>
+                                            {% if native_cycle.no_transfer_assessment_candidate %}
+                                                <p class="rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2 text-xs leading-5 text-content-secondary" role="note">
+                                                    No transfer was reported by the same-plan executor attempts. This is a candidate for independent no-transfer assessment only—not restart authorization. Verify every resource UID, resourceVersion, owner marker, spec and foreign metadata against committed plan and dry-run evidence; obtain a separate governed recovery decision.
+                                                </p>
+                                            {% else %}
+                                                <p class="rounded-lg border border-status-warning-border bg-status-warning-soft px-3 py-2 text-xs leading-5 text-content-secondary" role="note">
+                                                    Executor history is incomplete, inconsistent or reports provider effects. Keep restart blocked and use governed manual recovery review; do not infer safety from a zero verified count.
+                                                </p>
+                                            {% endif %}
                                             {% if recovery_attempt.errors %}
                                                 <div class="min-w-0 border-t border-outline-subtle pt-2.5">
                                                     <p class="text-xs font-semibold text-content-primary">Recorded failure summary</p>
