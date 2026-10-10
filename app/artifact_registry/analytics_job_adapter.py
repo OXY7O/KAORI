@@ -3,17 +3,18 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
+from sqlalchemy import func
+
 from app.common.job_execution_contract import ARTIFACT_REGISTRY_ANALYTICS_MATERIALIZE_OPERATION
-from app.common.presentation import present_user_datetime
 from app.common.job_execution_presentation import present_job_execution
+from app.common.presentation import present_user_datetime
 from app.models.integration import IntegrationInstance
 from app.models.job import JobExecution, JobPolicy
 from app.models.registry import RegistryAnalyticsSnapshot
-from sqlalchemy import func
-from app.platform_operations.jobs.policies.presentation import present_interval
 from app.platform_operations.jobs.constants import ACTIVE_JOB_STATUSES, WORKLOAD_ANALYTICS
 from app.platform_operations.jobs.definitions.base import RegisteredJobDispatchResult
 from app.platform_operations.jobs.dispatcher import JobDispatchOptions, enqueue_canonical_job
+from app.platform_operations.jobs.policies.presentation import present_interval
 
 
 def _eligible_ids() -> list[int]:
@@ -65,6 +66,7 @@ def dispatch_registry_analytics_materialization(
         payload={'total_count': len(ids), 'targets': ids, 'trigger_type': trigger_type},
         max_attempts=3,
         dispatch_options=JobDispatchOptions(
+            require_registered_worker=True,
             soft_time_limit_seconds=600,
             hard_time_limit_seconds=900,
         ),

@@ -29,6 +29,7 @@
                           action="{{ url_for('artifact_registry.analytics_collect') }}"
                           hx-post="{{ url_for('artifact_registry.analytics_collect') }}"
                           hx-target="#artifact-registry-analytics-controls-readiness"
+                          hx-indicator="#artifact-registry-analytics-collect-indicator"
                           hx-swap="outerHTML"
                           hx-disabled-elt="find button">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

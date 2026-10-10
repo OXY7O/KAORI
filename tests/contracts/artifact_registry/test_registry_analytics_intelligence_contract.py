@@ -207,6 +207,8 @@ def test_registry_analytics_controls_use_canonical_worker_and_committed_readines
     assert "_analytics_snapshot_posture(" in adapter
     assert "enqueue_canonical_job(" in adapter
     assert "queue_name='analytics-batch'" in adapter
+    assert 'require_registered_worker=True' in adapter
+    assert 'hx-indicator="#artifact-registry-analytics-collect-indicator"' in controls
 
 
 def test_registry_analytics_posture_classifies_missing_partial_and_current_snapshots() -> None:
