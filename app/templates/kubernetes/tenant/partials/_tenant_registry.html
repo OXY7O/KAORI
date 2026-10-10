@@ -935,8 +935,10 @@
                                             {% if native_cycle.dry_run_passed %}Native dry-run passed; no live handoff was executed. {% endif %}
                                             {% if native_cycle.reference_recorded %}An external reference was recorded but is not consent. {% endif %}
                                             {% if native_cycle.readback_observed_unverified %}Provider changes were observed without verified successor acceptance. {% endif %}
-                                            Automated live handoff and KAORI-managed Release are not yet admitted.
-                                            ResourceQuota and Namespace remain provider-authoritative.
+                                            Live Native handoff and Managed Release require explicit successor consent,
+                                            conditional provider mutation and authoritative read-back. Runtime security/UAT
+                                            admission is still required before staging promotion.
+                                            Kubernetes remains authoritative.
                                         </p>
                                     </div>
                                 {% endif %}
@@ -998,7 +1000,9 @@
                                         </button>
                                     </form>
                                 {% endif %}
-                                {% if not row.release_preflight or row.release_preflight.blockers %}
+                                {% if (not row.release_preflight or row.release_preflight.blockers)
+                                      and not (row.release_native_handoff_execution
+                                          and row.release_native_handoff_execution.status == 'provider_handoff_verified') %}
                                     <p class="mt-3 text-xs leading-5 text-content-muted">
                                         Release remains blocked. Resolve recorded conditions and independently verify the successor.
                                     </p>
