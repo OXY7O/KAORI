@@ -346,8 +346,9 @@ def _populate_signals(
     selected_cluster_id: str | None,
     selected: Any | None,
 ) -> None:
-    if selected is not None:
-        dashboard.alerts_snapshot = _kaori_alert_snapshot(selected)
+    if selected is None:
+        return
+    dashboard.alerts_snapshot = _kaori_alert_snapshot(selected)
     dashboard.recommended_actions = build_recommendations(selected_cluster_id=selected_cluster_id)
 
 
