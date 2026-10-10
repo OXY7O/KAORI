@@ -351,6 +351,8 @@ def get_tenant_registry_context(
     handoff_dry_runs: dict[str, dict[str, Any]] = {}
     handoff_readbacks: dict[str, dict[str, Any]] = {}
     handoff_executions: dict[str, dict[str, Any]] = {}
+    no_transfer_assessments: dict[str, dict[str, Any]] = {}
+    no_transfer_decisions: dict[str, dict[str, Any]] = {}
     successor_handbacks: dict[str, dict[str, Any]] = {}
     successor_claims: dict[str, dict[str, Any]] = {}
     successor_acceptances: dict[str, dict[str, Any]] = {}
@@ -361,6 +363,8 @@ def get_tenant_registry_context(
             ('kubernetes_tenant_release_native_handoff_dry_run', handoff_dry_runs),
             ('kubernetes_tenant_release_native_handoff_readback', handoff_readbacks),
             ('kubernetes_tenant_release_native_handoff_execution', handoff_executions),
+            ('kubernetes_tenant_release_native_no_transfer_assessment', no_transfer_assessments),
+            ('kubernetes_tenant_release_native_no_transfer_decision', no_transfer_decisions),
             ('kubernetes_tenant_verified_native_successor_handback', successor_handbacks),
             ('kubernetes_tenant_release_successor_claim', successor_claims),
             ('kubernetes_tenant_release_verified_successor_acceptance', successor_acceptances),
@@ -435,6 +439,8 @@ def get_tenant_registry_context(
             row['release_native_handoff_dry_run'] = handoff_dry_runs.get(item.id)
             row['release_native_handoff_readback'] = handoff_readbacks.get(item.id)
             row['release_native_handoff_execution'] = handoff_executions.get(item.id)
+            row['release_native_no_transfer_assessment'] = no_transfer_assessments.get(item.id)
+            row['release_native_no_transfer_decision'] = no_transfer_decisions.get(item.id)
             row['release_successor_handback'] = successor_handbacks.get(item.id)
             row['release_successor_claim'] = successor_claims.get(item.id)
             row['release_successor_acceptance'] = successor_acceptances.get(item.id)
@@ -453,6 +459,8 @@ def get_tenant_registry_context(
                     handoff_execution=row['release_native_handoff_execution'],
                     readback_history=readback_histories.get(str(item.id), []),
                     execution_history=execution_histories.get(str(item.id), []),
+                    no_transfer_assessment=row['release_native_no_transfer_assessment'],
+                    no_transfer_decision=row['release_native_no_transfer_decision'],
                 )
         tenant_rows.append(row)
 
