@@ -38,6 +38,9 @@ def test_incident_readiness_redesign_uses_committed_control_evidence() -> None:
     assert 'xl:grid-cols-[minmax(0,1.65fr)_minmax(19rem,1fr)]' in content
     assert 'stroke-dasharray="{{ incident_readiness.score if has_checks else 0 }} 100"' in content
     assert 'Readiness score unavailable' in content
+    assert 'class="mt-3 flex flex-col items-center gap-3"' in content
+    assert 'class="min-w-0 w-full text-center"' in content
+    assert 'mt-3 flex flex-wrap items-center gap-4' not in content
     assert "analysis_surface.snapshot_shell_classes()" in content
     assert "analysis_surface.nested_evidence_card_classes(" in content
     assert "analysis_surface.guidance_card_classes()" in content
