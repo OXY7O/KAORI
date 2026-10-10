@@ -33,8 +33,12 @@ def test_artifact_registry_overview_consumes_operational_dashboard_family() -> N
     assert 'signal_overview.render(' in signal
     assert "section='kpi_cards'" in signal
     assert 'hx-trigger="load"' in signal
-    assert 'components/operational_metric_card.html' in kpis
-    assert "scope_label='Active Scope'" in kpis
+    assert 'components/resource_posture_grid.html' in kpis
+    assert 'posture_grid.render(overview_metrics, columns=4)' in kpis
+    assert 'for kpi in overview.kpis' in kpis
+    assert "body_classes='p-0'" in signal
+    assert 'components/operational_signal_overview.html' in signal
+    assert 'hx-trigger="load"' in signal
     assert 'hx-push-url="true"' in signal
     assert 'hx-include="#artifact-registry-dashboard-active-tab"' in signal
     assert 'All Registry Providers' in signal
@@ -424,3 +428,24 @@ def test_artifact_registry_signals_match_object_storage_scope_and_alert_logic() 
     assert "'available': False" in presentation
     assert "'available': True" in presentation
     assert "'alerts': _registry_alerts(selected_provider)" in presentation
+
+
+def test_artifact_registry_overview_grouped_kpi_uses_existing_signal_shell() -> None:
+    from jinja2 import Environment
+
+    kpis = read('app/templates/artifact_registry/partials/_overview_kpi_cards.html')
+    signal = read('app/templates/artifact_registry/partials/_overview_signal_overview.html')
+    shell = read('app/templates/components/operational_signal_overview.html')
+    grid = read('app/templates/components/resource_posture_grid.html')
+    for template in (kpis, signal, shell, grid):
+        Environment().parse(template)
+
+    assert "body_classes='p-5'" in shell
+    assert '<div class="{{ body_classes }}">{{ signal_content|safe }}</div>' in shell
+    assert "body_classes='p-0'" in signal
+    assert "posture_grid.render(overview_metrics, columns=4)" in kpis
+    for field in ('kpi.icon', 'kpi.label', 'kpi.value', 'kpi.description'):
+        assert field in kpis
+    assert "data-kaori-artifact-registry-operational-kpis" in kpis
+    assert "hx-trigger=\"load\"" in signal
+    assert "components/operational_metric_card.html" not in kpis
