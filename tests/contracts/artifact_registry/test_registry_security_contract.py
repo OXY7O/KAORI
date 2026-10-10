@@ -39,7 +39,7 @@ def test_security_workspace_uses_canonical_kaori_components() -> None:
         'components/content_tabs.html',
         'components/loading_bar.html',
         'components/section_intro.html',
-        'components/operational_callout.html',
+        'components/info_tip.html',
         'components/action_button.html',
         'components/operational_metric_card.html',
         'components/operational_section_card.html',
@@ -72,6 +72,42 @@ def test_security_workspace_uses_canonical_kaori_components() -> None:
     assert 'Search CVE, package, repo, or digest…' in template
     assert 'Current critical findings from the latest committed scan evidence.' not in template
     assert 'Current high-severity findings from the latest committed scan evidence.' not in template
+
+
+def test_vulnerability_evidence_status_is_inline_and_contextual() -> None:
+    from jinja2 import Environment
+
+    template = read('app/templates/artifact_registry/partials/_security_workspace.html')
+    presentation = read('app/artifact_registry/security/presentation.py')
+    Environment().parse(template)
+
+    start = template.index('aria-labelledby="artifact-registry-vulnerability-findings-heading"')
+    end = template.index("{% if security.view == 'vulnerabilities' or (", start)
+    intro = template[start:end]
+
+    assert "section_intro.render('Vulnerability Findings'," in intro
+    assert "table_label.status_label(security.finding_interpretation.title" in intro
+    assert "info_tip.render('artifact-registry-vulnerability-evidence-help'," in intro
+    assert 'security.finding_interpretation.description' in intro
+    assert "extra_classes='min-w-0 flex-1'" in intro
+    assert 'sm:items-end sm:justify-between' in intro
+    assert 'operational_callout.render(' not in intro
+
+    interpretation = presentation.split('def _security_finding_interpretation(', 1)[1].split(
+        'def _security_finding_empty_state(', 1
+    )[0]
+    assert "'title': 'Committed Evidence'" in interpretation
+    assert "'tone': 'info'" in interpretation
+    assert "'icon': 'database'" in interpretation
+    assert "'tone': 'critical' if evidence['critical_total']" not in interpretation
+    for state in (
+        'Security Evidence Not Collected',
+        'Previous Findings Retained',
+        'No Provider Scan Evidence',
+        'Partial Scan Coverage',
+        'No Vulnerabilities Observed',
+    ):
+        assert state in interpretation
 
 
 def test_security_has_two_level_three_views_above_the_hero() -> None:

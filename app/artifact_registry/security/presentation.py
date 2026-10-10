@@ -558,10 +558,13 @@ def _security_finding_interpretation(evidence: dict[str, Any]) -> dict[str, str]
             'icon': 'shield-check',
         }
     return {
-        'title': 'Committed Vulnerability Findings',
-        'description': 'Findings reflect the latest committed provider scan evidence and current Registry scope.',
-        'tone': 'critical' if evidence['critical_total'] else ('warning' if evidence['high_total'] else 'info'),
-        'icon': 'shield-alert',
+        'title': 'Committed Evidence',
+        'description': (
+            'Findings reflect the latest committed provider scan evidence for the selected Registry scope. '
+            'Critical and high severity are shown separately in the snapshot and finding rows.'
+        ),
+        'tone': 'info',
+        'icon': 'database',
     }
 
 

@@ -1,7 +1,7 @@
 {% import "components/action_button.html" as action_button %}
 {% import "components/content_tabs.html" as content_tabs %}
 {% import "components/loading_bar.html" as loading_bar %}
-{% import "components/operational_callout.html" as operational_callout %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/operational_metric_card.html" as metric_card %}
 {% import "components/operational_section_card.html" as section_card %}
 {% import "components/resource_posture_grid.html" as posture_grid %}
@@ -377,14 +377,21 @@
                     {% if security.view == 'vulnerabilities' %}
                         <section class="space-y-4"
                                  aria-labelledby="artifact-registry-vulnerability-findings-heading">
-                            {{ section_intro.render('Vulnerability Findings',
+                            <div class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                                {{ section_intro.render('Vulnerability Findings',
                                                         'Review committed scanner findings and their current runtime exposure.',
-                                                        'artifact-registry-vulnerability-findings-heading') }}
-                            {{ operational_callout.render(security.finding_interpretation.title,
-                                                        security.finding_interpretation.description,
-                                                        security.finding_interpretation.icon,
-                                                        security.finding_interpretation.tone,
-                                                        variant='semantic') }}
+                                                        'artifact-registry-vulnerability-findings-heading',
+                                                        extra_classes='min-w-0 flex-1') }}
+                                <div class="flex items-center gap-1 sm:justify-end">
+                                    {{ table_label.status_label(security.finding_interpretation.title,
+                                                                security.finding_interpretation.tone,
+                                                                icon=security.finding_interpretation.icon) }}
+                                    {{ info_tip.render('artifact-registry-vulnerability-evidence-help',
+                                                       security.finding_interpretation.title,
+                                                       security.finding_interpretation.description,
+                                                       placement='left') }}
+                                </div>
+                            </div>
                         {% endif %}
                         {% if security.view == 'vulnerabilities' or (security.view == 'supply_chain' and security.supply_section == 'evidence') %}
                             {% set result_badge %}

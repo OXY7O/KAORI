@@ -345,11 +345,20 @@ remain HOLD.
 
 ## Vulnerability Findings Registry: compact list and committed detail (#948)
 
-The Vulnerability Findings workspace keeps the existing Security Evidence
-interpretation block (#948) and distinguishes collected findings from scan
-coverage; a filtered or zero-result view never proves the Registry estate is
-fully scanned. The bounded HTMX Vulnerability Registry retains its canonical
-5-row default pagination, filter controls and source/permission scope.
+The Vulnerability Findings workspace presents its committed Security Evidence
+interpretation inline beside the existing `section_intro` heading, not as a
+full-width severity-colored callout. It uses the canonical
+`table_label.status_label` and accessible, pointer/keyboard/touch-enabled
+`info_tip` to retain the current collection, scan-coverage and refresh-state
+explanations without consuming a separate panel. A fully collected finding
+set is labeled informational **Committed Evidence** regardless of
+whether it contains Critical/High CVEs: security severity remains visible in
+the snapshot metrics and per-finding rows, not inferred from evidence
+provenance. Not-collected, failed-refresh, missing-scan and partial-coverage
+states retain their distinct semantic labels and tones. A filtered or
+zero-result view never proves the Registry estate is fully scanned. The
+bounded HTMX Vulnerability Registry retains canonical 5-row pagination,
+filters and source/permission scope.
 
 For operator scanability the table uses six aligned columns:
 **Finding (19%) / Artifact (21%) / Package & Fix (23%) /
