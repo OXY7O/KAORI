@@ -5,7 +5,11 @@ from typing import Any
 
 from sqlalchemy import func
 
-from app.artifact_registry.analytics_job_adapter import build_registry_analytics_readiness
+from app.artifact_registry.analytics_job_adapter import (
+    analytics_snapshot_matches_window,
+    build_registry_analytics_readiness,
+    normalize_registry_analytics_window,
+)
 from app.artifact_registry.presentation_common import _fmt_bytes, _providers
 from app.artifact_registry.presentation_overview import build_overview
 from app.common.pagination import paginate_sequence
@@ -42,9 +46,18 @@ _REGISTRY_ANALYTICS_PAGE_DETAILS = {
 }
 
 
+def _registry_analytics_scope(
+    provider_id: int | None,
+    identities: list[Any],
+) -> int | None:
+    return provider_id if provider_id is not None and any(row.id == provider_id for row in identities) else None
+
+
 def build_analytics_shell(
     *,
     active_tab: str = 'overview',
+    provider_id: int | None = None,
+    snapshot_window: str = 'current',
     alert_search: str = '',
     alert_severity: str = 'all',
     alert_state: str = 'all',
@@ -55,30 +68,25 @@ def build_analytics_shell(
     overview = build_overview()
     normalized_tab = active_tab if active_tab in _REGISTRY_ANALYTICS_PAGE_DETAILS else 'overview'
     page_title, page_description, page_icon = _REGISTRY_ANALYTICS_PAGE_DETAILS[normalized_tab]
-    provider_count = int(overview['provider_count'])
-    snapshot_count = (
-        RegistryAnalyticsSnapshot.query.with_entities(
-            func.count(func.distinct(RegistryAnalyticsSnapshot.integration_instance_id))
-        )
-        .filter(RegistryAnalyticsSnapshot.status == 'ready')
-        .scalar()
-        or 0
-    )
-    latest_generated_at = (
-        RegistryAnalyticsSnapshot.query.with_entities(func.max(RegistryAnalyticsSnapshot.generated_at))
-        .filter(RegistryAnalyticsSnapshot.status == 'ready')
-        .scalar()
+    provider_options = _providers()
+    selected_provider_id = _registry_analytics_scope(provider_id, provider_options)
+    selected_window = normalize_registry_analytics_window(snapshot_window)
+    readiness = build_registry_analytics_readiness(
+        provider_id=selected_provider_id, snapshot_window=selected_window
     )
     return {
         'setup': overview['setup'],
-        'provider_count': provider_count,
-        'snapshot_count': int(snapshot_count),
-        'latest_generated_at': latest_generated_at,
+        'provider_count': readiness['registered_count'],
+        'snapshot_count': readiness['covered_count'],
+        'latest_generated_at': readiness['latest_generated_at'],
+        'provider_options': provider_options,
+        'selected_provider_id': selected_provider_id,
+        'snapshot_window': selected_window,
         'active_tab': normalized_tab,
         'page_title': page_title,
         'page_description': page_description,
         'page_icon': page_icon,
-        'data_readiness': build_registry_analytics_readiness(),
+        'data_readiness': readiness,
         'alert_filters': {
             'search': alert_search,
             'severity': alert_severity,
@@ -283,7 +291,9 @@ def _analytics_snapshot_view(identity: Any, snapshot: RegistryAnalyticsSnapshot 
     }
 
 
-def _collect_analytics_rows(identities: list[Any]) -> dict[str, Any]:
+def _collect_analytics_rows(
+    identities: list[Any], *, snapshot_window: str = 'current'
+) -> dict[str, Any]:
     bundle: dict[str, Any] = {
         'aggregate': _analytics_aggregate(),
         'latest_rows': [],
@@ -305,6 +315,8 @@ def _collect_analytics_rows(identities: list[Any]) -> dict[str, Any]:
             )
             .first()
         )
+        if snapshot is not None and not analytics_snapshot_matches_window(snapshot, snapshot_window):
+            snapshot = None
         view = _analytics_snapshot_view(identity, snapshot)
         bundle['latest_rows'].append(view)
         if snapshot is None or not isinstance(snapshot.payload_json, dict):
@@ -676,6 +688,8 @@ def _analytics_alert_page(
 def build_analytics(
     *,
     active_tab: str = 'growth',
+    provider_id: int | None = None,
+    snapshot_window: str = 'current',
     alert_search: str = '',
     alert_severity: str = 'all',
     alert_state: str = 'all',
@@ -685,7 +699,11 @@ def build_analytics(
 ) -> dict[str, Any]:
     overview = build_overview()
     identities = _providers()
-    bundle = _collect_analytics_rows(identities)
+    selected_provider_id = _registry_analytics_scope(provider_id, identities)
+    selected_window = normalize_registry_analytics_window(snapshot_window)
+    if selected_provider_id is not None:
+        identities = [row for row in identities if row.id == selected_provider_id]
+    bundle = _collect_analytics_rows(identities, snapshot_window=selected_window)
     aggregate = bundle['aggregate']
     growth_rows = bundle['growth_rows']
     forecast_rows = bundle['forecast_rows']
@@ -715,6 +733,8 @@ def build_analytics(
         'setup': overview['setup'],
         'provider_count': len(identities),
         'snapshot_count': sum(bool(row.get('snapshot')) for row in bundle['latest_rows']),
+        'selected_provider_id': selected_provider_id,
+        'snapshot_window': selected_window,
         'aggregate': aggregate,
         'latest_rows': bundle['latest_rows'],
         'active_tab': normalized_tab,

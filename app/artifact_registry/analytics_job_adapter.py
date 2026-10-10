@@ -136,6 +136,28 @@ def build_registry_analytics_context(policy: JobPolicy) -> dict[str, Any]:
     }
 
 
+_ANALYTICS_SNAPSHOT_WINDOWS = {'current': None, '24h': 1, '7d': 7, '30d': 30}
+
+
+def normalize_registry_analytics_window(window: str) -> str:
+    return window if window in _ANALYTICS_SNAPSHOT_WINDOWS else 'current'
+
+
+def analytics_snapshot_matches_window(
+    snapshot: RegistryAnalyticsSnapshot,
+    window: str,
+    *,
+    now: datetime | None = None,
+) -> bool:
+    """A lookback limits the age of committed snapshot evidence, not provider measurements."""
+    days = _ANALYTICS_SNAPSHOT_WINDOWS[normalize_registry_analytics_window(window)]
+    if days is None:
+        return True
+    generated = snapshot.generated_at
+    aware = generated if generated.tzinfo is not None else generated.replace(tzinfo=UTC)
+    return aware >= (now or datetime.now(UTC)) - timedelta(days=days)
+
+
 ANALYTICS_JOB_KEY = 'artifact_registry.analytics.materialize'
 ANALYTICS_JOB_TYPE = 'artifact_registry_analytics'
 _SUCCESS_STATUSES = ('succeeded', 'partially_succeeded')
@@ -195,10 +217,19 @@ def should_request_registry_analytics_materialization(
     return True
 
 
-def build_registry_analytics_readiness() -> dict[str, Any]:
+def build_registry_analytics_readiness(
+    *,
+    provider_id: int | None = None,
+    snapshot_window: str = 'current',
+) -> dict[str, Any]:
     """Read-only UI projection of canonical JobExecution and committed snapshots."""
     eligible_ids = _eligible_ids()
-    registered_count = IntegrationInstance.query.filter_by(integration_type='registry').count()
+    if provider_id is not None:
+        eligible_ids = [value for value in eligible_ids if value == provider_id]
+    registered = IntegrationInstance.query.filter_by(integration_type='registry')
+    registered_count = (
+        registered.filter_by(id=provider_id).count() if provider_id is not None else registered.count()
+    )
     policy = JobPolicy.query.filter_by(job_key=ANALYTICS_JOB_KEY).first()
     jobs = JobExecution.query.filter(
         JobExecution.job_type == ANALYTICS_JOB_TYPE,
@@ -230,6 +261,9 @@ def build_registry_analytics_readiness() -> dict[str, Any]:
         ids = [int(row[0]) for row in latest_ids]
         if ids:
             snapshots = RegistryAnalyticsSnapshot.query.filter(RegistryAnalyticsSnapshot.id.in_(ids)).all()
+            snapshots = [
+                row for row in snapshots if analytics_snapshot_matches_window(row, snapshot_window)
+            ]
 
     now = datetime.now(UTC)
     current = [
