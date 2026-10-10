@@ -282,7 +282,9 @@
                     </div>
                 </div>
                 <div class="min-w-0 space-y-5 px-4 py-5 sm:px-6 sm:py-6" aria-label="Tenant management sections">
-                {% if can_manage and tenant.ownership_status == 'adopted' and tenant.lifecycle_status == 'ready' %}
+                {% if can_manage and current_user.has_permission('integrations.manage')
+                      and current_user.has_permission('clusters.manage')
+                      and tenant.ownership_status == 'adopted' and tenant.lifecycle_status == 'ready' %}
                     <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5" aria-label="Release governance">
                         <div class="flex items-start gap-3">
                             <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
@@ -1015,6 +1017,7 @@
                     </section>
                 {% endif %}
                 {% if can_manage and current_user.has_permission('integrations.manage')
+                      and current_user.has_permission('clusters.manage')
                       and tenant.provider_key == 'native_kubernetes' and tenant.lifecycle_status == 'released'
                       and tenant.provider_evidence_json and tenant.provider_evidence_json.release_governance
                       and tenant.provider_evidence_json.release_governance.release_mode == 'managed_handoff' %}
