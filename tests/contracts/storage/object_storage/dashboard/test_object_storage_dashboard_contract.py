@@ -340,3 +340,101 @@ def test_object_storage_dashboard_uses_fast_shell_without_rebuilding_overview_pe
 
     reporting_branch = section.split("elif section == 'reporting':", 1)[1]
     assert '_freshness(selected, systems)' not in reporting_branch
+
+def test_fleet_freshness_renders_four_distinct_committed_evidence_types(monkeypatch) -> None:
+    from datetime import UTC, datetime
+    from types import SimpleNamespace
+
+    from app.storage.object_storage.dashboard import service
+
+    systems = [
+        SimpleNamespace(id=1, inventory_observed_at=datetime.now(UTC)),
+        SimpleNamespace(id=2, inventory_observed_at=datetime.now(UTC)),
+    ]
+    analytics = {'1': True, '2': True}
+    forecasts = {'1': True, '2': False}
+    streams = {
+        '1': {'connected': True, 'fallback_used': True},
+        '2': {'connected': False, 'fallback_used': False},
+    }
+
+    def snapshot(system):
+        key = str(system.id)
+        return {'stream': streams[key]}, {'usable': analytics[key]}
+
+    def get_forecast_snapshot(*, system_id: str, history_window: str):
+        assert history_window == '30d'
+        return {'usable': forecasts[system_id]}
+
+    monkeypatch.setattr(service, '_snapshot_payload', snapshot)
+    monkeypatch.setattr(service, 'get_forecast_snapshot', get_forecast_snapshot)
+    monkeypatch.setattr(service, 'forecast_snapshot_state', lambda snapshot: snapshot)
+    monkeypatch.setattr(service, '_alert_view', lambda payload: (payload['stream'], {}))
+
+    rows = service._freshness(None, systems)
+    assert [row['label'] for row in rows] == [
+        'Inventory Fleet',
+        'Analytics Fleet',
+        'Forecast Fleet',
+        'Alert Evidence Fleet',
+    ]
+    assert [row['status'] for row in rows] == ['Available', 'Ready', 'Partial', 'Partial']
+    assert rows[1]['value'] == '2 / 2 systems'
+    assert rows[2]['value'] == '1 / 2 systems'
+    assert rows[3]['value'] == '1 / 2 systems'
+    assert rows[3]['tone'] == 'warning'
+    assert '1 system(s) using fallback evidence' in rows[3]['description']
+
+
+def test_fleet_freshness_keeps_missing_and_fallback_evidence_explicit(monkeypatch) -> None:
+    from types import SimpleNamespace
+
+    from app.storage.object_storage.dashboard import service
+
+    systems = [SimpleNamespace(id=1, inventory_observed_at=None)]
+    snapshot = {'stream': {'connected': True, 'fallback_used': True}}
+    monkeypatch.setattr(service, '_snapshot_payload', lambda system: (snapshot, {'usable': True}))
+    monkeypatch.setattr(service, '_alert_view', lambda payload: (payload['stream'], {}))
+    monkeypatch.setattr(service, 'get_forecast_snapshot', lambda **kwargs: {'usable': False})
+    monkeypatch.setattr(service, 'forecast_snapshot_state', lambda value: value)
+
+    rows = service._freshness(None, systems)
+    assert len(rows) == 4
+    assert [row['status'] for row in rows] == [
+        'Not Collected',
+        'Ready',
+        'Required',
+        'Fallback',
+    ]
+    assert rows[3]['tone'] == 'warning'
+
+    monkeypatch.setattr(service, '_snapshot_payload', lambda system: (None, {'usable': False}))
+    rows = service._freshness(None, systems)
+    assert len(rows) == 4
+    assert [row['status'] for row in rows] == [
+        'Not Collected',
+        'Required',
+        'Required',
+        'Required',
+    ]
+    assert rows[3]['value'] == '0 / 1 systems'
+    assert rows[3]['tone'] == 'unknown'
+
+
+def test_object_storage_fleet_and_single_system_share_four_tile_renderer() -> None:
+    source = read('app/storage/object_storage/dashboard/service.py')
+    overview = read('app/templates/storage/object_storage/dashboard/partials/_overview.html')
+    tile = read('app/templates/components/operational_evidence_tile.html')
+
+    fleet_branch = source.split('def _freshness(', 1)[1].split('    analytics_snapshot = ', 1)[0]
+    selected_branch = source.split('    analytics_snapshot = ', 1)[1].split('def _capacity(', 1)[0]
+    assert fleet_branch.count("'label':") == 4
+    assert selected_branch.count("'label':") == 4
+    assert 'forecast_snapshot_state(' in fleet_branch
+    assert '_snapshot_payload(system)' in fleet_branch
+    assert '_alert_view(payload)' in fleet_branch
+    assert "'Fallback' if alert_fallback else 'Available'" in fleet_branch
+    assert "for item in dashboard.freshness" in overview
+    assert 'evidence_tile.freshness(' in overview
+    assert "body_classes='grid gap-3 p-5 sm:grid-cols-2'" in overview
+    assert '{% macro freshness(' in tile
