@@ -116,25 +116,26 @@ Hero
 
 `Tenant Registry` is the default tab and uses the canonical KAORI server-backed registry contract: shared loading bar, Cluster/Environment/Lifecycle/Search filters, committed-state reads, semantic labels, responsive horizontal overflow, default 5-row pagination, 5/10/25/50 page sizes, and HTMX progressive enhancement with the Tenants route as the real navigation fallback.
 
-**Tenant Details focused workspace (#1069, supersedes #1067 layout):**
-The latest approved layout no longer combines a large hero, four big KPI
-cards, a sticky sidebar and a very long Release page. The detail uses a
-compact contextual Violet Hero with a single Back action, a small committed
-facts strip and canonical `components/content_tabs.html` navigation.
-Operator-visible views are Overview, Release, Handback, Attachment, Provider
-and Lifecycle (available according to current Tenant state/permissions).
-Tabs preserve URL history and use normal GET or HTMX fragment navigation;
-unsupported views safely fall back to Overview. Work Inbox approval links
-open `view=release` directly. Release displays independently scoped phases
-for preflight, handoff inventory, approval and final verification.
+**Tenant Management single-page correction (#1071, current design):**
+The user rejected both the oversized dashboard (#1067) and the secondary
+Content Tabs workflow (#1069). The current detail is one naturally scrolling
+page with the exact shared KAORI Violet Hero sizing, layout, intro/title,
+description and metadata classes. It has a single Back to filtered Registry
+action, the normal Tenants active navigation and canonical global breadcrumb.
+A concise Tenant Overview is followed by clearly described, full-width
+governance sections: Release (four divided phases with readable blocker and
+inventory evidence), Platform Admin Handback, Capsule Attachment, Provider
+Authority, and Lifecycle. Sections appear only where applicable and
+authorized. No custom Hero overrides, nested modal framing, second tab row,
+sticky sidebar, oversized KPI cards or internal inventory scrolling.
 
-All 14 existing POST forms retain CSRF/provider authority plus selected
-`tenant_detail_view` and Registry search/pagination in both HTMX and normal
-redirects. The whole Hero + active view is swapped and standard OOB toast
-stays visible. No new provider code or RBAC grants; only the small destructive
-Decommission confirmation uses a modal. The previous stacked-workspace
-design was rejected during human Visual Review. Full browser Visual QA and
-security-sensitive admission remain pending.
+All 14 existing governance POST forms, CSRF, provider authority, independent
+review, exact Tenant identity, and Registry filters remain unchanged. The
+entire detail including Hero is refreshed by HTMX and emits the existing OOB
+Operational Toast; the non-JS POST returns to the same page. The Work Inbox
+link scrolls directly to the Release Governance section. Only short
+Decommission confirmation remains modal. No provider or permission rules
+were changed. Browser Visual QA and gate admission remain pending.
 
 **Dedicated Tenant Management (#1065):** a Registry row's single
 `Manage/View` action navigates to `/kubernetes/tenant/tenants/<tenant-id>/manage`,

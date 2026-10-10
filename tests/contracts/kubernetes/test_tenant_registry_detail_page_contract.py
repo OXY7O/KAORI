@@ -1,7 +1,7 @@
-"""Tenant Registry links to a dedicated, committed-only governance page (#1065).
+"""Tenant Registry → one standard KAORI detail page (#1071).
 
-This replaces the superseded native Tenant Management dialog contract #1022.
-Provider mutation/authorization remains owned by existing Tenant services.
+Supersedes rejected modal relocation (#1065), sticky dashboard (#1067) and
+secondary Content Tabs (#1069). Governance services are unchanged.
 """
 from pathlib import Path
 
@@ -19,142 +19,141 @@ DETAIL = 'app/templates/kubernetes/tenant/partials/_tenant_management_detail.htm
 PAGE = 'app/templates/kubernetes/tenant/tenant_detail.html'
 
 
-def test_compact_registry_has_one_full_page_detail_link_not_a_management_dialog():
+def test_registry_is_compact_and_uses_one_link_not_a_management_dialog():
     registry = read(REGISTRY)
     actions = registry.split(
-        '<td class="{{ table_ui.cell_classes(action=true) }} align-middle">', 1,
+        '<td class="{{ table_ui.cell_classes(action=true) }} align-middle">', 1
     )[1].split('</td>', 1)[0]
     assert actions.count('<a ') == 1
     assert 'tenant.tenant_detail' in actions
     assert 'hx-boost="false"' in actions
     assert 'tenant_id=tenant.id' in actions
-    assert 'table_ui.action_classes()' in actions
     assert "'Manage' if can_manage else 'View'" in actions
     for key in ('page', 'per_page', 'search', 'cluster_id', 'environment', 'lifecycle_status'):
         assert f'registry_{key}=' in actions
     assert 'data-kaori-dialog-open' not in registry
-    assert 'data-tenant-registry-actions-dialog' not in registry
     assert '<dialog' not in registry
-    assert 'Review Release' not in registry
-    assert 'Decommission' not in actions
     assert 'registry_ui.footer(' in registry
 
 
-def test_detail_has_one_compact_kaori_hero_with_one_back_action():
-    page = read(PAGE)
+def test_single_hero_uses_unmodified_shared_kaori_template_and_spacing():
     detail = read(DETAIL)
+    page = read(PAGE)
+    hero = read('app/templates/components/page_hero.html')
+    base = read('app/templates/kubernetes/tenant/base.html')
+    layout = read('app/templates/layouts/app.html')
     assert '{% extends "kubernetes/tenant/base.html" %}' in page
     assert '{% block dashboard_content %}' in page
     assert '{% block tenant_content %}' not in page
-    assert 'data-kaori-tenant-detail-page' in page
-    assert 'aria-label="Tenant breadcrumbs"' not in page
-    assert 'page_hero.shell_classes()' in detail
+    assert 'class="relative min-w-0 space-y-6"' in detail
+    assert 'id="tenant-management-loading"' in detail
+    assert 'htmx-indicator pointer-events-none absolute' in detail
+    assert 'class="htmx-indicator text-sm' not in detail
+    assert 'class="{{ page_hero.shell_classes() }}"' in detail
+    assert 'class="{{ page_hero.layout_classes() }}"' in detail
+    assert 'class="{{ page_hero.content_classes() }}"' in detail
+    assert "page_hero.intro('building-2', 'Kubernetes Tenant', 'building-2')" in detail
+    assert 'class="{{ page_hero.title_classes() }}"' in detail
+    assert 'page_hero.description_classes()' in detail
+    assert 'page_hero.persistent_metadata([' in detail
+    assert 'class="{{ page_hero.primary_action_classes() }}"' in detail
     assert 'data-kaori-hero-profile="transactional-admin"' in detail
-    assert 'id="tenant-detail-{{ tenant.id }}-title"' in detail
-    assert 'page_hero.context_status_badge(' in detail
     assert detail.count('Back to Registry') == 1
-    assert 'return_to_registry_url' in detail
+    assert '!min-h-0 !p-4' not in detail
+    assert 'min-h-[15.5rem]' in hero
+    assert '<div class="space-y-6" data-tenant-workspace=' in base
+    assert 'data-kaori-capability-navigation=' in layout
+    assert 'data-kaori-native-dialog' not in detail
     assert 'page_hero.context_card' not in detail
-    assert 'Open Cluster Integrations' not in detail
     assert 'Tenant at a glance' not in detail
-    assert 'data-tenant-management-detail="{{ tenant.id }}"' in detail
-    assert '!min-h-0 !p-4 sm:!p-5' in detail
 
 
-
-def test_detail_is_focused_tabs_not_relocated_modal_or_kpi_dashboard():
+def test_one_described_page_not_a_new_tabbed_application():
     detail = read(DETAIL)
-    assert 'id="tenant-management-detail"' in detail
-    assert 'data-kaori-tenant-detail-workspace' in detail
-    assert 'data-tenant-active-view="{{ active_tenant_detail_view }}"' in detail
+    common = read('app/kubernetes/tenant/route_common.py')
     assert 'id="tenant-detail-snapshot"' in detail
-    assert 'aria-label="Tenant committed facts"' in detail
-    assert 'grid-cols-2 gap-px' in detail
-    assert 'sm:grid-cols-4' in detail
-    assert 'content_tabs.render_links(' in detail
-    assert "data_namespace='tenant-detail'" in detail
-    assert 'hx_push_url=\'true\'' in detail
-    assert "nowrap=true" in detail
-    assert "active_tenant_detail_view == 'overview'" in detail
-    for view in ('release', 'handback', 'attachment', 'provider', 'lifecycle'):
-        assert f"active_tenant_detail_view == '{view}'" in detail
+    assert 'Tenant Overview' in detail
+    assert 'Current identity, ownership and allocation scope' in detail
+    assert 'Managed resource scope' in detail
+    assert 'historical Namespace record' in detail
+    assert 'row.namespace_history_count - row.namespace_count' in detail
     assert 'aria-label="Tenant management sections"' in detail
     assert 'role="region"' in detail
-    assert 'aria-label="Release governance"' in detail
-    assert 'aria-label="Tenant lifecycle actions"' in detail
+    assert 'content_tabs.render_links' not in detail
+    assert 'data-tenant-active-view' not in detail
+    assert 'active_tenant_detail_view' not in detail
     assert 'xl:sticky xl:top-4' not in detail
-    assert 'xl:grid-cols-[15rem_minmax(0,1fr)]' not in detail
     assert 'Tenant at a glance' not in detail
-    assert 'max-h-[calc(100dvh-2rem)]' not in detail
-    assert 'data-kaori-native-dialog' not in detail
-    assert 'data-kaori-dialog-preserve-on-swap' not in detail
-    assert 'Back to Tenant Registry' not in detail
-    assert 'tenant-registry-actions-' not in detail
-    assert '<footer ' not in detail
+    assert 'tenant_detail_tab_urls' not in common
+    assert 'requested_view' not in common
+    assert 'tenant_detail_view' not in common
+    assert 'view=context[' not in common
     assert '<dialog' not in detail
 
 
+def test_page_shows_all_governed_sections_in_authoritative_order():
+    detail = read(DETAIL)
+    labels = (
+        'id="tenant-detail-snapshot"',
+        'id="tenant-release-governance"',
+        'id="tenant-native-handback"',
+        'id="tenant-namespace-attachment"',
+        'id="tenant-provider-authority"',
+        'id="tenant-lifecycle-actions"',
+    )
+    assert all(label in detail for label in labels)
+    assert [detail.index(label) for label in labels] == sorted(
+        detail.index(label) for label in labels
+    )
+    assert "tenant.ownership_status == 'adopted'" in detail
+    assert "tenant.provider_key == 'native_kubernetes'" in detail
+    assert "tenant.provider_key == 'capsule'" in detail
+    assert "current_user.has_permission('clusters.manage')" in detail
 
-def test_global_navigation_sets_tenants_active_and_correct_detail_breadcrumb():
-    capability = read('app/common/workspace_navigation.py')
-    sidebar = read('app/templates/components/navigation/tenant_menu.html')
-    breadcrumb = read('app/common/navigation.py')
-    assert "'tenant.tenant_detail': 'tenants'" in capability
-    assert "'tenant.tenant_detail'" in sidebar
-    assert "'tenant.tenant_detail': 'Tenant Details'" in breadcrumb
-    routes = read('app/kubernetes/tenant/routes.py')
-    assert "build_navigation_breadcrumb('tenant.tenant_detail')" in routes
-    assert "breadcrumb[-1]['label'] = context['row']['tenant'].name" in routes
-    assert "context['navigation_breadcrumb'] = breadcrumb" in routes
-    detail_branch = breadcrumb.split("elif endpoint == 'tenant.tenant_detail':", 1)[1].split(
-        "elif endpoint.startswith", 1
+
+def test_release_evidence_is_readable_full_width_without_nested_scroll():
+    detail = read(DETAIL)
+    release = detail.split('id="tenant-release-governance"', 1)[1].split(
+        'id="tenant-native-handback"', 1
     )[0]
-    assert "BreadcrumbItem('Kubernetes', 'boxes')" in detail_branch
-    assert "BreadcrumbItem('Tenant')" in detail_branch
-    assert "BreadcrumbItem('Tenants')" in detail_branch
-    assert "BreadcrumbItem('Tenant Details')" in detail_branch
+    for label in (
+        '01 · Preflight and blockers',
+        '02 · Provider handoff scope',
+        '03 · Independent approval and handoff',
+        '04 · Verify and finalize',
+        'aria-label="Release blockers"',
+        'aria-label="Provider handoff inventory"',
+        'aria-label="Release governance workflow"',
+    ):
+        assert label in release
+    assert 'divide-y divide-outline-subtle' in release
+    assert 'max-h-72' not in release
+    assert 'overflow-y-auto' not in release
+    assert 'text-sm leading-6' in release
+    assert release.count('<form ') == 11
 
 
-
-def test_detail_route_reads_one_exact_tenant_without_live_provider_or_filter_leak():
-    routes = read('app/kubernetes/tenant/routes.py')
-    common = read('app/kubernetes/tenant/route_common.py')
-    context = read('app/kubernetes/tenant/registry_context.py')
-    assert "@tenant_bp.get('/tenants/<string:tenant_id>/manage')" in routes
-    assert "@any_permission_required('tenant.view', 'tenant.manage')" in routes
-    assert "def tenant_detail(tenant_id: str):" in routes
-    assert "_tenant_detail_context(tenant_id)" in routes
-    assert "get_tenant_registry_context(tenant_id=tenant_id, per_page=1)" in common
-    assert "if not rows:" in common
-    assert "abort(404)" in common
-    assert "query.filter(Tenant.id == tenant_id)" in context
-    assert "include_decommission_preflight: bool = True" in context
-    assert "runtime_adapter.build_client(" not in common
-    assert "runtime_adapter.build_client(" not in context
-
-
-def test_mutation_forms_refresh_selected_detail_and_deliver_normal_toast_oob():
+def test_exact_governance_forms_return_to_same_page_and_global_toast():
     detail = read(DETAIL)
     common = read('app/kubernetes/tenant/route_common.py')
     toast = read('app/templates/components/operational_toast.html')
     assert detail.count('<form ') == 14
     assert detail.count('name="csrf_token"') == 14
     assert detail.count('name="tenant_detail_id"') == 14
-    assert detail.count('name="tenant_detail_view"') == 14
     assert detail.count('registry_state.items()') == 14
     assert detail.count('hx-target="#tenant-management-detail"') == 14
     assert detail.count('hx-select="#tenant-management-detail"') == 14
     assert detail.count('hx-post=') == 14
+    assert 'name="tenant_detail_view"' not in detail
     assert "detail_id = str(request.form.get('tenant_detail_id')" in common
     assert "'kubernetes/tenant/partials/_tenant_management_detail.html'" in common
     assert "'tenant.tenant_detail', tenant_id=detail_id" in common
-    assert "toast_oob=True" in common
+    assert 'toast_oob=True' in common
     assert 'beforeend:#operational-toast-stack' in toast
     assert 'data-kaori-native-dialog' not in detail
-    assert "htmx:beforeSwap" not in detail
 
 
-def test_detail_keeps_governed_workflows_without_reimplementing_endpoints():
+def test_service_endpoints_and_independent_approval_remain_unchanged():
     detail = read(DETAIL)
     for name in (
         'review_tenant_release_route',
@@ -173,99 +172,41 @@ def test_detail_keeps_governed_workflows_without_reimplementing_endpoints():
         'decommission_tenant_route',
     ):
         assert name in detail
-    sections = (
-        'aria-label="Release governance"',
-        'aria-label="Namespace attachment"',
-        'aria-label="Provider authority"',
-        'aria-label="Tenant lifecycle actions"',
-    )
-    assert all(section in detail for section in sections)
-    assert [detail.index(section) for section in sections] == sorted(
-        detail.index(section) for section in sections
-    )
-    assert 'data-release-handoff-approval' in detail
     assert 'Acknowledge as Independent Reviewer' in detail
     assert 'handoff_plan.requested_by != current_user.id' in detail
     assert 'row.release_preflight.blockers' in detail
     assert 'data-capsule-namespace-attach' in detail
     assert 'name="namespace_uid"' in detail
     assert 'name="namespace_resource_version"' in detail
-
-
-def test_decommission_keeps_dedicated_short_confirmation_modal():
-    detail = read(DETAIL)
     assert "destructive_modal.render('tenant-decommission-modal'" in detail
     assert 'data-destructive-modal-open' in detail
-    assert 'data-destructive-submit-button-id=' in detail
-    assert 'name="csrf_token"' in detail
-    assert 'name="tenant_detail_id"' in detail
-    assert '<dialog' not in detail
-    assert 'data-kaori-dialog-close' not in detail
-
-
-def test_detail_is_read_only_for_nonmanagers_and_no_secret_bearers():
-    detail = read(DETAIL)
-    assert 'if not can_manage' in detail
-    assert "can_manage and current_user.has_permission('integrations.manage')" in detail
-    assert "current_user.has_permission('clusters.manage')" in detail
     assert 'name="kubernetes_successor_token"' not in detail
-    assert 'client-key-data' not in detail
-    assert 'private_key' not in detail
-    assert 'csrf_token()' in detail
 
 
-def test_tenant_detail_templates_parse_under_real_jinja_parser():
-    env = Environment(autoescape=True)
-    for path in (REGISTRY, PAGE, DETAIL):
-        env.parse(read(path))
-
-
-
-def test_detail_hero_refreshes_with_governance_htmx_and_global_toast():
-    page = read(PAGE)
-    detail = read(DETAIL)
-    common = read('app/kubernetes/tenant/route_common.py')
-    hero = detail.index('data-kaori-hero-profile="transactional-admin"')
-    summary = detail.index('id="tenant-detail-snapshot"')
-    release = detail.index('aria-label="Release governance"')
-    assert hero < summary < release
-    assert detail.index('id="tenant-management-detail"') < hero
-    assert "data-kaori-tenant-detail-page" in page
-    assert "hx-target=\"#tenant-management-detail\"" in detail
-    assert "hx-select=\"#tenant-management-detail\"" in detail
-    assert "'kubernetes/tenant/partials/_tenant_management_detail.html'" in common
-    assert "toast_oob=True" in common
-    assert 'data-kaori-native-dialog' not in detail
-
-
-
-def test_tab_routes_are_permission_scoped_and_preserve_fallback_state():
+def test_detail_get_reads_one_exact_committed_tenant_without_provider_request():
     routes = read('app/kubernetes/tenant/routes.py')
     common = read('app/kubernetes/tenant/route_common.py')
+    context = read('app/kubernetes/tenant/registry_context.py')
+    assert "@tenant_bp.get('/tenants/<string:tenant_id>/manage')" in routes
+    assert "@any_permission_required('tenant.view', 'tenant.manage')" in routes
+    assert "def tenant_detail(tenant_id: str):" in routes
+    assert '_tenant_detail_context(tenant_id)' in routes
+    assert 'get_tenant_registry_context(tenant_id=tenant_id, per_page=1)' in common
+    assert 'if not rows:' in common
+    assert 'abort(404)' in common
+    assert 'query.filter(Tenant.id == tenant_id)' in context
+    assert 'runtime_adapter.build_client(' not in common
+    assert 'runtime_adapter.build_client(' not in context
+
+
+def test_independent_work_inbox_deep_link_targets_release_section():
     inbox = read('app/kubernetes/tenant/approval_inbox.py')
-    assert "views: list[tuple[str, str, str]] = [('overview', 'Overview', 'layout-dashboard')]" in common
-    assert "current_user.has_permission('clusters.manage')" in common
-    assert "'tenant_detail_tab_urls'" in common
-    assert "'active_tenant_detail_view'" in common
-    assert "requested_view if requested_view in allowed_views else 'overview'" in common
-    assert "request.values.get('tenant_detail_view')" in common
-    assert "view=context['active_tenant_detail_view']" in common
-    assert "request.headers.get('HX-Request') == 'true'" in routes
-    assert "kubernetes/tenant/partials/_tenant_management_detail.html" in routes
-    assert 'view="release"' in inbox
+    assert '"tenant.tenant_detail"' in inbox
+    assert '_anchor="tenant-release-governance"' in inbox
+    assert 'view="release"' not in inbox
 
 
-def test_release_readability_presents_four_flat_governed_steps():
-    detail = read(DETAIL)
-    release = detail.split("{% elif active_tenant_detail_view == 'release' %}", 1)[1].split(
-        "{% elif active_tenant_detail_view == 'handback' %}", 1
-    )[0]
-    assert '01 · Preflight and blockers' in release
-    assert '02 · Provider handoff scope' in release
-    assert '03 · Independent approval and handoff' in release
-    assert '04 · Verify and finalize' in release
-    assert 'aria-label="Release blockers"' in release
-    assert 'aria-label="Provider handoff inventory"' in release
-    assert 'max-h-72' not in release
-    assert 'bg-surface-elevated p-4' not in release
-    assert release.count('<form ') == 11
+def test_tenant_templates_parse_under_jinja2():
+    environment = Environment(autoescape=True)
+    for path in (REGISTRY, PAGE, DETAIL):
+        environment.parse(read(path))

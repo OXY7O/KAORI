@@ -344,14 +344,6 @@ def tenant_detail(tenant_id: str):
     breadcrumb = build_navigation_breadcrumb('tenant.tenant_detail')
     breadcrumb[-1]['label'] = context['row']['tenant'].name
     context['navigation_breadcrumb'] = breadcrumb
-    if request.headers.get('HX-Request') == 'true':
-        response = make_response(render_template(
-            'kubernetes/tenant/partials/_tenant_management_detail.html',
-            can_manage=current_user.has_permission('tenant.manage'),
-            **context,
-        ))
-        response.headers['Cache-Control'] = 'no-store, max-age=0'
-        return response
     return render_template(
         'kubernetes/tenant/tenant_detail.html',
         tenant_page='tenants',

@@ -1,209 +1,119 @@
 {% import "components/page_hero.html" as page_hero %}
-{% import "components/content_tabs.html" as content_tabs %}
+{% import "components/section_intro.html" as section_intro %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/destructive_confirmation_modal.html" as destructive_modal %}
 {% set tenant = row.tenant %}
 <div id="tenant-management-detail"
-     class="min-w-0 space-y-4 sm:space-y-5"
+     class="relative min-w-0 space-y-6"
      data-tenant-management-detail="{{ tenant.id }}"
-     data-kaori-tenant-detail-workspace
-     data-tenant-active-view="{{ active_tenant_detail_view }}">
+     data-kaori-tenant-detail-workspace>
+    {# HTMX indicators fade by opacity, not display. Keep it outside normal
+       flow so an invisible indicator cannot create a false gap above the Hero. #}
     <div id="tenant-management-loading"
-         class="htmx-indicator text-sm text-content-muted"
-         role="status" aria-live="polite">Updating Tenant workspace…</div>
+         class="htmx-indicator pointer-events-none absolute right-3 top-3 z-10 rounded-lg border border-outline-subtle bg-surface-card px-3 py-2 text-xs font-medium text-content-secondary shadow-sm"
+         role="status" aria-live="polite">Updating Tenant Management…</div>
 
-    <section class="{{ page_hero.shell_classes() }} !min-h-0 !p-4 sm:!p-5"
+    {# Canonical KAORI Hero sizing/layout; the capability navbar and Hero use the shared layout's spacing. #}
+    <section class="{{ page_hero.shell_classes() }}"
              aria-labelledby="tenant-detail-{{ tenant.id }}-title"
              data-kaori-hero-profile="transactional-admin"
              data-kaori-hero-state="normal">
-        <div class="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div class="min-w-0">
-                <p class="text-xs font-semibold uppercase tracking-wide text-brand-foreground-muted">Kubernetes / Tenant</p>
-                <div class="mt-2 flex flex-wrap items-center gap-2.5">
+        <div class="{{ page_hero.layout_classes() }}">
+            <div class="{{ page_hero.content_classes() }}">
+                {% call page_hero.intro('building-2', 'Kubernetes Tenant', 'building-2') %}
                     <h1 id="tenant-detail-{{ tenant.id }}-title"
-                        class="min-w-0 break-words text-2xl font-bold tracking-tight text-brand-foreground sm:text-3xl">
-                        {{ tenant.name }}
-                    </h1>
-                    {{ page_hero.context_status_badge(
-                        tenant.lifecycle_status|replace('_', ' ')|title,
-                        'normal' if tenant.lifecycle_status == 'ready'
-                        else ('critical' if tenant.lifecycle_status in ['degraded', 'decommissioning'] else 'unknown')
-                    ) }}
-                </div>
-                <p class="mt-2 break-words text-sm leading-6 text-brand-foreground-muted">
-                    {{ row.cluster.name if row.cluster else 'Cluster unavailable' }}
-                    <span aria-hidden="true" class="px-1">·</span>
-                    {{ tenant.provider_key|replace('_', ' ')|title }}
-                    <span aria-hidden="true" class="px-1">·</span>
-                    Generation {{ tenant.generation }}
-                </p>
+                        class="{{ page_hero.title_classes() }}">{{ tenant.name }}</h1>
+                    <p class="mt-2 {{ page_hero.description_classes() }}">
+                        Manage Tenant ownership, provider handoff, Release and lifecycle
+                        with committed evidence and independent approval.
+                    </p>
+                    {{ page_hero.persistent_metadata([
+                        ('server', row.cluster.name if row.cluster else 'Cluster unavailable'),
+                        ('boxes', tenant.provider_key|replace('_', ' ')|title),
+                        ('git-branch', 'Generation ' ~ tenant.generation)
+                    ]) }}
+                {% endcall %}
             </div>
-            <a href="{{ return_to_registry_url }}"
-               class="{{ page_hero.primary_action_classes() }} !h-9 w-full shrink-0 sm:w-auto"
-               aria-label="Back to filtered Tenant Registry">
-                <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
-                Back to Registry
-            </a>
+            <aside class="{{ page_hero.aside_classes() }}"
+                   aria-label="Tenant detail navigation">
+                {# aside_classes expands its direct child to full height on xl;
+                   keep that behavior on a wrapper, never on the Back button. #}
+                <div class="flex items-center justify-start xl:justify-end">
+                    <a href="{{ return_to_registry_url }}"
+                       class="{{ page_hero.primary_action_classes() }}"
+                       aria-label="Back to filtered Tenant Registry">
+                        <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
+                        Back to Registry
+                    </a>
+                </div>
+            </aside>
         </div>
     </section>
 
-    <dl id="tenant-detail-snapshot"
-        class="grid min-w-0 grid-cols-2 gap-px overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle sm:grid-cols-4"
-        aria-label="Tenant committed facts">
-        <div class="min-w-0 bg-surface-card px-4 py-3">
-            <dt class="text-xs font-medium text-content-muted">Namespaces</dt>
-            <dd class="mt-1 text-base font-semibold tabular-nums text-content-primary">{{ row.namespace_count }} active</dd>
+    <section id="tenant-detail-snapshot" class="min-w-0 space-y-4"
+             aria-labelledby="tenant-detail-overview-heading">
+        {{ section_intro.render(
+            'Tenant Overview',
+            'Current identity, ownership and allocation scope from committed KAORI state.',
+            'tenant-detail-overview-heading'
+        ) }}
+        <div class="rounded-xl border border-outline-subtle bg-surface-card px-5 py-4 sm:px-6">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-outline-subtle pb-4">
+                <h3 class="text-base font-semibold text-content-primary">Managed resource scope</h3>
+                <p class="text-sm text-content-secondary">
+                    {{ row.namespace_count }} active Namespace{{ '' if row.namespace_count == 1 else 's' }}
+                    · {{ row.environments|length }} environment{{ '' if row.environments|length == 1 else 's' }}
+                </p>
+            </div>
+            <dl class="grid min-w-0 gap-x-8 gap-y-4 pt-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div class="min-w-0">
+                    <dt class="text-sm text-content-muted">Cluster</dt>
+                    <dd class="mt-1 break-words text-sm font-semibold text-content-primary">
+                        {{ row.cluster.name if row.cluster else 'Cluster unavailable' }}
+                    </dd>
+                </div>
+                <div class="min-w-0">
+                    <dt class="text-sm text-content-muted">Ownership</dt>
+                    <dd class="mt-1 text-sm font-semibold text-content-primary">
+                        {{ tenant.ownership_status|replace('_', ' ')|title }}
+                    </dd>
+                </div>
+                <div class="min-w-0">
+                    <dt class="text-sm text-content-muted">Reconciliation authority</dt>
+                    <dd class="mt-1 break-words text-sm font-semibold text-content-primary">
+                        {{ tenant.reconciliation_authority|replace('_', ' ')|title }}
+                    </dd>
+                </div>
+            </dl>
             {% set historical_namespace_count = row.namespace_history_count - row.namespace_count %}
             {% if historical_namespace_count > 0 %}
-                <p class="mt-1 text-xs text-content-muted">
-                    {{ historical_namespace_count }} historical Namespace record{{ '' if historical_namespace_count == 1 else 's' }} retained
+                <p class="mt-4 border-t border-outline-subtle pt-3 text-sm text-content-muted">
+                    {{ historical_namespace_count }} historical Namespace record{{ '' if historical_namespace_count == 1 else 's' }} retained for audit and generation lineage.
                 </p>
             {% endif %}
         </div>
-        <div class="min-w-0 bg-surface-card px-4 py-3">
-            <dt class="text-xs font-medium text-content-muted">Environments</dt>
-            <dd class="mt-1 text-base font-semibold tabular-nums text-content-primary">{{ row.environments|length }}</dd>
-        </div>
-        <div class="min-w-0 bg-surface-card px-4 py-3">
-            <dt class="text-xs font-medium text-content-muted">Ownership</dt>
-            <dd class="mt-1 break-words text-sm font-semibold text-content-primary">{{ tenant.ownership_status|replace('_', ' ')|title }}</dd>
-        </div>
-        <div class="min-w-0 bg-surface-card px-4 py-3">
-            <dt class="text-xs font-medium text-content-muted">Reconciliation</dt>
-            <dd class="mt-1 break-words text-sm font-semibold text-content-primary">{{ tenant.reconciliation_authority|replace('_', ' ')|title }}</dd>
-        </div>
-    </dl>
+    </section>
 
-    {{ content_tabs.render_links(
-        'tenant-detail',
-        tenant_detail_tabs,
-        active_tenant_detail_view,
-        'Tenant Management Workspaces',
-        embedded=false,
-        data_namespace='tenant-detail',
-        hx_target='#tenant-management-detail',
-        hx_select='#tenant-management-detail',
-        hx_swap='outerHTML show:none focus-scroll:false',
-        hx_push_url='true',
-        hx_indicator='#tenant-management-loading',
-        nowrap=true,
-        hx_sync='this:replace'
-    ) }}
+    <div class="min-w-0 space-y-6" role="region" aria-label="Tenant management sections">
 
-    <div class="min-w-0" role="region" aria-label="Tenant management sections">
-    {% if active_tenant_detail_view == 'overview' %}
-        <section class="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1.25fr)_minmax(18rem,0.75fr)]"
-                 aria-label="Tenant overview">
-            <div class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-5 sm:p-6">
-                <div class="flex items-start gap-3">
-                    <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                        <i data-lucide="shield-check" class="h-5 w-5" aria-hidden="true"></i>
-                    </span>
-                    <div class="min-w-0">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary">Tenant governance</p>
-                        <h2 class="mt-1 text-lg font-semibold text-content-primary">Current administrative state</h2>
-                        <p class="mt-2 text-sm leading-6 text-content-secondary">
-                            This Tenant is {{ tenant.lifecycle_status|replace('_', ' ')|title }} and
-                            {{ tenant.ownership_status|replace('_', ' ')|title }}.
-                            Provider objects remain authoritative in Kubernetes or Capsule;
-                            KAORI presents committed governance and lifecycle evidence.
-                        </p>
-                    </div>
-                </div>
-                <dl class="mt-5 divide-y divide-outline-subtle border-t border-outline-subtle">
-                    <div class="grid gap-1 py-3 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-4">
-                        <dt class="text-sm text-content-muted">Provider</dt>
-                        <dd class="break-words text-sm font-semibold text-content-primary">{{ tenant.provider_key|replace('_', ' ')|title }}</dd>
-                    </div>
-                    <div class="grid gap-1 py-3 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-4">
-                        <dt class="text-sm text-content-muted">Cluster</dt>
-                        <dd class="break-words text-sm font-semibold text-content-primary">{{ row.cluster.name if row.cluster else 'Cluster unavailable' }}</dd>
-                    </div>
-                    <div class="grid gap-1 py-3 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-4">
-                        <dt class="text-sm text-content-muted">Current generation</dt>
-                        <dd class="text-sm font-semibold tabular-nums text-content-primary">{{ tenant.generation }}</dd>
-                    </div>
-                </dl>
-                <a href="{{ tenant_detail_tab_urls['provider'] }}"
-                   class="mt-4 inline-flex min-h-10 items-center gap-2 rounded-lg border border-outline-default px-4 text-sm font-semibold text-kaori-primary hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                    Review provider authority
-                    <i data-lucide="arrow-right" class="h-4 w-4" aria-hidden="true"></i>
-                </a>
-            </div>
-            <div class="min-w-0 space-y-4">
-                <section class="rounded-xl border border-outline-subtle bg-surface-card p-5">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary">Next step</p>
-                    {% if tenant_detail_tab_urls.get('release') %}
-                        <h2 class="mt-2 text-lg font-semibold text-content-primary">Review Release readiness</h2>
-                        <p class="mt-2 text-sm leading-6 text-content-secondary">
-                            Inspect dependencies, provider handoff scope and independent approval
-                            before any governance Release.
-                        </p>
-                        <a href="{{ tenant_detail_tab_urls['release'] }}"
-                           class="mt-4 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-kaori-soft px-4 text-sm font-semibold text-kaori-primary hover:bg-kaori-soft/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                            Open Release workspace
-                            <i data-lucide="arrow-right" class="h-4 w-4" aria-hidden="true"></i>
-                        </a>
-                    {% elif tenant_detail_tab_urls.get('handback') %}
-                        <h2 class="mt-2 text-lg font-semibold text-content-primary">Review handback eligibility</h2>
-                        <p class="mt-2 text-sm leading-6 text-content-secondary">
-                            Released resources require a new explicit Platform Admin
-                            handback before governed Re-adoption.
-                        </p>
-                        <a href="{{ tenant_detail_tab_urls['handback'] }}"
-                           class="mt-4 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-kaori-soft px-4 text-sm font-semibold text-kaori-primary hover:bg-kaori-soft/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                            Open Handback workspace
-                            <i data-lucide="arrow-right" class="h-4 w-4" aria-hidden="true"></i>
-                        </a>
-                    {% elif tenant_detail_tab_urls.get('attachment') %}
-                        <h2 class="mt-2 text-lg font-semibold text-content-primary">Attach a Namespace</h2>
-                        <p class="mt-2 text-sm leading-6 text-content-secondary">
-                            Link a discovered Capsule Namespace only after identity and ownership checks.
-                        </p>
-                        <a href="{{ tenant_detail_tab_urls['attachment'] }}"
-                           class="mt-4 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-kaori-soft px-4 text-sm font-semibold text-kaori-primary hover:bg-kaori-soft/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                            Open Attachment workspace
-                            <i data-lucide="arrow-right" class="h-4 w-4" aria-hidden="true"></i>
-                        </a>
-                    {% else %}
-                        <h2 class="mt-2 text-lg font-semibold text-content-primary">Committed state is available</h2>
-                        <p class="mt-2 text-sm leading-6 text-content-secondary">
-                            Review provider evidence and lifecycle history. Administrative
-                            actions require the corresponding KAORI permissions.
-                        </p>
-                    {% endif %}
-                </section>
-                <section class="rounded-xl border border-outline-subtle bg-surface-card p-5">
-                    <div class="flex items-center gap-2 text-sm font-semibold text-content-primary">
-                        <i data-lucide="database-zap" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
-                        Evidence boundary
-                    </div>
-                    <p class="mt-2 text-sm leading-6 text-content-secondary">
-                        This page reads committed KAORI state. Live provider validation
-                        occurs only in governed operator workflows.
-                    </p>
-                </section>
-            </div>
-        </section>
-    {% elif active_tenant_detail_view == 'release' %}
 {% if can_manage and current_user.has_permission('integrations.manage')
                       and current_user.has_permission('clusters.manage')
                       and tenant.ownership_status == 'adopted' and tenant.lifecycle_status == 'ready' %}
-                    <section id="tenant-release-governance" class="min-w-0 scroll-mt-24 space-y-5" aria-label="Release governance">
-                        <div class="flex items-start gap-3">
+                    <section id="tenant-release-governance" class="min-w-0 scroll-mt-24 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card" aria-label="Release governance">
+                        <div class="flex items-start gap-3 px-5 pt-5 sm:px-6 sm:pt-6">
                             <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
                                 <i data-lucide="clipboard-check" class="h-4 w-4"></i>
                             </span>
                             <div class="min-w-0">
                                 <h2 class="text-xl font-semibold tracking-tight text-content-primary">Release Governance</h2>
                                 <p class="mt-1 text-sm leading-6 text-content-secondary">
-                                    Review dependencies and provider handoff evidence before releasing governance.
+                                    Check dependencies, preserve existing Kubernetes resources and confirm the independently approved handoff before changing Tenant governance.
                                 </p>
                             </div>
                         </div>
-                        <div class="space-y-4" aria-label="Release governance workflow">
+                        <div class="mt-5 divide-y divide-outline-subtle border-t border-outline-subtle" aria-label="Release governance workflow">
                             {# The release review is an action; evidence and handoff are stable workflow steps, not tabs. #}
-                            <section class="min-w-0 space-y-4 rounded-xl border border-outline-subtle bg-surface-card p-4 shadow-sm sm:p-5"
+                            <section class="min-w-0 space-y-4 px-5 py-5 sm:px-6 sm:py-6"
                                      aria-label="Release readiness">
                                 <div class="flex flex-wrap items-start justify-between gap-3">
                                     <div class="min-w-0 flex-1">
@@ -222,7 +132,6 @@
                                               hx-indicator="#tenant-management-loading">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
-                                            <input type="hidden" name="tenant_detail_view" value="{{ active_tenant_detail_view }}">
                                             {% for state_key, state_value in registry_state.items() %}
                                                 <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
                                             {% endfor %}
@@ -285,11 +194,11 @@
                                     </div>
                                 {% endif %}
                             </section>
-                            <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4 shadow-sm sm:p-5"
+                            <section class="min-w-0 px-5 py-5 sm:px-6 sm:py-6"
                                      aria-label="Provider handoff inventory">
                                 <div class="flex flex-wrap items-start justify-between gap-3">
                                     <div class="flex min-w-0 items-start gap-3">
-                                        <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-card text-xs font-semibold text-kaori-primary" aria-hidden="true">1</span>
+                                        
                                         <div class="min-w-0">
                                             <h4 class="text-base font-semibold text-content-primary">02 · Provider handoff scope</h4>
                                             <p class="mt-1 text-sm leading-6 text-content-secondary">
@@ -344,15 +253,15 @@
                                     </p>
                                 {% endif %}
                             </section>
-                            <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4 shadow-sm sm:p-5"
+                            <section class="min-w-0 px-5 py-5 sm:px-6 sm:py-6"
                                      aria-label="Governed handoff workflow">
                                 <div class="flex flex-wrap items-start justify-between gap-3">
                                     <div class="flex min-w-0 items-start gap-3">
-                                        <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-card text-xs font-semibold text-kaori-primary" aria-hidden="true">2</span>
+                                        
                                         <div class="min-w-0">
                                             <h4 class="text-base font-semibold text-content-primary">03 · Independent approval and handoff</h4>
                                             <p class="mt-1 text-sm leading-6 text-content-secondary">
-                                                Prepare a successor record and obtain independent acknowledgment.
+                                                Prepare a provider governance plan, then obtain independent Platform Admin approval.
                                             </p>
                                         </div>
                                     </div>
@@ -399,7 +308,6 @@
                                               class="space-y-2">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
-                                            <input type="hidden" name="tenant_detail_view" value="{{ active_tenant_detail_view }}">
                                             {% for state_key, state_value in registry_state.items() %}
                                                 <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
                                             {% endfor %}
@@ -490,7 +398,6 @@
                                                           class="mt-2 space-y-2 rounded-lg border border-outline-subtle bg-surface-card p-2">
                                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
-                                            <input type="hidden" name="tenant_detail_view" value="{{ active_tenant_detail_view }}">
                                             {% for state_key, state_value in registry_state.items() %}
                                                 <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
                                             {% endfor %}
@@ -539,7 +446,6 @@
                                                               class="mt-2 space-y-2 rounded-lg border border-outline-subtle bg-surface-card p-3">
                                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
-                                            <input type="hidden" name="tenant_detail_view" value="{{ active_tenant_detail_view }}">
                                             {% for state_key, state_value in registry_state.items() %}
                                                 <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
                                             {% endfor %}
@@ -577,7 +483,6 @@
                                                           class="mt-2 space-y-2 rounded-lg border border-outline-subtle bg-surface-card p-2">
                                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
-                                            <input type="hidden" name="tenant_detail_view" value="{{ active_tenant_detail_view }}">
                                             {% for state_key, state_value in registry_state.items() %}
                                                 <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
                                             {% endfor %}
@@ -634,7 +539,6 @@
                                                               class="mt-2 space-y-2 rounded-lg border border-outline-subtle bg-surface-card p-3">
                                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
-                                            <input type="hidden" name="tenant_detail_view" value="{{ active_tenant_detail_view }}">
                                             {% for state_key, state_value in registry_state.items() %}
                                                 <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
                                             {% endfor %}
@@ -676,7 +580,6 @@
                                                           class="mt-2 space-y-2 rounded-lg border border-outline-subtle bg-surface-card p-2">
                                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
-                                            <input type="hidden" name="tenant_detail_view" value="{{ active_tenant_detail_view }}">
                                             {% for state_key, state_value in registry_state.items() %}
                                                 <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
                                             {% endfor %}
@@ -742,7 +645,6 @@
                                                       class="space-y-2 border-t border-outline-subtle pt-3">
                                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
-                                            <input type="hidden" name="tenant_detail_view" value="{{ active_tenant_detail_view }}">
                                             {% for state_key, state_value in registry_state.items() %}
                                                 <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
                                             {% endfor %}
@@ -789,10 +691,10 @@
                                     </p>
                                 {% endif %}
                             </section>
-                            <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4 shadow-sm sm:p-5"
+                            <section class="min-w-0 px-5 py-5 sm:px-6 sm:py-6"
                                      aria-label="Independent verification and release">
                                 <div class="flex min-w-0 items-start gap-3">
-                                    <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-card text-xs font-semibold text-kaori-primary" aria-hidden="true">3</span>
+                                    
                                     <div class="min-w-0">
                                         <h4 class="text-base font-semibold text-content-primary">04 · Verify and finalize</h4>
                                         <p class="mt-1 text-sm leading-6 text-content-secondary">
@@ -856,7 +758,6 @@
                                                           class="space-y-2">
                                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
-                                            <input type="hidden" name="tenant_detail_view" value="{{ active_tenant_detail_view }}">
                                             {% for state_key, state_value in registry_state.items() %}
                                                 <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
                                             {% endfor %}
@@ -904,7 +805,6 @@
                                           class="mt-4 flex min-w-0 flex-col gap-3 border-t border-outline-subtle pt-4">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
-                                            <input type="hidden" name="tenant_detail_view" value="{{ active_tenant_detail_view }}">
                                             {% for state_key, state_value in registry_state.items() %}
                                                 <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
                                             {% endfor %}
@@ -936,7 +836,6 @@
                                           class="mt-4 space-y-3 rounded-lg border border-outline-subtle bg-surface-card p-3">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
-                                            <input type="hidden" name="tenant_detail_view" value="{{ active_tenant_detail_view }}">
                                             {% for state_key, state_value in registry_state.items() %}
                                                 <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
                                             {% endfor %}
@@ -970,20 +869,19 @@
                         </div>
                         <p class="mt-4 flex items-start gap-2 border-t border-outline-subtle pt-4 text-sm leading-6 text-content-muted">
                             <i data-lucide="shield-check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
-                            Internal approval or an external reference does not prove successor acceptance.
-                            Provider ownership remains authoritative.
+                            Independent approval or an external reference alone cannot authorize provider handoff.
+                            Explicit Platform Admin acceptance and authoritative provider verification are still required.
                         </p>
                     </section>
                 {% endif %}
-    {% elif active_tenant_detail_view == 'handback' %}
-    {% if can_manage and current_user.has_permission('integrations.manage')
+{% if can_manage and current_user.has_permission('integrations.manage')
                       and current_user.has_permission('clusters.manage')
                       and tenant.provider_key == 'native_kubernetes' and tenant.lifecycle_status == 'released'
                       and tenant.provider_evidence_json and tenant.provider_evidence_json.release_governance
                       and tenant.provider_evidence_json.release_governance.release_mode == 'managed_handoff' %}
                     {% set released_native = tenant.provider_evidence_json.release_governance %}
                     {% set handback_receipt = row.release_successor_handback %}
-                    <section id="tenant-native-handback" class="min-w-0 scroll-mt-24 rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5"
+                    <section id="tenant-native-handback" class="min-w-0 scroll-mt-24 rounded-xl border border-outline-subtle bg-surface-card p-5 sm:p-6"
                              aria-label="Native successor handback">
                         <div class="flex items-start gap-3">
                             <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
@@ -1022,7 +920,6 @@
                                   class="mt-4 space-y-3 rounded-lg border border-outline-subtle bg-surface-elevated p-3">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
-                                            <input type="hidden" name="tenant_detail_view" value="{{ active_tenant_detail_view }}">
                                             {% for state_key, state_value in registry_state.items() %}
                                                 <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
                                             {% endfor %}
@@ -1048,10 +945,9 @@
                         {% endif %}
                     </section>
                 {% endif %}
-    {% elif active_tenant_detail_view == 'attachment' %}
-    {% if can_manage and tenant.provider_key == 'capsule' and tenant.provider_state == 'capsule'
+{% if can_manage and tenant.provider_key == 'capsule' and tenant.provider_state == 'capsule'
                       and tenant.lifecycle_status == 'ready' and row.capsule_environment_options %}
-                    <section id="tenant-namespace-attachment" class="min-w-0 scroll-mt-24 rounded-xl border border-outline-subtle bg-surface-card p-4" aria-label="Namespace attachment">
+                    <section id="tenant-namespace-attachment" class="min-w-0 scroll-mt-24 rounded-xl border border-outline-subtle bg-surface-card p-5 sm:p-6" aria-label="Namespace attachment">
                         <div class="flex items-start gap-3">
                             <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
                                 <i data-lucide="link-2" class="h-4 w-4"></i>
@@ -1078,7 +974,6 @@
                                               class="mt-4 grid min-w-0 gap-3 rounded-xl border border-outline-subtle bg-surface-elevated p-3.5 sm:grid-cols-2">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
-                                            <input type="hidden" name="tenant_detail_view" value="{{ active_tenant_detail_view }}">
                                             {% for state_key, state_value in registry_state.items() %}
                                                 <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
                                             {% endfor %}
@@ -1128,8 +1023,7 @@
                         </p>
                     </section>
                 {% endif %}
-    {% elif active_tenant_detail_view == 'provider' %}
-    <section id="tenant-provider-authority" class="min-w-0 scroll-mt-24 rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5"
+<section id="tenant-provider-authority" class="min-w-0 scroll-mt-24 rounded-xl border border-outline-subtle bg-surface-card p-5 sm:p-6"
                              aria-label="Provider authority">
                         <div class="flex items-center gap-2">
                             <i data-lucide="shield-check" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
@@ -1153,9 +1047,8 @@
                             Kubernetes or Capsule enforces provider state. KAORI presents committed governance evidence.
                         </p>
                     </section>
-    {% elif active_tenant_detail_view == 'lifecycle' %}
-    {% set decommission = row.decommission_preflight %}
-                <section id="tenant-lifecycle-actions" class="min-w-0 scroll-mt-24 rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5" aria-label="Tenant lifecycle actions">
+{% set decommission = row.decommission_preflight %}
+                <section id="tenant-lifecycle-actions" class="min-w-0 scroll-mt-24 rounded-xl border border-outline-subtle bg-surface-card p-5 sm:p-6" aria-label="Tenant lifecycle actions">
                     <div class="flex flex-wrap items-start justify-between gap-3">
                         <div class="flex min-w-0 flex-1 items-start gap-3">
                             <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-status-warning-soft text-status-warning-text" aria-hidden="true">
@@ -1164,7 +1057,7 @@
                             <div class="min-w-0">
                                 <h3 class="text-sm font-semibold text-content-primary">Lifecycle Actions</h3>
                                 <p class="mt-1 text-xs leading-5 text-content-secondary">
-                                    Decommission is destructive. Release preserves provider resources.
+                                    Release preserves provider resources and audit lineage. Decommission removes governed resources only after explicit safety checks.
                                 </p>
                             </div>
                         </div>
@@ -1187,7 +1080,6 @@
                                           class="inline-flex">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
-                                            <input type="hidden" name="tenant_detail_view" value="{{ active_tenant_detail_view }}">
                                             {% for state_key, state_value in registry_state.items() %}
                                                 <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
                                             {% endfor %}
@@ -1237,9 +1129,8 @@
                         </div>
                     {% endif %}
                 </section>
-    {% endif %}
     </div>
-        {{ destructive_modal.render('tenant-decommission-modal',
+    {{ destructive_modal.render('tenant-decommission-modal',
 'Decommission Tenant',
 'Selected Tenant',
 'Commit only after verified cleanup. Tenant history and audit evidence remain.',
