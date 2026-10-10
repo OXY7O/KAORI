@@ -134,7 +134,9 @@ def test_ui_explains_snapshot_authority_and_three_stage_readiness() -> None:
 
     assert 'Pages read worker-materialized analytics snapshots' in controls
     assert 'Analytics Worker Snapshot' in controls
-    assert 'Loading Committed Analytics Snapshot' in controls
+    assert "analytics/components/_controls_readiness.html" in controls
+    assert "shared_readiness.frame(" in controls
+    assert "'object-storage-analytics-refresh-indicator'" in controls
     assert blocker.count('Object Storage → Metrics Source → Alert Source → Analytics Snapshot') == 1
     assert blocker.count('Object Storage → Metrics Source → Alert Source') == 2
     assert blocker.count('dependency_grid_classes = "lg:grid-cols-3"') == 1
