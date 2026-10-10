@@ -22,7 +22,9 @@ from app.kubernetes.tenant.native_handoff_readback import (
 from app.kubernetes.tenant.native_handoff_recovery import classify_native_handoff_component
 from app.kubernetes.tenant.native_handoff_transfer_patch import build_native_successor_handoff_patch
 from app.kubernetes.tenant.native_successor_acceptance import require_current_native_acceptance
-from app.kubernetes.tenant.native_successor_identity import verify_native_successor_resource_authority
+from app.kubernetes.tenant.native_platform_admin_authority import (
+    require_platform_admin_actor, verify_native_provider_admin_authority,
+)
 from app.kubernetes.tenant.release_handoff_approval import (
     _can_confirm_plan, _checked_recently, _plan_hash,
     latest_release_handoff_approval, latest_release_handoff_plan,
@@ -151,7 +153,7 @@ def _verify_current_plan(
 
 def execute_native_handoff_committed(
     *, tenant_id: str, actor_user_id: int, plan_sha256: str,
-    provider_token: str, confirmed: bool,
+    confirmed: bool,
 ) -> dict[str, Any]:
     """Perform explicit guarded provider handoff; commit partial recovery evidence.
 
@@ -161,20 +163,26 @@ def execute_native_handoff_committed(
     against the exact original dry-run inventory.
     """
     if not confirmed:
-        raise ValueError('Explicit successor-authorized Native transfer confirmation is required.')
+        raise ValueError('Explicit Platform Admin Native transfer confirmation is required.')
+    require_platform_admin_actor(actor_user_id)
     plan, approval, accepted, tenant, cluster, snapshots = _verify_current_plan(
         tenant_id=tenant_id, actor_user_id=actor_user_id, plan_sha256=plan_sha256,
     )
-    identity = verify_native_successor_resource_authority(
-        cluster=cluster, plan=plan, provider_token=provider_token,
+    if accepted.get('authority_mode') != 'platform_admin_governed':
+        raise ValueError('Historic bearer-based acceptance cannot authorize Platform Admin execution.')
+    authority = verify_native_provider_admin_authority(
+        cluster=cluster, components=[
+            dict(item) for item in plan['handoff_components']
+            if item.get('handoff') == 'external_acceptance_required'
+        ],
     )
     if (
-        identity['provider_principal_uid'] != accepted['provider_principal_uid']
-        or identity['provider_username'] != accepted['provider_username']
-        or identity['successor_owner'] != accepted['successor_owner']
-        or identity['scope_count'] != accepted['scope_count']
+        authority['provider_username'] != accepted['provider_username']
+        or authority['provider_groups'] != accepted['provider_groups']
+        or authority['provider_credential_id'] != accepted['provider_credential_id']
+        or authority['scope_count'] != accepted['scope_count']
     ):
-        raise ValueError('Successor Kubernetes identity/authorization changed after consent.')
+        raise ValueError('Registered Kubernetes provider identity/permissions changed after admin approval.')
     # The first provider transfer must be performed against a new exact preflight.
     # On a partial retry this will no longer match the original fingerprint;
     # recovery instead proves each component against the immutable dry-run.
@@ -271,14 +279,18 @@ def execute_native_handoff_committed(
         'plan_sha256': plan_sha256,
         'handoff_fingerprint': plan['handoff_fingerprint'],
         'successor_owner': plan['successor_owner'],
-        'provider_principal_uid': accepted['provider_principal_uid'],
+        'authority_mode': 'platform_admin_governed',
+        'accepted_by': accepted['accepted_by'],
+        'provider_username': authority['provider_username'],
+        'provider_credential_id': authority['provider_credential_id'],
+        'provider_authority_verified': True,
         'verified_components': results,
         'expected_component_count': len(components),
         'verified_count': len(results),
         'errors': errors, 'checked_at': datetime.now(UTC).isoformat(),
         'provider_mutation_performed': bool(mutated_count),
         'provider_handoff_verified': complete,
-        'external_successor_verified': True,
+        'external_successor_verified': False,
         'release_authorized': False,
         'secret_material_persisted': False,
     }
