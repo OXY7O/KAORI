@@ -216,6 +216,17 @@ def test_capacity_decision_modal_uses_single_evidence_surface_and_quiet_traceabi
     assert 'whitespace-pre-line break-words text-sm' in dialog
     assert 'decision.resource_profile_version or row.profile.version' in dialog
     assert "evidence.get('allocation_scope')" in dialog
+    # Full-width canonical Resource Profile is the first row; Operation and
+    # Allocation Scope share the following row, never compressing its width.
+    contract = dialog.split('id="{{ dialog_id }}-contract-title"', 1)[1].split(
+        'id="{{ dialog_id }}-record-title"', 1
+    )[0]
+    assert 'dl class="mt-3 grid grid-cols-2 gap-x-4 gap-y-3"' in contract
+    assert '<div class="col-span-2 min-w-0">' in contract
+    assert 'sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]' not in contract
+    assert contract.index('Resource Profile</dt>') < contract.index('Operation</dt>')
+    assert contract.index('Resource Profile</dt>') < contract.index('Allocation Scope</dt>')
+    assert 'mt-1 break-words text-sm font-semibold leading-5 text-content-primary">{{ profile_name }}</dd>' in contract
     assert 'row.created_at_label' in dialog
     assert 'row.data_cutoff_label' in dialog
     assert "capacity_source.get('snapshot_state')" in dialog
