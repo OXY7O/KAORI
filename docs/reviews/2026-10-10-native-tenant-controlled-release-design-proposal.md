@@ -154,3 +154,38 @@ provider mutation follows from this candidate.
 
 Review-focused negative tests:
 `tests/kubernetes/tenant/test_native_successor_identity.py`.
+
+
+## #1057 expired acknowledged-plan recovery (review branch)
+
+The five Native Release checkpoints intentionally report **currently valid**
+evidence. An independently acknowledged plan remains immutable audit history,
+but its 15-minute freshness and the provider preflight may expire, so the
+checkpoint count can return to 0/5 without removing the recorded decision.
+
+An expired acknowledged plan now has one explicit, non-mutating operator action:
+**Restart Expired Handoff Plan**, available only to its original requester,
+with existing `tenant.manage` and `integrations.manage` permissions, CSRF,
+and an explicit confirmation. The service verifies the original plan SHA,
+independent actor, approved fingerprint, nonfuture timestamps and expiry. It
+commits a *fresh* authoritative Native preflight, proves the exact same
+Tenant/generation/provider UID/resourceVersion and handoff fingerprint,
+checks zero unresolved dependencies, and uses the existing Tenant row lock to
+block races. If a read-back has already been recorded for that plan, or
+the provider inventory has changed (including partial ownership transfer),
+restart is blocked until explicit recovery review.
+
+On success the service creates a **new plan SHA** and records
+`supersedes_plan_sha256` as nonsecret AuditEvent evidence. The old approval,
+external reference and dry-run remain in history but are not valid for the
+new plan, which must be independently acknowledged again. No Kubernetes
+mutation, successor consent, Release or Re-adopt authority is gained by
+restarting the plan. The readiness UI distinguishes `Recorded · Expired`
+from `Pending` and labels the counter as *active* checkpoints. A historical
+acknowledgement must never be displayed as an executable current approval.
+
+**Operational consequence:** this fixes the stuck screenshot state and makes
+it possible to repeat provider preflight/review safely, but it is *not* a
+substitute for the missing accepted #1047 trusted successor attestation, the
+#1048 live transfer executor, or the #1049 verified Released finalizer/
+successor-authorized new-generation Re-adoption.
