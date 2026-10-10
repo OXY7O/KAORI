@@ -445,65 +445,128 @@
                         {% endif %}
                     </section>
                 {% elif tenant_release_step == 'handoff' %}
-                    <section id="tenant-release-stage-inventory" class="min-w-0 scroll-mt-24 px-5 py-5 sm:px-6 sm:py-6"
-                                     aria-label="Provider handoff inventory">
-                                <div class="flex flex-wrap items-start justify-between gap-3">
-                                    <div class="flex min-w-0 items-start gap-3">
-                                        
-                                        <div class="min-w-0">
-                                            <h4 class="text-base font-semibold text-content-primary">02 · Provider handoff scope</h4>
-                                            <p class="mt-1 text-sm leading-6 text-content-secondary">
-                                                Inspect provider objects and ownership evidence requiring handoff.
-                                            </p>
-                                        </div>
-                                    </div>
-                                    {% if row.release_preflight %}
-                                        {{ table_label.status_label((row.release_preflight.handoff_required_count|string) ~ ' to review',
-                                                                    'warning' if row.release_preflight.handoff_required_count else 'info') }}
-                                    {% else %}
-                                        {{ table_label.status_label('Awaiting Review', 'unknown') }}
-                                    {% endif %}
+                    <section id="tenant-release-stage-inventory"
+                             class="min-w-0 scroll-mt-24 px-4 py-4 sm:px-6 sm:py-5"
+                             aria-label="Provider handoff inventory">
+                        <header class="flex min-w-0 flex-wrap items-start justify-between gap-3">
+                            <div class="flex min-w-0 items-start gap-3">
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                      aria-hidden="true"><i data-lucide="clipboard-list" class="h-4 w-4"></i></span>
+                                <div class="min-w-0">
+                                    <h4 class="text-base font-semibold text-content-primary">Provider handoff scope</h4>
+                                    <p class="mt-1 text-sm leading-5 text-content-secondary">
+                                        Review each provider resource, its ownership and the exact identifiers needed for verified handoff.
+                                    </p>
                                 </div>
-                                {% if row.release_preflight and row.release_preflight.handoff_components %}
-                                    <div class="mt-4 divide-y divide-outline-subtle border-t border-outline-subtle">
-                                        {% for item in row.release_preflight.handoff_components %}
-                                            <div class="min-w-0 space-y-2 py-3">
-                                                <div class="flex flex-wrap items-start gap-1.5">
-                                                    {{ table_label.status_label(
-                                                        'Handoff Required' if item.handoff == 'external_acceptance_required'
-                                                        else 'Ownership Conflict' if item.handoff == 'owner_review_required'
-                                                        else 'Observed',
-                                                        'warning' if item.handoff != 'observe_only' else 'info'
-                                                    ) }}
-                                                    <span class="break-all text-xs font-semibold text-content-primary">
-                                                        {{ item.kind }}/{{ item.name }}
+                            </div>
+                            {% if row.release_preflight %}
+                                {{ table_label.status_label(
+                                    (row.release_preflight.handoff_required_count|string) ~ ' require handoff',
+                                    'warning' if row.release_preflight.handoff_required_count else 'info'
+                                ) }}
+                            {% else %}
+                                {{ table_label.status_label('Review not recorded', 'unknown') }}
+                            {% endif %}
+                        </header>
+                        {% if row.release_preflight and row.release_preflight.handoff_components %}
+                            <div class="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 border-y border-outline-subtle py-2.5">
+                                <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-content-primary">
+                                    <i data-lucide="boxes" class="h-3.5 w-3.5 text-kaori-primary" aria-hidden="true"></i>
+                                    {{ row.release_preflight.handoff_components|length }} provider resources
+                                </span>
+                                <span class="text-xs leading-5 text-content-muted">
+                                    Recorded during the latest Release preflight
+                                </span>
+                            </div>
+                            <ol class="divide-y divide-outline-subtle" aria-label="Recorded provider handoff resources">
+                                {% for item in row.release_preflight.handoff_components %}
+                                    <li class="min-w-0 py-4">
+                                        <article class="min-w-0" aria-label="{{ item.kind }} {{ item.name }}">
+                                            <div class="flex min-w-0 flex-wrap items-start justify-between gap-3">
+                                                <div class="flex min-w-0 flex-1 items-start gap-3">
+                                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                                          aria-hidden="true">
+                                                        <i data-lucide="{{ 'boxes' if item.kind == 'Namespace' else ('scale' if item.kind == 'ResourceQuota' else ('sliders-horizontal' if item.kind == 'LimitRange' else ('layers-3' if item.kind == 'CapsuleTenant' else 'box'))) }}"
+                                                           class="h-4 w-4"></i>
                                                     </span>
+                                                    <div class="min-w-0">
+                                                        <p class="text-xs font-medium text-content-muted">{{ item.kind }}</p>
+                                                        <h5 class="mt-0.5 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ item.name }}</h5>
+                                                        {% if item.namespace and item.namespace != item.name %}
+                                                            <p class="mt-1 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">
+                                                                Namespace: {{ item.namespace }}
+                                                            </p>
+                                                        {% endif %}
+                                                    </div>
                                                 </div>
-                                                <p class="break-all font-mono text-xs text-content-muted">
-                                                    {% if item.namespace %}{{ item.namespace }} · {% endif %}
-                                                    UID {{ item.uid }} · RV {{ item.resource_version }}
-                                                </p>
-                                                <p class="text-sm leading-6 text-content-secondary">
-                                                    {{ item.ownership|replace('_', ' ')|title }}
-                                                    {% if item.managed_by %}· Manager {{ item.managed_by }}{% endif %}
-                                                </p>
+                                                {{ table_label.status_label(
+                                                    'Handoff Required' if item.handoff == 'external_acceptance_required'
+                                                    else 'Ownership Conflict' if item.handoff == 'owner_review_required'
+                                                    else 'Observed',
+                                                    'warning' if item.handoff != 'observe_only' else 'info'
+                                                ) }}
                                             </div>
-                                        {% endfor %}
-                                        <p class="text-sm leading-6 text-content-muted">
-                                            Handoff inventory is read-only provider evidence. Release never transfers or deletes
-                                            provider-owned controls without verified handoff.
-                                        </p>
-                                    </div>
-                                {% elif row.release_preflight %}
-                                    <p class="mt-3 rounded-lg border border-outline-subtle bg-surface-card p-3 text-sm leading-6 text-content-secondary">
-                                        No provider objects require handoff in the latest review. This does not authorize Release.
-                                    </p>
-                                {% else %}
-                                    <p class="mt-3 rounded-lg border border-outline-subtle bg-surface-card p-3 text-sm leading-6 text-content-secondary">
-                                        Run Review Release to load the committed provider handoff inventory.
-                                    </p>
-                                {% endif %}
-                            </section>
+                                            <dl class="mt-3 grid min-w-0 gap-x-6 gap-y-2 sm:grid-cols-2">
+                                                <div class="min-w-0">
+                                                    <dt class="text-xs text-content-muted">Ownership evidence</dt>
+                                                    <dd class="mt-0.5 break-words text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]">
+                                                        {{ item.ownership|replace('_', ' ')|title }}
+                                                    </dd>
+                                                </div>
+                                                <div class="min-w-0">
+                                                    <dt class="text-xs text-content-muted">Provider manager</dt>
+                                                    <dd class="mt-0.5 break-words text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]">
+                                                        {{ item.managed_by if item.managed_by else 'Not recorded' }}
+                                                    </dd>
+                                                </div>
+                                            </dl>
+                                            <details class="group/identifiers mt-3 min-w-0 border-t border-outline-subtle pt-2"
+                                                     aria-label="Provider identifiers for {{ item.kind }} {{ item.name }}">
+                                                <summary class="inline-flex min-h-9 max-w-full cursor-pointer list-none items-center gap-2 rounded-md px-1 text-xs font-semibold text-kaori-primary transition hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus [&::-webkit-details-marker]:hidden">
+                                                    <i data-lucide="fingerprint" class="h-3.5 w-3.5 shrink-0" aria-hidden="true"></i>
+                                                    Provider identifiers
+                                                    <i data-lucide="chevron-down" class="h-3.5 w-3.5 shrink-0 transition-transform group-open/identifiers:rotate-180"
+                                                       aria-hidden="true"></i>
+                                                </summary>
+                                                <dl class="grid min-w-0 gap-x-6 gap-y-2 pb-2 pt-1 sm:grid-cols-2">
+                                                    {% if item.namespace %}
+                                                        <div class="min-w-0 sm:col-span-2">
+                                                            <dt class="text-xs text-content-muted">Namespace</dt>
+                                                            <dd class="mt-0.5 break-all font-mono text-xs leading-5 text-content-primary">{{ item.namespace }}</dd>
+                                                        </div>
+                                                    {% endif %}
+                                                    <div class="min-w-0">
+                                                        <dt class="text-xs text-content-muted">Provider UID</dt>
+                                                        <dd class="mt-0.5 break-all font-mono text-xs leading-5 text-content-primary">{{ item.uid }}</dd>
+                                                    </div>
+                                                    <div class="min-w-0">
+                                                        <dt class="text-xs text-content-muted">Resource Version</dt>
+                                                        <dd class="mt-0.5 break-all font-mono text-xs leading-5 text-content-primary">{{ item.resource_version }}</dd>
+                                                    </div>
+                                                </dl>
+                                            </details>
+                                        </article>
+                                    </li>
+                                {% endfor %}
+                            </ol>
+                            <p class="flex min-w-0 items-start gap-2 border-t border-outline-subtle pt-3 text-xs leading-5 text-content-muted"
+                               role="note">
+                                <i data-lucide="info" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"
+                                   aria-hidden="true"></i>
+                                <span>These are read-only provider observations, not approval to transfer or delete resources. Verified handoff remains required.</span>
+                            </p>
+                        {% elif row.release_preflight %}
+                            <p class="mt-4 flex items-start gap-2 rounded-lg bg-surface-elevated px-4 py-3 text-sm leading-6 text-content-secondary">
+                                <i data-lucide="info" class="mt-1 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                No provider resources requiring handoff were recorded in the latest review. This does not authorize Release.
+                            </p>
+                        {% else %}
+                            <p class="mt-4 flex items-start gap-2 rounded-lg bg-surface-elevated px-4 py-3 text-sm leading-6 text-content-secondary">
+                                <i data-lucide="clipboard-list" class="mt-1 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                Run Review Release to collect the provider handoff inventory before continuing.
+                            </p>
+                        {% endif %}
+                    </section>
                 {% elif tenant_release_step == 'approval' %}
                     <section id="tenant-release-stage-approval" class="min-w-0 scroll-mt-24 px-5 py-5 sm:px-6 sm:py-6"
                                      aria-label="Governed handoff workflow">
