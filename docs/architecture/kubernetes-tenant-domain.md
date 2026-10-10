@@ -289,6 +289,73 @@ object. Contract tests are authored; runtime tests, light/dark/mobile
 browser QA, CI/CD, Developer Check, Full Admission, UAT, promotion and
 deployment remain HOLD until separately authorized.
 
+## Governed no-transfer recovery after historical failed Native executor (#1104; #1057 child)
+
+An expired, independently approved Native Release plan with a committed
+`in_progress` -> `partial_handoff_recovery_required` executor audit cannot
+be restarted using ordinary expired-plan renewal, even with 0/2 verified.
+The earlier executor bug #1102 (preview vs approved component) could fail
+before the first provider write; a negative mutation counter alone does not
+prove provider state or authorize retry.
+
+This is a three-operator, **read-only-first** governance extension. Normal
+Tenant GETs consume committed KAORI state only.
+
+1. **Requester assessment** (original plan `requested_by` actor):
+   require one exact SHA/fingerprint/generation Native plan, originally
+   independently approved but now expired, immutable historical executor
+   sequence exactly `native_handoff_started` then
+   `native_handoff_recovery_required`, same executor actor, 0 verified,
+   `provider_mutation_performed=False`, zero verified components and no
+   unverified/partial external read-back or ambiguous attempt for the same SHA.
+   Any same-plan external read-back must independently satisfy the existing
+   full canonical `provider_handoff_not_started` receipt contract, and its
+   immutable content is included in the recovery source-history digest. Any
+   partial/full/unknown/duplicate history fails closed. Perform current
+   authoritative Release preflight and compare the original complete
+   provider identity, ownership handoff inventory, fingerprint and all
+   dependencies. Reuse existing canonical dry-run evidence and read-only
+   `_read_resource` / `summarize_native_handoff_recovery` to verify
+   original UID/resourceVersion, every KAORI marker, specification SHA256
+   and retained foreign metadata hash. Require all components
+   `pending_provider_transfer`. Persist immutable SHA-bound assessment,
+   audit history digest, source failed event, assessment actor and
+   provider proof hash. **No provider PATCH**.
+2. **Independent recovery decision**: a different authorized operator must
+   be neither the original requester/assessor nor the original failed
+   executor actor. The decision binds the assessment SHA, history digest,
+   exact plan/fingerprint, observed provider proof and current timestamps.
+   It grants *only* a fresh requester restart, never a provider transfer,
+   successor consent or Release. This distinct security-sensitive review
+   may require a third authorized human.
+3. **Original requester restart**: backend revalidates original plan,
+   original independent approval, new distinct recovery decision, full
+   executor/read-back history, fresh authoritative provider preflight and
+   exact preserved provider proof, before and under the existing Tenant
+   lock. The new handoff plan SHA is a new immutable audit event with
+   `supersedes_plan_sha256`, `no_transfer_recovery_assessment_sha256`
+   and `no_transfer_recovery_authorized_by` lineage. Old approval,
+   dry-run, reference and Platform Admin acceptance do **not** carry over.
+   Another authorized independent reviewer must approve the new SHA, and
+   a fresh verified Platform Admin acceptance/dry-run is necessary before
+   any later authorized handoff.
+
+Assessments and decisions expire through the existing 15-minute
+`_checked_recently` contract. If a decision expires or history changes,
+the requester must assess again and obtain a new independent decision.
+The review UI reads two additional committed AuditEvent targets and
+reuses the existing Release Governance panel, Violet status badges,
+CSRF/HTMX POST, pending/Toast and focus patterns. No new provider authority,
+automatic retry/rollback, new admin token, weakened TLS/RBAC, or
+Released commit is introduced.
+
+The present Docker Desktop evidence includes live UID/RV and KAORI owner
+labels, which is **supporting data only**; it is not equivalent to a
+successful full assessment of spec/foreign metadata and exact audit
+history. CI/CD, unit tests, Developer Check, Full Admission, browser QA,
+live Kubernetes actions, UAT, promotion and deployment remain HOLD
+until separately approved.
+
 ## Expired Native plan recovery after canonical zero-transfer read-back (#1057; latest recovery authority)
 
 DevContainer screenshots exposed a **stranded renewal** after an expired
