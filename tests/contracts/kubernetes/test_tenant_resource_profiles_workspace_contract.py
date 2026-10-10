@@ -396,10 +396,10 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert 'placeholder="2048"' in capacity
     assert '2048 GiB = 2 TiB' in capacity
     assert 'Compute evidence required' in capacity
-    assert 'Logical storage policy remains active' in capacity
-    assert "('Storage', values.storage)" in capacity
+    assert 'Logical storage governed' in capacity
+    assert "('Logical Storage', 'Policy ceiling', item.display.budget.storage, item.display.committed.storage, item.display.headroom.storage)" in capacity
     assert 'Storage is logical admission capacity.' in capacity
-    assert 'Budget, committed allocation, and remaining headroom.' in capacity
+    assert 'Governed request budgets and remaining headroom.' in capacity
     assert capacity.count('Logical budget only.') == 1
     assert 'Physical and usable capacity remain separate Storage Analytics evidence.' in capacity
     assert 'min-h-10 w-full items-center' in capacity
@@ -408,8 +408,8 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert 'class="flex min-h-10 w-full items-center gap-2' in capacity
     assert 'name="tenant_storage_budget_gib"' in capacity
     assert "form_field.help('Enter GiB" not in capacity
-    assert 'values.pods' in capacity
-    assert 'values.storage' in capacity
+    assert 'item.display.budget.pods' in capacity
+    assert 'item.display.headroom.storage' in capacity
     assert "action_button.classes('primary')" in capacity
     assert "action_button.classes('primary', full=true)" not in capacity
     assert 'components/info_tip.html' in capacity
@@ -452,7 +452,7 @@ def test_allocation_budget_registry_separates_snapshot_freshness_and_compute_bud
     assert "data-kaori-native-dialog" in capacity
     assert "data-kaori-dialog-open" in capacity
     assert "registry_ui.footer" in capacity
-    assert "macro" in table  # Shared table primitives remain the sole table owner.
+    assert 'macro cluster_identity(' in table  # Reuse the existing identity primitive.
 
     # The new read-only resource-first layout never changes dimensions or units.
     dialog = capacity.split('aria-label="Resource allocation comparison"', 1)[1].split('</section>', 1)[0]
