@@ -1112,12 +1112,12 @@ def test_tenant_status_actions_use_semantic_labels() -> None:
     assert 'tenant-discovery-status-tip' in discovery
     assert 'status_detail_dialog' not in discovery
 
-    assert "special_label('History Retained', 'unknown', 'archive')" in detail
-    assert "special_label('Blocked', 'critical', 'shield-alert')" in registry
+    assert "'Released · Provider Retained'" in detail
+    assert "table_label.status_label('Blocked', 'warning')" in detail
     assert 'tenant-registry-status-tip' in registry
     assert 'Blocked — Tenant stays valid; teardown fails closed until blockers clear.' in registry
     assert 'status_detail_dialog' not in registry
-    assert "special_label('Unavailable', 'unknown', 'circle-slash-2')" in registry
+    assert "special_label('Unavailable', 'unknown', 'circle-slash-2')" in detail
 
 
 def test_tenant_setup_explains_capsule_adoption_boundary() -> None:
