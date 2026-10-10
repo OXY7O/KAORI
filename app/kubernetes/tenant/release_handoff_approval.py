@@ -356,7 +356,7 @@ def approve_release_handoff_plan_committed(
     return accepted
 
 
-def _confirm_safe_native_restart_history(tenant_id: str, plan: dict[str, Any]) -> bool:
+def _confirm_safe_native_restart_history(tenant_id: str, plan: dict[str, Any]) -> int:
     """Return whether canonical zero-transfer observations need a fresh recheck.
 
     Unknown, partial, full or conflicting read-backs and every committed
@@ -392,7 +392,7 @@ def _confirm_safe_native_restart_history(tenant_id: str, plan: dict[str, Any]) -
             same_plan.append(receipt)
             if not readback_proves_handoff_not_started(receipt, plan=plan):
                 raise ValueError('Provider handoff read-back requires independent recovery review before restarting.')
-    return bool(same_plan)
+    return len(same_plan)
 
 
 def restart_expired_native_release_handoff_plan_committed(
@@ -441,7 +441,7 @@ def restart_expired_native_release_handoff_plan_committed(
     # A canonical 0-transfer observation MAY permit an *attempt* at a fresh
     # provider preflight. All executor activity, partial/full or corrupt
     # observations (including older receipts) fail closed.
-    prior_zero_transfer = _confirm_safe_native_restart_history(tenant_id, plan)
+    prior_zero_transfer_count = _confirm_safe_native_restart_history(tenant_id, plan)
 
     # This authorized provider read commits a new snapshot. Never restart based
     # on expired UID/resourceVersion or the old dry-run/approval alone.
@@ -480,7 +480,7 @@ def restart_expired_native_release_handoff_plan_committed(
         raise ValueError('Another handoff operation replaced the expired plan.')
     # Recheck entire committed history after the row lock. If a concurrent
     # observer/executor recorded unsafe evidence, do not supersede this plan.
-    if _confirm_safe_native_restart_history(tenant_id, current) != prior_zero_transfer:
+    if _confirm_safe_native_restart_history(tenant_id, current) != prior_zero_transfer_count:
         raise ValueError('Provider handoff history changed during restart; recovery review required.')
     if _checked_recently(current.get('requested_at')) and _checked_recently(acknowledged.get('approved_at')):
         raise ValueError('The current handoff is not expired.')
@@ -500,7 +500,7 @@ def restart_expired_native_release_handoff_plan_committed(
         'blockers': fresh['blockers'],
         'supersedes_plan_sha256': plan_sha256,
         'restart_reason': 'approved_evidence_expired',
-        'restart_zero_transfer_readback_reverified': prior_zero_transfer,
+        'restart_zero_transfer_readback_reverified': prior_zero_transfer_count > 0,
         'provider_mutation_performed': False,
         'provider_handoff_verified': False,
         'release_authorized': False,
