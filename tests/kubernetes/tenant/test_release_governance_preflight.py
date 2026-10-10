@@ -61,6 +61,28 @@ def test_mutated_and_unknown_namespace_provenance_have_distinct_handoff_authorit
     assert all('independently approved external handoff is required' not in reason for reason in unknown)
 
 
+
+def test_managed_allocation_blocker_gives_provider_handoff_and_readback_context():
+    blockers = _release_blockers(
+        _tenant(),
+        [_namespace(namespace='tenant-uat-demo', resource_profile_id=12)],
+        counts={},
+    )
+    assert len(blockers) == 1
+    explanation = blockers[0]
+    assert explanation.startswith('tenant-uat-demo has a KAORI-managed allocation')
+    assert 'Resource Profile' in explanation
+    assert 'independent approval' in explanation
+    assert 'authoritative provider read-back' in explanation
+    assert 'cannot silently abandon the committed allocation' in explanation
+    assert 'delete provider resources' in explanation
+
+    # Only Resource Profile linkage triggers this specific blocker; wording
+    # must not silently reinterpret clean adopted allocation as managed.
+    assert _release_blockers(_tenant(), [_namespace()], counts={}) == []
+
+
+
 def test_external_adoption_without_active_dependencies_is_preflight_review_candidate_only():
     assert _release_blockers(
         _tenant(), [_namespace()], counts={
