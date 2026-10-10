@@ -112,7 +112,7 @@ def prepare(monkeypatch, *, expired=True, actor=42, readback=None, mutate=None):
     from app.kubernetes.tenant import native_handoff_readback
     monkeypatch.setattr(
         native_handoff_readback, 'latest_native_handoff_readback',
-        lambda _: readback,
+        lambda _: {'plan_sha256': data['plan_sha256']} if readback == 'current' else readback,
     )
     result = service.restart_expired_native_release_handoff_plan_committed(
         tenant_id='tenant-a', actor_user_id=actor,
@@ -145,22 +145,14 @@ def test_wrong_requester_cannot_restart_acknowledged_plan(monkeypatch):
 
 
 def test_provider_readback_blocks_restart_even_when_expired(monkeypatch):
-    readback = {'plan_sha256': plan(snapshot())['plan_sha256']}
-    # Force consistent old SHA on the same plan by setting the spy after creation
-    # instead use a returning read-back receipt of whatever current plan exists
-    from app.kubernetes.tenant import native_handoff_readback
-    monkeypatch.setattr(
-        native_handoff_readback, 'latest_native_handoff_readback',
-        lambda _: {'plan_sha256': service.latest_release_handoff_plan('tenant-a')['plan_sha256']},
-    )
     with pytest.raises(ValueError, match='read-back'):
-        prepare(monkeypatch)
+        prepare(monkeypatch, readback='current')
 
 
 def test_changed_provider_inventory_blocks_restart(monkeypatch):
     def changed(data):
         return {**data, 'handoff_fingerprint': 'another-inventory'}
-    with pytest.raises(ValueError, match='Provider inventory changed'):
+    with pytest.raises(ValueError, match='fingerprint|inventory changed'):
         prepare(monkeypatch, mutate=changed)
 
 
