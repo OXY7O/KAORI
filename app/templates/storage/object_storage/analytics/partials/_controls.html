@@ -95,7 +95,7 @@
                         'Selected Alert Stream',
                         alert_source.resolved_label,
                         'Alertmanager Lifecycle',
-                        alertmanager.label,
+                        alertmanager.label ~ ' · ' ~ alertmanager.profile,
                         icon=none
                     ) }}
                 {% else %}
@@ -105,7 +105,7 @@
                         metrics_readiness.label,
                         metrics_readiness.tone,
                         'Metrics Source',
-                        metrics_source.provider_label,
+                        metrics_source.provider_label ~ (' · ' ~ metrics_source.instance_name if metrics_source.instance_name else ''),
                         'Committed Inventory',
                         inventory_observed_at|user_datetime('Not Collected'),
                         icon=none
