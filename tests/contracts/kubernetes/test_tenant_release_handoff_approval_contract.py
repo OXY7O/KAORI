@@ -80,7 +80,9 @@ def test_handoff_preparation_cannot_replace_a_current_approval_request() -> None
     assert "def handoff_plan_preparation_state(" in service
     assert "def _require_no_active_handoff_plan(" in service
     lock = service.index("Tenant.query.filter_by(id=tenant_id).with_for_update()")
-    check = service.index("_require_no_active_handoff_plan(tenant_id=tenant_id)")
+    check = service.index(
+        "_require_no_active_handoff_plan(tenant_id=tenant_id, actor_user_id=actor_user_id)"
+    )
     write = service.index("action='tenant.release.handoff_plan_prepared'")
     assert lock < check < write
     assert "state == 'pending'" in service
