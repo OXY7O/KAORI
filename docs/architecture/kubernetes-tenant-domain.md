@@ -307,7 +307,10 @@ Tenant GETs consume committed KAORI state only.
    sequence exactly `native_handoff_started` then
    `native_handoff_recovery_required`, same executor actor, 0 verified,
    `provider_mutation_performed=False`, zero verified components and no
-   external read-back/other ambiguous attempt for the same SHA. Any
+   unverified/partial external read-back or ambiguous attempt for the same SHA.
+   Any same-plan external read-back must independently satisfy the existing
+   full canonical `provider_handoff_not_started` receipt contract, and its
+   immutable content is included in the recovery source-history digest. Any
    partial/full/unknown/duplicate history fails closed. Perform current
    authoritative Release preflight and compare the original complete
    provider identity, ownership handoff inventory, fingerprint and all
