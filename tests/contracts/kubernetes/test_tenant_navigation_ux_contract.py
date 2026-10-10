@@ -265,3 +265,13 @@ def test_tenant_detail_uses_tenants_active_capability_and_contextual_topbar():
     assert '{% block tenant_content %}' not in page
     assert 'data-kaori-hero-profile="transactional-admin"' in partial
     assert partial.count('Back to Registry') == 1
+
+
+def test_tenant_detail_runtime_navigation_projection_is_tenants_not_overview():
+    from app.common.navigation import build_navigation_breadcrumb
+    from app.common.workspace_navigation import _capability_active_key
+
+    assert _capability_active_key('kubernetes_tenant', 'tenant.tenant_detail') == 'tenants'
+    assert [item['label'] for item in build_navigation_breadcrumb('tenant.tenant_detail')] == [
+        'Kubernetes', 'Tenant', 'Tenants', 'Tenant Details',
+    ]
