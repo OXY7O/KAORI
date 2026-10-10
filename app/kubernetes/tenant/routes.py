@@ -1117,6 +1117,7 @@ def release_tenant_governance_route(tenant_id: str):
 @tenant_bp.post('/tenants/<string:tenant_id>/release-managed-native')
 @permission_required('tenant.manage')
 @permission_required('integrations.manage')
+@permission_required('clusters.manage')
 def finalize_verified_native_release_route(tenant_id: str):
     """Finalizer only; all provider objects remain intact."""
     try:
@@ -1147,16 +1148,14 @@ def finalize_verified_native_release_route(tenant_id: str):
 @tenant_bp.post('/tenants/<string:tenant_id>/release-handback')
 @permission_required('tenant.manage')
 @permission_required('integrations.manage')
+@permission_required('clusters.manage')
 def verify_native_successor_handback_route(tenant_id: str):
-    """Successor explicitly relinquishes Native owner markers, not auto-adopt."""
+    """Platform Admin authorizes Native governance handback, not auto-adopt."""
     try:
         _csrf()
-        if not request.is_secure:
-            raise ValueError('Native successor credentials require verified HTTPS ingress.')
         result = handback_native_successor_governance_committed(
             tenant_id=tenant_id, actor_user_id=int(current_user.id),
             release_plan_sha256=str(request.form.get('release_plan_sha256') or ''),
-            provider_token=str(request.form.get('kubernetes_successor_token') or ''),
             confirmed=request.form.get('confirm_successor_handback') == 'handback',
         )
     except (ApiException, ValueError) as exc:
@@ -1172,7 +1171,7 @@ def verify_native_successor_handback_route(tenant_id: str):
         _record(
             event_type='kubernetes_tenant_successor_handback_recorded',
             status='success' if done else 'warning',
-            title='Successor Handback Verified' if done else 'Handback Recovery Required',
+            title='Platform Admin Handback Verified' if done else 'Handback Recovery Required',
             message=f"{result['verified_count']} of {result['expected_component_count']} resources verified.",
             detail=(
                 'Use fresh Discovery to explicitly Re-adopt as a new Tenant generation.'
