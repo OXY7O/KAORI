@@ -74,7 +74,12 @@
                 scope_metric_label='Active Scope',
                 coverage_metric_label='Runtime Coverage',
                 exceptions_metric_label='Correlation Exceptions') }}
-        <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+        <section class="space-y-3"
+                 aria-labelledby="artifact-registry-runtime-summary-heading">
+            {{ section_intro.render('Runtime Correlation',
+                'Committed artifact-to-Kubernetes bindings, identity matches, and security exposure.',
+                'artifact-registry-runtime-summary-heading') }}
+            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
                  aria-label="Runtime Usage summary">
             {{ metric_card.render('Runtime Bindings',
                         runtime.total,
@@ -100,6 +105,7 @@
                         'shield-alert',
                         source_label='Security × Runtime',
                         scope_label=runtime.scope.label) }}
+            </div>
         </section>
         <section class="space-y-4"
                  aria-labelledby="artifact-registry-runtime-bindings-heading">
