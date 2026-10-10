@@ -217,8 +217,7 @@ authority/provider with a simple keyboard-accessible Namespace disclosure;
 the four governed request amounts are displayed as a two-column metric grid.
 There are no table columns, nested cards or horizontal table scrolling.
 
-The inline summary metrics come from the **unfiltered committed contribution
-ledger** (committed Tenants, linked Namespaces, shared-quota Tenants, and
+The inline summary metrics come from the **unfiltered committed contribution ledger** (committed Tenants, linked Namespaces, shared-quota Tenants, and
 incomplete / ambiguous records). Linked Namespace count is a count of
 Namespace identities and **not** a second summation of Capsule shared quota.
 Incomplete / ambiguous counts are evidence-quality indicators, never inferred
