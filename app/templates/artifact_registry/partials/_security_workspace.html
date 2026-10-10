@@ -177,7 +177,12 @@
                 </div>
             </div>
         </section>
-        <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+        <section class="space-y-3"
+                 aria-labelledby="artifact-registry-security-summary-heading">
+            {{ section_intro.render('Security Snapshot',
+                'Committed vulnerability, supply-chain, and runtime exposure indicators for the selected Registry scope.',
+                'artifact-registry-security-summary-heading') }}
+            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
                  aria-label="{{ security.title }} summary">
             {% if security.view == 'vulnerabilities' %}
                 {{ metric_card.render('Critical Findings', security.critical, 'Critical findings in the latest committed scan.', 'octagon-alert', source_label='Security Snapshot', scope_label=security.snapshot.scope_label) }}
@@ -190,6 +195,7 @@
                 {{ metric_card.render('Coverage Gaps', security.coverage_gaps, 'Artifacts missing signature or SBOM evidence.', 'scan-search', source_label='Committed Registry', scope_label=security.snapshot.scope_label) }}
                 {{ metric_card.render('Security Sources', security.source_count, 'Registry sources represented in the active security scope.', 'blocks', source_label='Registry Integration', scope_label=security.snapshot.scope_label) }}
             {% endif %}
+            </div>
         </section>
         {% if security.view == 'supply_chain' %}
             <section class="space-y-4"
