@@ -61,7 +61,7 @@
         {% for notification in inbox_items %}
             {{ center_item.notification_item(notification, surface='panel', target='#notification-deck-inbox-content', compact=true, swap='innerHTML', view='inbox') }}
         {% endfor %}
-    {% else %}
+    {% elif not tenant_approval_items %}
         <div class="rounded-xl border border-dashed border-outline-default bg-surface-card px-4 py-10 text-center">
             <span class="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                 <i data-lucide="message-square-check" class="h-5 w-5"></i>
