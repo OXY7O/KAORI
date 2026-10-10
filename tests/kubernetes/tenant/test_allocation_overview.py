@@ -7,6 +7,8 @@ from jinja2 import Environment
 from app.kubernetes.tenant.allocation_overview import (
     _partition_tenant_contributions,
     build_tenant_allocation_bars,
+    describe_tightest_headroom,
+    filter_tenant_contribution_rows,
 )
 
 
@@ -112,6 +114,62 @@ def test_ambiguous_shared_quota_stays_unknown() -> None:
     assert rows[0]["unknown"] is True
     assert rows[0]["source"] == "Ambiguous Shared Quota"
     assert rows[0]["allocation"]["cpu"] == "N/A"
+
+
+def test_near_capacity_exposes_tightest_governed_dimension_without_reclassifying() -> None:
+    bars = build_tenant_allocation_bars(_summary())
+    assert describe_tightest_headroom(bars, "Near Capacity") == "Lowest headroom: CPU Requests (40.0%)"
+    assert describe_tightest_headroom(bars, "Critical") == "Lowest headroom: CPU Requests (40.0%)"
+    assert describe_tightest_headroom(bars, "Healthy") is None
+    assert describe_tightest_headroom(bars, "Unknown") is None
+    assert describe_tightest_headroom(bars, "Overcommitted") is None
+
+    no_bounded = build_tenant_allocation_bars(_summary(cpu_budget=None))
+    assert describe_tightest_headroom(no_bounded[:1], "Near Capacity") is None
+
+
+def test_contribution_filter_disambiguates_tenants_with_the_same_display_name() -> None:
+    first = SimpleNamespace(id="tenant-111111", name="tenant-uat-demo", provider_key="native_kubernetes", ownership_status="adopted")
+    second = SimpleNamespace(id="tenant-222222", name="tenant-uat-demo", provider_key="native_kubernetes", ownership_status="adopted")
+    rows = _partition_tenant_contributions(
+        [first, second],
+        [_namespace(first.id, "alpha-ns"), _namespace(second.id, "beta-ns")],
+        {},
+        [],
+    )
+
+    assert len(filter_tenant_contribution_rows(rows, "tenant-uat-demo")) == 2
+    assert [item["tenant"].id for item in filter_tenant_contribution_rows(rows, "222222")] == [second.id]
+    assert [item["tenant"].id for item in filter_tenant_contribution_rows(rows, "beta-ns")] == [second.id]
+    assert len(filter_tenant_contribution_rows(rows, "  DEVELOPMENT  ")) == 2
+    assert filter_tenant_contribution_rows(rows, "not-found") == []
+    assert filter_tenant_contribution_rows(rows, "") == rows
+
+
+def test_allocation_modal_htmx_contract_preserves_dialog_across_pagination() -> None:
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[3]
+    page = (root / "app/templates/kubernetes/tenant/partials/_tenant_allocation_overview.html").read_text(
+        encoding="utf-8"
+    )
+    routes = (root / "app/kubernetes/tenant/routes.py").read_text(encoding="utf-8")
+
+    assert 'hx-trigger="change"' in page
+    assert "View Allocation</button>" not in page
+    assert "action_button.classes('secondary')" in page
+    assert "How allocation budgets work" in page
+    assert "data-kaori-native-dialog" in page
+    assert "data-kaori-dialog-open" in page
+    assert "data-kaori-dialog-close" in page
+    assert "contributions_body_id," in page
+    assert "contributions_loading_id," in page
+    assert "registry_ui.filter_form" in page
+    assert "registry_ui.footer" in page
+    assert 'row.tenant.id|string|truncate' in page
+    assert "allocation_tenant_total" in page
+    assert "allocation_search" in routes
+    assert "filter_tenant_contribution_rows(tenant_rows, allocation_search)" in routes
 
 
 def test_tenant_allocation_overview_template_parses_with_jinja() -> None:
