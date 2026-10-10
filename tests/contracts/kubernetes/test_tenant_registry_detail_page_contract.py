@@ -429,6 +429,45 @@ def test_step_four_has_compact_readiness_and_role_scoped_recovery():
 
 
 
+
+def test_external_readback_discloses_stale_requirements_before_read_only_inspection():
+    detail = read(DETAIL)
+    readiness = read('app/kubernetes/tenant/native_release_readiness.py')
+    approval = detail.split('id="tenant-release-stage-approval"', 1)[1].split(
+        "{% elif tenant_release_step == 'finalize' %}", 1
+    )[0]
+    Environment().parse(detail)
+
+    assert 'readback_status.external_readback_prerequisites_current' in approval
+    assert 'readback_status.approval_expired' in approval
+    assert 'readback_status.external_reference_current' in approval
+    assert 'readback_status.dry_run_passed' in approval
+    assert 'aria-label="External read-back prerequisites"' in approval
+    assert 'External handoff inspection is unavailable' in approval
+    assert 'The original requester must restart it' in approval
+    assert "tenant_release_step_urls['finalize']" in approval
+    assert 'View recovery steps' in approval
+    assert 'A historical Dry-Run Passed receipt' not in approval
+    assert 'historical Dry-Run Passed receipt may be expired' in approval
+    assert 'External operator handoff — inspection only' in approval
+    assert 'Inspect External Handoff' in approval
+    assert 'governed Native Handoff executor' in approval
+    assert 'name="confirm_native_handoff_readback"' in approval
+    assert 'tenant.inspect_native_external_handoff_route' in approval
+    assert 'Last recorded read-back:' in approval
+    assert 'This historical observation does not verify external acceptance' in approval
+
+    assert '_checked_recently((successor_claim or {}).get("recorded_at"))' in readiness
+    assert 'external_readback_prerequisites_current' in readiness
+    assert '"external_reference_current": external_reference_current' in readiness
+    assert 'and (dry_run or {}).get("release_authorized") is False' in readiness
+    # Render-gating does not delete or silently replace original protected POST.
+    assert detail.count('<form method="post"') == 14
+    assert detail.count('name="csrf_token"') == 14
+    assert detail.count('hx-post=') == 14
+
+
+
 def test_exact_governance_forms_return_to_same_page_and_global_toast():
     detail = read(DETAIL)
     common = read('app/kubernetes/tenant/route_common.py')
@@ -461,15 +500,15 @@ def test_release_wizard_navigation_is_fragment_get_with_history_and_plain_link_f
     Environment().parse(detail)
     # All four step tabs, footer Previous/Next, and internal recovery links
     # preserve normal href while using scoped HTMX GET and canonical URLs.
-    assert detail.count('hx-get="{{ tenant_release_step_urls[') == 11
-    assert detail.count('hx-push-url="{{ tenant_release_step_urls[') == 11
+    assert detail.count('hx-get="{{ tenant_release_step_urls[') == 12
+    assert detail.count('hx-push-url="{{ tenant_release_step_urls[') == 12
     assert detail.count('hx-select="#tenant-management-detail"') == 14
     assert detail.count('hx-target="#tenant-management-detail"') == 14
-    assert detail.count('hx-select="#tenant-release-governance"') == 11
-    assert detail.count('hx-target="#tenant-release-governance"') == 11
-    assert detail.count('hx-swap="outerHTML show:none focus-scroll:false"') == 25
+    assert detail.count('hx-select="#tenant-release-governance"') == 12
+    assert detail.count('hx-target="#tenant-release-governance"') == 12
+    assert detail.count('hx-swap="outerHTML show:none focus-scroll:false"') == 26
     assert 'hx-history="false"' in detail  # Avoid restoring stale authorization evidence.
-    assert detail.count('href="{{ tenant_release_step_urls[') == 11
+    assert detail.count('href="{{ tenant_release_step_urls[') == 12
     assert "request.headers.get('HX-Target') == 'tenant-release-governance'" in routes
     assert "request.headers.get('HX-History-Restore-Request') != 'true'" in routes
     assert "'kubernetes/tenant/partials/_tenant_management_detail.html'" in routes
