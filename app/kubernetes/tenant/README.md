@@ -246,8 +246,10 @@ Contract/unit tests and browser QA are pending, as are CI/CD gates, Full
 Admission, staging/UAT and deployment; no production migration performed.
 
 **Read-only executor no-transfer assessment (#1110):**
-Step 4 distinguishes a same-plan failure with consistent, explicitly
-no-mutation 0-verified receipts from incomplete or conflicting history.
+Step 4 distinguishes one canonical same-plan executor started/failed pair:
+the in-progress audit is written before provider mutation counters exist,
+while the failed completion explicitly reports zero verification and no
+mutation. Missing/extra receipts or unsafe read-back history remain blocked.
 `no_transfer_assessment_candidate` is an **advisory committed UI signal**,
 not an approval, successful provider read-back, restart permission or
 automatic retry. Existing backend fail-closed guard continues to block
@@ -257,6 +259,10 @@ immutable audit evidence via the existing #1104 governed workflow before
 any new SHA/approval or Kubernetes mutation. The candidate hint is never
 a substitute for requester assessment or an independent recovery decision.
 No live provider checks were run for #1110; QA and gates HOLD.
+The assessment backend reports whether exact-plan executor receipt count is
+not two, or whether a same-plan read-back cannot prove zero transfer, without
+changing either gate. Operators must inspect Activity Audit and never
+infer safe restart from an advisory or a reported 0/2 count.
 
 **Native executor approved-component patch binding (#1102 corrective under #1048):**
 `dry_run_native_handoff_component` commits authoritative Kubernetes

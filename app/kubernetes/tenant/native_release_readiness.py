@@ -104,31 +104,51 @@ def project_native_release_readiness(
         history_incomplete or any_execution
         or (same_plan_readbacks and not zero_transfer_observed)
     )
-    # Distinguish a historical failed attempt that *might* qualify for
-    # separately authorized no-transfer assessment from proven transfer.
-    # This is NEVER restart clearance or a substitute for live verification.
+    # Advisory only. Registry execution_history is newest-first: the terminal
+    # failed receipt precedes the initial in_progress receipt. The initial
+    # receipt is written before any provider PATCH and intentionally does not
+    # contain terminal mutation/verified counters. Never invent those fields.
+    # This is a screening hint, not the event-ID/actor/chronology admission
+    # performed by _source_history and fresh authoritative provider inspection.
     same_plan_executions = [
         item for item in executions
         if isinstance(item, dict) and item.get("plan_sha256") == plan_sha
     ]
+    invalid_execution_history = any(
+        not isinstance(item, dict)
+        or not isinstance(item.get("plan_sha256"), str)
+        or re.fullmatch(r"[0-9a-f]{64}", item["plan_sha256"]) is None
+        for item in executions
+    )
     no_transfer_assessment_candidate = bool(
-        plan and same_plan_executions
-        and not any(
-            not isinstance(item, dict)
-            or not isinstance(item.get("plan_sha256"), str)
-            or len(item["plan_sha256"]) != 64
-            for item in executions
-        )
+        plan
+        and not invalid_execution_history
+        and not history_incomplete
+        and (not same_plan_readbacks or zero_transfer_observed)
+        and len(same_plan_executions) == 2
+        and same_plan_executions[0].get("status") == "partial_handoff_recovery_required"
+        and same_plan_executions[1].get("status") == "in_progress"
         and all(
-            item.get("status") in ("in_progress", "partial_handoff_recovery_required")
-            and item.get("handoff_fingerprint") == plan.get("handoff_fingerprint")
-            and item.get("provider_mutation_performed") is False
-            and item.get("provider_handoff_verified") is False
-            and item.get("release_authorized") is False
-            and item.get("verified_count", 0) == 0
-            and not item.get("verified_components")
+            item.get("handoff_fingerprint") == plan.get("handoff_fingerprint")
             for item in same_plan_executions
         )
+        and same_plan_executions[0].get("provider_mutation_performed") is False
+        and same_plan_executions[0].get("provider_handoff_verified") is False
+        and same_plan_executions[0].get("release_authorized") is False
+        and type(same_plan_executions[0].get("verified_count")) is int
+        and same_plan_executions[0]["verified_count"] == 0
+        and type(same_plan_executions[0].get("expected_component_count")) is int
+        and same_plan_executions[0]["expected_component_count"] > 0
+        and same_plan_executions[0].get("verified_components") == []
+        and isinstance(same_plan_executions[0].get("errors"), list)
+        and bool(same_plan_executions[0]["errors"])
+        and same_plan_executions[1].get("release_authorized") is False
+        and "provider_mutation_performed" not in same_plan_executions[1]
+        and "provider_handoff_verified" not in same_plan_executions[1]
+        and "verified_count" not in same_plan_executions[1]
+        and "verified_components" not in same_plan_executions[1]
+        and isinstance(same_plan_executions[1].get("started_at"), str)
+        and isinstance(same_plan_executions[0].get("checked_at"), str)
     )
     restart_required = bool(approval_expired and not restart_blocked)
     # Committed UI hints for the independent recovery workflow. Backend must

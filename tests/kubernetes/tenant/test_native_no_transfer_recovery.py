@@ -128,6 +128,42 @@ def test_unsafe_or_ambiguous_history_is_never_recoverable(monkeypatch, alteratio
         recovery._source_history(p['tenant_id'], p)
 
 
+def test_wrong_executor_receipt_count_explains_blocker_without_bypassing_history(monkeypatch):
+    p = plan()
+    incomplete = history(p)[:1]
+    set_history(monkeypatch, incomplete)
+    with pytest.raises(ValueError, match='found 1 same-plan executor receipts'):
+        recovery._source_history(p['tenant_id'], p)
+
+    duplicate = history(p)
+    duplicate.append(SimpleNamespace(
+        id=3, actor_user_id=43,
+        target_type=recovery._EXECUTOR_TARGET,
+        action='tenant.release.native_handoff_recovery_required',
+        metadata_json=duplicate[-1].metadata_json.copy(),
+    ))
+    set_history(monkeypatch, duplicate)
+    with pytest.raises(ValueError, match='found 3 same-plan executor receipts'):
+        recovery._source_history(p['tenant_id'], p)
+
+
+def test_partial_provider_readback_explains_blocker_separately(monkeypatch):
+    p = plan()
+    events = history(p)
+    events.append(SimpleNamespace(
+        id=3, actor_user_id=43,
+        target_type=recovery._READBACK_TARGET,
+        action='tenant.release.native_provider_handoff_recovery_observed',
+        metadata_json={
+            'plan_sha256': p['plan_sha256'],
+            'status': 'provider_handoff_observed_acceptance_unverified',
+        },
+    ))
+    set_history(monkeypatch, events)
+    with pytest.raises(ValueError, match='same-plan provider read-back receipts'):
+        recovery._source_history(p['tenant_id'], p)
+
+
 def test_canonical_zero_transfer_readback_is_digest_bound(monkeypatch):
     p = plan()
     initial = history(p)

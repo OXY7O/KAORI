@@ -88,11 +88,21 @@ def _source_history(tenant_id: str, plan: dict[str, Any]) -> dict[str, Any]:
             attempts.append(item)
         else:
             observations.append(item)
-    if len(attempts) != 2 or any(
+    if len(attempts) != 2:
+        raise ValueError(
+            'Recovery requires exactly one started and one failed executor '
+            f'receipt (2 total); found {len(attempts)} same-plan executor receipts. '
+            'Inspect Activity Audit; recovery remains blocked.'
+        )
+    if any(
         not readback_proves_handoff_not_started(row['metadata'], plan=plan)
         for row in observations
     ):
-        raise ValueError('Provider history is ambiguous or includes unverified/partial read-back; recovery is blocked.')
+        raise ValueError(
+            'One or more same-plan provider read-back receipts are incomplete, '
+            'unverified or partial. Canonical no-transfer read-back proof is '
+            'required; recovery remains blocked.'
+        )
     started, failure = attempts
     first, last = started['metadata'], failure['metadata']
     if (
