@@ -83,7 +83,8 @@ cluster-wide Provider Readiness aside is intentionally absent: it belongs on
 the Tenant capability overview and collection surfaces, not an individual
 Tenant detail. There is no secondary page breadcrumb; the **global navbar**
 resolves `tenant.tenant_detail` as Kubernetes → Tenant → Tenants →
-Tenant Details. Both the capability navigation and sidebar map this route to
+**the actual committed Tenant name** (the generic endpoint label remains
+Tenant Details as a canonical fallback). Both the capability navigation and sidebar map this route to
 the **Tenants** active key rather than defaulting to Overview.
 
 Below the Hero, standalone committed-state cards summarize Namespace count,
