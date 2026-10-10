@@ -156,6 +156,54 @@ The logical budget does not claim physical reservation or backend free space. It
 
 Physical/usable storage capacity remains a separate evidence problem. Kubernetes Storage Analytics workstream #782 owns future correlation across StorageClass, PV, PVC, Tenant/Namespace, and authoritative storage-backend capacity. Until that evidence exists, KAORI must not derive physical storage headroom from node filesystem metrics, PV totals, or PVC quota.
 
+## Tenant Allocation Overview (#1034)
+
+The read-only **Resource Profiles → Capacity Governance → Tenant Allocation Overview**
+adds a per-cluster visual projection above the existing Allocation Budget table.
+The operator selects a cluster in the overview; the routine page renders from
+the same committed #654 summaries (`build_capacity_governance_summaries`):
+budget, committed requests, headroom, capacity state, snapshot status and
+cutoff. Four horizontal accessible bars represent **CPU requests**, **memory
+requests**, **Pod slots** and the explicit **logical requests.storage ceiling**.
+Bar width is presentation only and never participates in the allow/block
+decision. Exact canonical numeric values remain visible alongside the bars;
+a deficit is labeled explicitly rather than concealing overcommit.
+
+Create-in-KAORI and provider-Adopt enter the **same effective committed
+Namespace allocation** ledger. The Tenant contribution view partitions that
+ledger by Tenant while using the existing #654 shared-quota selection and
+`_aggregate_committed_allocation` arithmetic per Tenant. Admitted Capsule
+Tenant-shared quotas are counted **once** rather than added once per child
+Namespace. Ambiguous shared authority, unbounded dimensions and missing/stale
+materialized Capacity Analytics evidence remain explicit Unknown/Not Governed,
+never fabricated as zero free capacity. Tenants with no committed namespaces or
+shared allocation are not counted as committed budget consumers. The Tenant
+breakdown is paginated using the canonical five-row default and allows
+Namespace identities to be expanded for correlation.
+
+**Boundary:** this is request-budget governance and an **admission planning
+read model**, not actual CPU/memory use, Pod runtime pressure, or physical
+storage reservation. Actual metrics and backend capacity remain in dedicated
+Kubernetes Analytics; the link to Capacity Analytics is permission-gated.
+The view performs no live provider/Prometheus call, no adoption/provisioning
+mutation, no new quota arithmetic or independent admission rule. Cluster policy
+changes and Namespace allocation increases still require the same #654
+preflight and provider reconciliation/write-readback governance. Projected
+transaction impact for Create/Adopt is scoped separately under #125.
+
+### Review / quality evidence
+
+- Verify positive, zero-budget, overcommitted, unknown/missing, unbounded and
+  logical-storage-unconfigured visuals alongside the existing detail modal.
+- Prove aggregate and per-Tenant values against #654 for Native and Capsule
+  shared allocations, including a shared Tenant with multiple Namespaces.
+- Check cluster selection, HTMX partial swap, pagination, expanded Namespace
+  identities, permission-scoped Analytics link, keyboard, accessible text,
+  light/dark and responsive layouts.
+- Human DevContainer visual acceptance is separate from Developer Check,
+  Full Admission and provider UAT. No admission/deployment gate is implied by
+  this read-only presentation.
+
 ## UAT
 
 Staging UAT for #654 must demonstrate:
