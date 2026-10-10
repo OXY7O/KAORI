@@ -151,7 +151,11 @@ For operator scanability the table uses six aligned columns:
 **Finding (19%) / Artifact (21%) / Package & Fix (23%) /
 Runtime Exposure (14%) / Evidence (13%) / Details (10%)**.
 Finding contains one CVE identifier and one severity badge, not redundant
-severity prose and duplicate severity badges. Artifact displays repository and
+severity prose and duplicate severity badges. Following human DevContainer
+feedback, **Finding, Artifact, and Evidence restore the established KAORI
+icon-bearing `table_ui.title_cell` component** (`shield-alert`,
+`package-search`, and `blocks`). The icons are navigational reading cues,
+not additional severity or scan-state claims. Artifact displays repository and
 project without a truncated raw digest. Package shows its name, installed
 version and provider-observed fix availability; full fixed-version evidence
 moves to the detail. Evidence shows Registry source and freshness; timestamp,
