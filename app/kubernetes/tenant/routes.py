@@ -69,6 +69,10 @@ from app.kubernetes.tenant.native_successor_acceptance import (
     accept_native_successor_handoff_committed,
 )
 from app.kubernetes.tenant.native_handoff_executor import execute_native_handoff_committed
+from app.kubernetes.tenant.native_no_transfer_recovery import (
+    assess_native_no_transfer_recovery_committed,
+    authorize_native_no_transfer_recovery_committed,
+)
 from app.kubernetes.tenant.native_successor_handback import (
     handback_native_successor_governance_committed,
 )
@@ -862,6 +866,73 @@ def prepare_tenant_release_handoff_route(tenant_id: str):
             message=f"Successor {result['successor_owner']} · {result['change_reference']}",
             detail='Independent approval and provider ownership transfer are still required.',
             metadata={'tenant_id': tenant_id, 'operation': 'prepare_release_handoff'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/no-transfer/assess')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+@permission_required('clusters.manage')
+def assess_native_no_transfer_recovery_route(tenant_id: str):
+    """Explicit requester read-only provider assessment, no Kubernetes mutation."""
+    try:
+        _csrf()
+        result = assess_native_no_transfer_recovery_committed(
+            tenant_id=tenant_id, actor_user_id=int(current_user.id),
+            plan_sha256=str(request.form.get('plan_sha256') or ''),
+            confirmed=request.form.get('confirm_no_transfer_assessment') == 'assess',
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_native_recovery_assessment_blocked',
+            status='warning', title='Recovery Assessment Blocked',
+            message=str(exc),
+            detail='No Kubernetes ownership marker or Released lifecycle changed.',
+            metadata={'tenant_id': tenant_id, 'operation': 'native_no_transfer_assessment'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_native_recovery_assessment_recorded',
+            status='info', title='No-Transfer Assessment Recorded',
+            message='Provider evidence verified; a separate authorized reviewer must approve the exact assessment.',
+            detail='Assessment is time-limited and never authorizes a provider mutation or Release.',
+            metadata={'tenant_id': tenant_id, 'operation': 'native_no_transfer_assessment',
+                      'assessment_sha256': result['assessment_sha256']},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/no-transfer/authorize')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+@permission_required('clusters.manage')
+def authorize_native_no_transfer_recovery_route(tenant_id: str):
+    """Independent acceptance of exact committed assessment, not ownership transfer."""
+    try:
+        _csrf()
+        result = authorize_native_no_transfer_recovery_committed(
+            tenant_id=tenant_id, actor_user_id=int(current_user.id),
+            plan_sha256=str(request.form.get('plan_sha256') or ''),
+            assessment_sha256=str(request.form.get('assessment_sha256') or ''),
+            confirmed=request.form.get('confirm_no_transfer_authorization') == 'authorize',
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_native_recovery_authorization_blocked',
+            status='warning', title='Recovery Authorization Blocked',
+            message=str(exc),
+            detail='Independent authorization was not recorded; provider state is unchanged.',
+            metadata={'tenant_id': tenant_id, 'operation': 'native_no_transfer_authorization'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_native_recovery_authorized',
+            status='info', title='No-Transfer Recovery Authorized',
+            message='Original requester may now attempt a fresh provider-verified plan restart.',
+            detail='Fresh assessment/decision expire; new SHA will require independent approval again.',
+            metadata={'tenant_id': tenant_id, 'operation': 'native_no_transfer_authorization',
+                      'assessment_sha256': result['assessment_sha256']},
         )
     return _tenant_section_redirect('registry')
 

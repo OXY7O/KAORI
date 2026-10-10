@@ -648,7 +648,9 @@
                                                     <div class="min-w-0">
                                                         <p class="text-xs font-semibold text-status-warning-text">Approval is no longer current</p>
                                                         <p class="mt-0.5 text-xs leading-5 text-content-secondary">
-                                                            {% if row.native_release_readiness.approval_expired %}
+                                                            {% if row.native_release_readiness.provider_handoff_recovery_required %}
+                                                                This plan also has a failed Native handoff. Ordinary restart is blocked until a governed no-transfer recovery assessment and independent authorization are recorded in Step 4.
+                                                            {% elif row.native_release_readiness.approval_expired %}
                                                                 The recorded independent approval or plan expired. Platform Admin acceptance is unavailable until the original requester restarts the plan and a different operator reviews the new SHA.
                                                             {% else %}
                                                                 The provider Release review expired. Refresh the provider scope before proceeding.
@@ -1264,6 +1266,152 @@
                                                class="inline-flex min-h-9 items-center gap-1.5 text-xs font-semibold text-kaori-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                                                 Review Handoff Evidence <i data-lucide="arrow-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                             </a>
+
+                                            {% set recovery_plan = row.release_handoff_plan %}
+                                            {% set recovery_assessment = row.get('release_native_no_transfer_assessment') %}
+                                            {% set recovery_decision = row.get('release_native_no_transfer_decision') %}
+                                            {% set recovery_requester = recovery_plan and recovery_plan.requested_by == current_user.id %}
+                                            {% set recovery_operator_permitted = current_user.has_permission('tenant.manage') and current_user.has_permission('integrations.manage') and current_user.has_permission('clusters.manage') %}
+                                            {% set recovery_independent = recovery_assessment and recovery_plan and current_user.id != recovery_plan.requested_by and current_user.id != recovery_assessment.assessed_by and current_user.id != recovery_assessment.executor_actor_id %}
+                                            <div class="mt-3 rounded-lg border border-outline-subtle bg-surface-card px-3 py-3" data-native-no-transfer-recovery>
+                                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                                    <p class="text-xs font-semibold text-content-primary">Governed No-Transfer Recovery</p>
+                                                    {% if native_cycle.no_transfer_authorized_current %}
+                                                        {{ table_label.status_label('Authorized for Fresh Restart', 'success') }}
+                                                    {% elif recovery_decision and recovery_plan and recovery_decision.plan_sha256 == recovery_plan.plan_sha256 %}
+                                                        {{ table_label.status_label('Reassessment Required', 'warning') }}
+                                                    {% elif native_cycle.no_transfer_assessment_current %}
+                                                        {{ table_label.status_label('Independent Decision Required', 'warning') }}
+                                                    {% else %}
+                                                        {{ table_label.status_label('Assessment Required', 'warning') }}
+                                                    {% endif %}
+                                                </div>
+                                                <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                                    Read-only Kubernetes ownership and retained metadata evidence, original failed-executor audit, independent authorization, then requester-only fresh restart. No automatic mutation or Release.
+                                                </p>
+                                                {% if not recovery_plan %}
+                                                    <p class="mt-2 text-xs text-status-warning-text">The active Native recovery plan is unavailable.</p>
+                                                {% elif recovery_decision and recovery_decision.plan_sha256 == recovery_plan.plan_sha256 and not native_cycle.no_transfer_authorized_current %}
+                                                    <p class="mt-2 text-xs text-status-warning-text">The previous decision expired or is no longer current. Restart the read-only assessment with a new assessment SHA.</p>
+                                                    {% if recovery_requester and recovery_operator_permitted %}
+
+                                                    <form method="post"
+                                                          action="{{ url_for('tenant.assess_native_no_transfer_recovery_route', tenant_id=tenant.id) }}"
+                                                          hx-post="{{ url_for('tenant.assess_native_no_transfer_recovery_route', tenant_id=tenant.id) }}"
+                                                          hx-target="#tenant-management-detail"
+                                                          hx-select="#tenant-management-detail"
+                                                          hx-swap="outerHTML show:none focus-scroll:false"
+                                                          hx-indicator="#tenant-management-loading"
+                                                          hx-disabled-elt="find button[type='submit']"
+                                                          class="mt-3 space-y-2.5 border-t border-outline-subtle pt-3">
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                        <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                                                        <input type="hidden" name="tenant_detail_section" value="release">
+                                                        <input type="hidden" name="tenant_release_step" value="finalize">
+                                                        {% for state_key, state_value in registry_state.items() %}
+                                                            <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
+                                                        {% endfor %}
+                                                        <input type="hidden" name="plan_sha256" value="{{ recovery_plan.plan_sha256 }}">
+                                                        <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                                                            <input type="checkbox" name="confirm_no_transfer_assessment" value="assess" required class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
+                                                            <span>I request read-only authoritative verification; no Kubernetes ownership mutation or Release is authorized.</span>
+                                                        </label>
+                                                        <button type="submit" class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-progress disabled:opacity-60">Reassess No-Transfer Provider State</button>
+                                                    </form>
+                                                    {% endif %}
+                                                {% elif native_cycle.no_transfer_authorized_current %}
+                                                    <p class="mt-2 text-xs leading-5 text-content-secondary">Independent recovery decision recorded. The original requester must recheck exact provider state and history; expired approval cannot be inherited.</p>
+                                                    {% if recovery_requester and recovery_operator_permitted %}
+
+                                                    <form method="post"
+                                                          action="{{ url_for('tenant.restart_expired_tenant_release_handoff_route', tenant_id=tenant.id) }}"
+                                                          hx-post="{{ url_for('tenant.restart_expired_tenant_release_handoff_route', tenant_id=tenant.id) }}"
+                                                          hx-target="#tenant-management-detail"
+                                                          hx-select="#tenant-management-detail"
+                                                          hx-swap="outerHTML show:none focus-scroll:false"
+                                                          hx-indicator="#tenant-management-loading"
+                                                          hx-disabled-elt="find button[type='submit']"
+                                                          class="mt-3 space-y-2.5 border-t border-outline-subtle pt-3">
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                        <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                                                        <input type="hidden" name="tenant_detail_section" value="release">
+                                                        <input type="hidden" name="tenant_release_step" value="finalize">
+                                                        {% for state_key, state_value in registry_state.items() %}
+                                                            <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
+                                                        {% endfor %}
+                                                        <input type="hidden" name="plan_sha256" value="{{ recovery_plan.plan_sha256 }}">
+                                                        <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                                                            <input type="checkbox" name="confirm_handoff_restart" value="restart" required class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
+                                                            <span>I authorize a fresh Plan SHA only, requiring new independent review and Platform Admin acceptance.</span>
+                                                        </label>
+                                                        <button type="submit" class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-progress disabled:opacity-60">Restart with Fresh Provider Verification</button>
+                                                    </form>
+                                                    {% else %}
+                                                        <p class="mt-2 text-xs text-content-muted">Await the original authorized requester; this decision does not transfer account identity.</p>
+                                                    {% endif %}
+                                                {% elif native_cycle.no_transfer_assessment_current %}
+                                                    <p class="mt-2 text-xs leading-5 text-content-secondary">Assessment recorded for the exact Plan SHA. The requester, assessor and original failed executor cannot authorize this recovery; a separate reviewer is required.</p>
+                                                    {% if recovery_independent and recovery_operator_permitted %}
+
+                                                    <form method="post"
+                                                          action="{{ url_for('tenant.authorize_native_no_transfer_recovery_route', tenant_id=tenant.id) }}"
+                                                          hx-post="{{ url_for('tenant.authorize_native_no_transfer_recovery_route', tenant_id=tenant.id) }}"
+                                                          hx-target="#tenant-management-detail"
+                                                          hx-select="#tenant-management-detail"
+                                                          hx-swap="outerHTML show:none focus-scroll:false"
+                                                          hx-indicator="#tenant-management-loading"
+                                                          hx-disabled-elt="find button[type='submit']"
+                                                          class="mt-3 space-y-2.5 border-t border-outline-subtle pt-3">
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                        <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                                                        <input type="hidden" name="tenant_detail_section" value="release">
+                                                        <input type="hidden" name="tenant_release_step" value="finalize">
+                                                        {% for state_key, state_value in registry_state.items() %}
+                                                            <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
+                                                        {% endfor %}
+                                                        <input type="hidden" name="plan_sha256" value="{{ recovery_plan.plan_sha256 }}">
+                                                        <input type="hidden" name="assessment_sha256" value="{{ recovery_assessment.assessment_sha256 }}">
+                                                        <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                                                            <input type="checkbox" name="confirm_no_transfer_authorization" value="authorize" required class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
+                                                            <span>I independently authorize only an original-requester restart for this exact immutable assessment, not the provider transfer.</span>
+                                                        </label>
+                                                        <button type="submit" class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-progress disabled:opacity-60">Authorize Reviewed No-Transfer Recovery</button>
+                                                    </form>
+                                                    {% else %}
+                                                        <p class="mt-2 text-xs text-content-muted">Await an authorized third-party recovery reviewer. The original requester and executor cannot approve themselves.</p>
+                                                    {% endif %}
+                                                {% else %}
+                                                    <p class="mt-2 text-xs leading-5 text-content-secondary">A historical 0/2 counter cannot prove no mutation. Original requester must assess live provider state against every immutable dry-run snapshot first.</p>
+                                                    {% if recovery_requester and recovery_operator_permitted %}
+
+                                                    <form method="post"
+                                                          action="{{ url_for('tenant.assess_native_no_transfer_recovery_route', tenant_id=tenant.id) }}"
+                                                          hx-post="{{ url_for('tenant.assess_native_no_transfer_recovery_route', tenant_id=tenant.id) }}"
+                                                          hx-target="#tenant-management-detail"
+                                                          hx-select="#tenant-management-detail"
+                                                          hx-swap="outerHTML show:none focus-scroll:false"
+                                                          hx-indicator="#tenant-management-loading"
+                                                          hx-disabled-elt="find button[type='submit']"
+                                                          class="mt-3 space-y-2.5 border-t border-outline-subtle pt-3">
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                        <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                                                        <input type="hidden" name="tenant_detail_section" value="release">
+                                                        <input type="hidden" name="tenant_release_step" value="finalize">
+                                                        {% for state_key, state_value in registry_state.items() %}
+                                                            <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
+                                                        {% endfor %}
+                                                        <input type="hidden" name="plan_sha256" value="{{ recovery_plan.plan_sha256 }}">
+                                                        <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                                                            <input type="checkbox" name="confirm_no_transfer_assessment" value="assess" required class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
+                                                            <span>I request read-only authoritative verification; no Kubernetes ownership mutation or Release is authorized.</span>
+                                                        </label>
+                                                        <button type="submit" class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-progress disabled:opacity-60">Assess No-Transfer Provider State</button>
+                                                    </form>
+                                                    {% else %}
+                                                        <p class="mt-2 text-xs text-content-muted">Ask the original requester (User ID {{ recovery_plan.requested_by }}) to initiate the read-only assessment.</p>
+                                                    {% endif %}
+                                                {% endif %}
+                                            </div>
                                         </div>
                                     {% elif native_cycle.approval_expired %}
                                         <div class="mt-3 min-w-0" role="status" aria-label="Expired handoff recovery">
