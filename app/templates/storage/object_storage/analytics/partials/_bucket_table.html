@@ -5,6 +5,8 @@
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "analytics/components/_record_pagination.html" as record_pagination %}
 <section id="object-storage-bucket-table-panel"
+         data-analytics-lazy-section="true"
+         data-analytics-load-state="idle"
          class="{{ analysis_surface.evidence_shell_classes() if analysis_surface is defined else table_ui.block_classes() }}">
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
