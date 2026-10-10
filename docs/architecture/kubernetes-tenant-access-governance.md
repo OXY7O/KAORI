@@ -1040,44 +1040,56 @@ Production is pipeline-first. A namespace whose canonical Tenant Environment is 
 The production policy records non-secret decision evidence for downstream Activity, audit correlation (#122), and Tenant Governance Intelligence (#123). Kubernetes remains authoritative for effective authentication/RBAC; this policy does not replace Kubernetes audit evidence for operations performed outside KAORI-managed flows.
 
 
-## Native Released successor acceptance authority (#1047)
+## Native Platform Admin Release authority (#1047, approved 2026-10-10)
 
-The Native Kubernetes Release successor is recognized through the authoritative
-cluster authentication API, **not** through a KAORI SSO username, free-text
-successor label, ticket, or a second KAORI administrator approval.
+The administrative Kubernetes provider connection registered in KAORI uses an
+X.509 client certificate in its already governed kubeconfig. For the observed
+cluster Kubernetes reports principal `kubernetes-admin` with group
+`kubeadm:cluster-admins` and a hashed X.509 credential identifier. This is
+the **provider execution identity**. It is **not** an external successor,
+a KAORI SSO user mapping, or a reason to grant ordinary users cluster access.
 
-The accepted decision for this bounded Native workflow is:
+An authorized KAORI **Platform Admin** performs Native (and, under its own
+authority, Capsule) infrastructure administration. Ordinary Tenant users are
+delegated only explicit JumpServer/pipeline/RBAC access as governed separately
+by Tenant access controls (#690). Release means KAORI ceases governance and
+automatic reconciliation of the released objects while Platform Admin remains
+the infrastructure authority. Provider-owned specs and workloads are preserved.
 
-1. An independent KAORI operator acknowledges the exact immutable handoff plan.
-2. The receiving successor explicitly accepts the *same* plan and its full
-   Namespace/ResourceQuota/LimitRange inventory using a transient Kubernetes
-   bearer credential. The cluster's AuthenticationV1 `TokenReview` establishes
-   the provider username, stable UID and membership in the exact Kubernetes
-   group identified by the handoff successor label. Service-account/system
-   identities and impersonated KAORI display names are not admitted.
-3. The cluster's AuthorizationV1 `SubjectAccessReview` checks `get` and
-   `patch` authority for each named Namespace, ResourceQuota and LimitRange
-   in that reviewed scope. A denied/evaluation-error response blocks acceptance;
-   KAORI does not grant new RBAC or silently expand access.
-4. A distinct explicit consent POST commits actor, authoritative principal UID,
-   scoped resources, plan SHA, provider identity/fingerprint and timestamp into
-   an existing `AuditEvent`. **Never persist the bearer credential**. The
-   expiry window remains 15 minutes and each acceptance is bound to only one
-   immutable plan generation. A new plan requires new consent.
-5. A future admitted live executor MUST reauthenticate the same short-lived
-   successor provider identity and recheck exact resource authority on the
-   execution request, then verify every object after the conditional JSON
-   PATCH. This acceptance step alone never mutates Kubernetes or sets Released.
+Native Release requires two independent authorization domains:
 
-Provider-issued group membership is source of truth. A member's KAORI
-application identity is retained separately as the *operator who submitted
-the consent*, not conflated with the verified Kubernetes principal. TokenReview
-is bearer-possession authentication rather than cryptographic user-signature
-non-repudiation; deployment must use protected TLS ingress and avoid access
-logs of POST bodies. Human UAT must validate trust/revocation behavior for the
-actual cluster authenticator before promotion.
+1. **Human governance:** current immutable handoff SHA/UID/resourceVersion,
+   fresh provider/dependency preflight, separate KAORI requester and independent
+   reviewer, then explicit confirmation from an authorized Platform Admin with
+   existing `tenant.manage`, `integrations.manage` and `clusters.manage`
+   permissions. The successor owner label is a governance name only, **never a
+   Kubernetes group or effective RBAC grant**.
+2. **Provider execution:** use the already registered, TLS-verified cluster
+   kubeconfig through the existing KubernetesClient. Kubernetes
+   `SelfSubjectReview` proves the actual executing X.509-authenticated
+   principal. `SelfSubjectAccessReview` must allow `get` and `patch`
+   separately for every exact Namespace, ResourceQuota and LimitRange in the
+   handoff scope. These calls are evidence of identity and effective
+   permission, **not** human acceptance. The executor rechecks these checks
+   immediately before starting provider mutation; no external token or private
+   key is submitted in a web form, and no secret material is committed.
 
-The provider group must already possess the required effective Kubernetes RBAC.
-This workflow does not provision successor RoleBindings, expand cluster scopes,
-or change Capsule-controlled resources. Release and Re-adopt still require their
-own verified executor/read-back/handback gates.
+Evidence is committed into the existing AuditEvent stream and bound to plan,
+cluster, Tenant generation, provider inventory and the administrative actor.
+Older TokenReview/bearer-based successor acceptance receipts are explicitly
+**not admitted** by the new Platform Admin contract, even when still present
+in audit history.
+
+Metadata-only UID/resourceVersion-conditioned PATCH and full provider read-back
+remain mandatory before `Released` can be committed. Re-adoption is a separate
+explicit Platform Admin handback operation with fresh kubeconfig authentication,
+provider checks, read-back and new-generation Discovery/Adopt. This does not
+restore old grants or create external IdP/group memberships. Capsule has its
+own provider-owned authority and is not silently treated as Native.
+
+The use of an existing cluster-admin-level kubeconfig is recorded as a
+privilege concentration risk. Longer term a least-privileged KAORI service
+identity with strictly scoped API verbs is preferable; it is a separately
+reviewed credential lifecycle change, **not** a prerequisite invented in this
+Release workstream. Independent human and real nonproduction provider UAT
+remain required before staging promotion; CI/CD is HOLD.
