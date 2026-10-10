@@ -144,6 +144,28 @@ separate POST from Save New Version and never silently mutates existing Namespac
 snapshots. No new JS, design tokens, data model, admission arithmetic or provider
 write path is introduced.
 
+### Resource Profile Manage: concise evidence and governance copy (#1035)
+
+Following DevContainer review, the Manage header shows an explicit existing
+semantic **Editable** or **Versioned Controls** label beside the title. Profile
+lineage is a shared metadata label (for example, **Independent Custom ·
+Operator-managed values**), not a free-floating explanatory sentence. The
+scattered four-value strip is grouped as **Contract** (Class, Version) and
+**Usage** (Namespace References, Capacity Decisions), with responsive
+two-column groups and no new card taxonomy.
+
+The historically stored governance-cutover description remains authoritative
+but is summarized in the identity display as **"Adopted baseline profile; no
+provider value changes requested."** The canonical full description remains
+available in the existing Custom edit field and is not mutated by rendering.
+
+Two other operational notes are compressed without changing their scope:
+**"Each Namespace is admitted, applied, and verified separately. Blocked
+Namespaces retain their prior committed version."** and **"Existing Namespace
+allocations stay unchanged; edits affect future allocations until explicitly
+applied."** These messages do not imply that saving a profile silently changes
+Namespace snapshots, or that a blocked rollout replaces a committed version.
+
 Local DevContainer Visual QA must cover the registry at desktop/mobile widths,
 unmanaged quota dimensions, long adopted profile names, Custom editing and
 preset governance disclosures, long descriptions, keyboard/focus, dark/light,
