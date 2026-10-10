@@ -1266,9 +1266,14 @@
                                                             Restart Expired Handoff Plan
                                                         </button>
                                                     </form>
+                                            {% elif row.release_handoff_plan
+                                                  and row.release_handoff_plan.requested_by != current_user.id %}
+                                                <p class="mt-3 border-t border-outline-subtle pt-2.5 text-xs leading-5 text-status-warning-text">
+                                                    This account is not the original requester (User ID {{ row.release_handoff_plan.requested_by }}). Ask that requester to restart after fresh provider verification; a different operator must approve the new SHA.
+                                                </p>
                                             {% else %}
                                                 <p class="mt-3 border-t border-outline-subtle pt-2.5 text-xs leading-5 text-status-warning-text">
-                                                    Only the original requester with the required permissions can restart this plan. Ask them to run fresh provider verification; a different operator must independently approve the new SHA.
+                                                    Restart requires the original requester with both Tenant and Integrations management permissions. Ask an authorized administrator to resolve account access without transferring requester identity.
                                                 </p>
                                             {% endif %}
                                         </div>
