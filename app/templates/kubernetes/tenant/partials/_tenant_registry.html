@@ -216,7 +216,7 @@
 
 {# Only one management panel is rendered, outside the overflowing table.
    Selection is scoped to the current authorized paginated Tenant row set. #}
-<div id="tenant-registry-management-panel" class="scroll-mt-5" aria-live="polite">
+<div id="tenant-registry-management-panel" class="scroll-mt-5">
 {% for row in tenant_rows %}
     {% set tenant = row.tenant %}
     {% if managed_tenant_id == tenant.id|string %}
