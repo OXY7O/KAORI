@@ -238,7 +238,20 @@ def test_zero_transfer_receipt_does_not_bypass_fresh_identity_comparison(monkeyp
             mutate=lambda evidence: {
                 **evidence,
                 'live_provider_identity': [
-                    {'kind': 'Namespace', 'name': 'sandbox', 'uid': 'different', 'resource_version': '21'},
+                    {'kind': 'Namespace', 'name': 'sandbox', 'uid': 'uid-1', 'resource_version': '22'},
+                ],
+            },
+        )
+
+
+def test_zero_transfer_receipt_does_not_bypass_fresh_provider_uid_check(monkeypatch):
+    with pytest.raises(ValueError, match='Namespace handoff coverage|Provider inventory changed'):
+        prepare(
+            monkeypatch, readback='zero',
+            mutate=lambda evidence: {
+                **evidence,
+                'live_provider_identity': [
+                    {'kind': 'Namespace', 'name': 'sandbox', 'uid': 'new-uid', 'resource_version': '21'},
                 ],
             },
         )
