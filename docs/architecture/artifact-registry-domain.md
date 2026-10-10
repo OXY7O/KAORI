@@ -178,6 +178,63 @@ responses, light/dark mode and mobile widths. Full Admission, CI/CD,
 staging/UAT deployment and main promotion remain **HOLD** until explicit
 authorization.
 
+### Registry UI Consistency Audit — active workspace family (#1087)
+
+**Scope:** Artifact Registry Overview, Inventory, Security, Runtime Usage,
+Governance, and Analytics as present on the current
+`kaori/review/staging-uat` implementation. This audit applies the already
+approved KAORI Design System v2, `section_intro`, the shared
+`operational_metric_card`, `section_card`, tab, table and pagination
+components. It does **not** introduce a new page archetype or prescribe the
+same nested-card geometry for every domain.
+
+| Workspace | Hero / evidence authority | Summary / section-intro treatment | Navigation / table pattern | Audit decision |
+| --- | --- | --- | --- | --- |
+| Overview | Operational Dashboard Hero and committed operational signals | KPI card grid owned by canonical Operational Dashboard composition; no extra KPI shell | Dashboard four operational workspace views | **Retain** — already canonical #911/#923 |
+| Inventory | Shared Hero / committed snapshot context | External **Operational Posture** intro; existing grouped posture metrics; Registry Inventory intro | Bounded Inventory table, HTMX filters and 5-row pagination | **Retain** — grouped posture contract intentionally differs from summary KPI cards (#931) |
+| Security | Shared Hero / Security Sync / committed scan evidence | External **Security Snapshot** intro and four independent `operational_metric_card` metrics per active security view | Small content-tabs family for Supply Chain; shared vulnerability/evidence registry and 5-row footer | **Align** section-intro hierarchy only (#1087, existing #948 authority) |
+| Runtime Usage | Shared Hero / committed correlation snapshot | External **Runtime Correlation** intro and four independent `operational_metric_card` metrics | Runtime Bindings section intro and bounded table; committed correlation, 5-row footer | **Align** section-intro hierarchy only (#1087, existing #897 authority) |
+| Governance | Shared Hero / Governance Sync / committed policy evidence | External **Governance Coverage** intro and four independent posture cards carrying provider-semantic badges; no enclosing outer card | External Governance Evidence intro; standard URL/HTMX content tabs for Policies/Replication; 5-row footer | **Restore** independent cards under #950; preserve content tabs |
+| Analytics | Shared Hero / committed analytical materialization | External **Registry Analytical Posture** intro and four independent summary cards, without a page-local uppercase eyebrow | Seven analytics-domain framed tabs remain appropriate for operational-domain navigation; lazy bounded HTMX summary/sections | **Align** summary intro only (#1087, existing #899 authority) |
+
+#### Component and composition rules applied in this audit
+
+- A major **summary / KPI group** on Security, Runtime, Governance or Analytics
+  uses a plain `section_intro` outside a `grid gap-4 sm:grid-cols-2
+  xl:grid-cols-4` of **standalone** evidence cards. A second enclosing card
+  border is not justified by shared evidence alone.
+- The **Inventory Operational Posture** is intentionally a coordinated
+  evidence panel with a common operational meaning; it continues using its
+  approved `operational_section_card` and `posture_grid`. The Overview
+  dashboard continues using the canonical Operational Dashboard composition.
+- **Navigation follows interaction scope**, not cosmetic uniformity. The
+  two-view Governance and closely related Supply Chain content use
+  `content_tabs.render_links`; the seven-domain Analytics workspace retains
+  the approved `framed_workspace_tabs.render_navigation`. Both are
+  server/URL-owned and preserve HTMX boundaries and keyboard/navigation
+  semantics.
+- Use shared Hero, loading/empty/error, filters, tables, labels and default
+  five-row paginated footer in each owning workspace; never replace provider
+  semantics with generic optimistic states. Icons and badges convey meaning,
+  not decorative visual repetition. Avoid creating new page-local CSS/JS,
+  tokens, wrappers or one-off card families.
+
+**Implementation separation:** #950 covers only the Governance standalone
+card rollback; #1087 covers Security/Runtime/Analytics summary intro
+normalization and this cross-page audit. Existing #911, #931, #948, #897 and
+#899 remain authoritative for their specific capability data or backend
+behaviors. Work is grouped only for fast DevContainer review at
+`kaori/review/staging-uat`; no CI/CD Full Admission, deployment, staging
+promotion or main promotion occurs without explicit approval.
+
+**Developer / human Visual QA:** verify summary headings, four independent
+cards with consistent gaps/heights, no double borders, mobile stacked cards,
+Violet light/dark contrasts, meaningful per-metric badges, Security
+Vulnerabilities/Supply Chain view switching, Policies/Replication HTMX,
+Analytics framed seven-domain URL transitions, 5-row pagination, and zero/
+nonzero committed evidence. A static Jinja source review is **not** browser
+Visual QA or human acceptance.
+
 ### Governance Coverage and Evidence layout (#950 DevContainer follow-up)
 
 The Governance evidence area now follows the established Security/Supply
