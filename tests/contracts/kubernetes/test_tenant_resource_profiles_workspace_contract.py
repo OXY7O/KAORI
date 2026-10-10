@@ -128,11 +128,66 @@ def test_capacity_decisions_registry_is_compact_and_exposes_read_only_evidence()
     assert 'row.data_cutoff_label' in template
     assert 'decision.correlation_id' in template
     assert "Blocked preflight does not authorize provider allocation mutation." in template
-    assert '<details class="group mt-4' in template
+    assert '<details class="group border-t border-outline-subtle">' in template
+    assert 'id="{{ dialog_id }}-admission-title"' in template
+    assert 'id="{{ dialog_id }}-contract-title"' in template
+    assert 'id="{{ dialog_id }}-record-title"' in template
+    assert 'aria-labelledby="{{ dialog_id }}-admission-title"' in template
+    assert "template"  # Existing committed read-only detail contract
     assert 'hx-post' not in template
     assert '<form method="post"' not in template
     assert 'class TenantCapacityDecision(db.Model)' in model
     assert "evidence_json: Mapped[dict]" in model
+
+
+def test_capacity_decision_modal_uses_single_evidence_surface_and_quiet_traceability() -> None:
+    template = read('app/templates/kubernetes/tenant/partials/_capacity_decisions.html')
+    start = template.index('<dialog id="{{ dialog_id }}"')
+    end = template.index('</dialog>', start)
+    dialog = template[start:end]
+
+    # Keep the native header clear of status/table-cell alignment inheritance.
+    assert 'p-0 text-left shadow-2xl' in dialog
+    assert 'bg-surface-card px-4 py-4 text-left sm:px-6' in dialog
+    assert 'bg-surface-page p-4 text-left sm:p-5' in dialog
+    assert 'Admission Evidence' in dialog
+    assert 'id="{{ dialog_id }}-title"' in dialog
+    assert 'id="{{ dialog_id }}-description"' in dialog
+    assert 'data-kaori-dialog-close' in dialog
+
+    # One bordered reading surface, rather than nested independent cards.
+    assert dialog.count('overflow-hidden rounded-xl border border-outline-subtle bg-surface-card') == 1
+    for heading in ('Admission', 'Target &amp; Contract', 'Committed Evidence'):
+        assert heading in dialog
+    assert dialog.index('id="{{ dialog_id }}-admission-title"') < dialog.index(
+        'id="{{ dialog_id }}-contract-title"'
+    ) < dialog.index('id="{{ dialog_id }}-record-title"') < dialog.index('>Traceability</span>')
+    assert dialog.count('border-t border-outline-subtle px-4 py-4 sm:px-5') == 2
+
+    # Keep the decision distinct from state, the full reason (no indentation),
+    # the pinned contract, cutoff and correlation in source-owned evidence.
+    assert 'decision.decision|title, decision_tone' in dialog
+    assert 'decision.capacity_state, state_tone' in dialog
+    assert 'evidence.get(\'reason\') or \'No committed explanation recorded.\'' in dialog
+    assert 'whitespace-pre-line break-words text-sm' in dialog
+    assert 'decision.resource_profile_version or row.profile.version' in dialog
+    assert "evidence.get('allocation_scope')" in dialog
+    assert 'row.created_at_label' in dialog
+    assert 'row.data_cutoff_label' in dialog
+    assert "capacity_source.get('snapshot_state')" in dialog
+    assert 'decision.correlation_id' in dialog
+    assert "capacity_source.get('snapshot_id')" in dialog
+
+    # Traceability is a native, default-closed keyboard disclosure at the bottom,
+    # not another large inner card, and no modal action mutates providers.
+    assert '<details class="group border-t border-outline-subtle">' in dialog
+    assert 'open>' not in dialog.split('<details class="group border-t border-outline-subtle">', 1)[1].split(
+        '<summary', 1
+    )[0]
+    assert 'group-open:rotate-180' in dialog
+    assert 'px-4 py-3 text-left focus-visible:' in dialog
+    assert 'hx-post' not in dialog
+    assert '<form' not in dialog
 
 
 def test_namespace_registry_uses_compact_rows_and_committed_read_only_detail_dialog() -> None:
