@@ -327,6 +327,45 @@ def test_release_step_three_separates_plan_review_external_claim_and_platform_ad
 
 
 
+def test_native_platform_admin_acceptance_requires_verified_cluster_tls_in_ui():
+    detail = read(DETAIL)
+    approval = detail.split('id="tenant-release-stage-approval"', 1)[1].split(
+        'id="tenant-release-stage-finalize"', 1
+    )[0]
+    final = detail.split('id="tenant-release-stage-finalize"', 1)[1].split(
+        "{% if row.release_preflight and row.release_preflight.status == 'handoff_review_required'", 1
+    )[0]
+    Environment().parse(detail)
+
+    # Status must not conceal missing/expired independent review evidence.
+    assert 'current_handoff_approval.plan_sha256 == current_handoff_plan.plan_sha256' in approval
+    assert 'row.native_release_readiness.approval_complete' in approval
+    assert 'row.native_release_readiness.review_complete' in approval
+    assert 'Verified TLS Required' in approval
+    assert 'row.cluster.kubernetes_connection.verify_ssl is not true' in approval
+
+    # The existing acceptance POST must only render in the positive TLS
+    # branch. The backend continues to fail closed independently.
+    before_acceptance = approval.split('<form method="post"\n                                                              action="{{ url_for(\'tenant.accept_native_successor_handoff_route', 1)[0]
+    assert 'aria-label="Kubernetes verified TLS prerequisite"' in before_acceptance
+    assert 'if not row.cluster or not row.cluster.kubernetes_connection' in before_acceptance
+    assert '{% else %}' in before_acceptance
+    assert "url_for('cluster.edit_cluster', cluster_id=row.cluster.id)" in approval
+    assert "current_user.has_permission('clusters.manage')" in approval
+    assert 'Full Validation' in approval
+    assert 'name="confirm_successor_acceptance"' in approval
+
+    # Step 4 action explains the same canonical connection requirement.
+    assert 'Next required action' in final
+    assert 'Verified TLS Required' in final
+    assert 'Test Connection and complete Full Validation' in final
+    assert "url_for('cluster.edit_cluster', cluster_id=row.cluster.id)" in final
+
+    # Existing operations are not deleted and may still render when eligible.
+    assert detail.count('<form ') == 14
+    assert detail.count('name="csrf_token"') == 14
+
+
 def test_step_three_freshness_matches_native_readiness_and_hides_stale_acceptance():
     detail = read(DETAIL)
     step = detail.split('id="tenant-release-stage-approval"', 1)[1].split(
