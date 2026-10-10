@@ -39,6 +39,37 @@ by the UI tracker. A future change to true lazy Overview content requires a
 separate scoped issue with fast-shell read-model, fragment endpoints and
 real data-loading evidence; don't turn static tabs into fake HTMX requests.
 
+## Canonical two-card Analytics readiness layout (#1114)
+
+The six Object Storage Analytics views now use the same **two-column,
+two-card** shared composition as Kubernetes and Registry Analytics, rather
+than the former three/four equal-width status tiles. The form and header
+continue to reuse `analytics/components/_controls_readiness.html::frame`.
+
+- **Metrics Source Status** (Overview, Capacity, Performance, Forecast,
+  Top Consumers) uses the reusable `source_card`: the status is the
+  **committed Metrics Contract At Collection** state, with source provider,
+  qualified instance and committed inventory timestamp. This must not
+  impersonate a live Metrics Source connectivity probe.
+- **Alert Source Status** (Alerts) uses the same `source_card` with
+  committed selected stream and Alertmanager lifecycle provenance.
+  Metrics Snapshot Source and fallback/unavailable warnings remain visible
+  as contextual evidence below the two main cards.
+- **Latest Analytics Data Snapshot** uses the reusable `snapshot_card`
+  with committed `generated_at`, selected materialized dataset time range,
+  `expires_at` (Refresh Due) and `last_attempt_at` (Worker Attempt).
+  `analytics_snapshot_state` exposes `expires_at` read-only from the
+  existing snapshot model; no database schema or worker mutation changed.
+- Forecast's separate worker remains distinct and visible as a contextual
+  **Forecast Worker Snapshot** status below the main analytics evidence.
+  Source alerts, stale-grace and dispatch diagnostics are preserved.
+
+Normal page GET remains committed-state only, with existing bounded
+JobExecution refresh behavior; no additional live Metrics Source query,
+UI-only collector, scheduler, or false coverage count is introduced. Use
+the existing strict Jinja render regression over all six page variants
+to guard the actual two-card output and supporting source evidence.
+
 ## Evidence ownership
 
 - Committed Object Storage Inventory is authoritative for current-state asset,
