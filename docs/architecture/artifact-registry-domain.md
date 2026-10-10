@@ -546,8 +546,10 @@ and filter both committed analytical summary and domain results before
 aggregation/pagination. The analysis window refers only to the age of the
 most recent committed **materialization**, never to invented provider
 telemetry windows or resampled raw metrics; out-of-range snapshots are
-explicitly excluded. Alerts source and record filters preserve the selected
-provider/window through pagination and browser history.
+explicitly excluded. When snapshots exist outside the selected lookback,
+readiness reports **No Snapshots in Window** rather than incorrectly claiming
+Registry analytics were never collected. Alerts source and record filters
+preserve the selected provider/window through pagination and browser history.
 Neither domain introduces a false Metrics Source readiness claim for Registry.
 
 The Registry panel **does not contain manual Collect/Configure buttons**.

@@ -206,10 +206,13 @@ def test_registry_analytics_readiness_reuses_k8s_shared_controls_without_buttons
     assert 'hx-push-url="true"' in registry
     assert 'hx-indicator="#artifact-registry-analytics-refresh-indicator"' in registry
     assert 'loading=readiness.is_active' in registry
-    assert 'header_content=worker_status' in registry
+    assert "header_content=worker_status if readiness.is_active else ''" in registry
     assert 'header_content' in common
     assert '{% if header_content %}{{ header_content }}{% endif %}' in common
-    assert registry.index('header_content=worker_status') < registry.index('<form id="artifact-registry-analytics-filter"')
+    assert (
+        registry.index("header_content=worker_status")
+        < registry.index('<form id="artifact-registry-analytics-filter"')
+    )
     assert registry.count('include "artifact_registry/partials/_analytics_collect_live_state.html"') == 1
     assert 'Collect Analytics Data' not in registry
     assert 'Configure Collection' not in registry
@@ -320,6 +323,11 @@ def test_registry_analytics_scope_and_committed_snapshot_window_are_real_filters
         '7d',
         now=now,
     )
+    readiness_source = (
+        ROOT / 'app/artifact_registry/analytics_job_adapter.py'
+    ).read_text()
+    assert 'No Snapshots in Window' in readiness_source
+    assert 'has_older_evidence' in readiness_source
 
 
 def test_registry_analytics_selector_preserves_scope_through_routes_and_alerts() -> None:
@@ -351,7 +359,7 @@ def test_registry_analytics_selector_preserves_scope_through_routes_and_alerts()
     assert 'name="snapshot_window" value="{{ analytics.snapshot_window }}"' in section
     assert "'snapshot_window': analytics.snapshot_window" in section
     assert "artifact-registry-analytics-collect-live-state" not in controls
-    assert "header_content=worker_status" in controls
+    assert "header_content=worker_status if readiness.is_active else ''" in controls
 
 
 def test_registry_analytics_materialization_is_bounded_and_worker_owned() -> None:

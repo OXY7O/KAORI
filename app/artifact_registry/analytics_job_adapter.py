@@ -185,7 +185,11 @@ def _analytics_snapshot_posture(
     if not eligible_count:
         return 'Blocked', 'warning', 'No eligible Registry providers. Validate and enable a provider first.'
     if not covered_count:
-        return 'Not Materialized', 'warning', 'The registered analytics worker has not yet committed Registry snapshots.'
+        return (
+            'Not Materialized',
+            'warning',
+            'The registered analytics worker has not yet committed Registry snapshots.',
+        )
     if current_count == eligible_count:
         return 'Current Snapshot', 'normal', 'All eligible providers have current committed analytics evidence.'
     if current_count:
@@ -261,9 +265,10 @@ def build_registry_analytics_readiness(
         ids = [int(row[0]) for row in latest_ids]
         if ids:
             snapshots = RegistryAnalyticsSnapshot.query.filter(RegistryAnalyticsSnapshot.id.in_(ids)).all()
-            snapshots = [
-                row for row in snapshots if analytics_snapshot_matches_window(row, snapshot_window)
-            ]
+    has_older_evidence = bool(snapshots)
+    snapshots = [
+        row for row in snapshots if analytics_snapshot_matches_window(row, snapshot_window)
+    ]
 
     now = datetime.now(UTC)
     current = [
@@ -276,6 +281,16 @@ def build_registry_analytics_readiness(
         covered_count=len(snapshots),
         current_count=len(current),
     )
+    if (
+        normalize_registry_analytics_window(snapshot_window) != 'current'
+        and has_older_evidence
+        and not snapshots
+    ):
+        label, tone, helper = (
+            'No Snapshots in Window',
+            'info',
+            'Previous committed snapshots exist, but none were generated within the selected lookback.',
+        )
     if active is not None:
         execution_label = 'Queued' if active.status == 'queued' else 'Collecting'
         execution_tone = 'pending'

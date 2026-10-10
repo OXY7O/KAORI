@@ -16,7 +16,7 @@
         'artifact-registry-analytics-refresh-indicator',
         eyebrow='Registry Analytics',
         loading=readiness.is_active,
-        header_content=worker_status
+        header_content=worker_status if readiness.is_active else ''
         ) %}
         <form id="artifact-registry-analytics-filter"
               method="get"
