@@ -703,19 +703,18 @@
                                                               class="mt-2 space-y-2 rounded-lg border border-outline-subtle bg-surface-card p-3">
                                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                             <input type="hidden" name="plan_sha256" value="{{ handoff_plan.plan_sha256 }}">
-                                                            <label class="block text-xs font-medium text-content-secondary">
-                                                                Reauthenticate Kubernetes successor (credential not retained)
-                                                                <input name="kubernetes_successor_token" type="password"
-                                                                       maxlength="16384" autocomplete="off"
-                                                                       spellcheck="false" required
-                                                                       class="mt-1 block h-9 w-full rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs text-content-primary">
-                                                            </label>
+                                                            <p class="text-xs leading-5 text-content-secondary">
+                                                                KAORI will recheck its configured Kubernetes kubeconfig
+                                                                identity and permission for each resource before executing.
+                                                                No successor token or private key is required.
+                                                            </p>
                                                             <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
                                                                 <input name="confirm_native_handoff_execution" type="checkbox"
                                                                        value="transfer" required
                                                                        class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
-                                                                <span>Execute exact Native metadata-only transfer after fresh authentication and provider checks.
-                                                                    Do not change CPU, memory, quotas or workloads. Recovery is required on partial failure.</span>
+                                                                <span>As a Platform Admin, I authorize exact Native governance metadata transfer
+                                                                    after current provider checks. CPU, memory, quota and workloads remain untouched.
+                                                                    Recovery is required on any partial failure.</span>
                                                             </label>
                                                             <button type="submit"
                                                                     class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">

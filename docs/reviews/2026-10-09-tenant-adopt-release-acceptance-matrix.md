@@ -231,3 +231,26 @@ This code is **for local DevContainer/security UAT evaluation**, not evidence
 that provider mutation has passed nonproduction cluster tests or staging
 admission. No tests, CI/CD quality gates, staging deployment or production
 execution were performed during this GitHub implementation.
+
+
+## Approved Platform Admin kubeconfig execution correction (2026-10-10, #1048)
+
+The earlier token-authenticated *external* successor executor model is
+superseded. The administering humans are authorized KAORI Platform Admins,
+and the existing registered Kubernetes X.509 kubeconfig is the provider
+execution identity. An owner label denotes governance transfer, not RBAC
+membership or a new Kubernetes access grant.
+
+Live Native metadata-only execution requires the same independent plan,
+explicit Platform Admin acceptance (#1047), exact UID/RV and inventory
+fingerprint, fresh complete dry-run, plus a fresh Kubernetes
+SelfSubjectReview and SelfSubjectAccessReview for each resource's get/patch
+rights. The provider principal and credential identifier must match the
+committed acceptance. The executor no longer accepts a successor bearer
+token, external private key or second kubeconfig form input.
+
+Its in-progress/partial/verified AuditEvent lifecycle, CAS JSON Patch, server
+dry-run, preservation of CPU/memory/ResourceQuota/LimitRange and post-write
+read-back remain in place. An old bearer-mode acceptance receipt is **not**
+eligible for Platform Admin execution, even if historically committed.
+Real provider UAT remains unexecuted; no change to CI/CD gate HOLD.

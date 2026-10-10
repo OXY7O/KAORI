@@ -1003,16 +1003,14 @@ def dry_run_native_release_handoff_route(tenant_id: str):
 @tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/native-execute')
 @permission_required('tenant.manage')
 @permission_required('integrations.manage')
+@permission_required('clusters.manage')
 def execute_native_release_handoff_route(tenant_id: str):
-    """Explicit verified successor Native provider mutation, never Released."""
+    """Explicit Platform Admin Native provider mutation, never Released."""
     try:
         _csrf()
-        if not request.is_secure:
-            raise ValueError('Native successor credentials require verified HTTPS ingress.')
         result = execute_native_handoff_committed(
             tenant_id=tenant_id, actor_user_id=int(current_user.id),
             plan_sha256=str(request.form.get('plan_sha256') or ''),
-            provider_token=str(request.form.get('kubernetes_successor_token') or ''),
             confirmed=request.form.get('confirm_native_handoff_execution') == 'transfer',
         )
     except (ApiException, ValueError) as exc:

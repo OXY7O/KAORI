@@ -91,8 +91,7 @@ def test_executor_never_calls_provider_without_explicit_mutation_confirmation():
     with pytest.raises(ValueError, match='Explicit'):
         execute_native_handoff_committed(
             tenant_id='tenant-a', actor_user_id=31,
-            plan_sha256='a' * 64, provider_token='token',
-            confirmed=False,
+            plan_sha256='a' * 64, confirmed=False,
         )
 
 
@@ -106,10 +105,27 @@ def test_no_full_transfer_or_release_in_unadmitted_evidence():
     assert "'status': 'in_progress'" in source
     assert "partial_handoff_recovery_required" in source
     assert "'release_authorized': False" in source
-    assert "verify_native_successor_resource_authority(" in source
+    assert "verify_native_provider_admin_authority(" in source
+    assert "require_platform_admin_actor(" in source
     assert "require_current_native_acceptance(" in source
     assert "verify_external_native_component(" in source
     assert "with_for_update()" in source
     assert "delete_namespace(" not in source
     assert "delete_namespaced_resource_quota(" not in source
     assert "release_adopted_tenant_committed(" not in source
+
+
+def test_x509_platform_admin_authority_is_not_a_separate_successor_token():
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[3]
+    executor = (root / 'app/kubernetes/tenant/native_handoff_executor.py').read_text()
+    route = (root / 'app/kubernetes/tenant/routes.py').read_text()
+    view = (root / 'app/templates/kubernetes/tenant/partials/_tenant_registry.html').read_text()
+    assert "provider_token" not in executor
+    assert "provider_token" not in route
+    assert "kubernetes_successor_token" not in view or 'Successor Handback' in view
+    assert "verified_provider_identity" in (
+        root / 'app/kubernetes/tenant/native_successor_acceptance.py'
+    ).read_text()
+    assert "@permission_required('clusters.manage')" in route
