@@ -459,6 +459,8 @@ def get_tenant_registry_context(
                     handoff_execution=row['release_native_handoff_execution'],
                     readback_history=readback_histories.get(str(item.id), []),
                     execution_history=execution_histories.get(str(item.id), []),
+                    no_transfer_assessment=row['release_native_no_transfer_assessment'],
+                    no_transfer_decision=row['release_native_no_transfer_decision'],
                 )
         tenant_rows.append(row)
 
