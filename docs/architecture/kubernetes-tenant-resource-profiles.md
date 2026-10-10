@@ -157,6 +157,42 @@ Capsule profile names, released records, missing snapshot version, responsive
 overflow, light/dark styling and duplicate Namespace identities. CI/CD,
 Full Admission, staging/UAT and main promotion remain on HOLD.
 
+### Namespace Provisioning Registry row hierarchy (#1035 follow-up)
+
+A further DevContainer screenshot showed an older five-column registry with
+separate Resource Profile and Provider columns, unbounded adopted names and
+truncated reconciliation messages. The authoritative review-branch partial
+already renders a newer **Namespace / Tenant-Environment / Allocation / State /
+Details** table and a read-only committed evidence dialog. Do not reintroduce
+the old Provider column or duplicate its detail workflow.
+
+The current registry uses a predictable two-level row pattern. **Namespace**
+shows the full-on-hover identity, compact **Managed/Adopted ownership label**
+and committed generation (important for duplicate namespace history).
+**Tenant / Environment** preserves the tenant identity and environment.
+**Allocation** uses the previously approved short display-only profile name,
+and a single subdued `Snapshot vN / No pinned snapshot · Provider` line.
+**State** contains the authoritative provisioning status badge plus an
+optional compact `Control: ...` line derived from existing committed
+allocation-control evidence. Control is **not** treated as readiness or provider
+health. Full provenance and reconciliation text stay in the View More native
+dialog, whose read-only frozen allocation values remain authoritative.
+
+The fixed-layout table retains its existing `min-w-[1080px]` responsive
+scroll with proportions **25% / 18% / 32% / 15% / 10%**. The minimum Details
+column width still preserves the View More action; long names truncate
+visually with full `title` attributes. HTMX filter/search, default-five
+pagination, empty/error/loading conventions, native dialog, and light/dark
+tokens stay the same. No new backend model, arithmetic, provider call,
+mutation or component taxonomy is introduced.
+
+Review must verify Managed/Adopted, Ready/Released/Failed, Native/Capsule,
+missing snapshots, repeated namespaces across generations, long profile names
+and responsive desktop/mobile presentation. Verify the local DevContainer
+checkout actually points to `kaori/review/staging-uat` before comparing with
+screenshots. Runtime pytest/Jinja rendering and human Visual QA are pending;
+CI/CD, Full Admission, UAT deployment and main promotion remain HOLD.
+
 ### Namespace Registry: compact row and committed evidence detail (#1035)
 
 Following human DevContainer review, the Namespace Registry retains the
