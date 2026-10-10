@@ -60,10 +60,13 @@ def latest_no_transfer_decision(tenant_id: str) -> dict[str, Any] | None:
 
 
 def _source_history(tenant_id: str, plan: dict[str, Any]) -> dict[str, Any]:
-    """Permit exactly one provably failed-before-write attempt; all else fails closed.
+    """Prove every same-plan executor attempt failed before provider writes.
 
-    A 0/2 summary by itself is NOT proof; the complete committed executor
-    sequence and any external read-back for the SAME SHA are mandatory inputs.
+    A canonical history has one or more complete, ordered started/failed
+    pairs from the same executor actor. All same-plan external read-backs
+    must independently prove no transfer. Full history is digest-bound and
+    rechecked before assessment, independent decision and requester restart.
+    This never authorizes a provider mutation or Release.
     """
     events = (
         AuditEvent.query.filter(
@@ -77,7 +80,10 @@ def _source_history(tenant_id: str, plan: dict[str, Any]) -> dict[str, Any]:
         record = dict(event.metadata_json or {})
         sha = record.get('plan_sha256')
         if not isinstance(sha, str) or len(sha) != 64:
-            raise ValueError('Incomplete historical provider operation; independent recovery investigation required.')
+            raise ValueError(
+                'Incomplete historical provider operation; '
+                'independent recovery investigation required.'
+            )
         if sha != plan['plan_sha256']:
             continue
         item = {
@@ -88,11 +94,13 @@ def _source_history(tenant_id: str, plan: dict[str, Any]) -> dict[str, Any]:
             attempts.append(item)
         else:
             observations.append(item)
-    if len(attempts) != 2:
+
+    if len(attempts) < 2 or len(attempts) % 2:
         raise ValueError(
-            'Recovery requires exactly one started and one failed executor '
-            f'receipt (2 total); found {len(attempts)} same-plan executor receipts. '
-            'Inspect Activity Audit; recovery remains blocked.'
+            'Recovery requires complete started/failed executor pairs '
+            f'(at least 2 and an even receipt count); found {len(attempts)} '
+            'same-plan executor receipts. Inspect Activity Audit; '
+            'recovery remains blocked.'
         )
     if any(
         not readback_proves_handoff_not_started(row['metadata'], plan=plan)
@@ -103,53 +111,90 @@ def _source_history(tenant_id: str, plan: dict[str, Any]) -> dict[str, Any]:
             'unverified or partial. Canonical no-transfer read-back proof is '
             'required; recovery remains blocked.'
         )
-    started, failure = attempts
-    first, last = started['metadata'], failure['metadata']
-    if (
-        started['action'] != 'tenant.release.native_handoff_started'
-        or failure['action'] != 'tenant.release.native_handoff_recovery_required'
-        or started['actor_id'] != failure['actor_id']
-        or type(started['actor_id']) is not int
-        or first.get('status') != 'in_progress'
-        or last.get('status') != 'partial_handoff_recovery_required'
-        or not isinstance(last.get('errors'), list) or not last['errors']
-        or type(last.get('verified_count')) is not int or last['verified_count'] != 0
-        or type(last.get('expected_component_count')) is not int
-        or last['expected_component_count'] != len([
-            row for row in plan.get('handoff_components', [])
-            if row.get('handoff') == 'external_acceptance_required'
-        ])
-        or last.get('provider_mutation_performed') is not False
-        or last.get('provider_handoff_verified') is not False
-        or last.get('release_authorized') is not False
-        or last.get('verified_components') != []
-        or first.get('release_authorized') is not False
-        or last.get('tenant_id') != tenant_id
-        or last.get('cluster_id') != plan.get('cluster_id')
-        or last.get('generation') != plan.get('generation')
-        or any(
-            row.get('plan_sha256') != plan['plan_sha256']
-            or row.get('handoff_fingerprint') != plan.get('handoff_fingerprint')
-            for row in (first, last)
-        )
-    ):
-        raise ValueError('An executor attempt may have mutated resources or its evidence is incomplete.')
-    # Both audit timestamps must be valid, ordered and in the past. A
-    # missing/rewritten receipt is not evidence of a failed-before-write run.
-    try:
-        began_at = datetime.fromisoformat(str(first.get('started_at') or ''))
-        failed_at = datetime.fromisoformat(str(last.get('checked_at') or ''))
-    except ValueError as exc:
-        raise ValueError('Executor audit chronology is incomplete.') from exc
-    if (
-        began_at.tzinfo is None or failed_at.tzinfo is None
-        or began_at > failed_at or failed_at > datetime.now(UTC)
-    ):
-        raise ValueError('Executor audit chronology is not trustworthy.')
+
+    selected = [
+        row for row in plan.get('handoff_components', [])
+        if row.get('handoff') == 'external_acceptance_required'
+    ]
+    if not selected:
+        raise ValueError('Original approved Native recovery scope is empty.')
+
+    executor_actor_id: int | None = None
+    previous_finished_at: datetime | None = None
+    failed_event_ids: list[int] = []
+    for offset in range(0, len(attempts), 2):
+        started, failure = attempts[offset:offset + 2]
+        first, last = started['metadata'], failure['metadata']
+        if (
+            started['action'] != 'tenant.release.native_handoff_started'
+            or failure['action'] != 'tenant.release.native_handoff_recovery_required'
+            or type(started['actor_id']) is not int
+            or started['actor_id'] != failure['actor_id']
+            or (
+                executor_actor_id is not None
+                and started['actor_id'] != executor_actor_id
+            )
+            or started['event_id'] >= failure['event_id']
+            or first.get('status') != 'in_progress'
+            or last.get('status') != 'partial_handoff_recovery_required'
+            or not isinstance(last.get('errors'), list)
+            or not last['errors']
+            or type(last.get('verified_count')) is not int
+            or last['verified_count'] != 0
+            or type(last.get('expected_component_count')) is not int
+            or last['expected_component_count'] != len(selected)
+            or last.get('provider_mutation_performed') is not False
+            or last.get('provider_handoff_verified') is not False
+            or last.get('release_authorized') is not False
+            or last.get('verified_components') != []
+            or first.get('release_authorized') is not False
+            or any(
+                key in first for key in (
+                    'provider_mutation_performed', 'provider_handoff_verified',
+                    'verified_count', 'verified_components',
+                )
+            )
+            or first.get('tenant_id') != tenant_id
+            or first.get('generation') != plan.get('generation')
+            or last.get('tenant_id') != tenant_id
+            or last.get('cluster_id') != plan.get('cluster_id')
+            or last.get('generation') != plan.get('generation')
+            or any(
+                item.get('plan_sha256') != plan['plan_sha256']
+                or item.get('handoff_fingerprint') != plan.get('handoff_fingerprint')
+                for item in (first, last)
+            )
+        ):
+            raise ValueError(
+                'An executor attempt is incomplete, was not failed-before-write, '
+                'or has inconsistent actors, original plan or provider effects.'
+            )
+
+        try:
+            began_at = datetime.fromisoformat(str(first.get('started_at') or ''))
+            failed_at = datetime.fromisoformat(str(last.get('checked_at') or ''))
+        except ValueError as exc:
+            raise ValueError('Executor audit chronology is incomplete.') from exc
+        if (
+            began_at.tzinfo is None or failed_at.tzinfo is None
+            or began_at > failed_at or failed_at > datetime.now(UTC)
+            or (previous_finished_at is not None
+                and began_at <= previous_finished_at)
+        ):
+            raise ValueError('Executor audit chronology is not trustworthy.')
+
+        previous_finished_at = failed_at
+        executor_actor_id = started['actor_id']
+        failed_event_ids.append(failure['event_id'])
+
     return {
-        'digest': _sha({'executor_attempts': attempts, 'external_readbacks': observations}),
-        'executor_actor_id': started['actor_id'],
-        'failed_event_id': failure['event_id'],
+        'digest': _sha({
+            'executor_attempts': attempts, 'external_readbacks': observations,
+        }),
+        'executor_actor_id': executor_actor_id,
+        'failed_event_id': failed_event_ids[-1],
+        'failed_event_ids': failed_event_ids,
+        'attempt_count': len(failed_event_ids),
     }
 
 
@@ -292,6 +337,8 @@ def assess_native_no_transfer_recovery_committed(
         'handoff_fingerprint': plan['handoff_fingerprint'],
         'assessed_by': actor_user_id, 'executor_actor_id': history['executor_actor_id'],
         'failed_event_id': history['failed_event_id'],
+        'failed_event_ids': history['failed_event_ids'],
+        'attempt_count': history['attempt_count'],
         'history_digest': history['digest'],
         'provider_proof_sha256': proof['provider_proof_sha256'],
         'observed_components': proof['observed_components'],
@@ -406,6 +453,8 @@ def require_authorized_no_transfer_restart(
         history['digest'] != assessed.get('history_digest')
         or history['executor_actor_id'] != assessed.get('executor_actor_id')
         or history['failed_event_id'] != assessed.get('failed_event_id')
+        or history['failed_event_ids'] != assessed.get('failed_event_ids')
+        or history['attempt_count'] != assessed.get('attempt_count')
     ):
         raise ValueError('Provider execution evidence changed; recovery authorization is invalid.')
     return decision

@@ -120,35 +120,44 @@ def project_native_release_readiness(
         or re.fullmatch(r"[0-9a-f]{64}", item["plan_sha256"]) is None
         for item in executions
     )
+    # Each pair is represented newest-first in the committed registry read
+    # model: terminal failure first, followed by the initial start receipt.
+    # Actor, audit-ID and authoritative chronology checks remain backend-only.
+    execution_pairs = [
+        (same_plan_executions[index + 1], same_plan_executions[index])
+        for index in range(0, len(same_plan_executions) - 1, 2)
+    ]
     no_transfer_assessment_candidate = bool(
         plan
         and not invalid_execution_history
         and not history_incomplete
         and (not same_plan_readbacks or zero_transfer_observed)
-        and len(same_plan_executions) == 2
-        and same_plan_executions[0].get("status") == "partial_handoff_recovery_required"
-        and same_plan_executions[1].get("status") == "in_progress"
+        and len(same_plan_executions) >= 2
+        and len(same_plan_executions) % 2 == 0
         and all(
-            item.get("handoff_fingerprint") == plan.get("handoff_fingerprint")
-            for item in same_plan_executions
+            start.get("status") == "in_progress"
+            and failed.get("status") == "partial_handoff_recovery_required"
+            and start.get("handoff_fingerprint") == plan.get("handoff_fingerprint")
+            and failed.get("handoff_fingerprint") == plan.get("handoff_fingerprint")
+            and failed.get("provider_mutation_performed") is False
+            and failed.get("provider_handoff_verified") is False
+            and failed.get("release_authorized") is False
+            and type(failed.get("verified_count")) is int
+            and failed["verified_count"] == 0
+            and type(failed.get("expected_component_count")) is int
+            and failed["expected_component_count"] > 0
+            and failed.get("verified_components") == []
+            and isinstance(failed.get("errors"), list)
+            and bool(failed["errors"])
+            and start.get("release_authorized") is False
+            and "provider_mutation_performed" not in start
+            and "provider_handoff_verified" not in start
+            and "verified_count" not in start
+            and "verified_components" not in start
+            and isinstance(start.get("started_at"), str)
+            and isinstance(failed.get("checked_at"), str)
+            for start, failed in execution_pairs
         )
-        and same_plan_executions[0].get("provider_mutation_performed") is False
-        and same_plan_executions[0].get("provider_handoff_verified") is False
-        and same_plan_executions[0].get("release_authorized") is False
-        and type(same_plan_executions[0].get("verified_count")) is int
-        and same_plan_executions[0]["verified_count"] == 0
-        and type(same_plan_executions[0].get("expected_component_count")) is int
-        and same_plan_executions[0]["expected_component_count"] > 0
-        and same_plan_executions[0].get("verified_components") == []
-        and isinstance(same_plan_executions[0].get("errors"), list)
-        and bool(same_plan_executions[0]["errors"])
-        and same_plan_executions[1].get("release_authorized") is False
-        and "provider_mutation_performed" not in same_plan_executions[1]
-        and "provider_handoff_verified" not in same_plan_executions[1]
-        and "verified_count" not in same_plan_executions[1]
-        and "verified_components" not in same_plan_executions[1]
-        and isinstance(same_plan_executions[1].get("started_at"), str)
-        and isinstance(same_plan_executions[0].get("checked_at"), str)
     )
     restart_required = bool(approval_expired and not restart_blocked)
     # Committed UI hints for the independent recovery workflow. Backend must

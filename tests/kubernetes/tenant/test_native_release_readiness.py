@@ -445,6 +445,30 @@ def test_no_transfer_assessment_is_advisory_and_never_unlocks_restart():
     assert project_native_release_readiness(**snapshot)['no_transfer_assessment_candidate'] is True
 
 
+def test_multi_attempt_candidate_remains_read_only_and_fail_closed():
+    snapshot = evidence()
+    snapshot['plan']['handoff_fingerprint'] = 'scope-fp'
+    snapshot['approval']['approved_at'] = '2020-01-01T00:00:00+00:00'
+    pair = canonical_failed_before_write_receipts()
+    snapshot['execution_history'] = [*pair, *canonical_failed_before_write_receipts()]
+    status = project_native_release_readiness(**snapshot)
+    assert status['no_transfer_assessment_candidate'] is True
+    assert status['restart_blocked_by_readback'] is True
+    assert status['restart_required'] is False
+    assert status['execute_admitted'] is False
+    assert status['release_admitted'] is False
+
+    # Every attempt is required: older mutation or mismatched scope is blocked.
+    snapshot['execution_history'][2]['provider_mutation_performed'] = True
+    assert project_native_release_readiness(**snapshot)['no_transfer_assessment_candidate'] is False
+    snapshot['execution_history'][2]['provider_mutation_performed'] = False
+    snapshot['execution_history'][3]['handoff_fingerprint'] = 'different'
+    assert project_native_release_readiness(**snapshot)['no_transfer_assessment_candidate'] is False
+    snapshot['execution_history'][3]['handoff_fingerprint'] = 'scope-fp'
+    snapshot['execution_history'].append(pair[0].copy())
+    assert project_native_release_readiness(**snapshot)['no_transfer_assessment_candidate'] is False
+
+
 def test_legacy_bearer_acceptance_not_used_by_new_platform_admin_readiness():
     snapshot = evidence()
     snapshot['successor_acceptance'] = {
