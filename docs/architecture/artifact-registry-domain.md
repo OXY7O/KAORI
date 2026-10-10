@@ -529,17 +529,34 @@ Committed-data readiness, eligibility, active collection, last failed attempt,
 and scheduled collection are separate states; a failed newer worker run does
 not discard previous committed evidence.
 
-An authorized CSRF-protected **Collect Analytics Data** request dispatches the
-already-registered `artifact_registry.analytics.materialize` job using
-`dispatch_registered_job` and its `analytics-batch` worker, respecting existing
-deduplication. The page uses shared HTMX operational toasts, scoped JobExecution
-progress polling and a terminal event to refresh its own committed-state shell.
-No request-time Registry, Prometheus, Thanos, or Alertmanager query or extra
-provider mutation is permitted. View users may read snapshot and job status;
-execution requires both `artifact_registry.view` and `jobs.execute`.
-Controls reuse the shared K8s snapshot presentation, KAORI status/progress
-primitives and existing Registry registered-job actions; no new queue or
-scheduler ownership is introduced.
+Following human review, Registry and Kubernetes Analytics **share the
+exact same** `analytics/components/_controls_readiness.html` frame and
+snapshot-card macros: one header/eyebrow/description, header loading bar,
+two-column scope controls, two-column source/snapshot readiness, and
+contextual warnings. The existing K8s capacity `controls_readiness` macro
+delegates to this shared shell without changing its public signature,
+cluster/time-range controls, Metrics Source-specific card, or snapshot
+interpretation. Registry renders the shared source card with its own genuine
+provider/snapshot evidence and an explicit read-only Fleet/Current window.
+Neither domain introduces a false Metrics Source readiness claim for Registry.
+
+The Registry panel **does not contain manual Collect/Configure buttons**.
+As in K8s Analytics, a bounded HTMX GET to
+`/artifact-registry/analytics/materialization/resolve` checks the committed
+snapshot freshness and dispatches the existing registered
+`artifact_registry.analytics.materialize` job only when eligible evidence is
+missing/expired, no active job exists, and the latest attempt is outside a
+five-minute retry cooldown. This routes to the existing `analytics-batch`
+worker through `dispatch_registered_job(trigger_type='on_demand')` with
+canonical JobExecution deduplication and a registered-worker preflight.
+The top-level page GET stays a fast committed-state shell; the background
+request may schedule work but never performs synchronous live provider queries.
+JobPolicy scheduling continues independently, with no write-on-page-read
+policy creation. UI loading, scoped JobExecution progress and terminal page
+refresh read the committed snapshots; a later failed job retains old evidence.
+Queue/preflight errors are displayed as warnings, never as successful refresh.
+Manual execution remains available through existing Platform Operations Jobs
+rather than a second domain-specific collection button.
 
 ## Analytics Fast-Shell Contract
 
