@@ -24,6 +24,50 @@
     </section>
 {%- endmacro %}
 
+
+{# The shared Analytics selector owns all field geometry. Domain adapters provide options/evidence. #}
+{% macro control_label_classes() -%}
+    {{ table_ui.filter_label_classes() }}
+{%- endmacro %}
+
+{% macro control_select_classes() -%}
+    {{ table_ui.filter_select_classes() }}
+{%- endmacro %}
+
+{% macro filter_layout_classes() -%}
+    {{ table_ui.filter_layout_classes() }}
+{%- endmacro %}
+
+{% macro controls_grid() -%}
+    <div class="grid gap-4 sm:grid-cols-2">{{ caller() }}</div>
+{%- endmacro %}
+
+{% macro readiness_grid() -%}
+    <div class="grid gap-4 lg:grid-cols-2">{{ caller() }}</div>
+{%- endmacro %}
+
+{% macro selector(field_id, name, label, options, selected, empty_label=none, title=none, legacy_value=none, legacy_label=none) -%}
+    <label for="{{ field_id }}" class="block min-w-0">
+        <span class="{{ control_label_classes() }}">{{ label }}</span>
+        <select id="{{ field_id }}" name="{{ name }}"
+                class="{{ control_select_classes() }}"
+                {% if title %}title="{{ title }}"{% endif %}>
+            {% if empty_label is not none %}
+                <option value="" {% if selected is none or selected|string == '' %}selected{% endif %}>{{ empty_label }}</option>
+            {% endif %}
+            {% if legacy_label and legacy_value is not none and selected|string == legacy_value|string %}
+                <option value="{{ legacy_value }}" selected>{{ legacy_label }}</option>
+            {% endif %}
+            {% for option in options %}
+                {% set option_value = option.value|default(option.id|default('')) %}
+                {% set option_label = option.label|default(option.name|default(option_value)) %}
+                <option value="{{ option_value }}"
+                        {% if selected is not none and selected|string == option_value|string %}selected{% endif %}>{{ option_label }}</option>
+            {% endfor %}
+        </select>
+    </label>
+{%- endmacro %}
+
 {% macro snapshot_card(title, description, status_label, status_tone, updated, dataset, refresh_due='Not Scheduled', worker_attempt='Unavailable', coverage='') -%}
     <article class="min-w-0 rounded-lg border border-outline-subtle bg-surface-card p-4"
              data-analytics-snapshot-status>
@@ -77,9 +121,13 @@
     </article>
 {%- endmacro %}
 
-{% macro source_card(title, description, status_label, status_tone, first_label, first_value, second_label, second_value, icon='database') -%}
-    <article class="min-w-0 rounded-lg border border-outline-subtle bg-surface-card p-4"
-             data-analytics-source-status>
+{% macro source_card(title, description, status_label, status_tone, first_label, first_value, second_label, second_value, icon='database', extra_class='', metric_source_state=none, first_icon=none, second_icon=none) -%}
+    <article class="min-w-0 rounded-lg border border-outline-subtle bg-surface-card p-4 {{ extra_class }}"
+             data-analytics-source-status
+             {% if metric_source_state is not none %}
+                 data-analytics-metrics-source-status
+                 data-metrics-source-state="{{ metric_source_state }}"
+             {% endif %}>
         <div class="flex flex-wrap items-start justify-between gap-3">
             <div class="flex min-w-0 items-start gap-3">
                 {% if icon %}
@@ -87,7 +135,7 @@
                         <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
                     </span>
                 {% else %}
-                    {% set dot_class = 'bg-status-normal' if status_tone == 'normal' else ('bg-status-warning' if status_tone == 'warning' else ('bg-status-critical' if status_tone == 'critical' else 'bg-status-unknown')) %}
+                    {% set dot_class = 'bg-status-normal' if status_tone == 'normal' else ('bg-status-warning' if status_tone == 'warning' else ('bg-status-critical' if status_tone == 'critical' else ('bg-status-disabled' if status_tone == 'disabled' else ('bg-status-info' if status_tone == 'info' else 'bg-status-unknown')))) %}
                     <span class="mt-1 h-2.5 w-2.5 shrink-0 rounded-full {{ dot_class }}"
                           aria-hidden="true"></span>
                 {% endif %}
@@ -103,11 +151,17 @@
         <dl class="mt-4 grid gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle sm:grid-cols-2">
             <div class="min-w-0 bg-surface-card px-3 py-3">
                 <dt class="text-xs font-semibold text-content-muted">{{ first_label }}</dt>
-                <dd class="mt-1 text-sm font-semibold text-content-primary">{{ first_value }}</dd>
+                <dd class="mt-1 flex min-w-0 items-start gap-1.5 break-words text-sm font-semibold text-content-primary">
+                    {% if first_icon %}<i data-lucide="{{ first_icon }}" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>{% endif %}
+                    <span>{{ first_value }}</span>
+                </dd>
             </div>
             <div class="min-w-0 bg-surface-card px-3 py-3">
                 <dt class="text-xs font-semibold text-content-muted">{{ second_label }}</dt>
-                <dd class="mt-1 text-sm font-semibold text-content-primary">{{ second_value }}</dd>
+                <dd class="mt-1 flex min-w-0 items-start gap-1.5 break-words text-sm font-semibold text-content-primary">
+                    {% if second_icon %}<i data-lucide="{{ second_icon }}" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>{% endif %}
+                    <span>{{ second_value }}</span>
+                </dd>
             </div>
         </dl>
     </article>
