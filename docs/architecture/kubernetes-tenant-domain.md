@@ -345,3 +345,56 @@ successor-authenticated handback must be bound to the immutable Released
 lineage and a freshly observed provider UID/resourceVersion before the guard
 can admit a managed Re-adopt. No live Kubernetes mutation or Released
 finalization is introduced by this protection.
+
+
+## Verified Native provider Release → successor handback → Re-adopt (#1049)
+
+Native Kubernetes ownership is a *governance contract represented by provider
+metadata plus independently existing Kubernetes RBAC*, not a new Kubernetes
+controller, IdP or permission system. Provider objects are never deleted or
+resized as part of Release/handback. Capsule CR ownership remains independent.
+
+The reviewed Native workflow now has three deliberately separate authorities:
+
+1. **Successor acceptance (#1047)**: current TokenReview identity, exact
+   successor group, object-by-object SAR `get`/`patch` rights, one explicit
+   consent bound to the immutable approved plan. The external principal and
+   KAORI application actor are recorded separately. No credentials are stored.
+2. **KAORI-controlled provider handoff (#1048)**: after accepted plan and
+   full dry-run, issue strictly preconditioned metadata-only Kubernetes patches
+   over ResourceQuota, LimitRange and finally Namespace; read back UID/RV,
+   specs and unrelated metadata and persist the verified full-inventory receipt.
+   Partial/abandoned operations never authorize Released.
+3. **Canonical KAORI Released (#1049)**: only the fully verified handoff
+   receipt with current provider read-back and zero active KAORI
+   grants/credentials/dependencies may update the existing Tenant and
+   Namespace lifecycle statuses to `released`. Historical resource profile,
+   CPU/memory and quota snapshots remain retained in the retired generation;
+   active capacity/Sync exclude the Released generation. No Kubernetes writes
+   are performed by this finalization step.
+
+**Re-adopt is a new transaction, not reversal of Release.** The external
+successor authenticates anew using Kubernetes TokenReview and object-specific
+SubjectAccessReview, explicitly authorizes handback of the Released plan and
+all preserved provider resources, and KAORI removes only the verified
+successor `managed-by` metadata using UID/resourceVersion JSON Patch with
+admission dry-run and post-write read-back. It does **not** silently register
+or mutate a new Tenant. When the entire scope is proven, it records
+`handback_governance` and a separate immutable AuditEvent. A subsequent
+fresh Discovery/Adopt operation must match provider UID and the exact
+handback resourceVersion for every historical Native Namespace, preserve
+previous Tenant/Namespace `Released` lineage, and create the next
+generation through the existing capacity admission and adoption pipeline.
+
+Missing authoritative identity, revoked RBAC, unknown provider owner, shifted
+spec/quotas, changed UID/RV, unresolved KAORI grant/credential dependency,
+unverified full handoff or partial handback fail closed. Partial handback
+requires explicit provider recovery; no automatic retries or automatic
+Re-adoption. Kubernetes and KAORI commits are not one distributed
+transaction, so crash/in-progress recovery requires fresh provider evidence.
+
+This architecture decision is accepted for local DevContainer testing on
+`kaori/review/staging-uat`. It does **not** imply that pytest, Developer
+Check, Full Admission, real Kubernetes UAT or promotion to staging/main passed.
+Security-sensitive provider behavior must undergo nonproduction Kubernetes
+read-back and independent Human Acceptance before deployment.
