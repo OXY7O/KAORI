@@ -1,10 +1,14 @@
-{% import "components/resource_posture_grid.html" as posture_grid %}
-{% set overview_metrics = [] %}
-{% for kpi in overview.kpis %}
-    {% set _ = overview_metrics.append((kpi.icon, kpi.label, kpi.value, kpi.description, 'info')) %}
-{% endfor %}
+{% import "components/operational_metric_card.html" as operational_metric_card %}
 <div id="artifact-registry-dashboard-kpis"
+     class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
      aria-live="polite"
      data-kaori-artifact-registry-operational-kpis>
-    {{ posture_grid.render(overview_metrics, columns=4) }}
+    {% for kpi in overview.kpis %}
+        {{ operational_metric_card.render(label=kpi.label,
+                value=kpi.value,
+                description=kpi.description,
+                icon=kpi.icon,
+                source_label='Committed Inventory',
+                scope_label='Active Scope') }}
+    {% endfor %}
 </div>
