@@ -25,8 +25,8 @@
         {% endif %}
     {% endset %}
     {{ table_ui.inventory_block_header('folder-tree',
-        'Namespace Registry',
-        'Committed Namespace ownership, effective Resource Profile snapshot, provider authority, and reconciliation state.',
+        'Namespace Provisioning Registry',
+        'Committed Namespace allocation, ownership, and reconciliation state.',
         loading_id,
         'Refreshing Namespace Registry',
         none,
@@ -91,10 +91,10 @@
             <caption class="sr-only">Committed Tenant Namespace registry with read-only allocation details.</caption>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[23%]">Namespace</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[20%]">Tenant / Environment</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[33%]">Allocation</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">State</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[25%]">Namespace</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[18%]">Tenant / Environment</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[32%]">Allocation</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[15%]">State</th>
                     <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[10%]">Details</th>
                 </tr>
             </thead>
@@ -139,7 +139,20 @@
                     {% set dialog_id = 'tenant-namespace-evidence-' ~ item.id %}
                     <tr class="{{ table_ui.row_classes() }}">
                         <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
-                            {{ table_ui.title_cell(item.namespace, item.ownership_status|replace('_', ' ')|title ~ ' · Gen ' ~ item.generation, 'folder-tree') }}
+                            <div class="flex min-w-0 items-center gap-2.5">
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                      aria-hidden="true">
+                                    <i data-lucide="folder-tree" class="h-4 w-4"></i>
+                                </span>
+                                <div class="min-w-0">
+                                    <p class="truncate text-sm font-semibold text-content-primary"
+                                       title="{{ item.namespace }}">{{ item.namespace }}</p>
+                                    <div class="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                                        {{ table_label.status_label(item.ownership_status|replace('_', ' ')|title, 'normal' if item.ownership_status == 'managed' else 'info') }}
+                                        <span class="text-xs tabular-nums text-content-muted">Gen {{ item.generation }}</span>
+                                    </div>
+                                </div>
+                            </div>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
                             <p class="min-w-0 truncate text-sm font-semibold text-content-primary"
@@ -147,21 +160,20 @@
                             <p class="mt-1 text-xs text-content-muted">{{ item.environment.environment|title }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
-                            <p class="min-w-0 truncate text-sm font-semibold text-content-primary"
+                            <p class="min-w-0 truncate text-sm font-semibold {{ 'text-content-secondary' if profile_name == 'No profile' else 'text-content-primary' }}"
                                title="{{ profile_name }}">{{ profile_display }}</p>
-                            <div class="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-                                <span class="text-xs text-content-muted"
-                                      title="{{ 'Snapshot v' ~ item.resource_profile_version if item.resource_profile_version else 'No pinned snapshot' }} · {{ provider_name }} · {{ authority_name }} authority">
-                                    {{ 'v' ~ item.resource_profile_version if item.resource_profile_version else 'No pinned snapshot' }}
-                                    · {{ provider_name }}
-                                </span>
-                                {% if control_label %}
-                                    {{ table_label.metadata_label(control_label) }}
-                                {% endif %}
-                            </div>
+                            <p class="mt-1 min-w-0 truncate text-xs text-content-muted"
+                               title="{{ 'Snapshot v' ~ item.resource_profile_version if item.resource_profile_version else 'No pinned snapshot' }} · {{ provider_name }} · {{ authority_name }} authority">
+                                {{ 'Snapshot v' ~ item.resource_profile_version if item.resource_profile_version else 'No pinned snapshot' }}
+                                · {{ provider_name }}
+                            </p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
                             {{ table_label.status_label(item.provisioning_status|replace('_', ' ')|title, state_tone) }}
+                            {% if control_label %}
+                                <p class="mt-1 max-w-full truncate text-xs text-content-muted"
+                                   title="Control: {{ control_label }}">Control: {{ control_label }}</p>
+                            {% endif %}
                         </td>
                         <td class="{{ table_ui.cell_classes(action=true) }} align-middle">
                             <button type="button"
