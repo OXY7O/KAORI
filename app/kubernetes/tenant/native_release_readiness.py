@@ -102,6 +102,32 @@ def project_native_release_readiness(
         history_incomplete or any_execution
         or (same_plan_readbacks and not zero_transfer_observed)
     )
+    # Distinguish a historical failed attempt that *might* qualify for
+    # separately authorized no-transfer assessment from proven transfer.
+    # This is NEVER restart clearance or a substitute for live verification.
+    same_plan_executions = [
+        item for item in executions
+        if isinstance(item, dict) and item.get("plan_sha256") == plan_sha
+    ]
+    no_transfer_assessment_candidate = bool(
+        plan and same_plan_executions
+        and not any(
+            not isinstance(item, dict)
+            or not isinstance(item.get("plan_sha256"), str)
+            or len(item["plan_sha256"]) != 64
+            for item in executions
+        )
+        and all(
+            item.get("status") in ("in_progress", "partial_handoff_recovery_required")
+            and item.get("handoff_fingerprint") == plan.get("handoff_fingerprint")
+            and item.get("provider_mutation_performed") is False
+            and item.get("provider_handoff_verified") is False
+            and item.get("release_authorized") is False
+            and item.get("verified_count", 0) == 0
+            and not item.get("verified_components")
+            for item in same_plan_executions
+        )
+    )
     restart_required = bool(approval_expired and not restart_blocked)
     preview_passed = bool(
         same_plan and dry_run
@@ -215,6 +241,7 @@ def project_native_release_readiness(
         "approval_expired": approval_expired,
         "review_expired": review_expired,
         "restart_required": restart_required,
+        "no_transfer_assessment_candidate": no_transfer_assessment_candidate,
         "restart_blocked_by_readback": bool(approval_expired and restart_blocked),
         "restart_zero_transfer_recheck_required": bool(approval_expired and zero_transfer_observed and not restart_blocked),
         "dry_run_passed": preview_passed,
