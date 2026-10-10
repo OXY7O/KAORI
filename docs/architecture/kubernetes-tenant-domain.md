@@ -1347,6 +1347,47 @@ then commit new evidence without rewriting any historical receipt.
 Never automatically patch, repeat Handback, force Re-adopt, or remove
 provider labels manually. All runtime mutation/security gates remain HOLD.
 
+### Legacy Native Verified Handback residue: read-only assessment (#1129)
+
+The #1128 provider-remediation workstream is split so historical evidence
+can be assessed without creating a Kubernetes mutation authority. The
+source-only service
+`native_residual_recovery_assessment.assess_legacy_native_profile_residue_readonly`
+is an **explicitly invoked, fail-closed diagnostic**, not a Tenant UI button,
+automatic reconciler, new endpoint or PATCH executor. It requires an
+existing authorized KAORI Platform Admin, exactly the Released Native
+managed-handoff Tenant generation, a matching original dry-run / Released
+receipt / latest verified Handback with the same plan, successor, cluster,
+Namespace UIDs and complete Namespace/ResourceQuota/LimitRange scope,
+zero remaining KAORI dependencies and verified live X.509 provider identity
+through the existing SelfSubjectReview / named get + patch
+SelfSubjectAccessReview. These authorization reviews are read-only
+provider API calls; no provider mutation occurs in the assessment.
+
+**Historical hash-version preservation:** old pre-#1126 dry-run receipts
+treated `kaori.io/resource-profile` as *foreign* metadata. Their
+`retained_metadata_sha256` must be recalculated with the **old fixed**
+four-marker projection (`managed-by`, `tenant-id`, `environment`,
+`profile-id`), never with the new six-marker projection. The assessor
+also checks the original spec SHA, foreign labels and annotations,
+ownerReferences/finalizers, historical last-Handback component RVs,
+Namespace lineage and exact profile public ID; any other owned marker,
+successor manager or drift blocks assessment. The only recognized
+candidate residue is precisely `kaori.io/resource-profile`; arbitrary
+`kaori.io/*` stripping is forbidden.
+
+An advisory `read_only_recovery_candidate` result has
+`cleanup_authorized=False`, `re_adopt_admitted=False`,
+`evidence_committed=False` and `provider_mutation_performed=False`.
+It **must never** be consumed as an execution authorization. Any future
+provider recovery executor, independent human approval/Separation of
+Duties, fresh CAS preconditions, partial-write evidence recovery and
+append-only immutable audit/Namespace RV lineage updates require separate
+security/design acceptance under #1128. Existing Discovery remains
+Blocked and no historical AuditEvent or provider object is edited.
+Tests, Developer Check, Full Admission, Kubernetes UAT and CI/CD remain
+HOLD; source review is not formal admission.
+
 The `successor_owner` label is an administrative governance marker, **not
 a Kubernetes IdP group, RBAC entitlement or credential recipient**.
 Historical bearer-token successor receipts and old acceptance UI are
