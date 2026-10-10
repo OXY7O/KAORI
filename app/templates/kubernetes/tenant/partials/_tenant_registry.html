@@ -428,7 +428,7 @@
                                             </p>
                                         </div>
                                     </div>
-                                    {% if row.release_handoff_plan %}
+                                    {% if current_user.has_permission('integrations.manage') and row.release_handoff_plan %}
                                         {% set current_handoff_plan = row.release_handoff_plan %}
                                         {% set current_handoff_approval = row.release_handoff_approval %}
                                         {% if current_handoff_approval and current_handoff_approval.plan_sha256 == current_handoff_plan.plan_sha256 %}
@@ -436,6 +436,8 @@
                                         {% else %}
                                             {{ table_label.status_label('Approval Pending', 'warning') }}
                                         {% endif %}
+                                    {% elif row.release_preflight and row.release_preflight.handoff_required_count %}
+                                        {{ table_label.status_label('Handoff Required', 'warning') }}
                                     {% else %}
                                         {{ table_label.status_label('Not Prepared', 'unknown') }}
                                     {% endif %}
