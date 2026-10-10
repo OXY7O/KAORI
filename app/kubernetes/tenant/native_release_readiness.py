@@ -22,9 +22,11 @@ def project_native_release_readiness(
 ) -> dict[str, Any]:
     """Display checkpoints only; no provider calls, audit writes, or admission."""
     plan_sha = str((plan or {}).get("plan_sha256") or "")
-    active_plan = (
+    active_plan = bool(
         len(plan_sha) == 64
-        and (plan or {}).get("status") == "pending_independent_approval"
+        and plan
+        and plan.get("status") == "pending_independent_approval"
+        and _checked_recently(plan.get("requested_at"))
     )
     review_current = bool(
         preflight
