@@ -116,6 +116,30 @@ Hero
 
 `Tenant Registry` is the default tab and uses the canonical KAORI server-backed registry contract: shared loading bar, Cluster/Environment/Lifecycle/Search filters, committed-state reads, semantic labels, responsive horizontal overflow, default 5-row pagination, 5/10/25/50 page sizes, and HTMX progressive enhancement with the Tenants route as the real navigation fallback.
 
+**Native external provider handoff read-back preconditions (#1095 follow-up):**
+The read-only external inspection action requires *current* committed
+independent plan/approval, matching SHA/fingerprint, same-plan external
+reference and fresh exact-scope Native dry-run. Showing historical
+`Dry-Run Passed` or a reference claim alone does **not** mean it can be
+submitted. The server continues to enforce complete evidence freshness,
+tenant identity, UID/resourceVersion and provider authorization before
+any Kubernetes read.
+
+Step 3 now shows `External handoff inspection is unavailable` with
+the specific missing evidence instead of a doomed confirmation checkbox.
+When the approval expired, use the original-requester restart control in
+Step 4 and re-establish reviewer, reference and dry-run for the **new**
+SHA. If all prerequisites are current, the separate
+`Inspect External Handoff` form is available only after an *external*
+operator truly transferred provider ownership markers. This read-only
+observation is **not** the KAORI-governed handoff executor, does not
+verify successor consent, and cannot authorize Release. A read-back
+count from an earlier attempt is labeled as historical evidence.
+
+No provider mutation or new authorization, no source-of-truth change,
+no new form, CSRF or gateway bypass. Contract/unit tests written but
+not executed; browser Visual QA and admission/CI/CD HOLD.
+
 **Tenant Release wizard navigation and feedback (#1095; current UX):**
 Step 1–4 tabs, Previous/Next and internal step links now fetch a committed
 Tenant Detail fragment through HTMX and **swap only the Release Governance
