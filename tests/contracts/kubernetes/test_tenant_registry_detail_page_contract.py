@@ -45,7 +45,10 @@ def test_single_hero_uses_unmodified_shared_kaori_template_and_spacing():
     assert '{% extends "kubernetes/tenant/base.html" %}' in page
     assert '{% block dashboard_content %}' in page
     assert '{% block tenant_content %}' not in page
-    assert 'class="min-w-0 space-y-6"' in detail
+    assert 'class="relative min-w-0 space-y-6"' in detail
+    assert 'id="tenant-management-loading"' in detail
+    assert 'htmx-indicator pointer-events-none absolute' in detail
+    assert 'class="htmx-indicator text-sm' not in detail
     assert 'class="{{ page_hero.shell_classes() }}"' in detail
     assert 'class="{{ page_hero.layout_classes() }}"' in detail
     assert 'class="{{ page_hero.content_classes() }}"' in detail
