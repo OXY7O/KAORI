@@ -104,36 +104,36 @@
         {% endcall %}
     </div>
     <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[920px]') }}">
+        <table class="{{ table_ui.table_classes('min-w-[1100px] !table-fixed') }}">
             <caption class="sr-only">Tenant membership registry.</caption>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Principal</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Tenant</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Type</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Status</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Updated</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Action</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[23%]">Principal</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[20%]">Tenant</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">Type</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[13%]">Status</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[15%]">Updated</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[15%]">Action</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
                 {% for membership in membership_rows %}
                     <tr class="{{ table_ui.row_classes() }}">
-                        <td class="{{ table_ui.cell_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
                             {{ table_ui.title_cell(membership.subject_name, membership.user.username if membership.user else (membership.group.name if membership.group else 'Managed principal') , 'user-round') }}
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">
-                            <p class="text-sm font-semibold text-content-primary">{{ membership.tenant.name }}</p>
-                            <p class="mt-1 text-xs text-content-muted">{{ membership.tenant.slug }}</p>
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
+                            <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ membership.tenant.name }}">{{ membership.tenant.name }}</p>
+                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="{{ membership.tenant.slug }}">{{ membership.tenant.slug }}</p>
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
                             {{ table_label.metadata_label(membership.principal_type|replace('_', ' ') |title) }}
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
                             {{ table_label.status_label(membership.status|title, 'normal' if membership.status == 'active' else 'critical') }}
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">
-                            <p class="text-xs font-medium text-content-secondary">{{ membership.updated_at|user_datetime }}</p>
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
+                            <p class="text-xs font-medium text-content-secondary min-w-0 max-w-full truncate" title="{{ membership.updated_at|user_datetime }}">{{ membership.updated_at|user_datetime }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes(action=true) }}">
                             {% if membership.status == 'active' %}
