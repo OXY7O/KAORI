@@ -620,3 +620,33 @@ def test_dashboard_health_registries_preserve_zero_result_pagination_and_compact
         assert 'pagination_ui.navigation_classes(disabled=true)' in source
         assert '{% if pagination.total_items > 0 %}\n        <footer' not in source
         assert '</footer>\n{% endcall %}' in source
+
+
+def test_unselected_dashboard_scope_uses_one_tab_level_prerequisite_without_hiding_valid_aggregates() -> None:
+    kubernetes_capacity = read('app/templates/kubernetes/dashboard/partials/_capacity.html')
+    kubernetes_signals = read('app/templates/kubernetes/dashboard/partials/_signals.html')
+    object_capacity = read('app/templates/storage/object_storage/dashboard/partials/_capacity.html')
+    object_signals = read('app/templates/storage/object_storage/dashboard/partials/_signals.html')
+    registry_capacity = read('app/templates/artifact_registry/partials/_overview_capacity.html')
+    registry_signals = read('app/templates/artifact_registry/partials/_overview_signals.html')
+    service = read('app/kubernetes/dashboard/service.py')
+    standard = read('docs/design/patterns/OPERATIONAL_DASHBOARD.md')
+
+    for source in (kubernetes_capacity, kubernetes_signals, object_capacity, object_signals):
+        assert '{% if not dashboard.selected_' in source
+        assert 'components/states/_blocked_state.html' in source
+        assert 'Select ' in source
+        assert source.index('components/states/_blocked_state.html') < source.index('{% else %}')
+        assert source.index('{% else %}') < source.index('peer_content_grid.layout_classes()')
+        assert source.count('components/states/_blocked_state.html') == 1
+
+    assert '{% if not overview.selected_provider %}' in registry_signals
+    assert 'components/states/_blocked_state.html' in registry_signals
+    assert '{% if not overview.selected_provider %}' not in registry_capacity
+    assert 'artifact_registry/partials/_overview_capacity_snapshot.html' in registry_capacity
+
+    signal_helper = service.split('def _populate_signals(', 1)[1].split('def get_dashboard_overview(', 1)[0]
+    assert 'if selected is None:\n        return' in signal_helper
+    assert signal_helper.index('if selected is None:') < signal_helper.index('build_recommendations(')
+    assert 'one shared prerequisite blocker at tab level' in standard
+    assert 'All Registry Providers' in standard
