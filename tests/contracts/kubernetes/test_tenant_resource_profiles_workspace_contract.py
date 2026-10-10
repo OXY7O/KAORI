@@ -364,10 +364,17 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert 'data-kaori-native-dialog' in capacity
     assert 'class="{{ table_ui.action_classes() }}"' in capacity
     assert 'View More' in capacity
-    assert 'lg:grid-cols-3' in capacity
-    assert "('Budget', 'gauge', item.display.budget" in capacity
-    assert "('Committed', 'layers-3', item.display.committed" in capacity
-    assert "('Headroom', 'chart-no-axes-combined', item.display.headroom" in capacity
+    assert 'aria-label="Resource allocation comparison"' in capacity
+    assert 'grid grid-cols-3 gap-3 sm:grid-cols-[minmax(9rem,1.1fr)_repeat(3,minmax(0,1fr))]' in capacity
+    assert 'col-span-3 min-w-0 sm:col-span-1' in capacity
+    assert 'lg:grid-cols-3' not in capacity
+    assert "('CPU Requests', 'Compute', item.display.budget.cpu, item.display.committed.cpu, item.display.headroom.cpu)" in capacity
+    assert "('Memory Requests', 'Compute', item.display.budget.memory, item.display.committed.memory, item.display.headroom.memory)" in capacity
+    assert "('Pod Slots', 'Pod quota', item.display.budget.pods, item.display.committed.pods, item.display.headroom.pods)" in capacity
+    assert "('Logical Storage', 'Policy ceiling', item.display.budget.storage, item.display.committed.storage, item.display.headroom.storage)" in capacity
+    assert "('Budget', budget)" in capacity
+    assert "('Committed', committed)" in capacity
+    assert "('Headroom', headroom)" in capacity
     assert 'No governed namespaces' in capacity
     assert "dialog_id = 'capacity-budget-details-'" in capacity
     assert 'space-y-3 p-4' not in capacity
@@ -425,6 +432,40 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert 'paginate_sequence' in routes
     assert "context['capacity_pagination']" in routes
     assert "context['capacity_filters']" in routes
+
+
+def test_allocation_budget_registry_separates_snapshot_freshness_and_compute_budget() -> None:
+    capacity = read('app/templates/kubernetes/tenant/partials/_capacity_governance.html')
+    docs = read('docs/architecture/kubernetes-tenant-capacity-governance.md')
+    table = read('app/templates/components/table.html')
+
+    # Separate snapshot state from committed computed budget availability.
+    assert "item.snapshot_state in ['current', 'fresh']" in capacity
+    assert "'Compute budget available' if item.budget else 'Compute evidence required'" in capacity
+    assert "item.snapshot_state == 'current' else 'Compute evidence required'" not in capacity
+    assert "'Compute budget available' if item.snapshot_state" not in capacity
+    assert "Logical storage governed" in capacity
+    for column, percent in [('Cluster', 28), ('Evidence', 39), ('State', 17), ('Details', 16)]:
+        assert f'w-[{percent}%]">{column}</th>' in capacity
+    assert "table_ui.table_classes('min-w-[980px] !table-fixed')" in capacity
+    assert "table_ui.action_classes()" in capacity
+    assert "data-kaori-native-dialog" in capacity
+    assert "data-kaori-dialog-open" in capacity
+    assert "registry_ui.footer" in capacity
+    assert "macro" in table  # Shared table primitives remain the sole table owner.
+
+    # The new read-only resource-first layout never changes dimensions or units.
+    dialog = capacity.split('aria-label="Resource allocation comparison"', 1)[1].split('</section>', 1)[0]
+    assert 'grid grid-cols-3' in dialog
+    assert 'col-span-3 min-w-0 sm:col-span-1' in dialog
+    assert 'sm:sr-only' in dialog
+    assert 'break-words text-sm font-semibold tabular-nums' in dialog
+    assert dialog.count('item.display.budget.') == 4
+    assert dialog.count('item.display.committed.') == 4
+    assert dialog.count('item.display.headroom.') == 4
+    assert 'overflow-x-auto' not in dialog
+    assert "Storage is logical admission capacity." in capacity
+    assert "Allocation Budget registry and detail visual hierarchy" in docs
 
 
 def test_capacity_commitment_excludes_deprovisioned_history_and_preserves_unknowns() -> None:
