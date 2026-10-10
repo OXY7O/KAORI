@@ -186,6 +186,39 @@ Do not toggle DB state directly or weaken TLS. Connection updates are
 operational mutations requiring separate approval. 14 governance forms and
 original provider safeguards preserved. CI/CD, security checks, UAT HOLD.
 
+**Governed no-transfer recovery after a failed executor (#1104, child of #1057):**
+A historical Native executor attempt still blocks ordinary expired-plan
+restart. A reported `0/2 verified` and `provider_mutation_performed=False`
+do not authorize a retry, even when Kubernetes labels currently show
+`managed-by=kaori`.
+
+The bounded Step 4 workflow is:
+- Original requester: **Assess No-Transfer Provider State**. The server
+  checks exactly one failed-before-write executor sequence and rejects
+  ambiguous/partial same-plan read-back attempts (strictly canonical
+  no-transfer read-backs remain digest-bound), exact former dry-run identities/hashes,
+  fresh provider inventory, metadata/spec/foreign-label preservation and
+  dependency counts. Only read-only Kubernetes GETs occur; a SHA-bound
+  assessment is committed to AuditEvent.
+- Independent recovery reviewer: **Authorize Reviewed No-Transfer Recovery**
+  only if not the requester/assessor/original executor. A third authorized
+  operator can be required. Decision is bound to the exact assessment and
+  expires; it never authorizes Kubernetes PATCH or Release.
+- Original requester: **Restart with Fresh Provider Verification**.
+  All provider/history evidence is verified again and an immutable new
+  pending-independent-review Plan SHA replaces the expired plan. No previous
+  approval, reference, preview, Platform Admin identity consent or released
+  state is inherited. Existing independent approval + Native trusted
+  acceptance/dry-run workflow still applies.
+
+The panel is committed-read-model UI only and not permission authority.
+Endpoints separately enforce Tenant/Integrations/Cluster manage RBAC,
+CSRF, actor separation, exact SHA and the existing fail-closed gates.
+Unknown/partial/full transfer and any provider/history drift still
+require a separate manual investigation. **Do not erase AuditEvents,
+manipulate timestamps/labels, retry blindly, or treat successful source
+checks as completed recovery.** Tests/UAT/CI/CD remain HOLD.
+
 **Native expired-plan recovery with 0 transferred resources (#1057 follow-up):**
 A `provider_handoff_not_started` receipt may permit the original requester
 to **attempt** Restart Expired Handoff Plan only when its complete canonical
@@ -220,9 +253,10 @@ not an approval, successful provider read-back, restart permission or
 automatic retry. Existing backend fail-closed guard continues to block
 same-plan executor attempts. Operator must verify original provider scope,
 UID/resourceVersion, full spec and retained metadata, dependencies and
-immutable audit evidence via a separate governed recovery workflow before
-any new SHA/approval or Kubernetes mutation. No live provider checks were
-run for this implementation; QA and gates HOLD.
+immutable audit evidence via the existing #1104 governed workflow before
+any new SHA/approval or Kubernetes mutation. The candidate hint is never
+a substitute for requester assessment or an independent recovery decision.
+No live provider checks were run for #1110; QA and gates HOLD.
 
 **Native executor approved-component patch binding (#1102 corrective under #1048):**
 `dry_run_native_handoff_component` commits authoritative Kubernetes
