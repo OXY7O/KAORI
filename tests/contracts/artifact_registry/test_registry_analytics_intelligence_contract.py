@@ -164,6 +164,61 @@ def test_registry_analytics_uses_fast_shell_and_bounded_fragments() -> None:
     assert 'never waits on live Harbor, Alertmanager, Prometheus, or Thanos requests' in template
 
 
+def test_registry_analytics_controls_use_canonical_worker_and_committed_readiness() -> None:
+    from jinja2 import Environment
+
+    shell = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
+    controls = (
+        ROOT / 'app/templates/artifact_registry/partials/_analytics_controls_readiness.html'
+    ).read_text()
+    live = (ROOT / 'app/templates/artifact_registry/partials/_analytics_collect_live_state.html').read_text()
+    adapter = (ROOT / 'app/artifact_registry/analytics_job_adapter.py').read_text()
+    routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
+    presenter = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
+
+    for template in (shell, controls, live):
+        Environment().parse(template)
+    assert 'Analytics Controls & Data Readiness' in controls
+    assert 'kubernetes/analytics/components/_analysis_workspace.html' in controls
+    assert 'analytics_workspace.snapshot_card(' in controls
+    assert 'artifact_registry/partials/_analytics_controls_readiness.html' in shell
+    assert "hx-trigger=\"artifactRegistryAnalyticsMaterializationFinished from:body\"" in shell
+    assert 'hx-select="#artifact-registry-analytics-page"' in shell
+    assert "artifact_registry.analytics.materialize" in controls
+    assert 'name="csrf_token"' in controls
+    assert "current_user.has_permission('jobs.execute')" in controls
+    assert "current_user.has_permission('artifact_registry.view')" in controls
+    assert 'hx-disabled-elt="find button"' in controls
+    assert 'not readiness.can_collect' in controls
+    assert 'hx-trigger="every 1s"' in live
+    assert 'progress_bar.job_progress(' in live
+    assert "get_registry_analytics_job(public_id)" in routes
+    assert "artifactRegistryAnalyticsMaterializationFinished" in routes
+    assert "job_key='artifact_registry.analytics.materialize'" in routes
+    assert "@permission_required('jobs.execute')" in routes
+    assert "dispatch_registered_job(" in routes
+    assert "'artifact_registry/partials/_analytics_controls_readiness.html'" in routes
+    assert 'build_registry_analytics_readiness()' in presenter
+    assert "JobPolicy.query.filter_by(job_key=ANALYTICS_JOB_KEY).first()" in adapter
+    assert "get_or_create_job_policy(" not in adapter
+    assert "RegistryAnalyticsSnapshot.query" in adapter
+    assert "JobExecution.query.filter(" in adapter
+    assert "present_job_execution(active)" in adapter
+    assert "_analytics_snapshot_posture(" in adapter
+    assert "enqueue_canonical_job(" in adapter
+    assert "queue_name='analytics-batch'" in adapter
+
+
+def test_registry_analytics_posture_classifies_missing_partial_and_current_snapshots() -> None:
+    from app.artifact_registry.analytics_job_adapter import _analytics_snapshot_posture
+
+    assert _analytics_snapshot_posture(eligible_count=0, covered_count=0, current_count=0)[0] == 'Blocked'
+    assert _analytics_snapshot_posture(eligible_count=2, covered_count=0, current_count=0)[0] == 'Not Materialized'
+    assert _analytics_snapshot_posture(eligible_count=2, covered_count=2, current_count=2)[0] == 'Current Snapshot'
+    assert _analytics_snapshot_posture(eligible_count=3, covered_count=2, current_count=1)[0] == 'Partial Coverage'
+    assert _analytics_snapshot_posture(eligible_count=2, covered_count=2, current_count=0)[0] == 'Stale Snapshot'
+
+
 def test_registry_alert_source_is_worker_materialized_and_provider_neutral() -> None:
     analytics = (ROOT / 'app/artifact_registry/analytics.py').read_text()
     presentation = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()

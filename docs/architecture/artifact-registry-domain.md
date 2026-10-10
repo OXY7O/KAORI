@@ -517,6 +517,30 @@ capability evidence are recorded.
 Alert-source failure is an observability dependency only. It does not invalidate committed Registry
 inventory, security, runtime, or governance truth.
 
+## Analytics Controls & Data Readiness (#1099)
+
+The Registry Analytics Overview and all seven focused analytics pages use the
+approved Kubernetes Analytics **Controls & Data Readiness** composition.
+Their authoritative read-only source/commit readiness comes from
+`build_registry_analytics_readiness`, which reads eligible Registry providers,
+the latest ready materialized snapshot per eligible provider, snapshot expiry,
+existing JobPolicy (without creating it in GET), and canonical JobExecution.
+Committed-data readiness, eligibility, active collection, last failed attempt,
+and scheduled collection are separate states; a failed newer worker run does
+not discard previous committed evidence.
+
+An authorized CSRF-protected **Collect Analytics Data** request dispatches the
+already-registered `artifact_registry.analytics.materialize` job using
+`dispatch_registered_job` and its `analytics-batch` worker, respecting existing
+deduplication. The page uses shared HTMX operational toasts, scoped JobExecution
+progress polling and a terminal event to refresh its own committed-state shell.
+No request-time Registry, Prometheus, Thanos, or Alertmanager query or extra
+provider mutation is permitted. View users may read snapshot and job status;
+execution requires both `artifact_registry.view` and `jobs.execute`.
+Controls reuse the shared K8s snapshot presentation, KAORI status/progress
+primitives and existing Registry registered-job actions; no new queue or
+scheduler ownership is introduced.
+
 ## Analytics Fast-Shell Contract
 
 Artifact Registry Analytics uses the same bounded delivery principle as the canonical operational dashboard:

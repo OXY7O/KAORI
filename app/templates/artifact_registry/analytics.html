@@ -5,7 +5,16 @@
     {% import "components/operational_section_loading.html" as section_loading %}
     {% import "components/page_hero.html" as page_hero %}
     {% import "components/section_intro.html" as section_intro %}
-    <div class="space-y-6">
+    <div id="artifact-registry-analytics-page" class="space-y-6">
+        <span id="artifact-registry-analytics-background-refresh-trigger"
+              class="hidden"
+              aria-hidden="true"
+              hx-get="{{ request.full_path }}"
+              hx-trigger="artifactRegistryAnalyticsMaterializationFinished from:body"
+              hx-target="#artifact-registry-analytics-page"
+              hx-select="#artifact-registry-analytics-page"
+              hx-swap="outerHTML"
+              hx-sync="#artifact-registry-analytics-page:replace"></span>
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
@@ -38,7 +47,9 @@
         </section>
         {% if analytics.setup.is_blocked %}
             {% include "artifact_registry/components/_setup_blocker.html" %}
-        {% elif analytics.active_tab == 'overview' %}
+        {% else %}
+            {% include "artifact_registry/partials/_analytics_controls_readiness.html" %}
+            {% if analytics.active_tab == 'overview' %}
             <section id="artifact-registry-analytics-summary"
                      hx-get="{{ url_for('artifact_registry.analytics_section', section='summary') }}"
                      hx-trigger="load"
@@ -88,7 +99,7 @@
                     </div>
                 {% endcall %}
             </section>
-        {% else %}
+            {% else %}
             <section id="artifact-registry-analytics-workspace"
                      class="{{ section_card.shell_classes() }}"
                      aria-label="{{ analytics.page_title }} workspace">
@@ -102,6 +113,7 @@
                             analytics.page_icon) }}
                 </div>
             </section>
+            {% endif %}
         {% endif %}
     </div>
 {% endblock dashboard_content %}
