@@ -66,6 +66,9 @@ def verify_native_successor_identity_for_review(
     The caller must supply a token via an independently approved secure channel;
     no HTTP form, credential storage or broad provider privileges are added here.
     """
+    connection = _field(cluster, 'kubernetes_connection')
+    if _field(connection, 'verify_ssl') is not True:
+        raise ValueError('Kubernetes TLS verification is required for identity review.')
     cluster_id = str(_field(cluster, 'id') or '')
     owner = _verify_review_plan(plan, cluster_id)
     if (
