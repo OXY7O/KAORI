@@ -272,7 +272,7 @@ def setup_read_only_provider_proof(monkeypatch):
         },
     )
     monkeypatch.setattr(recovery, '_approved_component_for_preview', lambda **kwargs: p['handoff_components'][0])
-    monkeypatch.setattr(recovery, 'db', SimpleNamespace(session=SimpleNamespace(get=lambda *args: object())))
+    monkeypatch.setattr(recovery, 'db', SimpleNamespace(session=SimpleNamespace(get=lambda *args: SimpleNamespace(kubernetes_connection=SimpleNamespace(verify_ssl=True)))))
     core = object()
     monkeypatch.setattr(
         recovery, 'runtime_adapter',
@@ -299,6 +299,20 @@ def test_provider_assessment_uses_read_only_exact_original_evidence(monkeypatch)
     )
     assert len(proof['provider_proof_sha256']) == 64
     assert proof['verified_count'] == 1
+
+
+def test_provider_recovery_proof_rejects_unverified_tls(monkeypatch):
+    p, fresh = setup_read_only_provider_proof(monkeypatch)
+    monkeypatch.setattr(
+        recovery, 'db',
+        SimpleNamespace(session=SimpleNamespace(
+            get=lambda *args: SimpleNamespace(kubernetes_connection=SimpleNamespace(verify_ssl=False)),
+        )),
+    )
+    with pytest.raises(ValueError, match='Verified Kubernetes API TLS'):
+        recovery._verify_original_provider_state(
+            tenant_id=p['tenant_id'], plan=p, actor_user_id=42, fresh=fresh,
+        )
 
 
 def test_provider_assessment_rejects_partial_markers_or_changed_inventory(monkeypatch):
