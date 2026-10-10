@@ -185,16 +185,16 @@
                 'artifact-registry-security-summary-heading') }}
             {% if security.view == 'vulnerabilities' %}
                 {% set security_metrics = [
-                    ('octagon-alert', 'Critical Findings', security.critical, 'Critical findings in the latest committed scan.', 'critical' if security.critical else 'normal'),
-                    ('triangle-alert', 'High Findings', security.high, 'High findings in the latest committed scan.', 'warning' if security.high else 'normal'),
-                    ('package-search', 'Affected Artifacts', security.affected_artifacts, 'Distinct artifact digests with critical or high findings.', 'warning' if security.affected_artifacts else 'normal'),
-                    ('waypoints', 'Runtime Exposed', security.runtime_exposed, 'Kubernetes bindings using critical/high-risk artifacts.', 'critical' if security.runtime_exposed else 'normal')
+                    ('octagon-alert', 'Critical Findings', security.critical, 'Critical findings in the latest committed scan.', 'critical' if security.critical else 'info'),
+                    ('triangle-alert', 'High Findings', security.high, 'High findings in the latest committed scan.', 'warning' if security.high else 'info'),
+                    ('package-search', 'Affected Artifacts', security.affected_artifacts, 'Distinct artifact digests with critical or high findings.', 'warning' if security.affected_artifacts else 'info'),
+                    ('waypoints', 'Runtime Exposed', security.runtime_exposed, 'Kubernetes bindings using critical/high-risk artifacts.', 'critical' if security.runtime_exposed else 'info')
                 ] %}
             {% else %}
                 {% set security_metrics = [
                     ('badge-check', 'Signature Observed', security.signature_observed, 'Artifacts where the provider reports signature presence.', 'info'),
                     ('file-check-2', 'SBOM Available', security.sbom_available, 'Artifacts with provider-observed SBOM availability.', 'info'),
-                    ('scan-search', 'Coverage Gaps', security.coverage_gaps, 'Artifacts missing signature or SBOM evidence.', 'warning' if security.coverage_gaps else 'normal'),
+                    ('scan-search', 'Coverage Gaps', security.coverage_gaps, 'Artifacts missing signature or SBOM evidence.', 'warning' if security.coverage_gaps else 'info'),
                     ('blocks', 'Security Sources', security.source_count, 'Registry sources represented in the active security scope.', 'info')
                 ] %}
             {% endif %}
