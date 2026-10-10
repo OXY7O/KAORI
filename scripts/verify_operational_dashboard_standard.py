@@ -386,6 +386,20 @@ def _verify_artifact_registry_dashboard(
         'Artifact Registry capacity peer dashboard grammar',
     )
     _require(
+        capacity,
+        (
+            '{% if not overview.selected_provider %}',
+            'components/states/_blocked_state.html',
+            'Select Registry Provider',
+            '{% else %}',
+        ),
+        'Artifact Registry selected-provider Capacity prerequisite',
+    )
+    if capacity.index('components/states/_blocked_state.html') >= capacity.index('{% else %}'):
+        raise AssertionError('Registry Capacity scope blocker must precede selected-provider content')
+    if capacity.count('components/states/_blocked_state.html') != 1:
+        raise AssertionError('Registry Capacity must render exactly one scope blocker')
+    _require(
         signals,
         (
             'components/peer_content_grid.html',
@@ -453,6 +467,29 @@ def _verify_artifact_registry_dashboard(
             'func.sum(RegistryArtifact.size_bytes)',
         ),
         'Artifact Registry committed bounded dashboard projection',
+    )
+    capacity_section = presentation.split("if section == 'capacity':", 1)[1].split(
+        "if section == 'signals':", 1
+    )[0]
+    _require(
+        capacity_section,
+        (
+            'if selected_provider is None:',
+            'return context',
+            'return _overview_capacity_projection(',
+        ),
+        'Registry Capacity lazy section selected-provider guard',
+    )
+    if capacity_section.index('return context') >= capacity_section.index('return _overview_capacity_projection('):
+        raise AssertionError('Registry Capacity must bypass evidence projection when no provider is selected')
+    capacity_projection = presentation.split('def _overview_capacity_projection(', 1)[1].split('def build_overview(', 1)[0]
+    _require(
+        capacity_projection,
+        (
+            'selected_provider: IntegrationInstance,',
+            'RegistryProject.integration_instance_id == selected_provider.id',
+        ),
+        'Registry selected-provider Capacity query boundary',
     )
     shell_projection = presentation.split('def build_overview(', 1)[1].split('def build_overview_section(', 1)[0]
     for forbidden in (
