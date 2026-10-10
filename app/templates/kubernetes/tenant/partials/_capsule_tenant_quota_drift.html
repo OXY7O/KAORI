@@ -10,8 +10,9 @@
         'capsule-tenant-quota-drift-loading',
         'Refreshing Capsule Tenant Quota Drift') }}
     <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[1450px] !table-fixed') }}">
+        <table class="{{ table_ui.table_classes('min-w-[1450px] !table-fixed' if capsule_tenant_quota_drifted else '!table-fixed') }}">
             <caption class="sr-only">Capsule Tenant resource quota drift and reconciliation actions.</caption>
+            {% if capsule_tenant_quota_drifted %}
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[19%]">Tenant</th>
@@ -20,6 +21,7 @@
                     <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[23%]">Action</th>
                 </tr>
             </thead>
+            {% endif %}
             <tbody class="{{ table_ui.body_classes() }}">
                 {% for tenant in capsule_tenant_quota_drifted %}
                     {% set state = capsule_tenant_quota_drift_state.get(tenant.id) or {} %}
@@ -112,6 +114,9 @@
                             {% set empty_state_icon = "circle-check" %}
                             {% set empty_state_title = "No Capsule Tenant Quota Drift" %}
                             {% set empty_state_description = "No governed Capsule Tenant.spec.resourceQuotas currently differs from committed KAORI intent." %}
+                            {% set empty_state_label = '' %}
+                            {% set empty_state_min_height = 'min-h-[128px]' %}
+                            {% set empty_state_container_class = '!py-5' %}
                             {% include 'components/states/_empty_state.html' %}
                         </td>
                     </tr>
