@@ -345,6 +345,7 @@ def get_tenant_registry_context(
     handoff_approvals: dict[str, dict[str, Any]] = {}
     handoff_dry_runs: dict[str, dict[str, Any]] = {}
     handoff_readbacks: dict[str, dict[str, Any]] = {}
+    handoff_executions: dict[str, dict[str, Any]] = {}
     successor_claims: dict[str, dict[str, Any]] = {}
     successor_acceptances: dict[str, dict[str, Any]] = {}
     if tenant_ids and include_decommission_preflight:
@@ -353,6 +354,7 @@ def get_tenant_registry_context(
             ('kubernetes_tenant_release_handoff_approval', handoff_approvals),
             ('kubernetes_tenant_release_native_handoff_dry_run', handoff_dry_runs),
             ('kubernetes_tenant_release_native_handoff_readback', handoff_readbacks),
+            ('kubernetes_tenant_release_native_handoff_execution', handoff_executions),
             ('kubernetes_tenant_release_successor_claim', successor_claims),
             ('kubernetes_tenant_release_verified_successor_acceptance', successor_acceptances),
         ):
@@ -398,6 +400,7 @@ def get_tenant_registry_context(
             )
             row['release_native_handoff_dry_run'] = handoff_dry_runs.get(item.id)
             row['release_native_handoff_readback'] = handoff_readbacks.get(item.id)
+            row['release_native_handoff_execution'] = handoff_executions.get(item.id)
             row['release_successor_claim'] = successor_claims.get(item.id)
             row['release_successor_acceptance'] = successor_acceptances.get(item.id)
             if item.provider_key == 'native_kubernetes' and (
@@ -412,6 +415,7 @@ def get_tenant_registry_context(
                     successor_acceptance=row['release_successor_acceptance'],
                     dry_run=row['release_native_handoff_dry_run'],
                     readback=row['release_native_handoff_readback'],
+                    handoff_execution=row['release_native_handoff_execution'],
                 )
         tenant_rows.append(row)
 

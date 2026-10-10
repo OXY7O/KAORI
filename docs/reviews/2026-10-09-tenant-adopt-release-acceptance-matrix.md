@@ -195,3 +195,39 @@ PATCH from this read-back action and no KAORI Released commit. This is
 DevContainer review candidate behavior only; the live executor still needs
 approved #1047 consent, #1048 mutation/recovery admission and #1049 finalizer
 plus provider UAT. No CI/CD gate or staging promotion was run for this change.
+
+
+## Approved identity → executable Native metadata transfer review candidate (#1048)
+
+Following explicit acceptance of TokenReview, scoped SubjectAccessReview and
+successor consent (#1047), the Native executor `native_handoff_executor.py`
+adds an explicit HTTPS+CSRF POST to the existing Release Governance dialog.
+It requires the same Kubernetes successor principal to reauthenticate,
+checks the unexpired exact plan SHA, independent reviewer, committed consent,
+all-zero dependency ledger, full canonical server-side dry-run receipt and a
+new provider preflight for the first attempt. There is no automatic transfer
+on a normal Registry GET or sync.
+
+The executor records an `in_progress` AuditEvent under the Tenant row lock
+before provider writes. For ResourceQuota/LimitRange before Namespace, each
+Kubernetes JSON Patch tests UID, resourceVersion and exact KAORI owner
+markers; it removes only KAORI correlation labels and assigns the accepted
+successor manager label. Kubernetes dryRun admission is repeated against the
+*actual final successor patch* immediately before execution. The executor
+re-reads every object and requires spec/quotas, UID, foreign labels,
+annotations, finalizers, ownerReferences and lifecycle metadata to remain
+unchanged. Native RBAC is only **verified**, never granted by KAORI.
+
+Partial failures are recorded as `partial_handoff_recovery_required` with
+nonsecret per-object evidence. The service never commits `Released`, never
+auto-reverts provider resources, and permits a bounded explicit retry only
+within still-current plan, approval, consent and dry-run windows, using
+unchanged provider-resource read-back as authority. A crashed `in_progress`
+attempt stays blocked pending operator recovery rather than being silently
+retried. The separately governed #1049 finalizer must reread provider state
+and settle capacity/access dependencies before marking `Released`.
+
+This code is **for local DevContainer/security UAT evaluation**, not evidence
+that provider mutation has passed nonproduction cluster tests or staging
+admission. No tests, CI/CD quality gates, staging deployment or production
+execution were performed during this GitHub implementation.
