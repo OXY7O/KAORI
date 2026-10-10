@@ -590,13 +590,13 @@ def test_exact_governance_forms_return_to_same_page_and_global_toast():
     toast = read('app/templates/components/operational_toast.html')
     assert detail.count('<form ') == 17
     assert detail.count('name="csrf_token"') == 17
-    assert detail.count('name="tenant_detail_id"') == 18
-    assert detail.count('registry_state.items()') == 18
-    assert detail.count('hx-target="#tenant-management-detail"') == 18
-    assert detail.count('hx-select="#tenant-management-detail"') == 18
+    assert detail.count('name="tenant_detail_id"') == 17
+    assert detail.count('registry_state.items()') == 17
+    assert detail.count('hx-target="#tenant-management-detail"') == 17
+    assert detail.count('hx-select="#tenant-management-detail"') == 17
     assert detail.count('hx-post=') == 17
     assert 'name="tenant_detail_view"' not in detail
-    assert detail.count('name="tenant_detail_section"') == 18
+    assert detail.count('name="tenant_detail_section"') == 17
     assert detail.count('name="tenant_release_step"') == 15
     assert 'tenant_release_step_urls' in common
     assert "context['tenant_release_step']" in common
@@ -618,8 +618,8 @@ def test_release_wizard_navigation_is_fragment_get_with_history_and_plain_link_f
     # preserve normal href while using scoped HTMX GET and canonical URLs.
     assert detail.count('hx-get="{{ tenant_release_step_urls[') == 13
     assert detail.count('hx-push-url="{{ tenant_release_step_urls[') == 13
-    assert detail.count('hx-select="#tenant-management-detail"') == 18
-    assert detail.count('hx-target="#tenant-management-detail"') == 18
+    assert detail.count('hx-select="#tenant-management-detail"') == 17
+    assert detail.count('hx-target="#tenant-management-detail"') == 17
     assert detail.count('hx-select="#tenant-release-governance"') == 13
     assert detail.count('hx-target="#tenant-release-governance"') == 13
     assert detail.count('hx-swap="outerHTML show:none focus-scroll:false"') == 31
