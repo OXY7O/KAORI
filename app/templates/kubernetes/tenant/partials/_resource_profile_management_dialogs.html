@@ -154,11 +154,17 @@
                                 {% endfor %}
                             </div>
                         </section>
-                        <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
-                            <h3 class="text-sm font-semibold text-content-primary">Storage Guardrails</h3>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Namespace quota and per-PVC request bounds are managed independently.</p>
-                            {% set storage_policy = profile.storage_policy_json or {} %}
-                            <div class="mt-4 grid gap-4 lg:grid-cols-2">
+                        <details class="group overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                            <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus [&::-webkit-details-marker]:hidden">
+                                <span class="min-w-0">
+                                    <span class="block text-sm font-semibold text-content-primary">Storage Guardrails</span>
+                                    <span class="mt-0.5 block text-xs text-content-muted">Namespace quotas and PVC limits</span>
+                                </span>
+                                <i data-lucide="chevron-down" class="h-4 w-4 shrink-0 text-content-muted transition-transform group-open:rotate-180" aria-hidden="true"></i>
+                            </summary>
+                            <div class="border-t border-outline-subtle px-4 py-4">
+                                {% set storage_policy = profile.storage_policy_json or {} %}
+                            <div class="grid gap-4 lg:grid-cols-2">
                                 <div class="rounded-xl border border-outline-subtle bg-surface-elevated p-3.5">
                                     <p class="text-xs font-semibold text-content-primary">Namespace Quota</p>
                                     <p class="mt-1 text-xs leading-5 text-content-muted">Claim count and cumulative requested storage.</p>
@@ -216,11 +222,18 @@
                                     </div>
                                 </div>
                             </div>
-                        </section>
-                        <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
-                            <h3 class="text-sm font-semibold text-content-primary">Object Limits</h3>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Namespace object ResourceQuota controls.</p>
-                            <div class="mt-4 grid gap-4 sm:grid-cols-3">
+                            </div>
+                        </details>
+                        <details class="group overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                            <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus [&::-webkit-details-marker]:hidden">
+                                <span class="min-w-0">
+                                    <span class="block text-sm font-semibold text-content-primary">Object Limits</span>
+                                    <span class="mt-0.5 block text-xs text-content-muted">Services, ConfigMaps and Secrets</span>
+                                </span>
+                                <i data-lucide="chevron-down" class="h-4 w-4 shrink-0 text-content-muted transition-transform group-open:rotate-180" aria-hidden="true"></i>
+                            </summary>
+                            <div class="border-t border-outline-subtle px-4 py-4">
+                                <div class="grid gap-4 sm:grid-cols-3">
                                 {% for name, label, value, placeholder, managed in [
                                     ('services', 'Services', profile.quota_hard_json.get('services') or '', '10', 'services' in (profile.quota_hard_json or {})),
                                     ('configmaps', 'ConfigMaps', profile.quota_hard_json.get('configmaps') or '', '50', 'configmaps' in (profile.quota_hard_json or {})),
@@ -245,11 +258,18 @@
                                     </div>
                                 {% endfor %}
                             </div>
-                        </section>
-                        <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
-                            <h3 class="text-sm font-semibold text-content-primary">Container Defaults</h3>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">LimitRange defaults applied when a container omits its own request/limit values.</p>
-                            <div class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                            </div>
+                        </details>
+                        <details class="group overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                            <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus [&::-webkit-details-marker]:hidden">
+                                <span class="min-w-0">
+                                    <span class="block text-sm font-semibold text-content-primary">Container Defaults</span>
+                                    <span class="mt-0.5 block text-xs text-content-muted">LimitRange request and limit defaults</span>
+                                </span>
+                                <i data-lucide="chevron-down" class="h-4 w-4 shrink-0 text-content-muted transition-transform group-open:rotate-180" aria-hidden="true"></i>
+                            </summary>
+                            <div class="border-t border-outline-subtle px-4 py-4">
+                                <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                                 {% for name, label, value, placeholder, managed in [
                                     ('default_request_cpu', 'Default CPU Request', default_requests.get('cpu') or '', '100m', 'cpu' in default_requests),
                                     ('default_cpu', 'Default CPU Limit', defaults.get('cpu') or '', '500m', 'cpu' in defaults),
@@ -275,7 +295,8 @@
                                     </div>
                                 {% endfor %}
                             </div>
-                        </section>
+                            </div>
+                        </details>
                         {{ advanced_profile_controls.render(profile.advanced_controls_json or {}, true, 'resource-profile-edit-' ~ profile.id, false) }}
                     </form>
                     <div class="rounded-xl border border-kaori-primary/20 bg-kaori-soft px-4 py-3 text-xs leading-5 text-content-secondary">
@@ -351,15 +372,16 @@
                                 {% endfor %}
                             </div>
                         </section>
-                        <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
-                            <div class="flex items-center justify-between gap-3">
-                                <div>
-                                    <h3 class="text-sm font-semibold text-content-primary">Storage Guardrails</h3>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Namespace quota and per-PVC bounds stay one managed storage contract.</p>
-                                </div>
-                                {{ table_label.metadata_label('Fixed Values', 'lock-keyhole') }}
-                            </div>
-                            <div class="mt-4 grid gap-4 lg:grid-cols-2">
+                        <details class="group overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                            <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus [&::-webkit-details-marker]:hidden">
+                                <span class="min-w-0">
+                                    <span class="block text-sm font-semibold text-content-primary">Storage Guardrails</span>
+                                    <span class="mt-0.5 block text-xs text-content-muted">Namespace quotas and PVC limits</span>
+                                </span>
+                                <i data-lucide="chevron-down" class="h-4 w-4 shrink-0 text-content-muted transition-transform group-open:rotate-180" aria-hidden="true"></i>
+                            </summary>
+                            <div class="border-t border-outline-subtle px-4 py-4">
+                                <div class="grid gap-4 lg:grid-cols-2">
                                 <div class="rounded-xl border border-outline-subtle bg-surface-elevated p-3.5">
                                     <p class="text-xs font-semibold text-content-primary">Namespace Quota</p>
                                     <div class="mt-3 grid gap-3 sm:grid-cols-2">
@@ -409,16 +431,18 @@
                                     </div>
                                 </div>
                             </div>
-                        </section>
-                        <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
-                            <div class="flex items-center justify-between gap-3">
-                                <div>
-                                    <h3 class="text-sm font-semibold text-content-primary">Object Limits</h3>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Namespace object-count ownership.</p>
-                                </div>
-                                {{ table_label.metadata_label('Fixed Values', 'lock-keyhole') }}
                             </div>
-                            <div class="mt-4 grid gap-3 sm:grid-cols-3">
+                        </details>
+                        <details class="group overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                            <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus [&::-webkit-details-marker]:hidden">
+                                <span class="min-w-0">
+                                    <span class="block text-sm font-semibold text-content-primary">Object Limits</span>
+                                    <span class="mt-0.5 block text-xs text-content-muted">Services, ConfigMaps and Secrets</span>
+                                </span>
+                                <i data-lucide="chevron-down" class="h-4 w-4 shrink-0 text-content-muted transition-transform group-open:rotate-180" aria-hidden="true"></i>
+                            </summary>
+                            <div class="border-t border-outline-subtle px-4 py-4">
+                                <div class="grid gap-3 sm:grid-cols-3">
                                 {% for field, label, quota_key in [
                                     ('services', 'Services', 'services'),
                                     ('configmaps', 'ConfigMaps', 'configmaps'),
@@ -440,16 +464,18 @@
                                     </label>
                                 {% endfor %}
                             </div>
-                        </section>
-                        <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
-                            <div class="flex items-center justify-between gap-3">
-                                <div>
-                                    <h3 class="text-sm font-semibold text-content-primary">Container Defaults</h3>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Fixed Container LimitRange defaults with versioned ownership.</p>
-                                </div>
-                                {{ table_label.metadata_label('Fixed Values', 'lock-keyhole') }}
                             </div>
-                            <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        </details>
+                        <details class="group overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                            <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus [&::-webkit-details-marker]:hidden">
+                                <span class="min-w-0">
+                                    <span class="block text-sm font-semibold text-content-primary">Container Defaults</span>
+                                    <span class="mt-0.5 block text-xs text-content-muted">LimitRange request and limit defaults</span>
+                                </span>
+                                <i data-lucide="chevron-down" class="h-4 w-4 shrink-0 text-content-muted transition-transform group-open:rotate-180" aria-hidden="true"></i>
+                            </summary>
+                            <div class="border-t border-outline-subtle px-4 py-4">
+                                <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                                 {% for field, label, group, resource in [
                                     ('default_request_cpu', 'CPU Request', 'default_request', 'cpu'),
                                     ('default_cpu', 'CPU Limit', 'default', 'cpu'),
@@ -474,7 +500,8 @@
                                     </label>
                                 {% endfor %}
                             </div>
-                        </section>
+                            </div>
+                        </details>
                         {{ advanced_profile_controls.render(profile.advanced_controls_json or {}, true, 'resource-profile-edit-' ~ profile.id, false) }}
                     </form>
                 {% endif %}
