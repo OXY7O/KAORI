@@ -389,6 +389,12 @@ def resource_profiles():
         per_page=request.args.get('capacity_per_page', 5, type=int) or 5,
     )
     context['capacity_governance'] = capacity_items
+    # Reuse the read-only #1034 presentation percentages for each visible
+    # committed #654 Allocation Budget row; no new evidence or admission path.
+    context['capacity_budget_bars'] = {
+        str(item['cluster'].id): build_tenant_allocation_bars(item)
+        for item in capacity_items
+    }
     context['capacity_pagination'] = capacity_pagination
     context['capacity_filters'] = {'search': capacity_search}
 
