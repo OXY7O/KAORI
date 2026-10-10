@@ -41,7 +41,7 @@
                 </div>
             </header>
             <div class="min-h-0 flex-1 bg-surface-page">
-                <div class="grid grid-cols-3 divide-x divide-outline-subtle border-b border-outline-subtle bg-surface-card">
+                <div id="tenant-detail-snapshot" class="grid grid-cols-3 divide-x divide-outline-subtle border-b border-outline-subtle bg-surface-card scroll-mt-24">
                     <div class="min-w-0 px-3 py-3.5 sm:px-5">
                         <p class="text-[11px] font-medium text-content-muted">Namespaces</p>
                         <p class="mt-1 text-sm font-semibold text-content-primary">{{ row.namespace_count }} active</p>
@@ -61,11 +61,39 @@
                         <p class="mt-1 truncate text-sm font-semibold text-content-primary">{{ tenant.lifecycle_status|replace('_', ' ')|title }}</p>
                     </div>
                 </div>
+                <nav aria-label="Tenant detail sections"
+                     class="flex flex-wrap items-center gap-2 border-b border-outline-subtle bg-surface-card px-4 py-3 sm:px-6">
+                    <a href="#tenant-detail-snapshot"
+                       class="inline-flex min-h-9 items-center rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">Snapshot</a>
+                    {% if can_manage and current_user.has_permission('integrations.manage')
+                          and current_user.has_permission('clusters.manage')
+                          and tenant.ownership_status == 'adopted' and tenant.lifecycle_status == 'ready' %}
+                        <a href="#tenant-release-governance"
+                           class="inline-flex min-h-9 items-center rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">Release Governance</a>
+                    {% endif %}
+                    {% if can_manage and current_user.has_permission('integrations.manage')
+                          and current_user.has_permission('clusters.manage')
+                          and tenant.provider_key == 'native_kubernetes' and tenant.lifecycle_status == 'released'
+                          and tenant.provider_evidence_json and tenant.provider_evidence_json.release_governance
+                          and tenant.provider_evidence_json.release_governance.release_mode == 'managed_handoff' %}
+                        <a href="#tenant-native-handback"
+                           class="inline-flex min-h-9 items-center rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">Re-adopt Handback</a>
+                    {% endif %}
+                    {% if can_manage and tenant.provider_key == 'capsule' and tenant.provider_state == 'capsule'
+                          and tenant.lifecycle_status == 'ready' and row.capsule_environment_options %}
+                        <a href="#tenant-namespace-attachment"
+                           class="inline-flex min-h-9 items-center rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">Namespace Attachment</a>
+                    {% endif %}
+                    <a href="#tenant-provider-authority"
+                       class="inline-flex min-h-9 items-center rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">Provider Authority</a>
+                    <a href="#tenant-lifecycle-actions"
+                       class="inline-flex min-h-9 items-center rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">Lifecycle</a>
+                </nav>
                 <div class="min-w-0 space-y-5 px-4 py-5 sm:px-6 sm:py-6" aria-label="Tenant management sections">
                 {% if can_manage and current_user.has_permission('integrations.manage')
                       and current_user.has_permission('clusters.manage')
                       and tenant.ownership_status == 'adopted' and tenant.lifecycle_status == 'ready' %}
-                    <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5" aria-label="Release governance">
+                    <section id="tenant-release-governance" class="min-w-0 scroll-mt-24 rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5" aria-label="Release governance">
                         <div class="flex items-start gap-3">
                             <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
                                 <i data-lucide="clipboard-check" class="h-4 w-4"></i>
@@ -847,7 +875,7 @@
                       and tenant.provider_evidence_json.release_governance.release_mode == 'managed_handoff' %}
                     {% set released_native = tenant.provider_evidence_json.release_governance %}
                     {% set handback_receipt = row.release_successor_handback %}
-                    <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5"
+                    <section id="tenant-native-handback" class="min-w-0 scroll-mt-24 rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5"
                              aria-label="Native successor handback">
                         <div class="flex items-start gap-3">
                             <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
@@ -913,7 +941,7 @@
                 {% endif %}
                 {% if can_manage and tenant.provider_key == 'capsule' and tenant.provider_state == 'capsule'
                       and tenant.lifecycle_status == 'ready' and row.capsule_environment_options %}
-                    <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4" aria-label="Namespace attachment">
+                    <section id="tenant-namespace-attachment" class="min-w-0 scroll-mt-24 rounded-xl border border-outline-subtle bg-surface-card p-4" aria-label="Namespace attachment">
                         <div class="flex items-start gap-3">
                             <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
                                 <i data-lucide="link-2" class="h-4 w-4"></i>
@@ -989,7 +1017,7 @@
                         </p>
                     </section>
                 {% endif %}
-                    <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5"
+                    <section id="tenant-provider-authority" class="min-w-0 scroll-mt-24 rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5"
                              aria-label="Provider authority">
                         <div class="flex items-center gap-2">
                             <i data-lucide="shield-check" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
@@ -1014,7 +1042,7 @@
                         </p>
                     </section>
                 {% set decommission = row.decommission_preflight %}
-                <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5" aria-label="Tenant lifecycle actions">
+                <section id="tenant-lifecycle-actions" class="min-w-0 scroll-mt-24 rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5" aria-label="Tenant lifecycle actions">
                     <div class="flex flex-wrap items-start justify-between gap-3">
                         <div class="flex min-w-0 flex-1 items-start gap-3">
                             <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-status-warning-soft text-status-warning-text" aria-hidden="true">
