@@ -30,7 +30,14 @@
     {% if provider_authority_embedded %}
         <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 sm:px-5">
             <p class="text-xs leading-5 text-content-muted">Committed Tenant provider and reconciliation authority.</p>
-            {{ header_actions }}
+            <div class="flex flex-wrap items-center gap-3">
+                {{ header_actions }}
+                <a href="{{ url_for('tenant.tenants', section='registry') }}"
+                   class="inline-flex items-center gap-1 text-xs font-semibold text-kaori-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                    Tenant Registry
+                    <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                </a>
+            </div>
         </div>
     {% else %}
     {{ table_ui.inventory_block_header('shield-check',
