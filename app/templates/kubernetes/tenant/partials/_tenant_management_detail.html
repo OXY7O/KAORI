@@ -143,7 +143,7 @@
                 <p class="mt-2">Mutations require explicit approval, current permissions and authoritative provider evidence.</p>
             </div>
         </aside>
-        <main class="min-w-0 space-y-5" aria-label="Tenant management sections">
+        <div class="min-w-0 space-y-5" role="region" aria-label="Tenant management sections">
 
 {% if can_manage and current_user.has_permission('integrations.manage')
                       and current_user.has_permission('clusters.manage')
@@ -1178,7 +1178,7 @@
                         </div>
                     {% endif %}
                 </section>
-        </main>
+        </div>
     </div>
     {{ destructive_modal.render('tenant-decommission-modal',
 'Decommission Tenant',
