@@ -21,10 +21,14 @@
                         <p class="text-xs font-semibold text-kaori-primary">
                             {{ 'Custom Resource Profile' if editable else 'KAORI Built-in Preset' }}
                         </p>
-                        <h2 id="resource-profile-manage-{{ profile.id }}-title"
-                            class="mt-1 text-lg font-semibold text-content-primary">
-                            {{ 'Manage Resource Profile' if editable else 'Resource Profile Details' }}
-                        </h2>
+                        <div class="mt-1 flex flex-wrap items-center gap-2">
+                            <h2 id="resource-profile-manage-{{ profile.id }}-title"
+                                class="text-lg font-semibold text-content-primary">
+                                {{ 'Manage Resource Profile' if editable else 'Resource Profile Details' }}
+                            </h2>
+                            {{ table_label.status_label('Editable' if editable else 'Versioned Controls',
+                                'info' if editable else 'maintenance') }}
+                        </div>
                         <p class="mt-1 text-xs leading-5 text-content-muted">
                             {{ 'Update reusable intent; Namespace snapshots stay pinned.' if editable
                                else 'Fixed preset values; approved control changes create a new version.' }}
@@ -50,35 +54,62 @@
                         title="{{ profile.name }}">{{ profile.name }}</h3>
                     {% if profile.description %}
                         <div aria-label="Resource Profile description" class="mt-2 max-w-4xl">
-                            <p class="whitespace-pre-wrap break-words text-sm leading-6 text-content-secondary">{{ profile.description }}</p>
+                            {% if profile.description.startswith('Explicit governance-cutover profile materialized from the adopted provider baseline.') %}
+                                <p class="text-sm leading-6 text-content-secondary">
+                                    Adopted baseline profile; no provider value changes requested.
+                                </p>
+                            {% else %}
+                                <p class="whitespace-pre-wrap break-words text-sm leading-6 text-content-secondary">{{ profile.description }}</p>
+                            {% endif %}
                         </div>
                     {% else %}
                         <p class="mt-1 text-xs text-content-muted">No profile description.</p>
                     {% endif %}
-                    <p class="mt-3 text-xs text-content-muted">
+                    <div class="mt-3 flex flex-wrap items-center gap-2" aria-label="Profile lineage">
                         {% if editable and profile.base_preset_class %}
-                            Based on {{ profile_class_labels.get(profile.base_preset_class, profile.base_preset_class|replace('_', ' ')|title) }}
-                            v{{ profile.base_preset_version or '—' }}
+                            {{ table_label.metadata_label(
+                                'Based on ' ~ profile_class_labels.get(profile.base_preset_class, profile.base_preset_class|replace('_', ' ')|title)
+                                ~ ' v' ~ (profile.base_preset_version or '—'), 'git-branch') }}
                         {% elif editable %}
-                            Independent Custom · Operator-managed values
+                            {{ table_label.metadata_label('Independent Custom · Operator-managed values', 'layers-3', wrap=true) }}
                         {% else %}
-                            Canonical KAORI preset · Fixed numeric values
+                            {{ table_label.metadata_label('Canonical KAORI preset · Fixed values', 'lock-keyhole', wrap=true) }}
                         {% endif %}
-                    </p>
+                    </div>
                 </section>
-                <dl class="grid grid-cols-2 gap-x-4 gap-y-3 border-b border-outline-subtle px-1 pb-4 sm:grid-cols-4">
-                    {% for label, value in [
-                        ('Class', profile_class_labels.get(profile.profile_class, profile.profile_class|replace('_', ' ')|title)),
-                        ('Version', 'v' ~ profile.version),
-                        ('Namespace References', usage.namespaces),
-                        ('Capacity Decisions', usage.capacity_decisions)
-                    ] %}
-                        <div class="min-w-0">
-                            <dt class="text-xs text-content-muted">{{ label }}</dt>
-                            <dd class="mt-1 text-sm font-semibold text-content-primary">{{ value }}</dd>
+                <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+                         aria-label="Profile contract and usage summary">
+                    <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0">
+                        <div class="min-w-0 px-4 py-3 sm:px-5">
+                            <h3 class="text-xs font-semibold text-content-secondary">Contract</h3>
+                            <dl class="mt-3 grid grid-cols-2 gap-3">
+                                <div class="min-w-0">
+                                    <dt class="text-xs text-content-muted">Class</dt>
+                                    <dd class="mt-1 text-sm font-semibold text-content-primary">
+                                        {{ profile_class_labels.get(profile.profile_class, profile.profile_class|replace('_', ' ')|title) }}
+                                    </dd>
+                                </div>
+                                <div class="min-w-0">
+                                    <dt class="text-xs text-content-muted">Version</dt>
+                                    <dd class="mt-1 text-sm font-semibold text-content-primary">v{{ profile.version }}</dd>
+                                </div>
+                            </dl>
                         </div>
-                    {% endfor %}
-                </dl>
+                        <div class="min-w-0 px-4 py-3 sm:px-5">
+                            <h3 class="text-xs font-semibold text-content-secondary">Usage</h3>
+                            <dl class="mt-3 grid grid-cols-2 gap-3">
+                                <div class="min-w-0">
+                                    <dt class="text-xs text-content-muted">Namespace References</dt>
+                                    <dd class="mt-1 text-sm font-semibold tabular-nums text-content-primary">{{ usage.namespaces }}</dd>
+                                </div>
+                                <div class="min-w-0">
+                                    <dt class="text-xs text-content-muted">Capacity Decisions</dt>
+                                    <dd class="mt-1 text-sm font-semibold tabular-nums text-content-primary">{{ usage.capacity_decisions }}</dd>
+                                </div>
+                            </dl>
+                        </div>
+                    </div>
+                </section>
                 <div class="min-w-0">
                     <h3 class="text-sm font-semibold text-content-primary">Profile Configuration</h3>
                     <p class="mt-1 text-xs leading-5 text-content-muted">
@@ -300,7 +331,7 @@
                         {{ advanced_profile_controls.render(profile.advanced_controls_json or {}, true, 'resource-profile-edit-' ~ profile.id, false) }}
                     </form>
                     <div class="rounded-xl border border-kaori-primary/20 bg-kaori-soft px-4 py-3 text-xs leading-5 text-content-secondary">
-                        Existing Namespace allocations keep their committed source version and effective snapshot. This edit changes only the reusable Custom contract used by future allocation or explicit allocation-change workflows.
+                        Existing Namespace allocations stay unchanged; edits affect future allocations until explicitly applied.
                     </div>
                 {% else %}
                     {% set preset = resource_profile_presets.get(profile.profile_class, {}) %}
@@ -548,8 +579,7 @@
                                     How rollout is applied
                                 </summary>
                                 <p class="mt-1 max-w-3xl text-xs leading-5 text-content-muted">
-                                    Each Namespace runs its own capacity admission, provider mutation, and read-back.
-                                    A blocked Namespace stays on its previous committed version.
+                                    Each Namespace is admitted, applied, and verified separately. Blocked Namespaces retain their prior committed version.
                                 </p>
                             </details>
                         </div>
