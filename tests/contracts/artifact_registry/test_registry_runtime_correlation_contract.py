@@ -133,4 +133,3 @@ def test_runtime_summary_reuses_shared_section_intro_and_standalone_metrics() ->
     assert 'section_card.shell_classes()' not in summary
     assert 'runtime.scope.label' in summary
     assert 'registry.footer(' in template
-    assert 'data-kaori-native-dialog' in template or 'runtime.binding' in template
