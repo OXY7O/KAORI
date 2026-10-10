@@ -624,6 +624,40 @@ Do not manually edit labels, retry verified Handback or force Adopt.
 No Kubernetes mutation or quality gates are authorized by this source
 change; tests/CI/formal UAT remain HOLD.
 
+### Read-only assessment of legacy Verified Handback residue (#1129)
+
+Before designing any *separately authorized* provider cleanup for an
+already Released and Handback Verified Native Tenant, the source-only
+service
+`assess_legacy_native_profile_residue_readonly(tenant_id=..., actor_user_id=...)`
+in `app/kubernetes/tenant/native_residual_recovery_assessment.py`
+allows an authorized Platform Admin to obtain a noncommitting advisory
+assessment. It performs the existing explicit provider GET and
+SelfSubjectReview/SelfSubjectAccessReview against the registered KAORI
+TLS-verified cluster, correlates the historical dry-run/Released/Handback
+AuditEvents and Namespace lineage, and checks the exact Namespace,
+ResourceQuota and LimitRange UID/RV, resource specs and owner-neutral
+provider metadata. It does **not** run during normal Registry/Discovery
+GET and does not add a new button, endpoint or service job.
+
+Old pre-#1126 `retained_metadata_sha256` receipts regarded
+`kaori.io/resource-profile` as a foreign label. Verification must use
+**that exact historical four-key marker projection** rather than applying
+today's expanded marker allowlist to old evidence. If the original
+provider hash, live metadata, committed profile identity, exact scope,
+last Handback resourceVersion or authorized provider principal differs,
+the assessor fails closed. Its candidate report never permits a patch,
+re-adoption, status change or AuditEvent write.
+
+This read-only assessment is **not recovery authorization**. The residual
+provider Namespace/ResourceQuota labels on `tenant-uat-demo` remain
+Blocked until the separate #1128 mutation design, authorized
+independent approval, conditional PATCH/read-back and append-only new
+evidence are explicitly accepted. Do not retry already verified Handback,
+run `kubectl label` manually, rewrite historical receipts, or force Adopt.
+Regression test files are authored; running gates or provider mutation
+still requires lifting HOLD.
+
 ### Provider Discovery and Adoption
 
 #736 owns the two-way Tenant Registry path. Discovery is an explicit live-provider exception to normal committed-state reads: it reads Native Kubernetes namespaces and Capsule Tenant CRs on the Discovery request, shows provider status, correlates objects already governed by KAORI, and classifies candidates as **Managed**, **Discovered**, or **Blocked**. It does not wait for the Overview inventory worker sync. Discovery itself never mutates provider state.
