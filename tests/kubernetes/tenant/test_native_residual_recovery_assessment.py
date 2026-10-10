@@ -13,6 +13,7 @@ from app.kubernetes.tenant.native_handoff_dry_run import (
     _stable_sha256,
 )
 from app.kubernetes.tenant.native_residual_recovery_assessment import (
+    _index_scope,
     _legacy_retained_metadata,
     inspect_legacy_profile_residue_component,
 )
@@ -162,6 +163,19 @@ def test_assessment_fails_closed_on_provider_or_receipt_drift(change):
             preview=preview, handback=handback, live=live,
             profile_public_id='profile-uuid',
         )
+
+
+@pytest.mark.parametrize('values', [
+    [],
+    [{'kind': 'Namespace', 'name': 'uat-demo', 'uid': 'uid-ns'}] * 2,
+    [{'kind': 'Unknown', 'name': 'uat-demo', 'uid': 'uid-ns'}],
+    [{'kind': 'Namespace', 'name': 'uat-demo', 'uid': 12}],
+    [{'kind': 'Namespace', 'name': 'uat-demo', 'uid': 'uid-ns',
+      'namespace': 'other'}],
+])
+def test_legacy_assessment_scope_rejects_missing_duplicate_or_malformed(values):
+    with pytest.raises(ValueError):
+        _index_scope(values, title='Test historical receipt')
 
 
 def test_assessment_has_no_provider_write_or_re_adopt_admission_path():

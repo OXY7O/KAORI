@@ -60,12 +60,15 @@ _SUPPORTED = frozenset({'Namespace', 'ResourceQuota', 'LimitRange'})
 
 
 def _scope_key(item: Mapping[str, Any]) -> tuple[str, str, str, str]:
-    kind = str(item.get('kind') or '')
-    name = str(item.get('name') or '')
-    namespace = str(item.get('namespace') or name)
-    uid = str(item.get('uid') or '')
+    kind = item.get('kind')
+    name = item.get('name')
+    namespace = item.get('namespace') or name
+    uid = item.get('uid')
     if (
-        kind not in _SUPPORTED or not name or not namespace or not uid
+        not isinstance(kind, str) or kind not in _SUPPORTED
+        or not isinstance(name, str) or not name
+        or not isinstance(namespace, str) or not namespace
+        or not isinstance(uid, str) or not uid
         or (kind == 'Namespace' and name != namespace)
     ):
         raise ValueError('Legacy Native recovery evidence has an invalid resource identity.')
@@ -198,10 +201,15 @@ def assess_legacy_native_profile_residue_readonly(
         or release.get('release_mode') != 'managed_handoff'
         or release.get('provider_handoff_verified') is not True
         or release.get('authority_mode') != 'platform_admin_governed'
+        or not release.get('provider_username')
+        or not release.get('provider_credential_id')
+        or handback.get('provider_username') != release.get('provider_username')
+        or handback.get('provider_credential_id') != release.get('provider_credential_id')
         or release.get('tenant_id') != tenant_id
         or release.get('cluster_id') != tenant.cluster_id
         or release.get('generation') != tenant.generation
         or not isinstance(plan_sha, str) or len(plan_sha) != 64
+        or any(char not in '0123456789abcdef' for char in plan_sha)
         or not release.get('successor_owner')
         or committed_handback.get('status') != 'verified'
         or committed_handback.get('release_plan_sha256') != plan_sha
