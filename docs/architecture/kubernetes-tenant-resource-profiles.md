@@ -153,6 +153,22 @@ the committed PVC min/max and Container LimitRange defaults when present;
 full provider reconciliation messages, last-reconciled evidence and
 Native-adopted / Capsule-provider-mirrored distinctions remain readable.
 
+After additional DevContainer visual feedback, the modal body follows one
+compact, left-aligned reading order: **Status / Ownership / Provider / Authority**
+in a single evidence strip; **Committed Allocation** as four consistently
+labelled frozen values; **Source Profile / Effective Snapshot** within that
+allocation section; then the full **Reconciliation** message as an understated
+left-accented text block. Optional PVC/LimitRange controls stay collapsed
+below the operational facts. Removing redundant nested cards and repeated
+descriptive copy reduces visual noise without changing evidence authority.
+
+Reconciliation text uses `whitespace-pre-line`, with the Jinja expression on
+the same source line as its paragraph. Earlier `whitespace-pre-wrap` preserved
+template indentation as visible leading spaces and made messages appear
+off-centre even though the dialog root was `text-left`. The change preserves
+intentional multiline evidence while collapsing HTML indentation. The status
+and the full provider message are **not** rewritten, truncated or inferred.
+
 The nested native dialog explicitly resets inherited table Action-cell
 `text-right` with `text-left` on modal root/body, consistent with the
 accepted #1053 alignment correction. Details offer no provider mutation,
