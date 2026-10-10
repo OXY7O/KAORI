@@ -193,6 +193,7 @@ def get_activity_center_context(
     from app.kubernetes.tenant.approval_inbox import get_tenant_release_work_inbox
 
     tenant_approval_inbox = get_tenant_release_work_inbox(user_id=user_id)
+    notification_inbox_unread_count = inbox_unread_count
     inbox_unread_count += tenant_approval_inbox["pending_count"]
     inbox_total_count += tenant_approval_inbox["total_count"]
 
@@ -218,6 +219,7 @@ def get_activity_center_context(
         'attention_count': attention_count,
         'unread_count': unread_count,
         'inbox_unread_count': inbox_unread_count,
+        'notification_inbox_unread_count': notification_inbox_unread_count,
         'inbox_total_count': inbox_total_count,
         'total_count': total_count,
         'display_limit': normalized_notification_limit,
