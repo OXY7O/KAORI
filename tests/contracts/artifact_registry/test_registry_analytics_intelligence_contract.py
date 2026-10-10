@@ -178,6 +178,7 @@ def test_registry_analytics_readiness_reuses_k8s_shared_controls_without_buttons
     for text in templates.values():
         Environment().parse(text)
     common, k8s, registry, live, page = templates.values()
+    presenter = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
 
     assert "{% macro frame(" in common
     assert 'analysis_surface.snapshot_shell_classes()' in common
