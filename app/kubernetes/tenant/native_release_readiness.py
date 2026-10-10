@@ -77,6 +77,21 @@ def project_native_release_readiness(
         and successor_claim.get("plan_sha256") == plan_sha
         and successor_claim.get("status") == "external_reference_unverified"
     )
+    # Advisory UI precondition only: mirror the *current*, SHA/fingerprint
+    # scoped evidence guards of the external observer. The service rechecks
+    # those guards before any provider read and remains authoritative.
+    external_reference_current = bool(
+        reference_recorded
+        and _checked_recently((successor_claim or {}).get("recorded_at"))
+        and (successor_claim or {}).get("successor_owner") == (plan or {}).get("successor_owner")
+    )
+    external_readback_prerequisites_current = bool(
+        same_plan and approval_recorded
+        and (approval or {}).get("handoff_fingerprint") == (plan or {}).get("handoff_fingerprint")
+        and external_reference_current and preview_passed
+        and (dry_run or {}).get("handoff_fingerprint") == (plan or {}).get("handoff_fingerprint")
+        and (dry_run or {}).get("release_authorized") is False
+    )
     # The existing native read-back deliberately observes without trusted
     # acceptance; never turn this into verified provider transfer.
     readback_observed = bool(
@@ -149,6 +164,8 @@ def project_native_release_readiness(
         "restart_blocked_by_readback": bool(approval_expired and readback_for_plan),
         "dry_run_passed": preview_passed,
         "reference_recorded": reference_recorded,
+        "external_reference_current": external_reference_current,
+        "external_readback_prerequisites_current": external_readback_prerequisites_current,
         "readback_observed_unverified": readback_observed,
         "completed_count": sum(int(complete) for _, complete, _ in stages),
         "total_count": len(stages),
