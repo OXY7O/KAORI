@@ -194,6 +194,34 @@ keyboard-accessible disclosure. This presentation does not change #654
 admission arithmetic, committed decisions, provider authority or #113
 frozen Namespace effective allocation.
 
+### Capacity Decisions compact target and contract identities (#775 follow-up)
+
+Following another DevContainer screenshot review, the capacity-decision list
+uses the existing display-only Resource Profile Registry convention rather
+than showing internal provider adoption prefixes and full UUIDs verbatim.
+For scannability, an exact synthetic namespace target matching
+`@tenant:<tenant>:resource-quotas` displays as
+`<tenant> · Resource Quotas` (other Namespace/target identities are not
+reinterpreted). Profile display strips the leading `Adopted ` prefix, formats
+`Baseline · N` as `Baseline N`, and abbreviates a terminal UUID after
+` · ` to eight hex characters as in the existing Resource Profile Registry.
+Unknown long labels are bounded at 34/36 characters for Target/Contract.
+The second Contract line combines adopted origin, profile class/version and
+operation, rather than repeating a third line of visually competing prose.
+
+These transformations **never rewrite canonical Namespace or Resource Profile
+identity**; full original values are preserved in the table `title`
+attributes and the already approved read-only View More modal. Baseline 3
+and Baseline 4 remain distinguishable, as do imported allocation contracts
+with different UUID prefixes. Search, five-row pagination, committed evidence,
+admission decision and traceability are unchanged. No data model, provider
+behavior, inference engine or admission calculation is affected.
+
+DevContainer Visual QA should compare short/local names, distinct adopted
+baseline versions, UUID-suffixed imported profiles, long synthetic quota
+targets, mobile/dark mode and the full identity in View More. Human acceptance,
+CI/CD and deployment remain HOLD.
+
 ### Capacity Decision View More visual hierarchy (#775 follow-up)
 
 Human DevContainer feedback found the initial native dialog too fragmented:
