@@ -166,6 +166,13 @@ def _tenant_detail_context(tenant_id: str) -> dict[str, Any]:
     )
     context['row'] = rows[0]
     context['registry_state'] = state
+    # Expand only a known governance section after a POST; never trust arbitrary
+    # client-supplied template selectors or reopen an unrelated mutation panel.
+    requested_section = str(request.values.get('tenant_detail_section') or '').strip()
+    allowed_sections = {'release', 'handback', 'attachment', 'provider', 'lifecycle'}
+    context['tenant_detail_open_section'] = (
+        requested_section if requested_section in allowed_sections else 'release'
+    )
 
     context['return_to_registry_url'] = url_for(
         'tenant.tenants',
