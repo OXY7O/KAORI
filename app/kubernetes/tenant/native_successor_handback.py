@@ -63,6 +63,8 @@ def handback_native_successor_governance_committed(
     if (
         tenant is None or tenant.lifecycle_status != TenantLifecycleStatus.RELEASED.value
         or tenant.provider_key != 'native_kubernetes'
+        or tenant.provider_state != 'native'
+        or tenant.ownership_status != 'adopted'
         or tenant.reconciliation_authority != 'native_kubernetes'
     ):
         raise ValueError('Only an existing Released Native Tenant may be handed back.')
@@ -234,6 +236,15 @@ def handback_native_successor_governance_committed(
         'checked_at': datetime.now(UTC).isoformat(),
     }
     if complete:
+        locked = Tenant.query.filter_by(id=tenant_id).with_for_update().one_or_none()
+        latest = latest_native_successor_handback(tenant_id)
+        if (
+            locked is None or locked.lifecycle_status != TenantLifecycleStatus.RELEASED.value
+            or locked.generation != release['generation']
+            or not latest or latest.get('status') != 'in_progress'
+            or latest.get('handback_plan_sha256') != contract['plan_sha256']
+        ):
+            raise ValueError('Concurrent Released lineage or handback operation changed.')
         rows = (
             TenantNamespace.query.join(
                 TenantEnvironment, TenantNamespace.tenant_environment_id == TenantEnvironment.id
