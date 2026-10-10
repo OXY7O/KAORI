@@ -243,7 +243,9 @@ def test_active_handoff_plan_shows_fixed_requester_and_review_role_not_prepare_b
     handoff = modal.split('aria-label="Governed handoff workflow"', 1)[1].split(
         'aria-label="Independent verification and release"', 1
     )[0]
-    assert "row.release_handoff_preparation_state in ['available', 'expired']" in handoff
+    assert "row.release_handoff_preparation_state == 'available'" in handoff
+    assert "handoff_plan.requested_by == current_user.id" in handoff
+    assert "Only its original requester" in handoff
     assert 'One active handoff plan per Tenant.' in handoff
     assert 'The current handoff plan is locked.' in handoff
     assert 'handoff_plan.successor_owner' in handoff
