@@ -20,6 +20,7 @@ from app.kubernetes.tenant.allocation_overview import (
     build_tenant_allocation_bars,
     build_tenant_contribution_rows,
     describe_tightest_headroom,
+    filter_tenant_contribution_rows,
 )
 from app.kubernetes.tenant.allocation_drift import (
     accept_provider_allocation_state_committed,
@@ -369,19 +370,7 @@ def resource_profiles():
         }
         tenant_rows = build_tenant_contribution_rows(str(selected['cluster'].id))
         context['allocation_tenant_total'] = len(tenant_rows)
-        if allocation_search:
-            needle = allocation_search.casefold()
-            tenant_rows = [
-                row for row in tenant_rows
-                if needle in str(row['tenant'].name).casefold()
-                or needle in str(row['tenant'].id).casefold()
-                or needle in str(row['source']).casefold()
-                or any(
-                    needle in str(namespace['name']).casefold()
-                    or needle in str(namespace['environment']).casefold()
-                    for namespace in row['namespaces']
-                )
-            ]
+        tenant_rows = filter_tenant_contribution_rows(tenant_rows, allocation_search)
         context['allocation_tenant_rows'], context['allocation_tenant_pagination'] = paginate_sequence(
             tenant_rows,
             page=request.args.get('allocation_page', 1, type=int) or 1,
