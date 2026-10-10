@@ -20,6 +20,7 @@ from app.kubernetes.tenant.native_handoff_dry_run import (
     _spec,
     _stable_sha256,
 )
+from app.kubernetes.tenant.native_handoff_recovery import summarize_native_handoff_recovery
 from app.kubernetes.tenant.release_handoff_approval import (
     _checked_recently,
     _plan_hash,
@@ -156,25 +157,47 @@ def observe_external_native_handoff_committed(
     if cluster is None:
         raise ValueError('Native Kubernetes cluster is unavailable for provider read-back.')
     core = runtime_adapter.build_client(cluster).core_api()
-    results: list[dict[str, Any]] = []
+    live_components: dict[tuple[str, str, str, str], Any] = {}
     for component in expected:
-        live = _read_resource(core, component)
-        results.append(verify_external_native_component(
-            before=component, current=live,
-            successor_owner=str(plan['successor_owner']),
-        ))
+        key = (
+            str(component.get('namespace') or ''), str(component['kind']),
+            str(component['name']), str(component['uid']),
+        )
+        live_components[key] = _read_resource(core, component)
+    recovery = summarize_native_handoff_recovery(
+        previewed_components=expected, live_components=live_components,
+        tenant_id=tenant_id, successor_owner=str(plan['successor_owner']),
+    )
+    # Keep the existing full-transfer proof and status unchanged. Partial or
+    # unchanged marker states can be observed but never complete provider handoff.
+    complete = recovery['status'] == 'provider_markers_transferred_consent_unverified'
+    results: list[dict[str, Any]] = []
+    if complete:
+        for component in expected:
+            key = (
+                str(component.get('namespace') or ''), str(component['kind']),
+                str(component['name']), str(component['uid']),
+            )
+            results.append(verify_external_native_component(
+                before=component, current=live_components[key],
+                successor_owner=str(plan['successor_owner']),
+            ))
 
     receipt = {
         'tenant_id': tenant_id, 'cluster_id': tenant.cluster_id,
         'generation': tenant.generation,
         'plan_sha256': plan_sha256,
         'handoff_fingerprint': plan['handoff_fingerprint'],
-        'status': 'provider_handoff_observed_acceptance_unverified',
-        'observed_components': results,
-        'observed_count': len(results),
+        'status': (
+            'provider_handoff_observed_acceptance_unverified'
+            if complete else recovery['status']
+        ),
+        'observed_components': results if complete else recovery['components'],
+        'observed_count': len(results) if complete else recovery['transferred_count'],
+        'recovery': recovery,
         'observed_at': datetime.now(UTC).isoformat(),
         'external_successor_verified': False,
-        'provider_handoff_observed': True,
+        'provider_handoff_observed': complete,
         'provider_mutation_performed': False,
         'provider_handoff_verified': False,
         'release_authorized': False,
@@ -182,8 +205,14 @@ def observe_external_native_handoff_committed(
     }
     db.session.add(AuditEvent(
         actor_user_id=actor_user_id, target_type=_TARGET, target_id=tenant_id,
-        action='tenant.release.native_provider_handoff_observed',
-        summary='Observed external provider marker transfer; acceptance unverified, Release blocked.',
+        action=(
+            'tenant.release.native_provider_handoff_observed'
+            if complete else 'tenant.release.native_provider_handoff_recovery_observed'
+        ),
+        summary=(
+            'Observed external provider marker transfer; acceptance unverified, Release blocked.'
+            if complete else 'Observed incomplete Native handoff; recovery required, Release blocked.'
+        ),
         metadata_json=receipt,
     ))
     db.session.commit()

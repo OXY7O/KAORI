@@ -167,3 +167,31 @@ cannot be satisfied by two internal KAORI approvals, an operator-submitted
 ticket string, a Kubernetes ownership label, or a successful server dry-run.
 The final external-acceptance and mutation/recovery contract must be admitted
 under #991/#690 before code may mark a KAORI-mutated Tenant Released.
+
+
+## Review candidate: Native partial handoff observation (#1048)
+
+The existing explicit **Verify Provider Read-Back** action now reuses the
+same canonical Native dry-run inventory to distinguish a fully observed
+external marker transfer from an unchanged or partially transferred set.
+`native_handoff_recovery.py` checks exact resource identity, resourceVersion,
+quota/LimitRange spec hash and retained foreign metadata before returning
+normalized per-object evidence.
+
+- All transferred: retain the existing
+  `provider_handoff_observed_acceptance_unverified` status and independently
+  run the existing strict read-back verifier for each resource.
+- Zero transferred: commit a `provider_handoff_not_started` observation.
+- Some transferred: commit `partial_handoff_recovery_required`, surface a
+  warning instead of a successful handoff message.
+- Unexpected manager, missing/changed UID, partial marker removal, modified
+  resource specification, foreign metadata or ambiguous inventory: reject
+  the observation; never infer safe retry.
+
+**Authority boundary:** every result continues to carry
+`external_successor_verified=false`, `provider_handoff_verified=false`,
+and `release_authorized=false`. No automatic continuation, no provider
+PATCH from this read-back action and no KAORI Released commit. This is
+DevContainer review candidate behavior only; the live executor still needs
+approved #1047 consent, #1048 mutation/recovery admission and #1049 finalizer
+plus provider UAT. No CI/CD gate or staging promotion was run for this change.
