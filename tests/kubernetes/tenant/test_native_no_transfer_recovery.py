@@ -128,6 +128,28 @@ def test_unsafe_or_ambiguous_history_is_never_recoverable(monkeypatch, alteratio
         recovery._source_history(p['tenant_id'], p)
 
 
+def test_canonical_zero_transfer_readback_is_digest_bound(monkeypatch):
+    p = plan()
+    initial = history(p)
+    set_history(monkeypatch, initial)
+    executor_only = recovery._source_history(p['tenant_id'], p)['digest']
+    observed = SimpleNamespace(
+        id=3, actor_user_id=43,
+        target_type=recovery._READBACK_TARGET,
+        action='tenant.release.native_handoff_readback_observed',
+        metadata_json={'plan_sha256': p['plan_sha256'], 'status': 'provider_handoff_not_started'},
+    )
+    monkeypatch.setattr(
+        recovery, 'readback_proves_handoff_not_started',
+        lambda item, *, plan: item.get('status') == 'provider_handoff_not_started',
+    )
+    set_history(monkeypatch, initial + [observed])
+    assert recovery._source_history(p['tenant_id'], p)['digest'] != executor_only
+    observed.metadata_json['status'] = 'partial_handoff_recovery_required'
+    with pytest.raises(ValueError, match='read-back'):
+        recovery._source_history(p['tenant_id'], p)
+
+
 def test_executor_chronology_must_be_valid_and_monotonic(monkeypatch):
     p = plan()
     events = history(p)
