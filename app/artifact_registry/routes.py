@@ -346,13 +346,22 @@ def runtime_binding_details(binding_id: int) -> ResponseReturnValue:
     )
 
 
-@artifact_registry_bp.get('/analytics')
-@permission_required('artifact_registry.view')
-def analytics() -> ResponseReturnValue:
+_REGISTRY_ANALYTICS_DETAIL_ROUTES = {
+    'growth': 'artifact_registry.analytics_growth',
+    'capacity': 'artifact_registry.analytics_capacity',
+    'usage': 'artifact_registry.analytics_usage',
+    'risk': 'artifact_registry.analytics_risk',
+    'governance': 'artifact_registry.analytics_governance',
+    'alerts': 'artifact_registry.analytics_alerts',
+    'insights': 'artifact_registry.analytics_insights',
+}
+
+
+def _render_registry_analytics_page(section: str) -> ResponseReturnValue:
     return render_template(
         'artifact_registry/analytics.html',
         analytics=build_analytics_shell(
-            active_tab=request.args.get('tab', 'growth', type=str),
+            active_tab=section,
             alert_search=request.args.get('alert_q', '', type=str),
             alert_severity=request.args.get('alert_severity', 'all', type=str),
             alert_state=request.args.get('alert_state', 'all', type=str),
@@ -361,6 +370,62 @@ def analytics() -> ResponseReturnValue:
             alert_per_page=request.args.get('alert_per_page', 5, type=int) or 5,
         ),
     )
+
+
+@artifact_registry_bp.get('/analytics')
+@permission_required('artifact_registry.view')
+def analytics() -> ResponseReturnValue:
+    legacy_tab = request.args.get('tab', '', type=str)
+    if legacy_tab in _REGISTRY_ANALYTICS_DETAIL_ROUTES:
+        alert_args = {
+            key: value
+            for key in ('alert_q', 'alert_severity', 'alert_state', 'alert_source', 'alert_page', 'alert_per_page')
+            if (value := request.args.get(key))
+        }
+        return redirect(url_for(_REGISTRY_ANALYTICS_DETAIL_ROUTES[legacy_tab], **alert_args))
+    return _render_registry_analytics_page('overview')
+
+
+@artifact_registry_bp.get('/analytics/growth')
+@permission_required('artifact_registry.view')
+def analytics_growth() -> ResponseReturnValue:
+    return _render_registry_analytics_page('growth')
+
+
+@artifact_registry_bp.get('/analytics/capacity')
+@permission_required('artifact_registry.view')
+def analytics_capacity() -> ResponseReturnValue:
+    return _render_registry_analytics_page('capacity')
+
+
+@artifact_registry_bp.get('/analytics/usage')
+@permission_required('artifact_registry.view')
+def analytics_usage() -> ResponseReturnValue:
+    return _render_registry_analytics_page('usage')
+
+
+@artifact_registry_bp.get('/analytics/risk')
+@permission_required('artifact_registry.view')
+def analytics_risk() -> ResponseReturnValue:
+    return _render_registry_analytics_page('risk')
+
+
+@artifact_registry_bp.get('/analytics/governance')
+@permission_required('artifact_registry.view')
+def analytics_governance() -> ResponseReturnValue:
+    return _render_registry_analytics_page('governance')
+
+
+@artifact_registry_bp.get('/analytics/alerts')
+@permission_required('artifact_registry.view')
+def analytics_alerts() -> ResponseReturnValue:
+    return _render_registry_analytics_page('alerts')
+
+
+@artifact_registry_bp.get('/analytics/insights')
+@permission_required('artifact_registry.view')
+def analytics_insights() -> ResponseReturnValue:
+    return _render_registry_analytics_page('insights')
 
 
 @artifact_registry_bp.get('/analytics/section/<string:section>')
@@ -392,7 +457,7 @@ def analytics_alerts_table() -> ResponseReturnValue:
     query_args: dict[str, Any] = request.args.to_dict(flat=True)
     query_args.pop('tab', None)
     if not is_htmx_request(request.headers):
-        return redirect(url_for('artifact_registry.analytics', tab='alerts', **query_args))
+        return redirect(url_for('artifact_registry.analytics_alerts', **query_args))
 
     context = build_analytics(
         active_tab='alerts',
@@ -410,8 +475,7 @@ def analytics_alerts_table() -> ResponseReturnValue:
         )
     )
     response.headers['HX-Push-Url'] = url_for(
-        'artifact_registry.analytics',
-        tab='alerts',
+        'artifact_registry.analytics_alerts',
         **query_args,
     )
     response.headers['Cache-Control'] = 'no-store, max-age=0'

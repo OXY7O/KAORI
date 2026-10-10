@@ -11,9 +11,21 @@ from app.common.pagination import paginate_sequence
 from app.models.registry import RegistryAnalyticsSnapshot
 
 
+_REGISTRY_ANALYTICS_PAGE_DETAILS = {
+    'overview': ('Analytics Overview', 'Review committed Registry trends, risk, usage, governance, and operational alerts.', 'layout-dashboard'),
+    'growth': ('Growth Analytics', 'Review artifact growth, inventory deltas, and storage expansion.', 'trending-up'),
+    'capacity': ('Capacity Analytics', 'Review quotas, headroom, and materialized capacity forecasts.', 'gauge'),
+    'usage': ('Usage Analytics', 'Review pull activity, runtime-used artifacts, and demand concentration.', 'activity'),
+    'risk': ('Risk Analytics', 'Correlate committed security findings and Kubernetes runtime exposure.', 'shield-alert'),
+    'governance': ('Governance Analytics', 'Analyze retention, immutability, and replication coverage gaps.', 'scale'),
+    'alerts': ('Alerts & Anomalies', 'Review committed Registry alerts and source/fallback evidence.', 'triangle-alert'),
+    'insights': ('Derived Insights', 'Review analytical signals and centrally owned Intelligence recommendations.', 'sparkles'),
+}
+
+
 def build_analytics_shell(
     *,
-    active_tab: str = 'growth',
+    active_tab: str = 'overview',
     alert_search: str = '',
     alert_severity: str = 'all',
     alert_state: str = 'all',
@@ -22,20 +34,8 @@ def build_analytics_shell(
     alert_per_page: int = 5,
 ) -> dict[str, Any]:
     overview = build_overview()
-    normalized_tab = (
-        active_tab
-        if active_tab
-        in {
-            'growth',
-            'capacity',
-            'usage',
-            'risk',
-            'governance',
-            'alerts',
-            'insights',
-        }
-        else 'growth'
-    )
+    normalized_tab = active_tab if active_tab in _REGISTRY_ANALYTICS_PAGE_DETAILS else 'overview'
+    page_title, page_description, page_icon = _REGISTRY_ANALYTICS_PAGE_DETAILS[normalized_tab]
     provider_count = int(overview['provider_count'])
     snapshot_count = (
         RegistryAnalyticsSnapshot.query.with_entities(
@@ -56,6 +56,9 @@ def build_analytics_shell(
         'snapshot_count': int(snapshot_count),
         'latest_generated_at': latest_generated_at,
         'active_tab': normalized_tab,
+        'page_title': page_title,
+        'page_description': page_description,
+        'page_icon': page_icon,
         'alert_filters': {
             'search': alert_search,
             'severity': alert_severity,

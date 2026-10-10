@@ -35,6 +35,8 @@ def _capability_key(endpoint: str) -> str | None:
         return 'artifact_registry_inventory'
     if endpoint.startswith('artifact_registry.security'):
         return 'artifact_registry_security'
+    if endpoint.startswith('artifact_registry.analytics'):
+        return 'artifact_registry_analytics'
     return None
 
 
@@ -49,6 +51,7 @@ def _capability_label(capability_key: str) -> str:
         'object_storage_analytics': 'Analytics',
         'artifact_registry_inventory': 'Inventory',
         'artifact_registry_security': 'Security',
+        'artifact_registry_analytics': 'Analytics',
     }[capability_key]
 
 
@@ -103,6 +106,16 @@ _CAPABILITY_ACTIVE_EXACT: dict[str, dict[str, str]] = {
     'artifact_registry_security': {
         'artifact_registry.security': 'vulnerabilities',
         'artifact_registry.security_supply_chain': 'supply_chain',
+    },
+    'artifact_registry_analytics': {
+        'artifact_registry.analytics_growth': 'growth',
+        'artifact_registry.analytics_capacity': 'capacity',
+        'artifact_registry.analytics_usage': 'usage',
+        'artifact_registry.analytics_risk': 'risk',
+        'artifact_registry.analytics_governance': 'governance',
+        'artifact_registry.analytics_alerts': 'alerts',
+        'artifact_registry.analytics_insights': 'insights',
+        'artifact_registry.analytics_alerts_table': 'alerts',
     },
     'object_storage_analytics': {
         'analytics.object_storage_capacity': 'capacity',
