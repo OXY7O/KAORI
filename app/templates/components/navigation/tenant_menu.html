@@ -1,6 +1,6 @@
 {% set tenant_active = request.endpoint and request.endpoint.startswith('tenant.') %}
 {% set tenant_overview_active = request.endpoint == 'tenant.index' %}
-{% set tenant_tenants_active = request.endpoint in ['tenant.tenants', 'tenant.generate_credential_material_route'] %}
+{% set tenant_tenants_active = request.endpoint in ['tenant.tenants', 'tenant.tenant_detail', 'tenant.generate_credential_material_route'] %}
 {% set tenant_profiles_active = request.endpoint == 'tenant.resource_profiles' %}
 {% set tenant_namespaces_active = request.endpoint == 'tenant.namespace_provisioning' %}
 {% set tenant_operations_active = request.endpoint == 'tenant.operations' %}
