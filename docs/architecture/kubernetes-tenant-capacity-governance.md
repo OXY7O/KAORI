@@ -234,8 +234,13 @@ independent canonical status labels; the full committed reason is displayed
 with no source-template indentation or truncation. The blocked-preflight
 provider-write boundary remains visible when applicable.
 
-The Contract section prioritizes the complete Resource Profile identity and
-pinned version, with Operation and Allocation Scope as secondary metadata.
+The Contract section gives the **complete canonical Resource Profile name
+and pinned version a full-width first row**. Operation and Allocation Scope
+occupy the following two-column metadata row, so long adopted/UUID-backed
+profile identities no longer wrap prematurely in a narrow 2/4-width column.
+Names wrap only if they exceed the dialog's available full content width;
+none are truncated or modified in committed data. This follows human
+DevContainer feedback and preserves the same responsive two-column layout.
 Recorded/Cutoff and capacity dataset/snapshot state use a compact two-column
 definition list. Traceability is a quiet, default-closed native disclosure
 within the same surface; correlation and snapshot IDs retain selectable
