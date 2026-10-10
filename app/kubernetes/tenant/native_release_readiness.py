@@ -20,6 +20,7 @@ def project_native_release_readiness(
     successor_claim: Mapping[str, Any] | None,
     dry_run: Mapping[str, Any] | None,
     readback: Mapping[str, Any] | None,
+    successor_acceptance: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Display checkpoints only; no provider calls, audit writes, or admission."""
     plan_sha = str((plan or {}).get("plan_sha256") or "")
@@ -81,6 +82,18 @@ def project_native_release_readiness(
         and readback.get("status") == "provider_handoff_observed_acceptance_unverified"
         and readback.get("external_successor_verified") is False
     )
+    verified_acceptance = bool(
+        same_plan and successor_acceptance
+        and successor_acceptance.get("plan_sha256") == plan_sha
+        and successor_acceptance.get("handoff_fingerprint") == plan.get("handoff_fingerprint")
+        and successor_acceptance.get("provider_identity") == plan.get("provider_identity")
+        and successor_acceptance.get("successor_owner") == plan.get("successor_owner")
+        and successor_acceptance.get("reviewed_by") == approval.get("approved_by")
+        and successor_acceptance.get("status") == "verified_explicit_successor_acceptance"
+        and successor_acceptance.get("consent_verified") is True
+        and successor_acceptance.get("resource_authority_verified") is True
+        and _checked_recently(successor_acceptance.get("accepted_at"))
+    )
     stages = (
         ("Release review", review_current,
          "Previous review expired; run a new authoritative provider review."
@@ -88,8 +101,9 @@ def project_native_release_readiness(
         ("Independent approval", same_plan,
          "Independent review is recorded but the plan/approval expired; only the original requester may restart after fresh provider checks."
          if approval_expired else "A different authorized KAORI operator acknowledges this exact plan."),
-        ("Verified successor acceptance", False,
-         "No approved Kubernetes/IdP principal mapping and consent verifier is integrated."),
+        ("Verified successor acceptance", verified_acceptance,
+         "Authenticated Kubernetes principal explicitly accepted this exact plan and passed scoped access review."
+         if verified_acceptance else "Kubernetes TokenReview, scoped SubjectAccessReview and explicit successor consent are required."),
         ("KAORI provider handoff", False,
          "Live ownership transfer executor is not yet admitted; Native dry-run is not execution."),
         ("Released and Re-adopt", False,
@@ -109,6 +123,7 @@ def project_native_release_readiness(
         ],
         "review_complete": review_current,
         "approval_complete": same_plan,
+        "verified_successor_acceptance": verified_acceptance,
         "approval_recorded": approval_recorded,
         "approval_expired": approval_expired,
         "review_expired": review_expired,
