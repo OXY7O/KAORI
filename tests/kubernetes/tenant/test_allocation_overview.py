@@ -9,6 +9,7 @@ from app.kubernetes.tenant.allocation_overview import (
     build_tenant_allocation_bars,
     describe_tightest_headroom,
     filter_tenant_contribution_rows,
+    summarize_tenant_contributions,
 )
 
 
@@ -147,6 +148,70 @@ def test_contribution_filter_disambiguates_tenants_with_the_same_display_name() 
     assert len(filter_tenant_contribution_rows(rows, "  DEVELOPMENT  ")) == 2
     assert filter_tenant_contribution_rows(rows, "not-found") == []
     assert filter_tenant_contribution_rows(rows, "") == rows
+
+
+def test_contribution_summary_uses_unfiltered_committed_tenant_rows() -> None:
+    created = SimpleNamespace(id="created", name="Created", provider_key="native_kubernetes", ownership_status="managed")
+    shared = SimpleNamespace(id="capsule", name="Capsule", provider_key="capsule", ownership_status="adopted")
+    ambiguous = SimpleNamespace(id="ambiguous", name="Unknown", provider_key="capsule", ownership_status="adopted")
+    rows = _partition_tenant_contributions(
+        [created, shared, ambiguous],
+        [_namespace("created", "created-ns"), _namespace("capsule", "one"), _namespace("capsule", "two"),
+         _namespace("ambiguous", "unknown-ns")],
+        {"capsule": {"requests.cpu": "4", "requests.memory": "8Gi", "pods": "20", "requests.storage": "10Gi"}},
+        ["ambiguous"],
+    )
+    assert summarize_tenant_contributions(rows) == {
+        "tenants": 3,
+        "namespaces": 4,
+        "shared": 1,
+        "attention": 1,
+    }
+    assert summarize_tenant_contributions(filter_tenant_contribution_rows(rows, "created"))["tenants"] == 1
+    assert summarize_tenant_contributions([]) == {
+        "tenants": 0,
+        "namespaces": 0,
+        "shared": 0,
+        "attention": 0,
+    }
+
+
+def test_redesigned_contributions_modal_keeps_summary_and_footer_separate_from_scroll_region() -> None:
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[3]
+    page = (root / "app/templates/kubernetes/tenant/partials/_tenant_allocation_overview.html").read_text(
+        encoding="utf-8"
+    )
+    routes = (root / "app/kubernetes/tenant/routes.py").read_text(encoding="utf-8")
+    docs = (root / "docs/architecture/kubernetes-tenant-capacity-governance.md").read_text(encoding="utf-8")
+
+    analytics = page[page.index('<a href="{{ url_for(\'analytics.capacity\') }}"'):].split("</a>", 1)[0]
+    assert "action_button.classes" not in analytics
+    assert "hover:underline" in analytics
+    assert "current_user.has_permission('analytics.view')" in page
+
+    summary = page[page.index('aria-label="Committed Tenant allocation summary"'):].split("</section>", 1)[0]
+    assert "allocation_tenant_summary.tenants" in summary
+    assert "allocation_tenant_summary.namespaces" in summary
+    assert "allocation_tenant_summary.shared" in summary
+    assert "allocation_tenant_summary.attention" in summary
+
+    dialog = page[page.index('<dialog id="{{ contributions_dialog_id }}"'):].split("</dialog>", 1)[0]
+    assert dialog.index('aria-label="Committed Tenant allocation summary"') < dialog.index(
+        'id="{{ contributions_body_id }}"'
+    )
+    assert dialog.index('id="{{ contributions_body_id }}"') < dialog.index(
+        "registry_ui.footer('tenant.resource_profiles'"
+    )
+    assert "table_ui.table_classes('min-w-[900px] !table-fixed')" in dialog
+    assert "data-kaori-native-dialog" in dialog
+    assert "data-kaori-dialog-close" in dialog
+    assert "table_label.status_label(row.tenant.ownership_status|title" in dialog
+    assert "role=\"status\"" in dialog
+    assert "Tenant Registry" in dialog
+    assert "summarize_tenant_contributions(tenant_rows)" in routes
+    assert "committed contribution ledger" in docs
 
 
 def test_allocation_modal_htmx_contract_preserves_dialog_across_pagination() -> None:
