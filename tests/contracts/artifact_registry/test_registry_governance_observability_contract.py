@@ -155,6 +155,49 @@ def test_governance_sync_matches_security_htmx_workspace_contract() -> None:
 
 
 
+def test_governance_evidence_tabs_are_badgeless_full_kaori_tables() -> None:
+    from jinja2 import Environment
+
+    workspace = (ROOT / 'app/templates/artifact_registry/partials/_governance_workspace.html').read_text()
+    Environment().parse(workspace)
+
+    start = workspace.index("content_tabs.render_links('registry-governance',")
+    end = workspace.index("{% endif %}", start)
+    evidence = workspace[start:end]
+    assert "tab='policies', page=1, per_page=governance.pagination.per_page))" in evidence
+    assert "tab='replication', page=1, per_page=governance.pagination.per_page))" in evidence
+    assert "governance.project_count)" not in evidence
+    assert "governance.replication_count)" not in evidence
+    assert "hx_target='#artifact-registry-governance-registry'" in evidence
+    assert "hx_select='#artifact-registry-governance-registry'" in evidence
+    assert "hx_push_url='true'" in evidence
+
+    assert 'components/table.html' in workspace
+    assert workspace.count("table_ui.table_classes('min-w-[") == 2
+    assert workspace.count("table_ui.head_classes()") == 2
+    assert workspace.count("table_ui.body_classes()") == 2
+    assert workspace.count("table_ui.row_classes()") == 2
+    assert workspace.count("table_ui.title_cell(") == 2
+    assert workspace.count("table_ui.header_cell_classes()") == 12
+    assert workspace.count("table_ui.cell_classes()") == 12
+    assert workspace.count('<caption class="sr-only">Committed Registry') == 2
+    assert 'Project Governance</h2>' not in evidence
+    assert 'Resilience Evidence</p>' not in evidence
+    assert 'class="border-b border-outline-subtle px-5 py-4"' not in evidence
+    assert 'min-w-full divide-y divide-outline-subtle text-sm' not in evidence
+
+    assert workspace.count("include 'components/states/_empty_state.html'") == 2
+    assert 'No Policy Evidence Collected' in workspace
+    assert 'No Replication Evidence Collected' in workspace
+    assert 'row.retention_tone' in workspace and 'row.immutability_tone' in workspace
+    assert "row.enabled is not none else 'Unknown'" in workspace
+    assert "row.destination_namespace" in workspace
+    assert workspace.count("registry.footer('artifact_registry.governance'") == 2
+    assert workspace.count('[5, 10, 25, 50]') == 2
+    assert "name=\"tab\" value=\"{{ governance.active_tab }}\"" in workspace
+    assert 'artifactRegistryGovernanceSyncFinished from:body' in workspace
+
+
 def test_governance_coverage_and_evidence_follow_canonical_section_layout() -> None:
     from jinja2 import Environment
 
