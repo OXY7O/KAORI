@@ -91,7 +91,7 @@ def test_object_storage_controls_use_shared_shell_with_preserved_domain_evidence
     assert 'name="source"' in controls
     for evidence in (
         'Committed Inventory',
-        'Analytics Worker Snapshot',
+        'Latest Analytics Data Snapshot',
         'Metrics Contract At Collection',
         'Forecast Worker Snapshot',
         'Selected Alert Stream',
@@ -171,6 +171,8 @@ def test_object_storage_controls_render_independently_in_all_six_views() -> None
             'tone': 'warning',
             'label': 'Not Materialized',
             'generated_at': None,
+            'expires_at': None,
+            'last_attempt_at': None,
             'stale': False,
             'refresh_dispatched': False,
             'dispatch_error': None,
@@ -218,12 +220,23 @@ def test_object_storage_controls_render_independently_in_all_six_views() -> None
         assert 'data-analytics-controls-readiness' in html
         assert 'object-storage-analytics-refresh-indicator' in html
         assert 'MinIO Test' in html
+        assert html.count('data-analytics-source-status') == 1
+        assert html.count('data-analytics-snapshot-status') == 1
+        assert 'Latest Analytics Data Snapshot' in html
+        assert 'Refresh Due' in html
+        assert 'Worker Attempt' in html
         if page_key == 'alerts':
+            assert 'Alert Source Status' in html
+            assert 'Selected Alert Stream' in html
             assert 'Alertmanager Lifecycle' in html
+            assert 'Metrics Snapshot Source' in html
             assert 'name="source"' in html
         elif page_key == 'forecast':
+            assert 'Metrics Source Status' in html
             assert 'Forecast Worker Snapshot' in html
             assert 'name="history_window"' in html
         else:
+            assert 'Metrics Source Status' in html
+            assert 'Committed Inventory' in html
             assert 'Metrics Contract At Collection' in html
             assert 'name="time_range"' in html
