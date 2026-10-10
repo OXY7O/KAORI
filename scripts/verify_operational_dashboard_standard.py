@@ -330,11 +330,17 @@ def _verify_artifact_registry_dashboard(
     _require(
         kpi_cards,
         (
-            'components/operational_metric_card.html',
-            "scope_label='Active Scope'",
+            'components/resource_posture_grid.html',
+            'posture_grid.render(overview_metrics, columns=4)',
+            'for kpi in overview.kpis',
             'data-kaori-artifact-registry-operational-kpis',
         ),
-        'Artifact Registry bounded KPI projection',
+        'Artifact Registry grouped bounded KPI projection',
+    )
+    _require(
+        signal_overview,
+        ("body_classes='p-0'",),
+        'Artifact Registry signal shell uses no nested card padding',
     )
     _require(
         operations,
