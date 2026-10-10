@@ -64,6 +64,9 @@ from app.kubernetes.tenant.job_adapter import (
     get_visible_tenant_sync_job,
 )
 from app.kubernetes.tenant.live_connection import get_live_tenant_connection_context
+from app.kubernetes.tenant.native_successor_acceptance import (
+    accept_native_successor_handoff_committed,
+)
 from app.kubernetes.tenant.native_handoff_dry_run import (
     dry_run_native_release_handoff_committed,
 )
@@ -914,6 +917,45 @@ def record_tenant_release_successor_reference_route(tenant_id: str):
             message=f"External reference {result['successor_reference']} recorded for review.",
             detail='Not verified acceptance; no provider transfer or Release authorized.',
             metadata={'tenant_id': tenant_id, 'operation': 'successor_reference'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/successor-accept')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+def accept_native_successor_handoff_route(tenant_id: str):
+    """One explicit provider-authenticated successor consent, no provider write."""
+    try:
+        _csrf()
+        if not request.is_secure:
+            raise ValueError('Native successor credentials require verified HTTPS ingress.')
+        if request.form.get('confirm_successor_acceptance') != 'accept':
+            raise ValueError('The authenticated successor must explicitly accept responsibility.')
+        result = accept_native_successor_handoff_committed(
+            tenant_id=tenant_id, actor_user_id=int(current_user.id),
+            plan_sha256=str(request.form.get('plan_sha256') or ''),
+            provider_token=str(request.form.get('kubernetes_successor_token') or ''),
+            confirmed=True,
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_successor_acceptance_blocked',
+            status='warning', title='Successor Acceptance Blocked',
+            message=str(exc),
+            detail='No Kubernetes ownership markers or Release state changed.',
+            metadata={'tenant_id': tenant_id, 'operation': 'successor_acceptance'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_successor_acceptance_verified',
+            status='success', title='Native Successor Acceptance Verified',
+            message=(
+                f"Kubernetes principal {result['provider_username']} accepted "
+                f"{result['scope_count']} provider objects."
+            ),
+            detail='TokenReview and SubjectAccessReview recorded; provider transfer requires an explicit next step.',
+            metadata={'tenant_id': tenant_id, 'operation': 'successor_acceptance'},
         )
     return _tenant_section_redirect('registry')
 

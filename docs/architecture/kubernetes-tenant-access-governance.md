@@ -1038,3 +1038,46 @@ Production is pipeline-first. A namespace whose canonical Tenant Environment is 
 - Unsupported or malformed production mutation identities fail closed.
 
 The production policy records non-secret decision evidence for downstream Activity, audit correlation (#122), and Tenant Governance Intelligence (#123). Kubernetes remains authoritative for effective authentication/RBAC; this policy does not replace Kubernetes audit evidence for operations performed outside KAORI-managed flows.
+
+
+## Native Released successor acceptance authority (#1047)
+
+The Native Kubernetes Release successor is recognized through the authoritative
+cluster authentication API, **not** through a KAORI SSO username, free-text
+successor label, ticket, or a second KAORI administrator approval.
+
+The accepted decision for this bounded Native workflow is:
+
+1. An independent KAORI operator acknowledges the exact immutable handoff plan.
+2. The receiving successor explicitly accepts the *same* plan and its full
+   Namespace/ResourceQuota/LimitRange inventory using a transient Kubernetes
+   bearer credential. The cluster's AuthenticationV1 `TokenReview` establishes
+   the provider username, stable UID and membership in the exact Kubernetes
+   group identified by the handoff successor label. Service-account/system
+   identities and impersonated KAORI display names are not admitted.
+3. The cluster's AuthorizationV1 `SubjectAccessReview` checks `get` and
+   `patch` authority for each named Namespace, ResourceQuota and LimitRange
+   in that reviewed scope. A denied/evaluation-error response blocks acceptance;
+   KAORI does not grant new RBAC or silently expand access.
+4. A distinct explicit consent POST commits actor, authoritative principal UID,
+   scoped resources, plan SHA, provider identity/fingerprint and timestamp into
+   an existing `AuditEvent`. **Never persist the bearer credential**. The
+   expiry window remains 15 minutes and each acceptance is bound to only one
+   immutable plan generation. A new plan requires new consent.
+5. A future admitted live executor MUST reauthenticate the same short-lived
+   successor provider identity and recheck exact resource authority on the
+   execution request, then verify every object after the conditional JSON
+   PATCH. This acceptance step alone never mutates Kubernetes or sets Released.
+
+Provider-issued group membership is source of truth. A member's KAORI
+application identity is retained separately as the *operator who submitted
+the consent*, not conflated with the verified Kubernetes principal. TokenReview
+is bearer-possession authentication rather than cryptographic user-signature
+non-repudiation; deployment must use protected TLS ingress and avoid access
+logs of POST bodies. Human UAT must validate trust/revocation behavior for the
+actual cluster authenticator before promotion.
+
+The provider group must already possess the required effective Kubernetes RBAC.
+This workflow does not provision successor RoleBindings, expand cluster scopes,
+or change Capsule-controlled resources. Release and Re-adopt still require their
+own verified executor/read-back/handback gates.
