@@ -309,7 +309,8 @@ def test_overview_loading_tracker_reports_real_lazy_section_progress() -> None:
     hero = read('partials/_hero.html')
     tracker = read('partials/_load_tracker.html')
     oob = read('partials/_composite_tabs_oob.html')
-    runtime = Path('app/static/js/kubernetes/analytics/overview.js').read_text(encoding='utf-8')
+    shared = Path('app/templates/analytics/components/_section_load_tracker.html').read_text(encoding='utf-8')
+    runtime = Path('app/static/js/analytics/section_load_tracker.js').read_text(encoding='utf-8')
     health = read('partials/_health_summary.html')
     loading_bar = Path('app/templates/components/loading_bar.html').read_text(encoding='utf-8')
     stylesheet = Path('frontend/styles.css').read_text(encoding='utf-8')
@@ -323,12 +324,14 @@ def test_overview_loading_tracker_reports_real_lazy_section_progress() -> None:
     assert 'data-overview-composite-dependent="true"' in index
     assert 'data-overview-load-state="loaded"' in oob
     assert 'data-overview-refresh-request="true"' in health
+    assert 'section_tracker.render' in tracker
+    assert 'data-analytics-section-load-tracker' in shared
     assert '<script' not in tracker
     assert "document.body.addEventListener('htmx:beforeRequest'" in runtime
     assert "document.body.addEventListener('htmx:afterSettle'" in runtime
     assert 'Requested Sections' in runtime
-    assert "section.dataset.overviewLoadState = 'failed'" in runtime
-    assert "filename='js/kubernetes/analytics/overview.js'" in index
+    assert "setState(section, 'failed')" in runtime
+    assert "filename='js/analytics/section_load_tracker.js'" in index
     assert 'kaori-loading-bar-segment' in loading_bar
     assert '@keyframes kaori-loading-bar-indeterminate' in stylesheet
 
