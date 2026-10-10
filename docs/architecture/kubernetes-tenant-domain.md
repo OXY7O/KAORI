@@ -122,15 +122,18 @@ projection, unconstrained by Registry filtering or pagination. Missing Tenant
 IDs return 404. There is no inline expansion below the table (rejected in
 #1039/#1041), and there is no long-lived native management dialog overlay.
 
-The detail page reuses the shared Tenant Hero/layout, breadcrumb back to the
-filtered Registry, compact Namespace/Environment/Lifecycle snapshot, in-page
-navigation and full-width Release Governance, Native Release/Handback,
-Capsule Attachment, Provider Authority and Lifecycle cards. These stay
-read-only for `tenant.view` users and permission/CSRF-gated for managers.
+The detail page reuses the shared Tenant layout with one compact Tenant
+Hero and Back to the filtered Registry. Its committed facts strip and
+permission-aware Content Tabs separate Overview, Release, Handback,
+Attachment, Provider and Lifecycle, each as a focused URL-addressable
+workspace (#1069 is the current presentation authority). Read-only
+`tenant.view` users cannot open mutation-only views; managers remain
+permission/CSRF-gated by existing services.
 Existing service endpoints, two-actor plan authority, evidence read models,
 provider inventory and destructive-operation rules are **unchanged**.
-All 14 existing POST forms include a bounded `tenant_detail_id` plus
-prefixed `registry_*` context for browser fallback and HTMX.
+All 14 existing POST forms include `tenant_detail_id`, the selected
+`tenant_detail_view`, and bounded prefixed `registry_*` context for browser
+fallback and HTMX.
 `_tenant_section_redirect` renders the same dedicated detail partial for
 HTMX POST and emits the **existing** OOB Operational Toast; normal POST
 redirects back to the same Tenant detail. Because the everyday management
@@ -140,8 +143,8 @@ short-form destructive **Decommission confirmation**; it is removed with the
 replaced detail fragment after the action. No custom toast z-index, new
 provider mutations or alternative authorization engine were introduced.
 
-The Platform Operations Work Inbox deep link for an independent reviewer now
-points directly at this detail route rather than the removed
+The Platform Operations Work Inbox deep link for an independent reviewer
+opens this detail route at `view=release` rather than the removed
 `manage_tenant_id` auto-opening dialog. Approval still requires a different
 authorized actor, the same committed plan SHA and canonical backend checks.
 The old native-dialog reopen logic remains a shared component for other
