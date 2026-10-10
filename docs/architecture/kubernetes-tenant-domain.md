@@ -65,30 +65,39 @@ workflows with empty and populated datasets, browser refresh/back/forward,
 per-registry filters/Rows/HTMX, light/dark and mobile views. This is not
 staging UAT or production acceptance evidence.
 
-## Tenant Overview committed record sheet (#1081; current detail-record UI authority)
+## Tenant Overview compact committed record (#1081; current detail UI authority)
 
-Human DevContainer review of the two detached #1075 Identity/Governance cards
-found the Governance panel half empty and audit data visually scattered.
-Single-Tenant **Tenant Overview** is now one cohesive, responsive, full-width
-record sheet beneath the existing #1079 **Governance Scope** metric grid:
-two balanced content areas (**Identity & Origin**, **Governance &
-Responsibility**) followed by full-width **Record History** and a
-non-truncated **Description**. This is detail/provenance information, not
-another cluster-wide KPI dashboard.
+DevContainer review of the initial #1081 record sheet found that the two inner
+sub-panel headers, dedicated Record History band and tall Description band
+still consumed too much height. The current **Tenant Overview** preserves
+one bordered KAORI surface, but uses a **single compact header** and the
+following direct information hierarchy:
 
-The registered Cluster, provider binding and exact Tenant ID retain their
-committed values; technical ID uses the existing `technical_value.render`
-macro with monospace and safe wrapping. Ownership, lifecycle semantic status
-and reconciliation authority remain factual (no derived health or grant).
-Generation, original registration time, last updated time and optional
-historical Namespace lineage remain accessible; missing timestamps are
-explicitly `Not recorded`, and history is distinguished from active
-Namespaces. Long values wrap on mobile and light/dark surfaces reuse Violet
-tokens and shared section/semantic-label conventions. No Quick Links, extra
-provider fetch, schema change or mutation control. The separate
-**Authority Boundary** note and all 14 CSRF/HTMX release/handback/attach/
-lifecycle forms remain untouched. Browser Visual QA, Developer Check and
-Full Admission are not claimed; CI/CD and deployment remain HOLD.
+1. Exact full Tenant ID in the existing wrapped monospace `technical_value`
+   presentation.
+2. Eight committed facts in a responsive **4/2/1-column** grid: Cluster,
+   Provider, Ownership, Lifecycle (canonical semantic status), Reconciliation
+   Authority, Generation, Registered and Last Updated.
+3. A small conditional historical Namespace audit footnote, distinct from
+   active Namespace coverage.
+4. A final inline-label Description row, never clipped or truncated; preserve
+   whitespace without introducing template-indentation artifacts.
+
+Avoid duplicating already visible #1079 Governance Scope KPI metrics. Only
+KAORI committed Tenant and Cluster state is read for this record. Values
+remain literal provider bindings and governance facts (not derived provider
+health); unknown dates show `Not recorded`. Extra-long ID, cluster, authority
+and description text wrap safely, with existing Violet tokens and shared
+`section_intro` / `table_label` / `technical_value` macros. No custom
+component, new provider request, data mutation, permission or backend change.
+Preserve the standalone Authority Boundary note, four-step Release wizard,
+14 existing CSRF/HTMX forms, toast and all other governance workspaces.
+
+This supersedes only the earlier #1081 two-inner-panel/Record-History-band
+composition, not #1079's established posture grid or #1075's lifecycle
+semantics. Human local browser review (mobile, light/dark, long values)
+remains required. Developer Check, CI/CD, Full Admission, UAT and deployment
+remain HOLD pending explicit authorization.
 
 ## Tenant Details Governance Scope — shared estate posture composition (#1079; current scope UI authority)
 
