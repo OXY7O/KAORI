@@ -96,6 +96,23 @@
                     {% set state_tone = 'normal' if decision.capacity_state == 'Healthy' else ('critical' if decision.capacity_state in ['Critical', 'Exhausted', 'Overcommitted'] else ('warning' if decision.capacity_state in ['Near Capacity', 'Unknown'] else 'unknown')) %}
                     {% set decision_tone = 'normal' if decision.decision == 'allow' else 'critical' %}
                     {% set profile_name = row.profile.name if row.profile else 'No Profile' %}
+                    {# Display-only names follow the compact Resource Profile Registry pattern.
+                       Canonical Namespace/Profile identities and evidence stay unchanged. #}
+                    {% set target_parts = decision.namespace.split(':') %}
+                    {% if target_parts|length == 3 and target_parts[0] == '@tenant' and target_parts[2] == 'resource-quotas' %}
+                        {% set target_display = target_parts[1] ~ ' · Resource Quotas' %}
+                    {% else %}
+                        {% set target_display = decision.namespace %}
+                    {% endif %}
+                    {% set target_display = target_display|truncate(34, True, '…') %}
+                    {% set adopted_profile = profile_name.startswith('Adopted ') %}
+                    {% set profile_display = profile_name[8:] if adopted_profile else profile_name %}
+                    {% set profile_display = profile_display|replace(' Baseline · ', ' Baseline ') %}
+                    {% set profile_parts = profile_display.rsplit(' · ', 1) %}
+                    {% if profile_parts|length == 2 and profile_parts[1]|length == 36 and profile_parts[1].count('-') == 4 %}
+                        {% set profile_display = profile_parts[0] ~ ' · ' ~ profile_parts[1][:8] %}
+                    {% endif %}
+                    {% set profile_display = profile_display|truncate(36, True, '…') %}
                     {% set dialog_id = 'tenant-capacity-decision-' ~ decision.id %}
                     <tr class="{{ table_ui.row_classes() }}">
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
@@ -106,7 +123,7 @@
                                 </span>
                                 <div class="min-w-0">
                                     <p class="truncate text-sm font-semibold text-content-primary"
-                                       title="{{ decision.namespace }}">{{ decision.namespace }}</p>
+                                       title="{{ decision.namespace }}">{{ target_display }}</p>
                                     <p class="mt-1 truncate text-xs text-content-muted"
                                        title="{{ row.cluster.name }} · {{ row.cluster.environment|title }}">
                                         {{ row.cluster.name }} · {{ row.cluster.environment|title }}
@@ -116,16 +133,15 @@
                         </td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
                             <p class="truncate text-sm font-semibold text-content-primary"
-                               title="{{ profile_name }}">{{ profile_name }}</p>
-                            <p class="mt-1 text-xs text-content-muted">
+                               title="{{ profile_name }}">{{ profile_display }}</p>
+                            <p class="mt-1 truncate text-xs text-content-muted">
+                                {% if adopted_profile %}Adopted · {% endif %}
                                 {% if row.profile %}
                                     {{ row.profile.profile_class|replace('_', ' ')|title }} · v{{ decision.resource_profile_version or row.profile.version }}
                                 {% else %}
                                     Observed / Legacy
                                 {% endif %}
-                            </p>
-                            <p class="mt-1 text-xs font-medium text-content-secondary">
-                                {{ decision.operation|replace('_', ' ')|title }}
+                                · {{ decision.operation|replace('_', ' ')|title }}
                             </p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
