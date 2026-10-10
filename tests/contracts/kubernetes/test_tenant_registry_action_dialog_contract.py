@@ -108,22 +108,68 @@ def test_blocking_evidence_is_visible_in_dialog_not_hover_only() -> None:
     assert source.count("data-tenant-registry-actions-dialog") == 1
 
 
-def test_disclosure_actions_remain_grouped_without_cramped_full_width_rows() -> None:
+def test_release_governance_uses_stable_ordered_workflow_not_tablike_disclosures() -> None:
     modal = _template().split('data-tenant-registry-actions-dialog', 1)[1]
-    action_start = modal.index('aria-label="Release review actions"')
-    action_end = modal.index('aria-label="Committed Release readiness"')
-    action_group = modal[action_start:action_end]
+    release = modal.split('aria-label="Release governance"', 1)[1].split(
+        'aria-label="Namespace attachment"', 1
+    )[0]
+    workflow_stages = (
+        'aria-label="Release readiness"',
+        'aria-label="Provider handoff inventory"',
+        'aria-label="Governed handoff workflow"',
+        'aria-label="Independent verification and release"',
+    )
+    assert all(stage in release for stage in workflow_stages)
+    assert [release.index(stage) for stage in workflow_stages] == sorted(
+        release.index(stage) for stage in workflow_stages
+    )
+    assert 'aria-label="Release governance workflow"' in release
 
-    assert 'flex flex-wrap items-start gap-2' in modal
-    assert 'review_tenant_release_route' in action_group
-    assert 'Handoff inventory' in action_group
-    assert 'Governed Handoff' in action_group
-    assert 'open:w-full' in action_group
-    assert 'max-h-72' in action_group
-    assert 'data-release-handoff-approval' in action_group
-    # Decommission and destructive confirmation are distinct from the Release toolbar.
-    assert 'decommission_tenant_route' not in action_group
-    assert 'data-destructive-modal-open' not in action_group
+    readiness = release.split(workflow_stages[0], 1)[1].split(workflow_stages[1], 1)[0]
+    inventory = release.split(workflow_stages[1], 1)[1].split(workflow_stages[2], 1)[0]
+    handoff = release.split(workflow_stages[2], 1)[1].split(workflow_stages[3], 1)[0]
+    verification = release.split(workflow_stages[3], 1)[1]
+
+    # Review Release is a write action, not a tab or a disclosure.
+    assert 'aria-label="Release review actions"' in readiness
+    assert 'review_tenant_release_route' in readiness
+    assert 'Latest Release Review' in readiness
+    assert 'Release blockers' in readiness
+    assert '<details' not in readiness
+
+    # Inventory is always a fixed read-only evidence panel; no toolbar reshuffle.
+    assert 'row.release_preflight.handoff_components' in inventory
+    assert 'Handoff inventory is read-only provider evidence' in inventory
+    assert 'Awaiting Review' in inventory
+    assert '<details' not in inventory
+    assert 'hx-post=' not in inventory
+
+    # The multi-step handoff is a permanent card, not a flex-wrapped toggle.
+    assert 'data-release-handoff-approval' in handoff
+    assert 'current_user.has_permission(\'integrations.manage\')' in handoff
+    assert 'tenant.prepare_tenant_release_handoff_route' in handoff
+    assert 'tenant.approve_tenant_release_handoff_route' in handoff
+    assert 'tenant.record_tenant_release_successor_reference_route' in handoff
+    assert 'tenant.dry_run_native_release_handoff_route' in handoff
+    assert 'tenant.inspect_native_external_handoff_route' in handoff
+    assert 'handoff_plan.requested_by != current_user.id' in handoff
+    assert 'name="confirm_handoff_approval"' in handoff
+    assert 'open:w-full' not in handoff
+
+    assert 'tenant.release_tenant_governance_route' in verification
+    assert 'name="confirm_release_governance"' in verification
+    assert 'Final Release requires fresh authoritative verification.' in verification
+    assert 'row.release_preflight.blockers' in verification
+    assert 'data-destructive-modal-open' not in release
+    assert 'decommission_tenant_route' not in release
+
+
+def test_release_workflow_template_parses_with_real_jinja_parser() -> None:
+    from jinja2 import Environment
+
+    source = _template()
+    assert '%>' not in source
+    Environment(autoescape=True).parse(source)
 
 
 def test_management_sections_use_full_width_cards_in_workflow_order() -> None:
