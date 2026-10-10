@@ -202,6 +202,49 @@ authn/RBAC and Release rules stay unchanged. Review-only merge to
 `kaori/review/staging-uat`; runtime tests, browser Visual QA, CI/CD,
 Developer Check, Full Admission, staging UAT and deployment HOLD.
 
+## Native external read-back: current evidence versus historical receipts (#1095 follow-up)
+
+Human DevContainer feedback after clicking `Verify Provider Read-Back` found
+the backend correctly returned **Native External Handoff Read-Back Blocked**
+(`A complete independent plan, successor reference and passed dry-run are
+required.`) even though Step 3 displayed a historical **Dry-Run Passed** and
+an expired independently reviewed plan. This is a **false UI affordance**:
+the previous Step 3 rendering checked only the presence of a same-SHA
+successor-reference and dry-run receipt, whereas
+`native_handoff_readback.observe_external_native_handoff_committed`
+requires the exact plan/reviewer, claim and dry-run evidence to be current,
+scope/fingerprint-matched and mutually consistent. With stale approval the
+function rejects **before** making a Kubernetes provider read.
+
+The committed `project_native_release_readiness` now exposes UI-only
+`external_reference_current` and
+`external_readback_prerequisites_current`, using the **existing**
+`_checked_recently` helper. Current evidence must include fresh plan and
+independent approval, SHA/actor/fingerprint correlation, fresh same-owner
+external reference, and a fresh exact-fingerprint dry-run receipt that
+neither mutated provider objects nor authorized Release. These values
+are **presentation hints, never a new admission authority**; the backend
+continues to check `_plan_hash`, tenant identity/dependencies/provider
+state and complete preflight evidence before contacting Kubernetes.
+
+Step 3 now displays a compact, contextual explanation instead of the
+unusable checkbox/button when evidence is expired or incomplete. With
+`approval_expired`, the original requester must follow Step 4's governed
+restart; this creates a new plan SHA and requires a separate fresh reviewer,
+new reference and fresh dry-run. The form is shown only when its advisory
+prerequisites are current. The action is explicitly **Inspect External
+Handoff**: read-only inspection **after an external operator actually
+performed the handoff**, not the **KAORI-controlled Execute Native Handoff**
+path and never a successor consent grant. Historical read-back counters
+are labeled as recorded history rather than current proof.
+
+Original 14 Tenant form/CSRF source contracts, provider-authoritative
+checks, RBAC/TLS, separation of duties, time limits, AuditEvents,
+partial-handoff recovery and UAT/Release admission remain unchanged.
+Only committed projections and form presentation were refined. Unit/source
+tests are authored; DevContainer Visual QA and all CI/CD, Developer Check,
+Full Admission, staging/UAT, promotion and deployment remain **HOLD**.
+
 ## Tenant Release wizard navigation and confirmation/result semantics (#1095; current UX authority)
 
 Human DevContainer review found that all four Release wizard step cards and
