@@ -180,7 +180,7 @@ def test_release_evidence_is_readable_full_width_without_nested_scroll():
     for label in (
         'Scope readiness',
         'Provider handoff scope',
-        '03 · Independent approval and handoff',
+        'Independent approval and handoff',
         '04 · Verify and finalize',
         'aria-label="Release blockers"',
         'aria-label="Provider handoff inventory"',
@@ -258,6 +258,71 @@ def test_release_handoff_inventory_is_structured_with_full_on_demand_identifiers
     assert 'This does not authorize Release.' in handoff
     assert 'Run Review Release to collect' in handoff
     assert '<form ' not in handoff
+
+
+
+
+def test_release_step_three_separates_plan_review_external_claim_and_platform_admin():
+    detail = read(DETAIL)
+    approval = detail.split('id="tenant-release-stage-approval"', 1)[1].split(
+        "{% elif tenant_release_step == 'finalize' %}", 1
+    )[0]
+    Environment().parse(detail)
+    assert 'Independent approval and handoff' in approval
+    assert 'aria-label="Governed handoff workflow"' in approval
+    assert 'data-release-handoff-approval' in approval
+    assert 'One active plan per Tenant.' in approval
+    assert 'requester and independent reviewer must be different' in approval
+
+    # An acknowledged plan is locked without inventing approval or provider transfer.
+    assert 'role="status" aria-label="Active handoff plan"' in approval
+    assert "row.release_handoff_preparation_state == 'acknowledged'" in approval
+    assert "row.release_handoff_preparation_state == 'expired'" in approval
+    assert 'governed restart' in approval
+    assert 'Successor owner' in approval
+    assert 'Change record' in approval
+    assert 'handoff_plan.successor_owner' in approval
+    assert 'handoff_plan.change_reference' in approval
+    assert '{{ handoff_plan.plan_sha256 }}' in approval
+    assert 'break-all font-mono' in approval
+    assert 'Plan SHA-256' in approval
+
+    # Recorded independent review does not imply verified successor acceptance.
+    assert 'Independent review recorded. External owner acceptance' in approval
+    assert 'role="status" aria-label="External successor evidence"' in approval
+    assert "successor_claim.plan_sha256 == handoff_plan.plan_sha256" in approval
+    assert 'External Reference Unverified' in approval
+    assert '{{ successor_claim.successor_reference }}' in approval
+    assert 'not an additional approval' in approval
+    assert 'provider ownership remains unchanged' in approval
+
+    # Exact platform-admin permission/identity action is preserved verbatim.
+    assert 'aria-label="Platform Admin provider verification"' in approval
+    assert 'Platform Admin verification' in approval
+    assert 'registered Kubernetes X.509 connection' in approval
+    assert "tenant.accept_native_successor_handoff_route" in approval
+    assert 'name="confirm_successor_acceptance"' in approval
+    assert 'type="checkbox"' in approval
+    assert 'required' in approval
+    assert 'Verify Provider &amp; Accept as Platform Admin' in approval
+
+    # All pre-existing conditional mutation routes and 14 CSRF forms are unchanged.
+    for action in (
+        'prepare_tenant_release_handoff_route',
+        'record_tenant_release_successor_reference_route',
+        'accept_native_successor_handoff_route',
+        'approve_tenant_release_handoff_route',
+        'restart_expired_tenant_release_handoff_route',
+        'dry_run_native_release_handoff_route',
+        'execute_native_release_handoff_route',
+        'inspect_native_external_handoff_route',
+        'release_tenant_governance_route',
+        'finalize_verified_native_release_route',
+    ):
+        assert action in approval
+    assert approval.count('<form ') == 10
+    assert detail.count('<form ') == 14
+    assert detail.count('name="csrf_token"') == 14
 
 
 
