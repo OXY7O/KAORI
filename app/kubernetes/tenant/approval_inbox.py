@@ -149,6 +149,9 @@ def get_tenant_release_work_inbox(*, user_id: int) -> dict[str, Any]:
         if item is not None:
             presented.append(item)
 
+    # Prioritize current work over resolved history; preserve recent event order
+    # within each group (stable sort). Committed approval state remains authority.
+    presented.sort(key=lambda item: not item["is_pending"])
     return {
         "items": presented[:_DISPLAY_LIMIT],
         "pending_count": sum(bool(item["is_pending"]) for item in presented),
