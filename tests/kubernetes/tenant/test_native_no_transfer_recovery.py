@@ -131,6 +131,49 @@ def repeated_history(plan_data):
     return first + second
 
 
+def test_assessment_records_all_failed_event_ids_and_rechecks_history(monkeypatch):
+    p = plan()
+    history_proof = {
+        'digest': 'd' * 64, 'executor_actor_id': 43,
+        'failed_event_id': 6, 'failed_event_ids': [2, 6],
+        'attempt_count': 2,
+    }
+    observed = {
+        'provider_proof_sha256': 'e' * 64,
+        'observed_components': [{'state': 'pending_provider_transfer'}],
+    }
+    monkeypatch.setattr(recovery, '_require_expired_plan', lambda *_: p)
+    monkeypatch.setattr(recovery, '_source_history', lambda *_: history_proof)
+    monkeypatch.setattr(
+        recovery, '_verify_original_provider_state',
+        lambda **_: observed,
+    )
+    monkeypatch.setattr(recovery, 'latest_release_handoff_plan', lambda *_: p)
+    monkeypatch.setattr(recovery, 'Tenant', SimpleNamespace(query=LockedTenantQuery()))
+    class Session:
+        events = []
+        def add(self, row):
+            self.events.append(row)
+        def commit(self):
+            pass
+
+    session = Session()
+    monkeypatch.setattr(recovery, 'db', SimpleNamespace(session=session))
+    monkeypatch.setattr(
+        recovery, 'AuditEvent', lambda **kwargs: SimpleNamespace(**kwargs),
+    )
+    receipt = recovery.assess_native_no_transfer_recovery_committed(
+        tenant_id=p['tenant_id'], actor_user_id=p['requested_by'],
+        plan_sha256=p['plan_sha256'], confirmed=True,
+    )
+    assert receipt['failed_event_ids'] == [2, 6]
+    assert receipt['attempt_count'] == 2
+    assert receipt['history_digest'] == history_proof['digest']
+    assert receipt['provider_mutation_performed'] is False
+    assert receipt['release_authorized'] is False
+    assert session.events[0].metadata_json == receipt
+
+
 def test_multiple_failed_before_write_attempts_bind_every_immutable_event(monkeypatch):
     p = plan()
     rows = repeated_history(p)

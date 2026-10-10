@@ -183,7 +183,7 @@ Connection Configuration**, confirm kubeconfig CA and API server certificate
 name, check **Verify Kubernetes API TLS Certificate**, **Test Connection**,
 save, and complete **Full Validation** before retrying the Release flow.
 Do not toggle DB state directly or weaken TLS. Connection updates are
-operational mutations requiring separate approval. 14 governance forms and
+operational mutations requiring separate approval. existing governance forms and
 original provider safeguards preserved. CI/CD, security checks, UAT HOLD.
 
 **Governed no-transfer recovery after a failed executor (#1104, child of #1057):**
@@ -197,8 +197,8 @@ The bounded Step 4 workflow is:
   checks every complete same-SHA, same-executor started/failed-before-write
   pair in chronological order and rejects orphan, duplicate, changed actor,
   partial/unknown/mutating receipts or non-canonical same-plan read-back.
-  All historical executor/read-back records are SHA256 digest-bound; exact
-  former dry-run identities/hashes,
+  All historical executor/read-back records are SHA256 digest-bound.
+  The assessment also rechecks original dry-run identities and hashes,
   fresh provider inventory, metadata/spec/foreign-label preservation and
   dependency counts. Only read-only Kubernetes GETs occur; a SHA-bound
   assessment is committed to AuditEvent.
