@@ -91,35 +91,35 @@
         {% endcall %}
     </div>
     <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[860px]') }}">
+        <table class="{{ table_ui.table_classes('min-w-[1100px] !table-fixed') }}">
             <caption class="sr-only">Tenant provider authority registry.</caption>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Tenant</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Cluster / Environment</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Provider</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Authority</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Lifecycle</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[22%]">Tenant</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[23%]">Cluster / Environment</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[17%]">Provider</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[23%]">Authority</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[15%]">Lifecycle</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
                 {% for row in operations_provider_rows %}
                     {% set tenant = row.tenant %}
                     <tr class="{{ table_ui.row_classes() }}">
-                        <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(tenant.name, tenant.slug, 'building-2') }}</td>
-                        <td class="{{ table_ui.cell_classes() }}">
-                            <p class="text-sm font-semibold text-content-primary">{{ row.cluster.name if row.cluster else 'Unknown cluster' }}</p>
-                            <p class="mt-1 text-xs text-content-muted">{{ row.environments|map("title") |join(', ') if row.environments else 'No environment' }} · {{ row.namespace_count }} active Namespace{{ '' if row.namespace_count == 1 else 's' }}</p>
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">{{ table_ui.title_cell(tenant.name, tenant.slug, 'building-2') }}</td>
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
+                            <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ row.cluster.name if row.cluster else 'Unknown cluster' }}">{{ row.cluster.name if row.cluster else 'Unknown cluster' }}</p>
+                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="{{ row.environments|map("title") |join(', ') if row.environments else 'No environment' }} · {{ row.namespace_count }} active Namespace{{ '' if row.namespace_count == 1 else 's' }}">{{ row.environments|map("title") |join(', ') if row.environments else 'No environment' }} · {{ row.namespace_count }} active Namespace{{ '' if row.namespace_count == 1 else 's' }}</p>
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
                             {{ table_label.status_label(tenant.provider_state|replace('_', ' ') |title, 'normal' if tenant.provider_state in ['native', 'capsule'] else 'warning') }}
-                            <p class="mt-1 text-xs text-content-muted">{{ tenant.provider_key|replace('_', ' ') |title }}</p>
+                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="{{ tenant.provider_key|replace('_', ' ') |title }}">{{ tenant.provider_key|replace('_', ' ') |title }}</p>
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">
-                            <p class="text-sm font-semibold text-content-primary">{{ tenant.reconciliation_authority|replace('_', ' ') |title }}</p>
-                            <p class="mt-1 text-xs text-content-muted">Effective mutation authority</p>
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
+                            <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ tenant.reconciliation_authority|replace('_', ' ') |title }}">{{ tenant.reconciliation_authority|replace('_', ' ') |title }}</p>
+                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="Effective mutation authority">Effective mutation authority</p>
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
                             {{ table_label.status_label(tenant.lifecycle_status|replace('_', ' ') |title, 'normal' if tenant.lifecycle_status == 'ready' else 'warning') }}
                         </td>
                     </tr>
