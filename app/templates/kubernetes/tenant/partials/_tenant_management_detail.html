@@ -190,7 +190,7 @@
                 </span>
             </summary>
             <div class="border-t border-outline-subtle ">
-                <div class="border-t border-outline-subtle px-4 py-4 sm:px-5"
+                <div class="px-4 py-4 sm:px-5"
                  aria-label="Release governance stages">
                 <ol class="grid grid-cols-2 gap-4 sm:grid-cols-4" aria-label="Governed Release sequence">
                     {% set release_steps = [
@@ -214,7 +214,17 @@
                     {% endfor %}
                 </ol>
             </div>
-            <div class="divide-y divide-outline-subtle" aria-label="Release governance workflow">
+            <details id="tenant-release-workflow-details"
+                     class="group/workflow border-t border-outline-subtle"
+                     {% if tenant_detail_release_expanded %}open{% endif %}>
+                <summary class="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-5 py-3 text-sm font-semibold text-kaori-primary hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus sm:px-6 [&::-webkit-details-marker]:hidden">
+                    <span class="inline-flex items-center gap-2">
+                        <i data-lucide="clipboard-list" class="h-4 w-4" aria-hidden="true"></i>
+                        View full Release workflow and evidence
+                    </span>
+                    <i data-lucide="chevron-down" class="h-4 w-4 shrink-0 transition-transform group-open/workflow:rotate-180" aria-hidden="true"></i>
+                </summary>
+                <div class="divide-y divide-outline-subtle" aria-label="Release governance workflow">
                             {# The release review is an action; evidence and handoff are stable workflow steps, not tabs. #}
                             <section id="tenant-release-stage-readiness" class="min-w-0 scroll-mt-24 space-y-4 px-5 py-5 sm:px-6 sm:py-6"
                                      aria-label="Release readiness">
@@ -981,6 +991,7 @@
                                 {% endif %}
                             </section>
                         </div>
+            </details>
                         <p class="mt-4 flex items-start gap-2 border-t border-outline-subtle pt-4 text-sm leading-6 text-content-muted">
                             <i data-lucide="shield-check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
                             Independent approval or an external reference alone cannot authorize provider handoff.
