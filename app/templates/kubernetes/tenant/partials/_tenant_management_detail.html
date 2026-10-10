@@ -4,11 +4,13 @@
 {% import "components/destructive_confirmation_modal.html" as destructive_modal %}
 {% set tenant = row.tenant %}
 <div id="tenant-management-detail"
-     class="min-w-0 space-y-6"
+     class="relative min-w-0 space-y-6"
      data-tenant-management-detail="{{ tenant.id }}"
      data-kaori-tenant-detail-workspace>
+    {# HTMX indicators fade by opacity, not display. Keep it outside normal
+       flow so an invisible indicator cannot create a false gap above the Hero. #}
     <div id="tenant-management-loading"
-         class="htmx-indicator text-sm text-content-muted"
+         class="htmx-indicator pointer-events-none absolute right-3 top-3 z-10 rounded-lg border border-outline-subtle bg-surface-card px-3 py-2 text-xs font-medium text-content-secondary shadow-sm"
          role="status" aria-live="polite">Updating Tenant Management…</div>
 
     {# Canonical KAORI Hero sizing/layout; the capability navbar and Hero use the shared layout's spacing. #}
