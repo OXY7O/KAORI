@@ -295,6 +295,37 @@ def test_resource_profile_workspace_redesign_preserves_governance_and_modal_work
     assert "url_for('tenant.rollout_resource_profile_route', profile_id=profile.id)" in dialogs
 
 
+def test_profile_manage_modal_copy_and_grouped_summary_remain_bounded() -> None:
+    dialogs = read('app/templates/kubernetes/tenant/partials/_resource_profile_management_dialogs.html')
+
+    # Status and lineage are rendered through canonical labels, not standalone prose.
+    assert "table_label.status_label('Editable' if editable else 'Versioned Controls'" in dialogs
+    assert "table_label.metadata_label('Independent Custom · Operator-managed values', 'layers-3', wrap=true)" in dialogs
+    assert "table_label.metadata_label('Canonical KAORI preset · Fixed values', 'lock-keyhole', wrap=true)" in dialogs
+
+    # Two intentional groups replace unstructured, widely separated figures.
+    summary = dialogs
+    assert 'aria-label="Profile contract and usage summary"' in summary
+    assert 'sm:grid-cols-2 sm:divide-x sm:divide-y-0' in summary
+    assert '<h3 class="text-xs font-semibold text-content-secondary">Contract</h3>' in summary
+    assert '<h3 class="text-xs font-semibold text-content-secondary">Usage</h3>' in summary
+    for metric in ("Class", "Version", "Namespace References", "Capacity Decisions"):
+        assert f">{metric}</dt>" in summary
+
+    # Legacy descriptions are presentation-shortened, never overwritten in forms.
+    assert "profile.description.startswith('Explicit governance-cutover profile materialized" in dialogs
+    assert "Adopted baseline profile; no provider value changes requested." in dialogs
+    assert '<textarea name="profile_description"' in dialogs
+    assert "{{ profile.description or '' }}</textarea>" in dialogs
+    assert 'value="{{ profile.description or \'\' }}"' in dialogs
+
+    # Governance boundary still explicitly covers committed version, admission and read-back.
+    assert "Existing Namespace allocations stay unchanged; edits affect future allocations until explicitly applied." in dialogs
+    assert "Each Namespace is admitted, applied, and verified separately." in dialogs
+    assert "Blocked Namespaces retain their prior committed version." in dialogs
+    assert "url_for('tenant.rollout_resource_profile_route', profile_id=profile.id)" in dialogs
+
+
 def test_resource_profile_workflow_uses_numbered_contract_stages_without_arrow_flow() -> None:
     workflow = read('app/templates/kubernetes/tenant/partials/_resource_profile_workflow.html')
     page = read('app/templates/kubernetes/tenant/resource_profiles.html')
