@@ -1,7 +1,7 @@
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/table_label.html" as table_label %}
 {# Shared Operational Signal Overview geometry; domains own semantics and KPI content. #}
-{% macro render(description, indicator_label, scope_label, scope_icon, status_label, status_tone, updated_text, selector_html) -%}
+{% macro render(description, indicator_label, scope_label, scope_icon, status_label, status_tone, updated_text, selector_html, body_classes='p-5') -%}
     {% set signal_content = caller() %}
     {% call operational_section_card.render(
         'Operational Signal Overview',
@@ -22,6 +22,6 @@
             </div>
             <div class="flex w-full items-center gap-2 lg:w-auto">{{ selector_html|safe }}</div>
         </div>
-        <div class="p-5">{{ signal_content|safe }}</div>
+        <div class="{{ body_classes }}">{{ signal_content|safe }}</div>
     {% endcall %}
 {%- endmacro %}
