@@ -380,6 +380,14 @@ def restart_expired_native_release_handoff_plan_committed(
         raise ValueError('The exact independently acknowledged Native plan is required.')
     if plan.get('requested_by') != actor_user_id:
         raise ValueError('Only the original requester can restart an acknowledged handoff plan.')
+    # Invalid or future timestamps are corrupt evidence, not a safe expiry.
+    for field_value in (plan.get('requested_at'), approval.get('approved_at')):
+        try:
+            timestamp = datetime.fromisoformat(str(field_value or ''))
+        except ValueError as exc:
+            raise ValueError('Handoff approval timestamp is invalid; manual review required.') from exc
+        if timestamp.tzinfo is None or timestamp > datetime.now(UTC):
+            raise ValueError('Handoff approval timestamp is not trustworthy.')
     if _checked_recently(plan.get('requested_at')) and _checked_recently(approval.get('approved_at')):
         raise ValueError('This handoff plan is still current; restart is not permitted.')
 
