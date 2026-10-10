@@ -454,6 +454,7 @@ def test_external_readback_discloses_stale_requirements_before_read_only_inspect
     assert 'governed Native Handoff executor' in approval
     assert 'name="confirm_native_handoff_readback"' in approval
     assert 'tenant.inspect_native_external_handoff_route' in approval
+    assert 'Historical / Not Current' in approval
     assert 'Last recorded read-back:' in approval
     assert 'This historical observation does not verify external acceptance' in approval
 
