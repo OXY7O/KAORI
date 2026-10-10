@@ -685,18 +685,22 @@
                                                 <dd class="min-w-0 break-all font-mono text-content-secondary">{{ handoff_plan.plan_sha256 }}</dd>
                                             </dl>
                                             {% if plan_accepted %}
-                                                <p class="text-sm leading-6 text-content-secondary">
-                                                    Independently acknowledged. External owner acceptance,
-                                                    provider handoff and read-back remain outstanding.
+                                                <p class="flex min-w-0 items-start gap-2 text-xs leading-5 text-content-secondary">
+                                                    <i data-lucide="check-circle-2" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                                    <span>Independent review recorded. External owner acceptance, provider handoff and verified read-back remain outstanding.</span>
                                                 </p>
                                                 {% set successor_claim = row.release_successor_claim %}
                                                 {% if successor_claim and successor_claim.plan_sha256 == handoff_plan.plan_sha256 %}
-                                                    <p class="text-sm leading-6 text-content-secondary">
+                                                    <div class="flex min-w-0 flex-wrap items-start gap-x-3 gap-y-1.5 rounded-lg border border-outline-subtle bg-surface-elevated/35 px-3 py-2.5"
+                                                         role="status" aria-label="External successor evidence">
                                                         {{ table_label.status_label('External Reference Unverified', 'warning') }}
-                                                        {{ successor_claim.successor_reference }} · Recorded as an external
-                                                        evidence claim, not an additional approval. Successor acceptance
-                                                        remains unverified and provider ownership is unchanged.
-                                                    </p>
+                                                        <div class="min-w-0 flex-1">
+                                                            <p class="break-all font-mono text-xs font-semibold leading-5 text-content-primary">{{ successor_claim.successor_reference }}</p>
+                                                            <p class="mt-0.5 text-xs leading-5 text-content-secondary">
+                                                                Reference recorded as an unverified claim, not an additional approval. Successor consent is unverified; provider ownership remains unchanged.
+                                                            </p>
+                                                        </div>
+                                                    </div>
                                                 {% else %}
                                                     <form method="post"
                                                           action="{{ url_for('tenant.record_tenant_release_successor_reference_route', tenant_id=tenant.id) }}"
