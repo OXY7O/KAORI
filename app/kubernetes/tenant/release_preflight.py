@@ -394,6 +394,8 @@ def release_verified_native_tenant_committed(
     """
     if not approved:
         raise ValueError('Explicit provider-preserving Native Release confirmation is required.')
+    from app.kubernetes.tenant.native_platform_admin_authority import require_platform_admin_actor
+    require_platform_admin_actor(actor_user_id)
     # Delayed imports avoid a cycle: the executor uses canonical preflight
     # dependency and provider evidence helpers from this module.
     from app.kubernetes.tenant.native_handoff_dry_run import _read_resource
