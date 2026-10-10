@@ -21,6 +21,7 @@ def project_native_release_readiness(
     dry_run: Mapping[str, Any] | None,
     readback: Mapping[str, Any] | None,
     successor_acceptance: Mapping[str, Any] | None = None,
+    handoff_execution: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Display checkpoints only; no provider calls, audit writes, or admission."""
     plan_sha = str((plan or {}).get("plan_sha256") or "")
@@ -94,6 +95,17 @@ def project_native_release_readiness(
         and successor_acceptance.get("resource_authority_verified") is True
         and _checked_recently(successor_acceptance.get("accepted_at"))
     )
+    provider_transfer_verified = bool(
+        handoff_execution
+        and handoff_execution.get("status") == "provider_handoff_verified"
+        and handoff_execution.get("plan_sha256") == plan_sha
+        and handoff_execution.get("handoff_fingerprint") == (plan or {}).get("handoff_fingerprint")
+        and handoff_execution.get("provider_handoff_verified") is True
+        and handoff_execution.get("external_successor_verified") is True
+        and type(handoff_execution.get("verified_count")) is int
+        and handoff_execution.get("verified_count") == handoff_execution.get("expected_component_count")
+        and handoff_execution.get("verified_count", 0) > 0
+    )
     stages = (
         ("Release review", review_current,
          "Previous review expired; run a new authoritative provider review."
@@ -104,8 +116,9 @@ def project_native_release_readiness(
         ("Verified successor acceptance", verified_acceptance,
          "Authenticated Kubernetes principal explicitly accepted this exact plan and passed scoped access review."
          if verified_acceptance else "Kubernetes TokenReview, scoped SubjectAccessReview and explicit successor consent are required."),
-        ("KAORI provider handoff", False,
-         "Live ownership transfer executor is not yet admitted; Native dry-run is not execution."),
+        ("KAORI provider handoff", provider_transfer_verified,
+         "Exact Native provider handoff was committed with post-write read-back."
+         if provider_transfer_verified else "Execute accepted Native handoff and verify all provider objects; partial transfer requires recovery."),
         ("Released and Re-adopt", False,
          "Canonical Released commit and new-generation Re-adopt require verified handoff."),
     )
@@ -124,6 +137,7 @@ def project_native_release_readiness(
         "review_complete": review_current,
         "approval_complete": same_plan,
         "verified_successor_acceptance": verified_acceptance,
+        "provider_transfer_verified": provider_transfer_verified,
         "approval_recorded": approval_recorded,
         "approval_expired": approval_expired,
         "review_expired": review_expired,
