@@ -129,6 +129,16 @@ def filter_tenant_contribution_rows(
     ]
 
 
+def summarize_tenant_contributions(rows: list[dict[str, Any]]) -> dict[str, int]:
+    """Summarize the unfiltered committed contribution ledger for read-only presentation."""
+    return {
+        'tenants': len(rows),
+        'namespaces': sum(int(row['namespace_count']) for row in rows),
+        'shared': sum(row['source'] == 'Shared Tenant Quota' for row in rows),
+        'attention': sum(bool(row['unknown']) for row in rows),
+    }
+
+
 def build_tenant_contribution_rows(cluster_id: str) -> list[dict[str, object]]:
     """Partition the same canonical ledger as #654, including shared-quota rules."""
     tenants = Tenant.query.filter_by(cluster_id=cluster_id).order_by(Tenant.name.asc(), Tenant.id.asc()).all()
