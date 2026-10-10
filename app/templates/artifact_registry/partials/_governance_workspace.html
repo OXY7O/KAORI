@@ -1,5 +1,6 @@
 {% import "components/action_button.html" as action_button %}
-{% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
+{% import "components/content_tabs.html" as content_tabs %}
+{% import "components/section_intro.html" as section_intro %}
 {% import "components/operational_section_card.html" as section_card %}
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/snapshot_context_bar.html" as snapshot_context_bar %}
@@ -117,28 +118,46 @@
             </div>
 
     </section>
-    <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
-             aria-label="Governance evidence coverage">
+    <section class="space-y-3"
+             aria-labelledby="artifact-registry-governance-coverage-heading">
+        {{ section_intro.render('Governance Coverage',
+            'Committed policy, retention, immutability, and replication evidence across Registry providers.',
+            'artifact-registry-governance-coverage-heading') }}
+        <div class="{{ section_card.shell_classes() }}">
+            <div class="grid gap-3 bg-surface-subtle p-4 sm:grid-cols-2 xl:grid-cols-4">
                 {% for item in governance.posture_cards %}
-                    <article class="rounded-xl border border-outline-subtle bg-surface-card p-4">
-                        <div class="flex items-start justify-between gap-3">
+                    <article class="min-w-0 rounded-lg border border-outline-subtle bg-surface-card p-4">
+                        <div class="flex min-w-0 flex-wrap items-start justify-between gap-2">
                             <div class="min-w-0">
                                 <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">{{ item.label }}</p>
                                 <p class="mt-2 text-lg font-semibold text-content-primary">{{ item.value }}</p>
                             </div>
                             {{ table_label.status_indicator_label(item.status_label, item.tone) }}
                         </div>
-                        <p class="mt-2 text-xs leading-5 text-content-secondary">{{ item.detail }}</p>
+                        <p class="mt-2 break-words text-xs leading-5 text-content-secondary">{{ item.detail }}</p>
                     </article>
                 {% endfor %}
-
+            </div>
+        </div>
     </section>
-    <section id="artifact-registry-governance-registry"
+
+    <section class="space-y-3"
+             aria-labelledby="artifact-registry-governance-evidence-heading">
+        {{ section_intro.render('Governance Evidence',
+            'Review committed project policy and replication records without changing provider configuration.',
+            'artifact-registry-governance-evidence-heading') }}
+        <section id="artifact-registry-governance-registry"
                  class="{{ section_card.shell_classes() }}">
-            {{ framed_workspace_tabs.render_navigation([
-                            ('policies', 'Policies', 'shield-check', url_for('artifact_registry.governance', tab='policies', page=1, per_page=governance.pagination.per_page) , governance.project_count),
-            ('replication', 'Replication', 'git-compare-arrows', url_for('artifact_registry.governance', tab='replication', page=1, per_page=governance.pagination.per_page), governance.replication_count)
-            ], governance.active_tab, prefix='registry-governance', aria_label='Registry Governance Sections', hx_target='#artifact-registry-governance-registry', hx_select='#artifact-registry-governance-registry') }}
+            {{ content_tabs.render_links('registry-governance', [
+                ('policies', 'Policies', 'shield-check', url_for('artifact_registry.governance', tab='policies', page=1, per_page=governance.pagination.per_page), governance.project_count),
+                ('replication', 'Replication', 'git-compare-arrows', url_for('artifact_registry.governance', tab='replication', page=1, per_page=governance.pagination.per_page), governance.replication_count)
+            ], governance.active_tab, 'Registry Governance Sections',
+                embedded=true,
+                data_namespace='registry-governance',
+                hx_target='#artifact-registry-governance-registry',
+                hx_select='#artifact-registry-governance-registry',
+                hx_push_url='true',
+                nowrap=true) }}
             <div id="artifact-registry-governance-loading"
                  class="htmx-indicator border-b border-outline-subtle px-5 py-2 text-xs text-content-muted">
                 Loading Governance evidence…
@@ -238,5 +257,6 @@
                                     control_name='artifact-registry-governance-replication') }}
             {% endif %}
         </section>
+    </section>
     {% endif %}
 </div>
