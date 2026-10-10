@@ -76,77 +76,221 @@
             </div>
         {% endcall %}
     </div>
-    <table class="{{ table_ui.table_classes('table-fixed') }}">
-        <caption class="sr-only">Tenant Capacity Decisions from committed KAORI evidence.</caption>
-        <thead class="{{ table_ui.head_classes() }}">
-            <tr>
-                <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[31%]">Target</th>
-                <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[29%]">Contract</th>
-                <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[22%]">Admission</th>
-                <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[18%]">Recorded</th>
-            </tr>
-        </thead>
-        <tbody class="{{ table_ui.body_classes() }}">
-            {% for row in capacity_decision_rows %}
-                {% set decision = row.decision %}
-                {% set state_tone = 'normal' if decision.capacity_state == 'Healthy' else ('critical' if decision.capacity_state in ['Critical', 'Exhausted', 'Overcommitted'] else ('warning' if decision.capacity_state in ['Near Capacity', 'Unknown'] else 'unknown')) %}
-                <tr class="{{ table_ui.row_classes() }}">
-                    <td class="{{ table_ui.cell_classes() }} align-middle">
-                        <div class="min-w-0">
-                            <div class="flex min-w-0 items-center gap-2">
-                                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
+    <div class="overflow-x-auto">
+        <table class="{{ table_ui.table_classes('min-w-[1060px] !table-fixed') }}">
+            <caption class="sr-only">Committed capacity-admission decisions and read-only details.</caption>
+            <thead class="{{ table_ui.head_classes() }}">
+                <tr>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[24%]">Target</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[27%]">Contract</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[22%]">Admission</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[17%]">Recorded</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[10%]">Details</th>
+                </tr>
+            </thead>
+            <tbody class="{{ table_ui.body_classes() }}">
+                {% for row in capacity_decision_rows %}
+                    {% set decision = row.decision %}
+                    {% set evidence = decision.evidence_json or {} %}
+                    {% set capacity_source = evidence.get('capacity_source') or {} %}
+                    {% set state_tone = 'normal' if decision.capacity_state == 'Healthy' else ('critical' if decision.capacity_state in ['Critical', 'Exhausted', 'Overcommitted'] else ('warning' if decision.capacity_state in ['Near Capacity', 'Unknown'] else 'unknown')) %}
+                    {% set decision_tone = 'normal' if decision.decision == 'allow' else 'critical' %}
+                    {% set profile_name = row.profile.name if row.profile else 'No Profile' %}
+                    {% set dialog_id = 'tenant-capacity-decision-' ~ decision.id %}
+                    <tr class="{{ table_ui.row_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
+                            <div class="flex min-w-0 items-center gap-2.5">
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                                       aria-hidden="true">
                                     <i data-lucide="folder-tree" class="h-4 w-4"></i>
                                 </span>
-                                <p class="min-w-0 truncate text-sm font-semibold text-content-primary"
-                                   title="{{ decision.namespace }}">{{ decision.namespace }}</p>
+                                <div class="min-w-0">
+                                    <p class="truncate text-sm font-semibold text-content-primary"
+                                       title="{{ decision.namespace }}">{{ decision.namespace }}</p>
+                                    <p class="mt-1 truncate text-xs text-content-muted"
+                                       title="{{ row.cluster.name }} · {{ row.cluster.environment|title }}">
+                                        {{ row.cluster.name }} · {{ row.cluster.environment|title }}
+                                    </p>
+                                </div>
                             </div>
-                            <p class="mt-1 truncate pl-9 text-xs text-content-muted"
-                               title="{{ row.cluster.name }} · {{ row.cluster.environment|title }}">
-                                {{ row.cluster.name }} · {{ row.cluster.environment|title }}
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
+                            <p class="truncate text-sm font-semibold text-content-primary"
+                               title="{{ profile_name }}">{{ profile_name }}</p>
+                            <p class="mt-1 text-xs text-content-muted">
+                                {% if row.profile %}
+                                    {{ row.profile.profile_class|replace('_', ' ')|title }} · v{{ decision.resource_profile_version or row.profile.version }}
+                                {% else %}
+                                    Observed / Legacy
+                                {% endif %}
                             </p>
-                        </div>
-                    </td>
-                    <td class="{{ table_ui.cell_classes() }} align-middle">
-                        <div class="min-w-0">
-                            {% if row.profile %}
-                                <p class="truncate text-sm font-semibold text-content-primary"
-                                   title="{{ row.profile.name }}">{{ row.profile.name }}</p>
-                                <p class="mt-1 text-xs text-content-muted">{{ row.profile.profile_class|title }} · v{{ decision.resource_profile_version or row.profile.version }}</p>
-                            {% else %}
-                                <p class="text-sm font-semibold text-content-primary">No Profile</p>
-                                <p class="mt-1 text-xs text-content-muted">Observed / legacy decision</p>
-                            {% endif %}
-                            <p class="mt-1 truncate text-xs text-content-muted"
-                               title="{{ decision.operation|replace('_', ' ') |title }}">
-                                {{ decision.operation|replace('_', ' ') |title }}
+                            <p class="mt-1 text-xs font-medium text-content-secondary">
+                                {{ decision.operation|replace('_', ' ')|title }}
                             </p>
-                        </div>
-                    </td>
-                    <td class="{{ table_ui.cell_classes() }} align-middle">
-                        <div class="flex flex-wrap items-center gap-2">
-                            {{ table_label.status_label(decision.capacity_state, state_tone) }}
-                            {{ table_label.status_label(decision.decision|title, 'normal' if decision.decision == 'allow' else 'critical') }}
-                        </div>
-                        <p class="mt-1 text-xs text-content-muted">Committed preflight</p>
-                    </td>
-                    <td class="{{ table_ui.cell_classes() }} align-middle">
-                        <p class="text-sm font-medium text-content-primary">{{ row.created_at_label }}</p>
-                        <p class="mt-1 text-xs text-content-muted">Cutoff {{ row.data_cutoff_label }}</p>
-                    </td>
-                </tr>
-            {% else %}
-                <tr>
-                    <td colspan="4" class="p-0">
-                        {% set empty_state_icon = "shield-check" %}
-                        {% set empty_state_title = "No Capacity Decisions Found" %}
-                        {% set empty_state_description = "Run Namespace provisioning or allocation preflight, or adjust the filters." %}
-                        {% include 'components/states/_empty_state.html' %}
-                    </td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
+                            <div class="flex flex-wrap items-center gap-1.5">
+                                {{ table_label.status_label(decision.decision|title, decision_tone) }}
+                                {{ table_label.status_label(decision.capacity_state, state_tone) }}
+                            </div>
+                            <p class="mt-1 text-xs text-content-muted">Committed preflight</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
+                            <p class="text-xs font-semibold tabular-nums text-content-primary">{{ row.created_at_label }}</p>
+                            <p class="mt-1 text-xs tabular-nums text-content-muted"
+                               title="Evidence cutoff: {{ row.data_cutoff_label }}">
+                                Cutoff {{ row.data_cutoff_label }}
+                            </p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes(action=true) }}">
+                            <button type="button"
+                                    data-kaori-dialog-open
+                                    data-dialog-target="{{ dialog_id }}"
+                                    aria-haspopup="dialog"
+                                    aria-controls="{{ dialog_id }}"
+                                    aria-label="View capacity decision for {{ decision.namespace }}"
+                                    class="{{ table_ui.action_classes() }}">
+                                <i data-lucide="eye" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                View More
+                            </button>
+                            <dialog id="{{ dialog_id }}"
+                                    data-kaori-native-dialog
+                                    aria-labelledby="{{ dialog_id }}-title"
+                                    aria-describedby="{{ dialog_id }}-description"
+                                    class="kaori-native-dialog m-auto w-[calc(100vw-1.5rem)] max-w-3xl overflow-hidden rounded-2xl border border-outline-default bg-surface-card p-0 text-left shadow-2xl sm:w-[calc(100vw-3rem)]">
+                                <section class="flex max-h-[calc(100dvh-2rem)] min-h-0 flex-col overflow-hidden text-left"
+                                         role="document">
+                                    <header class="flex shrink-0 items-start justify-between gap-3 border-b border-outline-subtle bg-surface-card px-4 py-4 text-left sm:px-6">
+                                        <div class="flex min-w-0 items-start gap-3">
+                                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                                                  aria-hidden="true">
+                                                <i data-lucide="shield-check" class="h-5 w-5"></i>
+                                            </span>
+                                            <div class="min-w-0">
+                                                <p class="text-xs font-semibold text-kaori-primary">Committed Admission Evidence</p>
+                                                <h2 id="{{ dialog_id }}-title"
+                                                    class="mt-1 break-words text-lg font-semibold leading-6 text-content-primary">
+                                                    {{ decision.namespace }}
+                                                </h2>
+                                                <p id="{{ dialog_id }}-description"
+                                                   class="mt-1 text-xs text-content-muted">
+                                                    {{ row.cluster.name }} · {{ row.cluster.environment|title }}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <button type="button"
+                                                data-kaori-dialog-close
+                                                class="{{ table_ui.action_classes() }} shrink-0"
+                                                aria-label="Close Capacity Decision details">
+                                            <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
+                                        </button>
+                                    </header>
+                                    <div class="min-h-0 space-y-4 overflow-y-auto bg-surface-page p-4 text-left sm:p-5">
+                                        <section aria-label="Capacity admission decision"
+                                                 class="rounded-xl border border-outline-subtle bg-surface-card px-4 py-4">
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                {{ table_label.status_label(decision.decision|title, decision_tone) }}
+                                                {{ table_label.status_label(decision.capacity_state, state_tone) }}
+                                                <span class="text-xs text-content-muted">Committed preflight</span>
+                                            </div>
+                                            <p class="mt-3 text-xs font-semibold text-content-secondary">Admission Reason</p>
+                                            <p class="mt-1 whitespace-pre-line break-words text-sm leading-6 text-content-primary">{{ evidence.get('reason') or 'No committed explanation recorded.' }}</p>
+                                            {% if decision.decision == 'block' %}
+                                                <p class="mt-2 text-xs text-content-muted">
+                                                    Blocked preflight does not authorize provider allocation mutation.
+                                                </p>
+                                            {% endif %}
+                                        </section>
+                                        <section aria-labelledby="{{ dialog_id }}-contract-title">
+                                            <h3 id="{{ dialog_id }}-contract-title"
+                                                class="text-sm font-semibold text-content-primary">Target &amp; Contract</h3>
+                                            <dl class="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
+                                                <div class="min-w-0 sm:col-span-2">
+                                                    <dt class="text-xs text-content-muted">Resource Profile</dt>
+                                                    <dd class="mt-1 break-words text-sm font-semibold text-content-primary">{{ profile_name }}</dd>
+                                                    <dd class="mt-1 text-xs text-content-muted">
+                                                        {% if row.profile %}
+                                                            {{ row.profile.profile_class|replace('_', ' ')|title }} · v{{ decision.resource_profile_version or row.profile.version }}
+                                                        {% else %}
+                                                            Observed / Legacy
+                                                        {% endif %}
+                                                    </dd>
+                                                </div>
+                                                <div class="min-w-0">
+                                                    <dt class="text-xs text-content-muted">Operation</dt>
+                                                    <dd class="mt-1 text-sm font-semibold text-content-primary">{{ decision.operation|replace('_', ' ')|title }}</dd>
+                                                </div>
+                                                <div class="min-w-0">
+                                                    <dt class="text-xs text-content-muted">Allocation Scope</dt>
+                                                    <dd class="mt-1 break-words text-sm font-semibold text-content-primary">
+                                                        {{ (evidence.get('allocation_scope') or 'Not recorded')|replace('_', ' ')|title }}
+                                                    </dd>
+                                                </div>
+                                            </dl>
+                                        </section>
+                                        <section aria-labelledby="{{ dialog_id }}-record-title"
+                                                 class="border-t border-outline-subtle pt-4">
+                                            <h3 id="{{ dialog_id }}-record-title"
+                                                class="text-sm font-semibold text-content-primary">Committed Evidence</h3>
+                                            <dl class="mt-3 grid grid-cols-2 gap-x-4 gap-y-3">
+                                                <div class="min-w-0">
+                                                    <dt class="text-xs text-content-muted">Recorded</dt>
+                                                    <dd class="mt-1 text-xs font-medium tabular-nums text-content-primary">{{ row.created_at_label }}</dd>
+                                                </div>
+                                                <div class="min-w-0">
+                                                    <dt class="text-xs text-content-muted">Data Cutoff</dt>
+                                                    <dd class="mt-1 text-xs font-medium tabular-nums text-content-primary">{{ row.data_cutoff_label }}</dd>
+                                                </div>
+                                                <div class="min-w-0">
+                                                    <dt class="text-xs text-content-muted">Capacity Source</dt>
+                                                    <dd class="mt-1 break-words text-xs font-medium text-content-primary">
+                                                        {{ capacity_source.get('dataset_key') or 'Not recorded' }}
+                                                    </dd>
+                                                </div>
+                                                <div class="min-w-0">
+                                                    <dt class="text-xs text-content-muted">Snapshot State</dt>
+                                                    <dd class="mt-1 text-xs font-medium text-content-primary">
+                                                        {{ (capacity_source.get('snapshot_state') or 'Not recorded')|replace('_', ' ')|title }}
+                                                    </dd>
+                                                </div>
+                                            </dl>
+                                            <details class="group mt-4 rounded-lg border border-outline-subtle bg-surface-card">
+                                                <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5 text-xs font-semibold text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus [&::-webkit-details-marker]:hidden">
+                                                    <span>Traceability</span>
+                                                    <i data-lucide="chevron-down"
+                                                       class="h-4 w-4 shrink-0 transition-transform group-open:rotate-180"
+                                                       aria-hidden="true"></i>
+                                                </summary>
+                                                <dl class="grid gap-3 border-t border-outline-subtle px-3 py-3 text-xs">
+                                                    <div class="min-w-0">
+                                                        <dt class="text-content-muted">Correlation ID</dt>
+                                                        <dd class="mt-1 break-all font-mono text-content-primary">{{ decision.correlation_id }}</dd>
+                                                    </div>
+                                                    <div class="min-w-0">
+                                                        <dt class="text-content-muted">Capacity Snapshot ID</dt>
+                                                        <dd class="mt-1 break-all font-mono text-content-primary">{{ capacity_source.get('snapshot_id') if capacity_source.get('snapshot_id') is not none else 'Not recorded' }}</dd>
+                                                    </div>
+                                                </dl>
+                                            </details>
+                                        </section>
+                                    </div>
+                                </section>
+                            </dialog>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="p-0">
+                            {% set empty_state_icon = "shield-check" %}
+                            {% set empty_state_title = "No Capacity Decisions Found" %}
+                            {% set empty_state_description = "Run Namespace provisioning or allocation preflight, or adjust the filters." %}
+                            {% include 'components/states/_empty_state.html' %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
     {% if capacity_decision_pagination.total_items > 0 %}
         {{ registry_ui.footer('tenant.namespace_provisioning',
                 registry_id,
