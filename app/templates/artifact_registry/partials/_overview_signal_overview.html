@@ -36,7 +36,8 @@
     overview.posture.label,
     overview.posture.tone,
     signal_updated,
-    scope_selector
+    scope_selector,
+    body_classes='p-0'
     ) %}
     <div id="artifact-registry-dashboard-kpis"
          hx-get="{{ url_for('artifact_registry.overview_section', section='kpi_cards') }}?provider_id={{ overview.selected_provider_id or '' }}"
@@ -44,6 +45,7 @@
          hx-target="this"
          hx-swap="outerHTML">
         {{ section_loading.kpis(item_count=4,
-                aria_label='Artifact Registry Operational Indicators Loading') }}
+                aria_label='Artifact Registry Operational Indicators Loading',
+                grouped=true) }}
     </div>
 {% endcall %}
