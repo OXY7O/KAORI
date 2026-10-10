@@ -274,8 +274,11 @@ def test_namespace_registry_uses_compact_rows_and_committed_read_only_detail_dia
 
     # Full profile names and reconciliation messages belong in the modal,
     # not in a text-clipped status cell or a sixth authority column.
-    assert 'profile_name|truncate(45, True' in template
+    assert 'profile_display|truncate(42, True' in template
     assert 'title="{{ profile_name }}"' in template
+    assert '{{ profile_display }}</p>' in template
+    assert 'table_label.metadata_label(control_label)' in template
+    assert "No pinned snapshot" in template
     assert 'item.provisioning_message or' in template
     assert "max-w-full truncate\" title=\"{{ item.provisioning_message" not in template
     assert "item.ownership_status" in template
@@ -333,6 +336,55 @@ def test_namespace_registry_uses_compact_rows_and_committed_read_only_detail_dia
     assert "allocation_limit_defaults_json: Mapped[dict | None]" in model
     assert "allocation_storage_policy_json: Mapped[dict | None]" in model
 
+
+
+def test_namespace_registry_uses_existing_compact_profile_naming_rules() -> None:
+    from jinja2 import Environment
+
+    source = read('app/templates/kubernetes/tenant/partials/_namespace_registry.html')
+    start = source.index("{% set adopted_prefix = profile_name.startswith('Adopted ') %}")
+    end = source.index("{% set quota = item.allocation_quota_json or {} %}", start)
+    snippet = Environment(autoescape=True).from_string(
+        source[start:end] + '{{ profile_display }}||{{ control_label or "None" }}'
+    )
+
+    def display(
+        name: str, *, control: str | None = 'kaori_managed',
+        mirrored: bool = False, observed: bool = False,
+    ) -> tuple[str, str]:
+        rendered = snippet.render(
+            profile_name=name,
+            provider_mirrored=mirrored,
+            adopted_observed=observed,
+            allocation_control=control,
+        )
+        first, second = rendered.split('||')
+        return first.strip(), second.strip()
+
+    assert display('Platform Medium') == ('Platform Medium', 'KAORI Managed')
+    assert display('Adopted tenant-uat-demo Baseline · 4')[0] == 'tenant-uat-demo Baseline 4'
+    assert display('Adopted tenant-uat-demo Baseline · 3')[0] == 'tenant-uat-demo Baseline 3'
+    assert display(
+        'Adopted kaori-demo Allocation · e36817ba-f3d5-433b-a26e-e8106bf28abb'
+    )[0] == 'kaori-demo Allocation · e36817ba'
+    assert display('Adopted kaori-demo/kaori-demo-dev Policy · None', mirrored=True)[1] == (
+        'Provider Mirrored'
+    )
+    assert display('Imported Provider Baseline', observed=True, control=None)[1] == (
+        'Awaiting Takeover'
+    )
+    assert display('No profile', control=None) == ('No profile', 'None')
+    long_name, _ = display('Unrecognized profile ' + 'x' * 100)
+    assert len(long_name) <= 42
+
+    # Compact name and authority are display-only, never replacing full
+    # committed identity/effective evidence in the read-only modal.
+    assert 'title="{{ profile_name }}"' in source
+    assert '{{ profile_name }}</p>' in source
+    assert 'item.allocation_quota_json or {}' in source
+    assert 'item.provisioning_message or' in source
+    assert 'data-kaori-native-dialog' in source
+    assert "registry_ui.footer('tenant.namespace_provisioning'" in source
 
 
 def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None:
