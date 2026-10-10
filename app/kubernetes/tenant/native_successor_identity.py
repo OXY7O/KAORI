@@ -14,6 +14,8 @@ from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import Any
 
+from kubernetes.client.rest import ApiException
+
 from kubernetes.client import (
     V1ResourceAttributes,
     V1SubjectAccessReview,
@@ -87,10 +89,14 @@ def verify_native_successor_identity_for_review(
     # The canonical cluster kubeconfig identifies the API server. TokenReview
     # authenticates the separately supplied successor token against that server.
     provider = runtime_adapter.build_client(cluster)
-    reply = provider.authentication_api().create_token_review(
-        V1TokenReview(spec=V1TokenReviewSpec(token=provider_token)),
-        _request_timeout=5,
-    )
+    try:
+        reply = provider.authentication_api().create_token_review(
+            V1TokenReview(spec=V1TokenReviewSpec(token=provider_token)),
+            _request_timeout=5,
+        )
+    except ApiException as exc:
+        # Never surface a provider error body that could echo credential input.
+        raise ValueError('Kubernetes TokenReview unavailable or rejected the supplied principal.') from None
     status = _field(reply, 'status')
     principal = _field(status, 'user')
     username = str(_field(principal, 'username') or '')
@@ -200,9 +206,12 @@ def verify_native_successor_resource_authority(
                     resource_attributes=attrs,
                 ),
             )
-            result = provider.authorization_api().create_subject_access_review(
-                req, _request_timeout=5,
-            )
+            try:
+                result = provider.authorization_api().create_subject_access_review(
+                    req, _request_timeout=5,
+                )
+            except ApiException:
+                raise ValueError('Kubernetes SubjectAccessReview unavailable for the exact resource.') from None
             status = _field(result, 'status')
             if (
                 _field(status, 'allowed') is not True
