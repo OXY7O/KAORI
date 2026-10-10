@@ -101,15 +101,15 @@ def test_denied_sar_cannot_promote_successor_identity_to_consent(monkeypatch):
         )
 
 
-def test_approval_boundary_never_accepts_unauthenticated_reference():
+def test_approval_boundary_never_accepts_unauthenticated_reference(monkeypatch):
     p = plan()
     reviewer = {
         'approved_by': 43,
     }
     from app.kubernetes.tenant import native_successor_acceptance as service
-    service.latest_native_successor_acceptance = lambda _: {
+    monkeypatch.setattr(service, 'latest_native_successor_acceptance', lambda _: {
         'status': 'external_reference_unverified', 'plan_sha256': p['plan_sha256'],
-    }
+    })
     with pytest.raises(ValueError, match='verified successor consent'):
         service.require_current_native_acceptance(tenant_id='tenant-a', plan=p, approval=reviewer)
 
