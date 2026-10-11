@@ -31,7 +31,6 @@ def _workspace_grid_classes(workspace_count: int, index: int) -> str:
     return 'xl:col-span-2'
 
 
-
 def _aggregate_access_posture(tones: list[str]) -> tuple[str, str]:
     """Respect KAORI severity precedence without treating optional/unknown scope as healthy."""
 
@@ -44,6 +43,7 @@ def _aggregate_access_posture(tones: list[str]) -> tuple[str, str]:
     if not tones or 'unknown' in tones:
         return 'Limited Evidence', 'unknown'
     return 'Current', 'normal'
+
 
 def _user_supporting_text(summary: dict[str, Any]) -> str:
     if not summary['active']:
@@ -268,7 +268,6 @@ def build_access_overview() -> dict[str, Any]:
 
     workspace_count = len(workspaces)
     warning_workspace_count = sum(1 for workspace in workspaces if workspace['status_tone'] == 'warning')
-    critical_workspace_count = sum(1 for workspace in workspaces if workspace['status_tone'] == 'critical')
     unknown_workspace_count = sum(1 for workspace in workspaces if workspace['status_tone'] == 'unknown')
     attention_workspace_count = warning_workspace_count + critical_workspace_count
 
