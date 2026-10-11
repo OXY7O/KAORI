@@ -720,8 +720,7 @@ def build_storage_posture(
             'label': 'Limited Evidence',
             'tone': 'unknown',
             'reason': (
-                f'{complete_domains} of 3 storage evidence domains are complete. '
-                'Missing evidence is not treated as healthy.'
+                f'{complete_domains}/3 storage evidence domains complete; gaps remain Unknown.'
             ),
             'evidence_complete': False,
             'critical_count': 0,
