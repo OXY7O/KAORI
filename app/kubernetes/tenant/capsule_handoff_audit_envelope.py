@@ -211,6 +211,25 @@ def inspect_capsule_scope_g2g3_trace(
         or readback_candidate.get('release_authorized') is not False
     ):
         raise ValueError('Capsule preview, consent, attempt and G3 scope diverged.')
+    # A caller cannot edit count/blocker rows while retaining a previously
+    # recorded read-back SHA. This canonical digest check is only tamper
+    # detection inside the submitted envelope, NOT provider authentication.
+    receipt_fields = (
+        'plan_sha256', 'handoff_fingerprint', 'worklist_sha256',
+        'capsule_cr_observed', 'namespace_observations',
+        'related_resource_observations', 'related_transfer_candidate_count',
+        'source_namespaced_sha256', 'candidate_namespaced_sha256',
+        'source_global_quota_sha256', 'candidate_global_quota_sha256',
+        'expected_count', 'observed_count', 'pending_count',
+        'transferred_count', 'ambiguous_count', 'blockers',
+    )
+    if (
+        not isinstance(readback_candidate.get('readback_sha256'), str)
+        or any(key not in readback_candidate for key in receipt_fields)
+        or _digest({key: readback_candidate[key] for key in receipt_fields})
+            != readback_candidate['readback_sha256']
+    ):
+        raise ValueError('Capsule G3 read-back receipt was changed after its digest was recorded.')
     if not isinstance(rows, list) or not rows:
         raise ValueError('Capsule G2/G3 trace cannot omit the START audit claim.')
     audit = inspect_capsule_audit_event_envelopes(
