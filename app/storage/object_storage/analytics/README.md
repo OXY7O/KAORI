@@ -168,6 +168,8 @@ Object Storage operational analytics follows the same materialization boundary a
 6. A successful collection is stored in `ObjectStorageAnalyticsSnapshot`. The UI reads only this committed artifact plus committed Object Storage Inventory and, where required, the separate forecast snapshot.
 7. When the operational snapshot becomes stale, KAORI keeps the last usable payload inside the configured stale-grace window and queues an on-demand refresh. Missing or expired evidence blocks with `Object Storage Analytics Snapshot Required` until a worker commits usable data.
 
+Scheduled due checks treat a failed Analytics or Forecast refresh as retry-eligible even if the previous committed payload has not expired. The previous generation may still be displayed as explicitly labeled last-known evidence inside stale grace; JobExecution deduplication prevents concurrent duplicate work. A ready or in-progress generation with an unexpired payload remains governed by its expiry window. This separates materialization recovery from the last-good evidence validity boundary.
+
 The registered job defaults to a 15-minute freshness interval with 24-hour stale grace. Its snapshot table is bounded by the unique `(object_storage_system_id, time_range)` scope: refreshes replace the current artifact instead of appending unbounded analytics history.
 
 ## No-compatibility rule

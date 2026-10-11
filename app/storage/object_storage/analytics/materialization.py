@@ -239,6 +239,10 @@ def analytics_snapshot_due(*, system_id: str, time_range: str) -> bool:
     snapshot = get_analytics_snapshot(system_id=system_id, time_range=time_range)
     if snapshot is None or snapshot.payload_json is None or snapshot.generated_at is None:
         return True
+    # A failed attempt remains due even when the retained last-good payload has not expired.
+    # JobExecution admission controls overlap; payload expiry governs continuity, not retries.
+    if snapshot.status == 'failed':
+        return True
     expires_at = _aware(snapshot.expires_at)
     return expires_at is None or datetime.now(UTC) >= expires_at
 
@@ -504,6 +508,10 @@ def forecast_snapshot_due(
 ) -> bool:
     snapshot = get_forecast_snapshot(system_id=system_id, history_window=history_window)
     if snapshot is None or snapshot.payload_json is None or snapshot.generated_at is None:
+        return True
+    # A failed attempt remains due even when the retained last-good payload has not expired.
+    # JobExecution admission controls overlap; payload expiry governs continuity, not retries.
+    if snapshot.status == 'failed':
         return True
     expires_at = _aware(snapshot.expires_at)
     return expires_at is None or datetime.now(UTC) >= expires_at
