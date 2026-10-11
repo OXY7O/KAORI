@@ -684,6 +684,8 @@ def build_overview_section(
         )
 
     if section == 'signals':
+        if selected_provider is None:
+            return context
         return {
             **context,
             'alerts': _registry_alerts(selected_provider),
