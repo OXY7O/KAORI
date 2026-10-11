@@ -17,6 +17,9 @@ from app.kubernetes.tenant.admin_workspace import (
     get_tenant_summary_context,
 )
 from app.kubernetes.tenant.discovery_service import get_tenant_discovery_context
+from app.kubernetes.tenant.registry_context import (
+    get_tenant_namespace_profile_mapping_context,
+)
 from app.kubernetes.tenant.service import (
     get_namespace_registry_context,
     get_tenant_registry_context,
@@ -165,6 +168,9 @@ def _tenant_detail_context(tenant_id: str) -> dict[str, Any]:
         int(state['per_page']) if int(state['per_page']) in {5, 10, 25, 50} else 5
     )
     context['row'] = rows[0]
+    context['tenant_namespace_profile_mapping'] = get_tenant_namespace_profile_mapping_context(
+        tenant_id
+    )
     context['registry_state'] = state
     # A detail POST reopens its governed section after the HTMX swap. If a
     # lifecycle transition makes it ineligible, use the next permitted view;

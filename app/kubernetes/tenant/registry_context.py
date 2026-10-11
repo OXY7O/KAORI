@@ -4,6 +4,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from sqlalchemy import case, func, or_
+from sqlalchemy.orm import joinedload
 
 from app.common.pagination import paginate_query
 from app.common.presentation import present_user_datetime
@@ -734,6 +735,86 @@ def _namespace_allocation_state(namespace_options: list[TenantNamespace]) -> dic
         }
         for record in namespace_options
     }
+
+
+
+def get_tenant_namespace_profile_mapping_context(
+    tenant_id: str, *, limit: int = 5,
+) -> dict[str, Any]:
+    """Bounded, committed-only Tenant → Namespace → profile lineage.
+
+    This read model does not infer current Kubernetes state. It includes
+    Released generations to explain preserved allocations during handoff
+    and later re-adoption without making Tenant Detail a second registry.
+    """
+    if limit != 5:
+        raise ValueError('Tenant Detail uses the canonical five-row preview.')
+    query = (
+        TenantNamespace.query
+        .join(
+            TenantEnvironment,
+            TenantNamespace.tenant_environment_id == TenantEnvironment.id,
+        )
+        .filter(TenantEnvironment.tenant_id == tenant_id)
+    )
+    # Count independently of eager ORM loader options; materialize only five.
+    total = query.count()
+    records = (
+        query.options(
+            joinedload(TenantNamespace.environment),
+            joinedload(TenantNamespace.resource_profile),
+        ).order_by(
+            TenantNamespace.created_at.desc(), TenantNamespace.id.desc(),
+        )
+        .limit(limit)
+        .all()
+    )
+    rows: list[dict[str, Any]] = []
+    for record in records:
+        evidence = record.provisioning_evidence_json or {}
+        allocation = evidence.get('allocation') if isinstance(evidence, Mapping) else {}
+        allocation = allocation if isinstance(allocation, Mapping) else {}
+        lineage = _namespace_profile_lineage(record)
+        attached = record.resource_profile is not None
+        if attached:
+            name = record.resource_profile.name
+            source = 'Linked Resource Profile'
+        elif lineage.get('label'):
+            name = str(lineage['label'])
+            source = 'Imported Provider Lineage'
+        elif allocation.get('provenance') == 'adopted_observed':
+            name = 'Imported Provider Baseline'
+            source = 'Observed (not linked)'
+        else:
+            name = 'No linked Resource Profile'
+            source = 'Unlinked'
+
+        historical = record.provisioning_status in (
+            TenantNamespaceProvisioningStatus.RELEASED.value,
+            TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+        )
+        rows.append({
+            'namespace': record.namespace,
+            'environment': record.environment.environment,
+            'generation': record.generation,
+            'ownership_status': record.ownership_status,
+            'provisioning_status': record.provisioning_status,
+            'historical': historical,
+            'profile_name': name,
+            'profile_source': source,
+            'profile_public_id': (
+                record.resource_profile.public_id if attached else None
+            ),
+            'profile_version': _namespace_profile_version(record),
+            'allocation_customized': record.allocation_customized,
+            'control_state': allocation_control_state(record),
+            'quota': dict(record.allocation_quota_json or {}),
+            'last_reconciled_at_label': present_user_datetime(
+                record.last_reconciled_at, empty='No reconciliation timestamp',
+            ),
+            'provider_uid': record.provider_reference,
+        })
+    return {'rows': rows, 'total': total, 'limit': limit}
 
 
 def get_namespace_registry_context(

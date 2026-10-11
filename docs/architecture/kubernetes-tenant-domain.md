@@ -161,6 +161,53 @@ semantics. Human local browser review (mobile, light/dark, long values)
 remains required. Developer Check, CI/CD, Full Admission, UAT and deployment
 remain HOLD pending explicit authorization.
 
+## Tenant Detail — committed Namespace / Resource Profile mapping (#1136)
+
+The canonical Tenant Detail now includes **Namespace & Resource Profile Mapping**
+directly before the Release/Handback administration section. It reuses
+`section_intro`, `operational_section_card`, the shared table/status
+primitives and the approved Violet responsive grid/empty states. This is a
+**bounded five-row committed projection**, not a second Namespace Registry:
+select only records correlated by the exact TenantEnvironment tenant ID, eager
+load their Resource Profile, order by newest generation records and retain
+Released/Deprovisioned history with clear historical labels. A link opens
+the existing Namespace Provisioning Registry filtered to that Tenant for
+the full collection. No provider GET, new management action, global
+profile mutation, schema migration or workflow branch is introduced.
+
+Each row distinguishes Native/other adopted provider-baseline lineage from
+a real linked Resource Profile, shows the **profile public ID** where linked,
+the pinned Resource Profile snapshot version and customization, allocation
+control state (historical records are explicitly **last committed**),
+Namespace ownership/lifecycle/generation and provider UID/last reconciliation
+evidence. CPU/Memory requests/limits, Pod slots and storage are frozen
+KAORI `allocation_quota_json` snapshots; unknown/unrecorded values are
+not fabricated and **not interpreted as live Kubernetes utilization**.
+A reusable Resource Profile definition may be revised to a new version
+without changing a Namespace's already-pinned snapshot until a separately
+admitted Allocation Change or rollout.
+
+**Native verification sequence and required invariants:**
+`Discover/Adopt existing Namespace → materialize its equivalent observed
+baseline → admitted managed Allocation Change (if requested) → live
+provider read-back of ResourceQuota/LimitRange → governed Native Release
+handoff → live read-back with unchanged provider allocation spec →
+independently authorized Handback / residual recovery if necessary →
+fresh Discovery → explicit new generation Re-adopt`.
+Native Release transfers the scoped KAORI ownership/manager metadata to
+its successor, **not CPU/memory/storage/quota or workload sizing**. Therefore
+Kubernetes allocation changes must already be admitted, executed and
+verified **before** Release; Released state and ownership markers change
+while committed and effective resource values remain identical. Handback
+or metadata recovery additionally changes authorized ownership metadata
+only. Historic generation snapshots and exact provider UID/RV evidence are
+retained for an auditable pre-/post-release comparison. Read-only mapping
+cannot substitute for provider GET or quality/UAT proof.
+
+Source integration is limited to `kaori/review/staging-uat` for DevContainer
+review; automated gates, provider mutations and staging/main promotion
+remain HOLD pending separate authorization.
+
 ## Tenant Details Governance Scope — shared estate posture composition (#1079; current scope UI authority)
 
 Human visual reference: the existing **Kubernetes Tenant Overview → Governance

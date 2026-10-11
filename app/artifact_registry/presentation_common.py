@@ -539,6 +539,7 @@ def _overview_scope_context(
         'active_tab': normalize_operational_tab(active_tab),
         'provider_count': len(scoped_providers),
         'latest_committed_at': latest,
+        'last_updated': _human_time(latest),
         'posture': posture,
         'snapshot_count': len(committed_states),
         'stale_snapshot_count': stale_count,
