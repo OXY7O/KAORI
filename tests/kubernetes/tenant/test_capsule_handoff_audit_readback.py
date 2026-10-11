@@ -93,7 +93,7 @@ def _inputs():
     ]
     related = {
         'status': 'read_only_related_inventory',
-        'resources': [], 'resource_count': 0,
+        'resources': [], 'resource_count': 0, 'blockers': [],
         'list_snapshots': lists, 'resource_sha256': related_sha,
         'global_quota': global_quota,
         'rbac_lineage': {
@@ -665,7 +665,11 @@ def test_g2_complete_offline_scope_binds_only_original_namespace_and_capsule_cr(
     assert review['transfer_candidate_count'] == 1
     assert review['complete_scope_count'] == 2
     assert review['globally_preserved_count'] == 1
-    assert review['scope_items'][0]['operation'] == 'conditional_metadata_dry_run_candidate'
+    assert {item['kind']: item['operation'] for item in review['scope_items']} == {
+        'CapsuleTenant': 'preserve_source_only_unverified',
+        'Namespace': 'conditional_metadata_dry_run_candidate',
+    }
+    assert review['global_quota_provider_readback_verified'] is False
     assert review['provider_execution_admitted'] is False
     receipt = inspect_capsule_complete_dry_run_shapes(
         **source, preview_objects=previews,
@@ -840,7 +844,7 @@ def test_complete_g2_scope_covers_related_control_and_preserves_foreign(kind):
     assert prepared['transfer_candidate_count'] == 2
     assert prepared['preserved_namespaced_count'] == 1
     assert prepared['globally_preserved_count'] == 1
-    assert len(prepared['scope_items']) == 4
+    assert len(prepared['scope_items']) == 5
     assert len([row for row in prepared['scope_items'] if row.get('patch_sha256')]) == 2
     dryrun = inspect_capsule_complete_dry_run_shapes(
         **source, preview_objects=previews,
@@ -940,3 +944,126 @@ def test_complete_g2g3_structural_match_does_not_authenticate_provider_or_author
             rows=rows, patch_review=prepared, preview_review=dryrun,
             readback_candidate=spoofed,
         )
+
+
+def test_g2_manifest_explicitly_covers_capsule_cr_and_every_global_quota_source():
+    source, previews, baseline = _g2_source_case()
+    plan, related = source['plan'], source['related']
+    shared = [{
+        'kind': 'GlobalResourceQuota', 'name': 'shared',
+        'uid': 'global-uid', 'resource_version': '23',
+        'scope': 'direct_tenant_selector', 'policy_sha256': 'a' * 64,
+    }]
+    quota = related['global_quota']
+    quota['resources'] = shared
+    quota['count'] = 1
+    quota['scope_sha256'] = _digest({
+        'api_version': quota['served_version'],
+        'list_resource_version': quota['list_resource_version'],
+        'resources': shared,
+    })
+    plan['handoff_components'][0]['capsule_shared_quota_sha256'] = quota['scope_sha256']
+    plan['handoff_fingerprint'] = handoff_fingerprint(plan['handoff_components'])
+    plan['plan_sha256'] = _plan_hash(plan)
+    report = assess_capsule_resource_handoff_scope(plan=plan, related=related)
+    source['approval']['plan_sha256'] = plan['plan_sha256']
+    source['acceptance']['plan_sha256'] = plan['plan_sha256']
+    source['acceptance']['handoff_fingerprint'] = plan['handoff_fingerprint']
+    manifest = source['consent_manifest']
+    manifest['plan_sha256'] = plan['plan_sha256']
+    manifest['handoff_fingerprint'] = plan['handoff_fingerprint']
+    manifest['worklist_sha256'] = report['worklist_sha256']
+    manifest['resource_review_sha256'] = report['resource_review_sha256']
+    prepared = build_capsule_scope_patch_review(**source)
+    assert prepared['complete_scope_count'] == 3
+    assert len(prepared['scope_items']) == 3
+    assert prepared['globally_preserved_count'] == 2
+    assert prepared['global_quota_provider_readback_verified'] is False
+    entries = {
+        (item['kind'], item['name']): item
+        for item in prepared['scope_items']
+    }
+    assert entries[('CapsuleTenant', 'demo')]['operation'] == 'preserve_source_only_unverified'
+    assert entries[('GlobalResourceQuota', 'shared')]['operation'] == 'preserve_source_only_unverified'
+    assert entries[('GlobalResourceQuota', 'shared')]['policy_sha256'] == 'a' * 64
+    assert entries[('GlobalResourceQuota', 'shared')]['source_resource_version'] == '23'
+    assert entries[('Namespace', 'demo-dev')]['operation'] == 'conditional_metadata_dry_run_candidate'
+    preview = inspect_capsule_complete_dry_run_shapes(**source, preview_objects=previews)
+    assert preview['scope_items_sha256'] == prepared['scope_items_sha256']
+    assert preview['provider_dry_run_source_authenticated'] is False
+    assert preview['release_authorized'] is False
+
+
+def test_g2_rejects_unresolved_shared_quota_selector_instead_of_omitting_it():
+    source, _, _ = _g2_source_case()
+    plan, related = source['plan'], source['related']
+    quota = related['global_quota']
+    quota['resources'] = [{
+        'kind': 'GlobalResourceQuota', 'name': 'uncertain',
+        'uid': 'other-uid', 'resource_version': '1',
+        'scope': 'unverified_selector', 'policy_sha256': 'a' * 64,
+    }]
+    quota['count'] = 1
+    quota['scope_sha256'] = _digest({
+        'api_version': quota['served_version'],
+        'list_resource_version': quota['list_resource_version'],
+        'resources': quota['resources'],
+    })
+    plan['handoff_components'][0]['capsule_shared_quota_sha256'] = quota['scope_sha256']
+    plan['handoff_fingerprint'] = handoff_fingerprint(plan['handoff_components'])
+    plan['plan_sha256'] = _plan_hash(plan)
+    with pytest.raises(ValueError):
+        build_capsule_scope_patch_review(**source)
+
+
+@pytest.mark.parametrize('mutation', [
+    'drop_capsule_cr',
+    'add_unknown_global_quota',
+    'turn_preservation_into_patch',
+    'replace_cr_resource_version',
+    'forge_preserved_policy',
+])
+def test_g2g3_trace_rejects_rehashed_tampered_full_preservation_manifest(mutation):
+    source, previews, _ = _g2_source_case()
+    patch = build_capsule_scope_patch_review(**source)
+    changed = deepcopy(patch)
+    items = changed['scope_items']
+    capsule = next(item for item in items if item['kind'] == 'CapsuleTenant')
+    if mutation == 'drop_capsule_cr':
+        items.remove(capsule)
+    elif mutation == 'add_unknown_global_quota':
+        items.append({
+            'namespace': '', 'kind': 'GlobalResourceQuota',
+            'name': 'injected', 'uid': 'foreign',
+            'source_resource_version': '1',
+            'operation': 'preserve_source_only_unverified',
+            'policy_sha256': 'c' * 64,
+        })
+    elif mutation == 'turn_preservation_into_patch':
+        capsule['operation'] = 'conditional_metadata_dry_run_candidate'
+        capsule['patch_sha256'] = 'a' * 64
+    elif mutation == 'replace_cr_resource_version':
+        capsule['source_resource_version'] = 'different-provider-object-version'
+    else:
+        capsule['policy_sha256'] = 'f' * 64
+    changed['scope_items_sha256'] = _digest(items)
+    changed['complete_scope_count'] = len(items)
+    with pytest.raises(ValueError, match='manifest|provider|preservation'):
+        inspect_capsule_scope_g2g3_trace(
+            plan=source['plan'], related=source['related'],
+            accepted_actor_user_id=30, rows=[],
+            patch_review=changed, preview_review={},
+            readback_candidate={},
+        )
+
+
+def test_g2_no_global_quota_does_not_claim_live_quota_readback_pass():
+    source, previews, _ = _g2_source_case()
+    review = build_capsule_scope_patch_review(**source)
+    assert review['globally_preserved_count'] == 1
+    assert review['scope_items'][0]['kind'] == 'CapsuleTenant'
+    assert review['scope_items'][0]['operation'] == 'preserve_source_only_unverified'
+    assert review['global_quota_provider_readback_verified'] is False
+    assert review['source_provider_authenticated'] is False
+    assert review['start_committed'] is False
+    assert review['release_authorized'] is False

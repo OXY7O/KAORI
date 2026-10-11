@@ -996,6 +996,44 @@ Source contracts cannot authorize or substitute these operations.
 Test fixtures are **authored, NOT executed**. #1230/#1231, migration,
 CI/CD and Kubernetes/UAT execution all remain **HOLD**.
 
+## G2/G3 scope completeness hardening — explicit preserved CR/GlobalResourceQuota (source-only)
+
+Source audit of the existing offline G2→G3 path found two integrity
+gaps: the new regression fixture lacked the required
+`capsule_related_inventory.blockers` field, and
+`build_capsule_scope_patch_review` previously **reported a complete
+worklist count without listing the Capsule Tenant CR or any
+GlobalResourceQuota in its per-resource manifest**. The fixture now
+follows the canonical inventory shape, and the manifest includes
+one immutable-source preservation item for the Capsule CR and each
+cluster-scoped GlobalResourceQuota, with exact kind/name/UID/RV and
+policy/spec SHA bound to the approved worklist. Its complete item
+count, identities and source versions must **equal every worklist
+item**; no resource may disappear through count subtraction. Unresolved
+GlobalResourceQuota selectors remain FAIL.
+
+The operation for those cluster-scoped objects is explicitly
+`preserve_source_only_unverified`, **not** a planned PATCH or verified
+current provider read-back. `global_quota_provider_readback_verified`
+remains `false` even when the source manifest is complete. The
+existing `inspect_capsule_scope_g2g3_trace` now revalidates the
+manifest's canonical SHA, unique exact worklist membership, each
+UID/RV and policy SHA, correct mutation-vs-preservation decisions,
+and complete transfer/preserved counts before correlating any START
+or read-back claim. Caller-rehashed dropped Capsule CRs, injected
+GlobalResourceQuota items and converted preservation-to-PATCH entries
+are rejected rather than treated as credible execution scope.
+
+Regression fixtures were authored for the missing field,
+explicit Capsule CR and shared quota inclusion, unknown selector
+rejection, rehashed altered preservation items, and continued
+false trust flags. **No pytest, CI/CD, live provider source scan,
+SQL commit, server dryRun=All or Release was executed.** G2/G3
+remain blocked until independently authenticated provider
+collection, installed write-once START, fresh authorized
+conditional executor, exact GlobalResourceQuota preservation
+read-back and complete UAT all pass by separate operator authority.
+
 ## Required before completing #1229
 
 1. Build on the SHA-bound Namespace and cluster-scoped
