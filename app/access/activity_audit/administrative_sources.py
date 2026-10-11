@@ -3,9 +3,8 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import or_
-
 from flask import abort, url_for
+from sqlalchemy import or_
 
 from app.common.pagination import normalize_per_page, paginate_query
 from app.models.audit import AuditEvent
@@ -102,7 +101,9 @@ def build_administrative_evidence_context(
             )
         )
     if normalized_outcome != 'all':
-        query = query.filter(AuditEvent.action.endswith(f'_{normalized_outcome}', autoescape=True))
+        query = query.filter(
+            AuditEvent.action.endswith(f'_{normalized_outcome}', autoescape=True)
+        )
         if normalized_outcome == 'succeeded':
             query = query.filter(
                 ~AuditEvent.action.endswith('_partially_succeeded', autoescape=True)

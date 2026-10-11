@@ -303,7 +303,7 @@ def test_activity_audit_administrative_source_scope_is_read_only_and_permission_
     assert "AuditEvent.action.startswith(specification['prefix'], autoescape=True)" in source
     assert "request.headers.get('HX-History-Restore-Request') != 'true'" in routes
     assert "AuditEvent.target_type.in_(specification['target_types'])" in source
-    assert 'paginate_query(query, page=page, per_page=5)' in source
+    assert 'paginate_query(query, page=page, per_page=normalized_per_page)' in source
     assert 'if selected not in available:' in source
     assert 'if can_view_jobs and event.target_type' in source
     assert "job = JobExecution.query.filter_by(public_id=event.target_id).first()" in source
@@ -330,7 +330,7 @@ def test_activity_audit_inventory_hierarchy_and_shared_two_tab_workspace() -> No
     administrative = read('app/templates/access/activity_audit/partials/_administrative_evidence.html')
     source = read('app/access/activity_audit/administrative_sources.py')
     routes = read('app/access/activity_audit/routes.py')
-    tabs = read('app/templates/components/content_tabs.html')
+    tabs = read('app/templates/components/framed_workspace_tabs.html')
 
     assert 'components/section_intro.html' in page
     assert "'Audit Records'" in page
@@ -340,11 +340,11 @@ def test_activity_audit_inventory_hierarchy_and_shared_two_tab_workspace() -> No
     assert page.count('_audit_records_workspace.html') == 1
     assert "'Activity Register', 'list-filter'" in workspace
     assert "'Administrative Evidence', 'file-clock'" in workspace
-    assert 'content_tabs.render_links(' in workspace
+    assert 'framed_tabs.render_navigation(' in workspace
     assert "hx_target='#activity-audit-records'" in workspace
     assert "hx_select='#activity-audit-records'" in workspace
     assert 'selected_audit_tab' in workspace
-    assert 'data-kaori-tab-variant="content-tabs-server"' in tabs
+    assert 'data-kaori-tab-variant="framed-workspace-v2-server"' in tabs
     assert workspace.count('_activity_table_card.html') == 1
     assert workspace.count('_administrative_evidence.html') == 1
     assert "embedded|default(false)" in activity_card
@@ -361,7 +361,8 @@ def test_activity_audit_inventory_hierarchy_and_shared_two_tab_workspace() -> No
     assert 'table_label.status_label(row.status_label, row.status_tone)' in administrative
     assert "table_label.metadata_label(row.source_label, 'database')" in administrative
     assert "page_param='admin_page'" in administrative
-    assert "pagination_ui.numeric_pages(" in administrative
+    assert "registry_ui.footer(" in administrative
+    assert "per_page_param='admin_per_page'" in administrative
     assert 'metadata_json' not in administrative
     assert "'display_action':" in source
     assert "'status_tone': status_tone" in source
@@ -392,3 +393,49 @@ def test_activity_audit_tab_navigation_preserves_independent_permissions_and_fal
     assert 'hx-target="#activity-administrative-evidence"' in administrative
     assert 'hx-sync="#activity-administrative-evidence:replace"' in administrative
     assert 'data-activity-evidence-source="administrative-audit-events"' in administrative
+
+
+def test_activity_audit_framed_tabs_and_canonical_administrative_filters() -> None:
+    workspace = read('app/templates/access/activity_audit/partials/_audit_records_workspace.html')
+    admin = read('app/templates/access/activity_audit/partials/_administrative_evidence.html')
+    source = read('app/access/activity_audit/administrative_sources.py')
+    routes = read('app/access/activity_audit/routes.py')
+    framed = read('app/templates/components/framed_workspace_tabs.html')
+    registry = read('app/templates/components/table_registry.html')
+    loading = read('app/templates/components/loading_bar.html')
+
+    assert 'framed_tabs.render_navigation(' in workspace
+    assert 'content_tabs.render_links(' not in workspace
+    assert 'data-kaori-tab-variant="framed-workspace-v2-server"' in framed
+    assert "hx_target='#activity-audit-records'" in workspace
+    assert 'data-kaori-canonical-registry-filter="activity-administrative-evidence"' in admin
+    assert 'grid w-full grid-cols-1 items-end gap-3 sm:grid-cols-2 lg:grid-cols-5' in admin
+    assert "'admin_search'" in admin
+    assert 'name="admin_scope"' in admin
+    assert 'name="admin_outcome"' in admin
+    assert 'name="admin_time_range"' in admin
+    assert 'name="admin_per_page"' in admin
+    assert 'data-kaori-clear-filters' in registry
+    assert 'registry_ui.clear_filters_action(' in admin
+    assert "marker='activity-administrative-evidence'" in admin
+    assert 'registry_ui.footer(' in admin
+    assert "loading_bar.render('administrative-activity-loading'" in admin
+    assert 'kaori-loading-bar-segment' in loading
+    assert "page_param='admin_page'" in admin
+    assert "per_page_param='admin_per_page'" in admin
+    assert '<noscript>' in admin
+    assert 'AuditEvent is hot, source-owned evidence.' not in admin
+    assert "AuditEvent.action.startswith(specification['prefix'], autoescape=True)" in source
+    assert 'AuditEvent.action.icontains(normalized_search, autoescape=True)' in source
+    assert 'AuditEvent.summary.icontains(normalized_search, autoescape=True)' in source
+    assert 'AuditEvent.target_id.icontains(normalized_search, autoescape=True)' in source
+    assert "AuditEvent.action.endswith('_partially_succeeded', autoescape=True)" in source
+    assert 'AuditEvent.created_at >= datetime.now(UTC) - _TIME_DELTA[normalized_time_range]' in source
+    assert 'normalize_per_page(per_page)' in source
+    assert 'paginate_query(query, page=page, per_page=normalized_per_page)' in source
+    assert 'selected != available[0]' in source
+    assert "current_user.has_permission('jobs.view')" in routes
+    assert "current_user.has_permission('tenant.manage')" in routes
+    assert "if selected_audit_tab == 'administrative' and not has_administrative_sources:" in routes
+    for param in ('admin_search', 'admin_outcome', 'admin_time_range', 'admin_per_page'):
+        assert f"request.args.get('{param}'" in routes or f"_request_int('{param}'" in routes
