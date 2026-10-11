@@ -438,6 +438,28 @@ Both actions require a committed `Drifted` Namespace state and a Tenant lifecycl
 
 #771 extends the same human-controlled lifecycle to the admitted Capsule `GlobalResourceQuota` path without converting shared quota into per-Namespace quota.
 
+**Capsule allocation authority guidance (#1172, DevContainer review):** In
+Capsule Shared Allocation Governance, `Control Unavailable` means that a
+Tenant whose committed authority **is** `capsule_global_resource_quota` does
+not pass GRQ source/capability/version/identity gates. Other committed
+authorities are instead shown as **Not applicable here** in a neutral
+read-only guidance area, without implying an unhealthy Capsule Tenant:
+`capsule_tenant_resource_quotas` directs the operator to the existing
+Capsule Tenant Quota Governance section (which independently validates
+eligibility), while `none_observed`, `native_namespaced`, and ambiguous
+authority require review of existing Tenant Sync/provider observation.
+Observed GRQ source count is displayed from committed evidence. A missing
+GRQ source is not by itself evidence that the required `v1beta2` API is
+unserved; only a detected source with an unsupported served version receives
+that specific error. No UI recommendation creates a GlobalResourceQuota or
+authorizes provider mutation. Example operator evidence 2026-10-11 on
+`docker-desktop`: zero GRQ objects, CRD `v1beta2 served=true`,
+`kaori-demo` with `Tenant.spec.resourceQuotas.scope=Tenant`, and
+lowercase provider Tenant `singa` with no declared quota scope in the
+reported output. This is **operator evidence**, not automatic confirmation
+that KAORI's currently committed baseline is fresh; a Tenant Sync/review
+may be needed before labels reflect new observations.
+
 ```text
 Adopted Capsule Tenant
 → observed GlobalResourceQuota + capability evidence

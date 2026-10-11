@@ -309,3 +309,69 @@ def test_capsule_shared_observation_blocks_selector_drift(monkeypatch):
     assert observation['differences'] == []
     assert observation['observed_matches_desired'] is False
     assert any('selector or non-quota authority fields changed' in reason for reason in observation['blocked_reasons'])
+
+
+def test_capsule_tenant_spec_quota_is_not_a_global_quota_error(monkeypatch):
+    _no_existing_intent(monkeypatch)
+    state = build_capsule_shared_allocation_cutover_state(
+        _tenant(authority='capsule_tenant_resource_quotas', sources=[], served_version='')
+    )
+    assert state['supported'] is False
+    assert state['applicable'] is False
+    assert state['detected_authority'] == 'Capsule Tenant.spec.resourceQuotas'
+    assert state['source_count'] == 0
+    assert state['authority'] == 'capsule_tenant_resource_quotas'
+    assert 'requires served capsule.clastix.io/v1beta2' not in state['reason']
+
+
+def test_no_quota_source_is_nonapplicable_not_an_api_version_failure(monkeypatch):
+    _no_existing_intent(monkeypatch)
+    state = build_capsule_shared_allocation_cutover_state(
+        _tenant(authority='none_observed', sources=[], served_version='')
+    )
+    assert state['supported'] is False
+    assert state['applicable'] is False
+    assert state['source_count'] == 0
+    assert state['detected_authority'] == 'No committed allocation authority'
+    assert 'Exactly one authoritative GlobalResourceQuota source is required' in state['reason']
+    assert 'requires served capsule.clastix.io/v1beta2' not in state['reason']
+
+
+def test_declared_grq_without_source_still_blocks_without_false_version_message(monkeypatch):
+    _no_existing_intent(monkeypatch)
+    state = build_capsule_shared_allocation_cutover_state(
+        _tenant(sources=[], served_version='')
+    )
+    assert state['applicable'] is True
+    assert state['supported'] is False
+    assert state['source_count'] == 0
+    assert 'Exactly one authoritative GlobalResourceQuota source is required' in state['reason']
+    assert 'requires served capsule.clastix.io/v1beta2' not in state['reason']
+
+
+def test_capsule_shared_governance_guidance_is_read_only_and_links_only_admitted_alternative():
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[3]
+    shared = (
+        root / 'app/templates/kubernetes/tenant/partials/_capsule_shared_allocation_cutover.html'
+    ).read_text(encoding='utf-8')
+    quota = (
+        root / 'app/templates/kubernetes/tenant/partials/_capsule_tenant_quota_cutover.html'
+    ).read_text(encoding='utf-8')
+    workspace = (root / 'app/templates/kubernetes/tenant/namespace_provisioning.html').read_text(
+        encoding='utf-8'
+    )
+    assert 'GlobalResourceQuota governance blockers' in shared
+    assert 'Other Capsule allocation authorities' in shared
+    assert "state.get('applicable') and not state.get('supported')" in shared
+    assert "if state.get('authority') == 'capsule_tenant_resource_quotas'" in shared
+    assert "elif state.get('authority') == 'none_observed'" in shared
+    assert 'href="#capsule-tenant-quota-heading"' in shared
+    assert 'id="capsule-tenant-quota-heading"' in quota
+    assert 'data-tenant-capsule-allocation-workspace' in workspace
+    assert 'No Tenant-level quota authority is recorded.' in shared
+    assert 'Not applicable here' in shared
+    assert shared.count('data-tenant-shared-allocation-form') == 1
+    assert shared.count('type="submit"') == 1
+    assert shared.count('name="csrf_token"') == 1
