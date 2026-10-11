@@ -12,6 +12,9 @@ from typing import Any
 from sqlalchemy.orm import joinedload
 
 from app.kubernetes.tenant.capacity_allocation_state import (
+    _TERMINAL_NAMESPACE_ALLOCATION_STATUSES,
+    _TERMINAL_TENANT_ALLOCATION_LIFECYCLES,
+    _active_namespace_allocation_query,
     _aggregate_committed_allocation,
     _canonical_shared_allocation_quota,
 )
@@ -21,7 +24,6 @@ from app.models.tenant import (
     Tenant,
     TenantEnvironment,
     TenantNamespace,
-    TenantNamespaceProvisioningStatus,
 )
 
 _ZERO = Decimal("0")
@@ -141,15 +143,18 @@ def summarize_tenant_contributions(rows: list[dict[str, Any]]) -> dict[str, int]
 
 def build_tenant_contribution_rows(cluster_id: str) -> list[dict[str, object]]:
     """Partition the same canonical ledger as #654, including shared-quota rules."""
-    tenants = Tenant.query.filter_by(cluster_id=cluster_id).order_by(Tenant.name.asc(), Tenant.id.asc()).all()
+    tenants = (
+        Tenant.query.filter(
+            Tenant.cluster_id == cluster_id,
+            Tenant.lifecycle_status.notin_(_TERMINAL_TENANT_ALLOCATION_LIFECYCLES),
+        )
+        .order_by(Tenant.name.asc(), Tenant.id.asc())
+        .all()
+    )
     namespaces = (
-        TenantNamespace.query.options(
-            joinedload(TenantNamespace.environment).joinedload(TenantEnvironment.tenant),
-        )
-        .filter(
-            TenantNamespace.cluster_id == cluster_id,
-            TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
-        )
+        _active_namespace_allocation_query()
+        .options(joinedload(TenantNamespace.environment).joinedload(TenantEnvironment.tenant))
+        .filter(TenantNamespace.cluster_id == cluster_id)
         .order_by(TenantNamespace.namespace.asc())
         .all()
     )
@@ -166,10 +171,14 @@ def _partition_tenant_contributions(
     """Pure read-model partition; match #654's shared and ambiguous accounting."""
     by_tenant: dict[str, list[TenantNamespace]] = defaultdict(list)
     for row in namespaces:
+        if getattr(row, "provisioning_status", None) in _TERMINAL_NAMESPACE_ALLOCATION_STATUSES:
+            continue
         by_tenant[str(row.environment.tenant_id)].append(row)
 
     results = []
     for tenant in tenants:
+        if getattr(tenant, "lifecycle_status", None) in _TERMINAL_TENANT_ALLOCATION_LIFECYCLES:
+            continue
         rows = by_tenant.get(str(tenant.id), [])
         if not rows and str(tenant.id) not in shared and str(tenant.id) not in ambiguous:
             continue

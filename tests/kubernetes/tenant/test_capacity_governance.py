@@ -647,3 +647,28 @@ def test_fleet_capacity_summary_batches_snapshot_reads(monkeypatch) -> None:
     assert batch_calls == [['cluster-1', 'cluster-2']]
     assert list(summaries) == ['cluster-1', 'cluster-2']
     assert all(summary['snapshot_is_batched'] for summary in summaries.values())
+
+
+def test_committed_allocation_queries_exclude_terminal_generations_in_all_paths() -> None:
+    """Single/batched #654 and Capsule shared query paths use one lifecycle boundary."""
+    from pathlib import Path
+
+    from app.kubernetes.tenant.capacity_allocation_state import (
+        _TERMINAL_NAMESPACE_ALLOCATION_STATUSES,
+        _TERMINAL_TENANT_ALLOCATION_LIFECYCLES,
+    )
+
+    source = (
+        Path(__file__).resolve().parents[3] / "app/kubernetes/tenant/capacity_allocation_state.py"
+    ).read_text(encoding="utf-8")
+    overview = (
+        Path(__file__).resolve().parents[3] / "app/kubernetes/tenant/allocation_overview.py"
+    ).read_text(encoding="utf-8")
+    assert set(_TERMINAL_NAMESPACE_ALLOCATION_STATUSES) == {"released", "deprovisioned"}
+    assert set(_TERMINAL_TENANT_ALLOCATION_LIFECYCLES) == {"released", "decommissioned"}
+    assert source.count("_active_namespace_allocation_query()") == 3  # definition + two readers
+    assert source.count("Tenant.lifecycle_status.notin_(_TERMINAL_TENANT_ALLOCATION_LIFECYCLES)") == 5
+    assert source.count("TenantNamespace.provisioning_status.notin_(_TERMINAL_NAMESPACE_ALLOCATION_STATUSES)") == 1
+    assert overview.count("_active_namespace_allocation_query()") == 1
+    assert "Tenant.lifecycle_status.notin_(_TERMINAL_TENANT_ALLOCATION_LIFECYCLES)" in overview
+    assert "resource_profile_id is None" not in source

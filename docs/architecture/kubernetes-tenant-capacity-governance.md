@@ -89,6 +89,24 @@ The aggregate represents governed Tenant request commitment. It does not claim t
 
 Existing namespace allocations remain committed even when provider state is drifted or failed because KAORI must not silently free capacity intent before an explicit governed allocation change.
 
+**Active capacity membership after verified Release (#1149):** the single-cluster
+and batched #654 committed-allocation readers and the Tenant Contributions modal
+use the same lifecycle filter. A Namespace with provisioning state `released`
+or `deprovisioned`, or linked to a Tenant with lifecycle `released` or
+`decommissioned`, contributes **zero active logical quota**. These historical
+generations and their frozen Resource Profile snapshots remain intact for
+lineage, evidence and audit; provider ResourceQuota/Namespace objects may still
+exist after governance Release and must never be interpreted as KAORI-owned
+capacity reservations. Native/Capsule Tenant-shared quota candidates apply
+the same terminal Tenant filter, including ambiguous shared quota. When an
+object is explicitly re-adopted as a new generation, **only its current
+committed generation** contributes allocation. Pending, ready, drifted,
+failed, degraded and in-progress deprovisioning remain committed until a
+governed terminal transition; lack of a linked `resource_profile_id` does
+not itself remove a frozen committed allocation. No provider read/write,
+capacity admission policy change, migration or historical evidence deletion
+occurs when constructing these read-only totals.
+
 An unbounded governed dimension remains explicit. KAORI does not coerce unbounded to zero. A positive allocation cannot be proven safe when CPU, memory, Pod, or configured storage-budget commitment is unbounded.
 
 ## Capacity states
