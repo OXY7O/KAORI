@@ -26,7 +26,9 @@
             </span>
         </div>
         {% if mapping.rows %}
-            <div class="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-2"
+            {# A single Namespace must fill this operational card instead of
+   leaving an empty desktop grid track. Keep two columns for 2+ items. #}
+            <div class="grid min-w-0 grid-cols-1 gap-4{% if mapping.rows|length > 1 %} xl:grid-cols-2{% endif %}"
                  aria-label="Namespace allocation cards">
                 {% for item in mapping.rows %}
                     <article class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-elevated p-4 sm:p-5"
