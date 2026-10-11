@@ -64,7 +64,11 @@ def build_administrative_evidence_context(
     rows: list[dict[str, Any]] = []
     for event in events:
         action_suffix = event.action.removeprefix(specification['prefix'])
-        outcome_key = action_suffix.rsplit('_', 1)[-1]
+        outcome_key = (
+            'partially_succeeded'
+            if action_suffix.endswith('partially_succeeded')
+            else action_suffix.rsplit('_', 1)[-1]
+        )
         status_tone = {
             'succeeded': 'success',
             'failed': 'error',

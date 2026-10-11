@@ -30,7 +30,7 @@
               hx-trigger="change from:select"
               hx-sync="#activity-administrative-evidence:replace"
               aria-label="Administrative source filters"
-              class="{{ table_ui.filter_layout_classes() }}">
+              class="flex flex-wrap items-end gap-3">
             <input type="hidden" name="view" value="administrative">
             <input type="hidden" name="admin_page" value="1">
             <div class="min-w-0 sm:max-w-xs">
@@ -116,7 +116,8 @@
             {{ pagination_ui.resource_name('Administrative Events', administrative_evidence.pagination.total_items) |trim }}
         </p>
         <nav class="{{ pagination_ui.navigation_group_classes() }}"
-             aria-label="Administrative evidence pagination">
+             aria-label="Administrative evidence pagination"
+             hx-push-url="true">
             {% set admin_page_params = {'view': 'administrative', 'admin_scope': administrative_evidence.scope} %}
             {% if administrative_evidence.pagination.has_prev %}
                 {% set prev_url = url_for('access.activity_audit.index', view='administrative', admin_scope=administrative_evidence.scope, admin_page=administrative_evidence.pagination.prev_page) %}
@@ -129,9 +130,15 @@
             {% else %}
                 <span class="{{ pagination_ui.navigation_classes(true) }}">Previous</span>
             {% endif %}
-            <span class="{{ pagination_ui.current_page_classes() }}">
-                {{ administrative_evidence.pagination.page }} / {{ administrative_evidence.pagination.total_pages }}
-            </span>
+            {{ pagination_ui.numeric_pages(
+                administrative_evidence.pagination.page,
+                administrative_evidence.pagination.total_pages,
+                page_param='admin_page',
+                endpoint='access.activity_audit.index',
+                query_params=admin_page_params,
+                hx_target='#activity-administrative-evidence',
+                hx_swap='outerHTML'
+            ) }}
             {% if administrative_evidence.pagination.has_next %}
                 {% set next_url = url_for('access.activity_audit.index', view='administrative', admin_scope=administrative_evidence.scope, admin_page=administrative_evidence.pagination.next_page) %}
                 <a href="{{ next_url }}"
