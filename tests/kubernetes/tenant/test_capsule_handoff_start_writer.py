@@ -14,6 +14,7 @@ from app.kubernetes.tenant.capsule_handoff_attempt_state import _event_checksum
 from app.kubernetes.tenant.capsule_handoff_related_inventory import _digest
 from app.kubernetes.tenant.capsule_handoff_start_writer import (
     _CAPSULE_START_WRITER_ENABLED,
+    _require_postgres_ledger_write_once_guards,
     build_capsule_start_candidate,
     commit_capsule_start_staged,
 )
@@ -118,7 +119,7 @@ def test_changed_plan_or_inventory_cannot_produce_a_valid_start(change):
 
 @pytest.mark.parametrize('attempt_id', [
     '', 'not-a-uuid', '00000000-0000-4000-8000-000000000001X',
-    '00000000-0000-4000-8000-000000000001'.upper(),
+    'abcdefab-cdef-4abc-8abc-abcdefabcdef'.upper(),
 ])
 def test_invalid_attempt_identity_is_rejected_by_event_projection(attempt_id):
     plan, related = _scope()
@@ -167,4 +168,104 @@ def test_current_admission_always_denies_execution_even_if_writer_gate_changed(m
             expected_plan_sha256=plan['plan_sha256'],
             preflight={}, provider_authority={},
             explicit_operator_confirmation=False,
+        )
+
+
+class _QueryResult:
+    def __init__(self, value):
+        self.value = value
+
+    def all(self):
+        return self.value
+
+    def mappings(self):
+        return self
+
+    def one(self):
+        return self.value
+
+
+class _PostgresReviewSession:
+    def __init__(self, triggers, state):
+        self.triggers = triggers
+        self.state = state
+        self.calls = 0
+
+    def execute(self, _statement):
+        self.calls += 1
+        if self.calls == 1:
+            return _QueryResult(self.triggers)
+        return _QueryResult(self.state)
+
+
+def _postgres_state():
+    return {
+        'fsync_setting': 'on', 'sync_commit': 'on',
+        'replication_role': 'origin',
+        'elevated': False, 'is_owner': False,
+        'member_of_owner': False, 'may_insert': True,
+        'may_update': False, 'may_delete': False,
+        'may_truncate': False,
+    }
+
+
+def _postgres_triggers():
+    return [
+        (name, 'O') for name in (
+            'tr_capsule_ledger_guard_insert',
+            'tr_capsule_ledger_deny_update',
+            'tr_capsule_ledger_deny_delete',
+            'tr_capsule_ledger_deny_truncate',
+        )
+    ]
+
+
+def test_staged_db_guard_requires_all_triggers_without_sql_write():
+    session = _PostgresReviewSession(_postgres_triggers(), _postgres_state())
+    _require_postgres_ledger_write_once_guards(session)
+    assert session.calls == 2
+
+
+@pytest.mark.parametrize('missing', [
+    'tr_capsule_ledger_guard_insert',
+    'tr_capsule_ledger_deny_update',
+    'tr_capsule_ledger_deny_delete',
+    'tr_capsule_ledger_deny_truncate',
+])
+def test_staged_db_guard_rejects_disabled_or_missing_immutability_triggers(missing):
+    triggers = [
+        item for item in _postgres_triggers() if item[0] != missing
+    ]
+    with pytest.raises(ValueError, match='missing or disabled'):
+        _require_postgres_ledger_write_once_guards(
+            _PostgresReviewSession(triggers, _postgres_state()),
+        )
+    disabled = [
+        (name, 'D' if name == missing else mode)
+        for name, mode in _postgres_triggers()
+    ]
+    with pytest.raises(ValueError, match='missing or disabled'):
+        _require_postgres_ledger_write_once_guards(
+            _PostgresReviewSession(disabled, _postgres_state()),
+        )
+
+
+@pytest.mark.parametrize('field,bad_value', [
+    ('fsync_setting', 'off'),
+    ('sync_commit', 'off'),
+    ('replication_role', 'replica'),
+    ('elevated', True),
+    ('is_owner', True),
+    ('member_of_owner', True),
+    ('may_insert', False),
+    ('may_update', True),
+    ('may_delete', True),
+    ('may_truncate', True),
+])
+def test_staged_db_guard_rejects_privileged_or_nondurable_execution_role(field, bad_value):
+    state = _postgres_state()
+    state[field] = bad_value
+    with pytest.raises(ValueError, match='role, trigger or WAL'):
+        _require_postgres_ledger_write_once_guards(
+            _PostgresReviewSession(_postgres_triggers(), state),
         )
