@@ -307,7 +307,12 @@ snapshot. Ingress mapping remains an independently qualified evidence source.
 
 The TLS Operations `Last Successful` indicator is derived from committed
 certificate-row `collected_at` and collection-state `collected_at` **only
-when the Secret source is Collected**. Never choose a newer failed attempt's
+when the Secret source is Collected**. If the prior successful collection
+contained zero TLS Secrets and a subsequent attempt failed, the bounded
+`JobExecution` history can supply a last-successful timestamp **only for
+that specific target cluster** when a successful or partially successful
+job explicitly lists the cluster and does not list it among failures.
+No fleet-level job success automatically qualifies a failed cluster. Never choose a newer failed attempt's
 `updated_at` or failed collection-state timestamp, nor treat a fleet job's
 partial success as success for each target cluster. A fleet scope is `Current`
 only if **every registered cluster** has a non-stale successful Secret snapshot
