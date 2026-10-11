@@ -334,11 +334,11 @@ def _selected_provider_freshness(
             'icon': 'database-zap',
         },
         {
-            'label': 'Metrics Snapshot',
+            'label': 'Metrics Source',
             'status': str(selected_metrics.get('label') or 'Not Bound'),
             'tone': str(selected_metrics.get('tone') or 'unknown'),
             'value': str(selected_metrics.get('selected_source') or 'No validated Metrics Source'),
-            'description': 'Validated Registry Metrics Source binding; independent from provider readiness.',
+            'description': 'Validated Metrics Source binding readiness; not a committed metrics snapshot.',
             'icon': 'activity',
         },
         {
@@ -411,19 +411,11 @@ def _fleet_freshness(
             'icon': 'database-zap',
         },
         {
-            'label': 'Metrics Snapshot',
+            'label': 'Metrics Source',
             'status': 'Ready' if metrics_all_ready else ('Partial' if metrics_ready_count else 'Not Bound'),
             'tone': 'normal' if metrics_all_ready else ('warning' if metrics_ready_count else 'unknown'),
-            'value': (
-                'Validated Metrics Source available'
-                if metrics_all_ready
-                else (
-                    'Validated Metrics Source partially available'
-                    if metrics_ready_count
-                    else 'No validated Metrics Source'
-                )
-            ),
-            'description': 'Validated Registry Metrics Source availability across the active scope.',
+            'value': f'{metrics_ready_count} / {provider_count} providers',
+            'description': 'Validated Registry Metrics Source bindings; not committed metrics snapshots.',
             'icon': 'activity',
         },
         {
