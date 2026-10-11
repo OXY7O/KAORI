@@ -42,6 +42,47 @@ the executor can actually complete admitted dry-run, guarded operation,
 partial recovery and definitive provider read-back. #1230 and #1231 stay
 blocked by that evidence.
 
+## Guarded Capsule G4 canonical Released finalizer source — #1230
+
+`capsule_release_finalizer.py` and the existing Release wizard now expose
+a separately confirmed G4 route only when the committed G3 execution
+claims exact complete provider handoff. The UI claim is informational;
+the service **must** independently pass every guard before writing
+canonical governance. The finalizer does **not PATCH/DELETE/create**
+Kubernetes objects.
+
+Under locked, adopted, Ready Tenant/Namespace generations it verifies:
+independently approved exact Release plan; current successor X.509
+identity and Kubernetes scoped SAR; zero canonical dependencies; original
+SHA-bound complete inventory; installed PostgreSQL write-once
+START/terminal ledger role/trigger/WAL requirements; canonical 2-event
+append-only chain with exact actor/plan/worklist/readback; and exactly
+one fully verified G3 execution outcome. Then it uses fresh typed
+Kubernetes GET across the original Capsule CR, every Namespace, every
+ResourceQuota/LimitRange/RoleBinding, plus full GlobalResourceQuota
+LIST/read-back. Only exact successor-owned metadata-only transfers are
+accepted; original spec/policy, UID, foreign ownership and preservation
+digests are revalidated. A terminal proof row lacking authenticated
+resource-specific consent or controller origin fails closed.
+
+Only upon complete proof does one guarded DB transaction set Tenant
+`lifecycle_status=Released` and each governed Namespace
+`provisioning_status=Released`, record generation-specific immutable
+lineage/audit and preserve original provider objects. Capacity accounting
+uses KAORI's existing `capacity_allocation_state` terminal-lifecycle
+filters: both Released Tenant and Released Namespace stop reserving
+logical headroom **as a consequence of the same DB commit**. No manual
+budget subtraction, historical profile deletion or double release occurs.
+Predecessor IDs and resource profile history remain intact.
+
+**Source is installed but G4 is not PASS.** Current #1229 only has
+G1/dry-run, disabled START and disabled one-object provider PATCH
+primitive; there is no true G3 execution receipt satisfying these
+requirements. Consequently a synthetic `verified=true` flag, an
+incomplete AuditEvent, an uninstalled/mutable ledger or a partial outcome
+cannot yield a legitimate Capsule Released row. Tests and live UAT are
+still separately held.
+
 ## Capsule Released successor handback source — #1231 (G5, pending G2–G4)
 
 `capsule_successor_handback.py` provides a real, explicitly confirmed
