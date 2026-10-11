@@ -102,8 +102,14 @@ def _permission_supporting_text(summary: dict[str, Any]) -> str:
 
 def _activity_supporting_text(summary: dict[str, Any]) -> str:
     if summary['attention_24h']:
-        return f'{summary["attention_24h"]} warning/error event(s) were recorded in the last 24 hours.'
-    return 'No warning/error administrative evidence was recorded in the last 24 hours.'
+        return (
+            f'{summary["attention_24h"]} warning/error event(s) in the Notification-backed Activity Register '
+            'during the last 24 hours.'
+        )
+    return (
+        'No warning/error events in the Notification-backed Activity Register during the last 24 hours; '
+        'other administrative evidence sources remain separate.'
+    )
 
 
 def build_access_overview() -> dict[str, Any]:
@@ -240,7 +246,9 @@ def build_access_overview() -> dict[str, Any]:
             {
                 'key': 'activity-audit',
                 'label': 'Activity Audit',
-                'description': 'System-wide administrative and authentication evidence.',
+                'description': (
+                    'Notification-backed administrative and authentication activity; other sources remain separate.'
+                ),
                 'icon': 'history',
                 'status_label': activity['posture_label'],
                 'status_tone': activity['posture_tone'],
@@ -259,7 +267,8 @@ def build_access_overview() -> dict[str, Any]:
             {
                 'title': 'Audit Evidence',
                 'description': (
-                    'Activity Audit owns retained administrative and authentication evidence and actor semantics.'
+                    'Activity Audit preserves Notification-backed Activity Register evidence and its actor snapshots; '
+                    'other administrative sources retain their own scope and permissions.'
                 ),
                 'status_label': activity['posture_label'],
                 'status_tone': activity['posture_tone'],
