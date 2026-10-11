@@ -485,16 +485,23 @@ def _capsule_namespace_records(
             raise ValueError('Capsule Namespace adoption has ambiguous duplicate Namespace correlation.')
         seen_names.add(namespace_name)
 
+    # First finish the complete resource identity/duplication scan above;
+    # then verify ALL historical handbacks before allocating any new rows.
+    for correlated in correlated_rows:
+        _verify_released_namespace_lineage(
+            cluster_id=str(context.cluster.id),
+            namespace=str(correlated['name']).strip(),
+            provider_uid=str(correlated['uid']).strip(),
+            tenant_slug=context.tenant.slug,
+            resource_version=str(correlated['resource_version']).strip(),
+        )
+
     records: list[TenantNamespace] = []
     for correlated in correlated_rows:
         namespace_name = str(correlated['name']).strip()
         provider_uid = str(correlated['uid']).strip()
         resource_version = str(correlated['resource_version']).strip()
         namespace_allocation = dict(correlated.get('allocation') or {})
-        _verify_released_namespace_lineage(
-            cluster_id=str(context.cluster.id), namespace=namespace_name,
-            provider_uid=provider_uid, tenant_slug=context.tenant.slug,
-        )
         record = TenantNamespace()
         record.environment = environment
         record.cluster_id = context.cluster.id
@@ -685,7 +692,11 @@ def _adopt_capsule(context: _AdoptionContext) -> tuple[TenantEnvironment, Tenant
         'provider_mutation_performed': False,
         'secret_material_persisted': False,
     }
-    lineage = _released_predecessor_evidence(tenant, provider_uid=provider_uid)
+    # Match the fresh Capsule Tenant CR resourceVersion against immutable
+    # Released handback evidence, not just the provider UID and name.
+    lineage = _released_predecessor_evidence(
+        tenant, provider_uid=provider_uid, resource_version=resource_version,
+    )
     if lineage is not None:
         tenant.provider_evidence_json['re_adoption_lineage'] = lineage
     db.session.add(tenant)
