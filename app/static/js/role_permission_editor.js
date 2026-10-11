@@ -15,6 +15,7 @@
         root.dataset.rolePermissionEditorReady = 'true'
 
         const searchInput = root.querySelector('[data-role-permission-search]')
+        const roleActiveCheckbox = root.querySelector('input[name="is_active"]')
         const selectedCount = root.querySelector('[data-role-selected-count]')
         const selectedModuleCount = root.querySelector('[data-role-selected-module-count]')
         const toggleAllButton = root.querySelector('[data-role-toggle-all]')
@@ -82,6 +83,18 @@
             if (actionLabel) {
                 actionLabel.textContent = allSelected ? 'Clear module' : 'Select module'
             }
+        }
+
+        function syncRoleStatusPreview() {
+            if (!(roleActiveCheckbox instanceof HTMLInputElement)) {
+                return
+            }
+            root.querySelectorAll('[data-role-state-active]').forEach((el) => {
+                el.hidden = !roleActiveCheckbox.checked
+            })
+            root.querySelectorAll('[data-role-state-inactive]').forEach((el) => {
+                el.hidden = roleActiveCheckbox.checked
+            })
         }
 
         function syncSummary() {
@@ -199,6 +212,8 @@
         })
 
         searchInput?.addEventListener('input', applySearch)
+        roleActiveCheckbox?.addEventListener('change', syncRoleStatusPreview)
+        syncRoleStatusPreview()
 
         syncSummary()
         applySearch()
