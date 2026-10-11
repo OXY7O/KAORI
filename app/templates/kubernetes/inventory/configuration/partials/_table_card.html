@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_registry.html" as registry_ui %}
 <section id="configuration-inventory-card"
@@ -20,7 +21,11 @@
         'Refreshing Configuration Inventory',
         url_for('integrations.kubernetes') ,
     'Open Cluster Integrations',
-    header_actions=inventory_header_actions
+    header_actions=inventory_header_actions,
+    title_extra=info_tip.render('k8s-inventory-configuration-title', 'Configuration Inventory Guide', 'Meaning of the committed evidence in this table.', items=[
+        'Configuration Keys and Mutation: Number of recorded ConfigMap or Secret keys and a summary of observed changes; Secret values are not exposed in inventory.',
+        'Current Pod References: Pods referencing this configuration in the committed generation; a missing reference is not proof the object is unused outside this scope.'
+    ], placement='right')
     ) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         <form hx-get="{{ url_for('inventory.configuration') }}"
