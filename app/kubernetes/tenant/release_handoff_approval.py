@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import Any
 
@@ -47,6 +48,50 @@ _EXPECTED_HANDOFF_FRAGMENTS = (
     'has KAORI-mutated Namespace provider controls; independently approved external handoff is required.',
     'KAORI-linked allocation ownership requires independently approved external handoff',
 )
+_CAPSULE_G1_EXECUTOR_OBLIGATION = (
+    'Capsule controller-generated RoleBinding origins and '
+    'provider handoff remain unverified; executor is blocked.'
+)
+
+
+def _capsule_g1_only_origin_obligation(snapshot: dict[str, Any], blocker: str) -> bool:
+    """Permit consenting to the G1 *plan*, never Capsule provider execution.
+
+    The exact, already-committed read-only inventories must be present. The
+    controller-origin warning itself remains a hard G2/G3 executor blocker.
+    Unknown identity/ownership/coverage warnings always prevent G1.
+    """
+    if snapshot.get('provider') != 'capsule' or blocker != _CAPSULE_G1_EXECUTOR_OBLIGATION:
+        return False
+    components = snapshot.get('handoff_components')
+    related = snapshot.get('capsule_related_inventory')
+    if not isinstance(components, list) or not isinstance(related, Mapping):
+        return False
+    crs = [item for item in components if isinstance(item, Mapping) and item.get('kind') == 'CapsuleTenant']
+    if len(crs) != 1:
+        return False
+    cr = crs[0]
+    if any(not isinstance(cr.get(key), str) or not re.fullmatch(r'[a-f0-9]{64}', cr[key])
+           for key in ('capsule_spec_sha256', 'capsule_related_resources_sha256',
+                       'capsule_shared_quota_sha256', 'capsule_rbac_lineage_sha256')):
+        return False
+    quota = related.get('global_quota')
+    lineage = related.get('rbac_lineage')
+    if (
+        related.get('status') != 'read_only_related_inventory'
+        or not isinstance(related.get('resources'), list)
+        or not isinstance(related.get('list_snapshots'), list)
+        or related.get('resource_sha256') != cr['capsule_related_resources_sha256']
+        or related.get('blockers') != []
+        or not isinstance(quota, Mapping) or quota.get('blockers') != []
+        or quota.get('scope_sha256') != cr['capsule_shared_quota_sha256']
+        or not isinstance(lineage, Mapping) or lineage.get('blockers') != []
+        or lineage.get('lineage_sha256') != cr['capsule_rbac_lineage_sha256']
+    ):
+        return False
+    return True
+
+
 _REQUIRED_DEPENDENCIES = frozenset({
     'credentials', 'Access Grants', 'Memberships', 'enabled Groups',
     'managed resources', 'advanced capabilities', 'domain reservations',
@@ -153,6 +198,7 @@ def _can_confirm_plan(snapshot: dict[str, Any]) -> None:
         row for row in blockers
         if not row.startswith(_EXPECTED_HANDOFF_PREFIXES)
         and not any(fragment in row for fragment in _EXPECTED_HANDOFF_FRAGMENTS)
+        and not _capsule_g1_only_origin_obligation(snapshot, row)
     ]
     if unexpected:
         raise ValueError('Unresolved provider, identity or governance blockers prevent approval.')

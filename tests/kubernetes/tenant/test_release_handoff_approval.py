@@ -83,6 +83,68 @@ def test_handoff_plan_acceptance_requires_only_expected_handoff_blockers():
     _can_confirm_plan(_snapshot())
 
 
+def _capsule_g1_snapshot() -> dict:
+    origin_warning = (
+        'Capsule controller-generated RoleBinding origins and '
+        'provider handoff remain unverified; executor is blocked.'
+    )
+    snapshot = _snapshot(blockers=[origin_warning])
+    snapshot['provider'] = 'capsule'
+    snapshot['live_provider_identity'] = [
+        {'kind': 'CapsuleTenant', 'name': 'demo', 'uid': 'cr-uid', 'resource_version': '5'},
+        {'kind': 'Namespace', 'name': 'sandbox', 'uid': 'ns-uid', 'resource_version': '6'},
+    ]
+    snapshot['handoff_components'] = [
+        {'kind': 'CapsuleTenant', 'name': 'demo', 'uid': 'cr-uid',
+         'resource_version': '5', 'authority': 'capsule',
+         'handoff': 'external_acceptance_required',
+         'capsule_spec_sha256': 'a' * 64,
+         'capsule_related_resources_sha256': 'b' * 64,
+         'capsule_shared_quota_sha256': 'c' * 64,
+         'capsule_rbac_lineage_sha256': 'd' * 64},
+        {'kind': 'Namespace', 'name': 'sandbox', 'namespace': 'sandbox',
+         'uid': 'ns-uid', 'resource_version': '6', 'authority': 'capsule',
+         'handoff': 'observe_only'},
+    ]
+    snapshot['handoff_required_count'] = 1
+    snapshot['handoff_fingerprint'] = handoff_fingerprint(snapshot['handoff_components'])
+    snapshot['capsule_related_inventory'] = {
+        'status': 'read_only_related_inventory',
+        'resources': [], 'list_snapshots': [],
+        'resource_sha256': 'b' * 64, 'blockers': [],
+        'global_quota': {'scope_sha256': 'c' * 64, 'blockers': []},
+        'rbac_lineage': {'lineage_sha256': 'd' * 64, 'blockers': []},
+    }
+    return snapshot
+
+
+def test_capsule_g1_can_consent_to_known_executor_origin_obligation_only():
+    # Independent consent is not a G2/G3 permission to PATCH or Release.
+    _can_confirm_plan(_capsule_g1_snapshot())
+
+
+@pytest.mark.parametrize('change', [
+    'native', 'missing_inventory', 'stale_related_digest',
+    'quota_incomplete', 'rbac_conflict', 'extra_unknown_blocker',
+])
+def test_capsule_g1_does_not_waive_other_provider_or_dependency_failures(change):
+    snapshot = _capsule_g1_snapshot()
+    if change == 'native':
+        snapshot['provider'] = 'native_kubernetes'
+    elif change == 'missing_inventory':
+        snapshot.pop('capsule_related_inventory')
+    elif change == 'stale_related_digest':
+        snapshot['capsule_related_inventory']['resource_sha256'] = 'f' * 64
+    elif change == 'quota_incomplete':
+        snapshot['capsule_related_inventory']['global_quota']['blockers'] = ['missing GRQ']
+    elif change == 'rbac_conflict':
+        snapshot['capsule_related_inventory']['rbac_lineage']['blockers'] = ['RBAC drift']
+    elif change == 'extra_unknown_blocker':
+        snapshot['blockers'].append('Capsule Namespace provider UID mismatch.')
+    with pytest.raises(ValueError, match='Unresolved provider'):
+        _can_confirm_plan(snapshot)
+
+
 def test_resource_profile_allocation_preflight_copy_is_approved_handoff_obligation():
     """The actual managed-allocation blocker is not a new provider-identity failure."""
     tenant = SimpleNamespace(
