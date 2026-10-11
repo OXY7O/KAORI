@@ -877,6 +877,39 @@ of all forms. Runtime tests, DevContainer browser Visual QA, Developer
 Check, CI/CD/Full Admission, staging UAT, main promotion and deployment
 are HOLD pending explicit authorization.
 
+## Capsule Release dependency guidance and readable conditions (#1204)
+
+A Capsule Tenant's **Release preflight** can record active Access Grants,
+Memberships, KAORI-mutated allocations, managed Resource Profiles and
+external Capsule owner/RBAC handoff obligations simultaneously. The
+`release_handoff_approval._can_confirm_plan` guard requires **all** committed
+Tenant dependency counts (credentials, Access Grants, Memberships, enabled
+Groups, managed resources, advanced capabilities, domain reservations and
+exposure policies) to be zero. An independent reviewer who has correct
+permissions still cannot acknowledge a plan if active dependencies remain:
+for example, the 2026-10-11 `kaori-demo` screenshot records **1 Access
+Grant and 1 Membership**, either sufficient to block approval. The server
+re-runs current provider preflight on every approval attempt; a blocked
+acknowledgment does not mutate the provider or complete Release.
+
+Step 1 presents **short display-only condition titles and operator actions**
+for known recorded blocker patterns. The **verbatim original blocker** is
+retained in committed AuditEvent evidence and exposed via a native,
+keyboard-accessible `Exact recorded reason` disclosure on each responsive
+condition. Unrecognized reasons remain visible unchanged, never implicitly
+trusted, ignored, or reclassified as eligible. A concise dependency summary
+describes the gate without equating an active dependency with permission to
+delete a Kubernetes/Capsule resource.
+
+Step 3 differentiates **independent reviewer eligibility** from **handoff
+approval eligibility** using existing committed dependency counts for
+read-only guidance; active dependencies prompt resolution via existing
+governance workflows followed by a fresh `Review Release`. Neither form
+gating, existing CSRF/HTMX routes, ownership handoff/read-back checks nor
+server-side approval policy is changed. This is a DevContainer source
+presentation refinement, not completed Capsule Release UAT or an approved
+provider mutation.
+
 ## Release Review Scope and step prerequisites (#1144; current visual refinement)
 
 The four-step Tenant Release wizard keeps its original one-active-step HTMX/URL navigation, fail-closed backend guards, exact Review Release POST and committed provider evidence. Step 1 now uses a single full-width status/action/coverage surface: the recorded preflight status and exact blocker count, one prominent Review Release button, and three compact review dimensions (provider resources, allocation ownership, governance dependencies). Exact source blocker messages are retained in the native accessible `View recorded conditions` disclosure; no-clear-blockers does not assert provider acceptance.

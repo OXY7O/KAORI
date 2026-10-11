@@ -474,15 +474,64 @@
                                     </span>
                                     <i data-lucide="chevron-down" class="h-4 w-4 text-content-muted transition-transform group-open/evidence:rotate-180" aria-hidden="true"></i>
                                 </summary>
-                                <ol class="grid gap-0 border-t border-outline-subtle px-4 sm:grid-cols-2 sm:gap-x-6 sm:px-5">
-                                    {% for blocker in row.release_preflight.blockers %}
-                                        <li class="flex min-w-0 items-start gap-3 border-b border-outline-subtle py-3 last:border-b-0">
-                                            <span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-status-warning-soft text-xs font-semibold tabular-nums text-status-warning-text"
-                                                  aria-hidden="true">{{ loop.index }}</span>
-                                            <span class="min-w-0 break-words text-sm leading-6 text-content-secondary">{{ blocker }}</span>
-                                        </li>
-                                    {% endfor %}
-                                </ol>
+                                {% set release_dependency_counts = row.release_preflight.dependency_counts or {} %}
+                                {% set active_release_dependencies = release_dependency_counts.values()|sum %}
+                                <div class="border-t border-outline-subtle px-4 py-3 sm:px-5">
+                                    {% if active_release_dependencies > 0 %}
+                                        <p class="flex items-start gap-2 text-xs leading-5 text-status-warning-text" role="status">
+                                            <i data-lucide="shield-alert" class="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true"></i>
+                                            <span><strong>{{ active_release_dependencies }} active Tenant dependenc{{ 'y' if active_release_dependencies == 1 else 'ies' }}</strong>
+                                                require governance review before handoff approval. Resolving them does not waive provider handoff.</span>
+                                        </p>
+                                    {% else %}
+                                        <p class="text-xs leading-5 text-content-secondary">
+                                            Review every provider handoff condition. Independent approval does not transfer ownership.
+                                        </p>
+                                    {% endif %}
+                                    <ol class="mt-3 grid min-w-0 gap-3 sm:grid-cols-2" aria-label="Recorded Release conditions">
+                                        {% for blocker in row.release_preflight.blockers %}
+                                            {% if blocker.startswith('Adoption performed KAORI-owned provider mutations.') %}
+                                                {% set condition_title = 'KAORI provider handoff required' %}
+                                                {% set condition_action = 'Independently verify allocation and policy handoff; database-only Release cannot abandon these controls.' %}
+                                            {% elif ' active Access Grants must be governed/handoff-reviewed before release.' in blocker %}
+                                                {% set amount = blocker.split(' active ')[0] %}
+                                                {% set condition_title = amount ~ ' active Access Grant' ~ ('' if amount == '1' else 's') %}
+                                                {% set condition_action = 'Complete governed handoff or closure of these grants; then refresh Release review.' %}
+                                            {% elif ' active Memberships must be governed/handoff-reviewed before release.' in blocker %}
+                                                {% set amount = blocker.split(' active ')[0] %}
+                                                {% set condition_title = amount ~ ' active Membership' ~ ('' if amount == '1' else 's') %}
+                                                {% set condition_action = 'Complete governed handoff or closure of these memberships; then refresh Release review.' %}
+                                            {% elif ' has a KAORI-managed Resource Profile allocation.' in blocker
+                                                  or ' has a KAORI-managed allocation linked to a Resource Profile.' in blocker %}
+                                                {% set condition_title = blocker.split(' has a KAORI-managed ')[0] ~ ' · Managed allocation' %}
+                                                {% set condition_action = 'Obtain independent Resource Profile allocation handoff approval and provider read-back.' %}
+                                            {% elif blocker.startswith('Capsule allocation was modified by KAORI;') %}
+                                                {% set condition_title = 'Capsule allocation handoff' %}
+                                                {% set condition_action = 'Verify accepted successor authority and transfer of Capsule allocation control.' %}
+                                            {% elif blocker.startswith('Inspect external Capsule owners and RBAC before Release Governance.') %}
+                                                {% set condition_title = 'Capsule owners and RBAC' %}
+                                                {% set condition_action = 'Inspect external Capsule owners and RBAC; record fresh provider evidence.' %}
+                                            {% else %}
+                                                {% set condition_title = 'Review recorded condition' %}
+                                                {% set condition_action = blocker %}
+                                            {% endif %}
+                                            <li class="flex min-w-0 items-start gap-2.5 rounded-lg border border-outline-subtle bg-surface-elevated/40 p-3">
+                                                <span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-status-warning-soft text-xs font-semibold tabular-nums text-status-warning-text" aria-hidden="true">{{ loop.index }}</span>
+                                                <div class="min-w-0 flex-1">
+                                                    <p class="break-words text-xs font-semibold leading-5 text-content-primary">{{ condition_title }}</p>
+                                                    <p class="mt-0.5 break-words text-xs leading-5 text-content-secondary">{{ condition_action }}</p>
+                                                    <details class="group/reason mt-2 min-w-0">
+                                                        <summary class="inline-flex min-h-7 cursor-pointer list-none items-center gap-1 text-xs font-medium text-kaori-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus [&::-webkit-details-marker]:hidden">
+                                                            Exact recorded reason
+                                                            <i data-lucide="chevron-down" class="h-3.5 w-3.5 transition-transform group-open/reason:rotate-180" aria-hidden="true"></i>
+                                                        </summary>
+                                                        <p class="mt-1 break-words rounded-md bg-surface-card p-2 text-xs leading-5 text-content-secondary">{{ blocker }}</p>
+                                                    </details>
+                                                </div>
+                                            </li>
+                                        {% endfor %}
+                                    </ol>
+                                </div>
                             </details>
                         {% endif %}
                     </section>
@@ -1111,12 +1160,23 @@
                                                     </details>
                                                 {% endif %}
                                             {% elif row.release_handoff_preparation_state == 'pending' and handoff_plan.requested_by != current_user.id %}
-                                                <p class="rounded-lg border border-outline-subtle bg-surface-card p-3 text-sm leading-6 text-content-secondary"
+                                                {% set approval_dependency_counts = row.release_preflight.dependency_counts if row.release_preflight else {} %}
+                                                {% set approval_active_dependencies = approval_dependency_counts.values()|sum if approval_dependency_counts else 0 %}
+                                                <p class="rounded-lg border p-3 text-xs leading-5
+                                                          {{ 'border-status-warning-border bg-status-warning-soft text-status-warning-text' if approval_active_dependencies > 0
+                                                             else 'border-outline-subtle bg-surface-card text-content-secondary' }}"
                                                    role="status">
-                                                    <span class="font-semibold text-content-primary">Independent approval available.</span>
-                                                    Your account has Tenant Manage and Integrations Manage permissions
-                                                    and is different from the operator who prepared this plan.
-                                                    Review the committed plan and provider evidence before acknowledgment.
+                                                    {% if approval_active_dependencies > 0 %}
+                                                        <span class="font-semibold">Reviewer eligible · Approval blocked.</span>
+                                                        The last Release review recorded {{ approval_active_dependencies }} active Tenant dependenc{{ 'y' if approval_active_dependencies == 1 else 'ies' }}.
+                                                        Complete their governed review or handoff, then run Review Release again in Step 1.
+                                                        Submission rechecks provider and dependency evidence.
+                                                    {% else %}
+                                                        <span class="font-semibold text-content-primary">Independent review available.</span>
+                                                        Your account has Tenant Manage and Integrations Manage permissions
+                                                        and is different from the operator who prepared this plan.
+                                                        Review the committed plan and provider evidence before acknowledgment.
+                                                    {% endif %}
                                                 </p>
                                                 <form method="post"
                                                       action="{{ url_for('tenant.approve_tenant_release_handoff_route', tenant_id=tenant.id) }}"
