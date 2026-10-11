@@ -37,11 +37,46 @@ def _first_relevant(jobs: list[JobExecution], cluster_id: str | None) -> JobExec
     return next((job for job in jobs if _job_applies_to_cluster(job, cluster_id)), None)
 
 
+def _successful_job_evidence_times(
+    jobs: list[JobExecution], cluster_ids: list[str],
+) -> dict[str, datetime]:
+    """Bounded fallback for completed successful zero-certificate collections.
+
+    Job result failures are cluster-specific; a partially successful fleet
+    job must never qualify a failed target as successfully collected.
+    """
+    scoped = set(cluster_ids)
+    evidence: dict[str, datetime] = {}
+    for job in jobs:
+        completed = _as_utc(job.completed_at)
+        if job.status not in {'succeeded', 'partially_succeeded'} or completed is None:
+            continue
+        payload = job.payload_json or {}
+        summary = job.result_summary_json or {}
+        if not isinstance(payload, dict) or not isinstance(summary, dict):
+            continue
+        failed = {
+            str(item.get('cluster_id'))
+            for item in summary.get('failures') or []
+            if isinstance(item, dict) and item.get('cluster_id')
+        }
+        for target in payload.get('targets') or []:
+            if not isinstance(target, dict):
+                continue
+            cid = str(target.get('cluster_id') or '')
+            if cid in scoped and cid not in failed:
+                previous = evidence.get(cid)
+                if previous is None or completed > previous:
+                    evidence[cid] = completed
+    return evidence
+
+
 def _collection_freshness(
     *,
     cluster_ids: list[str],
     states: dict[str, TLSCertificateCollectionState],
     record_times: dict[str, datetime],
+    job_success_times: dict[str, datetime] | None = None,
     stale_after: timedelta,
     now: datetime,
 ) -> tuple[datetime | None, bool, bool]:
@@ -61,6 +96,10 @@ def _collection_freshness(
         ingress_ok = state is not None and state.ingress_mapping_status == TLS_COLLECTION_COLLECTED
         state_time = _as_utc(state.collected_at) if secret_ok else None
         source_time = max((t for t in (record_time, state_time) if t is not None), default=None)
+        if source_time is None:
+            # Only use job evidence when there is no certificate row or currently
+            # admitted success timestamp (e.g. a successfully scanned empty scope).
+            source_time = _as_utc((job_success_times or {}).get(cluster_id))
         if source_time is not None:
             candidates.append(source_time)
         if source_time is None or now - source_time > stale_after:
@@ -111,6 +150,7 @@ def build_tls_sync_state(*, cluster_id: str | None = None) -> dict[str, Any]:
         cluster_ids=scoped_ids,
         states=states,
         record_times=record_times,
+        job_success_times=_successful_job_evidence_times(recent_jobs, scoped_ids),
         stale_after=stale_after,
         now=datetime.now(UTC),
     )
