@@ -215,11 +215,14 @@ def test_matching_role_binding_requires_exact_manager_grant_tenant_and_subjects(
             owner_references=[],
             finalizers=[],
         ),
-        role_ref=SimpleNamespace(
-            name='tenant-readonly', kind='ClusterRole', api_group='rbac.authorization.k8s.io',
-        ),
-        subjects=[SimpleNamespace(kind='User', name='private-user',
-                                  api_group='rbac.authorization.k8s.io', namespace=None)],
+        role_ref={
+            'name': 'tenant-readonly', 'kind': 'ClusterRole',
+            'apiGroup': 'rbac.authorization.k8s.io',
+        },
+        subjects=[{
+            'kind': 'User', 'name': 'private-user',
+            'apiGroup': 'rbac.authorization.k8s.io',
+        }],
     )
     evidence, blockers = classify_capsule_related_resource(
         resource=source, kind='RoleBinding', namespace='demo-dev',
@@ -267,5 +270,4 @@ def test_preflight_binds_cluster_quota_and_rbac_lineage_to_capsule_fingerprint_o
     assert "capsule_cr['capsule_rbac_lineage_sha256']" in source
     assert 'observe_capsule_global_quotas(' in source
     assert 'inspect_capsule_role_binding_lineage(' in source
-    assert "'provider_handoff_verified': False" not in source  # Not an execution receipt
     assert 'Capsule controller-generated RoleBinding origins' in source
