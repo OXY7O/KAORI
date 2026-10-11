@@ -325,8 +325,8 @@ def _human_claims(plan, base, approval, acceptance, manifest):
     manifest_at = datetime.fromisoformat(manifest['accepted_at'])
     claims = []
     for ix, (action, actor, signed_at) in enumerate((
-        ('independent_review', approval['approved_by'], manifest_at - timedelta(seconds=2)),
-        ('successor_acceptance', acceptance['accepted_by'], manifest_at - timedelta(seconds=1)),
+        ('independent_review', approval['approved_by'], manifest_at),
+        ('successor_acceptance', acceptance['accepted_by'], manifest_at),
     )):
         claims.append({
             'contract_version': 'capsule-resource-human-session-attestation/v1',
