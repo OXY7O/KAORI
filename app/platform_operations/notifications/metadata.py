@@ -81,7 +81,8 @@ def redact_operational_text(value: object, *, limit: int = _MAX_METADATA_TEXT) -
     # Decode only when encoded credential markers are present. Decoding all
     # evidence would change legitimate percent-encoded action URLs/references.
     encoded_secret = re.search(
-        r'(?i)(?:password|passwd|passphrase|token|secret|api[_-]?key|client_secret|authorization|cookie)(?:%(?:25)?3[da])',
+        r'(?i)(?:password|passwd|passphrase|token|secret|api[_-]?key|client_secret|'
+        r'authorization|cookie)(?:%(?:25)?3[da])',
         rendered,
     ) or re.search(r'(?i)https?%3a%2f%2f', rendered)
     if encoded_secret:

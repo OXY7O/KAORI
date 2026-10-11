@@ -192,7 +192,11 @@ class OperationalActivityArchiveDomain:
                 'title': redact_operational_text(notification.title) if notification.title is not None else None,
                 'message': redact_operational_text(notification.message) if notification.message is not None else None,
                 'detail': redact_operational_text(notification.detail) if notification.detail is not None else None,
-                'action_url': redact_operational_text(notification.action_url, limit=500) if notification.action_url else None,
+                'action_url': (
+                    redact_operational_text(notification.action_url, limit=500)
+                    if notification.action_url
+                    else None
+                ),
                 'metadata': redact_operational_metadata(notification.metadata_json),
                 'created_at': _isoformat(notification.created_at),
                 'read_at': _isoformat(notification.read_at),

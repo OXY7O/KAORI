@@ -166,7 +166,10 @@ def test_activity_hot_register_is_explicit_about_archive_lifecycle_boundary() ->
     queries = read('app/platform_operations/notifications/queries.py')
     retention_domain = read('app/platform_operations/data_lifecycle/retention/domains/operational_activity.py')
 
-    assert 'Hot records reside in PostgreSQL; verified older evidence remains in archive-first Data Lifecycle history.' in summary
+    assert (
+        'Hot records reside in PostgreSQL; verified older evidence remains in archive-first Data Lifecycle history.'
+        in summary
+    )
     assert 'This register reads hot PostgreSQL records.' not in summary
     assert 'hot-record time range' in card
     assert "('all', 'All Hot Records')" in queries
