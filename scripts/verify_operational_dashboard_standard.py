@@ -1246,6 +1246,18 @@ def verify() -> None:
         'Object Storage refreshed Alert Evidence Fleet copy',
     )
     _require(
+        object_dashboard_service,
+        (
+            'inventory_ready = len(observed)',
+            "'value': f'{inventory_ready} / {system_count} systems'",
+            "'Partial' if inventory_ready else 'Not Collected'",
+            "alert_fallback = alert_connected and bool(stream.get('fallback_used'))",
+            "'status': 'Fallback' if alert_fallback",
+            "'tone': 'warning' if alert_fallback",
+        ),
+        'Object Storage truthful fleet and selected alert evidence',
+    )
+    _require(
         dashboard_empty_state,
         (
             "state_variant == 'panel'",
