@@ -253,6 +253,9 @@ def preview_capsule_release_namespace_committed(
         'handoff_fingerprint': plan['handoff_fingerprint'],
         'source_worklist_sha256': complete_worklist['inventory_sha256'],
         'transfer_items': transfer_items,
+        'unverified_kaori_rolebinding_origin': any(
+            row['kind'] == 'RoleBinding' for row in transfer_items
+        ),
         'actor_user_id': actor_user_id,
         'provider_credential_id': authority['provider_credential_id'],
         'namespace_count': observed['namespace_count'],
