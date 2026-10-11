@@ -252,7 +252,7 @@ endpoint, scheduler, persistence, dry-run invocation or live PATCH; all
 `capsule_handoff_persistence_review.py` adds a read-only access path to
 the existing SQL `audit_events` table. It fetches **all Capsule execution
 records for one Tenant**, ascending by AuditEvent ID, with a fixed
-`max_attempt_events + 1` bound to reject replayed or truncated attempts.
+`max_attempt_events + 1` bound to reject overlong attempts instead of silently trimming records.
 The inspected records must match the canonical actor, event action, target,
 attempt UUID, plan SHA, worklist and hash chain. Rows for prior plans are
 **not** filtered away just to make a newer attempt appear empty. A START
