@@ -98,6 +98,19 @@ def _committed_full_handoff(
     )
     if len(attempts) != 2:
         raise ValueError('Capsule requires exact immutable START and terminal readback history.')
+    from app.kubernetes.tenant.capsule_handoff_ledger_review import (
+        inspect_capsule_ledger_rows,
+    )
+    checked = inspect_capsule_ledger_rows(
+        plan=plan, related=related,
+        accepted_actor_user_id=actor_user_id, rows=attempts,
+    )
+    if (
+        checked.get('status') != 'readback_claim_requires_independent_provider_verification'
+        or checked.get('event_count') != 2
+        or checked.get('worklist_sha256') != work['inventory_sha256']
+    ):
+        raise ValueError('Capsule ledger event schema, chronology or readback is invalid.')
     started, terminal = attempts
     first, last = started.event_json, terminal.event_json
     if (
@@ -261,6 +274,7 @@ def _current_verified_capsule_scope(
                 receipt.get('state') != 'preserved'
                 or rv != source['resource_version']
                 or _labels(live).get('app.kubernetes.io/managed-by') == 'kaori'
+                or any(key.startswith('kaori.io/') for key in _labels(live))
             ):
                 raise ValueError('Foreign Capsule Namespace changed or retains KAORI ownership.')
         else:
@@ -375,6 +389,15 @@ def release_verified_capsule_tenant_committed(
         raise ValueError('Capsule Namespace lineage or original Ready inventory changed.')
     if any(type(v) is not int or v != 0 for v in _release_dependency_counts(tenant_id).values()):
         raise ValueError('Active Tenant dependencies prevent Capsule Release.')
+    from app.kubernetes.tenant.capsule_handoff_start_writer import (
+        _require_postgres_ledger_write_once_guards,
+    )
+    # G4 is categorically denied on SQLite, missing write-once triggers,
+    # privileged DB roles or uncertain WAL durability.
+    session = db.session()
+    if session.get_bind().dialect.name != 'postgresql':
+        raise ValueError('Capsule Released requires independently guarded PostgreSQL history.')
+    _require_postgres_ledger_write_once_guards(session)
     source, work = _source_snapshot(tenant_id=tenant_id, plan=plan)
     execution = _committed_full_handoff(
         tenant_id=tenant_id, plan=plan, related=source, work=work,
