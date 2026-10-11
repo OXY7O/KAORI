@@ -64,7 +64,16 @@ def _arrange(monkeypatch, *, changed=False):
         'handoff_components': plan['handoff_components'],
         'dependency_counts': plan['dependency_counts'],
         'capsule_related_inventory': {
-            'blockers': [], 'global_quota': {'blockers': []},
+            'blockers': [], 'resources': [], 'resource_count': 0,
+            'list_snapshots': [
+                {'namespace': 'demo-dev', 'kind': kind,
+                 'count': 0, 'list_resource_version': 'rv-1'}
+                for kind in ('ResourceQuota', 'LimitRange', 'RoleBinding')
+            ],
+            'global_quota': {
+                'blockers': [], 'resources': [], 'count': 0,
+                'list_resource_version': 'grq-rv-1',
+            },
             'rbac_lineage': {'blockers': []},
         },
     }
@@ -89,6 +98,7 @@ def _arrange(monkeypatch, *, changed=False):
             'status': 'preview_observed_coverage_incomplete',
             'dry_run_complete': False, 'provider_handoff_verified': False,
             'provider_mutation_performed': False, 'namespace_count': 1,
+            'namespace_preview_count': 1,
         }
     monkeypatch.setattr(service, 'preview_capsule_handoff_scope', _preview)
     def _preview_related(**kwargs):
@@ -107,6 +117,70 @@ def _arrange(monkeypatch, *, changed=False):
         ],
     })
     return plan, accepted, calls
+
+
+def test_capsule_preview_preserves_observed_namespace_when_related_candidate_is_dry_run(monkeypatch):
+    plan, _, calls = _arrange(monkeypatch)
+
+    monkeypatch.setattr(service, 'preview_capsule_handoff_scope', lambda **_: {
+        'status': 'preview_observed_coverage_incomplete',
+        'dry_run_complete': False,
+        'provider_mutation_performed': False,
+        'provider_handoff_verified': False,
+        'namespace_count': 1, 'namespace_preview_count': 0,
+    })
+    monkeypatch.setattr(service, 'build_capsule_handoff_worklist', lambda **_: {
+        'inventory_sha256': 'c' * 64,
+        'items': [
+            {'kind': 'Namespace', 'namespace': '', 'name': 'demo-dev',
+             'uid': 'ns-1', 'resource_version': '6',
+             'decision': 'preserve_existing_provider_namespace'},
+            {'kind': 'ResourceQuota', 'namespace': 'demo-dev', 'name': 'quota',
+             'uid': 'quota-1', 'resource_version': '7',
+             'decision': 'explicit_kaori_metadata_handoff_review'},
+        ],
+    })
+    result = service.preview_capsule_release_namespace_committed(
+        tenant_id='tenant-1', actor_user_id=43,
+        plan_sha256=plan['plan_sha256'], confirmed=True,
+    )
+    assert result['namespace_preview_count'] == 0
+    assert result['namespace_preserved_count'] == 1
+    assert result['related_preview_count'] == 1
+    assert len(result['transfer_items']) == 1
+    assert result['transfer_items'][0]['kind'] == 'ResourceQuota'
+    assert result['provider_mutation_performed'] is False
+    assert result['provider_execution_admitted'] is False
+    assert result['release_authorized'] is False
+    assert ('audit', 'tenant.release.capsule_complete_scope_server_preview_observed') in calls
+
+
+def test_capsule_preview_denies_scope_with_no_metadata_transfer_candidates(monkeypatch):
+    plan, _, calls = _arrange(monkeypatch)
+    monkeypatch.setattr(service, 'preview_capsule_handoff_scope', lambda **_: {
+        'status': 'preview_observed_coverage_incomplete',
+        'dry_run_complete': False,
+        'provider_mutation_performed': False,
+        'provider_handoff_verified': False,
+        'namespace_count': 1, 'namespace_preview_count': 0,
+    })
+    monkeypatch.setattr(service, '_preview_related_provider_scope', lambda **_: {
+        'related_preview_count': 0, 'related_preserved_count': 4,
+    })
+    monkeypatch.setattr(service, 'build_capsule_handoff_worklist', lambda **_: {
+        'inventory_sha256': 'c' * 64,
+        'items': [
+            {'kind': 'Namespace', 'namespace': '', 'name': 'demo-dev',
+             'uid': 'ns-1', 'resource_version': '6',
+             'decision': 'preserve_existing_provider_namespace'},
+        ],
+    })
+    with pytest.raises(ValueError, match='requires exact KAORI metadata transfer candidates'):
+        service.preview_capsule_release_namespace_committed(
+            tenant_id='tenant-1', actor_user_id=43,
+            plan_sha256=plan['plan_sha256'], confirmed=True,
+        )
+    assert not any(call[0] == 'audit' for call in calls)
 
 
 def test_accepting_actor_records_only_incomplete_server_preview(monkeypatch):

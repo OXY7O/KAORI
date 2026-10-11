@@ -104,6 +104,96 @@ def test_preview_uses_server_dry_run_only_and_rechecks_provider():
     assert receipt['release_authorized'] is False
 
 
+def test_observed_capsule_namespace_preserves_foreign_manager_without_patch():
+    component = {
+        **_components()[1],
+        'handoff': 'observe_only',
+        'ownership': 'external_or_unattributed',
+        'managed_by': 'capsule',
+    }
+
+    class _ObservedCore:
+        def __init__(self):
+            self.calls = []
+
+        def read_namespace(self, name, **kwargs):
+            self.calls.append(('read', name))
+            resource = _namespace()
+            resource.metadata.labels.pop('kaori.io/tenant-id')
+            resource.metadata.labels['app.kubernetes.io/managed-by'] = 'capsule'
+            return resource
+
+        def patch_namespace(self, **kwargs):
+            pytest.fail('Observed Capsule Namespace must NEVER be PATCHed')
+
+    core = _ObservedCore()
+    result = preview_capsule_namespace_handoff(
+        core, component, tenant_id='tenant-uuid',
+        capsule_tenant_name='demo', successor_owner='platform-team',
+    )
+    assert result['operation'] == 'observe_capsule_namespace_without_transfer'
+    assert result['dry_run'] is False
+    assert result['live_provider_unchanged'] is True
+    assert [call[0] for call in core.calls] == ['read', 'read']
+
+    full = preview_capsule_handoff_scope(
+        custom=_Custom(), core=_ObservedCore(),
+        components=[_components()[0], component],
+        tenant_id='tenant-uuid', successor_owner='platform-team',
+    )
+    assert full['status'] == 'preview_observed_coverage_incomplete'
+    assert full['namespace_count'] == 1
+    assert full['namespace_preview_count'] == 0
+    assert full['dry_run_complete'] is False
+    assert full['provider_handoff_verified'] is False
+    assert full['release_authorized'] is False
+
+
+def test_observed_capsule_namespace_blocks_unknown_kaori_control_label():
+    component = {
+        **_components()[1], 'handoff': 'observe_only',
+        'ownership': 'external_or_unattributed', 'managed_by': '',
+    }
+
+    class _OrphanMarkerCore:
+        def read_namespace(self, name, **kwargs):
+            resource = _namespace()
+            resource.metadata.labels.pop('kaori.io/tenant-id')
+            resource.metadata.labels.pop('app.kubernetes.io/managed-by')
+            resource.metadata.labels['kaori.io/unknown-control'] = 'unverified'
+            return resource
+
+        def patch_namespace(self, **kwargs):
+            pytest.fail('Unclassified KAORI label must block any PATCH')
+
+    with pytest.raises(ValueError, match='unclassified KAORI control labels'):
+        preview_capsule_namespace_handoff(
+            _OrphanMarkerCore(), component, tenant_id='tenant-uuid',
+            capsule_tenant_name='demo', successor_owner='platform-team',
+        )
+
+
+def test_observed_capsule_namespace_rejects_changed_manager():
+    component = {
+        **_components()[1], 'handoff': 'observe_only',
+        'ownership': 'external_or_unattributed', 'managed_by': '',
+    }
+    class _ForeignManagerCore:
+        def read_namespace(self, name, **kwargs):
+            resource = _namespace()
+            resource.metadata.labels.pop('kaori.io/tenant-id')
+            resource.metadata.labels['app.kubernetes.io/managed-by'] = 'capsule'
+            return resource
+        def patch_namespace(self, **kwargs):
+            pytest.fail('Stale observed manager must not be patched')
+
+    with pytest.raises(ValueError, match='manager changed'):
+        preview_capsule_namespace_handoff(
+            _ForeignManagerCore(), component, tenant_id='tenant-uuid',
+            capsule_tenant_name='demo', successor_owner='platform-team',
+        )
+
+
 def test_preview_rejects_admission_that_mutates_finalizers():
     with pytest.raises(ValueError, match='provider-owned'):
         preview_capsule_namespace_handoff(

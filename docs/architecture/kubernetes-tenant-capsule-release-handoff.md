@@ -9,6 +9,51 @@ Target integration: `kaori/review/staging-uat` only. No developer check,
 pytest, Ruff, pyright, CI/CD, DAST, live API UAT, promotion or deployment until
 a separate explicit instruction.
 
+## G1 accepted → G2 Capsule provider scope preview: observed Namespace boundary (#1229)
+
+Local DevContainer: the independent second-operator review and exact
+X.509 Capsule Platform Admin acceptance for 2 resources both succeeded.
+The next `Preview Capsule Provider Scope` was rejected with
+`Namespace handoff source ownership is ambiguous.`, **before any live
+provider mutation**. The G1 recorded approval and non-mutating
+successor consent do not prove provider transfer or resolve the separate
+controller-generated RoleBinding origin warning.
+
+The original Capsule Namespace preview required all observation-only
+Namespaces to have **no** `app.kubernetes.io/managed-by` key; this
+incorrectly rejected an otherwise unchanged Namespace owned by a
+non-KAORI external manager. The surrounding scope preview also always
+required one Namespace PATCH, even when the entire Namespace set was
+observation-only and a governed **related** quota/limit candidate was
+the legitimate server-side dry-run target.
+
+The provider-preserving correction:
+- Exact observed Namespace UID/resourceVersion, Capsule membership label
+  correlation, source `managed_by` value, full label/spec/owner/finalizer
+  invariants and second provider GET must still match the prepared plan.
+- `observe_only/external_or_unattributed` may retain a verified non-KAORI
+  `app.kubernetes.io/managed-by` marker. This is a **GET-only**
+  preservation receipt, never a PATCH, implicit KAORI grant, or
+  provider-owned label rewrite.
+- An observed Namespace with `kaori.io/*` controls, claimed KAORI
+  manager, unverified/changed source manager, or other ambiguous
+  ownership remains **FAIL**, now with a more actionable explicit error.
+  Do not manually strip such labels to make Release succeed.
+- Namespace-only preview may contain zero Namespace dry-run PATCHes,
+  but complete-scope preview must first read and validate every governed
+  quota/limit/RoleBinding and require at least one real, exact
+  KAORI-correlated metadata transfer candidate somewhere in the
+  canonical worklist. Exact Namespace/related candidate counts must
+  match observed server dry-run coverage. A zero-transfer observed-only
+  scope does **not** produce an executable handoff preview, and G2/G3
+  admission, START, authorization and Release remain separate.
+
+If the same environment continues to show an unclassified KAORI control
+label, obtain **read-only** Namespace label evidence and correlate it with
+the existing committed KAORI controller/adoption history. This change
+does not authorize relabeling or deletion of provider resources.
+Regression source authored but NOT executed under the CI/CD/runtime HOLD.
+
 ## G1 live feedback — separate complete LIST evidence from stable object identity (#1228)
 
 A `kaori-demo` independent reviewer correctly reached G1, but the exact

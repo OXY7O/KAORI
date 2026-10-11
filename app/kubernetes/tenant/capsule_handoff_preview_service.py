@@ -211,6 +211,8 @@ def preview_capsule_release_namespace_committed(
         or observed.get('provider_handoff_verified') is not False
         or observed.get('provider_mutation_performed') is not False
         or observed.get('namespace_count') != len(plan['handoff_components']) - 1
+        or type(observed.get('namespace_preview_count')) is not int
+        or not 0 <= observed['namespace_preview_count'] <= observed['namespace_count']
     ):
         raise ValueError('Capsule preview did not return the expected fail-closed receipt.')
     # Prove the source covers every namespaced quota, limit and RoleBinding.
@@ -252,6 +254,24 @@ def preview_capsule_release_namespace_committed(
             'explicit_kaori_metadata_handoff_review',
         )
     ]
+    # The old helper wrongly required one Namespace PATCH regardless of
+    # whether the approved source classified it as observation-only. Allow
+    # Namespace preservation, but NEVER claim an executable handoff when
+    # there are no exact KAORI metadata transfer candidates anywhere.
+    namespace_candidates = sum(
+        item['kind'] == 'Namespace' for item in transfer_items
+    )
+    if (
+        not transfer_items
+        or namespace_candidates != observed['namespace_preview_count']
+        or len(transfer_items) != (
+            namespace_candidates + related_counts['related_preview_count']
+        )
+    ):
+        raise ValueError(
+            'Capsule preview requires exact KAORI metadata transfer candidates '
+            'and matching Namespace/related-resource dry-run coverage.'
+        )
     receipt = {
         'status': 'complete_scope_server_dry_run_only',
         'tenant_id': tenant_id,
@@ -267,6 +287,10 @@ def preview_capsule_release_namespace_committed(
         'actor_user_id': actor_user_id,
         'provider_credential_id': authority['provider_credential_id'],
         'namespace_count': observed['namespace_count'],
+        'namespace_preview_count': observed['namespace_preview_count'],
+        'namespace_preserved_count': (
+            observed['namespace_count'] - observed['namespace_preview_count']
+        ),
         **related_counts,
         'whole_scope_source_unchanged': True,
         'checked_at': datetime.now(UTC).isoformat(),
