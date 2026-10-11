@@ -3,10 +3,11 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import or_
-from sqlalchemy.orm import selectinload
+from sqlalchemy import func, or_
+from sqlalchemy.orm import load_only
 
 from app.common.pagination import paginate_sequence
+from app.extensions.db import db
 from app.intelligence.alert_intelligence.dashboard_cases import active_recommendation_alert_cases
 from app.intelligence.dashboard_recommendations import get_dashboard_recommendation_findings
 from app.models import Report, ReportSchedule, ReportTemplate
@@ -24,16 +25,25 @@ from app.storage.object_storage.analytics.materialization import (
 )
 from app.storage.object_storage.analytics.presentation import format_bytes, format_number
 from app.storage.object_storage.dashboard.presentation import build_forecast_view, build_top_consumers_view
+from app.storage.object_storage.inventory.aggregates import bucket_usage_by_system, bucket_usage_summary
 
 _DASHBOARD_TIME_RANGE = '24h'
 _DASHBOARD_FORECAST_WINDOW = '30d'
 
 
 def _systems() -> list[ObjectStorageSystem]:
+    # The Fast Shell only requires identity, scope, provider status and observation time.
+    # Never hydrate bucket collections for shell or section selection.
     return list(
-        ObjectStorageSystem.query.options(selectinload(ObjectStorageSystem.buckets)).order_by(
-            ObjectStorageSystem.name.asc()
-        )
+        ObjectStorageSystem.query.options(
+            load_only(
+                ObjectStorageSystem.id,
+                ObjectStorageSystem.name,
+                ObjectStorageSystem.environment,
+                ObjectStorageSystem.status,
+                ObjectStorageSystem.inventory_observed_at,
+            )
+        ).order_by(ObjectStorageSystem.name.asc(), ObjectStorageSystem.id.asc())
     )
 
 
@@ -122,48 +132,62 @@ def _kaori_alert_posture(system: ObjectStorageSystem | None) -> dict[str, Any]:
     }
 
 
-def _inventory_summary(systems: list[ObjectStorageSystem]) -> dict[str, Any]:
-    buckets = [bucket for system in systems for bucket in (system.buckets or ())]
-    observed_systems = [system for system in systems if system.inventory_observed_at is not None]
-    empty_observed_systems = [system for system in observed_systems if not (system.buckets or ())]
-    size_values = [int(bucket.size_bytes) for bucket in buckets if bucket.size_bytes is not None]
-    object_values = [int(bucket.object_count) for bucket in buckets if bucket.object_count is not None]
-    quota_configured = [
-        bucket for bucket in buckets if bucket.quota_state == 'configured' and bucket.quota_bytes is not None
-    ]
-    usage_collected = [
-        bucket for bucket in buckets if bucket.size_bytes is not None and bucket.object_count is not None
-    ]
+def _inventory_summary(
+    systems: list[ObjectStorageSystem], *, selected: ObjectStorageSystem | None = None
+) -> dict[str, Any]:
+    """Summarize committed bucket evidence without hydrating bucket ORM rows."""
+    evidence = (
+        bucket_usage_summary(system_id=str(selected.id) if selected is not None else None)
+        if systems else {
+            'buckets': 0, 'stored_bytes': 0, 'stored_samples': 0,
+            'objects': 0, 'object_samples': 0, 'quota_configured': 0, 'usage_collected': 0,
+        }
+    )
+    observed = sum(system.inventory_observed_at is not None for system in systems)
+    empty_observed = 0
+    if observed:
+        # Correlated EXISTS uses the indexed bucket system ID; no relationship load.
+        query = db.session.query(func.count(ObjectStorageSystem.id)).filter(
+            ObjectStorageSystem.inventory_observed_at.is_not(None),
+            ~ObjectStorageSystem.buckets.any(),
+        )
+        if selected is not None:
+            query = query.filter(ObjectStorageSystem.id == str(selected.id))
+        empty_observed = int(query.one()[0] or 0)
     return {
         'systems': len(systems),
-        'buckets': len(buckets),
-        'stored_bytes': sum(size_values),
-        'stored_display': format_bytes(sum(size_values)) if size_values else 'Not Collected',
-        'objects': sum(object_values),
-        'objects_display': format_number(sum(object_values)) if object_values else 'Not Collected',
-        'quota_configured': len(quota_configured),
-        'usage_collected': len(usage_collected),
-        'observed_systems': len(observed_systems),
-        'empty_observed_systems': len(empty_observed_systems),
+        'buckets': evidence['buckets'],
+        'stored_bytes': evidence['stored_bytes'],
+        'stored_display': (
+            format_bytes(evidence['stored_bytes']) if evidence['stored_samples'] else 'Not Collected'
+        ),
+        'objects': evidence['objects'],
+        'objects_display': (
+            format_number(evidence['objects']) if evidence['object_samples'] else 'Not Collected'
+        ),
+        'quota_configured': evidence['quota_configured'],
+        'usage_collected': evidence['usage_collected'],
+        'observed_systems': observed,
+        'empty_observed_systems': empty_observed,
     }
-
 
 def _health_rows(systems: list[ObjectStorageSystem]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
+    # System Health paginates first; aggregate only its visible system IDs.
+    bucket_evidence = bucket_usage_by_system([str(system.id) for system in systems])
     for system in systems:
         payload, snapshot_state = _snapshot_payload(system)
         overview = _page_metrics(payload, 'overview')
         posture = _kaori_alert_posture(system)
-        buckets = list(system.buckets or ())
-        inventory_usage_values = [float(bucket.size_bytes) for bucket in buckets if bucket.size_bytes is not None]
-        snapshot_usage = overview.get('usage_total')
-        stored_bytes = (
-            snapshot_usage
-            if snapshot_usage is not None
-            else (sum(inventory_usage_values) if inventory_usage_values else None)
+        usage = bucket_evidence.get(str(system.id), {})
+        inventory_stored = (
+            usage.get('stored_bytes', 0) if usage.get('stored_samples', 0) else None
         )
+        snapshot_usage = overview.get('usage_total')
+        stored_bytes = snapshot_usage if snapshot_usage is not None else inventory_stored
         usage_source = (
-            'Snapshot' if snapshot_usage is not None else ('Inventory' if inventory_usage_values else 'Not Collected')
+            'Snapshot' if snapshot_usage is not None
+            else ('Inventory' if inventory_stored is not None else 'Not Collected')
         )
         provider_status = str(system.status or 'unknown').replace('_', ' ').title()
         analytics_usable = bool(snapshot_state.get('usable'))
@@ -226,7 +250,7 @@ def _health_rows(systems: list[ObjectStorageSystem]) -> list[dict[str, Any]]:
                 'provider_status': provider_status,
                 'inventory_updated': _human_time(system.inventory_observed_at),
                 'inventory_ready': system.inventory_observed_at is not None,
-                'bucket_count': len(buckets),
+                'bucket_count': int(usage.get('buckets', 0)),
                 'stored_display': format_bytes(stored_bytes),
                 'usage_source': usage_source,
                 'snapshot_label': str(snapshot_state.get('label') or 'Worker Data'),
@@ -249,7 +273,7 @@ def _health_rows(systems: list[ObjectStorageSystem]) -> list[dict[str, Any]]:
 
 def _dashboard_kpis(systems: list[ObjectStorageSystem], selected: ObjectStorageSystem | None) -> list[dict[str, str]]:
     scoped = [selected] if selected is not None else systems
-    inventory = _inventory_summary(scoped)
+    inventory = _inventory_summary(scoped, selected=selected)
     active_alerts = 0
     analytics_ready = 0
     operational_usage: float | None = None
@@ -659,7 +683,9 @@ def get_dashboard_section(
         dashboard['system_health_pagination'] = pagination
         if section == 'system_health':
             return dashboard
-        dashboard['inventory'] = _inventory_summary([selected] if selected is not None else systems)
+        dashboard['inventory'] = _inventory_summary(
+            [selected] if selected is not None else systems, selected=selected
+        )
         dashboard['freshness'] = _freshness(selected, systems)
     elif section == 'kpi_cards':
         dashboard['kpis'] = _dashboard_kpis(systems, selected)
