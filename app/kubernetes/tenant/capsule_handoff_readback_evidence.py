@@ -11,6 +11,10 @@ from typing import Any
 
 from app.kubernetes.tenant.capsule_handoff_contract import (
     _identity, verify_capsule_cr_preserved, validate_capsule_handoff_scope,
+    classify_capsule_related_metadata_readback,
+)
+from app.kubernetes.tenant.capsule_handoff_related_inventory import (
+    classify_capsule_related_resource,
 )
 from app.kubernetes.tenant.capsule_handoff_recovery import classify_capsule_namespace_handoff
 from app.kubernetes.tenant.capsule_handoff_related_inventory import _digest
@@ -98,11 +102,126 @@ def _fingerprints(
     return related_sha, quota_sha
 
 
+
+def _review_related_scope(
+    *, plan: Mapping[str, Any], worklist: Mapping[str, Any],
+    source_related: Mapping[str, Any], current_related: Mapping[str, Any],
+    evidence: Mapping[tuple[str, str, str], Mapping[str, Any]] | None,
+) -> tuple[list[dict[str, str]], int, int, list[str]]:
+    """Accept only explainable per-object metadata deltas across complete LISTs.
+
+    Raw caller-supplied before/after bodies and label consent are NOT
+    authenticated provider snapshots or human authority.
+    """
+    source = {(r['namespace'], r['kind'], r['name']): r
+              for r in source_related['resources']}
+    current = {(r['namespace'], r['kind'], r['name']): r
+               for r in current_related['resources']}
+    candidates = {
+        (r['namespace'], r['kind'], r['name']): r
+        for r in worklist['items']
+        if r['decision'] == 'explicit_kaori_metadata_handoff_review'
+    }
+    if evidence is not None and (
+        not isinstance(evidence, Mapping)
+        or set(evidence) != set(candidates)
+        or any(
+            not isinstance(row, Mapping)
+            or set(row) != {'before', 'current', 'approved_label_keys'}
+            for row in evidence.values()
+        )
+    ):
+        raise ValueError('Capsule related raw handoff evidence must cover exactly all candidates.')
+    blockers: list[str] = []
+    if set(source) != set(current):
+        blockers.append('related_resource_add_delete_or_scope_drift')
+    original_lists = {
+        (row['namespace'], row['kind']): row
+        for row in source_related['list_snapshots']
+    }
+    new_lists = {
+        (row['namespace'], row['kind']): row
+        for row in current_related['list_snapshots']
+    }
+    capsule = next(row for row in plan['handoff_components']
+                   if row['kind'] == 'CapsuleTenant')
+    transferred_scopes: set[tuple[str, str]] = set()
+    observations: list[dict[str, str]] = []
+    transferred = pending = 0
+    for key, work_item in candidates.items():
+        original = source.get(key)
+        observed = current.get(key)
+        state = 'ambiguous_recovery_required'
+        if original is None or observed is None:
+            blockers.append('related_transfer_target_missing_or_replaced')
+        elif evidence is None:
+            if original == observed:
+                state = 'pending_provider_transfer'
+            else:
+                blockers.append('related_kaori_control_recovery_unverified')
+        else:
+            entry = evidence[key]
+            try:
+                if any(original.get(field) != work_item.get(field) for field in (
+                    'kind', 'namespace', 'name', 'uid', 'resource_version',
+                    'policy_sha256',
+                )):
+                    raise ValueError('Original Capsule LIST differs from approved worklist.')
+                projection, problems = classify_capsule_related_resource(
+                    resource=entry['current'], kind=key[1], namespace=key[0],
+                    tenant_id=plan['tenant_id'], capsule_name=capsule['name'],
+                    capsule_uid=capsule['uid'],
+                )
+                if projection != observed:
+                    raise ValueError('Capsule current LIST disagrees with raw object.')
+                outcome = classify_capsule_related_metadata_readback(
+                    record=original, before=entry['before'], current=entry['current'],
+                    kind=key[1], namespace=key[0], tenant_id=plan['tenant_id'],
+                    capsule_name=capsule['name'], capsule_uid=capsule['uid'],
+                    successor_owner=str(plan.get('successor_owner') or ''),
+                    approved_label_keys=entry['approved_label_keys'],
+                )
+                state = outcome['state']
+                if state == 'provider_markers_transferred' and problems:
+                    raise ValueError('Capsule transferred control retains ambiguous ownership.')
+            except (TypeError, ValueError, KeyError, AttributeError):
+                state = 'ambiguous_recovery_required'
+                blockers.append('related_transfer_identity_policy_or_metadata_drift')
+        if state == 'provider_markers_transferred':
+            transferred += 1
+            transferred_scopes.add((key[0], key[1]))
+        elif state == 'pending_provider_transfer':
+            pending += 1
+        observations.append({
+            'kind': key[1], 'namespace': key[0], 'name': key[2],
+            'uid': work_item['uid'], 'state': state,
+        })
+    for key, original in source.items():
+        if key not in candidates and original != current.get(key):
+            blockers.append('related_foreign_or_unadmitted_control_drift')
+    for scope, original in original_lists.items():
+        after = new_lists[scope]
+        list_changed = (
+            after['list_resource_version'] != original['list_resource_version']
+        )
+        if after['count'] != original['count']:
+            blockers.append('related_list_resource_count_changed')
+        if list_changed and scope not in transferred_scopes:
+            blockers.append('namespaced_list_revision_drift')
+        if not list_changed and scope in transferred_scopes:
+            blockers.append('related_transfer_list_revision_not_observed')
+    observations.sort(key=lambda x: (x['namespace'], x['kind'], x['name']))
+    return observations, transferred, pending, blockers
+
+
 def inspect_capsule_readback_candidate(
     *, plan: Mapping[str, Any], source_related: Mapping[str, Any],
     current_related: Mapping[str, Any], current_capsule_cr: Any,
     current_namespaces: Mapping[str, Any],
     namespace_baselines: list[dict[str, Any]], tenant_id: str,
+    related_transfer_evidence: (
+        Mapping[tuple[str, str, str], Mapping[str, Any]] | None
+    ) = None,
 ) -> dict[str, Any]:
     """Compare full exact-scope provider snapshots without asserting execution.
 
@@ -161,16 +280,19 @@ def inspect_capsule_readback_candidate(
     except (TypeError, ValueError, KeyError, AttributeError):
         blockers.append('capsule_cr_provider_spec_or_identity_drift')
         cr_observation = None
-    if current_related_sha != base_related_sha:
+    related_rows, related_transferred, related_pending, related_blockers = (
+        _review_related_scope(
+            plan=plan, worklist=worklist, source_related=source_related,
+            current_related=current_related, evidence=related_transfer_evidence,
+        )
+    )
+    blockers.extend(related_blockers)
+    if current_related_sha != base_related_sha and related_blockers:
         blockers.append('namespaced_provider_object_or_list_changed')
     if current_quota_sha != base_quota_sha:
         blockers.append('cluster_global_quota_or_list_changed')
-    # Full inventory records are required: a forged top-level digest or a
-    # dropped row must not look like read-back.
-    if source_related.get('resources') != current_related.get('resources'):
-        blockers.append('namespaced_resource_identity_policy_or_metadata_drift')
-    if source_related.get('list_snapshots') != current_related.get('list_snapshots'):
-        blockers.append('namespaced_list_revision_drift')
+    # The per-object comparison above accepts only explainable marker
+    # transfers; foreign/unapproved policy and LIST drift still fails.
     if source_related.get('global_quota') != current_related.get('global_quota'):
         blockers.append('global_quota_evidence_drift')
     if source_related.get('rbac_lineage') != current_related.get('rbac_lineage'):
@@ -216,18 +338,9 @@ def inspect_capsule_readback_candidate(
     rows.sort(key=lambda x: x['name'])
     transferred = sum(r['state'] == 'provider_markers_transferred' for r in rows)
     pending = sum(r['state'] == 'pending_provider_transfer' for r in rows)
-    candidate_related = [
-        item for item in worklist['items']
-        if item['decision'] == 'explicit_kaori_metadata_handoff_review'
-    ]
-    expected_count = len(required_baselines) + len(candidate_related)
-    # Related resource origin and ownership never transfer through the
-    # Namespace-only patch contract. An unchanged full resource LIST can be
-    # classified as pending, but cannot establish successor handback.
-    if source_related.get('resources') == current_related.get('resources'):
-        pending += len(candidate_related)
-    else:
-        blockers.append('related_kaori_control_recovery_unverified')
+    expected_count = len(required_baselines) + len(related_rows)
+    transferred += related_transferred
+    pending += related_pending
     unknown = expected_count - transferred - pending
     if unknown:
         blockers.append('incomplete_transfer_candidate_readback_proof')
@@ -241,6 +354,8 @@ def inspect_capsule_readback_candidate(
         'worklist_sha256': worklist['inventory_sha256'],
         'capsule_cr_observed': cr_observation is not None,
         'namespace_observations': rows,
+        'related_resource_observations': related_rows,
+        'related_transfer_candidate_count': len(related_rows),
         'source_namespaced_sha256': base_related_sha,
         'candidate_namespaced_sha256': current_related_sha,
         'source_global_quota_sha256': base_quota_sha,
