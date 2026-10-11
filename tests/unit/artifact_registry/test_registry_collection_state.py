@@ -2,7 +2,11 @@ from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
 from app.artifact_registry.presentation_common import _human_time, _overview_inventory_kpi_evidence
-from app.artifact_registry.presentation_overview import _overview_inventory_items
+from app.artifact_registry.presentation_overview import (
+    _fleet_freshness,
+    _overview_inventory_items,
+    _selected_provider_freshness,
+)
 from app.artifact_registry.sync import (
     _mark_inventory_collection_failed,
     _mark_inventory_collection_started,
@@ -127,3 +131,54 @@ def test_registry_signal_updated_age_uses_relative_committed_time() -> None:
 
     assert _human_time(committed_at) == '28m ago'
     assert _human_time(None) == 'Not Collected'
+
+
+def test_registry_data_freshness_metrics_source_counts_validated_binding_coverage() -> None:
+    context = {
+        'latest_committed_at': None,
+        'stale_snapshot_count': 0,
+        'failed_refresh_count': 0,
+    }
+    stats = {
+        'committed_count': 0,
+        'metrics_ready_count': 2,
+        'analytics_ready_count': 0,
+        'artifact_total': 0,
+        'scanned_count': 0,
+        'latest_security_at': None,
+        'latest_analytics_at': None,
+    }
+    partial = _fleet_freshness(context=context, provider_count=3, stats=stats)
+    assert [item['label'] for item in partial] == [
+        'Inventory Snapshot', 'Metrics Source', 'Security Snapshot', 'Analytics Snapshot'
+    ]
+    assert (partial[1]['status'], partial[1]['tone'], partial[1]['value']) == (
+        'Partial', 'warning', '2 / 3 providers'
+    )
+    assert 'not committed metrics snapshots' in partial[1]['description']
+
+    stats['metrics_ready_count'] = 3
+    ready = _fleet_freshness(context=context, provider_count=3, stats=stats)[1]
+    assert (ready['status'], ready['value']) == ('Ready', '3 / 3 providers')
+
+    stats['metrics_ready_count'] = 0
+    missing = _fleet_freshness(context=context, provider_count=3, stats=stats)[1]
+    assert (missing['status'], missing['value']) == ('Not Bound', '0 / 3 providers')
+
+
+def test_registry_selected_metrics_freshness_describes_bound_source_not_snapshot() -> None:
+    metrics = {17: {'status': 'ready', 'label': 'Ready', 'tone': 'normal', 'selected_source': 'Prometheus'}}
+    rows = _selected_provider_freshness(
+        selected_provider=SimpleNamespace(id=17),
+        state_by_provider={},
+        metrics_by_provider=metrics,
+        analytics_by_provider={},
+        artifact_total=0,
+        scanned_count=0,
+        latest_security_at=None,
+    )
+    assert len(rows) == 4
+    assert rows[1]['label'] == 'Metrics Source'
+    assert rows[1]['value'] == 'Prometheus'
+    assert rows[1]['status'] == 'Ready'
+    assert 'not a committed metrics snapshot' in rows[1]['description']
