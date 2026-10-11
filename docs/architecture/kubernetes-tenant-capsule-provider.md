@@ -76,3 +76,20 @@ A controlled **Native Recovery** is an explicit governance workflow:
 During Native Recovery, Capsule remains the reconciliation authority until the final verification succeeds. The transition to `native_kubernetes` is therefore reviewable, auditable, and fail-closed.
 
 Advanced Capsule-only feature execution remains owned by #124. #121 provides discovery, provider safety, degradation, and recovery authority only.
+
+## Capsule provider-preserving Release handoff (#1229)
+
+Capsule Release is a separate workflow from Native Recovery and Native handoff.
+The Capsule v1beta2 Tenant CR remains provider-authoritative for spec, quota,
+limits, owners and RBAC. A review-only source contract for bounded conditional
+Namespace metadata handoff, read-only server dry-run preview, and no-retry
+partial recovery is documented in
+[Capsule Release handoff](kubernetes-tenant-capsule-release-handoff.md).
+
+The current source-only slice is **not** an admitted executor: approved inventory
+still lacks exact ResourceQuota, LimitRange and distributed RoleBinding origins,
+so preview must report incomplete coverage and cannot authorize a live PATCH,
+Kubernetes release, database Released finalization or decommission.
+Independent X.509 successor acceptance and approved plan evidence cannot be
+inferred from source merge. Developer checks, CI/CD, real-provider UAT and
+deployment remain held pending separate operator instruction.
