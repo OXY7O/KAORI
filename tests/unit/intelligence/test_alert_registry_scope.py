@@ -160,3 +160,63 @@ def test_registry_invalid_deep_link_skips_case_and_delivery_scope_queries(monkey
     assert result['summary']['active'] == 0
     assert result['active_cases'] == []
     assert result['selected_case'] is None
+
+
+def test_registry_case_lifecycle_and_selected_detail_stay_in_provider_scope(monkeypatch) -> None:
+    column = _Column()
+    no_rows = _ProvidersQuery([])
+    monkeypatch.setattr(service, 'Cluster', SimpleNamespace(query=no_rows, name=column))
+    monkeypatch.setattr(service, 'ObjectStorageSystem', SimpleNamespace(query=no_rows, name=column))
+    provider = SimpleNamespace(
+        id=7, name='Harbor A', environment='UAT',
+        enabled=True, lifecycle_status='active', readiness_status='ready',
+    )
+    model = SimpleNamespace(
+        query=_ProvidersQuery([provider]),
+        integration_type=column, enabled=column, lifecycle_status=column,
+        name=column, id=column,
+    )
+    monkeypatch.setattr(service, 'IntegrationInstance', model)
+
+    def case_record(identifier: str, state: str, workflow: str) -> SimpleNamespace:
+        return SimpleNamespace(
+            public_id=identifier, source_state=state, workflow_state=workflow,
+            severity='warning', source_resolved_at=None, closure_reason='resolved',
+            postmortem_status='complete',
+        )
+
+    scoped_cases = [
+        case_record('REG-7-UNKNOWN', 'unknown', 'open'),
+        case_record('REG-7-RESOLVED', 'resolved', 'closed'),
+    ]
+    observed = []
+
+    def scoped_query(*, domain: str, asset_key: str):
+        observed.append((domain, asset_key))
+        return scoped_cases
+
+    monkeypatch.setattr(service, '_case_rows', scoped_query)
+    monkeypatch.setattr(service, '_serialize_case', lambda case: {'public_id': case.public_id})
+    monkeypatch.setattr(service, '_serialize_case_detail', lambda case: {'public_id': case.public_id})
+    monkeypatch.setattr(service, '_active_silence_rows', lambda **_kwargs: [])
+    monkeypatch.setattr(service, '_delivery_failure_count', lambda **_kwargs: 0)
+    monkeypatch.setattr(service, 'routing_policy_rows', lambda: [])
+    monkeypatch.setattr(service, 'notification_channel_options', lambda: [])
+    monkeypatch.setattr(service, 'notification_channel_summary', lambda: {'eligible': 0})
+    monkeypatch.setattr(service, 'built_in_templates', lambda: [])
+    monkeypatch.setattr(service, '_owner_options', lambda: [])
+
+    args = MultiDict([
+        ('domain', 'registry'), ('asset', '7'), ('tab', 'active'),
+        ('case', 'REG-7-UNKNOWN'),
+    ])
+    payload = service.get_alert_intelligence_payload(args)
+    assert payload['scope_invalid'] is False
+    assert payload['summary']['active'] == 1
+    assert payload['summary']['source_unknown'] == 1
+    assert payload['summary']['resolved_total'] == 1
+    assert payload['selected_case'] == {'public_id': 'REG-7-UNKNOWN'}
+    assert observed == [('registry', '7')]
+
+    args['case'] = 'CASE-OTHER-DOMAIN'
+    assert service.get_alert_intelligence_payload(args)['selected_case'] is None
