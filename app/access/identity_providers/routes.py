@@ -47,6 +47,7 @@ from app.access.identity_providers.service import (
     create_identity_provider,
     normalize_provider_filters,
     provider_default_role_assignment_error,
+    ProviderIdentityRebindError,
     rollback_identity_provider_transaction,
     update_identity_provider,
 )
@@ -127,6 +128,11 @@ def edit(provider_id: int):
             return render_template('access/identity_providers/form.html', **_form_context(form, provider))
         try:
             update_identity_provider(provider, configuration_from_form(form))
+        except ProviderIdentityRebindError as exc:
+            if form.provider_key.data != provider.provider_key:
+                form.provider_key.errors = [*form.provider_key.errors, str(exc)]
+            else:
+                form.key.errors = [*form.key.errors, str(exc)]
         except IntegrityError:
             form.key.errors = [*form.key.errors, 'Provider key already exists.']
         else:

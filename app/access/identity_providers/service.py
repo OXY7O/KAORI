@@ -251,10 +251,31 @@ def create_identity_provider(configuration: IdentityProviderConfiguration) -> Id
     return provider
 
 
+class ProviderIdentityRebindError(ValueError):
+    """A linked provider cannot be rebound to a different identity authority."""
+
+
+def ensure_provider_identity_continuity(
+    provider: IdentityProvider, configuration: IdentityProviderConfiguration
+) -> None:
+    """Protect provider-id/subject links from a new identity authority or callback key."""
+    if (
+        provider.key == configuration.key
+        and provider.provider_key == configuration.provider_key
+    ):
+        return
+    if provider.identity_links.first() is not None:
+        raise ProviderIdentityRebindError(
+            'This provider already has linked identities. Its instance key and provider type '
+            'cannot be changed; create a separate provider and explicitly re-link identities.'
+        )
+
+
 def update_identity_provider(
     provider: IdentityProvider,
     configuration: IdentityProviderConfiguration,
 ) -> IdentityProvider:
+    ensure_provider_identity_continuity(provider, configuration)
     apply_identity_provider_configuration(provider, configuration)
     try:
         db.session.commit()
