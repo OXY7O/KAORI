@@ -175,15 +175,19 @@ def classify_capsule_related_resource(
         key.startswith('kaori.io/') for key in labels
     )
     problems: list[str] = []
-    if (
+    # A KAORI management label never overrides Capsule membership or a
+    # foreign ownerReference. Correlation must not hide competing authority.
+    origin_conflict = bool(
         (capsule_claims and capsule_claims != {capsule_name})
         or (capsule_refs and not capsule_ref_matches)
         or foreign_refs
-    ):
+    )
+    if origin_conflict:
         problems.append(f'Capsule {kind}/{namespace}/{name} has conflicting or unverified provider ownership.')
     if has_kaori_controls:
         if (
-            manager != 'kaori' or kaori_id != tenant_id
+            origin_conflict
+            or manager != 'kaori' or kaori_id != tenant_id
             or any(k.startswith('kaori.io/') and k not in _KAORI_MARKERS for k in labels)
             or (kind == 'RoleBinding' and not labels.get('kaori.io/access-grant'))
             or (kind != 'RoleBinding' and 'kaori.io/access-grant' in labels)
