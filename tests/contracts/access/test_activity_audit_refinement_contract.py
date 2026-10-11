@@ -391,7 +391,7 @@ def test_activity_audit_tab_navigation_preserves_independent_permissions_and_fal
     assert "action=\"{{ url_for('access.activity_audit.index') }}\"" in administrative
     assert 'hx-push-url="true"' in administrative
     assert 'hx-target="#activity-administrative-evidence"' in administrative
-    assert 'hx-sync="#activity-administrative-evidence:replace"' in administrative
+    assert 'hx-sync="closest section:replace"' in administrative
     assert 'data-activity-evidence-source="administrative-audit-events"' in administrative
 
 
