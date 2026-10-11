@@ -360,6 +360,7 @@ def get_tenant_registry_context(
     residual_cleanup_executions: dict[str, dict[str, Any]] = {}
     successor_claims: dict[str, dict[str, Any]] = {}
     successor_acceptances: dict[str, dict[str, Any]] = {}
+    capsule_successor_acceptances: dict[str, dict[str, Any]] = {}
     if tenant_ids and include_decommission_preflight:
         for target_type, destination in (
             ('kubernetes_tenant_release_handoff_plan', handoff_plans),
@@ -375,6 +376,7 @@ def get_tenant_registry_context(
             ('kubernetes_tenant_native_residual_cleanup_execution', residual_cleanup_executions),
             ('kubernetes_tenant_release_successor_claim', successor_claims),
             ('kubernetes_tenant_release_verified_successor_acceptance', successor_acceptances),
+            ('kubernetes_tenant_release_capsule_successor_acceptance', capsule_successor_acceptances),
         ):
             latest_ids = (
                 db.session.query(func.max(AuditEvent.id).label('id'))
@@ -469,6 +471,7 @@ def get_tenant_registry_context(
             )
             row['release_successor_claim'] = successor_claims.get(item.id)
             row['release_successor_acceptance'] = successor_acceptances.get(item.id)
+            row['release_capsule_successor_acceptance'] = capsule_successor_acceptances.get(item.id)
             if item.provider_key == 'native_kubernetes' and (
                 row['release_handoff_plan']
                 or (row['release_preflight'] or {}).get('handoff_required_count')
