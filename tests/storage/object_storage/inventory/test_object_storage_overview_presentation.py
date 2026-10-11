@@ -135,5 +135,5 @@ def test_no_assets_or_public_evidence_keeps_unknown_state_and_real_public_attent
     assert empty[1]['tone'] == empty[2]['tone'] == 'unknown'
     public = _BucketPostureStub('configured', 'enabled', 'enabled', 'enabled', 'public', 'collected')
     readings = _overview_fleet_readings(_overview_bucket_posture([public]))
-    assert readings[1]['tone'] == 'normal'
+    assert readings[1]['tone'] == 'warning'  # Public exposure also triggers protection attention.
     assert readings[2]['tone'] == 'critical'
