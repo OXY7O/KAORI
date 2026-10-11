@@ -53,6 +53,14 @@ def _build_result(
         if failed_systems
         else f'{bucket_count} bucket record(s) are represented by the latest committed object-storage snapshots.'
     )
+    if empty_reconciliation_evidence and not failed_systems:
+        title = 'Object Storage Empty Inventory Reconciled'
+        message = 'A verified empty provider snapshot replaced the previously committed bucket inventory.'
+        deleted = sum(int(item.get('removed_bucket_count') or 0) for item in empty_reconciliation_evidence)
+        detail = (
+            f'{deleted} previously committed bucket/container asset(s) were removed after '
+            'explicit operator confirmation and two successful bucket-discovery checks.'
+        )
     return {
         'status': status,
         'title': title,
