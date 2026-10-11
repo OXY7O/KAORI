@@ -7,6 +7,14 @@ from app.kubernetes.dashboard.schema import FreshnessItem, ReportingSnapshot
 from app.kubernetes.dashboard.utils import human_time
 
 
+def _fleet_coverage(ready: int, total: int) -> tuple[str, str, str]:
+    if total and ready == total:
+        return 'Ready', 'normal', f'{ready} / {total} clusters'
+    if ready:
+        return 'Partial', 'warning', f'{ready} / {total} clusters'
+    return 'Required', 'unknown', f'0 / {total} clusters'
+
+
 def build_data_freshness(
     *,
     latest_inventory_sync: datetime | None,
@@ -14,6 +22,9 @@ def build_data_freshness(
     has_alertmanager_data: bool,
     reporting_snapshot: ReportingSnapshot,
     selected_cluster: Any | None,
+    fleet_cluster_count: int = 0,
+    fleet_metrics_count: int = 0,
+    fleet_alerts_count: int = 0,
 ) -> list[FreshnessItem]:
     selected_cluster_mode = selected_cluster is not None
 
@@ -41,17 +52,17 @@ def build_data_freshness(
             else 'Validate the alert source and refresh the selected cluster before relying on alert signals.'
         )
     else:
-        metrics_source_status = 'Per Cluster'
-        metrics_source_tone = 'info'
-        metrics_source_value = 'Committed cluster snapshots'
+        metrics_source_status, metrics_source_tone, metrics_source_value = _fleet_coverage(
+            fleet_metrics_count, fleet_cluster_count
+        )
         metrics_source_description = (
             'All Clusters shows committed capacity by cluster. '
             'Select a cluster for detailed analytics.'
         )
 
-        alert_status = 'Per Cluster'
-        alert_tone = 'info'
-        alert_value = 'Committed cluster snapshots'
+        alert_status, alert_tone, alert_value = _fleet_coverage(
+            fleet_alerts_count, fleet_cluster_count
+        )
         alert_description = (
             'All Clusters shows committed alerts by cluster. Select a cluster for source details.'
         )
