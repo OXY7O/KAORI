@@ -86,7 +86,9 @@ def index():
         # Returning the registry for a tab swap would discard its wrapper/tabs.
         if request.headers.get('HX-Target') == 'identity-provider-workspace':
             return render_template('access/identity_providers/partials/_workspace.html', **payload)
-        return render_template('access/identity_providers/partials/_registry.html', **payload)
+        # Filter/Rows/pagination replace only the embedded registry. The
+        # surrounding workspace owns the outer border, radius and shadow.
+        return render_template('access/identity_providers/partials/_registry.html', embedded=True, **payload)
     return render_template('access/identity_providers/index.html', **payload)
 
 
