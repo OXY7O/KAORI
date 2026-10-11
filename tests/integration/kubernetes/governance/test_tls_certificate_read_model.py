@@ -160,3 +160,40 @@ def test_tls_validity_projection_filters_sorts_and_preserves_committed_facts(gov
         assert detail_row.presentation['validity_days_remaining'] <= 0
         assert source_row.status == 'healthy' and source_row.days_remaining == 100
         assert db.session.get(TLSCertificateInventory, source_row.id).status == 'healthy'
+
+
+def test_failed_tls_secret_sync_does_not_advance_collected_evidence_clock(governance_repository_app) -> None:
+    now = datetime.now(UTC)
+    old = now - timedelta(days=5)
+    with governance_repository_app.app_context():
+        cluster = Cluster(id='freshness-test', name='Freshness', environment='production', status='connected')
+        db.session.add(cluster)
+        db.session.flush()
+        service._persist_collection_state(
+            cluster.id, secret_status='collected', ingress_status='collected',
+            secret_detail=None, ingress_detail=None, collected_at=old,
+        )
+        db.session.commit()
+
+        service._persist_collection_state(
+            cluster.id, secret_status='collection_failed',
+            ingress_status='collected', secret_detail='API failure',
+            ingress_detail=None, collected_at=now,
+        )
+        db.session.commit()
+        state = db.session.get(TLSCertificateCollectionState, cluster.id)
+        assert state.collected_at.replace(tzinfo=UTC) == old
+        assert state.secret_collection_status == 'collection_failed'
+        assert state.secret_collection_detail == 'API failure'
+        assert state.updated_at is not None
+
+        # Complete Secret collection with failed Ingress mapping is a new
+        # Secret snapshot but not complete governance coverage.
+        service._persist_collection_state(
+            cluster.id, secret_status='collected', ingress_status='permission_unavailable',
+            secret_detail=None, ingress_detail='Ingress API denied', collected_at=now,
+        )
+        db.session.commit()
+        state = db.session.get(TLSCertificateCollectionState, cluster.id)
+        assert state.collected_at.replace(tzinfo=UTC) == now
+        assert state.ingress_mapping_status == 'permission_unavailable'
