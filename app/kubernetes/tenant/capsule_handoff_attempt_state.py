@@ -18,7 +18,7 @@ from app.kubernetes.tenant.release_handoff_approval import _plan_hash
 
 _SCHEMA = 'capsule-handoff-attempt/v1'
 _SHA = re.compile(r'[0-9a-f]{64}\Z')
-_MAX_HISTORY = 12
+_MAX_HISTORY = 3
 _STATES = {
     'started': 'unknown',
     'partial': 'unknown',
