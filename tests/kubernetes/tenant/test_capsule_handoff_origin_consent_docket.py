@@ -12,6 +12,8 @@ import pytest
 from app.kubernetes.tenant.capsule_handoff_collector_receipt import (
     inspect_capsule_collector_receipt,
 )
+from app.kubernetes.tenant import capsule_handoff_collector_key_resolution as key_resolution
+from app.kubernetes.tenant import capsule_handoff_consent_identity as consent_identity
 from app.kubernetes.tenant.capsule_handoff_origin_consent_docket import (
     review_capsule_origin_consent_docket,
 )
@@ -312,3 +314,173 @@ def test_manifest_must_bind_the_current_review_not_just_a_forged_flag():
     manifest['reviewed_by'] = plan['requested_by']
     with pytest.raises(ValueError):
         _consent(plan, base, approval, acceptance, manifest)
+
+
+def _human_claims(plan, base, approval, acceptance, manifest):
+    """Only synthetic caller-supplied shapes; never authentic human identities."""
+    reviewed = inspect_capsule_resource_consent(
+        plan=plan, resource_report=base, approval=approval,
+        acceptance=acceptance, manifest=manifest,
+    )
+    manifest_at = datetime.fromisoformat(manifest['accepted_at'])
+    claims = []
+    for ix, (action, actor, signed_at) in enumerate((
+        ('independent_review', approval['approved_by'], manifest_at - timedelta(seconds=2)),
+        ('successor_acceptance', acceptance['accepted_by'], manifest_at - timedelta(seconds=1)),
+    )):
+        claims.append({
+            'contract_version': 'capsule-resource-human-session-attestation/v1',
+            'attestation_id': str(UUID(int=ix + 101)),
+            'issuer_id': 'company-idp', 'key_id': 'idp-key-1',
+            'action': action, 'actor_user_id': actor,
+            'session_sha256': format(ix + 101, '064x'),
+            'challenge_sha256': format(ix + 201, '064x'),
+            'authentication_method': 'phishing_resistant_mfa',
+            'authenticated_at': (signed_at - timedelta(seconds=1)).isoformat(),
+            'issued_at': signed_at.isoformat(),
+            'expires_at': (signed_at + timedelta(minutes=4)).isoformat(),
+            'tenant_id': plan['tenant_id'], 'cluster_id': plan['cluster_id'],
+            'generation': plan['generation'],
+            'plan_sha256': plan['plan_sha256'],
+            'worklist_sha256': reviewed['worklist_sha256'],
+            'resource_review_sha256': reviewed['resource_review_sha256'],
+            'consent_manifest_sha256': reviewed['resource_consent_manifest_sha256'],
+            'resource_scope_sha256': reviewed['resource_scope_sha256'],
+            'mac_sha256': 'f' * 64,
+        })
+    return claims
+
+
+def _identity_review(case, attestations, **changes):
+    plan, related, approval, acceptance, base, claims, receipt, manifest = case
+    opts = dict(
+        plan=plan, resource_report=base, approval=approval,
+        acceptance=acceptance, manifest=manifest, attestations=attestations,
+        expected_issuer_id='company-idp', expected_key_id='idp-key-1',
+    )
+    opts.update(changes)
+    return consent_identity.inspect_capsule_consent_session_attestations(**opts)
+
+
+def test_two_distinct_session_envelopes_correlate_without_authenticating_humans():
+    case = _fixture()
+    plan, related, approval, acceptance, base, claims, receipt, manifest = case
+    human = _human_claims(plan, base, approval, acceptance, manifest)
+    observed = _identity_review(case, human)
+    assert observed['attestation_count'] == 2
+    assert observed['distinct_claimed_sessions'] is True
+    assert len(observed['session_attestation_digest_sha256']) == 64
+    assert observed['idp_session_origin_authenticated'] is False
+    assert observed['mfa_challenge_verified'] is False
+    assert observed['one_time_challenge_consumed'] is False
+    assert observed['consent_source_authenticated'] is False
+    assert observed['provider_execution_admitted'] is False
+    assert 'session_sha256' not in str(observed)
+    docket = review_capsule_origin_consent_docket(
+        plan=plan, related=related, approval=approval, acceptance=acceptance,
+        claims=claims, collector_receipt=receipt, consent_manifest=manifest,
+        trusted_collector_id='trusted-cluster-audit',
+        trusted_key_id='operator-root-001', trusted_hmac_key=_KEY,
+        identity_attestations=human,
+        expected_identity_issuer_id='company-idp',
+        expected_identity_key_id='idp-key-1',
+    )
+    assert docket['identity_attestation_count'] == 2
+    assert docket['identity_attestations_sha256'] == observed['session_attestation_digest_sha256']
+    assert docket['human_consent_authenticated'] is False
+    assert docket['release_authorized'] is False
+
+
+@pytest.mark.parametrize('mutate', [
+    lambda c: c[0].update(actor_user_id=12),
+    lambda c: c[1].update(actor_user_id=11),
+    lambda c: c[0].update(action='successor_acceptance'),
+    lambda c: c[1].update(session_sha256=c[0]['session_sha256']),
+    lambda c: c[1].update(challenge_sha256=c[0]['challenge_sha256']),
+    lambda c: c[1].update(attestation_id=c[0]['attestation_id']),
+    lambda c: c[0].update(tenant_id='foreign'),
+    lambda c: c[1].update(plan_sha256='0' * 64),
+    lambda c: c[1].update(resource_review_sha256='0' * 64),
+    lambda c: c[0].update(consent_manifest_sha256='0' * 64),
+    lambda c: c[0].update(resource_scope_sha256='0' * 64),
+    lambda c: c[1].update(authentication_method='password_only'),
+    lambda c: c[0].update(issuer_id='caller-controlled'),
+    lambda c: c[0].update(key_id='rotated'),
+    lambda c: c[0].update(mac_sha256='not-sha'),
+    lambda c: c[0].update(expires_at='2001-01-01T00:00:00+00:00'),
+    lambda c: c[1].update(issued_at='2001-01-01T00:00:00+00:00'),
+    lambda c: c[0].update(secret='NEVER'),
+])
+def test_forged_cross_scope_replayed_or_stale_human_claim_is_rejected(mutate):
+    case = _fixture()
+    plan, _, approval, acceptance, base, _, _, manifest = case
+    human = _human_claims(plan, base, approval, acceptance, manifest)
+    mutate(human)
+    with pytest.raises((ValueError, TypeError, KeyError)):
+        _identity_review(case, human)
+
+
+def test_claimed_valid_signature_cannot_open_source_gated_idp_verifier(monkeypatch):
+    case = _fixture()
+    plan, related, approval, acceptance, base, claims, receipt, manifest = case
+    human = _human_claims(plan, base, approval, acceptance, manifest)
+
+    class ExplodingIssuer:
+        def read_verification_key(self, **kwargs):
+            raise AssertionError('Key broker must NOT be used under source HOLD.')
+
+    class ExplodingPin:
+        def expected_key_fingerprint(self, **kwargs):
+            raise AssertionError('Key policy must NOT be used under source HOLD.')
+
+    for first, second in ((False, False), (False, True), (True, False)):
+        monkeypatch.setattr(consent_identity, '_IDENTITY_MAC_VERIFIER_ENABLED', first)
+        monkeypatch.setattr(consent_identity, '_AUTHENTICATED_HUMAN_SESSION_INGRESS_ENABLED', second)
+        with pytest.raises(PermissionError, match='source-disabled'):
+            consent_identity.review_capsule_consent_idp_mac_staged(
+                plan=plan, resource_report=base, approval=approval,
+                acceptance=acceptance, manifest=manifest, attestations=human,
+                expected_issuer_id='company-idp', expected_key_id='idp-key-1',
+                broker=ExplodingIssuer(), operator_policy=ExplodingPin(),
+            )
+
+
+def test_key_broker_resolution_is_source_disabled_before_secret_access(monkeypatch):
+    case = _fixture()
+    plan, related, approval, acceptance, base, claims, receipt, manifest = case
+
+    class ExplodingBroker:
+        def read_key(self, **kwargs):
+            raise AssertionError('Vault/KMS key read forbidden under HOLD.')
+
+        def read_pin(self, **kwargs):
+            raise AssertionError('Vault/KMS pin read forbidden under HOLD.')
+
+    class ExplodingPolicy:
+        def expected_fingerprint(self, **kwargs):
+            raise AssertionError('Operator registry read forbidden under HOLD.')
+
+    for first, second in ((False, False), (False, True), (True, False)):
+        monkeypatch.setattr(key_resolution, '_COLLECTOR_RESOLVER_ENABLED', first)
+        monkeypatch.setattr(key_resolution, '_TRUSTED_COLLECTOR_INGRESS_ENABLED', second)
+        with pytest.raises(PermissionError, match='source-disabled'):
+            key_resolution.review_capsule_collector_via_broker_staged(
+                resource_report=base, claims=claims, receipt=receipt,
+                broker=ExplodingBroker(), operator_policy=ExplodingPolicy(),
+                expected_cluster_id=plan['cluster_id'],
+                expected_collector_id='trusted-cluster-audit',
+                expected_key_id='operator-root-001',
+            )
+
+
+def test_docket_rejects_issuer_fields_without_actual_session_envelopes():
+    case = _fixture()
+    plan, related, approval, acceptance, base, claims, receipt, manifest = case
+    with pytest.raises(ValueError):
+        review_capsule_origin_consent_docket(
+            plan=plan, related=related, approval=approval, acceptance=acceptance,
+            claims=claims, collector_receipt=receipt, consent_manifest=manifest,
+            trusted_collector_id='trusted-cluster-audit',
+            trusted_key_id='operator-root-001', trusted_hmac_key=_KEY,
+            expected_identity_issuer_id='company-idp',
+        )
