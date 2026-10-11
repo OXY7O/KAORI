@@ -521,3 +521,32 @@ def test_registry_dashboard_kpi_projection_respects_active_committed_scope_and_e
     assert "scope_tone = overview.posture.tone if overview.selected_provider else 'warning'" in signal
     assert '    scope_status,' in signal
     assert '    scope_tone,' in signal
+
+
+def test_registry_operations_inventory_snapshot_500_regression_and_relative_updated() -> None:
+    registry = read('app/artifact_registry/presentation_overview.py')
+    common = read('app/artifact_registry/presentation_common.py')
+    signal = read('app/templates/artifact_registry/partials/_overview_signal_overview.html')
+    object_signal = read('app/templates/storage/object_storage/dashboard/partials/_signal_overview.html')
+    kubernetes_signal = read('app/templates/kubernetes/dashboard/partials/_signal_overview.html')
+
+    inventory = registry.split('def _overview_inventory_items(', 1)[1].split(
+        'def _security_freshness_status(', 1
+    )[0]
+    assert 'has_committed_inventory: bool' in inventory
+    assert "if not has_committed_inventory:" in inventory
+    assert "item['value'] = 'Not Collected'" in inventory
+    assert 'committed_count' not in inventory
+
+    operations = registry.split('def _overview_operations_projection(', 1)[1].split(
+        'def _overview_capacity_projection(', 1
+    )[0]
+    assert 'has_committed_inventory=bool(committed_provider_ids)' in operations
+
+    assert "'last_updated': _human_time(latest)" in common
+    assert "overview.last_updated" in signal
+    assert 'overview.latest_committed_at|user_datetime' not in signal
+    assert "'Updated ' ~ overview.last_updated" in signal
+    assert "'Updated ' ~ dashboard.last_updated" in object_signal
+    assert "'Updated ' ~ dashboard.last_updated" in kubernetes_signal
+    assert "else 'Not Collected'" in signal
