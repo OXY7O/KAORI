@@ -184,6 +184,69 @@ def inspect_capsule_scope_g2g3_trace(
         build_capsule_handoff_worklist,
     )
     worklist = build_capsule_handoff_worklist(plan=plan, related=related)
+    manifest = patch_review.get('scope_items')
+    if (
+        not isinstance(manifest, list)
+        or len(manifest) != worklist['item_count']
+        or patch_review.get('complete_scope_count') != len(manifest)
+        or patch_review.get('scope_items_sha256') != _digest(manifest)
+        or any(not isinstance(item, Mapping) for item in manifest)
+    ):
+        raise ValueError('Capsule G2 whole-worklist preservation manifest is incomplete.')
+    work_items = {
+        (item['namespace'], item['kind'], item['name']): item
+        for item in worklist['items']
+    }
+    if (
+        len(work_items) != len(manifest)
+        or {
+            (item.get('namespace'), item.get('kind'), item.get('name'))
+            for item in manifest
+        } != set(work_items)
+    ):
+        raise ValueError('Capsule G2 manifest has added, omitted or repeated provider objects.')
+    transfer_count = foreign_count = global_count = 0
+    for item in manifest:
+        key = (item['namespace'], item['kind'], item['name'])
+        source = work_items[key]
+        kind, decision = item['kind'], source['decision']
+        if (
+            item.get('uid') != source['uid']
+            or item.get('source_resource_version') != source['resource_version']
+        ):
+            raise ValueError('Capsule G2 manifest changed immutable provider identity.')
+        if kind in ('CapsuleTenant', 'GlobalResourceQuota'):
+            global_count += 1
+            required_operation = 'preserve_source_only_unverified'
+        elif decision in (
+            'candidate_kaori_metadata_handoff_review',
+            'explicit_kaori_metadata_handoff_review',
+        ):
+            transfer_count += 1
+            required_operation = 'conditional_metadata_dry_run_candidate'
+        elif decision in (
+            'preserve_existing_provider_namespace',
+            'preserve_foreign_provider_control',
+        ):
+            foreign_count += 1
+            required_operation = 'preserve_only'
+        else:
+            raise ValueError('Capsule G2 manifest includes unresolved ownership.')
+        if (
+            item.get('operation') != required_operation
+            or (required_operation == 'conditional_metadata_dry_run_candidate')
+                != (isinstance(item.get('patch_sha256'), str)
+                    and len(item['patch_sha256']) == 64)
+            or (source.get('policy_sha256') is not None
+                and item.get('policy_sha256') != source['policy_sha256'])
+        ):
+            raise ValueError('Capsule G2 manifest changed preservation into mutation.')
+    if (
+        transfer_count != patch_review.get('transfer_candidate_count')
+        or foreign_count != patch_review.get('preserved_namespaced_count')
+        or global_count != patch_review.get('globally_preserved_count')
+    ):
+        raise ValueError('Capsule G2 manifest counts no longer match the worklist.')
     if (
         patch_review.get('status') != 'complete_offline_scope_patch_review_unadmitted'
         or preview_review.get('status')
