@@ -273,24 +273,27 @@ def _registry_capacity_summary(
                 'label': 'Artifact Footprint',
                 'value': _fmt_bytes(total_size_bytes),
                 'description': f'{artifact_total} committed artifact identities.',
-                'used_percent': None,
+                'progress_percent': None,
+                'progress_label': 'Inventory',
             },
             {
                 'label': 'Quota Utilization',
                 'value': f'{quota_utilization:.1f}%' if quota_utilization is not None else 'N/A',
                 'description': (
-                    f'{_fmt_bytes(round(float(posture["total_usage"])))} used of '
-                    f'{_fmt_bytes(round(total_quota))} committed project quota.'
+                    f'{_fmt_bytes(round(float(posture["total_usage"])))} / '
+                    f'{_fmt_bytes(round(total_quota))} quota.'
                     if total_quota > 0
                     else 'No committed project quota denominator is available.'
                 ),
-                'used_percent': quota_utilization,
+                'progress_percent': quota_utilization,
+                'progress_label': 'Used',
             },
             {
                 'label': 'Quota Headroom',
                 'value': _fmt_bytes(round(quota_headroom)) if quota_headroom is not None else 'N/A',
-                'description': 'Remaining Registry quota headroom.',
-                'used_percent': quota_utilization,
+                'description': 'Remaining project quota.',
+                'progress_percent': 100 - quota_utilization if quota_utilization is not None else None,
+                'progress_label': 'Free',
             },
         ],
         'risk': posture['risk'],
@@ -317,7 +320,7 @@ def _registry_capacity_forecast(
         'nearest_quota_days': f'{nearest_days:.1f} days' if nearest_days is not None else 'N/A',
         'risk': posture['risk'],
         'detail': (
-            'Worker-materialized Registry analytics combines committed inventory deltas with bound Metrics Source quota evidence.'
+            'Committed growth and Metrics Source quota evidence.'
         ),
     }
 
