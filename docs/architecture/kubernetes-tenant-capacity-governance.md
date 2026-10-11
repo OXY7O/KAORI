@@ -395,7 +395,10 @@ cluster header with a lightweight **Tenant Registry** navigation link on the
 right, one compact **segmented summary strip** within a subtle shared border,
 compact search and a responsive, vertically scrollable list of Tenant records.
 Each Tenant record has a single readable outline, without nested cards or shadows.
-This modal intentionally has **no Rows selector or pagination footer**.
+This modal intentionally has **no Rows selector or pagination controls**:
+a compact read-only evidence footer stays visible beneath a separately framed
+scrolling viewport. The footer reports matching versus total Tenant counts
+and is updated with the search inside the existing HTMX-swapped body.
 Each record groups Tenant name, ownership badge, stable ID, provider/authority,
 and a keyboard-accessible Namespace disclosure. Four governed requests use an
 unboxed two-column definition grid with one dividing rule at desktop widths.
@@ -411,8 +414,11 @@ Summary metrics are computed once from the existing read-only per-Tenant #654
 partition before applying the search filter. The route exposes **all committed
 Tenant records matching the search**; it does not invoke the page-size/pagination
 helper for this detail dialog. Fifty Tenant records therefore remain in one
-native-height-bounded, keyboard-scrollable content region. The header, summary
-and search remain outside the scrolling list; the modal body alone is swapped
+native-height-bounded, keyboard-scrollable **inset bordered panel** with
+comfortable top/bottom and scrollbar-side padding, plus clear gaps between
+the existing unboxed-metric Tenant record cards. The header, summary,
+search and read-only evidence footer remain outside the scrolling list;
+the modal body alone is swapped
 during HTMX searches. Matching and total counts are distinct, and the unchanged
 canonical five-row pagination remains in other KAORI registry surfaces.
 The #1153 human visual-feedback iteration supersedes both the original

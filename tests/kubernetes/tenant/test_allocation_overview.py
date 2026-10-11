@@ -471,7 +471,7 @@ def test_tenant_contribution_modal_uses_one_segmented_summary_and_unboxed_metric
     assert 'tabular-nums leading-6 text-content-primary' in summary
 
     # One outer border per record, not another four outlined quota tiles.
-    assert '<ol class="space-y-2.5"' in scroll
+    assert '<ol class="space-y-3"' in scroll
     assert '<li class="min-w-0">' in scroll
     assert 'rounded-lg border border-outline-default bg-surface-card p-4' in scroll
     assert 'md:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]' in scroll
@@ -494,3 +494,40 @@ def test_tenant_contribution_modal_uses_one_segmented_summary_and_unboxed_metric
     assert 'data-kaori-dialog-close' in dialog
     assert "registry_ui.footer" not in dialog
     assert "<table" not in dialog
+
+
+def test_tenant_contribution_scroll_frame_and_fixed_evidence_footer() -> None:
+    """#1153: room around overflowing rows and a separate non-paginated footer."""
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[3]
+    page = (root / "app/templates/kubernetes/tenant/partials/_tenant_allocation_overview.html").read_text(
+        encoding="utf-8"
+    )
+    Environment(autoescape=True).parse(page)
+    dialog = page.split('<dialog id="{{ contributions_dialog_id }}"', 1)[1].split("</dialog>", 1)[0]
+    swapped_body = dialog.split('<section id="{{ contributions_body_id }}"', 1)[1].split(
+        '</footer>', 1
+    )[0]
+    frame = swapped_body.split('aria-label="Scroll through Tenant contributions"', 1)[0]
+    footer = swapped_body.split('<footer ', 1)[1]
+
+    assert 'flex min-h-0 flex-1 flex-col bg-surface-card px-4 py-3 sm:px-6 sm:py-4' in frame
+    assert 'min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-xl border border-outline-subtle' in frame
+    assert 'bg-surface-elevated px-3 py-3 pr-4' in frame
+    assert 'sm:px-4 sm:py-4 sm:pr-5' in frame
+    assert 'tabindex="0"' in swapped_body
+    assert '<ol class="space-y-3"' in swapped_body
+    assert 'shrink-0 flex-wrap items-center justify-between gap-2 border-t border-outline-subtle' in footer
+    assert 'bg-surface-elevated px-4 py-3 sm:px-6' in footer
+    assert 'aria-label="Tenant Contributions evidence footer"' in footer
+    assert 'Read-only committed allocation evidence' in footer
+    assert '{{ allocation_tenant_matches }} of {{ allocation_tenant_total }} Tenants' in footer
+
+    # The count updates inside the same HTMX-swapped body as search and scroll.
+    assert 'hx-target="#{{ contributions_body_id }}"' in swapped_body
+    assert 'hx-select="#{{ contributions_body_id }}"' in swapped_body
+    assert dialog.count('<footer ') == 1
+    assert 'registry_ui.footer' not in dialog
+    assert 'pagination' not in footer.lower()
+    assert 'data-kaori-dialog-close' in dialog

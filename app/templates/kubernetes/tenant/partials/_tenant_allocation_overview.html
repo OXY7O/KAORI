@@ -271,11 +271,13 @@
                                 {% endif %}
                             </p>
                         </div>
-                        <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-surface-elevated px-3 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus sm:px-5"
-                             tabindex="0"
-                             aria-label="Scroll through Tenant contributions">
+                        {# The list scrolls inside an inset frame; search and evidence footer remain visible. #}
+                        <div class="flex min-h-0 flex-1 flex-col bg-surface-card px-4 py-3 sm:px-6 sm:py-4">
+                            <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-xl border border-outline-subtle bg-surface-elevated px-3 py-3 pr-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus sm:px-4 sm:py-4 sm:pr-5"
+                                 tabindex="0"
+                                 aria-label="Scroll through Tenant contributions">
                             {% if allocation_tenant_rows %}
-                                <ol class="space-y-2.5" aria-label="Committed Tenant contributions">
+                                <ol class="space-y-3" aria-label="Committed Tenant contributions">
                                     {% for row in allocation_tenant_rows %}
                                         <li class="min-w-0">
                                             <article class="grid min-w-0 gap-4 rounded-lg border border-outline-default bg-surface-card p-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] md:gap-5"
@@ -352,7 +354,19 @@
                                     </p>
                                 </div>
                             {% endif %}
+                            </div>
                         </div>
+                        <footer class="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-outline-subtle bg-surface-elevated px-4 py-3 sm:px-6"
+                                aria-label="Tenant Contributions evidence footer">
+                            <span class="inline-flex items-center gap-1.5 text-xs leading-5 text-content-secondary">
+                                <i data-lucide="shield-check" class="h-3.5 w-3.5 shrink-0 text-kaori-primary"
+                                   aria-hidden="true"></i>
+                                Read-only committed allocation evidence
+                            </span>
+                            <span class="text-xs font-medium tabular-nums leading-5 text-content-muted">
+                                {{ allocation_tenant_matches }} of {{ allocation_tenant_total }} Tenants
+                            </span>
+                        </footer>
                     </section>
                 </section>
             </dialog>
