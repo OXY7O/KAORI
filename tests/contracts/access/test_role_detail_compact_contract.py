@@ -18,6 +18,7 @@ def test_role_detail_modal_uses_one_full_width_resource_sheet() -> None:
     Environment().parse(template)
     assert 'data-resource-detail-header' in template
     assert 'data-kaori-detail-variant="full-workspace-modal"' in template
+    assert 'data-kaori-detail-density="unified-resource-sheet"' in template
     assert 'detail_ui.header_identity_row()' in template
     assert 'detail_ui.summary_strip([' in template
     assert '], compact=true, borderless=true)' in template
@@ -70,6 +71,7 @@ def test_role_detail_permission_directory_keeps_every_capability_visible() -> No
     assert 'sm:grid-cols-[minmax(0,11rem)_minmax(0,1fr)]' in template
     assert 'data-kaori-role-module' in template
     assert 'module.count' in template
+    assert 'aria-label="{{ module.count }} permission{{' in template
     assert 'detail.module_count' in template
     assert '{% for module in detail.permission_modules %}' in template
     assert '{% for permission in module.permissions %}' in template
