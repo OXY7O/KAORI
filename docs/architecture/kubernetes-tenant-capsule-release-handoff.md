@@ -9,6 +9,44 @@ Target integration: `kaori/review/staging-uat` only. No developer check,
 pytest, Ruff, pyright, CI/CD, DAST, live API UAT, promotion or deployment until
 a separate explicit instruction.
 
+## Disabled live metadata PATCH adapter — #1229 executor source boundary
+
+`app/kubernetes/tenant/capsule_handoff_live_patch.py` stages the actual
+Kubernetes API dispatch needed by the G2 executor, **without exposing it as a
+live KAORI capability**. Its nonconfigurable
+`_CAPSULE_LIVE_PATCH_ENABLED = False` prevents all Kubernetes operations on
+entry. No route, scheduler, background job or runtime service imports this
+adapter.
+
+Once independently authorized in a separate implementation/review step,
+the intended per-object operation is a strict
+`read -> server dryRun=All -> validate preview -> re-read unchanged ->
+JSON Patch once -> re-read -> classify` sequence. It reuses the existing
+Capsule Namespace and ResourceQuota/LimitRange/RoleBinding metadata-only
+builders/read-back classifiers and their UID/resourceVersion/full-label
+JSON Patch tests. The adapter never sends a spec-changing, create, delete,
+replace or workload operation. Its result remains explicitly
+`provider_handoff_verified=false` and `release_authorized=false`
+even for one apparently transferred object. Unknown provider PATCH outcome
+raises immediately with **no retry**; the full attempt must go to an
+independent operator recovery path.
+
+This staged primitive is deliberately **not** a complete safe executor.
+Before enabling or wiring it, #1229 must prove installed PostgreSQL
+write-once START and durable commit, current independent per-resource
+successor consent and authentic controller-origin evidence, exact operator
+and X.509/SAR reauthorization, whole-scope worklist identity, a recorded
+outcome for success/partial/unknown, and authoritative **entire-scope**
+post-operation read-back. The current admission assessor and START writer
+continue to deny that authority. No user-confirmation checkbox, source
+preview receipt, fabricated `start_committed` field, Python parameter, or
+feature flag can bypass them. #1230 finalization remains blocked.
+
+Author-only tests cover denied calls, typed `dry_run='All'` versus
+once-only live PATCH shape, source drift rejection, non-Release receipts,
+and a simulated unknown outcome. **Tests, migration, Kubernetes provider
+operations, CI/CD, Full Admission and UAT have not been executed.**
+
 ## Complete-scope Capsule server preview — #1229 source extension
 
 The existing authenticated **Preview Capsule provider handoff** Step 3
