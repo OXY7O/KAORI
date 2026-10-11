@@ -47,6 +47,7 @@ def test_registry_alert_intelligence_handoff_and_notification_policy_are_explici
     service = read('app/intelligence/alert_intelligence/service.py')
     routing = read('app/intelligence/alert_intelligence/routing.py')
     notifications = read('app/intelligence/alert_intelligence/notifications.py')
+    lifecycle = read('app/intelligence/alert_intelligence/lifecycle.py')
     workspace = read('app/templates/intelligence/partials/_alert_intelligence_workspace.html')
     route_support = read('app/intelligence/alert_intelligence/route_utils.py')
 
@@ -68,6 +69,9 @@ def test_registry_alert_intelligence_handoff_and_notification_policy_are_explici
     assert "if case.domain == 'registry':" in routing
     assert "if case.domain == 'registry':" in notifications
     assert "'domain': case.domain, 'asset': case.asset_key, 'case': case.public_id" in notifications
+    assert "'domain': case.domain, 'asset': case.asset_key, 'case': case.public_id" in lifecycle
+    assert lifecycle.count("action_url=_case_workspace_url(case, tab='active')") == 2
+    assert "action_url=_case_workspace_url(case, tab='resolved')" in lifecycle
 
 
 def test_false_positive_is_governed_closure_without_source_resolution() -> None:
