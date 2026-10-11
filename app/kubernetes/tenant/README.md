@@ -25,6 +25,37 @@ Tenant follows the shared #894 Provider Prerequisite Blocking contract while pre
 
 This preserves #750 terminal zero-cluster content blocking, #774 committed-state read availability, and #894 cross-domain navigation/Hero consistency without making normal Tenant pages depend on live provider requests.
 
+### Tenant Detail: Namespace and Resource Profile correlation (#1136)
+
+Use **Kubernetes → Tenant → Tenants → Tenant Registry → Tenant Detail →
+Namespace & Resource Profile Mapping** to identify every displayed
+Namespace's linked profile, public ID, pinned version, managed/observed
+allocation control and frozen quota values, with its environment, generation,
+Released/history status and last committed provider UID/reconciliation.
+The preview deliberately shows **five newest records** and links to the
+existing Tenant-filtered **Namespace Provisioning Registry** for full
+history; this is a committed-only read model, not a new management form.
+For a preexisting adopted Native Namespace without a linked profile, the
+provider baseline is labeled **Observed/Imported** instead of claiming a
+KAORI-managed profile. A linked Resource Profile's logical definition may
+change without rewriting the pinned Namespace allocation version.
+
+For a Native lifecycle test, record provider `ResourceQuota`/`LimitRange`
+specifications and metadata at these checkpoints: **before Adoption**,
+**after managed Allocation Change + verified read-back**, **after Native
+Release + verified handoff**, **after independent Handback**, and
+**after explicit fresh Discovery/Re-adopt**. Adoption initially records
+the observed provider allocation and the governed takeover may preserve
+equivalent values; only explicit admitted allocation mutations change
+Kubernetes allocation specs. **Release does not resize Kubernetes
+resources**: it transfers ownership/governance labels and verifies that
+effective quota/limits and foreign metadata remain unchanged. Subsequent
+Handback and verified residual-label recovery are metadata-only; new
+Adoption creates a new committed generation. Do not interpret the mapping's
+CPU/memory values as live utilization or assume `Released` proves that
+Re-adopt is already eligible. Provider execution/official UAT remains
+HOLD unless separately authorized.
+
 ### Resource Profile lifecycle
 
 Resource Profile administration preserves the approved #113 allocation authority while avoiding profile sprawl:

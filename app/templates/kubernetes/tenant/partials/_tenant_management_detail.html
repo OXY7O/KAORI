@@ -263,6 +263,7 @@
     </section>
 
     <div class="min-w-0 space-y-6" role="region" aria-label="Tenant management sections">
+        {% include 'kubernetes/tenant/partials/_tenant_namespace_profile_mapping.html' %}
 
 {% if can_manage and current_user.has_permission('integrations.manage')
                       and current_user.has_permission('clusters.manage')
