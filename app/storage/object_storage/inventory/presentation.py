@@ -15,6 +15,7 @@ from app.integrations.provider_matrix import provider_kinds
 from app.models.integration import IntegrationInstance
 from app.models.minio import MinioInstance
 from app.models.object_storage import ObjectStorageBucket, ObjectStorageSystem
+from app.storage.object_storage.inventory.aggregates import bucket_fleet_posture
 from app.storage.object_storage.inventory.system_presentation import (
     _compatibility_profile_display,
     _overview_snapshot_from_counts,
@@ -573,15 +574,47 @@ def _overview_provider_distribution(rows: list[dict[str, Any]]) -> list[dict[str
 
 
 def build_overview() -> dict[str, Any]:
-    rows = [_system_row(system) for system in _system_query().all()]
-    buckets = ObjectStorageBucket.query.all()
-    total_systems, total_buckets = len(rows), len(buckets)
-    bucket_posture = _overview_bucket_posture(buckets)
+    """Project exact committed fleet evidence using bounded SQL aggregates."""
+    threshold = datetime.now(UTC) - timedelta(hours=OBJECT_STORAGE_INVENTORY_FRESHNESS_HOURS)
+    status = func.lower(func.trim(func.coalesce(ObjectStorageSystem.status, 'unknown')))
+    normal = status.in_(('ready', 'connected'))
+    critical = status.in_(('blocked', 'failed'))
+    provider_attention = status.in_(('blocked', 'failed', 'warning', 'unknown'))
+    (total, observed, ready, blocked, attention, stale, latest) = (
+        db.session.query(
+            func.count(ObjectStorageSystem.id),
+            func.count(ObjectStorageSystem.inventory_observed_at),
+            func.sum(case((normal, 1), else_=0)),
+            func.sum(case((critical, 1), else_=0)),
+            func.sum(case((provider_attention, 1), else_=0)),
+            func.sum(case((
+                ObjectStorageSystem.inventory_observed_at < threshold, 1
+            ), else_=0)),
+            func.max(ObjectStorageSystem.inventory_observed_at),
+        )
+        .one()
+    )
+    total_systems, inventoried_systems = int(total or 0), int(observed or 0)
+    ready_systems, blocked_systems = int(ready or 0), int(blocked or 0)
+    provider_attention_count, stale_count = int(attention or 0), int(stale or 0)
+    missing_count = total_systems - inventoried_systems
+    active_signal_count = provider_attention_count + stale_count + missing_count
+
+    bucket_posture = bucket_fleet_posture()
+    total_buckets = bucket_posture['total_assets']
     fleet_readings = _overview_fleet_readings(bucket_posture)
-    ready_systems = sum(1 for row in rows if row['status_tone'] == 'normal')
-    blocked_systems = sum(1 for row in rows if row['status_tone'] == 'critical')
-    inventoried_systems = sum(1 for row in rows if row['last_inventory_at'] is not None)
-    active_signal_count = sum(len(row['signals']) for row in rows)
+
+    # Provider distribution uses the same authoritative canonical-owner join as list pages.
+    owner_query = _system_scope().order_by(None)
+    provider_label = _sql_provider_label()
+    distributions = owner_query.with_entities(
+        provider_label.label('provider_label'),
+        func.count(ObjectStorageSystem.id).label('system_count'),
+    ).group_by(provider_label).all()
+    provider_distribution = [
+        {'label': label, 'count': int(count)}
+        for label, count in sorted(distributions, key=lambda row: (-row[1], row[0]))
+    ]
     if total_systems == 0:
         posture_label, posture_tone = 'No Sources', 'unknown'
     elif blocked_systems or active_signal_count:
@@ -590,7 +623,7 @@ def build_overview() -> dict[str, Any]:
         posture_label, posture_tone = 'Inventory Pending', 'warning'
     else:
         posture_label, posture_tone = 'Ready', 'normal'
-    latest_inventory_at = max((row['last_inventory_at'] for row in rows if row['last_inventory_at']), default=None)
+
     return {
         'total_systems': total_systems,
         'total_buckets': total_buckets,
@@ -599,7 +632,7 @@ def build_overview() -> dict[str, Any]:
         'blocked_systems': blocked_systems,
         'inventoried_systems': inventoried_systems,
         'inventory_coverage': round((inventoried_systems / total_systems) * 100) if total_systems else 0,
-        'latest_inventory_at': latest_inventory_at,
+        'latest_inventory_at': latest,
         'posture_label': posture_label,
         'posture_tone': posture_tone,
         'active_signal_count': active_signal_count,
@@ -607,9 +640,16 @@ def build_overview() -> dict[str, Any]:
         'bucket_posture': bucket_posture,
         'fleet_readings': fleet_readings,
         'fleet_posture_metrics': _overview_fleet_posture_metrics(bucket_posture, fleet_readings),
-        'provider_distribution': _overview_provider_distribution(rows),
+        'provider_distribution': provider_distribution,
         'setup': _setup_state(total_systems),
-        'snapshot': _overview_snapshot(rows),
+        'snapshot': _overview_snapshot_from_counts(
+            total_systems=total_systems,
+            inventoried_count=inventoried_systems,
+            latest=latest,
+            missing_count=missing_count,
+            stale_count=stale_count,
+            provider_exception_count=provider_attention_count,
+        ),
     }
 
 

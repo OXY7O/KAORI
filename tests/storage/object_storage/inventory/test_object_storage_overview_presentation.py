@@ -137,3 +137,54 @@ def test_no_assets_or_public_evidence_keeps_unknown_state_and_real_public_attent
     readings = _overview_fleet_readings(_overview_bucket_posture([public]))
     assert readings[1]['tone'] == 'warning'  # Public exposure also triggers protection attention.
     assert readings[2]['tone'] == 'critical'
+
+
+def test_sql_fleet_bucket_aggregate_matches_existing_pure_posture(monkeypatch) -> None:
+    from types import SimpleNamespace
+
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import Session
+
+    from app.models.object_storage import ObjectStorageBucket, ObjectStorageSystem
+    from app.storage.object_storage.inventory import aggregates
+
+    engine = create_engine('sqlite+pysqlite:///:memory:')
+    ObjectStorageSystem.__table__.create(engine)
+    ObjectStorageBucket.__table__.create(engine)
+    with Session(engine) as session:
+        monkeypatch.setattr(aggregates, 'db', SimpleNamespace(session=session))
+        assert aggregates.bucket_fleet_posture() == _overview_bucket_posture([])
+        session.add(ObjectStorageSystem(id='storage-a', name='Storage A', environment='uat', status='ready'))
+        samples = [
+            _BucketPostureStub('configured', 'enabled', 'enabled', 'configured', 'private', 'collected'),
+            _BucketPostureStub('not_configured', 'not_collected', 'not_collected', 'not_collected', 'unknown', 'not_collected'),
+            _BucketPostureStub('not_collected', 'disabled', 'enabled', 'enabled', 'restricted', 'collected'),
+            _BucketPostureStub('configured', 'enabled', 'enabled', 'enforced', 'public', 'not_collected'),
+            _BucketPostureStub('not_collected', 'enabled', 'not_supported', 'enabled', 'not_collected', 'not_collected'),
+        ]
+        for index, data in enumerate(samples, start=1):
+            session.add(ObjectStorageBucket(
+                id=index, name=f'bucket-{index}', object_storage_system_id='storage-a',
+                quota_state=data.quota_state, versioning_state=data.versioning_state,
+                immutability_state=data.immutability_state, encryption_state=data.encryption_state,
+                exposure_state=data.exposure_state, usage_stats_state=data.usage_stats_state,
+                observed_at=datetime.now(UTC),
+            ))
+        session.commit()
+        assert aggregates.bucket_fleet_posture() == _overview_bucket_posture(samples)
+        assert aggregates.bucket_usage_summary()['buckets'] == len(samples)
+        assert aggregates.bucket_usage_summary(system_id='nonexistent')['buckets'] == 0
+    engine.dispose()
+
+
+def test_inventory_overview_aggregates_without_loading_entire_bucket_collection() -> None:
+    from pathlib import Path
+
+    source = Path('app/storage/object_storage/inventory/presentation.py').read_text(encoding='utf-8')
+    overview = source.split('def build_overview()', 1)[1].split('class SystemFilters:', 1)[0]
+    assert 'bucket_fleet_posture()' in overview
+    assert '_system_scope().order_by(None)' in overview
+    assert '_overview_snapshot_from_counts(' in overview
+    assert 'ObjectStorageBucket.query.all()' not in overview
+    assert '_system_query().all()' not in overview
+    assert '_system_row(' not in overview

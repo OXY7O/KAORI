@@ -60,3 +60,7 @@ scalar filter-option projections avoid full fleet row/evidence materialization o
 operational list reads. Tied asset names sort by stable ID. The Snapshot Context
 Bar uses the same committed fleet semantics through a SQL aggregate read model.
 No live provider calls are permitted on GET routes.
+
+## Bounded Inventory Overview fleet read model (#1370)
+
+Inventory Overview aggregates committed registered-system status, inventory observation coverage and provider distribution through grouped SQL and the existing canonical owner joins. Bucket/Container quota, protection, exposure, and usage evidence is aggregated by `inventory/aggregates.py::bucket_fleet_posture`, using the exact existing assessed/unknown, negative-control, and public-exposure definitions. No full bucket ORM collections or per-system provider-owner resolution are required by the Overview. Systems/Buckets paginated list pages remain separately governed by #1262; dashboard Fast Shell and its per-section evidence remain #1367. These operations read committed KAORI state only and do not contact MinIO or another provider.
