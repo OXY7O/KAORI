@@ -39,7 +39,7 @@ def repository_app():
             model.__table__.drop(db.engine)
 
 
-def test_deep_candidate_prefixes_preserve_full_committed_type_counts(repository_app) -> None:
+def test_deep_candidate_prefixes_preserve_full_committed_type_counts(repository_app, monkeypatch) -> None:
     now = datetime.now(UTC)
     with repository_app.app_context():
         cluster = Cluster(id='cluster-a', name='A', environment='production', status='connected')
@@ -126,6 +126,55 @@ def test_deep_candidate_prefixes_preserve_full_committed_type_counts(repository_
         assert len(scoped.storage_items) == 710
         assert 'pvc' not in scoped.source_totals
         assert 'pv' not in scoped.source_totals
+
+        # Graph parity, not merely an ORM row-count contract: the candidate
+        # budget must preserve all rendered nodes, edges and omission evidence.
+        from types import SimpleNamespace
+
+        from app.kubernetes.inventory.topology import node_builder
+        from app.kubernetes.inventory.topology.graph_builder import TopologyGraphBuilder
+
+        monkeypatch.setattr(node_builder, 'url_for', lambda endpoint, **kwargs: f'/{endpoint}')
+        display_cluster = SimpleNamespace(
+            id=cluster.id, name=cluster.name, status=cluster.status,
+            environment=cluster.environment, node_count=1,
+            updated_at=now, kubernetes_connection=None,
+        )
+
+        cases = (
+            ('all', 'full', ''),
+            ('compute', '3', ''),
+            ('networking', '3', ''),
+            ('all', 'full', 'app'),
+            ('storage', 'full', 'app'),
+        )
+        for scope, depth, namespace in cases:
+            selection = TopologySelection.from_filters(scope=scope, depth=depth)
+            arguments = dict(
+                clusters=[display_cluster],
+                latest_inventory={cluster.id: snapshot},
+                namespace=namespace,
+                selection=selection,
+            )
+            bounded = load_topology_records(**arguments, max_nodes=350)
+            complete = load_topology_records(**arguments, max_nodes=None)
+            filters = {'cluster_id': cluster.id, 'namespace': namespace, 'scope': scope, 'depth': depth}
+            builder_args = dict(
+                filters=filters, scope_label='Test scope', depth_label='Test depth',
+            )
+            bounded_graph = TopologyGraphBuilder(bounded, selection, max_nodes=350).build(**builder_args)
+            complete_graph = TopologyGraphBuilder(complete, selection, max_nodes=350).build(**builder_args)
+
+            assert [row['data']['id'] for row in bounded_graph['nodes']] == [
+                row['data']['id'] for row in complete_graph['nodes']
+            ], (scope, depth, namespace)
+            assert [row['data'] for row in bounded_graph['edges']] == [
+                row['data'] for row in complete_graph['edges']
+            ], (scope, depth, namespace)
+            assert bounded_graph['summary'] == complete_graph['summary'], (
+                scope, depth, namespace,
+            )
+            assert bounded_graph['type_counts'] == complete_graph['type_counts']
 
 
 def test_namespace_pv_bindings_do_not_cross_cluster_boundaries(repository_app) -> None:

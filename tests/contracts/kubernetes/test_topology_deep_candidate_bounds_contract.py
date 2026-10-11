@@ -19,7 +19,8 @@ def test_committed_sql_candidate_counts_cover_independent_types() -> None:
     repo = source('app/kubernetes/inventory/topology/repository.py')
     assert "totals[kind] = query.order_by(None).count()" in repo
     assert "query.limit(max_nodes).all()" in repo
-    for kind in ("node", "workload", "service", "ingress", "configmap", "secret", "pvc", "pv", "pod"):
+    assert "totals['node'] = query.order_by(None).count()" in repo
+    for kind in ("workload", "service", "ingress", "configmap", "secret", "pvc", "pv", "pod"):
         assert f"kind='{kind}'" in repo
     assert "query.filter(visible.exists())" in repo
     assert "NamespaceInventory.namespace == model.namespace" in repo
