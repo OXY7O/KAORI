@@ -6,6 +6,7 @@ from sqlalchemy import func
 from typing import Any
 
 from app.common.presentation import present_user_datetime
+from app.extensions.db import db
 from app.models.cluster import Cluster
 from app.models.governance import TLSCertificateCollectionState, TLSCertificateInventory
 from app.models.job import JobExecution
