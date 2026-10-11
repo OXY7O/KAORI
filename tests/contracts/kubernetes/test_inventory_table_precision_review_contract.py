@@ -42,6 +42,30 @@ def test_node_identity_columns_are_prioritized_over_short_signal_columns() -> No
     assert "table_ui.title_cell(node.node_name, node.identity_supporting, 'server')" in node
 
 
+def test_namespace_widths_prioritize_names_and_preserve_control_pairs() -> None:
+    table = read('namespaces/partials/_table_content.html')
+    distribution = {
+        'Namespace': 24,
+        'Cluster': 21,
+        'Lifecycle': 8,
+        'Resource Controls': 18,
+        'Security Context': 19,
+        'Details': 10,
+    }
+    assert sum(distribution.values()) == 100
+    assert distribution['Namespace'] > distribution['Security Context']
+    assert distribution['Cluster'] > distribution['Resource Controls']
+    for heading, percent in distribution.items():
+        header = table.split(f'>{heading}</th>', 1)[0].rsplit('<th', 1)[-1]
+        assert f'w-[{percent}%]' in header
+
+    assert "table_ui.table_classes('min-w-[78rem] !table-fixed')" in table
+    assert 'overflow-x-auto overscroll-x-contain' in table
+    assert table.count('grid-cols-[6rem_minmax(0,1fr)]') == 2
+    assert 'table_ui.namespace_identity(namespace.namespace, \'w-full min-w-0\')' in table
+    assert "table_ui.cluster_identity(namespace.cluster_name, namespace.cluster_environment, 'w-full min-w-0')" in table
+
+
 def test_storage_and_ingress_keep_full_identity_available_in_title() -> None:
     storage = read('storage/partials/_table_content.html')
     ingress = read('ingresses/partials/_table_content.html')
