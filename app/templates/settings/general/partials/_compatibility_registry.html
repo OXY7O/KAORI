@@ -1,0 +1,211 @@
+{% import "components/table_label.html" as table_label %}
+<section id="compatibility-registry"
+         class="px-5 py-5 sm:px-6"
+         data-compatibility-registry="server-paginated"
+         aria-label="Compatibility Registry">
+    <div class="flex flex-wrap items-start justify-between gap-3">
+        <div>
+            <h3 class="text-base font-bold text-content-primary">Compatibility Registry</h3>
+            <p class="mt-1 text-sm leading-6 text-content-muted">Select an integration to inspect its qualified versions, contract, support and readiness authority.</p>
+        </div>
+        {{ table_label.metadata_label(compatibility_registry.total ~ ' of ' ~ system_information.compatibility_product_count ~ ' Integrations', 'blocks') }}
+    </div>
+    <form method="get"
+          action="{{ url_for('settings.general') }}"
+          hx-get="{{ url_for('settings.general') }}"
+          hx-target="#compatibility-registry"
+          hx-swap="outerHTML"
+          hx-push-url="true"
+          hx-sync="#compatibility-registry:replace"
+          hx-indicator="#general-settings-loading"
+          class="mt-4 flex flex-col gap-3 rounded-xl border border-outline-default bg-surface-card p-3 sm:flex-row sm:items-end"
+          role="search">
+        <input type="hidden" name="tab" value="compatibility-versions" />
+        <label class="flex min-w-0 flex-1 flex-col gap-1.5">
+            <span class="text-xs font-semibold text-content-secondary">Search Integrations</span>
+            <input type="search" name="compatibility_search" maxlength="100"
+                   value="{{ compatibility_registry.search }}"
+                   placeholder="Product, contract, or qualified version"
+                   class="h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm text-content-primary placeholder:text-content-muted focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-soft" />
+        </label>
+        <label class="flex min-w-0 flex-col gap-1.5 sm:w-48">
+            <span class="text-xs font-semibold text-content-secondary">Support Posture</span>
+            <select name="compatibility_support"
+                    class="h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm text-content-primary focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-soft">
+                <option value="all" {% if compatibility_registry.support == 'all' %}selected{% endif %}>All qualifications</option>
+                <option value="includes-current" {% if compatibility_registry.support == 'includes-current' %}selected{% endif %}>Includes Current</option>
+                <option value="extended-only" {% if compatibility_registry.support == 'extended-only' %}selected{% endif %}>Extended only</option>
+            </select>
+        </label>
+        <div class="flex items-center gap-2">
+            <button type="submit"
+                    class="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                <i data-lucide="search" class="h-4 w-4" aria-hidden="true"></i>Apply
+            </button>
+            <a href="{{ url_for('settings.general', tab='compatibility-versions') }}"
+               hx-get="{{ url_for('settings.general', tab='compatibility-versions') }}"
+               hx-target="#compatibility-registry" hx-swap="outerHTML" hx-push-url="true"
+               hx-indicator="#general-settings-loading"
+               class="inline-flex h-10 items-center justify-center rounded-md border border-outline-default px-3 text-sm font-semibold text-content-secondary hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">Reset</a>
+        </div>
+    </form>
+    <div class="mt-4 grid gap-4 lg:grid-cols-5"
+         data-compatibility-registry-layout="list-detail">
+        <section class="min-w-0 rounded-xl border border-outline-default lg:col-span-2"
+                 aria-labelledby="compatibility-catalog-heading">
+            <div class="flex items-center justify-between gap-2 border-b border-outline-subtle px-4 py-3">
+                <h4 id="compatibility-catalog-heading" class="text-sm font-bold text-content-primary">Integrations</h4>
+                <span class="text-xs text-content-muted">{{ compatibility_registry.start }}–{{ compatibility_registry.end }} of {{ compatibility_registry.total }}</span>
+            </div>
+            {% if compatibility_registry['items'] %}
+                <ul class="divide-y divide-outline-subtle" data-compatibility-product-list="page-5">
+                    {% for item in compatibility_registry['items'] %}
+                        <li>
+                            {% set is_selected = compatibility_registry.selected and item.key == compatibility_registry.selected.key %}
+                            {% set item_href = url_for('settings.general', tab='compatibility-versions', compatibility_search=compatibility_registry.search, compatibility_support=compatibility_registry.support, compatibility_page=compatibility_registry.page, compatibility_key=item.key) %}
+                            <a href="{{ item_href }}" hx-get="{{ item_href }}"
+                               hx-target="#compatibility-registry" hx-swap="outerHTML" hx-push-url="true"
+                               hx-indicator="#general-settings-loading"
+                               {% if is_selected %}aria-current="true"{% endif %}
+                               class="flex min-w-0 items-center gap-3 px-4 py-3.5 transition hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus {{ 'bg-kaori-soft/40' if is_selected else 'bg-surface-card' }}">
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                                    <i data-lucide="{{ item.icon }}" class="h-4 w-4" aria-hidden="true"></i>
+                                </span>
+                                <span class="min-w-0 flex-1">
+                                    <span class="block text-sm font-semibold text-content-primary">{{ item.product }}</span>
+                                    <span class="mt-0.5 block truncate text-xs text-content-muted" title="{{ item.qualified_versions }}">{{ item.qualified_versions }}</span>
+                                    <span class="mt-1 block text-xs text-content-secondary">{{ item.support_label }}</span>
+                                </span>
+                                <i data-lucide="chevron-right" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div class="px-4 py-10 text-center">
+                    <i data-lucide="search-x" class="mx-auto h-6 w-6 text-content-muted" aria-hidden="true"></i>
+                    <p class="mt-2 text-sm font-semibold text-content-primary">No matching integrations</p>
+                    <p class="mt-1 text-xs text-content-muted">Adjust the search or support filter to see qualified products.</p>
+                </div>
+            {% endif %}
+            {% if compatibility_registry.pages > 1 %}
+                <nav class="flex items-center justify-between gap-2 border-t border-outline-subtle px-4 py-3"
+                     aria-label="Integration registry pages">
+                    <span class="text-xs text-content-muted">Page {{ compatibility_registry.page }} of {{ compatibility_registry.pages }}</span>
+                    <div class="flex gap-2">
+                        {% if compatibility_registry.page > 1 %}
+                            {% set prev_href = url_for('settings.general', tab='compatibility-versions', compatibility_search=compatibility_registry.search, compatibility_support=compatibility_registry.support, compatibility_page=compatibility_registry.page - 1) %}
+                            <a href="{{ prev_href }}" hx-get="{{ prev_href }}" hx-target="#compatibility-registry" hx-swap="outerHTML" hx-push-url="true" hx-indicator="#general-settings-loading"
+                               class="rounded-md border border-outline-default px-3 py-1.5 text-xs font-semibold text-content-secondary hover:bg-surface-hover">Previous</a>
+                        {% endif %}
+                        {% if compatibility_registry.page < compatibility_registry.pages %}
+                            {% set next_href = url_for('settings.general', tab='compatibility-versions', compatibility_search=compatibility_registry.search, compatibility_support=compatibility_registry.support, compatibility_page=compatibility_registry.page + 1) %}
+                            <a href="{{ next_href }}" hx-get="{{ next_href }}" hx-target="#compatibility-registry" hx-swap="outerHTML" hx-push-url="true" hx-indicator="#general-settings-loading"
+                               class="rounded-md border border-outline-default px-3 py-1.5 text-xs font-semibold text-content-secondary hover:bg-surface-hover">Next</a>
+                        {% endif %}
+                    </div>
+                </nav>
+            {% endif %}
+        </section>
+        <section class="min-w-0 rounded-xl border border-outline-default bg-surface-card lg:col-span-3"
+                 aria-labelledby="compatibility-detail-heading"
+                 data-compatibility-product-detail="selected-only">
+            {% if compatibility_registry.selected %}
+                {% set selected = compatibility_registry.selected %}
+                <div class="flex flex-wrap items-start justify-between gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5">
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold text-kaori-primary">Qualification Detail</p>
+                        <h4 id="compatibility-detail-heading" class="mt-1 text-lg font-bold text-content-primary">{{ selected.product }}</h4>
+                        <p class="mt-1 break-words text-xs text-content-muted">{{ selected.version_scheme }} · {{ selected.contract_profile }}</p>
+                    </div>
+                    {{ table_label.status_label(selected.support_label, selected.support_tone, 'badge-check') }}
+                </div>
+                <div class="space-y-4 px-4 py-4 sm:px-5">
+                    <dl class="grid gap-4 sm:grid-cols-2">
+                        <div>
+                            <dt class="text-xs font-semibold text-content-muted">Qualified Versions</dt>
+                            <dd class="mt-1 break-words text-sm font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ selected.qualified_versions }}</dd>
+                            <p class="mt-1 text-xs text-content-muted">Preferred: {{ selected.recommended_label }}</p>
+                        </div>
+                        <div>
+                            <dt class="text-xs font-semibold text-content-muted">General Contract</dt>
+                            <dd class="mt-1 break-words font-mono text-sm font-semibold text-kaori-primary [overflow-wrap:anywhere]">{{ selected.contract_profile }}</dd>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ selected.capability_summary }}</p>
+                        </div>
+                        <div>
+                            <dt class="text-xs font-semibold text-content-muted">KAORI Support</dt>
+                            <dd class="mt-1 text-sm text-content-secondary">{{ selected.support_label }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs font-semibold text-content-muted">Upstream Lifecycle</dt>
+                            <dd class="mt-1 text-sm leading-6 text-content-secondary">{{ selected.upstream_lifecycle }}</dd>
+                        </div>
+                    </dl>
+                    <div class="border-t border-outline-subtle pt-4">
+                        <h5 class="flex items-center gap-2 text-sm font-semibold text-content-primary">
+                            <i data-lucide="shield-check" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                            Readiness Authority
+                        </h5>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">{{ selected.validation_basis }}</p>
+                        <p class="mt-2 text-xs leading-5 text-content-muted">Qualified versions are supporting evidence, not proof of live provider readiness.</p>
+                    </div>
+                    <section class="border-t border-outline-subtle pt-4" aria-labelledby="compatibility-qualification-heading">
+                        <div class="flex flex-wrap items-start justify-between gap-2">
+                            <div>
+                                <h5 id="compatibility-qualification-heading" class="text-sm font-bold text-content-primary">Version Qualification</h5>
+                                <p class="mt-1 text-xs text-content-muted">Policy {{ selected.policy_version }} · {{ selected.policy_window }} · {{ compatibility_registry.profile_total }} qualification rows</p>
+                            </div>
+                            {% if compatibility_registry.profile_total %}
+                                {{ table_label.metadata_label('Rows ' ~ compatibility_registry.profile_start ~ '–' ~ compatibility_registry.profile_end, 'layers-2') }}
+                            {% endif %}
+                        </div>
+                        {% if compatibility_registry.profiles %}
+                            <div class="mt-3 divide-y divide-outline-subtle rounded-lg border border-outline-default">
+                                {% for profile in compatibility_registry.profiles %}
+                                    <div class="px-3 py-3">
+                                        <p class="break-words font-mono text-xs font-semibold text-content-primary [overflow-wrap:anywhere]">{{ profile.version_constraint }}</p>
+                                        <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-content-secondary">
+                                            <span>{{ profile.support_level }}</span>
+                                            <span aria-hidden="true">·</span>
+                                            <span>{{ profile.upstream_lifecycle }}</span>
+                                        </div>
+                                        <p class="mt-1 break-words text-xs text-content-muted">{{ profile.contract_profile }}</p>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="mt-3 text-xs text-content-muted">No version qualification rows recorded.</p>
+                        {% endif %}
+                        {% if compatibility_registry.profile_pages > 1 %}
+                            <nav class="mt-3 flex flex-wrap items-center justify-between gap-2"
+                                 aria-label="Version qualification pages">
+                                <span class="text-xs text-content-muted">Rows {{ compatibility_registry.profile_start }}–{{ compatibility_registry.profile_end }} of {{ compatibility_registry.profile_total }}</span>
+                                <div class="flex gap-2">
+                                    {% if compatibility_registry.profile_page > 1 %}
+                                        {% set prev_profile_href = url_for('settings.general', tab='compatibility-versions', compatibility_search=compatibility_registry.search, compatibility_support=compatibility_registry.support, compatibility_page=compatibility_registry.page, compatibility_key=selected.key, compatibility_profile_page=compatibility_registry.profile_page - 1) %}
+                                        <a href="{{ prev_profile_href }}" hx-get="{{ prev_profile_href }}" hx-target="#compatibility-registry" hx-swap="outerHTML" hx-push-url="true" hx-indicator="#general-settings-loading"
+                                           class="rounded-md border border-outline-default px-3 py-1.5 text-xs font-semibold text-content-secondary hover:bg-surface-hover">Previous</a>
+                                    {% endif %}
+                                    {% if compatibility_registry.profile_page < compatibility_registry.profile_pages %}
+                                        {% set next_profile_href = url_for('settings.general', tab='compatibility-versions', compatibility_search=compatibility_registry.search, compatibility_support=compatibility_registry.support, compatibility_page=compatibility_registry.page, compatibility_key=selected.key, compatibility_profile_page=compatibility_registry.profile_page + 1) %}
+                                        <a href="{{ next_profile_href }}" hx-get="{{ next_profile_href }}" hx-target="#compatibility-registry" hx-swap="outerHTML" hx-push-url="true" hx-indicator="#general-settings-loading"
+                                           class="rounded-md border border-outline-default px-3 py-1.5 text-xs font-semibold text-content-secondary hover:bg-surface-hover">Next</a>
+                                    {% endif %}
+                                </div>
+                            </nav>
+                        {% endif %}
+                    </section>
+                </div>
+            {% else %}
+                <div class="px-5 py-10 text-center">
+                    <h4 id="compatibility-detail-heading" class="text-sm font-bold text-content-primary">No qualification detail selected</h4>
+                    <p class="mt-1 text-xs text-content-muted">Choose a matching integration to inspect its evidence.</p>
+                </div>
+            {% endif %}
+        </section>
+    </div>
+    <p class="mt-4 flex items-start gap-2 text-xs leading-5 text-content-muted">
+        <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+        Product version qualification, upstream lifecycle, KAORI support and live runtime evidence remain separate authorities.
+    </p>
+</section>

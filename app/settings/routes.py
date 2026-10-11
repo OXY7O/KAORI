@@ -35,6 +35,7 @@ from app.settings.general.actions import (
     save_timezone_preference,
     sync_browser_timezone_preference,
 )
+from app.settings.general.compatibility_registry import build_compatibility_registry
 from app.settings.general.forms import RegionalFormatForm, TimezonePreferenceForm
 from app.settings.system_information import build_system_information
 
@@ -102,6 +103,18 @@ def general():
             regional_form.date_format.data = normalize_date_format(user.date_format)
             regional_form.time_format.data = normalize_time_format(user.time_format)
 
+    system_information = build_system_information(current_app.config) if can_view_system_information else None
+    compatibility_registry = None
+    if active_tab == 'compatibility-versions' and system_information is not None:
+        compatibility_registry = build_compatibility_registry(
+            system_information['compatibility_products'],
+            search=request.args.get('compatibility_search'),
+            support=request.args.get('compatibility_support'),
+            page=request.args.get('compatibility_page'),
+            selected_key=request.args.get('compatibility_key'),
+            profile_page=request.args.get('compatibility_profile_page'),
+        )
+
     now_utc = datetime.now(UTC)
     context: dict[str, Any] = {
         'active_tab': active_tab,
@@ -117,11 +130,23 @@ def general():
             include_seconds=True,
         ),
         'preview_timestamp': now_utc.isoformat(),
-        'system_information': build_system_information(current_app.config) if can_view_system_information else None,
+        'system_information': system_information,
+        'compatibility_registry': compatibility_registry,
         'can_view_system_information': can_view_system_information,
         'page_title': 'General Settings',
         'timezone_sync_oob': is_htmx,
     }
+    if (
+        request.method == 'GET'
+        and is_htmx
+        and active_tab == 'compatibility-versions'
+        and compatibility_registry is not None
+        and request.headers.get('HX-Target') == 'compatibility-registry'
+    ):
+        return make_response(
+            render_template('settings/general/partials/_compatibility_registry.html', **context)
+        )
+
     template_name = 'settings/general/partials/_page_content.html' if is_htmx else 'settings/general/index.html'
     rendered_page = render_template(template_name, **context)
     if is_htmx and operation_feedback is not None:
