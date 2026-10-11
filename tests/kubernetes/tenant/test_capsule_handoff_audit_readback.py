@@ -1108,6 +1108,7 @@ def test_g3_source_rbac_lineage_and_inventory_are_plan_bound(attack):
     ('quota', 'global_quota_has_unresolved_provider_findings'),
     ('lineage', 'rbac_lineage_has_unresolved_provider_findings'),
     ('missing_status', 'related_inventory_provenance_or_coverage_unverified'),
+    ('missing_blockers', 'related_inventory_provenance_or_coverage_unverified'),
     ('non_string_findings', 'related_inventory_provenance_or_coverage_unverified'),
 ])
 def test_g3_current_provider_findings_cannot_be_hidden_by_matching_list_hashes(area, failure):
@@ -1127,6 +1128,8 @@ def test_g3_current_provider_findings_cannot_be_hidden_by_matching_list_hashes(a
         )
     elif area == 'missing_status':
         current.pop('status')
+    elif area == 'missing_blockers':
+        current.pop('blockers')
     else:
         current['blockers'].append({'detail': 'untrusted'})
     # No policy, LIST RV or global-quota hash changed; these source
