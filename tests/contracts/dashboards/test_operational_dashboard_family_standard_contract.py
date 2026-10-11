@@ -164,6 +164,32 @@ def test_data_freshness_microcopy_and_shared_family_geometry() -> None:
     assert "'label': 'Security Snapshot'" in read('app/artifact_registry/presentation_overview.py')
 
 
+def test_capacity_metric_cards_follow_kubernetes_visual_grammar() -> None:
+    kubernetes = read('app/templates/kubernetes/dashboard/partials/_capacity_snapshot.html')
+    storage = read('app/templates/storage/object_storage/dashboard/partials/_capacity.html')
+    registry = read('app/templates/artifact_registry/partials/_overview_capacity_snapshot.html')
+
+    for template in (kubernetes, storage, registry):
+        assert 'Data Scope:' in template
+        assert 'bg-kaori-soft p-3 text-xs leading-5 text-content-secondary' in template
+        assert 'grid gap-3 lg:grid-cols-3' in template
+        assert 'components/progress_bar.html' in template
+        assert 'bg-kaori-primary' in template
+        assert 'bg-status-info' in template
+        assert 'bg-status-pending' in template
+        assert 'bg-surface-elevated p-4' in template
+        assert 'Overall Capacity Risk' in template
+        assert 'Recommended Capacity Action Flow' in template
+
+    assert 'progress_bar.bar(percent,' in storage
+    assert 'percentage unavailable' in storage
+    assert 'Capacity Utilization</h3>' not in storage
+    assert 'progress_bar.bar(item.progress_percent,' in registry
+    assert 'item.progress_percent is not none' in registry
+    assert 'percentage not applicable' in registry
+    assert 'operational_callout.render(' not in registry
+
+
 def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
     freshness = read('app/kubernetes/dashboard/sections/freshness.py')
     capacity = read('app/kubernetes/dashboard/sections/capacity.py')
