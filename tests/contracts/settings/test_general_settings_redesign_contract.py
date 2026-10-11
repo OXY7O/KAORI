@@ -215,7 +215,22 @@ def test_compatibility_workspace_keeps_policy_contract_qualification_and_readine
     assert 'data-compatibility-registry-results="partial"' in results
     assert 'data-compatibility-registry-layout="list-detail"' in results
     assert 'data-compatibility-catalog="bounded-scroll"' in results
-    assert 'max-h-[24rem] overflow-y-auto' in results
+    assert 'max-h-[33rem] overflow-y-auto' in results
+    assert 'max-h-[24rem]' not in results
+    assert 'border-kaori-primary bg-kaori-soft/30' in results
+    assert 'border-transparent bg-surface-card hover:bg-surface-hover' in results
+    assert 'lg:grid-cols-12' in results
+    assert 'lg:col-span-4' in results
+    assert 'lg:col-span-8' in results
+    assert 'bg-kaori-soft/20' not in results
+    assert 'bg-kaori-soft/25' not in results
+    assert 'Qualification supports compatibility; live provider validation remains authoritative.' not in results
+    assert 'Qualification is not proof of live provider readiness.' in results
+    assert '<ol class="mt-3 divide-y divide-outline-subtle border-t border-outline-subtle"' in results
+    assert 'compatibility_registry.profile_pages > 1' in results
+    assert "'Page ' ~ compatibility_registry.profile_page" in results
+    assert 'profile.version_constraint' in results
+    assert 'profile.upstream_lifecycle' in results
     assert 'role="region"' in results
     assert 'tabindex="0"' in results
     assert 'aria-label="Scrollable integration catalog"' in results
