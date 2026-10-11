@@ -444,10 +444,10 @@ def _verify_artifact_registry_dashboard(
             "'progress_label': 'Used'",
             "'progress_label': 'Free'",
             "'label': 'Quota Left'",
-            'No quota risk within the warning window.',
+            'Committed project quota forecasts remain outside the warning threshold, with sufficient headroom for current demand.',
             "'progress_label': 'Inventory'",
             '100 - quota_utilization if quota_utilization is not None else None',
-            'Committed growth and quota evidence.',
+            'Registry growth is evaluated using committed inventory changes and project quota evidence from the bound Metrics Source.',
         ),
         'Registry committed quota progress semantics and compact evidence microcopy',
     )
