@@ -2,6 +2,8 @@
 {% import "components/operational_signal_overview.html" as signal_overview %}
 {% import "components/table.html" as table_ui %}
 {% set signal_updated = ('Updated ' ~ (overview.latest_committed_at|user_datetime)) if overview.latest_committed_at else 'Not Collected' %}
+{% set scope_status = overview.posture.label if overview.selected_provider else 'Select a Registry Provider for Detailed Signals' %}
+{% set scope_tone = overview.posture.tone if overview.selected_provider else 'warning' %}
 {% set scope_selector %}
     <label for="artifact-registry-dashboard-provider" class="sr-only">Registry Provider Scope</label>
     <div class="relative min-w-0 flex-1 lg:w-72 lg:flex-none">
