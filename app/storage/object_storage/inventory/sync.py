@@ -56,9 +56,9 @@ def commit_bucket_inventory(
     if existing and not observed:
         if not confirmed_empty:
             raise RuntimeError(
-            f'Provider bucket discovery returned zero assets while the last committed snapshot contains '
-            f'{len(existing)} bucket/container asset(s). KAORI preserved the previous committed snapshot. '
-            'Verify the S3 endpoint, credentials, and ListBuckets scope before retrying Object Storage Inventory Sync.'
+                'Provider bucket discovery returned zero assets while the last committed snapshot contains '
+                f'{len(existing)} bucket/container asset(s). KAORI preserved the previous committed snapshot. '
+                'Verify the S3 endpoint, credentials, and ListBuckets scope before retrying Object Storage Inventory Sync.'
             )
 
     created = 0
@@ -129,6 +129,11 @@ def sync_object_storage_inventory(
     current_stage = 'system lock'
     try:
         _lock_system_inventory_sync(system.id)
+        if empty_reconciliation is not None:
+            # Refresh under the system row lock; the dispatch-time ORM identity
+            # may have been loaded before a concurrent inventory generation.
+            db.session.refresh(system, attribute_names=['inventory_observed_at'])
+            db.session.expire(system, ['buckets'])
         previous_bucket_count = len(system.buckets)
         if empty_reconciliation is not None:
             observed = system.inventory_observed_at
