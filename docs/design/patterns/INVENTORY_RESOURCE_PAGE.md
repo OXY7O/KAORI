@@ -146,6 +146,12 @@ Topology reads API Server identity from the canonical `Cluster.kubernetes_connec
 - Missing or unavailable committed evidence renders a neutral unavailable/unknown state; it does not trigger a live-provider fallback.
 - Synchronization is asynchronous and owns its own retry/failure feedback boundary. Read pages remain available against the last committed generation when collection is not running.
 
+## Inventory table contextual explanations (KAORI shared Info Tip)
+
+When an Inventory table contains terms whose meaning may not be clear at a glance, place a concise, read-only `components/info_tip.html::render` control beside the **technical header label**. Namespace Inventory also exposes a tip beside its **PSA Enforce** in-cell label. The component already supports pointer hover, keyboard focus, click/touch and Escape; its popover is portaled to avoid clipping inside scrollable tables, including HTMX replacements. No parallel tooltip JavaScript or page-local hover CSS is allowed.
+
+Apply this across Kubernetes Inventory Overview plus Nodes, Namespaces, Workloads, Pods, Services, Ingresses, Storage and Configuration; Object Storage Systems and Buckets & Containers; and Artifact Registry Projects, Repositories and Artifacts. Keep header `<th>` semantics, column count, keyboard focus, stable unique tooltip IDs per rendered view, responsive Violet design tokens and default 5-row pagination. Explain the **meaning and evidence boundary** of reported values (for example PSA = Pod Security Admission, quota vs LimitRange, Service endpoints, PV/PVC binding, TLS secret references, Registry pull counts, bucket protection), not presumed health, compliance, or provider state. Missing values remain unknown, never a fabricated zero. Detailed data and source authority stay in the existing on-demand detail modal and committed Inventory snapshots.
+
 ## Accessibility, typography, and visual consistency
 
 - Human-facing headings, labels, field names, table headers, modal titles, and status descriptions use KAORI Title Case.
