@@ -18,7 +18,8 @@ def test_long_identity_context_uses_shared_responsive_summary_variant() -> None:
     assert "('Evidence', 'Activity Register', 'Notification-backed')" in detail
     assert "layout='default', pinned=true" in shared
     assert "data-kaori-summary-layout=\"target-wide\"" in shared
-    assert "xl:grid-cols-[minmax(0,1.05fr)_minmax(0,1.45fr)_minmax(0,0.95fr)_minmax(0,0.85fr)]" in shared
+    assert "sm:grid-cols-2 lg:mt-6 xl:grid-cols-5" in shared
+    assert "'xl:col-span-2' if target_wide and loop.index0 == 1 else ''" in shared
     assert '{% if pinned %}data-resource-detail-summary{% endif %}' in shared
     assert '[overflow-wrap:anywhere]' in shared
     assert "shell.querySelector(':scope > [data-resource-detail-summary]')" in modal
