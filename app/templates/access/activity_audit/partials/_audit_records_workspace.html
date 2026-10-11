@@ -1,4 +1,4 @@
-{% import "components/content_tabs.html" as content_tabs %}
+{% import "components/framed_workspace_tabs.html" as framed_tabs %}
 {% import "components/table.html" as table_ui %}
 <section id="activity-audit-records"
          class="{{ table_ui.block_classes() }}"
@@ -11,17 +11,13 @@
             ('administrative', 'Administrative Evidence', 'file-clock', url_for('access.activity_audit.index', view='administrative'))
         ] %}
     {% endif %}
-    {{ content_tabs.render_links(
-        'audit-records',
+    {{ framed_tabs.render_navigation(
         audit_record_tabs,
         selected_audit_tab,
-        'Audit Record Sources',
-        embedded=true,
-        data_namespace='audit-records',
+        prefix='audit-records',
+        aria_label='Audit Record Sources',
         hx_target='#activity-audit-records',
-        hx_select='#activity-audit-records',
-        hx_sync='#activity-audit-records:replace',
-        nowrap=true
+        hx_select='#activity-audit-records'
     ) }}
     {% set embedded = true %}
     {% if selected_audit_tab == 'administrative' %}
