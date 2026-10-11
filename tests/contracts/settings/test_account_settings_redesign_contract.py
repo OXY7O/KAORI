@@ -74,6 +74,24 @@ def test_profile_workspace_is_full_width_without_right_information_column() -> N
     assert 'Access Boundary' in profile
     assert 'table_label.status_indicator_label' in profile
     assert 'Read-Only Account View' in profile
+    assert "identity_context.identity_state == 'Local'" in profile
+    assert "identity_context.identity_state == 'Ready'" in profile
+    assert "table_label.metadata_label('Local Identity', 'database')" in profile
+    assert "table_label.status_indicator_label('Identity Linked', 'normal')" in profile
+    assert "table_label.status_label(identity_context.identity_state, identity_context.identity_tone)" in profile
+    assert 'Provider Ready' not in profile
+    assert "identity_context.provider_name != identity_context.type_label" in profile
+    assert 'RBAC permissions enforced after authentication.' in profile
+    assert 'Super Admin authority requires a Local Database identity.' in profile
+    assert 'Password hashes and resets' in profile
+    assert "'Time zone: ' ~ current_timezone" in profile
+    assert "'Locale: ' ~ current_locale" in profile
+    assert 'Authentication Source' in profile
+    assert "current_user.last_auth_source == 'database'" in profile
+    assert 'Recorded Request IP' in profile
+    assert 'trusted reverse proxy or container-network address' in profile
+    assert 'bg-surface-subtle' not in profile
+    assert 'bg-kaori-soft/30' in profile
 
 
 def test_authentication_activity_is_full_width_with_inline_evidence_boundary() -> None:
