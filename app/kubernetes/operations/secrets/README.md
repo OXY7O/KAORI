@@ -339,3 +339,13 @@ option set. No live Secret plaintext is committed to KAORI. This is a
 provider-request bound, not a replacement of live target discovery with
 Inventory evidence; throughput and authorization behavior still need
 DevContainer UAT and large-namespace benchmark.
+
+
+## Protected Reveal registry pagination (#1307)
+
+My Requests and Pending Approvals now call the canonical SQL
+`paginate_query`/pagination-window helpers with default 5 rows and
+approved 5/10/25/50 sizes. Independent query parameters, tab anchors,
+permission-gated Approvals, existing HTMX fragments, and the existing
+consumer-facing pagination aliases are preserved. Pages are clamped and
+empty windows use 0–0 count labels rather than a custom 3-row default.
