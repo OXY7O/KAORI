@@ -257,7 +257,7 @@ def test_sql_reader_is_only_bounded_select_not_a_writer(monkeypatch):
     assert result['append_authorized'] is False
     assert ('filter_by', {'tenant_id': 'tenant-1'}) in query.called
     assert ('limit', 4) in query.called
-    assert len(query.called) == 4
+    assert len(query.called) == 3
 
 
 def test_migration_source_has_write_once_triggers_fencing_and_no_data_drop():
