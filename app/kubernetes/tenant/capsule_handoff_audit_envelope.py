@@ -162,3 +162,102 @@ def inspect_capsule_audit_readback_link(
         'auto_retry_authorized': False,
         'resume_authorized': False, 'release_authorized': False,
     }
+
+
+def inspect_capsule_scope_g2g3_trace(
+    *, plan: Mapping[str, Any], related: Mapping[str, Any],
+    accepted_actor_user_id: int, rows: list[Any],
+    patch_review: Mapping[str, Any], preview_review: Mapping[str, Any],
+    readback_candidate: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Tie one complete G2 preview proposal to the START/G3 event chain.
+
+    This NEVER proves the START was durably committed before a Kubernetes
+    write, the preview came from a server, or read-back was authenticated.
+    A separately admitted executor must establish all those conditions.
+    """
+    if not all(isinstance(item, Mapping) for item in (
+        plan, related, patch_review, preview_review, readback_candidate,
+    )):
+        raise ValueError('Capsule G2/G3 trace needs exact source and review envelopes.')
+    from app.kubernetes.tenant.capsule_handoff_worklist import (
+        build_capsule_handoff_worklist,
+    )
+    worklist = build_capsule_handoff_worklist(plan=plan, related=related)
+    if (
+        patch_review.get('status') != 'complete_offline_scope_patch_review_unadmitted'
+        or preview_review.get('status')
+            != 'full_dry_run_shapes_correlated_not_provider_authenticated'
+        or patch_review.get('plan_sha256') != plan.get('plan_sha256')
+        or patch_review.get('handoff_fingerprint') != plan.get('handoff_fingerprint')
+        or patch_review.get('worklist_sha256') != worklist['inventory_sha256']
+        or preview_review.get('plan_sha256') != patch_review['plan_sha256']
+        or preview_review.get('worklist_sha256') != patch_review['worklist_sha256']
+        or preview_review.get('consent_manifest_sha256')
+            != patch_review.get('consent_manifest_sha256')
+        or preview_review.get('scope_items_sha256') != patch_review.get('scope_items_sha256')
+        or type(patch_review.get('transfer_candidate_count')) is not int
+        or patch_review['transfer_candidate_count'] < 1
+        or patch_review['transfer_candidate_count'] != preview_review.get('scope_candidate_count')
+        or preview_review.get('preview_count') != patch_review['transfer_candidate_count']
+        or readback_candidate.get('plan_sha256') != plan.get('plan_sha256')
+        or readback_candidate.get('worklist_sha256') != worklist['inventory_sha256']
+        or readback_candidate.get('expected_count') != patch_review['transfer_candidate_count']
+        or patch_review.get('provider_execution_admitted') is not False
+        or patch_review.get('start_committed') is not False
+        or preview_review.get('server_dry_run_completed') is not False
+        or preview_review.get('provider_execution_admitted') is not False
+        or readback_candidate.get('provider_handoff_verified') is not False
+        or readback_candidate.get('release_authorized') is not False
+    ):
+        raise ValueError('Capsule preview, consent, attempt and G3 scope diverged.')
+    if not isinstance(rows, list) or not rows:
+        raise ValueError('Capsule G2/G3 trace cannot omit the START audit claim.')
+    audit = inspect_capsule_audit_event_envelopes(
+        plan=plan, related=related, accepted_actor_user_id=accepted_actor_user_id,
+        rows=rows,
+    )
+    linked = inspect_capsule_audit_readback_link(
+        plan=plan, related=related, accepted_actor_user_id=accepted_actor_user_id,
+        rows=rows, readback_candidate=readback_candidate,
+    )
+    consistent = (
+        linked.get('recorded_readback_matches_candidate') is True
+        and audit['last_event_type'] in ('readback_candidate', 'recovery_reviewed')
+        and readback_candidate.get('ambiguous_count') == 0
+        and readback_candidate.get('pending_count') == 0
+        and readback_candidate.get('transferred_count')
+            == patch_review['transfer_candidate_count']
+        and not readback_candidate.get('blockers')
+    )
+    return {
+        'status': (
+            'complete_g2g3_claims_correlated_unverified'
+            if consistent else 'incomplete_or_uncertain_g2g3_manual_recovery_required'
+        ),
+        'tenant_id': plan['tenant_id'],
+        'plan_sha256': plan['plan_sha256'],
+        'worklist_sha256': worklist['inventory_sha256'],
+        'scope_items_sha256': patch_review['scope_items_sha256'],
+        'preview_receipts_sha256': preview_review['preview_receipts_sha256'],
+        'attempt_history_sha256': audit['history_sha256'],
+        'readback_sha256': readback_candidate.get('readback_sha256'),
+        'expected_transfer_count': patch_review['transfer_candidate_count'],
+        'recorded_readback_matches_candidate': (
+            linked['recorded_readback_matches_candidate']
+        ),
+        'all_candidates_structurally_transferred': consistent,
+        'server_dry_run_source_authenticated': False,
+        'start_db_commit_verified': False,
+        'provider_write_order_verified': False,
+        'audit_storage_append_only_verified': False,
+        'readback_authoritative_verified': False,
+        'independent_human_consent_authenticated': False,
+        'controller_origin_attested': False,
+        'provider_execution_admitted': False,
+        'provider_handoff_verified': False,
+        'auto_retry_authorized': False,
+        'resume_authorized': False,
+        'release_authorized': False,
+        'secret_material_persisted': False,
+    }
