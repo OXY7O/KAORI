@@ -356,6 +356,24 @@ def inspect_capsule_readback_candidate(
         )
     )
     blockers.extend(related_blockers)
+    # An original KAORI handoff warning can remain on a still-pending
+    # resource. It cannot remain on an allegedly transferred current object:
+    # this would contradict the current canonical controller inventory.
+    pending_kaori_warnings = {
+        (
+            f"Capsule {item['kind']}/{item['namespace']}/{item['name']} "
+            "retains KAORI provider controls requiring separately admitted handoff."
+        )
+        for item in related_rows
+        if item['state'] == 'pending_provider_transfer'
+    }
+    if any(
+        warning in allowed_handoff_warnings
+        and warning not in pending_kaori_warnings
+        for warning in current_related['blockers']
+        if isinstance(warning, str)
+    ):
+        blockers.append('related_current_handoff_finding_contradicts_readback')
     if current_related_sha != base_related_sha and related_blockers:
         blockers.append('namespaced_provider_object_or_list_changed')
     if current_quota_sha != base_quota_sha:
