@@ -503,7 +503,7 @@
                                                 {% set condition_action = 'Complete governed handoff or closure of these memberships; then refresh Release review.' %}
                                             {% elif ' has a KAORI-managed Resource Profile allocation.' in blocker
                                                   or ' has a KAORI-managed allocation linked to a Resource Profile.' in blocker %}
-                                                {% set condition_title = 'Managed Namespace allocation' %}
+                                                {% set condition_title = blocker.split(' has a KAORI-managed ')[0] ~ ' · Managed allocation' %}
                                                 {% set condition_action = 'Obtain independent Resource Profile allocation handoff approval and provider read-back.' %}
                                             {% elif blocker.startswith('Capsule allocation was modified by KAORI;') %}
                                                 {% set condition_title = 'Capsule allocation handoff' %}
