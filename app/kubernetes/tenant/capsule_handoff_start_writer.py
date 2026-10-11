@@ -13,7 +13,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from app.extensions.db import db
 from app.kubernetes.tenant.capsule_handoff_admission import assess_capsule_handoff_admission
@@ -94,6 +94,64 @@ def build_capsule_start_candidate(
     return event
 
 
+def _require_postgres_ledger_write_once_guards(session: Any) -> None:
+    """Fail closed unless the current non-owner DB role has immutable guards.
+
+    Called only inside a locked START transaction after a future explicit
+    source un-gating. A status check is not a substitute for privileged DDL
+    audit or recovery/backup durability verification.
+    """
+    expected = {
+        'tr_capsule_ledger_guard_insert',
+        'tr_capsule_ledger_deny_update',
+        'tr_capsule_ledger_deny_delete',
+        'tr_capsule_ledger_deny_truncate',
+    }
+    triggers = session.execute(text("""
+        SELECT t.tgname, t.tgenabled
+        FROM pg_trigger AS t
+        WHERE t.tgrelid = 'capsule_handoff_ledger_events'::regclass
+          AND NOT t.tgisinternal
+    """)).all()
+    observed = {
+        name: mode for name, mode in triggers
+        if isinstance(name, str) and isinstance(mode, str)
+    }
+    if (
+        not expected.issubset(observed)
+        or any(observed[name] not in ('O', 'A') for name in expected)
+    ):
+        raise ValueError('PostgreSQL Capsule ledger write-once guards are missing or disabled.')
+    state = session.execute(text("""
+        SELECT current_setting('fsync') AS fsync_setting,
+               current_setting('synchronous_commit') AS sync_commit,
+               current_setting('session_replication_role') AS replication_role,
+               (SELECT rolsuper OR rolcreatedb OR rolcreaterole
+                FROM pg_roles WHERE rolname = current_user) AS elevated,
+               pg_get_userbyid(c.relowner) = current_user AS is_owner,
+               pg_has_role(current_user, c.relowner, 'MEMBER') AS member_of_owner,
+               has_table_privilege(current_user, c.oid, 'INSERT') AS may_insert,
+               has_table_privilege(current_user, c.oid, 'UPDATE') AS may_update,
+               has_table_privilege(current_user, c.oid, 'DELETE') AS may_delete,
+               has_table_privilege(current_user, c.oid, 'TRUNCATE') AS may_truncate
+        FROM pg_class AS c
+        WHERE c.oid = 'capsule_handoff_ledger_events'::regclass
+    """)).mappings().one()
+    if (
+        state['fsync_setting'] != 'on'
+        or state['sync_commit'] not in ('on', 'remote_write', 'remote_apply')
+        or state['replication_role'] != 'origin'
+        or state['elevated'] is not False
+        or state['is_owner'] is not False
+        or state['member_of_owner'] is not False
+        or state['may_insert'] is not True
+        or state['may_update'] is not False
+        or state['may_delete'] is not False
+        or state['may_truncate'] is not False
+    ):
+        raise ValueError('PostgreSQL Capsule ledger role, trigger or WAL durability is not admitted.')
+
+
 def commit_capsule_start_staged(
     *, tenant_id: str, actor_user_id: int, expected_plan_sha256: str,
     preflight: Mapping[str, Any], provider_authority: Mapping[str, Any],
@@ -147,6 +205,7 @@ def commit_capsule_start_staged(
                 or tenant.ownership_status != 'adopted'
             ):
                 raise ValueError('Capsule Tenant is no longer an adopted, ready handoff candidate.')
+            _require_postgres_ledger_write_once_guards(session)
             if session.execute(
                 select(CapsuleHandoffLedgerEvent.id)
                 .where(CapsuleHandoffLedgerEvent.tenant_id == tenant_id).limit(1)
