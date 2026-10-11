@@ -162,6 +162,44 @@ DB execution audit, live dry-run, PATCH, retry or finalizer was enabled.
 Future actual controller-provenance proof must be a separately security-reviewed
 provider authority contract, not a managedFields claim, label, or matching hash.
 
+## Append-only attempt and no-retry recovery state — source-only contract
+
+`capsule_handoff_attempt_state.py` models a **single attempt**, but does not
+issue a Kubernetes request, create AuditEvents, or provide an executor.
+It validates a narrow v1 event envelope bound to the exact approved plan
+SHA-256, generation/cluster, provider fingerprint, deterministic source worklist
+SHA-256, one canonical attempt UUID, accepted actor ID, strictly increasing
+sequence/timestamps, and the prior event's SHA-256. Receipts contain only
+counts, an opaque optional read-back digest, event type, and invariant
+`provider_handoff_verified=false`/`release_authorized=false`. Unknown
+fields (including accidental credentials or provider objects) are rejected.
+
+| Event | Permitted follow-up | Source-only projection |
+| --- | --- | --- |
+| No event | None automatically | `no_attempt_observed_not_authorized` |
+| `started` | `partial` or `readback_candidate` | `started_outcome_unknown_recovery_required` |
+| `partial` | Independent `recovery_reviewed` | `partial_handoff_recovery_required` |
+| `readback_candidate` | Independent `recovery_reviewed` | `readback_claim_requires_independent_provider_verification` |
+| `recovery_reviewed` | No new start/retry | `manual_review_recorded_no_retry_granted` |
+
+The source model strictly forbids a `provider_handoff_verified` event and
+never converts an asserted all-transferred count into Released. A `started`
+record with no final provider acknowledgement is **unknown outcome**, not
+proof of no write. A manually reviewed partial/read-back claim is still
+non-retryable without a new externally governed plan and explicit recovery
+authorization. It requires a different human reviewer identity from the
+attempt actor, but cannot verify that person's entitlement by itself.
+
+Event SHA chaining is **not** tamper-proof evidence until anchored in a
+trusted, append-only AuditEvent stream. The future operational executor
+must independently enforce row locks, once-only attempt identity,
+committed `started` evidence *before* first PATCH, strong provider read-back
+and definitive partial/unknown receipts even on HTTP timeout, interrupted
+process or database-write failure. It must check current actor, plan,
+successor, Kubernetes TLS, X.509 SSR/SAR and resource origins immediately
+before every permitted mutation. This projection does none of those
+operations, has no route and never provides an execution capability.
+
 ## Required before completing #1229
 
 1. Build on the SHA-bound Namespace and cluster-scoped

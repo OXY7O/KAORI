@@ -259,7 +259,12 @@ def assess_capsule_handoff_admission(
     worklist_sha256: str | None = None
     manual_review_count: int | None = None
     if cr is not None:
-        problems.extend(_inspect_related(snapshot=preflight, cr=cr, namespaces=namespaces))
+        try:
+            problems.extend(_inspect_related(snapshot=preflight, cr=cr, namespaces=namespaces))
+        except (TypeError, ValueError, KeyError, OverflowError):
+            # Malformed untrusted LIST or metadata must not crash the review
+            # classifier or accidentally surface an admitted execution path.
+            problems.append('related_inventory_malformed')
         try:
             worklist = build_capsule_handoff_worklist(
                 plan=plan, related=preflight.get('capsule_related_inventory'),

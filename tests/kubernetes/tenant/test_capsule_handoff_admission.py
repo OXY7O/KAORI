@@ -262,3 +262,13 @@ def test_snapshots_never_leak_principal_or_credentials_into_gate_summary():
     assert 'X509SHA256=good-credential' not in str(outcome)
     assert 'platform-team' not in str(outcome)
     assert outcome['secret_material_persisted'] is False
+
+
+def test_unhashable_provider_list_scope_is_a_fail_closed_finding_not_server_error():
+    case = _fixture()
+    related = case['preflight']['capsule_related_inventory']
+    related['list_snapshots'][0]['namespace'] = ['malformed-list-key']
+    result = _assess(case)
+    assert 'related_inventory_malformed' in result['blockers']
+    assert result['provider_execution_admitted'] is False
+    assert result['release_authorized'] is False
