@@ -806,6 +806,33 @@ acceptance or Release occurs. Any future changes to handoff blocker copy
 must update its admission classification and coupled regression tests in
 the same issue/PR.
 
+## Capsule Release independently verified successor acceptance (#1228; no provider transfer)
+
+Step 3 of the existing Release Governance wizard supports **explicit Capsule
+Platform Admin consent** separately from Native provider acceptance. After
+an independently acknowledged exact Release plan, an authorized, non-requesting
+Platform Admin confirms the handoff scope. KAORI uses the registered cluster's
+verified-TLS Kubernetes **X.509** identity through SelfSubjectReview and
+SelfSubjectAccessReview `get`/`patch` on the cluster-scoped
+`capsule.clastix.io/tenants` object and each governed Namespace. Capsule
+Tenant CRs are not namespace-scoped. All scoped resources require complete
+UID/resourceVersion, Capsule provider ownership and the Capsule spec SHA-256
+from #1227; changed spec, plan, generation or independent review **fails
+closed**. Application authorization uses the existing Tenant, Integrations
+and Cluster Manage permissions, not provider-label identity or a new token.
+
+The separate append-only `kubernetes_tenant_release_capsule_successor_acceptance`
+AuditEvent stores the explicit actor, verified X.509 identity, scoped
+authorization evidence, plan SHA, fingerprint and bounded provider identities.
+Routine Tenant UI reads committed evidence, with no provider request on GET.
+This acceptance sets `consent_verified=true`, but **always**
+`provider_mutation_performed=false`, `provider_handoff_verified=false` and
+`release_authorized=false`. It is **not** Capsule handoff or a Released
+lifecycle transition. The provider-specific guarded dry-run/executor,
+read-back, finalizer and real Kubernetes UAT remain separate workstreams
+#1229–#1231. Source-only DevContainer integration; CI/CD, admission gates,
+provider mutations and deployment remain on HOLD.
+
 ## Capsule Release authoritative spec scope digest (#1227; preflight-only)
 
 The existing `release_handoff_inventory.capsule_tenant_handoff_evidence`

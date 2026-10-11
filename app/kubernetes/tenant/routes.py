@@ -65,6 +65,9 @@ from app.kubernetes.tenant.job_adapter import (
     get_visible_tenant_sync_job,
 )
 from app.kubernetes.tenant.live_connection import get_live_tenant_connection_context
+from app.kubernetes.tenant.capsule_successor_acceptance import (
+    accept_capsule_successor_handoff_committed,
+)
 from app.kubernetes.tenant.native_successor_acceptance import (
     accept_native_successor_handoff_committed,
 )
@@ -1085,6 +1088,43 @@ def accept_native_successor_handoff_route(tenant_id: str):
             ),
             detail='Existing kubeconfig identity and scoped permissions verified. Provider handoff remains a separate explicit action.',
             metadata={'tenant_id': tenant_id, 'operation': 'successor_acceptance'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/capsule-successor-accept')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+@permission_required('clusters.manage')
+def accept_capsule_successor_handoff_route(tenant_id: str):
+    """Verify and commit independent Capsule consent, never perform provider transfer."""
+    try:
+        _csrf()
+        if request.form.get('confirm_capsule_successor_acceptance') != 'accept':
+            raise ValueError('Explicit independent Capsule Platform Admin acceptance is required.')
+        result = accept_capsule_successor_handoff_committed(
+            tenant_id=tenant_id, actor_user_id=int(current_user.id),
+            plan_sha256=str(request.form.get('plan_sha256') or ''),
+            confirmed=True,
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_capsule_successor_acceptance_blocked',
+            status='warning', title='Capsule Successor Acceptance Blocked',
+            message=str(exc),
+            detail='Capsule Tenant and Namespace remain unchanged; no provider handoff or Release occurred.',
+            metadata={'tenant_id': tenant_id, 'operation': 'capsule_successor_acceptance'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_capsule_successor_acceptance_recorded',
+            status='success', title='Capsule Platform Admin Acceptance Recorded',
+            message=(
+                f"Verified {result['scope_count']} provider resource(s) for "
+                f"{result['provider_username']}."
+            ),
+            detail='Independent consent recorded only. Provider transfer and Released finalization are separate.',
+            metadata={'tenant_id': tenant_id, 'operation': 'capsule_successor_acceptance'},
         )
     return _tenant_section_redirect('registry')
 

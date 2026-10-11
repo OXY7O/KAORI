@@ -970,6 +970,87 @@
                                                         {% endif %}
                                                     {% endif %}
                                                 {% endif %}
+                                                {% if tenant.provider_key == 'capsule' %}
+                                                    {% set capsule_acceptance = row.release_capsule_successor_acceptance %}
+                                                    {% if row.capsule_successor_acceptance_current %}
+                                                        <div class="mt-2 rounded-lg border border-outline-subtle bg-surface-card p-3 text-xs leading-5 text-content-secondary"
+                                                             role="status" aria-label="Capsule Platform Admin consent recorded">
+                                                            {{ table_label.status_label('Capsule Consent Recorded', 'success') }}
+                                                            <p class="mt-1 break-words">{{ capsule_acceptance.provider_username }} ·
+                                                                {{ capsule_acceptance.scope_count }} scoped resources ·
+                                                                Exact Capsule plan and X.509 provider RBAC verified when recorded.
+                                                                No Capsule mutation, ownership transfer or Release was performed.</p>
+                                                        </div>
+                                                    {% elif row.release_handoff_preparation_state == 'acknowledged'
+                                                            and handoff_plan.requested_by == current_user.id %}
+                                                        <p class="mt-2 rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5 text-xs leading-5 text-content-secondary"
+                                                           role="status">
+                                                            Another Platform Admin must independently accept the exact Capsule scope.
+                                                            Your own plan request cannot constitute successor consent.
+                                                        </p>
+                                                    {% elif row.release_handoff_preparation_state == 'acknowledged'
+                                                            and handoff_approval
+                                                            and handoff_approval.approved_by != handoff_plan.requested_by
+                                                            and current_user.has_permission('clusters.manage')
+                                                            and row.release_preflight
+                                                            and row.release_preflight.handoff_fingerprint == handoff_plan.handoff_fingerprint %}
+                                                        {% if not row.cluster or not row.cluster.kubernetes_connection
+                                                              or row.cluster.kubernetes_connection.verify_ssl is not true %}
+                                                            <div class="mt-2 rounded-lg border border-status-warning-border bg-status-warning-soft p-3 text-xs leading-5 text-content-secondary"
+                                                                 role="status">
+                                                                <p class="font-semibold text-status-warning-text">Verified Kubernetes TLS required</p>
+                                                                <p class="mt-1">The registered cluster connection must verify the Kubernetes API certificate before Capsule successor acceptance.</p>
+                                                                {% if row.cluster %}
+                                                                    <a href="{{ url_for('cluster.edit_cluster', cluster_id=row.cluster.id) }}"
+                                                                       class="mt-2 inline-flex min-h-9 items-center gap-1 text-xs font-semibold text-kaori-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                                        Edit Kubernetes Connection <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                                    </a>
+                                                                {% endif %}
+                                                            </div>
+                                                        {% else %}
+                                                            <form method="post"
+                                                                  action="{{ url_for('tenant.accept_capsule_successor_handoff_route', tenant_id=tenant.id) }}"
+                                                                  hx-post="{{ url_for('tenant.accept_capsule_successor_handoff_route', tenant_id=tenant.id) }}"
+                                                                  hx-target="#tenant-management-detail"
+                                                                  hx-select="#tenant-management-detail"
+                                                                  hx-swap="outerHTML show:none focus-scroll:false"
+                                                                  hx-indicator="#tenant-management-loading"
+                                                                  hx-disabled-elt="find button[type='submit']"
+                                                                  class="mt-2 space-y-3 rounded-lg border border-outline-subtle bg-surface-elevated/35 p-3 sm:p-4"
+                                                                  aria-label="Capsule Platform Admin provider verification">
+                                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                                <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                                                                <input type="hidden" name="tenant_detail_section" value="release">
+                                                                <input type="hidden" name="tenant_release_step" value="approval">
+                                                                {% for state_key, state_value in registry_state.items() %}
+                                                                    <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
+                                                                {% endfor %}
+                                                                <input type="hidden" name="plan_sha256" value="{{ handoff_plan.plan_sha256 }}">
+                                                                <div class="flex items-start gap-2.5">
+                                                                    <i data-lucide="shield-check" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                                                    <div class="min-w-0">
+                                                                        <h5 class="text-sm font-semibold text-content-primary">Capsule Platform Admin verification</h5>
+                                                                        <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                                                            Verify the registered X.509 Kubernetes identity and get/patch authority for the exact Capsule Tenant CR and Namespaces. This records independent consent only; no Kubernetes resource is modified.
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                                <label class="flex items-start gap-2 rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5 text-xs leading-5 text-content-secondary">
+                                                                    <input name="confirm_capsule_successor_acceptance" type="checkbox"
+                                                                           value="accept" required
+                                                                           class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
+                                                                    <span>I independently accept the exact Capsule handoff plan and its immutable provider scope.
+                                                                        I understand this is not a resource transfer, Release or permission to change quotas/RBAC.</span>
+                                                                </label>
+                                                                <button type="submit"
+                                                                        class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-progress disabled:opacity-60">
+                                                                    <i data-lucide="shield-check" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                                    Verify Capsule Authority &amp; Record Consent
+                                                                </button>
+                                                            </form>
+                                                        {% endif %}
+                                                    {% endif %}
+                                                {% endif %}
                                                 {% if tenant.provider_key == 'native_kubernetes'
                                                       and handoff_approval.approved_by != current_user.id
                                                       and row.get('native_release_readiness')
