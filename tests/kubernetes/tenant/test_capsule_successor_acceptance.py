@@ -105,6 +105,42 @@ def _cluster(*, tls=True):
     )
 
 
+def test_capsule_related_admin_sar_checks_exact_namespace_rbac_and_quota():
+    provider = _Provider()
+    checked = authority.verify_capsule_related_admin_authority(
+        provider=provider, candidates=[
+            {'namespace': 'demo-dev', 'kind': 'ResourceQuota', 'name': 'quota',
+             'uid': 'quota-uid', 'resource_version': '7',
+             'decision': 'explicit_kaori_metadata_handoff_review'},
+            {'namespace': 'demo-dev', 'kind': 'RoleBinding', 'name': 'grant',
+             'uid': 'binding-uid', 'resource_version': '8',
+             'decision': 'explicit_kaori_metadata_handoff_review'},
+        ],
+    )
+    assert checked['checked_count'] == 2
+    assert checked['provider_execution_admitted'] is False
+    assert provider.calls == [
+        ('', 'resourcequotas', 'quota', 'demo-dev', 'get'),
+        ('', 'resourcequotas', 'quota', 'demo-dev', 'patch'),
+        ('rbac.authorization.k8s.io', 'rolebindings', 'grant', 'demo-dev', 'get'),
+        ('rbac.authorization.k8s.io', 'rolebindings', 'grant', 'demo-dev', 'patch'),
+    ]
+
+
+def test_capsule_related_admin_sar_rejects_denied_or_duplicate_targets():
+    candidate = {'namespace': 'demo-dev', 'kind': 'ResourceQuota', 'name': 'quota',
+                 'uid': 'uid', 'resource_version': '7',
+                 'decision': 'explicit_kaori_metadata_handoff_review'}
+    with pytest.raises(ValueError, match='denied get'):
+        authority.verify_capsule_related_admin_authority(
+            provider=_Provider(allowed=False), candidates=[candidate],
+        )
+    with pytest.raises(ValueError, match='duplicate'):
+        authority.verify_capsule_related_admin_authority(
+            provider=_Provider(), candidates=[candidate, dict(candidate)],
+        )
+
+
 def test_capsule_provider_authority_verifies_cluster_scoped_cr_and_namespace_get_patch(monkeypatch):
     client = _Provider()
     monkeypatch.setattr(authority.runtime_adapter, 'build_client', lambda _: client)

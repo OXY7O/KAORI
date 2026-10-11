@@ -1137,7 +1137,7 @@ def accept_capsule_successor_handoff_route(tenant_id: str):
 @permission_required('integrations.manage')
 @permission_required('clusters.manage')
 def preview_capsule_release_namespace_route(tenant_id: str):
-    """Explicit Capsule namespace-only dry-run, not handoff execution."""
+    """Explicit Capsule whole-scope provider preview, never live PATCH."""
     try:
         _csrf()
         result = preview_capsule_release_namespace_committed(
@@ -1156,9 +1156,13 @@ def preview_capsule_release_namespace_route(tenant_id: str):
     else:
         _record(
             event_type='kubernetes_tenant_capsule_namespace_preview_observed',
-            status='info', title='Capsule Namespace Preview Recorded',
-            message=f"{result['namespace_count']} Namespaces inspected through Kubernetes server-side dry-run.",
-            detail='Related quota, limit and RBAC handoff is still unverified. Release remains blocked.',
+            status='info', title='Capsule Provider Preview Recorded',
+            message=(
+                f"{result['namespace_count']} Namespaces and "
+                f"{result['related_preview_count']} quota/limit/RBAC candidates "
+                "inspected with Kubernetes server-side dry-run."
+            ),
+            detail='Whole-scope preview only. Per-resource consent, durable START, actual PATCH and Release remain blocked.',
             metadata={'tenant_id': tenant_id, 'operation': 'capsule_namespace_preview'},
         )
     return _tenant_section_redirect('registry')

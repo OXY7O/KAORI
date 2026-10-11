@@ -146,3 +146,65 @@ def verify_capsule_provider_admin_authority(
         'provider_mutation_performed': False,
         'secret_material_persisted': False,
     }
+
+
+def verify_capsule_related_admin_authority(
+    *, provider: Any, candidates: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Check current exact-resource GET/PATCH SARs for dry-run candidates only.
+
+    This is not independent ownership proof, human consent, or authorization
+    for a live PATCH. The previously authenticated X.509 actor must still
+    pass per-resource Kubernetes RBAC to invoke the dry-run itself.
+    """
+    resource = {
+        'ResourceQuota': ('', 'resourcequotas'),
+        'LimitRange': ('', 'limitranges'),
+        'RoleBinding': ('rbac.authorization.k8s.io', 'rolebindings'),
+    }
+    if (
+        not isinstance(candidates, list) or len(candidates) > 300
+        or any(
+            not isinstance(item, Mapping)
+            or item.get('kind') not in resource
+            or not all(isinstance(item.get(key), str) and item[key]
+                       for key in ('namespace', 'name', 'uid', 'resource_version'))
+            or item.get('decision') != 'explicit_kaori_metadata_handoff_review'
+            for item in candidates
+        )
+    ):
+        raise ValueError('Capsule related dry-run SAR scope is malformed or unbounded.')
+    names = [(item['namespace'], item['kind'], item['name']) for item in candidates]
+    if len(set(names)) != len(names):
+        raise ValueError('Capsule related dry-run SAR contains duplicate provider objects.')
+    for item in candidates:
+        group, plural = resource[item['kind']]
+        for verb in ('get', 'patch'):
+            review = V1SelfSubjectAccessReview(
+                spec=V1SelfSubjectAccessReviewSpec(
+                    resource_attributes=V1ResourceAttributes(
+                        group=group, resource=plural, namespace=item['namespace'],
+                        name=item['name'], verb=verb,
+                    ),
+                ),
+            )
+            try:
+                response = provider.authorization_api().create_self_subject_access_review(
+                    body=review, _request_timeout=5,
+                )
+            except (ApiException, AttributeError) as exc:
+                raise ValueError('Capsule related-resource provider SAR was unavailable.') from exc
+            result = _field(response, 'status')
+            if (
+                _field(result, 'allowed') is not True
+                or _field(result, 'denied') is True
+                or _field(result, 'evaluation_error')
+            ):
+                raise ValueError(
+                    f"Capsule provider denied {verb} for {item['kind']}/{item['namespace']}/{item['name']}."
+                )
+    return {
+        'checked_count': len(candidates),
+        'provider_mutation_performed': False,
+        'provider_execution_admitted': False,
+    }

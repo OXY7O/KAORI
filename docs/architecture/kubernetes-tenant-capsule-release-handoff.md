@@ -9,6 +9,45 @@ Target integration: `kaori/review/staging-uat` only. No developer check,
 pytest, Ruff, pyright, CI/CD, DAST, live API UAT, promotion or deployment until
 a separate explicit instruction.
 
+## Complete-scope Capsule server preview — #1229 source extension
+
+The existing authenticated **Preview Capsule provider handoff** Step 3
+button now dispatches source-verified server-side `dryRun=All` for
+KAORI-correlated Namespace, ResourceQuota, LimitRange and RoleBinding
+**metadata-only candidates**, plus explicit typed GET of every observed
+related resource. Its newly admitted read-only actor authority rechecks
+Kubernetes exact-object GET/PATCH SAR for each related candidate and
+uses the existing strict patch builders, policy-preservation checks,
+resource UID/RV, current related-resource fingerprints and subsequent
+provider GETs. A second entire committed Capsule Release preflight
+confirms identical CR/Namespace/GlobalResourceQuota/RBAC/inventory scope
+and live source revisions after *every* dry-run.
+
+G1 approval and preview may now tolerate *only* source-correlated
+`Capsule Kind/namespace/name retains KAORI provider controls requiring
+separately admitted handoff.` warnings if a digest-checked canonical
+worklist enumerates those same related objects and has no ambiguous
+provider origin, foreign claims, unknown selectors or other blockers.
+These warnings are **handoff obligations**, not authorization to PATCH:
+the resource transfer label key set is proposed from current provider
+metadata solely for preview and is not recorded as trusted resource
+consent. Denied RBAC, changed UID/RV, new/deleted objects, ambiguous
+RoleBindings, partial LIST or a changed GlobalResourceQuota fingerprint
+still aborts preview and is never treated as success.
+
+The existing `kubernetes_tenant_release_capsule_namespace_preview`
+AuditEvent target now records
+`status=complete_scope_server_dry_run_only`, scoped preview and
+preservation counts, `related_mutation_consent_verified=false`,
+`provider_execution_admitted=false`, and
+`provider_handoff_verified=false`. Normal Registry UI GET reads that
+committed receipt without making any live Kubernetes call.
+**Do not promote this receipt into G2/G3 PASS**: independent
+resource-specific consent/origin evidence, durable START, live
+conditional PATCH, authoritative complete post-mutation read-back and
+manual partial recovery remain outstanding. No tests, CI/CD or actual
+provider operations were executed for this source slice.
+
 ## G1 consent vs G2/G3 execution authority
 
 A committed Capsule preflight may contain the **exact** source-known warning
@@ -33,7 +72,7 @@ before progressing to #1230/#1231.
 
 ## First wired Capsule provider preview — #1229 functional slice
 
-The existing four-step Tenant Release wizard now offers **Preview Capsule Namespace**
+The initial source slice of the existing four-step Tenant Release wizard offered **Preview Capsule Namespace**
 only to the X.509 Platform Admin whose independent Capsule successor consent
 was recorded for the exact current plan. The authenticated POST requires
 `tenant.manage`, `integrations.manage`, `clusters.manage`, CSRF and explicit

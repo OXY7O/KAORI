@@ -5,6 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from app.kubernetes.tenant.capsule_handoff_related_inventory import _digest
 from app.kubernetes.tenant.release_handoff_inventory import handoff_fingerprint
 from app.kubernetes.tenant.release_preflight import _release_blockers
 from app.kubernetes.tenant.release_handoff_approval import (
@@ -141,6 +142,70 @@ def test_capsule_g1_does_not_waive_other_provider_or_dependency_failures(change)
         snapshot['capsule_related_inventory']['rbac_lineage']['blockers'] = ['RBAC drift']
     elif change == 'extra_unknown_blocker':
         snapshot['blockers'].append('Capsule Namespace provider UID mismatch.')
+    with pytest.raises(ValueError, match='Unresolved provider'):
+        _can_confirm_plan(snapshot)
+
+
+def _capsule_g1_related_kaori_control_snapshot() -> dict:
+    snapshot = _capsule_g1_snapshot()
+    related = snapshot['capsule_related_inventory']
+    warning = (
+        'Capsule ResourceQuota/sandbox/managed-quota retains KAORI provider '
+        'controls requiring separately admitted handoff.'
+    )
+    related['resources'] = [{
+        'kind': 'ResourceQuota', 'namespace': 'sandbox', 'name': 'managed-quota',
+        'uid': 'quota-uid', 'resource_version': '8', 'origin': 'kaori_correlated',
+        'policy_sha256': 'e' * 64, 'metadata_sha256': 'f' * 64,
+    }]
+    related['resource_count'] = 1
+    related['list_snapshots'] = [{
+        'kind': kind, 'namespace': 'sandbox',
+        'list_resource_version': 'list-rv', 'count': 1 if kind == 'ResourceQuota' else 0,
+    } for kind in ('ResourceQuota', 'LimitRange', 'RoleBinding')]
+    related['resource_sha256'] = _digest({
+        'resources': related['resources'], 'lists': related['list_snapshots'],
+    })
+    related['blockers'] = [warning]
+    related['global_quota'].update({
+        'served_version': 'v1beta2', 'list_resource_version': 'quota-list',
+        'resources': [], 'count': 0,
+    })
+    related['global_quota']['scope_sha256'] = _digest({
+        'api_version': 'v1beta2', 'list_resource_version': 'quota-list',
+        'resources': [],
+    })
+    cr = snapshot['handoff_components'][0]
+    cr['ownership'] = 'external_or_unattributed'
+    snapshot['handoff_components'][1]['ownership'] = 'external_or_unattributed'
+    cr['capsule_related_resources_sha256'] = related['resource_sha256']
+    cr['capsule_shared_quota_sha256'] = related['global_quota']['scope_sha256']
+    cr['capsule_related_resources_count'] = '1'
+    snapshot['handoff_fingerprint'] = handoff_fingerprint(snapshot['handoff_components'])
+    snapshot['blockers'].append(warning)
+    return snapshot
+
+
+def test_capsule_g1_allows_real_sha_bound_kaori_related_obligation_without_granting_execution():
+    snapshot = _capsule_g1_related_kaori_control_snapshot()
+    _can_confirm_plan(snapshot)
+    assert snapshot['blockers']  # G2/G3 still have the exact origin + handoff warnings.
+
+
+@pytest.mark.parametrize('field', [
+    'unattributed', 'related_digest_drift', 'unknown_extra_finding', 'missing_list',
+])
+def test_capsule_g1_refuses_incomplete_or_unknown_related_scope(field):
+    snapshot = _capsule_g1_related_kaori_control_snapshot()
+    related = snapshot['capsule_related_inventory']
+    if field == 'unattributed':
+        related['resources'][0]['origin'] = 'unattributed'
+    elif field == 'related_digest_drift':
+        related['resource_sha256'] = 'a' * 64
+    elif field == 'unknown_extra_finding':
+        related['blockers'].append('RoleBinding subject owner unverified.')
+    elif field == 'missing_list':
+        related['list_snapshots'].pop()
     with pytest.raises(ValueError, match='Unresolved provider'):
         _can_confirm_plan(snapshot)
 

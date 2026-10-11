@@ -981,6 +981,21 @@
                                                                 Exact Capsule plan and X.509 provider RBAC verified when recorded.
                                                                 No Capsule mutation, ownership transfer or Release was performed.</p>
                                                         </div>
+                                                        {% set capsule_preview = row.release_capsule_scope_preview %}
+                                                        {% if capsule_preview and handoff_plan
+                                                              and capsule_preview.plan_sha256 == handoff_plan.plan_sha256
+                                                              and capsule_preview.status == 'complete_scope_server_dry_run_only' %}
+                                                            <div class="mt-2 rounded-lg border border-outline-subtle bg-surface-card p-3 text-xs leading-5 text-content-secondary"
+                                                                 role="status" aria-label="Capsule provider dry-run evidence">
+                                                                {{ table_label.status_label('Server Dry-Run Observed', 'normal') }}
+                                                                <p class="mt-1">
+                                                                    {{ capsule_preview.namespace_count }} Namespace(s),
+                                                                    {{ capsule_preview.related_preview_count }} related transfer candidate(s),
+                                                                    {{ capsule_preview.related_preserved_count }} preserved resource(s).
+                                                                    Provider execution and governance Release are still blocked.
+                                                                </p>
+                                                            </div>
+                                                        {% endif %}
                                                         {% if capsule_acceptance.accepted_by == current_user.id
                                                               and handoff_plan
                                                               and capsule_acceptance.plan_sha256 == handoff_plan.plan_sha256 %}
@@ -1002,21 +1017,22 @@
                                                                     <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
                                                                 {% endfor %}
                                                                 <input type="hidden" name="plan_sha256" value="{{ handoff_plan.plan_sha256 }}">
-                                                                <h5 class="text-sm font-semibold text-content-primary">Preview Capsule Namespace handoff</h5>
+                                                                <h5 class="text-sm font-semibold text-content-primary">Preview Capsule provider handoff</h5>
                                                                 <p class="text-xs leading-5 text-content-secondary">
-                                                                    Perform exact UID/resourceVersion Kubernetes server-side dry-run for Capsule Namespace metadata only.
-                                                                    Quota, LimitRange, RoleBinding, and final Release are not yet admitted.
+                                                                    Inspect exact UID/resourceVersion Kubernetes server-side dry-run for KAORI-correlated Namespace, ResourceQuota, LimitRange and RoleBinding metadata.
+                                                                    Capsule CR, GlobalResourceQuota, foreign resources and workload specifications remain unchanged.
+                                                                    Preview is not transfer approval, PATCH execution or governance Release.
                                                                 </p>
                                                                 <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
                                                                     <input type="checkbox" name="confirm_capsule_namespace_preview"
                                                                            value="preview" required
                                                                            class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
-                                                                    <span>I authorize a provider dry-run only; no live metadata transfer or Released transition.</span>
+                                                                    <span>I authorize this server dry-run preview only; related-resource mutation consent, live PATCH and Released remain separate.</span>
                                                                 </label>
                                                                 <button type="submit"
                                                                         class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-elevated px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                                                                     <i data-lucide="scan-eye" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                                                    Preview Capsule Namespace
+                                                                    Preview Capsule Provider Scope
                                                                 </button>
                                                             </form>
                                                         {% endif %}
