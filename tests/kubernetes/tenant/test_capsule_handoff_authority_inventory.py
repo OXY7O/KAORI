@@ -271,3 +271,37 @@ def test_preflight_binds_cluster_quota_and_rbac_lineage_to_capsule_fingerprint_o
     assert 'observe_capsule_global_quotas(' in source
     assert 'inspect_capsule_role_binding_lineage(' in source
     assert 'Capsule controller-generated RoleBinding origins' in source
+
+
+def test_foreign_tenant_label_cannot_be_correlated_to_this_capsule_rbac_intent():
+    spec = _capsule_spec()
+    spec['rules'][0]['permissions']['bindings'][0]['labels']['kaori.io/tenant-id'] = 'foreign-tenant'
+    result = _lineage(spec=spec)
+    assert result['contract_correlated'] is False
+    assert result['intent_count'] == 0
+    assert any('foreign, partial or unknown KAORI ownership' in reason for reason in result['blockers'])
+    assert result['controller_origin_verified'] is False
+
+
+@pytest.mark.parametrize('mutation', [
+    lambda b: b['labels'].pop('kaori.io/tenant-id'),
+    lambda b: b['labels'].update({'kaori.io/tenant-id': 'foreign-tenant'}),
+    lambda b: b['labels'].update({'kaori.io/unadmitted-marker': 'value'}),
+    lambda b: b['labels'].update({'app.kubernetes.io/managed-by': 'foreign'}),
+])
+def test_partial_or_cross_tenant_kaori_binding_claim_never_matches(mutation):
+    spec = _capsule_spec()
+    mutation(spec['rules'][0]['permissions']['bindings'][0])
+    result = _lineage(spec=spec)
+    assert result['controller_origin_verified'] is False
+    assert result['contract_correlated'] is False
+    assert result['blockers']
+
+
+def test_ambiguous_effective_kaori_binding_never_satisfies_matching_intent():
+    related = _related_record()
+    related['resources'][0]['origin'] = 'ambiguous_kaori'
+    result = _lineage(related=related)
+    assert result['contract_correlated'] is False
+    assert result['effective_kaori_count'] == 0
+    assert any('ambiguous or foreign' in reason for reason in result['blockers'])
