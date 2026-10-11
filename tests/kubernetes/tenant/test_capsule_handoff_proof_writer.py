@@ -204,7 +204,7 @@ class _ReadOnlyPgCatalog:
         if 'FROM pg_trigger' in sql:
             return _Result(self.triggers)
         if 'FROM pg_constraint' in sql:
-            return _Result(list(self.constraints))
+            return _Result([(name, True) for name in self.constraints])
         if 'FROM pg_class' in sql:
             return _Result(self.permissions)
         if "current_setting('fsync')" in sql:
@@ -237,7 +237,7 @@ def test_staged_postgres_guard_refuses_missing_or_disabled_trigger(missing):
 
 
 def test_staged_postgres_guard_refuses_missing_composite_scope_constraint():
-    with pytest.raises(ValueError, match='constraints are absent'):
+    with pytest.raises(ValueError, match='constraints are absent or invalid'):
         writer._require_postgres_proof_storage_guards(_ReadOnlyPgCatalog(
             constraints=set(writer._REQUIRED_CONSTRAINTS)
             - {'fk_capsule_resource_consent_exact_audit_batch'},
@@ -280,3 +280,41 @@ def test_readback_comparison_checks_exact_committed_fields():
     assert writer._stored_matches(row, expected) is True
     assert writer._stored_matches(None, expected) is False
     assert writer._stored_matches(row, {**expected, 'batch_id': 'replayed'}) is False
+
+
+def test_proof_batch_global_and_tenant_uniqueness_stays_in_model_and_migration():
+    from pathlib import Path
+
+    from app.models.capsule_handoff_proof import (
+        CapsuleHandoffAuditBatch, CapsuleHandoffResourceConsentRecord,
+    )
+
+    batch_uniques = {
+        constraint.name for constraint in CapsuleHandoffAuditBatch.__table__.constraints
+        if getattr(constraint, 'name', None)
+    }
+    consent_uniques = {
+        constraint.name for constraint in CapsuleHandoffResourceConsentRecord.__table__.constraints
+        if getattr(constraint, 'name', None)
+    }
+    assert 'uq_capsule_audit_batch_global_id' in batch_uniques
+    assert 'uq_capsule_audit_batch_tenant_once' in batch_uniques
+    assert 'uq_capsule_resource_consent_tenant_once' in consent_uniques
+    migration = Path('migrations/versions/20261011_capsule_audit_consent_proof_ledger.py').read_text()
+    for name in (
+        'uq_capsule_audit_batch_global_id',
+        'uq_capsule_audit_batch_tenant_once',
+        'uq_capsule_resource_consent_tenant_once',
+    ):
+        assert name in migration
+
+
+def test_staged_writer_mentions_legacy_and_prior_start_checks_before_insert():
+    from pathlib import Path
+
+    source = Path('app/kubernetes/tenant/capsule_handoff_proof_writer.py').read_text()
+    assert "select(CapsuleHandoffLedgerEvent.id)" in source
+    assert "kubernetes_tenant_release_capsule_handoff_execution" in source
+    assert source.index('Prior Capsule START/legacy execution') < source.index('session.add(CapsuleHandoffAuditBatch')
+    assert source.index('session.add(CapsuleHandoffAuditBatch') < source.index('session.add(CapsuleHandoffResourceConsentRecord')
+    assert 'with session.begin()' in source
