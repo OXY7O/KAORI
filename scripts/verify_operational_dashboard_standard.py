@@ -419,8 +419,29 @@ def _verify_artifact_registry_dashboard(
     registry_capacity_snapshot = _read(ARTIFACT_CAPACITY_SNAPSHOT)
     _require(
         registry_capacity_snapshot,
-        ('components/operational_callout.html', "operational_callout.render('Data Scope'", 'grid gap-3 sm:grid-cols-3'),
-        'Registry Capacity Snapshot source-scope information and metric grid',
+        (
+            'Data Scope:</span> committed inventory for footprint',
+            'bg-kaori-soft p-3 text-xs leading-5 text-content-secondary',
+            'grid gap-3 lg:grid-cols-3',
+            'progress_bar.bar(item.progress_percent,',
+            'item.progress_label',
+            'percentage not applicable',
+            'Refresh evidence; verify headroom',
+        ),
+        'Registry Capacity Snapshot K8s visual grammar and evidence-qualified progress',
+    )
+    if 'operational_callout.render(' in registry_capacity_snapshot:
+        raise AssertionError('Registry Capacity must use the compact Kubernetes Data Scope strip')
+    _require(
+        presentation,
+        (
+            "'progress_label': 'Used'",
+            "'progress_label': 'Free'",
+            "'progress_label': 'Inventory'",
+            '100 - quota_utilization if quota_utilization is not None else None',
+            'Committed growth and Metrics Source quota evidence.',
+        ),
+        'Registry committed quota progress semantics and compact evidence microcopy',
     )
     registry_consumers = _read(ARTIFACT_CONSUMERS)
     _require(
@@ -450,6 +471,8 @@ def _verify_artifact_registry_dashboard(
             'overview.forecast.size_growth_per_day',
             'overview.forecast.artifact_growth_per_day',
             'overview.forecast.nearest_quota_days',
+            'Artifact change per day.',
+            'Quota ETA with positive growth.',
             'Forecast Basis',
             'Registry Analytics',
             'No historical daily series is available for a trend chart.',
