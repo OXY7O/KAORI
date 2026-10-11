@@ -168,7 +168,16 @@ def test_permission_catalog_detail_uses_count_free_shared_modal_hierarchy() -> N
     assert 'data-resource-detail-header' in detail
     assert 'data-kaori-detail-variant="full-workspace-modal"' in detail
     assert 'detail_ui.summary_strip([' in detail
+    assert '], compact=true, borderless=true)' in detail
     assert 'data-resource-detail-summary' in shared
+    assert '{% macro summary_strip(metrics, columns=4, compact=false, borderless=false)' in shared
+    assert 'data-kaori-summary-variant="borderless"' in shared
+    # The permission summary uses the borderless branch of the approved shared
+    # macro. Legacy callers keep the original divided variant by default.
+    assert "'min-w-0 py-0.5' if borderless" in shared
+    assert "'min-w-0 border-b border-outline-subtle" in shared
+    assert 'sm:border-r' in shared
+    assert 'gap-x-6 gap-y-3' in shared
     assert "('Role Mapping', 'Mapped' if permission.role_count else 'Unassigned', '')" in detail
     assert "('Active Usage', 'In Use' if permission.active_user_count else 'No Active Users', '')" in detail
     assert "('JIT Projection', 'Configured' if permission.jit_provider_count else 'Not Configured', '')" in detail
