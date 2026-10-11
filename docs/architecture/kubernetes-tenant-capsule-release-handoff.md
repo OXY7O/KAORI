@@ -493,6 +493,81 @@ X.509 SSR/SAR and provider read-back, and perform explicitly authorized
 dry-run/UAT before considering any executor activation. #1229 remains
 OPEN, #1230/#1231 BLOCKED. All tests, CI/CD and provider gates HOLD.
 
+## Capsule controller collector receipt + per-resource successor consent (source only)
+
+**Trust is split deliberately into three independent questions:** (1)
+whether the normalized controller audit **claim** correlates to the
+current resource UID/RV and original policy/metadata digests, (2)
+whether the **collection receipt** originated from a pinned backend
+collector key and covers the same exact plan/worklist/resource review,
+and (3) whether independent humans have explicitly reviewed every
+KAORI metadata-only transfer candidate. None of these alone proves
+the Kubernetes apiserver generated an authentic, complete audit trail,
+that the controller caused an event, or that provider mutation is safe.
+
+`capsule_handoff_collector_receipt.py` supplies a source-only
+HMAC-SHA256 authenticity check for a bounded collector receipt. The
+caller must inject a 32+ byte key from a **backend-owned, independently
+governed trust store** (never a request, user-supplied evidence,
+metadata label or GitHub source constant). An exact collector ID and
+key ID, canonical batch UUID, recent timezone-aware timestamp,
+tenant/cluster/plan/worklist/resource SHA and **all normalized claims**
+are MAC-bound; unknown fields, key substitution, tampering, missing
+keys, stale data and a different plan are rejected. **HMAC validates
+the receipt only**, not apiserver integrity or controller ServiceAccount
+causality. Because a trusted collection channel, anti-replay DB
+constraints and operationally pinned key registry are not yet
+implemented, `collector_key_source_independently_attested=false`,
+`audit_batch_replay_prevention_verified=false` and
+`apiserver_audit_integrity_verified=false` stay fixed.
+
+`capsule_handoff_resource_consent.py` defines the exact
+`capsule-resource-successor-consent/v1` proposal. It matches the
+current committed plan, SHA-bound per-resource report, original
+worklist, distinct requester/reviewer/successor IDs, current approval
+and plan-level Capsule acceptance. Its `transfer_targets` must
+cover **every** KAORI-labeled Namespace/ResourceQuota/LimitRange/
+RoleBinding candidate, exactly once with unchanged UID/RV,
+policy/metadata SHA and an explicit `proposed_metadata_labels_only`
+decision. It refuses Capsule Tenant CR, GlobalResourceQuota, foreign
+objects, incomplete scope, stale acceptance, duplicate targets,
+provider spec, RoleBinding subject/roleRef changes, unknown
+annotations and label keys outside the per-kind KAORI allowlist.
+Maximum candidate coverage is 30 Namespaces plus 300 related
+resources (330); no candidate may be silently omitted. A proposed
+manifest is **not** an independently authenticated, durable consent
+record and cannot grant operational authority. Namespace metadata
+baseline is not yet fully available and must still be obtained
+before any eventual provider write.
+
+`capsule_handoff_origin_consent_docket.py` composes the three
+source-only checks, enforcing exact audit claim coverage for every
+transfer candidate, valid collector MAC, identical SHA-bound scope
+and complete successor consent. Its only result is
+`collector_receipt_and_resource_consent_correlated_unadmitted`.
+It never returns an executable resource body, patch, token or
+permission. `collector_mac_verified=true` means a cryptographic
+MAC comparison passed **under the supplied backend key**; it is NOT
+the same thing as `controller_origin_attested`, current provider
+authority, verified resource consent or approval to execute.
+`dry_run_admitted=false`,
+`provider_execution_admitted=false`,
+`auto_retry_authorized=false`, and
+`release_authorized=false` remain fixed.
+
+**Required implementation before a real trust promotion:** review and
+configure secure key distribution/rotation for the audit collector,
+authenticate Kubernetes audit ingestion at source, enforce unique
+batch ID/digest and immutable retention in a trusted database or
+WORM storage, prove the current Capsule controller principal and
+causality independently of labels/managedFields, durably record
+separate resource-by-resource human approval and successor acceptance,
+and re-fetch authoritative provider UID/RV and namespace/related
+metadata before individually admitted dry-run and conditional PATCH.
+This PR provides no registered writer, collector runtime, endpoint,
+Kubernetes client, Release finalizer or database migration.
+All gate execution remains HOLD; #1229 OPEN and #1230/#1231 BLOCKED.
+
 ## Required before completing #1229
 
 1. Build on the SHA-bound Namespace and cluster-scoped
