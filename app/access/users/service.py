@@ -323,6 +323,7 @@ def can_edit_user(
     requested_role_id: int | None,
     requested_is_active: bool,
     requested_is_super_admin: bool,
+    validate_new_role: bool = True,
 ) -> tuple[bool, str | None]:
     if not actor.has_permission('users.manage'):
         return False, 'You do not have permission to edit users.'
