@@ -2,61 +2,78 @@
 {% import "components/table_label.html" as table_label %}
 {% call operational_section.render(
     'Authentication Source Posture',
-    'Committed provider configuration, enablement, and projected identity coverage.',
+    'Committed provider configuration, authentication eligibility, and account projection.',
     'fingerprint',
     header_badge=table_label.status_indicator_label(summary.posture_label, summary.posture_tone),
     body_classes='p-0',
     aria_label='Authentication Source Posture'
 ) %}
     {% set overview_metrics = [
-        ('badge-check', 'Configured', summary.configured, 'Complete adapter configurations', 'bg-status-normal-soft text-status-normal-text'),
-        ('power', 'Enabled', summary.enabled, 'Eligible authentication sources', 'bg-kaori-soft text-kaori-primary'),
-        ('network', 'Directory', summary.directory, 'Directory provider contracts', 'bg-status-info-soft text-status-info-text'),
-        ('log-in', 'Browser SSO', summary.sso, 'Registered browser sign-in sources', 'bg-status-unknown-soft text-status-unknown-text')
+        ('badge-check', 'Configured', summary.configured, 'Complete adapter contracts', 'bg-status-normal-soft text-status-normal-text'),
+        ('power', 'Enabled', summary.enabled, 'Eligible for authentication', 'bg-kaori-soft text-kaori-primary'),
+        ('network', 'Directory', summary.directory, 'Directory authentication sources', 'bg-status-info-soft text-status-info-text'),
+        ('log-in', 'Browser SSO', summary.sso, 'Browser sign-in providers', 'bg-status-unknown-soft text-status-unknown-text')
     ] %}
-    <div class="grid min-w-0 grid-cols-2 gap-3 p-4 sm:p-5 xl:grid-cols-4"
+    <div class="grid min-w-0 gap-3 p-4 sm:grid-cols-2 sm:gap-4 sm:p-5 xl:grid-cols-4"
          aria-label="Authentication provider configuration metrics"
          data-kaori-idp-overview-metrics>
         {% for icon, label, value, description, tone in overview_metrics %}
-            <article class="min-w-0 rounded-xl border border-outline-subtle bg-surface-subtle p-3.5 sm:p-4">
-                <div class="flex min-w-0 items-center justify-between gap-2">
-                    <p class="text-xs font-semibold leading-5 text-content-secondary">{{ label }}</p>
+            <article class="flex min-w-0 flex-col gap-1 rounded-lg bg-surface-subtle px-4 py-3.5"
+                     data-kaori-idp-posture-metric>
+                <div class="flex min-w-0 items-center justify-between gap-3">
+                    <h3 class="text-xs font-semibold leading-5 text-content-secondary">{{ label }}</h3>
                     <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ tone }}"
                           aria-hidden="true">
                         <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
                     </span>
                 </div>
-                <p class="mt-1 text-2xl font-bold leading-8 tracking-tight tabular-nums text-content-primary">{{ value }}</p>
-                <p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>
+                <p class="text-2xl font-bold leading-8 tracking-tight tabular-nums text-content-primary">{{ value }}</p>
+                <p class="text-xs leading-5 text-content-muted">{{ description }}</p>
             </article>
         {% endfor %}
     </div>
-    <div class="border-t border-outline-subtle px-4 py-4 sm:px-5 sm:py-5"
-         data-kaori-idp-governance-boundaries>
-        <div class="mb-3 flex min-w-0 flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-            <h3 class="text-sm font-semibold text-content-primary">Identity Governance</h3>
-            <p class="text-xs leading-5 text-content-muted">Configured does not mean connection-tested.</p>
-        </div>
-        {% set boundaries = [
-            ('layers-3', 'Provider / Adapter Boundary', 'Provider identifies the external authority; adapter defines the authentication contract. Core Access workflows depend on capabilities, not product names.'),
-            ('key-round', 'Credential Ownership', 'Secret values stay external. KAORI stores environment-reference names and non-secret provider configuration.'),
-            ('contact-round', 'Identity Projection', 'External identities are linked or administratively/JIT projected to KAORI accounts before RBAC authorization.'),
-            ('shield-check', 'Authorization Boundary', 'Authentication proves identity; active KAORI roles and account lifecycle state govern application access.')
-        ] %}
-        <div class="grid min-w-0 gap-x-7 gap-y-4 md:grid-cols-2">
-            {% for icon, title, description in boundaries %}
-                <div class="flex min-w-0 items-start gap-3">
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                          aria-hidden="true">
-                        <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
-                    </span>
-                    <div class="min-w-0">
-                        <h4 class="text-xs font-semibold leading-5 text-content-primary">{{ title }}</h4>
-                        <p class="mt-0.5 max-w-2xl text-xs leading-5 text-content-secondary">{{ description }}</p>
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
+    <div class="flex min-w-0 items-start gap-2 border-t border-outline-subtle bg-surface-hover px-4 py-3 sm:px-5"
+         data-kaori-idp-posture-context>
+        <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-content-muted" aria-hidden="true"></i>
+        <p class="text-xs leading-5 text-content-secondary">
+            {% if summary.total == 0 %}
+                No external provider has been registered. Local Database authentication remains separate from optional external providers.
+            {% else %}
+                Authentication eligibility reflects committed provider configuration, not a live connection-health guarantee.
+            {% endif %}
+            Configured means the adapter contract is complete; it does not mean the connection was tested.
+        </p>
     </div>
+{% endcall %}
+
+{% call operational_section.render(
+    'Identity Governance',
+    'Four independent boundaries keep provider authentication separate from KAORI authorization.',
+    'waypoints',
+    body_classes='p-4 sm:p-5',
+    aria_label='Identity Governance'
+) %}
+    {% set boundaries = [
+        ('layers-3', 'Provider / Adapter Boundary', 'Providers identify external identity authorities. Adapters define their authentication contracts.'),
+        ('key-round', 'Credential Ownership', 'Credential values remain external; KAORI commits only secret-reference names and non-secret configuration.'),
+        ('contact-round', 'Identity Projection', 'External identities are linked or governed-provisioned into KAORI accounts before authorization.'),
+        ('shield-check', 'Authorization Boundary', 'Authentication proves identity. Active KAORI roles and account lifecycle state determine access.')
+    ] %}
+    <ol class="grid min-w-0 gap-x-8 gap-y-5 md:grid-cols-2"
+        aria-label="Identity authority and governance boundaries"
+        data-kaori-idp-governance-boundaries>
+        {% for icon, title, description in boundaries %}
+            <li class="flex min-w-0 items-start gap-3" data-kaori-idp-governance-item>
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <h3 class="text-sm font-semibold leading-6 text-content-primary">{{ title }}</h3>
+                    <p class="mt-0.5 max-w-2xl text-sm leading-6 text-content-secondary">{{ description }}</p>
+                </div>
+            </li>
+        {% endfor %}
+    </ol>
 {% endcall %}
 {% include "access/identity_providers/partials/_directory_provisioning_strip.html" %}
