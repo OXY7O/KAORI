@@ -187,3 +187,99 @@ def test_capsule_namespace_requires_proven_tenant_claim_and_immutable_uid():
             tenant_name='tenant-capsule', tenant_id='kaori-id',
             status_namespace_names=set(),
         )
+
+
+def test_capsule_spec_fingerprint_is_canonical_and_binds_all_provider_controls():
+    """#1227: provider quota, limits, owner and RBAC changes invalidate handoff."""
+    from copy import deepcopy
+
+    tenant = SimpleNamespace(
+        id='tenant-a', provider_evidence_json={'provider_mutation_performed': True},
+    )
+    spec = {
+        'resourceQuotas': {'scope': 'Tenant', 'items': [{'hard': {'pods': '10'}}]},
+        'limitRanges': {'items': [{'limits': [{'type': 'Container'}]}]},
+        'namespaceOptions': {'quota': 2},
+        'owners': [{'kind': 'User', 'name': 'platform-team'}],
+        'rules': [{'permissions': {'bindings': [{'clusterRoleName': 'viewer'}]}}],
+        'additionalRoleBindings': [],
+    }
+
+    def observe(value, version='1'):
+        components, blockers = capsule_tenant_handoff_evidence(
+            tenant=tenant,
+            tenant_item={
+                'metadata': {'name': 'sandbox', 'uid': 'capsule-uid', 'resourceVersion': version},
+                'spec': value,
+            },
+        )
+        assert len(components) == 1
+        assert components[0]['handoff'] == 'external_acceptance_required'
+        assert any('explicit provider authority handoff' in reason for reason in blockers)
+        assert len(components[0]['capsule_spec_sha256']) == 64
+        assert 'owners' not in components[0]
+        assert 'rules' not in components[0]
+        return handoff_fingerprint(components), components[0]['capsule_spec_sha256']
+
+    baseline_fingerprint, baseline_digest = observe(spec)
+    reordered = dict(reversed(list(spec.items())))
+    assert observe(reordered) == (baseline_fingerprint, baseline_digest)
+
+    changes = [
+        ('resourceQuotas', {'scope': 'Tenant', 'items': [{'hard': {'pods': '20'}}]}),
+        ('limitRanges', {'items': []}),
+        ('namespaceOptions', {'quota': 3}),
+        ('owners', [{'kind': 'User', 'name': 'different-successor'}]),
+        ('rules', []),
+        ('additionalRoleBindings', [{'clusterRoleName': 'admin'}]),
+    ]
+    for field, replacement in changes:
+        changed = deepcopy(spec)
+        changed[field] = replacement
+        fingerprint, digest = observe(changed)  # Same UID/RV as initial preflight.
+        assert fingerprint != baseline_fingerprint
+        assert digest != baseline_digest
+
+
+@pytest.mark.parametrize('bad_spec', [
+    None,
+    [],
+    'unexpected',
+    {'owners': {}},
+    {'resourceQuotas': []},
+    {'rules': {}},
+    {'namespaceOptions': []},
+    {'bad': {1, 2}},
+    {'bad': float('nan')},
+    {'owners': 'a' * 262145},
+])
+def test_capsule_release_inventory_rejects_unbounded_or_unsupported_spec(bad_spec):
+    tenant = SimpleNamespace(
+        id='tenant-a', provider_evidence_json={'provider_mutation_performed': False},
+    )
+    with pytest.raises(ValueError, match='Capsule Tenant'):
+        capsule_tenant_handoff_evidence(
+            tenant=tenant,
+            tenant_item={
+                'metadata': {'name': 'sandbox', 'uid': 'capsule-uid', 'resourceVersion': '7'},
+                'spec': bad_spec,
+            },
+        )
+
+
+def test_capsule_release_scope_digest_is_read_only_and_visible_as_technical_evidence():
+    from pathlib import Path
+    from jinja2 import Environment
+
+    root = Path(__file__).resolve().parents[3]
+    partial = (root / 'app/templates/kubernetes/tenant/partials/_tenant_management_detail.html').read_text(
+        encoding='utf-8'
+    )
+    Environment(autoescape=True).parse(partial)
+    inventory = partial.split('id="tenant-release-stage-inventory"', 1)[1].split('</section>', 1)[0]
+    assert "item.kind == 'CapsuleTenant' and item.get('capsule_spec_sha256')" in inventory
+    assert 'Observed Capsule spec SHA-256' in inventory
+    assert '{{ item.capsule_spec_sha256 }}' in inventory
+    assert 'Read-only scope evidence' in inventory
+    assert 'Provider UID' in inventory
+    assert 'Resource Version' in inventory

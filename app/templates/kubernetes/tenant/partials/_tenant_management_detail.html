@@ -628,6 +628,15 @@
                                                     <dt class="text-xs text-content-muted">Resource Version</dt>
                                                     <dd class="mt-0.5 break-all font-mono text-xs leading-5 text-content-primary">{{ item.resource_version }}</dd>
                                                 </div>
+                                                {% if item.kind == 'CapsuleTenant' and item.get('capsule_spec_sha256') %}
+                                                    <div class="min-w-0 sm:col-span-2">
+                                                        <dt class="text-xs text-content-muted">Observed Capsule spec SHA-256</dt>
+                                                        <dd class="mt-0.5 break-all font-mono text-xs leading-5 text-content-primary">{{ item.capsule_spec_sha256 }}</dd>
+                                                        <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                                            Read-only scope evidence; Capsule retains authority over quotas, owners and RBAC.
+                                                        </p>
+                                                    </div>
+                                                {% endif %}
                                             </dl>
                                         </details>
                                     </li>
