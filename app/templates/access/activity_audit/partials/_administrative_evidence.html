@@ -125,13 +125,12 @@
     </div>
     {% if administrative_evidence.rows %}
         <div class="overflow-x-auto overscroll-x-contain">
-            <table class="{{ table_ui.table_classes('min-w-[66rem]') }}"
+            <table class="{{ table_ui.table_classes('min-w-[52rem]') }}"
                    aria-label="Separate administrative AuditEvent register">
                 <thead class="{{ table_ui.head_classes() }}">
                     <tr>
                         <th scope="col" class="{{ table_ui.header_cell_classes() }}">Activity</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Source</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Actor Reference</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Source / Actor</th>
                         <th scope="col" class="{{ table_ui.header_cell_classes() }}">Outcome</th>
                         <th scope="col" class="{{ table_ui.header_cell_classes() }}">Recorded</th>
                         <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Action</th>
@@ -146,10 +145,11 @@
                                    title="{{ row.action }}">Event: {{ row.action }}</p>
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
-                                {{ table_label.metadata_label(row.source_label, 'database') }}
-                            </td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                {{ table_ui.title_cell(row.actor_label, row.actor_detail, 'user-round') }}
+                                <div class="flex min-w-0 flex-col items-start gap-1.5">
+                                    {{ table_label.metadata_label(row.source_label, 'database') }}
+                                    <span class="text-xs leading-5 text-content-muted"
+                                          title="{{ row.actor_detail }}">{{ row.actor_reference }}</span>
+                                </div>
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
                                 {{ table_label.status_label(row.status_label, row.status_tone) }}

@@ -6,6 +6,7 @@ from typing import Any
 from flask import abort, url_for
 from sqlalchemy import or_
 
+from app.common.job_execution_contract import job_operation_label
 from app.common.pagination import normalize_per_page, paginate_query
 from app.models.audit import AuditEvent
 from app.models.job import JobExecution
@@ -131,14 +132,21 @@ def build_administrative_evidence_context(
         # The administrative model has only a nullable actor FK, never a
         # committed identity/role/auth-source snapshot: do not reconstruct it.
         job_url = None
+        # Prefer the canonical job-operation label when the matching committed
+        # execution is authorized. The AuditEvent action alone (e.g.
+        # automatic_job_succeeded) does not identify which job actually ran.
+        display_action = f"{specification['label']} · {action_suffix.replace('_', ' ').title()}"
         if can_view_jobs and event.target_type == 'job_execution' and event.target_id:
             job = JobExecution.query.filter_by(public_id=event.target_id).first()
             if job is not None:
+                display_action = redact_operational_text(
+                    job_operation_label(job.operation), limit=120
+                ) or display_action
                 job_url = url_for('jobs.executions', execution_tab='registry', search=job.public_id)
         rows.append({
             'id': event.id,
             'action': redact_operational_text(event.action, limit=120),
-            'display_action': f"{specification['label']} · {action_suffix.replace('_', ' ').title()}",
+            'display_action': display_action,
             'source_label': specification['source'],
             'status_label': outcome_key.replace('_', ' ').title(),
             'status_tone': status_tone,

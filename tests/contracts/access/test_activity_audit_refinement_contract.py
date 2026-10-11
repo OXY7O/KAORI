@@ -359,12 +359,19 @@ def test_activity_audit_inventory_hierarchy_and_shared_two_tab_workspace() -> No
     assert 'table_ui.inventory_filter_bar_classes()' in administrative
     assert "table_ui.title_cell(row.display_action, row.summary, 'file-clock')" in administrative
     assert 'table_label.status_label(row.status_label, row.status_tone)' in administrative
+    assert 'Source / Actor' in administrative
+    assert 'row.actor_reference' in administrative
+    assert 'Actor Reference</th>' not in administrative
+    assert "table_ui.table_classes('min-w-[52rem]')" in administrative
     assert "table_label.metadata_label(row.source_label, 'database')" in administrative
     assert "page_param='admin_page'" in administrative
     assert "registry_ui.footer(" in administrative
     assert "per_page_param='admin_per_page'" in administrative
     assert 'metadata_json' not in administrative
-    assert "'display_action':" in source
+    assert "'display_action': display_action" in source
+    assert 'job_operation_label(job.operation)' in source
+    assert 'redact_operational_text(' in source
+    assert 'display_action = f"{specification[' in source
     assert "'status_tone': status_tone" in source
     assert "'actor_detail': 'Actor FK · not a snapshot'" in source
     assert "action_suffix.endswith('partially_succeeded')" in source
