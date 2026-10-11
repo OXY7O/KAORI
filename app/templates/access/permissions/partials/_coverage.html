@@ -95,19 +95,22 @@
     </div>
 </form>
 <div class="overflow-x-auto">
-    <table class="{{ table_ui.table_classes('min-w-[70rem]') }}">
+    <table class="{{ table_ui.table_classes('min-w-[70rem]' if coverage_roles else 'min-w-[36rem]') }}">
         <thead class="{{ table_ui.head_classes() }}">
             <tr>
-                <th class="sticky left-0 z-20 min-w-[18rem] {{ table_ui.header_cell_classes() }} bg-surface-hover">Permission</th>
-                <th class="min-w-[10rem] {{ table_ui.header_cell_classes() }}">Module</th>
+                <th scope="col" class="sticky left-0 z-20 min-w-[18rem] {{ table_ui.header_cell_classes() }} bg-surface-hover">Permission</th>
+                <th scope="col" class="min-w-[10rem] {{ table_ui.header_cell_classes() }}">Module</th>
                 {% for role in coverage_roles %}
-                    <th class="min-w-[10rem] {{ table_ui.header_cell_classes() }} text-center">
+                    <th scope="col" class="min-w-[10rem] {{ table_ui.header_cell_classes() }} text-center">
                         <div class="flex flex-col items-center gap-1">
                             <span class="text-xs font-semibold text-content-primary">{{ role.display_name }}</span>
                             <span class="text-xs font-normal text-content-muted">{{ 'Default' if role.is_system else 'Custom' }} · {{ 'Active' if role.is_active else 'Inactive' }}</span>
                         </div>
                     </th>
-                {% endfor %}
+                {% else %}
+                    {# The empty-role column matches the body fallback cell and colspan. #}
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} text-center">Role Coverage</th>
+                {% endfor %>
             </tr>
         </thead>
         <tbody class="{{ table_ui.body_classes() }}">
@@ -132,7 +135,7 @@
                             {% endif %}
                         </td>
                     {% else %}
-                        <td class="{{ table_ui.cell_classes() }} text-sm text-content-muted">No roles match the current role filters.</td>
+                        <td class="{{ table_ui.cell_classes() }} text-center text-sm text-content-muted">No roles match the current role filters.</td>
                     {% endfor %}
                 </tr>
             {% else %}
