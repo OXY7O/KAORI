@@ -218,6 +218,11 @@ def test_capacity_dashboard_matches_kubernetes_forecast_and_top_consumer_pattern
 
     assert 'storage/object_storage/dashboard/partials/_forecast_risk.html' in capacity
     assert 'storage/object_storage/dashboard/partials/_top_consumers.html' in capacity
+    assert 'components/operational_callout.html' in capacity
+    assert "'Capacity Decision Notes'" in capacity
+    assert 'Planning Check' in capacity
+    assert 'Evidence Handoff' in capacity
+    assert 'top bucket consumers before acting' in capacity
     assert 'bg-kaori-soft p-3 text-xs leading-5 text-content-secondary' in capacity
     assert "dashboard.capacity.utilization if dashboard.capacity.utilization is number else none" in capacity
     assert "'Used Capacity'" in capacity
