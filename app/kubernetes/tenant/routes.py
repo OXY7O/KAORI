@@ -1214,9 +1214,9 @@ def execute_capsule_handoff_route(tenant_id: str):
             status='success' if success else 'warning',
             title='Capsule Provider Handoff Observed' if success else 'Capsule Recovery Required',
             message=(
-                f"{result['verified_resource_count']} of "
-                f"{result.get('verified_resource_count') if success else 'unknown'} "
-                "source resources re-read."
+                f"{result['verified_resource_count']} provider resources in full read-back."
+                if success
+                else "Provider transfer is partial or unknown; inspect the immutable attempt."
             ),
             detail=(
                 'Run a separate complete G4 provider verification before finalizing Released.'
