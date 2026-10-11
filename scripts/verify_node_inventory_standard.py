@@ -181,6 +181,13 @@ def main() -> int:
         errors,
     )
 
+    require(
+        'components/info_tip.html' in table_content
+        and "'k8s-inventory-nodes-readiness'" in table_content
+        and "'k8s-inventory-nodes-capacity'" in table_content,
+        'Node Inventory must use shared contextual help for Readiness and Capacity.',
+        errors,
+    )
     shared_detail = read('app/templates/components/details/_detail_content.html')
     require(
         'macro inspector_section(' in shared_detail, 'Node detail must expose the inspector section primitive.', errors

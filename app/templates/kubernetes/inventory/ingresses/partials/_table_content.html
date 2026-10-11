@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/table.html" as table_ui %}
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table_label.html" as table_label %}
@@ -15,9 +16,9 @@
                 <th scope="col"
                     class="{{ table_ui.header_cell_classes() }} w-[30%]">Publication</th>
                 <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} w-[13%]">TLS References</th>
+                    class="{{ table_ui.header_cell_classes() }} w-[13%]"><span class="inline-flex items-center gap-1">TLS References {{ info_tip.render('k8s-inventory-ingresses-tls-references', 'TLS References', 'Secret or certificate references declared for HTTPS hosts. Their presence does not by itself prove certificate validity or a working TLS endpoint.', placement='right') }}</span></th>
                 <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} w-[10%]">Routing</th>
+                    class="{{ table_ui.header_cell_classes() }} w-[10%]"><span class="inline-flex items-center gap-1">Routing {{ info_tip.render('k8s-inventory-ingresses-routing', 'Ingress Routing', 'HTTP host/path routing targets from committed Ingress rules. The actual controller and external reachability remain provider-owned.', placement='right') }}</span></th>
                 <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[12%]">Details</th>
             </tr>
         </thead>

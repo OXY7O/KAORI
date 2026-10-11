@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/table.html" as table_ui %}
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table_label.html" as table_label %}
@@ -14,9 +15,9 @@
                 <th scope="col"
                     class="{{ table_ui.header_cell_classes() }} min-w-[12rem]">Object Type</th>
                 <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} min-w-[14rem]">Key Index & Mutation</th>
+                    class="{{ table_ui.header_cell_classes() }} min-w-[14rem]"><span class="inline-flex items-center gap-1">Key Index & Mutation {{ info_tip.render('k8s-inventory-configuration-key-index-mutation', 'Configuration Keys and Mutation', 'Number of recorded ConfigMap or Secret keys and a summary of observed changes; Secret values are not exposed in inventory.', placement='right') }}</span></th>
                 <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} min-w-[15rem]">Current Pod References</th>
+                    class="{{ table_ui.header_cell_classes() }} min-w-[15rem]"><span class="inline-flex items-center gap-1">Current Pod References {{ info_tip.render('k8s-inventory-configuration-current-pod-references', 'Current Pod References', 'Pods referencing this configuration in the committed generation; a missing reference is not proof the object is unused outside this scope.', placement='right') }}</span></th>
                 <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Details</th>
             </tr>
         </thead>
