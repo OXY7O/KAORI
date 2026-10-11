@@ -308,6 +308,61 @@ this slice; no DB migration or AuditEvent writer is introduced. #1229
 remains OPEN and #1230/#1231 blocked. All test, CI/CD and real provider
 operations continue to be held pending explicit authorization.
 
+## Capsule write-once event ledger — migration source only
+
+`app/models/capsule_handoff_ledger.py` and
+`migrations/versions/20261011_capsule_handoff_write_once_ledger.py`
+define a **dedicated** `capsule_handoff_ledger_events` relation, separate
+from the generic mutable `audit_events` table. The new model records only
+the canonical attempt envelope, exact Tenant/cluster/generation and
+plan/worklist SHA, indexed actor/sequence/event hash, and safe event JSON.
+No Kubernetes subject, provider credential or raw resource spec belongs in
+the ledger.
+
+The migration is based on `20261009_tenant_released`. It is **authored,
+not applied**. It supports PostgreSQL and SQLite explicitly, and refuses
+other SQL dialects until their immutability controls are reviewed.
+Both dialects enforce bounded event progression (START, one outcome,
+optional independent recovery review) and unique Tenant sequence/digest.
+Insert guards prevent missing predecessors, parallel/new attempts,
+actor mismatch, different provider scope, and event chronology drift.
+PostgreSQL uses a Tenant row lock to serialize inserts, and guards
+UPDATE, DELETE **and TRUNCATE**. SQLite uses transaction-serialized
+predecessor checks and UPDATE/DELETE triggers. Downgrade is forbidden
+when events exist.
+
+**Conservative irreversible fence:** only one attempt history is permitted
+per Tenant. A future sanctioned restart cannot delete ledger evidence,
+reuse attempt sequence or silently reset history. It requires a separately
+approved recovery protocol and additive schema extension, not a bypass.
+
+`capsule_handoff_ledger_review.py` provides a bounded read-only query and
+compares each persisted indexed column with the canonical event payload
+and its original checksum/state chain. It also detects missing START,
+duplicate sequence, out-of-order records and changed plan/worklist.
+It **never** calls INSERT, UPDATE, DELETE, SQL commit or any Kubernetes API.
+
+### Admission still blocked
+
+A source migration is not proof of installed database triggers, correct SQL
+role privileges, WAL/fsync settings, backups or tamper resistance against
+database administrators. The target database engine has not been verified
+by an executed migration test. A future accepted execution service must
+prove the write-once schema installed on the actual engine, restrict DB
+role privileges, and ensure atomic persisted START acknowledgement plus
+fencing and fresh Kubernetes authority before the first provider mutation.
+
+The new ledger is currently **not used as an execution writer**. Its reader
+reports `db_write_once_triggers_verified=false`,
+`transactional_start_commit_verified=false`,
+`append_authorized=false`, `provider_handoff_verified=false` and
+`release_authorized=false`. Generic `AuditEvent` reader remains
+observation-only; no legacy Native implementation is changed. The
+next work item remains an explicitly reviewed **transactional writer and
+live provider executor**, with authoritative Capsule controller lineage,
+individual resource handoff and independent human consent, not an
+automatic promotion of this source merge. All gates remain HOLD.
+
 ## Required before completing #1229
 
 1. Build on the SHA-bound Namespace and cluster-scoped
