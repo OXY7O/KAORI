@@ -1217,6 +1217,21 @@ space for the actual action set and is **never** truncated to make text fit.
 The four conditional Operations Evidence table headers retain independent
 100%-width distributions.
 
+**Tenant Discovery desktop layout (#1134; scoped correction):** The old
+`min-w-[1300px]` forced the Review column and action outside the visible
+desktop card. Discovery now follows the already-established canonical
+responsive table policy: `min-w-[960px] lg:min-w-0` with a fixed
+seven-column distribution of **20/16/11/9/14/13/17%**, reserving 17% for
+Review Adoption/Attachment. Only Discovery opts into an optional compact
+Cluster Identity width; the shared 12rem default is untouched for other
+KAORI tables. Long identifiers truncate with their full-value title;
+status badges, all seven semantic columns, Info Tip, empty state, filters
+and canonical pagination retain existing behavior. The local
+`overflow-x-auto` container still bounds narrow-table scrolling for
+mobile/small tablets; at desktop width the table fits the available
+card rather than creating a scrollbar solely due to minimum width.
+Source-only presentation change; browser Visual QA and quality gates HOLD.
+
 **Tenant Registry correction (#1035 follow-up):** the earlier 1300px
 minimum forced horizontal scrolling even when the surrounding desktop Registry
 had enough room for seven columns. The Tenant Registry now uses a 1040px
