@@ -187,6 +187,7 @@ def test_capsule_release_condition_cards_keep_verbatim_evidence() -> None:
         "blocker.startswith('Inspect external Capsule owners and RBAC before Release Governance.')",
     ):
         assert pattern in panel
+    assert "condition_title = blocker.split(' has a KAORI-managed ')[0]" in panel
     assert "condition_title = 'Review recorded condition'" in panel
     assert "condition_action = blocker" in panel
     assert 'aria-label="Recorded Release conditions"' in panel
