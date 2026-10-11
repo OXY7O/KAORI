@@ -355,3 +355,64 @@ def test_access_grant_registry_shortcut_scrolls_nested_main_to_complete_form() -
     assert 'event.preventDefault()' in script
     assert "form.querySelector('[data-access-membership]')" in script
     assert 'membership.focus({ preventScroll: true })' in script
+
+
+def test_access_grants_included_capsule_evidence_template_compiles_and_renders() -> None:
+    """#1211: a malformed include must never turn Access Grants GET/HTMX into HTTP 500."""
+    from types import SimpleNamespace
+
+    from jinja2 import Environment, FileSystemLoader
+
+    templates = ROOT / 'app/templates'
+    environment = Environment(loader=FileSystemLoader(str(templates)), autoescape=True)
+    for name in (
+        'kubernetes/tenant/partials/_tenant_admin_workspace.html',
+        'kubernetes/tenant/partials/_tenant_access_grants_workspace.html',
+        'kubernetes/tenant/partials/_external_capsule_access_inventory.html',
+    ):
+        environment.get_template(name)
+
+    workspace = read('app/templates/kubernetes/tenant/partials/_tenant_admin_workspace.html')
+    grants = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
+    assert "('access-grants', 'Access Grants'" in workspace
+    assert 'hx_target=\'#tenant-admin-workspace\'' in workspace
+    assert 'hx_select=\'#tenant-admin-workspace\'' in workspace
+    assert '_tenant_access_grants_workspace.html' in workspace
+    assert '_external_capsule_access_inventory.html' in grants
+
+    view = environment.get_template(
+        'kubernetes/tenant/partials/_external_capsule_access_inventory.html'
+    )
+    baseline = {
+        'can_manage': False,
+        'external_capsule_tenants': [],
+        'recent_external_capsule_access': [],
+        'recent_capsule_access_drift': [],
+        'recent_capsule_access_remediation': [],
+        'recent_native_access_remediation': [
+            SimpleNamespace(
+                metadata_json={
+                    'provider': 'native_kubernetes',
+                    'tenant_id': 'kaori-demo',
+                    'explicit_reconcile_count': 0,
+                    'manual_review_count': 0,
+                    'items': [],
+                }
+            )
+        ],
+        'external_native_tenants': [],
+        'recent_external_native_access': [],
+        'recent_external_access_profile_reviews': [],
+        'recent_native_access_drift': [],
+    }
+    rendered = view.render(**baseline)
+    assert 'Governed Remediation Decisions' in rendered
+    assert 'Native Kubernetes · Tenant kaori-demo' in rendered
+    assert 'Preview only: no Kubernetes mutation.' in rendered
+    baseline['recent_native_access_remediation'] = [
+        SimpleNamespace(metadata_json=None)
+    ]
+    assert 'Governed Remediation Decisions' in view.render(**baseline)
+    assert "{% set plan = event.metadata_json or {} %}" in read(
+        'app/templates/kubernetes/tenant/partials/_external_capsule_access_inventory.html'
+    )
