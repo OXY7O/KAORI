@@ -57,8 +57,7 @@ not merely UID/RV/labels (PR #1359).
 
 This is **implementation presence**, not authorization, quality-gate
 result, installed PostgreSQL proof, live K8s mutation or end-to-end PASS.
-#1229/#1230/#1231 remain open under the same runtime HOLD. G5 has an
-explicit unresolved START-persistence immutability review (below).
+#1229/#1230/#1231 remain open under the same runtime HOLD. G5 has an explicit, now source-guarded START-persistence admission requirement (below).
 Do not turn the route presence into `release_execution_available=true`
 or represent `kaori-demo` as Released without fresh provider evidence,
 passing tests/UAT and human acceptance.
@@ -155,11 +154,22 @@ another attempt (including after process interruption). **Remaining G5
 admission risk:** the handback START currently uses the generic `AuditEvent`
 table, unlike G2's independently guarded PostgreSQL write-once ledger.
 Existence checks alone do not establish tamper-resistant START retention or
-anti-replay after a privileged audit-row deletion. Before G5 PASS,
-independently demonstrate equivalent installed, role-enforced immutable
-storage for this receipt or harden its persistence via a separately
-reviewed, minimal concrete remediation. Do not equate an application
-`db.session.commit()` with proof of immutable storage. Only complete verified
+anti-replay after an audit-row deletion. The #1231 source correction now
+provides `20261012_capsule_handback_audit_guard.py` to enforce a **unique
+per-Tenant START** (partial index) and reject any UPDATE/DELETE of handback
+audit rows plus PostgreSQL TRUNCATE of the AuditEvent table. A read-only
+runtime admission check verifies that all three PostgreSQL triggers and
+the START unique index are active, that the handback DB role cannot own
+or truncate the table or bypass triggers, and that fsync, synchronous
+commit and origin replication are admitted. The check runs BEFORE the
+handback START is committed or any provider PATCH occurs, so missing
+migration or unsafe DB role blocks all handback operations.
+
+**Source changes do not install or attest PostgreSQL protections.**
+G5 remains NOT PASS until the migration, restricted non-owner database
+role, WAL/backup durability, tests and live partial/replay/restart UAT
+are verified under separate operator authorization. Do not equate a
+`db.session.commit()` or a synthetic receipt with immutable evidence. Only complete verified
 provider scope and locked existing `Released` Namespace generations may
 write `handback_governance` evidence with precise current CR RV and each
 Namespace's own RV. Capsule GlobalResourceQuota is included in the canonical Released G4
