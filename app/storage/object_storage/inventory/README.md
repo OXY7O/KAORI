@@ -64,3 +64,7 @@ No live provider calls are permitted on GET routes.
 ## Bounded Inventory Overview fleet read model (#1370)
 
 Inventory Overview aggregates committed registered-system status, inventory observation coverage and provider distribution through grouped SQL and the existing canonical owner joins. Bucket/Container quota, protection, exposure, and usage evidence is aggregated by `inventory/aggregates.py::bucket_fleet_posture`, using the exact existing assessed/unknown, negative-control, and public-exposure definitions. No full bucket ORM collections or per-system provider-owner resolution are required by the Overview. Systems/Buckets paginated list pages remain separately governed by #1262; dashboard Fast Shell and its per-section evidence remain #1367. These operations read committed KAORI state only and do not contact MinIO or another provider.
+
+## Empty Inventory Snapshot Interpretation (#1383)
+
+Buckets & Containers uses committed fleet observation coverage, not only the number of stored bucket rows, to distinguish `Collection Pending` (no successful observation), `Partial Inventory` (some systems observed zero, others unobserved), `Observed Empty` (all registered systems observed successfully with zero buckets), and `No Matches` (buckets exist but active filters return zero rows). A successful first empty sync is valid committed inventory evidence. The Snapshot Context Bar separately communicates stale/provider conditions. None of these read-only states triggers a provider query.
