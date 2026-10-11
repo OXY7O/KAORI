@@ -10,6 +10,7 @@ from app.artifact_registry.presentation_common import (
     _fmt_bytes,
     _freshness_value,
     _latest_registry_analytics,
+    _overview_inventory_kpi_evidence,
     _overview_kpi_values,
     _overview_scope_context,
     _registry_alerts,
@@ -115,16 +116,16 @@ def _provider_health_projection(
             ),
         )
     )
-    if selected_provider is not None:
-        project_counts_query = project_counts_query.filter(
-            RegistryProject.integration_instance_id == selected_provider.id
-        )
-        repository_counts_query = repository_counts_query.filter(
-            RegistryProject.integration_instance_id == selected_provider.id
-        )
-        security_counts_query = security_counts_query.filter(
-            RegistryProject.integration_instance_id == selected_provider.id
-        )
+    scoped_provider_ids = [int(provider.id) for provider in scoped_providers]
+    project_counts_query = project_counts_query.filter(
+        RegistryProject.integration_instance_id.in_(scoped_provider_ids)
+    )
+    repository_counts_query = repository_counts_query.filter(
+        RegistryProject.integration_instance_id.in_(scoped_provider_ids)
+    )
+    security_counts_query = security_counts_query.filter(
+        RegistryProject.integration_instance_id.in_(scoped_provider_ids)
+    )
 
     project_counts = {
         int(provider_id): int(count)
@@ -470,7 +471,7 @@ def _overview_operations_projection(
         provider_health_per_page=provider_health_per_page,
     )
     committed_states = [state for state in states if state.last_committed_at is not None]
-    committed_provider_ids = [int(state.integration_instance_id) for state in committed_states]
+    committed_provider_ids, _kpi_source_label = _overview_inventory_kpi_evidence(scoped_providers, states)
     counts = _overview_kpi_values(committed_provider_ids)
     total_size_bytes, public_project_count, latest_security_at = _overview_inventory_evidence(committed_provider_ids)
     state_by_provider = {int(state.integration_instance_id): state for state in states}
@@ -611,18 +612,9 @@ def build_overview_section(
     )
 
     if section == 'kpi_cards':
-        committed_provider_ids = [
-            int(state.integration_instance_id) for state in states if state.last_committed_at is not None
-        ]
+        committed_provider_ids, source_label = _overview_inventory_kpi_evidence(scoped_providers, states)
         committed_count = len(committed_provider_ids)
-        provider_count = len(scoped_providers)
         counts = _overview_kpi_values(committed_provider_ids)
-        if not committed_count:
-            source_label = 'Not Collected'
-        elif committed_count < provider_count:
-            source_label = f'Partial Inventory ({committed_count}/{provider_count})'
-        else:
-            source_label = 'Committed Inventory'
         return {
             **context,
             'kpi_source_label': source_label,
