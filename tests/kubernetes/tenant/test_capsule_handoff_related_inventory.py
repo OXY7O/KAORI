@@ -90,6 +90,53 @@ def _observe(core, rbac, scope=None):
     )
 
 
+def test_capsule_namespaced_inventory_uses_only_methods_on_correct_kubernetes_sdk_api():
+    """Regression: real CoreV1Api has no RoleBinding LIST, RBAC API has no quota LIST."""
+    from kubernetes.client import CoreV1Api, RbacAuthorizationV1Api
+
+    assert hasattr(CoreV1Api, 'list_namespaced_resource_quota')
+    assert hasattr(CoreV1Api, 'list_namespaced_limit_range')
+    assert not hasattr(CoreV1Api, 'list_namespaced_role_binding')
+    assert hasattr(RbacAuthorizationV1Api, 'list_namespaced_role_binding')
+    assert not hasattr(RbacAuthorizationV1Api, 'list_namespaced_resource_quota')
+    assert not hasattr(RbacAuthorizationV1Api, 'list_namespaced_limit_range')
+
+    core_spy = _API(
+        ResourceQuota=[_resource(name='capsule-quota')],
+        LimitRange=[_resource('LimitRange', name='capsule-limit')],
+    )
+    rbac_spy = _API(RoleBinding=[
+        _resource('RoleBinding', name='capsule-namespace-deleter'),
+        _resource('RoleBinding', name='capsule-admin', uid='other-uid'),
+    ])
+
+    class _CoreOnly:
+        def list_namespaced_resource_quota(self, namespace, **kwargs):
+            return core_spy._list('ResourceQuota', namespace, **kwargs)
+
+        def list_namespaced_limit_range(self, namespace, **kwargs):
+            return core_spy._list('LimitRange', namespace, **kwargs)
+
+    class _RbacOnly:
+        def list_namespaced_role_binding(self, namespace, **kwargs):
+            return rbac_spy._list('RoleBinding', namespace, **kwargs)
+
+    # No object implements the other API's method. Prior eager dictionary
+    # dispatch raised AttributeError before the first provider LIST.
+    result = _observe(_CoreOnly(), _RbacOnly())
+    assert result['status'] == 'read_only_related_inventory'
+    assert result['resource_count'] == 4
+    assert result['blockers'] == []
+    assert len(result['list_snapshots']) == 3
+    assert [item[0] for item in core_spy.calls] == ['ResourceQuota', 'LimitRange']
+    assert [item[0] for item in rbac_spy.calls] == ['RoleBinding']
+    assert all(call[2] == {'limit': 101, '_request_timeout': 5}
+               for call in core_spy.calls + rbac_spy.calls)
+    assert result['provider_mutation_performed'] is False
+    assert result['provider_handoff_verified'] is False
+    assert result['release_authorized'] is False
+
+
 def test_provider_owned_and_external_policy_are_observed_not_claimed():
     items = [
         _resource(),
