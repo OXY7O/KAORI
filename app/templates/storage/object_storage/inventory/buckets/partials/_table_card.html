@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_registry.html" as registry_ui %}
 <section class="{{ table_ui.block_classes() }}">
@@ -19,7 +20,13 @@
         'Refreshing Object Storage Inventory',
         url_for('jobs.configuration', job_key='object_storage.inventory.sync') ,
     'Manage Inventory Jobs',
-    header_actions=inventory_header_actions
+    header_actions=inventory_header_actions,
+    title_extra=info_tip.render('storage-inventory-buckets-title', 'Buckets & Containers Guide', 'How to interpret committed Object Storage inventory evidence.', items=[
+        'Object Storage Type: Resource category such as bucket or container, as identified by the provider adapter.',
+        'Bucket Quota: Provider-reported quota or capacity boundary if available. Missing quota evidence does not imply unlimited capacity.',
+        'Bucket Protection: Observed protection controls such as versioning, retention, object lock or related provider features when supported; displayed evidence is not an audit verdict.',
+        'Last Committed Snapshot: Timestamp of the latest stored observation for this asset. It does not mean a current live provider request was made.'
+    ], placement='right')
     ) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         <form hx-get="{{ url_for('object_storage_inventory.buckets') }}"
