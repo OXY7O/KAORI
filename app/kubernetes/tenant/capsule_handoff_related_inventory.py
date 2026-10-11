@@ -234,11 +234,15 @@ def classify_capsule_related_resource(
 
 
 def _listing(api: Any, *, kind: str, namespace: str) -> tuple[list[Any], str]:
-    method = {
-        'ResourceQuota': api.list_namespaced_resource_quota,
-        'LimitRange': api.list_namespaced_limit_range,
-        'RoleBinding': api.list_namespaced_role_binding,
+    # CoreV1Api only exposes quota/limit operations, while RoleBinding LIST
+    # belongs to RbacAuthorizationV1Api. Never eagerly resolve all attributes:
+    # doing so raises AttributeError even for a fully authorized API client.
+    method_name = {
+        'ResourceQuota': 'list_namespaced_resource_quota',
+        'LimitRange': 'list_namespaced_limit_range',
+        'RoleBinding': 'list_namespaced_role_binding',
     }[kind]
+    method = getattr(api, method_name)
     response = method(namespace, limit=_PAGE_SIZE, _request_timeout=5)
     meta = _get(response, 'metadata')
     if _get(meta, '_continue') or _get(meta, 'continue'):
