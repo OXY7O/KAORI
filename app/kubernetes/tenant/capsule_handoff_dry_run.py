@@ -451,3 +451,85 @@ def inspect_capsule_complete_dry_run_shapes(
         'release_authorized': False,
         'secret_material_persisted': False,
     }
+
+
+def preview_capsule_related_handoff_with_provider(
+    *, core: Any, rbac: Any, record: Mapping[str, Any],
+    namespace: str, tenant_id: str, capsule_name: str, capsule_uid: str,
+    successor_owner: str, approved_label_keys: list[str],
+) -> dict[str, Any]:
+    """Real server dryRun=All dispatch for ONE approved Capsule-related item.
+
+    This helper is intentionally unregistered: only a separately authorized
+    executor with committed successor consent and START may invoke the same
+    scoped backend path for mutations. This does NOT grant that authority.
+    """
+    if not isinstance(record, Mapping) or record.get('namespace') != namespace:
+        raise ValueError('Capsule provider preview requires exact namespaced inventory.')
+    kind, name = record.get('kind'), record.get('name')
+    if not isinstance(name, str) or not name:
+        raise ValueError('Capsule preview resource identity is missing.')
+    if kind == 'ResourceQuota':
+        api = core
+        read = api.read_namespaced_resource_quota
+        patch = api.patch_namespaced_resource_quota
+    elif kind == 'LimitRange':
+        api = core
+        read = api.read_namespaced_limit_range
+        patch = api.patch_namespaced_limit_range
+    elif kind == 'RoleBinding':
+        api = rbac
+        read = api.read_namespaced_role_binding
+        patch = api.patch_namespaced_role_binding
+    else:
+        raise ValueError('Only Capsule quota, limit or RBAC metadata can be previewed.')
+    # Exact preflight inventory row must match a fresh provider GET before
+    # any dry-run request, including the original policy and owner metadata.
+    before = read(name=name, namespace=namespace, _request_timeout=5)
+    before_row, problems = classify_capsule_related_resource(
+        resource=before, kind=kind, namespace=namespace,
+        tenant_id=tenant_id, capsule_name=capsule_name,
+        capsule_uid=capsule_uid,
+    )
+    if before_row != dict(record) or any(
+        'conflicting' in problem or 'incomplete' in problem for problem in problems
+    ):
+        raise ValueError('Capsule resource changed after the authoritative inventory.')
+    operations = build_capsule_related_metadata_handoff_patch(
+        record=record, before=before, kind=kind,
+        namespace=namespace, tenant_id=tenant_id,
+        capsule_name=capsule_name, capsule_uid=capsule_uid,
+        successor_owner=successor_owner, approved_label_keys=approved_label_keys,
+    )
+    preview = patch(
+        name=name, namespace=namespace, body=operations,
+        dry_run='All', _content_type=_CONTENT_TYPE, _request_timeout=5,
+    )
+    shaped = verify_capsule_related_metadata_preview(
+        record=record, before=before, preview=preview,
+        kind=kind, namespace=namespace, tenant_id=tenant_id,
+        capsule_name=capsule_name, capsule_uid=capsule_uid,
+        successor_owner=successor_owner, approved_label_keys=approved_label_keys,
+    )
+    # Re-read the original resource after server dry-run. The preview
+    # cannot be counted as nonmutating if admission unexpectedly changed
+    # source RV, policy, labels, annotation, owner or finalizers.
+    live = read(name=name, namespace=namespace, _request_timeout=5)
+    live_row, live_problems = classify_capsule_related_resource(
+        resource=live, kind=kind, namespace=namespace,
+        tenant_id=tenant_id, capsule_name=capsule_name,
+        capsule_uid=capsule_uid,
+    )
+    if live_row != before_row or live_problems != problems:
+        raise ValueError('Capsule provider changed during dry-run; abort handoff.')
+    return {
+        **shaped,
+        'status': 'server_dry_run_shape_observed_not_execution_admitted',
+        'source_resource_sha256': _digest(before_row),
+        'candidate_patch_sha256': _digest(operations),
+        'live_resource_unchanged': True,
+        'provider_mutation_performed': False,
+        'provider_execution_admitted': False,
+        'provider_handoff_verified': False,
+        'release_authorized': False,
+    }
