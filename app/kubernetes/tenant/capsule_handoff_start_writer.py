@@ -25,6 +25,7 @@ from app.kubernetes.tenant.native_platform_admin_authority import require_platfo
 from app.kubernetes.tenant.release_handoff_approval import (
     _plan_hash, latest_release_handoff_approval, latest_release_handoff_plan,
 )
+from app.kubernetes.tenant.release_handoff_inventory import handoff_fingerprint
 from app.kubernetes.tenant.capsule_successor_acceptance import (
     require_current_capsule_acceptance,
 )
@@ -54,6 +55,7 @@ def build_capsule_start_candidate(
         or plan.get('tenant_id') != tenant_id or plan.get('provider') != 'capsule'
         or not isinstance(plan.get('plan_sha256'), str)
         or _plan_hash(dict(plan)) != plan['plan_sha256']
+        or handoff_fingerprint(plan.get('handoff_components')) != plan.get('handoff_fingerprint')
         or not isinstance(attempt_id, str)
         or not isinstance(event_at, datetime)
         or event_at.tzinfo is None or event_at.utcoffset() is None
