@@ -395,9 +395,11 @@ cluster header with a **Read-only** label beside the modal title, and a
 lightweight **Tenant Registry** navigation link pushed to the far right of the
 helper-description row (wrapping to its own right-aligned line on narrow screens).
 The top-right header corner contains only **Close**. Four summary metrics
-appear without any enclosing or per-metric cards, separated by thin vertical
-dividers (2-column mobile / 4-column desktop),
-compact search and a responsive, vertically scrollable list of Tenant records.
+appear without any enclosing or per-metric cards, separated **only between
+columns** by full-height vertical rules that reach the summary strip edges
+(no stray right-edge divider or floating row-gap). The grid remains
+2-column mobile / 4-column desktop, followed by compact search and a
+responsive, vertically scrollable list of Tenant records.
 Each Tenant record has a single readable outline, without nested cards or shadows.
 This modal intentionally has **no Rows selector or pagination controls**:
 a compact read-only evidence footer stays visible beneath a separately framed
