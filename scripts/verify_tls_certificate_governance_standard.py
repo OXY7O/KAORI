@@ -115,6 +115,40 @@ def main() -> int:
         'TLS registry table must retain accessibility boundaries.',
         errors,
     )
+    registry_widths = {
+        'Certificate': 27,
+        'Scope': 22,
+        'Validity': 12,
+        'Host Coverage': 20,
+        'Ingress Usage': 9,
+        'Details': 10,
+    }
+    require(
+        sum(registry_widths.values()) == 100
+        and table.count('scope="col"') == 6
+        and all(
+            f'w-[{width}%]' in table.split(f'>{heading}</th>', 1)[0].rsplit('<th', 1)[-1]
+            for heading, width in registry_widths.items()
+        ),
+        'TLS registry must prioritize Certificate, Scope, and Host Coverage without dropping scoped columns.',
+        errors,
+    )
+    require(
+        'hidden w-[20%]' in table and 'hidden w-[9%]' in table
+        and 'w-full overflow-hidden' in table and 'w-full table-fixed' in table,
+        'TLS registry responsive hide-and-reflow contract must remain unchanged.',
+        errors,
+    )
+    require(
+        'Coverage evidence unavailable' in table
+        and 'No Declared Hosts</p>' not in table
+        and '{% if record.uncovered_hosts %}' in table
+        and '{% if (presentation.declared_host_count or 0) > 0 %}' in table
+        and 'presentation.coverage_reported' in table
+        and 'presentation.ingress_mapping_reported' in table,
+        'TLS registry copy must stay concise without fabricating missing or zero host/consumer evidence.',
+        errors,
+    )
     for token in ('coverage_reported', 'ingress_mapping_reported', 'Not Reported'):
         require(token in detail or token in table, f'TLS UI missing evidence semantic token: {token}', errors)
     require(

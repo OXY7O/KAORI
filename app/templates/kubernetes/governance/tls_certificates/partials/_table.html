@@ -39,12 +39,12 @@
             <caption class="sr-only">TLS certificate governance registry for the selected committed worker snapshot.</caption>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
-                    <th scope="col" class="w-[29%] px-4 py-3 text-left">Certificate</th>
-                    <th scope="col" class="w-[20%] px-4 py-3 text-left">Scope</th>
-                    <th scope="col" class="w-[16%] px-4 py-3 text-left">Validity</th>
-                    <th scope="col" class="hidden w-[13%] px-4 py-3 text-left lg:table-cell">Host Coverage</th>
-                    <th scope="col" class="hidden w-[10%] px-4 py-3 text-left xl:table-cell">Ingress Usage</th>
-                    <th scope="col" class="w-[12%] px-3 py-3 text-right">Details</th>
+                    <th scope="col" class="w-[27%] px-4 py-3 text-left">Certificate</th>
+                    <th scope="col" class="w-[22%] px-4 py-3 text-left">Scope</th>
+                    <th scope="col" class="w-[12%] px-4 py-3 text-left">Validity</th>
+                    <th scope="col" class="hidden w-[20%] px-4 py-3 text-left lg:table-cell">Host Coverage</th>
+                    <th scope="col" class="hidden w-[9%] px-4 py-3 text-left xl:table-cell">Ingress Usage</th>
+                    <th scope="col" class="w-[10%] px-3 py-3 text-right">Details</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
@@ -89,12 +89,12 @@
                                 {{ table_label.status_indicator_label(presentation.status_label or 'Unknown', presentation.status_tone or 'unknown') }}
                                 {% if record.not_after %}
                                     <p class="truncate text-xs font-medium leading-5 text-content-primary"
-                                       title="{{ record.not_after|user_date('N/A') }}">{{ record.not_after|user_date("N/A") }}</p>
+                                       title="Expires · {{ record.not_after|user_date('N/A') }}">{{ record.not_after|user_date("N/A") }}</p>
                                     <p class="truncate text-xs leading-5 text-content-muted">
                                         {% if record.status == 'expired' %}
-                                            {{ (record.days_remaining or 0)|abs }} Days Expired
+                                            {{ (record.days_remaining or 0)|abs }} days expired
                                         {% else %}
-                                            {{ record.days_remaining }} Days Remaining
+                                            {{ record.days_remaining }} days left
                                         {% endif %}
                                     </p>
                                 {% else %}
@@ -107,15 +107,16 @@
                             <div class="min-w-0 space-y-1">
                                 {{ table_label.status_indicator_label(presentation.coverage_label or 'Not Reported', presentation.coverage_tone or 'unknown') }}
                                 {% if not presentation.coverage_reported %}
-                                    <p class="text-xs leading-5 text-content-muted">Host mapping evidence unavailable</p>
+                                    <p class="text-xs leading-5 text-content-muted">Coverage evidence unavailable</p>
                                 {% elif (record.declared_host_count or 0) == 0 %}
-                                    <p class="text-xs leading-5 text-content-muted">No Declared Hosts</p>
+                                    {# The coverage badge already identifies the observed absence of declared hosts. #}
                                 {% else %}
-                                    <p class="truncate text-xs font-medium leading-5 text-content-primary">{{ record.covered_host_count or 0 }}/{{ record.declared_host_count }} Hosts Covered</p>
-                                    <p class="truncate text-xs leading-5 text-content-muted"
-                                       {% if record.uncovered_hosts %}title="{{ record.uncovered_hosts|join(', ') }}"{% endif %}>
-                                        {{ (record.uncovered_hosts or [])|length }} Uncovered
-                                    </p>
+                                    <p class="truncate text-xs font-medium leading-5 text-content-primary"
+                                       title="{{ record.covered_host_count or 0 }} of {{ record.declared_host_count }} hosts covered">{{ record.covered_host_count or 0 }}/{{ record.declared_host_count }} hosts covered</p>
+                                    {% if record.uncovered_hosts %}
+                                        <p class="truncate text-xs leading-5 text-content-muted"
+                                           title="{{ record.uncovered_hosts|join(', ') }}">{{ record.uncovered_hosts|length }} uncovered</p>
+                                    {% endif %}
                                 {% endif %}
                             </div>
                         </td>
@@ -123,7 +124,9 @@
                             {% if presentation.ingress_mapping_reported %}
                                 {% set consumer_count = presentation.ingress_consumer_count or 0 %}
                                 <p class="truncate text-sm font-semibold text-content-primary">{{ consumer_count }} {{ 'Ingress' if consumer_count == 1 else 'Ingresses' }}</p>
-                                <p class="mt-0.5 truncate text-xs leading-5 text-content-muted">{{ presentation.declared_host_count or 0 }} Declared Hosts</p>
+                                {% if (presentation.declared_host_count or 0) > 0 %}
+                                    <p class="mt-0.5 truncate text-xs leading-5 text-content-muted">{{ presentation.declared_host_count }} declared {{ 'host' if presentation.declared_host_count == 1 else 'hosts' }}</p>
+                                {% endif %}
                             {% else %}
                                 <p class="text-sm font-semibold text-content-primary">Not Reported</p>
                                 <p class="mt-0.5 text-xs leading-5 text-content-muted">Ingress mapping unavailable</p>

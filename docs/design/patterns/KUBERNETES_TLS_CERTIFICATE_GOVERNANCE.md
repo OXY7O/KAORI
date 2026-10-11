@@ -128,6 +128,26 @@ Details
 
 The table directly opens the shared Full Workspace Modal. It does not render an intermediate expanded row. The dedicated detail route remains a direct-link and no-JavaScript fallback.
 
+### DevContainer table-width and evidence-copy refinement (#733)
+
+The six-column fixed registry prioritizes long technical identifiers and declared-host coverage:
+**Certificate 27%, Scope 22%, Validity 12%, Host Coverage 20%, Ingress Usage 9%, Details 10%**.
+Preserve existing responsive behavior without horizontal scroll: Host Coverage is shown at
+`lg` and above, and Ingress Usage at `xl` and above. Keep the shared details
+modal, full hover values, keyboard-accessible headings, filters, and pagination.
+
+Validity keeps the policy-derived status badge and factual expiry date; day text is
+compact (`74 days left` / `3 days expired`) without changing calculations.
+The `No Declared Hosts` badge is not repeated underneath when host declarations
+are factually absent. If coverage collection is unavailable, show `Not Reported`
+and `Coverage evidence unavailable`. If hosts exist, display the covered/declared
+ratio and only show uncovered-count support when nonzero.
+
+Ingress Usage shows the observed Ingress count, adding declared-host counts only when
+nonzero; unavailable Ingress mapping remains `Not Reported` plus `Ingress mapping
+unavailable`, never an invented zero. Full details and evidence distinctions remain
+accessible. Presentation changes do not infer live TLS reachability or trust.
+
 ## Full Workspace Modal
 
 Canonical content:
