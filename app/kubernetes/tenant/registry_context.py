@@ -363,6 +363,7 @@ def get_tenant_registry_context(
     capsule_successor_acceptances: dict[str, dict[str, Any]] = {}
     capsule_scope_previews: dict[str, dict[str, Any]] = {}
     capsule_successor_handbacks: dict[str, dict[str, Any]] = {}
+    capsule_handoff_executions: dict[str, dict[str, Any]] = {}
     if tenant_ids and include_decommission_preflight:
         for target_type, destination in (
             ('kubernetes_tenant_release_handoff_plan', handoff_plans),
@@ -381,6 +382,7 @@ def get_tenant_registry_context(
             ('kubernetes_tenant_release_capsule_successor_acceptance', capsule_successor_acceptances),
             ('kubernetes_tenant_release_capsule_namespace_preview', capsule_scope_previews),
             ('kubernetes_tenant_verified_capsule_successor_handback', capsule_successor_handbacks),
+            ('kubernetes_tenant_release_capsule_handoff_execution', capsule_handoff_executions),
         ):
             latest_ids = (
                 db.session.query(func.max(AuditEvent.id).label('id'))
@@ -478,6 +480,7 @@ def get_tenant_registry_context(
             row['release_capsule_successor_acceptance'] = capsule_successor_acceptances.get(item.id)
             row['release_capsule_scope_preview'] = capsule_scope_previews.get(item.id)
             row['release_capsule_successor_handback'] = capsule_successor_handbacks.get(item.id)
+            row['release_capsule_handoff_execution'] = capsule_handoff_executions.get(item.id)
             capsule_consent = row['release_capsule_successor_acceptance'] or {}
             approved_capsule_plan = row['release_handoff_plan'] or {}
             capsule_review = row['release_handoff_approval'] or {}
