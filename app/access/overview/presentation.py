@@ -5,8 +5,8 @@ from typing import Any
 from flask_login import current_user
 
 from app.access.activity_audit.service import get_activity_audit_summary
-from app.access.permissions.service import build_permission_registry_snapshot
-from app.access.roles.presentation import build_roles_index_context
+from app.access.permissions.service import build_permission_registry_summary
+from app.access.roles.presentation import build_roles_overview_summary
 from app.access.users.access_summary import build_identity_provider_summary, build_user_access_summary
 
 
@@ -186,8 +186,8 @@ def build_access_overview() -> dict[str, Any]:
         )
 
     if _can('roles.view'):
-        role_summary = build_roles_index_context(can_manage_roles=False)['summary']
-        permission_summary = build_permission_registry_snapshot()['summary']
+        role_summary = build_roles_overview_summary()
+        permission_summary = build_permission_registry_summary()
         workspaces.extend(
             [
                 {

@@ -3,13 +3,17 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Any
 
+from sqlalchemy import func
+from sqlalchemy.orm import lazyload
+
 from app.access.rbac.defaults import (
     ACCESS_ADMINISTRATION_PERMISSIONS,
     DEFAULT_PERMISSION_DEPENDENCIES,
     DEFAULT_PERMISSIONS,
     PERMISSION_MODULE_LABELS,
 )
-from app.models import IdentityProvider, Permission, Role
+from app.extensions.db import db
+from app.models import IdentityProvider, Permission, Role, RolePermission
 
 REGISTRY_STATE_PRESENTATION: dict[str, dict[str, str]] = {
     'canonical': {'label': 'Canonical', 'tone': 'normal', 'icon': 'circle-check'},
@@ -178,7 +182,7 @@ def _registry_summary(
     *,
     contracts: list[dict[str, Any]],
     database_permissions: list[Permission],
-    roles: list[Role],
+    role_mappings: int,
     modules: list[str],
 ) -> dict[str, Any]:
     """Build registry posture only from explicit inputs; never depend on outer snapshot locals."""
@@ -191,7 +195,7 @@ def _registry_summary(
         'canonical_permissions': len(canonical_contracts),
         'registered_permissions': len(database_permissions),
         'control_modules': len(modules),
-        'role_mappings': sum(len(role.permissions) for role in roles),
+        'role_mappings': role_mappings,
         'unused_contracts': sum(1 for row in canonical_contracts if row['role_count'] == 0),
         'access_administration_contracts': sum(1 for row in canonical_contracts if row['is_access_administration']),
         'standard_contracts': sum(1 for row in canonical_contracts if not row['is_access_administration']),
@@ -255,7 +259,7 @@ def build_permission_registry_snapshot() -> dict[str, Any]:
     summary = _registry_summary(
         contracts=contracts,
         database_permissions=database_permissions,
-        roles=roles,
+        role_mappings=sum(len(role.permissions) for role in roles),
         modules=modules,
     )
 
@@ -267,3 +271,60 @@ def build_permission_registry_snapshot() -> dict[str, Any]:
         'summary': summary,
         'module_options': [{'key': module, 'label': module_label(module)} for module in modules],
     }
+
+
+def build_permission_registry_summary() -> dict[str, Any]:
+    """Read the canonical registry summary without detailed role/user or dependency expansion."""
+
+    canonical_by_key = {
+        key: {'key': key, 'module': module, 'action': action, 'description': description}
+        for key, module, action, description in DEFAULT_PERMISSIONS
+    }
+    database_permissions = (
+        Permission.query.options(lazyload(Permission.role_permissions))
+        .order_by(Permission.key.asc())
+        .all()
+    )
+    database_by_key = {permission.key: permission for permission in database_permissions}
+    mapping_counts = {
+        int(permission_id): int(count)
+        for permission_id, count in (
+            db.session.query(RolePermission.permission_id, func.count(RolePermission.role_id))
+            .group_by(RolePermission.permission_id)
+            .all()
+        )
+    }
+
+    contracts: list[dict[str, Any]] = []
+    for key, canonical in canonical_by_key.items():
+        registered = database_by_key.get(key)
+        contracts.append(
+            {
+                'key': key,
+                'code_owned': True,
+                'state_key': _registry_state(canonical, registered),
+                'module': canonical['module'],
+                'role_count': mapping_counts.get(registered.id, 0) if registered else 0,
+                'is_access_administration': key in ACCESS_ADMINISTRATION_PERMISSIONS,
+            }
+        )
+    for key, registered in database_by_key.items():
+        if key in canonical_by_key:
+            continue
+        contracts.append(
+            {
+                'key': key,
+                'code_owned': False,
+                'state_key': 'database_only',
+                'module': registered.module,
+                'role_count': mapping_counts.get(registered.id, 0),
+                'is_access_administration': key in ACCESS_ADMINISTRATION_PERMISSIONS,
+            }
+        )
+
+    return _registry_summary(
+        contracts=contracts,
+        database_permissions=database_permissions,
+        role_mappings=sum(mapping_counts.values()),
+        modules=sorted({contract['module'] for contract in contracts}, key=module_label),
+    )
