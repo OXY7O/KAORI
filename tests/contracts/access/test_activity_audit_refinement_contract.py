@@ -225,3 +225,32 @@ def test_activity_audit_cross_domain_store_boundaries_and_existing_tenant_bridge
     assert 'dispatch_matching_notification_event(' in decision
     assert 'event = NotificationEvent(' in reports
     assert 'dispatch_notification_event(' in reports
+
+
+def test_activity_audit_additional_producer_sources_preserve_separate_authorities() -> None:
+    configmaps = read('app/kubernetes/operations/configmaps/routes.py')
+    secret_helper = read('app/kubernetes/operations/secrets/route_support.py')
+    cluster = read('app/kubernetes/cluster/lifecycle_web.py')
+    alertmanager = read(
+        'app/integrations/observability/alert_source/providers/alertmanager/application/notifications.py'
+    )
+    minio = read('app/integrations/storage/object_storage/providers/minio/application/routes.py')
+    templates = read('app/reports/report_templates/routes.py')
+    schedules = read('app/reports/schedules/routes.py')
+    registry = read('app/artifact_registry/routes.py')
+    automation = read('app/intelligence/automation_control/service.py')
+    tls = read('app/kubernetes/governance/tls_certificates/audit.py')
+    auth = read('app/access/authentication/audit.py')
+    tenant = read('app/kubernetes/tenant/audit_correlation_service.py')
+
+    for source in (configmaps, secret_helper, cluster, alertmanager, minio, templates, schedules, registry):
+        assert 'record_operational_activity(' in source
+
+    assert 'event = AuditEvent()' in automation
+    assert 'event = AuditEvent()' in tls
+    assert 'activity = Notification()' in auth
+    assert 'activity = Notification()' in tenant
+    # Direct producer-owned writes still need #1207 security review; the shared
+    # Notification writer's pre-persist sanitization is not on these two paths.
+    assert 'persist_notification(' not in auth
+    assert 'persist_notification(' not in tenant
