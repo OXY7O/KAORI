@@ -12,6 +12,7 @@ from kubernetes.config.config_exception import ConfigException
 from sqlalchemy import or_, text
 from urllib3.exceptions import HTTPError as Urllib3HTTPError
 
+from app.common.pagination import PER_PAGE_OPTIONS, build_pagination_window, paginate_query, pagination_payload
 from app.common.kubernetes_secrets import scrub_mapping_values, scrub_secret_payload
 from app.extensions.db import db
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver import (
@@ -326,88 +327,48 @@ def get_reveal_page_context(
     my_page: int = 1,
     my_per_page: int = 5,
     pending_page: int = 1,
-    pending_per_page: int = 3,
+    pending_per_page: int = 5,
 ) -> dict[str, Any]:
     _expire_stale_requests()
 
-    allowed_page_sizes = (5, 10, 25)
-    try:
-        normalized_per_page = int(my_per_page)
-    except (TypeError, ValueError):
-        normalized_per_page = 5
-    if normalized_per_page not in allowed_page_sizes:
-        normalized_per_page = 5
-
-    try:
-        normalized_page = max(int(my_page), 1)
-    except (TypeError, ValueError):
-        normalized_page = 1
-
     my_query = SecretRevealRequest.query.filter_by(
         requester_user_id=user_id,
-    ).order_by(SecretRevealRequest.requested_at.desc())
-    my_total = my_query.count()
-    my_pages = max((my_total + normalized_per_page - 1) // normalized_per_page, 1)
-    normalized_page = min(normalized_page, my_pages)
-    my_requests = my_query.offset((normalized_page - 1) * normalized_per_page).limit(normalized_per_page).all()
+    ).order_by(SecretRevealRequest.requested_at.desc(), SecretRevealRequest.id.desc())
+    my_requests, my_window = paginate_query(my_query, page=my_page, per_page=my_per_page)
+    # Preserve the existing Reveal template keys without keeping a separate
+    # page-size policy or a second hand-written pagination algorithm.
     my_pagination = {
-        'page': normalized_page,
-        'per_page': normalized_per_page,
-        'total': my_total,
-        'pages': my_pages,
-        'has_prev': normalized_page > 1,
-        'has_next': normalized_page < my_pages,
-        'prev_page': normalized_page - 1,
-        'next_page': normalized_page + 1,
-        'start': ((normalized_page - 1) * normalized_per_page + 1) if my_total else 0,
-        'end': min(normalized_page * normalized_per_page, my_total),
-        'page_sizes': allowed_page_sizes,
+        **my_window,
+        'total': my_window['total_items'],
+        'pages': my_window['total_pages'],
+        'start': my_window['start_item'],
+        'end': my_window['end_item'],
+        'page_sizes': PER_PAGE_OPTIONS,
     }
 
-    pending_page_sizes = (3, 5, 10)
-    try:
-        normalized_pending_per_page = int(pending_per_page)
-    except (TypeError, ValueError):
-        normalized_pending_per_page = 3
-    if normalized_pending_per_page not in pending_page_sizes:
-        normalized_pending_per_page = 3
-
-    try:
-        normalized_pending_page = max(int(pending_page), 1)
-    except (TypeError, ValueError):
-        normalized_pending_page = 1
-
     pending_requests: list[SecretRevealRequest] = []
-    pending_total = 0
-    pending_pages = 1
     if can_approve:
         pending_query = SecretRevealRequest.query.filter_by(status='pending').order_by(
-            SecretRevealRequest.requested_at.asc()
+            SecretRevealRequest.requested_at.asc(), SecretRevealRequest.id.asc()
         )
-        pending_total = pending_query.count()
-        pending_pages = max(
-            (pending_total + normalized_pending_per_page - 1) // normalized_pending_per_page,
-            1,
+        pending_requests, pending_window = paginate_query(
+            pending_query,
+            page=pending_page,
+            per_page=pending_per_page,
         )
-        normalized_pending_page = min(normalized_pending_page, pending_pages)
-        pending_requests = (
-            pending_query.offset((normalized_pending_page - 1) * normalized_pending_per_page)
-            .limit(normalized_pending_per_page)
-            .all()
-        )
-
+    else:
+        pending_window = pagination_payload(build_pagination_window(
+            total_items=0,
+            page=pending_page,
+            per_page=pending_per_page,
+        ))
     pending_pagination = {
-        'page': normalized_pending_page,
-        'per_page': normalized_pending_per_page,
-        'total': pending_total,
-        'pages': pending_pages,
-        'has_prev': normalized_pending_page > 1,
-        'has_next': normalized_pending_page < pending_pages,
-        'prev_page': normalized_pending_page - 1,
-        'next_page': normalized_pending_page + 1,
-        'start': ((normalized_pending_page - 1) * normalized_pending_per_page + 1 if pending_total else 0),
-        'end': min(normalized_pending_page * normalized_pending_per_page, pending_total),
-        'page_sizes': pending_page_sizes,
+        **pending_window,
+        'total': pending_window['total_items'],
+        'pages': pending_window['total_pages'],
+        'start': pending_window['start_item'],
+        'end': pending_window['end_item'],
+        'page_sizes': PER_PAGE_OPTIONS,
     }
     configured_reveal_namespace_count = SecretRevealNamespacePolicy.query.filter(
         SecretRevealNamespacePolicy.policy.in_(('step_up', 'approval_required'))
