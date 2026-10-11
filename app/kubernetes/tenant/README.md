@@ -32,13 +32,33 @@ Namespace & Resource Profile Mapping** to identify every displayed
 Namespace's linked profile, public ID, pinned version, managed/observed
 allocation control and frozen quota values, with its environment, generation,
 Released/history status and last committed provider UID/reconciliation.
-The preview deliberately shows **five newest records** and links to the
-existing Tenant-filtered **Namespace Provisioning Registry** for full
-history; this is a committed-only read model, not a new management form.
+The #1138 update presents **one operational card per Namespace** rather
+than the wide multi-column table. A single card shows identity, linked
+profile/public ID, pinned snapshot and six quota metrics with a compact
+ownership/control evidence footer. Multiple Namespace cards use the same
+responsive grid. The preview deliberately shows **five newest records**
+and links to the existing Tenant-filtered **Namespace Provisioning Registry**
+for the full current Tenant scope; it is a committed-only read model,
+not a new management form.
 For a preexisting adopted Native Namespace without a linked profile, the
 provider baseline is labeled **Observed/Imported** instead of claiming a
 KAORI-managed profile. A linked Resource Profile's logical definition may
 change without rewriting the pinned Namespace allocation version.
+
+**Verified Lifecycle History:** when the current Native Tenant
+was Re-adopted, KAORI records the predecessor Tenant ID, prior generation,
+correlation ID and `provider_uid_verified` flag. Each card may show a
+collapsed history of up to five previously Released generations **only**
+if the complete committed predecessor chain and Released Namespace rows
+match the original cluster, Native provider, Tenant slug, Namespace and
+immutable provider UID. Expand `Lifecycle History` to compare pinned
+profiles and frozen CPU/memory quota snapshots across verified generations.
+Generation number alone is not evidence: if correlation cannot be proved,
+the UI does not synthesize history. A new Tenant record after Re-adopt may
+have older released rows under **different Tenant IDs**; the regular
+Tenant-filtered Registry link intentionally continues to show only the
+current Tenant's own records. Neither history nor current cards represent
+live provider values.
 
 For a Native lifecycle test, record provider `ResourceQuota`/`LimitRange`
 specifications and metadata at these checkpoints: **before Adoption**,

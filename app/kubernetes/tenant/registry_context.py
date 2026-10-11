@@ -738,6 +738,155 @@ def _namespace_allocation_state(namespace_options: list[TenantNamespace]) -> dic
 
 
 
+def _matches_verified_native_profile_predecessor(
+    tenant: Tenant, current: Tenant, prior: Tenant | None,
+    lineage: Mapping[str, Any],
+) -> bool:
+    """Validate recorded Re-adoption handoff, not a name-only candidate."""
+    if prior is None:
+        return False
+    evidence = current.provider_evidence_json or {}
+    prior_evidence = prior.provider_evidence_json or {}
+    if not isinstance(evidence, Mapping) or not isinstance(prior_evidence, Mapping):
+        return False
+    release = prior_evidence.get('release_governance')
+    return bool(
+        prior.id == lineage.get('predecessor_tenant_id')
+        and prior.cluster_id == tenant.cluster_id
+        and prior.slug == tenant.slug
+        and prior.provider_key == tenant.provider_key
+        and prior.lifecycle_status == TenantLifecycleStatus.RELEASED.value
+        and prior.generation < current.generation
+        and lineage.get('predecessor_generation') == prior.generation
+        and lineage.get('predecessor_correlation_id') == prior.correlation_id
+        and lineage.get('provider_uid_verified') is True
+        and isinstance(release, Mapping)
+        and release.get('status') == 'released'
+        and bool(current.provider_reference)
+        and current.provider_reference == prior.provider_reference
+        and bool(evidence.get('provider_uid'))
+        and evidence.get('provider_uid') == prior_evidence.get('provider_uid')
+    )
+
+
+def _verified_native_profile_predecessors(
+    tenant: Tenant, *, limit: int = 5,
+) -> list[Tenant]:
+    """Follow only committed provider-UID-verified Re-adoption ancestry.
+
+    Never correlate cross-Tenant history based on Namespace name alone.
+    A missing or mismatched hop stops the history without guessing.
+    """
+    if tenant.provider_key != 'native_kubernetes':
+        return []
+    ancestors: list[Tenant] = []
+    seen = {tenant.id}
+    current = tenant
+    for _ in range(limit):
+        evidence = current.provider_evidence_json or {}
+        if not isinstance(evidence, Mapping):
+            break
+        lineage = evidence.get('re_adoption_lineage')
+        if not isinstance(lineage, Mapping):
+            break
+        predecessor_id = lineage.get('predecessor_tenant_id')
+        if (
+            not isinstance(predecessor_id, str) or not predecessor_id
+            or predecessor_id in seen
+            or lineage.get('provider_uid_verified') is not True
+        ):
+            break
+        prior = db.session.get(Tenant, predecessor_id)
+        if not _matches_verified_native_profile_predecessor(
+            tenant, current, prior, lineage,
+        ):
+            break
+        ancestors.append(prior)
+        seen.add(prior.id)
+        current = prior
+    return ancestors
+
+
+def _committed_profile_history(
+    tenant: Tenant, records: list[TenantNamespace],
+) -> dict[tuple[str, str], list[dict[str, Any]]]:
+    """Read a bounded provider-UID-verified predecessor snapshot set."""
+    ancestors = _verified_native_profile_predecessors(tenant)
+    if not ancestors or not records:
+        return {}
+    names = {row.namespace for row in records if row.provider_reference}
+    uids = {row.provider_reference for row in records if row.provider_reference}
+    if not names or not uids:
+        return {}
+    ancestors_by_id = {item.id: item for item in ancestors}
+    candidates = (
+        TenantNamespace.query
+        .join(
+            TenantEnvironment,
+            TenantNamespace.tenant_environment_id == TenantEnvironment.id,
+        )
+        .options(
+            joinedload(TenantNamespace.environment),
+            joinedload(TenantNamespace.resource_profile),
+        )
+        .filter(
+            TenantEnvironment.tenant_id.in_(list(ancestors_by_id)),
+            TenantNamespace.cluster_id == tenant.cluster_id,
+            TenantNamespace.namespace.in_(names),
+            TenantNamespace.provider_reference.in_(uids),
+            TenantNamespace.provisioning_status
+            == TenantNamespaceProvisioningStatus.RELEASED.value,
+        )
+        .order_by(
+            TenantNamespace.generation.desc(), TenantNamespace.id.desc(),
+        )
+        .limit(75)
+        .all()
+    )
+    result: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    seen: set[tuple[str, str, str, int]] = set()
+    for previous in candidates:
+        prior_tenant_id = previous.environment.tenant_id
+        prior_tenant = ancestors_by_id.get(prior_tenant_id)
+        if (
+            prior_tenant is None
+            or prior_tenant.provider_reference != previous.namespace
+            or previous.provider_reference != (
+                prior_tenant.provider_evidence_json or {}
+            ).get('provider_uid')
+        ):
+            continue
+        key = (previous.namespace, str(previous.provider_reference))
+        dedup = (
+            prior_tenant_id, previous.namespace,
+            str(previous.provider_reference), previous.generation,
+        )
+        if dedup in seen:
+            continue
+        seen.add(dedup)
+        evidence = prior_tenant.provider_evidence_json or {}
+        release = evidence.get('release_governance') or {}
+        result.setdefault(key, []).append({
+            'tenant_generation': prior_tenant.generation,
+            'namespace_generation': previous.generation,
+            'profile_name': _namespace_profile_name(previous),
+            'profile_version': _namespace_profile_version(previous),
+            'quota': dict(previous.allocation_quota_json or {}),
+            'released_at': release.get('released_at'),
+            'provider_uid': previous.provider_reference,
+            'status': 'Released',
+        })
+    for history in result.values():
+        history.sort(
+            key=lambda row: (
+                row['tenant_generation'], row['namespace_generation']
+            ),
+            reverse=True,
+        )
+        del history[5:]
+    return result
+
+
 def get_tenant_namespace_profile_mapping_context(
     tenant_id: str, *, limit: int = 5,
 ) -> dict[str, Any]:
@@ -768,6 +917,10 @@ def get_tenant_namespace_profile_mapping_context(
         )
         .limit(limit)
         .all()
+    )
+    tenant = db.session.get(Tenant, tenant_id)
+    history_by_provider = (
+        _committed_profile_history(tenant, records) if tenant else {}
     )
     rows: list[dict[str, Any]] = []
     for record in records:
@@ -813,6 +966,9 @@ def get_tenant_namespace_profile_mapping_context(
                 record.last_reconciled_at, empty='No reconciliation timestamp',
             ),
             'provider_uid': record.provider_reference,
+            'verified_history': history_by_provider.get(
+                (record.namespace, str(record.provider_reference)), []
+            ),
         })
     return {'rows': rows, 'total': total, 'limit': limit}
 

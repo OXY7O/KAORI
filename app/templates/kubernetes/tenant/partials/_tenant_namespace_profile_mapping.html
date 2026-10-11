@@ -1,60 +1,180 @@
-{% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% set mapping = tenant_namespace_profile_mapping %}
-<section id="tenant-namespace-profile-mapping" class="min-w-0 space-y-3 scroll-mt-24" aria-labelledby="tenant-profile-heading">
-  {{ section_intro.render('Namespace & Resource Profile Mapping', 'Pinned allocation snapshots by Namespace and generation, including Released history.', 'tenant-profile-heading') }}
-  {% call operational_section_card.render('Namespace Allocation Lineage', 'Committed KAORI evidence, not live Kubernetes utilization.', 'git-branch', id='tenant-profile-map-card', body_classes='p-0', aria_label='Namespace and Resource Profile lineage') %}
-    <p class="px-4 py-3 text-xs leading-5 text-content-secondary sm:px-5">After Adoption, manage allocation through admitted reconciliation. Native Release preserves verified resource values and transfers governance metadata; it does not resize resources.</p>
-    <div class="w-full min-w-0 max-w-full overflow-x-auto">
-      <table class="{{ table_ui.table_classes('min-w-[820px] lg:min-w-0 !table-fixed') }}">
-        <caption class="sr-only">Committed Namespace, Resource Profile and allocation values</caption>
-        <thead class="{{ table_ui.head_classes() }}"><tr>
-          <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[27%]">Namespace</th>
-          <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[28%]">Resource Profile</th>
-          <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[20%]">Control / State</th>
-          <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[25%]">Frozen Quota</th>
-        </tr></thead>
-        <tbody class="{{ table_ui.body_classes() }}">
-        {% for item in mapping.rows %}
-          <tr class="{{ table_ui.row_classes() }}">
-            <td class="{{ table_ui.cell_classes() }} min-w-0 align-top">
-              {{ table_ui.namespace_identity(item.namespace, 'max-w-full') }}
-              <p class="mt-1 text-xs text-content-muted">{{ item.environment|title }} · Gen {{ item.generation }}</p>
-              {{ table_label.status_label(item.provisioning_status|replace('_', ' ')|title, 'info' if item.historical else ('normal' if item.provisioning_status == 'ready' else 'warning')) }}
-              <p class="mt-1 text-xs text-content-muted">{{ 'Historical' if item.historical else item.ownership_status|title }}</p>
-            </td>
-            <td class="{{ table_ui.cell_classes() }} min-w-0 align-top">
-              <p class="truncate text-sm font-semibold text-content-primary" title="{{ item.profile_name }}">{{ item.profile_name }}</p>
-              <p class="mt-1 text-xs text-content-muted">{{ item.profile_source }}</p>
-              <p class="mt-1 text-xs text-content-secondary">Pinned Snapshot {{ 'v' ~ item.profile_version if item.profile_version else 'unknown' }}{% if item.allocation_customized %} · Customized{% endif %}</p>
-              {% if item.profile_public_id %}<p class="mt-1 truncate font-mono text-[11px] text-content-muted" title="{{ item.profile_public_id }}">Profile ID: {{ item.profile_public_id }}</p>{% endif %}
-            </td>
-            <td class="{{ table_ui.cell_classes() }} min-w-0 align-top">
-              <p class="text-xs font-semibold text-content-primary">{{ 'Last committed control' if item.historical else 'Allocation control' }}</p>
-              <p class="mt-1 text-xs text-content-secondary">{{ item.control_state|replace('_', ' ')|title if item.control_state else 'Not recorded' }}</p>
-              <p class="mt-2 text-xs text-content-muted">{{ item.last_reconciled_at_label }}</p>
-              {% if item.provider_uid %}<p class="mt-1 truncate font-mono text-[11px] text-content-muted" title="{{ item.provider_uid }}">UID: {{ item.provider_uid }}</p>{% endif %}
-            </td>
-            <td class="{{ table_ui.cell_classes() }} min-w-0 align-top">
-              <dl class="grid grid-cols-2 gap-2">{% for label, value in [('CPU Req', item.quota.get('requests.cpu')), ('Memory Req', item.quota.get('requests.memory')), ('CPU Limit', item.quota.get('limits.cpu')), ('Memory Limit', item.quota.get('limits.memory')), ('Pods', item.quota.get('pods')), ('Storage', item.quota.get('requests.storage'))] %}
-                <div><dt class="text-[11px] text-content-muted">{{ label }}</dt><dd class="text-xs font-semibold text-content-primary">{{ value if value is not none else 'Not recorded' }}</dd></div>
-              {% endfor %}</dl>
-            </td>
-          </tr>
+<section id="tenant-namespace-profile-mapping"
+         class="min-w-0 space-y-3 scroll-mt-24"
+         aria-labelledby="tenant-profile-heading">
+    {{ section_intro.render(
+        'Namespace & Resource Profile Mapping',
+        'Per-Namespace ownership, pinned allocation and verified Release lineage.',
+        'tenant-profile-heading'
+    ) }}
+    {% call operational_section_card.render(
+        'Namespace Allocation Lineage',
+        'Committed KAORI snapshots. Resource values are not live Kubernetes utilization.',
+        'git-branch',
+        id='tenant-profile-map-card',
+        body_classes='p-4 sm:p-5',
+        aria_label='Tenant Namespace and Resource Profile correlation'
+    ) %}
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <p class="max-w-3xl text-xs leading-5 text-content-secondary">
+                Allocation Change reconciles resource specs before Release.
+                Native Release preserves verified quotas while transferring governance.
+            </p>
+            <span class="shrink-0 text-xs tabular-nums text-content-muted">
+                Showing {{ mapping.rows|length }} of {{ mapping.total }} Namespace generations
+            </span>
+        </div>
+        {% if mapping.rows %}
+            <div class="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-2"
+                 aria-label="Namespace allocation cards">
+                {% for item in mapping.rows %}
+                    <article class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-elevated p-4 sm:p-5"
+                             aria-labelledby="tenant-namespace-profile-{{ loop.index }}-heading">
+                        <header class="flex min-w-0 flex-wrap items-start justify-between gap-3">
+                            <div class="flex min-w-0 flex-1 items-start gap-3">
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                      aria-hidden="true">
+                                    <i data-lucide="folder-tree" class="h-4 w-4"></i>
+                                </span>
+                                <div class="min-w-0 flex-1">
+                                    <h3 id="tenant-namespace-profile-{{ loop.index }}-heading"
+                                        class="truncate text-sm font-semibold text-content-primary"
+                                        title="{{ item.namespace }}">{{ item.namespace }}</h3>
+                                    <p class="mt-1 text-xs text-content-muted">
+                                        {{ item.environment|title }} · Namespace Gen {{ item.generation }}
+                                    </p>
+                                </div>
+                            </div>
+                            {{ table_label.status_label(
+                                item.provisioning_status|replace('_', ' ')|title,
+                                'info' if item.historical else (
+                                    'normal' if item.provisioning_status == 'ready' else 'warning'
+                                )
+                            ) }}
+                        </header>
+                        <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-content-muted">
+                            <span>{{ 'Historical snapshot' if item.historical else item.ownership_status|title }}</span>
+                            {% if item.verified_history %}
+                                {{ table_label.status_label('Verified lineage', 'success') }}
+                            {% endif %}
+                        </div>
+                        <div class="mt-4 min-w-0 rounded-lg border border-outline-subtle bg-surface-card p-3 sm:p-4">
+                            <div class="flex min-w-0 items-start gap-2.5">
+                                <i data-lucide="layers" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                <div class="min-w-0 flex-1">
+                                    <p class="truncate text-sm font-semibold text-content-primary"
+                                       title="{{ item.profile_name }}">{{ item.profile_name }}</p>
+                                    <p class="mt-1 text-xs text-content-secondary">{{ item.profile_source }}</p>
+                                    <p class="mt-1 text-xs text-content-muted">
+                                        {{ 'Pinned Snapshot v' ~ item.profile_version if item.profile_version else 'Snapshot version unrecorded' }}
+                                        {% if item.allocation_customized %} · Customized{% endif %}
+                                    </p>
+                                    {% if item.profile_public_id %}
+                                        <p class="mt-2 truncate font-mono text-[11px] text-content-muted"
+                                           title="{{ item.profile_public_id }}">Profile ID: {{ item.profile_public_id }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex flex-wrap items-center justify-between gap-2">
+                            <h4 class="text-xs font-semibold text-content-primary">Committed Quota Snapshot</h4>
+                            <span class="text-[11px] text-content-muted">Not live usage</span>
+                        </div>
+                        <dl class="mt-2 grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-3">
+                            {% for label, value in [
+                                ('CPU Requests', item.quota.get('requests.cpu')),
+                                ('Memory Requests', item.quota.get('requests.memory')),
+                                ('CPU Limits', item.quota.get('limits.cpu')),
+                                ('Memory Limits', item.quota.get('limits.memory')),
+                                ('Pod Slots', item.quota.get('pods')),
+                                ('Storage', item.quota.get('requests.storage'))
+                            ] %}
+                                <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5">
+                                    <dt class="text-[11px] leading-4 text-content-muted">{{ label }}</dt>
+                                    <dd class="mt-1 break-words text-sm font-semibold tabular-nums text-content-primary">
+                                        {{ value if value is not none else 'Not recorded' }}
+                                    </dd>
+                                </div>
+                            {% endfor %}
+                        </dl>
+                        <div class="mt-4 border-t border-outline-subtle pt-3 text-xs leading-5 text-content-secondary">
+                            <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                                <span>
+                                    <span class="font-semibold text-content-primary">Allocation control:</span>
+                                    {{ item.control_state|replace('_', ' ')|title if item.control_state else 'Not recorded' }}
+                                </span>
+                                <span>{{ item.last_reconciled_at_label }}</span>
+                            </div>
+                            {% if item.provider_uid %}
+                                <p class="mt-1 truncate font-mono text-[11px] text-content-muted"
+                                   title="{{ item.provider_uid }}">Provider UID: {{ item.provider_uid }}</p>
+                            {% endif %}
+                        </div>
+                        {% if item.verified_history %}
+                            <details class="group mt-3 rounded-lg border border-outline-subtle bg-surface-card">
+                                <summary class="flex min-h-10 cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-xs font-semibold text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                    <span>Lifecycle History · {{ item.verified_history|length }} verified predecessor(s)</span>
+                                    <i data-lucide="chevron-down" class="h-4 w-4 shrink-0 transition-transform group-open:rotate-180" aria-hidden="true"></i>
+                                </summary>
+                                <div class="space-y-3 border-t border-outline-subtle px-3 py-3">
+                                    {% for previous in item.verified_history %}
+                                        <div class="rounded-lg border border-outline-subtle p-3">
+                                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                                <p class="text-xs font-semibold text-content-primary">
+                                                    Tenant Gen {{ previous.tenant_generation }} · Namespace Gen {{ previous.namespace_generation }}
+                                                </p>
+                                                {{ table_label.status_label('Released', 'info') }}
+                                            </div>
+                                            <p class="mt-2 truncate text-xs font-medium text-content-primary"
+                                               title="{{ previous.profile_name }}">{{ previous.profile_name }}</p>
+                                            <p class="mt-1 text-xs text-content-muted">
+                                                {{ 'Pinned v' ~ previous.profile_version if previous.profile_version else 'Version unrecorded' }}
+                                                · Released allocation snapshot
+                                            </p>
+                                            <dl class="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs sm:grid-cols-3">
+                                                {% for label, value in [
+                                                    ('CPU Req', previous.quota.get('requests.cpu')),
+                                                    ('Memory Req', previous.quota.get('requests.memory')),
+                                                    ('CPU Limit', previous.quota.get('limits.cpu')),
+                                                    ('Memory Limit', previous.quota.get('limits.memory')),
+                                                    ('Pods', previous.quota.get('pods')),
+                                                    ('Storage', previous.quota.get('requests.storage'))
+                                                ] %}
+                                                    <div class="min-w-0">
+                                                        <dt class="text-content-muted">{{ label }}</dt>
+                                                        <dd class="font-semibold tabular-nums text-content-primary">{{ value if value is not none else 'Not recorded' }}</dd>
+                                                    </div>
+                                                {% endfor %}
+                                            </dl>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </details>
+                        {% elif item.generation > 1 %}
+                            <p class="mt-3 text-xs leading-5 text-content-muted">
+                                No verified cross-Tenant Release lineage is recorded for this Namespace.
+                                Generation number alone is not proof of a previous handoff.
+                            </p>
+                        {% endif %}
+                    </article>
+                {% endfor %}
+            </div>
         {% else %}
-          <tr><td colspan="4" class="p-0">
             {% set empty_state_icon = 'folder-tree' %}
             {% set empty_state_title = 'No Namespace Allocations' %}
             {% set empty_state_description = 'No committed Namespace generation or Resource Profile linkage is recorded for this Tenant.' %}
             {% include 'components/states/_empty_state.html' %}
-          </td></tr>
-        {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    <div class="flex flex-wrap items-center justify-between gap-3 border-t border-outline-subtle px-4 py-3">
-      <span class="text-xs text-content-muted">Showing {{ mapping.rows|length }} of {{ mapping.total }} generations; max {{ mapping.limit }} in this preview.</span>
-      <a class="{{ table_ui.action_classes() }}" href="{{ url_for('tenant.namespace_provisioning', view='provision', namespace_tenant_id=tenant.id) }}">View Full Namespace Registry</a>
-    </div>
-  {% endcall %}
+        {% endif %}
+        <div class="mt-4 flex min-w-0 flex-wrap items-center justify-between gap-3 border-t border-outline-subtle pt-4">
+            <p class="text-xs leading-5 text-content-muted">
+                Latest {{ mapping.limit }} Namespace cards. Historical ancestors appear only when provider UID and committed Re-adoption lineage match.
+            </p>
+            <a href="{{ url_for('tenant.namespace_provisioning', view='provision', namespace_tenant_id=tenant.id) }}"
+               class="inline-flex min-h-10 items-center gap-2 text-xs font-semibold text-kaori-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                View Full Namespace Registry
+                <i data-lucide="arrow-up-right" class="h-4 w-4" aria-hidden="true"></i>
+            </a>
+        </div>
+    {% endcall %}
 </section>
