@@ -18,7 +18,7 @@ class CapsuleHandoffAuditBatch(db.Model):
     __tablename__ = 'capsule_handoff_audit_batches'
 
     id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
-    batch_id: Mapped[str] = mapped_column(db.String(36), nullable=False, unique=True)
+    batch_id: Mapped[str] = mapped_column(db.String(36), nullable=False)
     tenant_id: Mapped[str] = mapped_column(
         db.String(36), db.ForeignKey('tenants.id', ondelete='RESTRICT'), nullable=False,
     )
