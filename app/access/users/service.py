@@ -446,6 +446,36 @@ def get_user(user_id: int) -> User | None:
     return db.session.get(User, user_id)
 
 
+def user_version_token(user: User) -> str:
+    """Snapshot identity and security-sensitive fields for optimistic edits."""
+    updated_at = user.updated_at
+    if updated_at.tzinfo is None:
+        updated_at = updated_at.replace(tzinfo=UTC)
+    return '|'.join((
+        updated_at.astimezone(UTC).isoformat(timespec='microseconds'),
+        str(user.role_id or ''),
+        str(int(user.account_is_active)),
+        str(int(user.is_super_admin)),
+        str(user.auth_session_version),
+        str(user.deleted_at.isoformat() if user.deleted_at is not None else ''),
+    ))
+
+
+def lock_user_for_mutation(user_id: int) -> User | None:
+    """Lock and refresh the persisted user row before reviewing an Edit POST."""
+    return (
+        db.session.query(User)
+        .populate_existing()
+        .filter(User.id == int(user_id))
+        .with_for_update()
+        .one_or_none()
+    )
+
+
+def user_version_matches(user: User, token: str | None) -> bool:
+    return bool(token and token == user_version_token(user))
+
+
 def persist_created_user(*, actor: User, user: User) -> None:
     try:
         db.session.flush()
