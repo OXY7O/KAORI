@@ -183,7 +183,7 @@ def classify_capsule_related_resource(
     }, problems
 
 
-def _listing(api: Any, *, kind: str, namespace: str) -> list[Any]:
+def _listing(api: Any, *, kind: str, namespace: str) -> tuple[list[Any], str]:
     method = {
         'ResourceQuota': api.list_namespaced_resource_quota,
         'LimitRange': api.list_namespaced_limit_range,
@@ -193,12 +193,13 @@ def _listing(api: Any, *, kind: str, namespace: str) -> list[Any]:
     meta = _get(response, 'metadata')
     if _get(meta, '_continue') or _get(meta, 'continue'):
         raise ValueError('Capsule inventory returned a paginated partial resource list.')
-    if not isinstance(_get(meta, 'resource_version') or _get(meta, 'resourceVersion'), str):
+    list_rv = _get(meta, 'resource_version') or _get(meta, 'resourceVersion')
+    if not isinstance(list_rv, str) or not list_rv:
         raise ValueError('Capsule inventory list has no authoritative resourceVersion.')
     items = _get(response, 'items')
     if not isinstance(items, list) or len(items) > _MAX_PER_NS:
         raise ValueError('Capsule inventory list is unavailable, partial or too large.')
-    return items
+    return items, list_rv
 
 
 def observe_capsule_related_inventory(
@@ -223,12 +224,18 @@ def observe_capsule_related_inventory(
     ):
         raise ValueError('Scoped Capsule Namespace set is not complete or bounded.')
     rows: list[dict[str, str]] = []
+    list_snapshots: list[dict[str, str | int]] = []
     blockers: list[str] = []
     for ns in namespace_components:
         for kind, api in (
             ('ResourceQuota', core), ('LimitRange', core), ('RoleBinding', rbac),
         ):
-            for item in _listing(api, kind=kind, namespace=ns['name']):
+            observed, list_rv = _listing(api, kind=kind, namespace=ns['name'])
+            list_snapshots.append({
+                'namespace': ns['name'], 'kind': kind,
+                'list_resource_version': list_rv, 'count': len(observed),
+            })
+            for item in observed:
                 evidence, problems = classify_capsule_related_resource(
                     resource=item, kind=kind, namespace=ns['name'],
                     tenant_id=tenant_id, capsule_name=capsule_name,
@@ -242,10 +249,12 @@ def observe_capsule_related_inventory(
     if len(unique_keys) != len(rows):
         raise ValueError('Duplicate namespaced provider resources were observed.')
     rows.sort(key=lambda x: (x['namespace'], x['kind'], x['name']))
+    list_snapshots.sort(key=lambda x: (str(x['namespace']), str(x['kind'])))
     return {
         'status': 'read_only_related_inventory',
         'resources': rows, 'resource_count': len(rows),
-        'resource_sha256': _digest(rows),
+        'list_snapshots': list_snapshots,
+        'resource_sha256': _digest({'resources': rows, 'lists': list_snapshots}),
         'blockers': blockers,
         'provider_mutation_performed': False,
         'provider_handoff_verified': False,
