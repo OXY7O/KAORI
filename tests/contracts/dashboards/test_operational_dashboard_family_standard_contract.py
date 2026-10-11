@@ -205,7 +205,11 @@ def test_capacity_metric_cards_follow_kubernetes_visual_grammar() -> None:
     assert 'progress_bar.bar(item.progress_percent,' in registry
     assert 'item.progress_percent is not none' in registry
     assert 'percentage not applicable' in registry
-    assert 'operational_callout.render(' not in registry
+    assert "operational_callout.render('Data Scope'" not in registry
+    for template in (kubernetes, storage, registry):
+        assert "'Capacity Decision Notes'" in template
+        assert 'Planning Check' in template
+        assert 'Evidence Handoff' in template
 
 
 def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
