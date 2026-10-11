@@ -508,34 +508,50 @@ def persist_updated_user(*, actor: User, user: User) -> None:
 
 
 def activate_user_account(*, actor: User, user: User) -> None:
-    set_user_active(user, True)
-    record_admin_event(actor=actor, action='user.activated', target=user, summary=f'Activated user {user.username}.')
-    db.session.commit()
-
+    try:
+        set_user_active(user, True)
+        record_admin_event(actor=actor, action='user.activated', target=user, summary=f'Activated user {user.username}.')
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
 
 def deactivate_user_account(*, actor: User, user: User) -> None:
-    set_user_active(user, False)
-    record_admin_event(
-        actor=actor, action='user.deactivated', target=user, summary=f'Deactivated user {user.username}.'
-    )
-    db.session.commit()
-
+    try:
+        set_user_active(user, False)
+        record_admin_event(
+            actor=actor, action='user.deactivated', target=user, summary=f'Deactivated user {user.username}.'
+        )
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
 
 def reset_user_password(*, actor: User, user: User, password: str) -> None:
-    user.set_password(password)
-    record_admin_event(
-        actor=actor, action='user.password_reset', target=user, summary=f'Reset password for user {user.username}.'
-    )
-    db.session.commit()
-
+    try:
+        user.set_password(password)
+        record_admin_event(
+            actor=actor, action='user.password_reset', target=user, summary=f'Reset password for user {user.username}.'
+        )
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
 
 def restore_user_account(*, actor: User, user: User) -> None:
-    restore_user(user)
-    record_admin_event(actor=actor, action='user.restored', target=user, summary=f'Restored user {user.username}.')
-    db.session.commit()
-
+    try:
+        restore_user(user)
+        record_admin_event(actor=actor, action='user.restored', target=user, summary=f'Restored user {user.username}.')
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
 
 def delete_user_account(*, actor: User, user: User) -> None:
-    soft_delete_user(user)
-    record_admin_event(actor=actor, action='user.deleted', target=user, summary=f'Soft deleted user {user.username}.')
-    db.session.commit()
+    try:
+        soft_delete_user(user)
+        record_admin_event(actor=actor, action='user.deleted', target=user, summary=f'Soft deleted user {user.username}.')
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
