@@ -26,6 +26,7 @@ Status: **FINAL LOCKED**
 
 - KAORI Violet Hero and semantic tokens.
 - General and Account use the same simple query-backed HTMX tab family, owned by `components/workspace_tabs.html::render_query_tabs`.
+- The shared query-backed tab strip uses `bg-surface-hover` behind a selected `bg-surface-card` tab in both light/dark modes; this reuses the existing semantic surface palette, not a new Settings tab style.
 - Time Zone and Regional Format keep their scope/data boundaries inline.
 - Account Profile and Authentication Activity remain full-width.
 - Credential Management uses natural-height action/context columns.
