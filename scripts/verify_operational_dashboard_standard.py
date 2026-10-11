@@ -1188,10 +1188,22 @@ def verify() -> None:
                 'components/operational_alert_summary.html',
                 'alert_summary.render(',
                 'up to five recent',
+                "empty_label='No Active Cases'",
+                'No active recommendation-origin AlertCases',
+                'Intelligence findings are separate.',
                 row_token,
             ),
             owner,
         )
+    signals_projection = artifact_presentation.split("if section == 'signals':", 1)[1].split(
+        "if section == 'reporting':", 1
+    )[0]
+    if (
+        'if selected_provider is None:' not in signals_projection
+        or signals_projection.index('return context') >= signals_projection.index('_registry_alerts(selected_provider)')
+        or signals_projection.index('return context') >= signals_projection.index('_registry_recommended_actions(selected_provider)')
+    ):
+        raise AssertionError('Registry unselected Signals must not evaluate cross-provider Intelligence findings')
     _require(
         alerts_builder,
         ('for item in raw_items[:5]',),
