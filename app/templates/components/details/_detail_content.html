@@ -398,12 +398,13 @@
         <p class="mx-auto mt-1 max-w-xl text-xs leading-5 text-content-muted">{{ description }}</p>
     </div>
 {%- endmacro %}
-{% macro summary_strip(metrics, columns=4, compact=false) -%}
+{% macro summary_strip(metrics, columns=4, compact=false, borderless=false) -%}
     <div data-resource-detail-summary
          data-kaori-inventory-summary-strip
-         class="mt-5 grid overflow-hidden border border-outline-subtle bg-surface-card sm:grid-cols-2 lg:mt-6 xl:grid-cols-4">
+         {% if borderless %}data-kaori-summary-variant="borderless"{% endif %}
+         class="{{ 'grid min-w-0 gap-x-6 gap-y-3 px-5 py-3.5 sm:grid-cols-2 sm:px-6 xl:grid-cols-4' if borderless else 'mt-5 grid overflow-hidden border border-outline-subtle bg-surface-card sm:grid-cols-2 lg:mt-6 xl:grid-cols-4' }}">
         {% for label, value, description in metrics %}
-            <article class="min-w-0 border-b border-outline-subtle px-5 py-3.5 sm:border-r xl:border-b-0 xl:last:border-r-0">
+            <article class="{{ 'min-w-0 py-0.5' if borderless else 'min-w-0 border-b border-outline-subtle px-5 py-3.5 sm:border-r xl:border-b-0 xl:last:border-r-0' }}">
                 <p class="text-xs font-medium leading-4 text-content-muted">{{ label }}</p>
                 <p class="mt-1 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ value }}</p>
                 {% if description %}<p class="mt-0.5 text-xs leading-4 text-content-muted">{{ description }}</p>{% endif %}
