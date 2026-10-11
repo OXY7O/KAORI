@@ -205,11 +205,22 @@ def review_tenant_release_preflight_committed(*, tenant_id: str, actor_user_id: 
                         if record.provisioning_status not in {'deprovisioned', 'released'}
                     }
                     observed_ns = {component['name'] for component in capsule_ns}
-                    if (
+                    capsule_handoff_needed = any(
+                        item.get('handoff') == 'external_acceptance_required'
+                        for item in handoff_components
+                    )
+                    if not capsule_handoff_needed:
+                        # Keep historical observation-only Capsule Release
+                        # semantics; this supplementary scan is a handoff gate.
+                        pass
+                    elif (
                         not capsule_ns or observed_ns != expected_ns
                         or (status_names and not status_names.issubset(observed_ns))
                     ):
-                        blockers.append('Capsule scoped Namespace inventory is incomplete; related provider resources were not trusted.')
+                        blockers.append(
+                            'Capsule scoped Namespace inventory is incomplete; '
+                            'related provider resources were not trusted.'
+                        )
                     else:
                         try:
                             capsule_related_inventory = observe_capsule_related_inventory(
@@ -224,13 +235,10 @@ def review_tenant_release_preflight_committed(*, tenant_id: str, actor_user_id: 
                             capsule_cr['capsule_related_resources_sha256'] = capsule_related_inventory['resource_sha256']
                             capsule_cr['capsule_related_resources_count'] = str(capsule_related_inventory['resource_count'])
                             blockers.extend(capsule_related_inventory['blockers'])
-                            if any(
-                                item.get('handoff') == 'external_acceptance_required'
-                                for item in handoff_components
-                            ):
-                                blockers.append(
-                                    'Capsule shared quota and controller-generated RBAC origins are not yet fully verified for handoff.'
-                                )
+                            blockers.append(
+                                'Capsule shared quota and controller-generated RBAC origins '
+                                'are not yet fully verified for handoff.'
+                            )
                         except (ValueError, TypeError, AttributeError, ApiException, StopIteration):
                             capsule_related_inventory = None
                             blockers.append('Capsule related quota/limit/RBAC authoritative inventory is incomplete.')
