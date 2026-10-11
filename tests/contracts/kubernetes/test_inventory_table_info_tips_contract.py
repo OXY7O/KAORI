@@ -50,6 +50,24 @@ def test_namespace_psa_explains_enforcement_without_compliance_assumptions() -> 
     assert 'does not prove the namespace is secure' in source
 
 
+def test_topology_and_tls_inventory_tables_explain_technical_evidence() -> None:
+    templates = ROOT.parents[0]
+    topology = (ROOT / 'topology/partials/_workspace.html').read_text(encoding='utf-8')
+    tls = (
+        templates / 'governance/tls_certificates/partials/_table.html'
+    ).read_text(encoding='utf-8')
+    for source in (topology, tls):
+        assert '{% import "components/info_tip.html" as info_tip %}' in source
+    assert 'k8s-inventory-topology-status' in topology
+    assert 'k8s-inventory-topology-relationships' in topology
+    assert 'missing or filtered evidence' in topology
+    assert 'k8s-inventory-tls-validity' in tls
+    assert 'k8s-inventory-tls-host-coverage' in tls
+    assert 'k8s-inventory-tls-ingress-usage' in tls
+    assert 'not a live handshake test' in tls
+    assert 'not proof of successful TLS termination' in tls
+
+
 def test_shared_info_tip_supports_pointer_keyboard_touch_and_htmx() -> None:
     shared = (ROOT.parents[1] / 'components/info_tip.html').read_text(encoding='utf-8')
     js = (ROOT.parents[2] / 'static/js/info_tips.js').read_text(encoding='utf-8')
