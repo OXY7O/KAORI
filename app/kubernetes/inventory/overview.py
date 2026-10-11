@@ -605,16 +605,12 @@ def get_inventory_overview(*, cluster_page: int = 1, cluster_per_page: int = 5) 
 
     cluster_rows = [_cluster_overview_row(cluster, inventory_summary, count_maps) for cluster in page_clusters]
 
+    # Grouped counts already cover every registered cluster in its committed
+    # generation. Reuse that same evidence for global totals instead of eight
+    # additional COUNT queries over the identical resource families.
     totals = {
-        'clusters': _count_rows(Cluster),
-        'nodes': _count_rows(NodeInventory),
-        'namespaces': _count_rows(NamespaceInventory),
-        'workloads': _count_rows(WorkloadInventory),
-        'pods': _count_rows(PodInventory),
-        'services': _count_rows(ServiceInventory),
-        'ingresses': _count_rows(IngressInventory),
-        'storage': _count_rows(StorageInventory),
-        'configuration': _count_rows(ConfigurationInventory),
+        'clusters': len(clusters),
+        **{key: sum(per_cluster.values()) for key, per_cluster in count_maps.items()},
     }
     inventory_total = sum(value for key, value in totals.items() if key != 'clusters')
     asset_catalog = _asset_catalog(totals)

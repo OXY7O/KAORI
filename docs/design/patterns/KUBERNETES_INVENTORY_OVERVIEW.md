@@ -144,3 +144,13 @@ projects exactly one committed cluster and its current resource-family counts,
 without invoking a full Overview projection. Table-only HTMX and modal fragments
 do not re-query the Snapshot Context Bar, while full page and workspace renders
 retain committed freshness context. Scope, RBAC and canonical modal stay intact.
+
+
+### Fleet total query reuse
+
+The Overview's eight committed-generation `GROUP BY cluster_id` resource
+count maps are also the authoritative fleet-level totals: sum each resource
+family's grouped counts once, rather than issuing eight duplicate COUNT queries.
+This preserves exact global totals while paging the cluster detail projection
+via the canonical SQL pagination contract. It does not change query freshness
+or the actual count of returned Kubernetes provider objects.

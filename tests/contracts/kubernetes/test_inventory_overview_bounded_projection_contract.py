@@ -30,6 +30,16 @@ def test_one_cluster_detail_avoids_full_fleet_overview() -> None:
     assert 'get_inventory_overview(' not in detail
 
 
+def test_fleet_global_counts_reuse_the_committed_grouped_sql_aggregates() -> None:
+    overview = source('app/kubernetes/inventory/overview.py')
+    assert "'clusters': len(clusters)" in overview
+    assert "sum(per_cluster.values()) for key, per_cluster in count_maps.items()" in overview
+    projection = overview.split('def get_inventory_overview(*,', 1)[1].split(
+        'def get_inventory_overview_cluster_detail(', 1
+    )[0]
+    assert '_count_rows(' not in projection
+
+
 def test_render_only_freshness_context_for_full_workspaces() -> None:
     routes = source('app/kubernetes/inventory/routes.py')
     assert "request.endpoint == 'inventory.overview'" in routes
