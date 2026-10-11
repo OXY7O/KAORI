@@ -325,3 +325,17 @@ is rejected and cannot publish a second success notification. SQLite's
 there. Approval still verifies live UID/type/key against the original request,
 while the separate one-time reveal lock remains unchanged. A browser success
 cannot substitute for the durable committed status.
+
+
+## Bounded live Secret selector pages (#1305)
+
+Secret operations must continue to identify targets through the live Kubernetes
+API. Namespace LIST/GET calls have a 10-second request timeout, and Secret
+LIST requests use Kubernetes `limit=100` and `continue` paging (max 100
+pages). Each page is scrubbed immediately after its metadata is consumed,
+even on an error. Repeated continuation tokens or excessive listings fail
+with an explicit selector error rather than silently returning an incomplete
+option set. No live Secret plaintext is committed to KAORI. This is a
+provider-request bound, not a replacement of live target discovery with
+Inventory evidence; throughput and authorization behavior still need
+DevContainer UAT and large-namespace benchmark.
