@@ -168,10 +168,12 @@ def test_kubernetes_capacity_decision_notes_and_forecast_helpers() -> None:
     capacity = read('app/templates/kubernetes/dashboard/partials/_capacity_snapshot.html')
     forecast = read('app/templates/kubernetes/dashboard/partials/_forecast_risk.html')
 
-    assert "operational_callout.render(" in capacity
-    assert "'Capacity Decision Notes'" in capacity
-    assert 'Planning Check' in capacity
-    assert 'Evidence Handoff' in capacity
+    assert 'Worker capacity headroom chart' in capacity
+    assert 'Available Capacity' in capacity
+    assert 'item.headroom_percent if item.headroom_percent is not none else none' in capacity
+    assert "progress_bar.bar(headroom_percent," in capacity
+    assert 'headroom unavailable' in capacity
+    assert 'Capacity Decision Notes' not in capacity
     assert 'Recommended Capacity Action Flow' in capacity
     for text in (
         'Peak projected utilization',
@@ -206,7 +208,8 @@ def test_capacity_metric_cards_follow_kubernetes_visual_grammar() -> None:
     assert 'item.progress_percent is not none' in registry
     assert 'percentage not applicable' in registry
     assert "operational_callout.render('Data Scope'" not in registry
-    for template in (kubernetes, storage, registry):
+    assert 'Worker capacity headroom chart' in kubernetes
+    for template in (storage, registry):
         assert "'Capacity Decision Notes'" in template
         assert 'Planning Check' in template
         assert 'Evidence Handoff' in template
