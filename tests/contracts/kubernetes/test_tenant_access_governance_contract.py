@@ -425,10 +425,10 @@ def test_access_grant_registry_actions_fit_desktop_and_use_existing_native_more_
     registry = read('app/templates/kubernetes/tenant/partials/_access_grant_registry.html')
     Environment(autoescape=True).parse(registry)
     credentials = read('app/templates/kubernetes/tenant/partials/_credential_registry.html')
-    assert "table_ui.table_classes('min-w-[980px] table-fixed lg:min-w-0')" in registry
-    assert 'overflow-x-auto lg:overflow-visible' in registry
+    assert "table_ui.table_classes('min-w-[1040px] table-fixed xl:min-w-0')" in registry
+    assert 'overflow-x-auto xl:overflow-visible' in registry
     assert "table_ui.table_classes('min-w-[1300px] !table-fixed')" not in registry
-    assert 'w-[17%]">Actions' in registry
+    assert 'w-[20%]">Actions' in registry
     assert 'min-w-[15rem] flex-wrap' not in registry
     assert 'flex items-center justify-end gap-1.5 whitespace-nowrap' in registry
     assert registry.count('data-kaori-dialog-open') == 1
