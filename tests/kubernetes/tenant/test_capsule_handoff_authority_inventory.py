@@ -305,3 +305,69 @@ def test_ambiguous_effective_kaori_binding_never_satisfies_matching_intent():
     assert result['contract_correlated'] is False
     assert result['effective_kaori_count'] == 0
     assert any('ambiguous or foreign' in reason for reason in result['blockers'])
+
+
+def test_capsule_incomplete_inventory_diagnostic_preserves_blocker_without_leaking_api_payload():
+    from app.kubernetes.tenant.release_preflight import _capsule_inventory_failure_report
+
+    for stage in (
+        'namespaced_quota_limit_rbac_inventory',
+        'cluster_global_quota_inventory',
+        'capsule_rolebinding_lineage',
+    ):
+        error = ApiException(status=403, reason='sensitive provider response')
+        result = _capsule_inventory_failure_report(stage, error)
+        assert result['stage'] == stage
+        assert result['error_kind'] == 'ApiException'
+        assert result['provider_http_status'] == 403
+        assert result['safe_reason'] is None
+        assert 'sensitive provider response' not in str(result)
+        assert result['inventory_complete'] is False
+        assert result['provider_mutation_performed'] is False
+        assert result['provider_handoff_verified'] is False
+        assert result['release_authorized'] is False
+
+
+def test_capsule_inventory_diagnostic_accepts_only_code_owned_safe_reason():
+    from app.kubernetes.tenant.release_preflight import _capsule_inventory_failure_report
+
+    known = _capsule_inventory_failure_report(
+        'cluster_global_quota_inventory',
+        ValueError('Capsule global quota API is not available on supported versions.'),
+    )
+    assert known['safe_reason'] == 'Capsule global quota API is not available on supported versions.'
+    untrusted = _capsule_inventory_failure_report(
+        'namespaced_quota_limit_rbac_inventory',
+        ValueError('Bearer private-secret from provider SDK'),
+    )
+    assert untrusted['safe_reason'] is None
+    assert untrusted['error_kind'] == 'ValueError'
+    assert 'private-secret' not in str(untrusted)
+    with pytest.raises(ValueError, match='stage is unsupported'):
+        _capsule_inventory_failure_report('hand_off_admitted', ValueError('invalid'))
+
+
+def test_capsule_g0_unknown_inventory_remains_blocked_and_renders_safe_stage():
+    from pathlib import Path
+
+    preflight_source = Path('app/kubernetes/tenant/release_preflight.py').read_text()
+    ui_source = Path(
+        'app/templates/kubernetes/tenant/partials/_tenant_management_detail.html'
+    ).read_text()
+    assert "capsule_inventory_failure = _capsule_inventory_failure_report(" in preflight_source
+    assert "'Capsule related quota/limit/RBAC authoritative inventory is incomplete.'" in preflight_source
+    assert "evidence['capsule_inventory_failure'] = capsule_inventory_failure" in preflight_source
+    assert "capsule_inventory_failure.safe_reason or capsule_inventory_failure.error_kind" in ui_source
+    assert "capsule_inventory_failure.provider_http_status" in ui_source
+
+
+def test_capsule_global_quota_empty_list_is_valid_preservation_evidence():
+    empty = observe_capsule_global_quotas(
+        custom=_Custom(items=[]), tenant_name='demo',
+    )
+    assert empty['count'] == 0
+    assert empty['resources'] == []
+    assert empty['blockers'] == []
+    assert len(empty['scope_sha256']) == 64
+    assert empty['provider_handoff_verified'] is False
+    assert empty['release_authorized'] is False

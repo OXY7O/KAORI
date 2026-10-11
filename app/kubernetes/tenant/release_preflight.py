@@ -43,6 +43,64 @@ from app.models.tenant_policy import (
 _TARGET = 'kubernetes_tenant_release_preflight'
 
 
+_CAPSULE_INVENTORY_STAGES = frozenset({
+    'namespaced_quota_limit_rbac_inventory',
+    'cluster_global_quota_inventory',
+    'capsule_rolebinding_lineage',
+})
+# Only code-owned literal messages may be exposed in committed state/UI.
+# No arbitrary Kubernetes exceptions, HTTP response body or RBAC subjects.
+_CAPSULE_INVENTORY_SAFE_REASONS = frozenset({
+    'Capsule global quota API is not available on supported versions.',
+    'Capsule global quota provider returned malformed LIST.',
+    'Capsule global quota LIST metadata is missing.',
+    'Capsule global quota list is incomplete or unbounded.',
+    'Capsule inventory returned a paginated partial resource list.',
+    'Capsule inventory list has no authoritative resourceVersion.',
+    'Capsule inventory list is unavailable, partial or too large.',
+    'Capsule related provider scope exceeds 300 resources.',
+    'Capsule-related provider policy is incomplete.',
+    'Provider inventory contains unsupported policy data.',
+    'Provider inventory has noncanonical policy data.',
+    'Capsule RBAC lineage requires exact bounded provider scope.',
+    'Capsule RBAC rule is malformed.',
+    'Capsule RBAC permissions are malformed.',
+    'Capsule RBAC spec binding inventory exceeds bounds.',
+})
+
+
+def _capsule_inventory_failure_report(stage: str, exc: Exception) -> dict[str, Any]:
+    """Bounded, non-secret diagnostic for a blocked READ-ONLY G0 inventory.
+
+    Do not report private RBAC subjects or raw API error response bodies.
+    This receipt is not handoff authority and never waives the blocker.
+    """
+    if stage not in _CAPSULE_INVENTORY_STAGES:
+        raise ValueError('Capsule inventory failure stage is unsupported.')
+    kind = type(exc).__name__
+    status = (
+        exc.status if isinstance(exc, ApiException)
+        and type(exc.status) is int and 400 <= exc.status <= 599 else None
+    )
+    message = str(exc)
+    return {
+        'stage': stage,
+        'error_kind': kind if kind in (
+            'ApiException', 'ValueError', 'TypeError', 'AttributeError',
+            'StopIteration',
+        ) else 'provider_inventory_error',
+        'provider_http_status': status,
+        'safe_reason': (
+            message if type(exc) is ValueError
+            and message in _CAPSULE_INVENTORY_SAFE_REASONS else None
+        ),
+        'inventory_complete': False,
+        'provider_mutation_performed': False,
+        'provider_handoff_verified': False,
+        'release_authorized': False,
+    }
+
+
 def _release_blockers(tenant: Tenant, namespace_rows: list[TenantNamespace], *, counts: dict[str, int]) -> list[str]:
     blockers: list[str] = []
     if tenant.ownership_status != 'adopted':
@@ -138,6 +196,7 @@ def review_tenant_release_preflight_committed(*, tenant_id: str, actor_user_id: 
     provider: list[dict[str, str]] = []
     handoff_components: list[dict[str, str]] = []
     capsule_related_inventory: dict[str, Any] | None = None
+    capsule_inventory_failure: dict[str, Any] | None = None
     if len(rows) > 30:
         blockers.append('Release handoff inventory exceeds 30 namespaces; review scope before Release.')
     cluster = db.session.get(Cluster, tenant.cluster_id)
@@ -227,15 +286,18 @@ def review_tenant_release_preflight_committed(*, tenant_id: str, actor_user_id: 
                         )
                     else:
                         try:
+                            inventory_stage = 'namespaced_quota_limit_rbac_inventory'
                             capsule_related_inventory = observe_capsule_related_inventory(
                                 core=client.core_api(), rbac=client.rbac_authorization_api(),
                                 namespace_components=capsule_ns, tenant_id=tenant.id,
                                 capsule_name=str(tenant.provider_reference), capsule_uid=uid,
                             )
+                            inventory_stage = 'cluster_global_quota_inventory'
                             global_quota = observe_capsule_global_quotas(
                                 custom=client.custom_objects_api(),
                                 tenant_name=str(tenant.provider_reference),
                             )
+                            inventory_stage = 'capsule_rolebinding_lineage'
                             rbac_lineage = inspect_capsule_role_binding_lineage(
                                 capsule_spec=obj.get('spec'),
                                 related=capsule_related_inventory,
@@ -260,7 +322,12 @@ def review_tenant_release_preflight_committed(*, tenant_id: str, actor_user_id: 
                                 'Capsule controller-generated RoleBinding origins and '
                                 'provider handoff remain unverified; executor is blocked.'
                             )
-                        except (ValueError, TypeError, AttributeError, ApiException, StopIteration):
+                        except (ValueError, TypeError, AttributeError, ApiException, StopIteration) as exc:
+                            # Preserve the blocker: stage diagnostics explain
+                            # the failure but never authorize missing evidence.
+                            capsule_inventory_failure = _capsule_inventory_failure_report(
+                                inventory_stage, exc,
+                            )
                             capsule_related_inventory = None
                             blockers.append('Capsule related quota/limit/RBAC authoritative inventory is incomplete.')
             except (ApiException, ValueError, AttributeError):
@@ -346,6 +413,7 @@ def review_tenant_release_preflight_committed(*, tenant_id: str, actor_user_id: 
     }
     if tenant.provider_key == 'capsule':
         evidence['capsule_related_inventory'] = capsule_related_inventory
+        evidence['capsule_inventory_failure'] = capsule_inventory_failure
     db.session.add(AuditEvent(
         actor_user_id=actor_user_id, target_type=_TARGET, target_id=tenant.id,
         action='tenant.release.preflight_observed',

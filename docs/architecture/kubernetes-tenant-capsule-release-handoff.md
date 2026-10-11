@@ -9,6 +9,32 @@ Target integration: `kaori/review/staging-uat` only. No developer check,
 pytest, Ruff, pyright, CI/CD, DAST, live API UAT, promotion or deployment until
 a separate explicit instruction.
 
+## G0 Capsule inventory diagnostics for local DevContainer troubleshooting (#1229)
+
+When the full read-only Capsule Release preflight cannot complete its
+ResourceQuota/LimitRange/RoleBinding inventory, cluster GlobalResourceQuota
+LIST, or RBAC contract lineage inspection, the standard Release blocker
+`Capsule related quota/limit/RBAC authoritative inventory is incomplete.`
+**remains FAIL**. The committed `capsule_inventory_failure` receipt now
+adds a bounded stage (`namespaced_quota_limit_rbac_inventory`,
+`cluster_global_quota_inventory`, or `capsule_rolebinding_lineage`),
+exception category, optional HTTP status, and only whitelisted code-owned
+error strings. The standard Violet Release conditions UI displays this
+diagnostic without exposing provider HTTP response bodies, RBAC subjects,
+secret values, or raw Kubernetes exception text.
+
+**Zero GlobalResourceQuota objects is valid** if the cluster-scoped
+versioned LIST returns complete metadata/resourceVersion and an empty items
+array. The object count alone is not grounds to bypass missing served API
+versions, malformed/paginated responses, stale identities, or ownership
+provenance. Kubernetes CLI LIST permission does not prove that KAORI's
+registered provider identity, served CRD versions, full payload shape,
+or RBAC lineage validator succeeded.
+
+Source-only tests are authored, not executed under the standing HOLD. This
+diagnostic change does not modify provider resources, waive a blocker,
+admit G1/G2/G3, execute handoff, mark Released or authorize automatic retry.
+
 ## G3 foreign Namespace full-preservation correction (#1229)
 
 Complete-scope Capsule executor read-back now rejects **any** drift in a

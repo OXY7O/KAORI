@@ -474,6 +474,7 @@
                                     </span>
                                     <i data-lucide="chevron-down" class="h-4 w-4 text-content-muted transition-transform group-open/evidence:rotate-180" aria-hidden="true"></i>
                                 </summary>
+                                {% set capsule_inventory_failure = row.release_preflight.capsule_inventory_failure or {} %}
                                 {% set release_dependency_counts = row.release_preflight.dependency_counts or {} %}
                                 {% set active_release_dependencies = release_dependency_counts.values()|sum %}
                                 <div class="border-t border-outline-subtle px-4 py-3 sm:px-5">
@@ -508,6 +509,9 @@
                                             {% elif blocker.startswith('Capsule allocation was modified by KAORI;') %}
                                                 {% set condition_title = 'Capsule allocation handoff' %}
                                                 {% set condition_action = 'Verify accepted successor authority and transfer of Capsule allocation control.' %}
+                                            {% elif blocker == 'Capsule related quota/limit/RBAC authoritative inventory is incomplete.' %}
+                                                {% set condition_title = 'Capsule inventory verification incomplete' %}
+                                                {% set condition_action = 'Refresh this read-only Release review after checking the recorded failing inventory stage. Never remove provider resources to silence this condition.' %}
                                             {% elif blocker.startswith('Inspect external Capsule owners and RBAC before Release Governance.') %}
                                                 {% set condition_title = 'Capsule owners and RBAC' %}
                                                 {% set condition_action = 'Inspect external Capsule owners and RBAC; record fresh provider evidence.' %}
@@ -520,6 +524,19 @@
                                                 <div class="min-w-0 flex-1">
                                                     <p class="break-words text-xs font-semibold leading-5 text-content-primary">{{ condition_title }}</p>
                                                     <p class="mt-0.5 break-words text-xs leading-5 text-content-secondary">{{ condition_action }}</p>
+                                                    {% if blocker == 'Capsule related quota/limit/RBAC authoritative inventory is incomplete.'
+                                                          and capsule_inventory_failure %}
+                                                        <p class="mt-2 break-words rounded-md border border-outline-subtle bg-surface-card p-2 text-xs leading-5 text-content-secondary"
+                                                           role="status" aria-label="Capsule inventory diagnostic">
+                                                            <span class="font-semibold text-content-primary">Failed read-only stage:</span>
+                                                            {{ capsule_inventory_failure.stage|replace('_', ' ')|title }}.
+                                                            {{ capsule_inventory_failure.safe_reason or capsule_inventory_failure.error_kind }}.
+                                                            {% if capsule_inventory_failure.provider_http_status %}
+                                                                Kubernetes HTTP {{ capsule_inventory_failure.provider_http_status }}.
+                                                            {% endif %}
+                                                            No transfer, Release or provider modification was authorized.
+                                                        </p>
+                                                    {% endif %}
                                                     <details class="group/reason mt-2 min-w-0">
                                                         <summary class="inline-flex min-h-7 cursor-pointer list-none items-center gap-1 text-xs font-medium text-kaori-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus [&::-webkit-details-marker]:hidden">
                                                             Exact recorded reason
