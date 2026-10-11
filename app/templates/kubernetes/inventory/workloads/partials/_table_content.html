@@ -2,22 +2,22 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/resource_detail_modal.html" as resource_detail_modal %}
-<div class="overflow-x-auto">
-    <table class="{{ table_ui.table_classes('min-w-[76rem] !table-fixed') }}">
+<div class="overflow-x-auto overscroll-x-contain">
+    <table class="{{ table_ui.table_classes('min-w-[78rem] !table-fixed') }}">
         <caption class="sr-only">Workload inventory records for {{ inventory.scope_label }}.</caption>
         <thead class="{{ table_ui.head_classes() }}">
             <tr>
                 <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} min-w-[16rem]">Workload</th>
+                    class="{{ table_ui.header_cell_classes() }} w-[26%] min-w-[17rem]">Workload</th>
                 <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} min-w-[13rem]">Scope</th>
+                    class="{{ table_ui.header_cell_classes() }} w-[23%] min-w-[15rem]">Scope</th>
                 <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} min-w-[12rem]">Operational State</th>
+                    class="{{ table_ui.header_cell_classes() }} w-[14%]">Operational State</th>
                 <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} min-w-[12rem]">Managed Pods</th>
+                    class="{{ table_ui.header_cell_classes() }} w-[12%]">Managed Pods</th>
                 <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} min-w-[13rem]">Update Strategy</th>
-                <th scope="col" class="{{ table_ui.header_cell_classes(true) }}">Details</th>
+                    class="{{ table_ui.header_cell_classes() }} w-[15%]">Update Strategy</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes(true) }} w-[10%]">Details</th>
             </tr>
         </thead>
         <tbody class="{{ table_ui.body_classes() }}">
