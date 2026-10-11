@@ -172,8 +172,41 @@ def test_permission_catalog_detail_uses_count_free_shared_modal_hierarchy() -> N
     assert "('JIT Projection', 'Configured' if permission.jit_provider_count else 'Not Configured'" in detail
     assert "('Requires', 'Present' if effective_requires else 'None'" in detail
     assert "('Control Module', permission.module_label" not in detail
-    assert 'lg:grid-cols-2' in detail
-    assert 'lg:col-span-2' in detail
+    # Four evidence cards and Role Coverage are full-width siblings, not the
+    # former two-column desktop grid that constricted long authority text.
+    assert 'data-kaori-permission-detail-layout="full-width-stack"' in detail
+    assert 'flex min-w-0 flex-col gap-3 p-4 sm:gap-4 sm:p-5' in detail
+    assert 'lg:grid-cols-2' not in detail
+    assert 'lg:col-span-2' not in detail
+    assert 'sm:grid-cols-2' in detail  # only compact identity facts use columns
+    for section_title in (
+        'Permission Identity',
+        'Dependency Contract',
+        'Delegation Boundary',
+        'Registry Boundary',
+        'Role Coverage',
+    ):
+        assert detail.count(section_title) >= 1
+    assert detail.index("detail_ui.detail_card('Permission Identity'") < detail.index(
+        "detail_ui.detail_card('Dependency Contract'"
+    )
+    assert detail.index("detail_ui.detail_card('Dependency Contract'") < detail.index(
+        "detail_ui.detail_card('Delegation Boundary'"
+    )
+    assert detail.index("detail_ui.detail_card('Delegation Boundary'") < detail.index(
+        "detail_ui.detail_card('Registry Boundary'"
+    )
+    assert detail.index("detail_ui.detail_card('Registry Boundary'") < detail.index(
+        '<h4 class="text-sm font-semibold text-content-primary">Role Coverage</h4>'
+    )
+    assert "detail_ui.stacked_detail_row('Permission Key', permission.key)" in detail
+    assert "detail_ui.stacked_detail_row('Description', permission.description" in detail
+    assert "table_label.metadata_label(item.title, 'arrow-down-left', true)" in detail
+    assert "table_label.metadata_label(item.title, 'arrow-up-right', true)" in detail
+    assert "detail_ui.stacked_detail_row('Stored Module', permission.database_module" in detail
+    assert "detail_ui.stacked_detail_row('Stored Action', permission.database_action" in detail
+    assert 'min-w-0 max-w-4xl' in detail
+    assert 'border-t border-outline-subtle pt-3' in detail
 
     # Keep source-derived semantics, but never render count badges or numeric KPIs in the detail.
     assert 'permission.role_count ~' not in detail
