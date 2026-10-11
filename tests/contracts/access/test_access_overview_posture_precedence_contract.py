@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ast
 from pathlib import Path
+from typing import Callable, cast
 
 import pytest
 
@@ -19,7 +20,8 @@ def aggregate_posture(tones: list[str]) -> tuple[str, str]:
     )
     namespace: dict[str, object] = {}
     exec(compile(ast.Module(body=[function], type_ignores=[]), '<access-overview>', 'exec'), namespace)
-    return namespace['_aggregate_access_posture'](tones)
+    function_under_test = cast(Callable[[list[str]], tuple[str, str]], namespace['_aggregate_access_posture'])
+    return function_under_test(tones)
 
 
 @pytest.mark.parametrize(
