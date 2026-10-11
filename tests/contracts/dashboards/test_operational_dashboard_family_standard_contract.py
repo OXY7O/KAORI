@@ -134,12 +134,13 @@ def test_data_freshness_microcopy_and_shared_family_geometry() -> None:
         'All Clusters shows committed capacity by cluster.',
         'Select a cluster for detailed analytics.',
         'All Clusters shows committed alerts by cluster. Select a cluster for source details.',
-        'Committed cluster snapshots',
+        'def _fleet_coverage(',
         'Latest Kubernetes object counts from committed inventory.',
         'Metrics-backed cluster usage and forecasts from committed snapshots.',
     ):
         assert text in kubernetes
-    assert kubernetes.count("'Committed cluster snapshots'") == 2
+    assert "'Committed cluster snapshots'" not in kubernetes
+    assert "'Per Cluster'" not in kubernetes
     assert 'Available alerts from committed 24h analytics snapshots;' in storage
     assert 'Alertmanager first, Metrics Source fallback.' in storage
     assert "f' {alert_fallback} system(s) using fallback evidence.'" in storage
