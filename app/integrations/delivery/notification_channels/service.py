@@ -226,7 +226,9 @@ def _channel_registry_page(*, page: int, per_page: int) -> tuple[list[dict[str, 
     return [_channel_view(channel, usage=usage_map.get(channel.id)) for channel in rows], pagination
 
 
-def _delivery_registry_page(*, page: int, per_page: int, event_key: str = '') -> tuple[list[dict[str, Any]], dict[str, Any]]:
+def _delivery_registry_page(
+    *, page: int, per_page: int, event_key: str = ''
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     query = NotificationDelivery.query
     if event_key:
         query = query.filter(NotificationDelivery.event_key == event_key)

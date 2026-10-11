@@ -172,7 +172,7 @@ def test_delivery_registry_supports_exact_source_linked_event_filter() -> None:
     assert "normalized_delivery_key = str(delivery_event_key or '').strip()[:255]" in service
     assert "'delivery_filter': normalized_delivery_key" in service
     assert 'name="delivery_event_key"' in page
-    assert "hx-select=\"#notification-channels-workspace\"" in page
+    assert 'hx-select="#notification-channels-workspace"' in page
     assert "'delivery_event_key': payload.delivery_filter" in page
     assert 'Delivery attempts and channel retries are provider-delivery evidence' in page
     assert 'No Matching Deliveries' in page
