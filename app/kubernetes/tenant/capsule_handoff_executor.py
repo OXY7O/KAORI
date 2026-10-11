@@ -555,8 +555,16 @@ def execute_capsule_handoff_committed(
                         )['state']
                         row['preservation_sha256'] = _digest(capsule_preservation_digest(before))
                     else:
-                        if _identity(live) != _identity(before) or _labels(live) != _labels(before):
-                            raise ValueError('Foreign Capsule Namespace changed during handoff.')
+                        if (
+                            _identity(live) != _identity(before)
+                            or _labels(live) != _labels(before)
+                            or capsule_preservation_digest(live)
+                            != capsule_preservation_digest(before)
+                        ):
+                            raise ValueError(
+                                'Foreign Capsule Namespace identity, spec or retained '
+                                'provider metadata changed during handoff.'
+                            )
                         state = 'preserved'
                 elif ops:
                     record = next(x for x in related['resources']
