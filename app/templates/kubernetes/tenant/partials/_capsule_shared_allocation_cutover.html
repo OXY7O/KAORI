@@ -163,7 +163,11 @@
                                 <li class="min-w-0 py-2.5 first:pt-0 last:pb-0">
                                     <div class="flex min-w-0 flex-wrap items-center gap-2">
                                         <span class="break-words text-sm font-semibold text-content-primary">{{ tenant.name }}</span>
-                                        {{ table_label.special_label('Not applicable here', 'info', 'info') }}
+                                        {% if state.get('no_tenant_quota_configured') %}
+                                            {{ table_label.special_label('No Tenant Quota Configured', 'info', 'info') }}
+                                        {% else %}
+                                            {{ table_label.special_label('Not applicable here', 'info', 'info') }}
+                                        {% endif %}
                                     </div>
                                     <p class="mt-1 break-words text-xs leading-5 text-content-secondary">
                                         <span class="font-medium text-content-primary">Detected authority:</span>
@@ -181,9 +185,20 @@
                                             <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                         </a>
                                     {% elif state.get('authority') == 'none_observed' %}
-                                        <p class="mt-1 text-xs leading-5 text-content-secondary">
-                                            No Tenant-level quota authority is recorded. Review Tenant Sync and provider observation before choosing any governance path.
-                                        </p>
+                                        {% if state.get('no_tenant_quota_configured') %}
+                                            <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                                Latest committed observation has no Tenant-level quota contract.
+                                                A Capsule Tenant can be Active without one; this is not a failed deployment.
+                                                Initial quota configuration is a separate governed workflow, not an observed-quota cutover.
+                                            </p>
+                                            <p class="mt-1 text-xs leading-5 text-content-muted">
+                                                Review Tenant Sync evidence before planning any initial allocation.
+                                            </p>
+                                        {% else %}
+                                            <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                                No Tenant-level quota authority is recorded. Review Tenant Sync and provider observation before choosing any governance path.
+                                            </p>
+                                        {% endif %}
                                     {% elif state.get('authority') == 'native_namespaced' %}
                                         <p class="mt-1 text-xs leading-5 text-content-secondary">
                                             Namespace-level allocation is observed. Review its owner and capability evidence; do not substitute a Native write for Capsule authority.
