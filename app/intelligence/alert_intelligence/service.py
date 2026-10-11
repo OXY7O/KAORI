@@ -7,22 +7,23 @@ from werkzeug.datastructures import MultiDict
 
 from app.common.pagination import paginate_sequence
 from app.integrations.delivery.notification_channels.service import notification_channel_summary
-from app.intelligence.alert_intelligence.lifecycle import active_delivery_silence, get_case
+from app.intelligence.alert_intelligence.lifecycle import active_delivery_silence
 from app.intelligence.alert_intelligence.notifications import case_delivery_rows
 from app.intelligence.alert_intelligence.routing import notification_channel_options, routing_policy_rows
 from app.intelligence.alert_intelligence.templates import built_in_templates
 from app.models.alert_ops import AlertCase, AlertCaseEvent, AlertSilence
 from app.models.cluster import Cluster
+from app.models.integration import IntegrationInstance
 from app.models.notification_channel import NotificationDelivery
 from app.models.object_storage import ObjectStorageSystem
 from app.models.user import User
 
-_VALID_DOMAINS = {'kubernetes', 'object_storage'}
+_VALID_DOMAINS = {'kubernetes', 'object_storage', 'registry'}
 _VALID_TABS = {'overview', 'active', 'routing', 'templates', 'silences', 'resolved', 'history'}
 _VALID_SEVERITIES = {'all', 'critical', 'warning', 'info', 'unknown'}
 _VALID_WORKFLOW_STATES = {'all', 'open', 'acknowledged', 'mitigating', 'verification_pending'}
 _VALID_SOURCE_TYPES = {'all', 'recommendation'}
-_DOMAIN_LABELS = {'kubernetes': 'Kubernetes', 'object_storage': 'Object Storage'}
+_DOMAIN_LABELS = {'kubernetes': 'Kubernetes', 'object_storage': 'Object Storage', 'registry': 'Artifact Registry'}
 _VALID_ROUTING_DOMAINS = {'all', 'kubernetes', 'object_storage'}
 _VALID_ROUTING_STATUSES = {'all', 'enabled', 'disabled'}
 
@@ -32,7 +33,16 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
     systems = ObjectStorageSystem.query.order_by(ObjectStorageSystem.name.asc()).all()
     domain = _selected_domain(args, clusters=clusters, systems=systems)
     assets = _asset_options(domain, clusters=clusters, systems=systems)
-    selected_asset_key = _selected_asset_key(args, assets)
+    selected_asset_key = _selected_asset_key(args, assets, domain=domain)
+    scope_invalid = selected_asset_key == _INVALID_REGISTRY_SCOPE
+    if scope_invalid:
+        assets.append(
+            {
+                'value': _INVALID_REGISTRY_SCOPE,
+                'label': 'Unavailable Registry Provider',
+                'environment': 'Select an active provider',
+            }
+        )
     selected_asset_name = next(
         (row['label'] for row in assets if row['value'] == selected_asset_key),
         'All Managed Assets',
@@ -50,7 +60,7 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
     routing_domain = _choice(args.get('routing_domain'), _VALID_ROUTING_DOMAINS, 'all')
     routing_status = _choice(args.get('routing_status'), _VALID_ROUTING_STATUSES, 'all')
 
-    scoped_cases = _case_rows(domain=domain, asset_key=selected_asset_key)
+    scoped_cases = [] if scope_invalid else _case_rows(domain=domain, asset_key=selected_asset_key)
     active_cases = [
         row for row in scoped_cases if row.source_state in {'firing', 'unknown'} and row.workflow_state != 'closed'
     ]
@@ -73,6 +83,8 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
     )
     selected_case = _selected_case(args.get('case'), scoped_cases)
     snapshot = _snapshot_context(domain=domain, asset_key=selected_asset_key)
+    if scope_invalid:
+        snapshot = {**snapshot, 'available': False, 'label': 'Registry Scope Unavailable', 'tone': 'warning'}
     channel_summary = notification_channel_summary()
     all_routing = routing_policy_rows()
     routing = _filter_routing_policies(
@@ -89,7 +101,7 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
     selected_policy = _selected_routing_policy(args.get('policy'), all_routing)
     channels = notification_channel_options()
     templates = built_in_templates()
-    active_silences = _active_silence_rows(
+    active_silences = [] if scope_invalid else _active_silence_rows(
         domain=domain,
         asset_key=selected_asset_key,
         search=silence_search,
@@ -105,9 +117,11 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
     return {
         'domain': domain,
         'domain_label': _DOMAIN_LABELS[domain],
+        'scope_invalid': scope_invalid,
         'domain_options': [
             {'value': 'kubernetes', 'label': 'Kubernetes'},
             {'value': 'object_storage', 'label': 'Object Storage'},
+            {'value': 'registry', 'label': 'Artifact Registry'},
         ],
         'assets': assets,
         'selected_asset_key': selected_asset_key,
@@ -129,7 +143,9 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
             'closed': sum(case.workflow_state == 'closed' for case in history_cases),
             'false_positive': sum(case.closure_reason == 'false_positive' for case in history_cases),
             'accepted_risk': sum(case.closure_reason == 'accepted_risk' for case in history_cases),
-            'delivery_failures': _delivery_failure_count(domain=domain, asset_key=selected_asset_key),
+            'delivery_failures': (
+                0 if scope_invalid else _delivery_failure_count(domain=domain, asset_key=selected_asset_key)
+            ),
             'postmortem_required': sum(case.postmortem_status in {'required', 'draft'} for case in history_cases),
             'routing_policies': len(all_routing),
             'channels': channel_summary.get('eligible', 0),
@@ -589,7 +605,7 @@ def _selected_case(value: Any, rows: list[AlertCase]) -> AlertCase | None:
     requested = str(value or '').strip()
     if not requested:
         return None
-    return next((case for case in rows if case.public_id == requested), None) or get_case(requested)
+    return next((case for case in rows if case.public_id == requested), None)
 
 
 def _selected_domain(args: MultiDict[str, str], *, clusters: list[Cluster], systems: list[ObjectStorageSystem]) -> str:
@@ -604,7 +620,26 @@ def _selected_domain(args: MultiDict[str, str], *, clusters: list[Cluster], syst
 
 
 def _asset_options(domain: str, *, clusters: list[Cluster], systems: list[ObjectStorageSystem]) -> list[dict[str, str]]:
-    records = clusters if domain == 'kubernetes' else systems
+    if domain == 'registry':
+        # Central AlertCase read-model scope only; the Registry provider remains authoritative.
+        providers = (
+            IntegrationInstance.query.filter(
+                IntegrationInstance.integration_type == 'registry',
+                IntegrationInstance.enabled.is_(True),
+                IntegrationInstance.lifecycle_status == 'active',
+            )
+            .order_by(IntegrationInstance.name.asc(), IntegrationInstance.id.asc())
+            .all()
+        )
+        records = [
+            row
+            for row in providers
+            if bool(row.enabled)
+            and str(row.lifecycle_status or '').lower() == 'active'
+            and str(row.readiness_status or '').lower() != 'blocked'
+        ]
+    else:
+        records = clusters if domain == 'kubernetes' else systems
     return [
         {'value': 'all', 'label': 'All Managed Assets', 'environment': 'Fleet scope'},
         *[
@@ -618,10 +653,19 @@ def _asset_options(domain: str, *, clusters: list[Cluster], systems: list[Object
     ]
 
 
-def _selected_asset_key(args: MultiDict[str, str], assets: list[dict[str, str]]) -> str:
+_INVALID_REGISTRY_SCOPE = '__invalid_registry_scope__'
+
+
+def _selected_asset_key(
+    args: MultiDict[str, str], assets: list[dict[str, str]], *, domain: str = ''
+) -> str:
     requested = str(args.get('asset') or 'all').strip()
     valid = {item['value'] for item in assets}
-    return requested if requested in valid else 'all'
+    if requested in valid:
+        return requested
+    # Unlike a cross-domain selector change, a direct Registry deep-link must
+    # never silently expand an unknown/disabled provider to fleet scope.
+    return _INVALID_REGISTRY_SCOPE if domain == 'registry' else 'all'
 
 
 def _choice(value: Any, valid: set[str], default: str) -> str:
