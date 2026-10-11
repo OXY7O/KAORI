@@ -438,3 +438,136 @@ def test_object_storage_fleet_and_single_system_share_four_tile_renderer() -> No
     assert 'evidence_tile.freshness(' in overview
     assert "body_classes='grid gap-3 p-5 sm:grid-cols-2'" in overview
     assert '{% macro freshness(' in tile
+
+
+def test_system_health_alert_signals_reflect_committed_snapshot_source(monkeypatch) -> None:
+    from datetime import UTC, datetime
+    from types import SimpleNamespace
+
+    from app.storage.object_storage.dashboard import service
+
+    system = SimpleNamespace(
+        id='system-1',
+        name='Storage One',
+        environment='uat',
+        status='connected',
+        inventory_observed_at=datetime.now(UTC),
+        buckets=[],
+    )
+    # Alert Intelligence cases are independent of provider alert snapshot availability.
+    monkeypatch.setattr(
+        service,
+        '_kaori_alert_posture',
+        lambda _system: {'total': 0, 'critical': 0, 'warning': 0, 'info': 0},
+    )
+    alertmanager_payload = {
+        'alert_streams': {
+            'alertmanager': {
+                'connected': True,
+                'resolved_source': 'alertmanager',
+                'rows': [],
+            },
+        },
+    }
+    metrics_fallback_payload = {
+        'alert_streams': {
+            'alertmanager': {'connected': False, 'configured': True},
+            'metrics_source': {
+                'connected': True,
+                'resolved_source': 'metrics_source',
+                'rows': [],
+            },
+        },
+    }
+    cases = [
+        (
+            alertmanager_payload,
+            {'usable': True, 'label': 'Ready'},
+            True,
+            False,
+            'Alertmanager · committed alert evidence',
+        ),
+        (
+            metrics_fallback_payload,
+            {'usable': True, 'label': 'Ready'},
+            True,
+            True,
+            'Metrics Source fallback · committed alert evidence',
+        ),
+        (
+            {'alert_streams': {}},
+            {'usable': True, 'label': 'Ready'},
+            False,
+            False,
+            'No usable committed alert evidence',
+        ),
+        (
+            None,
+            {'usable': False, 'label': 'Required'},
+            False,
+            False,
+            'No usable committed alert evidence',
+        ),
+        (
+            alertmanager_payload,
+            {'usable': False, 'label': 'Expired'},
+            False,
+            False,
+            'No usable committed alert evidence',
+        ),
+    ]
+    for payload, state, connected, fallback, label in cases:
+        monkeypatch.setattr(service, '_snapshot_payload', lambda _system, result=(payload, state): result)
+        rows = service._health_rows([system])
+        assert len(rows) == 1
+        row = rows[0]
+        assert row['alerts_connected'] is connected
+        assert row['alerts_fallback'] is fallback
+        assert row['alert_source_label'] == label
+        assert row['active_alerts'] == 0
+        assert row['inventory_ready'] is True
+        assert row['snapshot_ready'] is bool(state['usable'])
+
+
+def test_object_storage_alert_source_indicator_uses_validated_row_fields_and_tones() -> None:
+    service = read('app/storage/object_storage/dashboard/service.py')
+    health = read('app/templates/storage/object_storage/dashboard/partials/_system_health.html')
+    freshness = read('app/templates/storage/object_storage/dashboard/partials/_overview.html')
+    kubernetes = read('app/templates/kubernetes/dashboard/partials/_cluster_health.html')
+    registry = read('app/templates/artifact_registry/partials/_overview_provider_health.html')
+    application = read('app/dashboards/common/operational.py')
+    storage_routes = read('app/storage/object_storage/dashboard/routes.py')
+    registry_routes = read('app/artifact_registry/routes.py')
+    kubernetes_routes = read('app/kubernetes/dashboard/routes.py')
+
+    rows = service.split('def _health_rows(', 1)[1].split('def _dashboard_kpis(', 1)[0]
+    for field in (
+        "'inventory_ready':",
+        "'snapshot_ready':",
+        "'alerts_connected':",
+        "'alerts_fallback':",
+        "'alert_source_label':",
+    ):
+        assert field in rows
+    assert '_snapshot_payload(system)' in rows
+    assert '_alert_view(payload)' in rows
+    assert "alerts_connected = analytics_usable and bool(alert_stream.get('connected'))" in rows
+    assert 'load_alert_stream(' not in rows
+    assert 'get_alertmanager_alerts(' not in rows
+    for field in ('row.inventory_ready', 'row.snapshot_ready', 'row.alerts_connected', 'row.alerts_fallback'):
+        assert field in health
+    assert 'bg-status-warning' in health
+    assert 'bg-status-normal' in health
+    assert 'bg-status-unknown' in health
+    assert 'row.alert_source_label' in health
+    assert 'sr-only' in health
+    assert 'row.alerts_status' in kubernetes
+    assert 'row.inventory_ready' in registry
+    assert 'row.metrics_ready' in registry
+    assert 'row.security_ready' in registry
+    assert 'for item in dashboard.freshness' in freshness
+    for route in (storage_routes, registry_routes, kubernetes_routes):
+        assert 'normalize_operational_tab' in route
+        assert 'normalize_dashboard_page_size' in route
+    for tab in ("'overview'", "'capacity'", "'signals'", "'reporting'"):
+        assert tab in application
