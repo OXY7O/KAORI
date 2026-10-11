@@ -92,6 +92,8 @@ The former standalone `/settings/time-locale` and `/settings/system-info` pages 
 - Keep the Hero focused on a compact posture summary: Account Posture, Authentication Evidence, and Credential Posture.
 - Profile stays full-width and read-only. Identity ownership, role/lifecycle posture, personal presentation, Last Verified Sign-In, and the access boundary belong in the active profile workspace.
 - Authentication Activity stays full-width and uses the shared KAORI table and status-label primitives with an inline Authentication Evidence boundary. Avoid hand-built status badges.
+- Its summary counts are scoped to up to five most recent committed authentication events, not all-time or time-window security totals. Failed Sign-Ins is neutral when zero; a nonzero sample shows critical failure evidence without claiming an incident.
+- Self-service failed-event copy is deliberately generic rather than exposing audit reason metadata or assuming bad credentials. Recorded IP is the audit-captured request address and can represent a trusted proxy/container hop; it is not proof of the user's device address or location. Safe browser/device labels may appear when already present in committed event metadata. Authorized users can drill into Activity Audit for richer evidence.
 - Credential Management keeps the action workspace on the left and one security context panel on the right at wide breakpoints; columns remain natural-height and top-aligned.
 - Do not restore the retired `_profile_information.html` or `_activity_information.html` side-context partials. Their canonical evidence now lives inline in the active Profile and Authentication Activity workspaces.
 
