@@ -99,7 +99,7 @@ def verify_capsule_provider_admin_authority(
     )
     if (
         not isinstance(username, str) or not username
-        or username.startswith('system:')
+        or username.startswith(('system:serviceaccount:', 'system:node:'))
         or not isinstance(groups, (list, tuple))
         or not all(isinstance(group, str) and group for group in groups)
         or not credential_id

@@ -141,6 +141,16 @@ def test_capsule_provider_rejects_denied_rbac_missing_x509_or_serviceaccount(
         )
 
 
+def test_trusted_system_admin_x509_is_not_mistaken_for_a_service_account(monkeypatch):
+    client = _Provider(username='system:admin')
+    monkeypatch.setattr(authority.runtime_adapter, 'build_client', lambda _: client)
+    evidence = authority.verify_capsule_provider_admin_authority(
+        cluster=_cluster(), components=_components(),
+    )
+    assert evidence['provider_username'] == 'system:admin'
+    assert evidence['scope_count'] == 2
+
+
 def test_capsule_tls_must_be_verified_before_any_provider_request():
     with pytest.raises(ValueError, match='Verified Kubernetes TLS'):
         authority.verify_capsule_provider_admin_authority(
