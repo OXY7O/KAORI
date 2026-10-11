@@ -229,6 +229,21 @@ def preview_capsule_release_namespace_committed(
         'handoff_components', 'capsule_related_inventory', 'dependency_counts',
     )):
         raise ValueError('Capsule provider changed during complete-scope dry-run; refresh Release preflight.')
+    complete_worklist = build_capsule_handoff_worklist(
+        plan=plan, related=fresh['capsule_related_inventory'],
+    )
+    transfer_items = [
+        {
+            'kind': item['kind'], 'namespace': item['namespace'],
+            'name': item['name'], 'uid': item['uid'],
+            'resource_version': item['resource_version'],
+        }
+        for item in complete_worklist['items']
+        if item['decision'] in (
+            'candidate_kaori_metadata_handoff_review',
+            'explicit_kaori_metadata_handoff_review',
+        )
+    ]
     receipt = {
         'status': 'complete_scope_server_dry_run_only',
         'tenant_id': tenant_id,
@@ -236,6 +251,8 @@ def preview_capsule_release_namespace_committed(
         'generation': tenant.generation,
         'plan_sha256': plan_sha256,
         'handoff_fingerprint': plan['handoff_fingerprint'],
+        'source_worklist_sha256': complete_worklist['inventory_sha256'],
+        'transfer_items': transfer_items,
         'actor_user_id': actor_user_id,
         'provider_credential_id': authority['provider_credential_id'],
         'namespace_count': observed['namespace_count'],
