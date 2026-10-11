@@ -214,15 +214,19 @@ def observe_capsule_related_inventory(
     if (
         not isinstance(namespace_components, list)
         or not 0 < len(namespace_components) <= _MAX_NS
-        or len({row.get('name') for row in namespace_components}) != len(namespace_components)
         or any(
             not isinstance(row, Mapping) or row.get('kind') != 'Namespace'
-            or row.get('namespace') != row.get('name') or not row.get('uid')
-            or not row.get('resource_version')
+            or row.get('authority') != 'capsule'
+            or row.get('namespace') != row.get('name')
+            or not isinstance(row.get('name'), str) or not row.get('name')
+            or not isinstance(row.get('uid'), str) or not row.get('uid')
+            or not isinstance(row.get('resource_version'), str) or not row.get('resource_version')
             for row in namespace_components
         )
     ):
         raise ValueError('Scoped Capsule Namespace set is not complete or bounded.')
+    if len({row['name'] for row in namespace_components}) != len(namespace_components):
+        raise ValueError('Duplicate Capsule Namespace scopes are not admissible.')
     rows: list[dict[str, str]] = []
     list_snapshots: list[dict[str, str | int]] = []
     blockers: list[str] = []
