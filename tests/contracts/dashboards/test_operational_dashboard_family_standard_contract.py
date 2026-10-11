@@ -164,6 +164,24 @@ def test_data_freshness_microcopy_and_shared_family_geometry() -> None:
     assert "'label': 'Security Snapshot'" in read('app/artifact_registry/presentation_overview.py')
 
 
+def test_kubernetes_capacity_decision_notes_and_forecast_helpers() -> None:
+    capacity = read('app/templates/kubernetes/dashboard/partials/_capacity_snapshot.html')
+    forecast = read('app/templates/kubernetes/dashboard/partials/_forecast_risk.html')
+
+    assert "operational_callout.render(" in capacity
+    assert "'Capacity Decision Notes'" in capacity
+    assert 'Planning Check' in capacity
+    assert 'Evidence Handoff' in capacity
+    assert 'Recommended Capacity Action Flow' in capacity
+    for text in (
+        'Peak projected utilization',
+        'Resources nearing forecast limits',
+        'Committed 30-day history',
+    ):
+        assert text in forecast
+    assert forecast.count('mt-1 truncate text-xs text-content-muted') == 3
+
+
 def test_capacity_metric_cards_follow_kubernetes_visual_grammar() -> None:
     kubernetes = read('app/templates/kubernetes/dashboard/partials/_capacity_snapshot.html')
     storage = read('app/templates/storage/object_storage/dashboard/partials/_capacity.html')
