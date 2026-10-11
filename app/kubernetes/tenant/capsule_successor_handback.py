@@ -11,6 +11,8 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
+from sqlalchemy import text
+
 from app.extensions.db import db
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
 from app.kubernetes.tenant.capsule_handoff_contract import (
@@ -38,6 +40,74 @@ from app.models.tenant import (
 
 _TARGET = 'kubernetes_tenant_verified_capsule_successor_handback'
 _KINDS = frozenset({'Namespace', 'ResourceQuota', 'LimitRange', 'RoleBinding'})
+
+
+def _require_postgres_capsule_handback_start_guards(session: Any) -> None:
+    """Confirm installed immutable START retention and non-owner DB role.
+
+    Source-level migration presence is not a database admission. All checks
+    are read-only and must PASS inside the handback transaction BEFORE START.
+    """
+    if session.get_bind().dialect.name != 'postgresql':
+        raise ValueError('Capsule successor handback needs guarded PostgreSQL evidence.')
+    expected = {
+        'tr_capsule_handback_audit_deny_update',
+        'tr_capsule_handback_audit_deny_delete',
+        'tr_capsule_handback_audit_deny_truncate',
+    }
+    rows = session.execute(text("""
+        SELECT tgname, tgenabled FROM pg_trigger
+        WHERE tgrelid = 'audit_events'::regclass AND NOT tgisinternal
+    """)).all()
+    triggers = {name: mode for name, mode in rows}
+    if not expected.issubset(triggers) or any(
+        triggers[name] not in ('O', 'A') for name in expected
+    ):
+        raise ValueError('Capsule handback immutable AuditEvent triggers are absent or disabled.')
+    index = session.execute(text("""
+        SELECT x.indisunique, x.indisvalid, pg_get_indexdef(i.oid) AS definition,
+               pg_get_expr(x.indpred, x.indrelid) AS predicate
+        FROM pg_index AS x
+        JOIN pg_class AS i ON i.oid = x.indexrelid
+        WHERE x.indrelid = 'audit_events'::regclass
+          AND i.relname = 'uq_capsule_handback_start_tenant_once'
+    """)).mappings().one_or_none()
+    if (
+        not index
+        or index['indisunique'] is not True
+        or index['indisvalid'] is not True
+        or 'target_id' not in index['definition']
+        or 'kubernetes_tenant_verified_capsule_successor_handback'
+           not in (index['predicate'] or '')
+        or 'tenant.release.capsule_successor_handback_started'
+           not in (index['predicate'] or '')
+    ):
+        raise ValueError('Capsule handback single-START unique index is missing or invalid.')
+    posture = session.execute(text("""
+        SELECT current_setting('fsync') AS fsync_setting,
+               current_setting('synchronous_commit') AS sync_commit,
+               current_setting('session_replication_role') AS replication_role,
+               (SELECT rolsuper OR rolcreatedb OR rolcreaterole
+                  FROM pg_roles WHERE rolname = current_user) AS elevated,
+               pg_get_userbyid(c.relowner) = current_user AS is_owner,
+               pg_has_role((SELECT oid FROM pg_roles WHERE rolname = current_user),
+                           c.relowner, 'MEMBER') AS member_of_owner,
+               has_table_privilege(current_user, c.oid, 'INSERT') AS may_insert,
+               has_table_privilege(current_user, c.oid, 'TRUNCATE') AS may_truncate
+        FROM pg_class AS c WHERE c.oid = 'audit_events'::regclass
+    """)).mappings().one()
+    if (
+        posture['fsync_setting'] != 'on'
+        or posture['sync_commit'] not in ('on', 'remote_write', 'remote_apply')
+        or posture['replication_role'] != 'origin'
+        or posture['elevated'] is not False
+        or posture['is_owner'] is not False
+        or posture['member_of_owner'] is not False
+        or posture['may_insert'] is not True
+        or posture['may_truncate'] is not False
+    ):
+        raise ValueError('Capsule handback AuditEvent role, trigger or WAL guards are unverified.')
+
 
 
 def latest_capsule_successor_handback(tenant_id: str) -> dict[str, Any] | None:
@@ -324,6 +394,9 @@ def handback_capsule_successor_governance_committed(
         )
         _handback_patch(before=before, item=row, owner=release['successor_owner'])
         source.append((row, before))
+    # The G5 START must survive restarts, privileged-row deletion attempts
+    # and duplicate requests; an ordinary mutable AuditEvent is insufficient.
+    _require_postgres_capsule_handback_start_guards(db.session())
     locked = Tenant.query.filter_by(id=tenant_id).with_for_update().one_or_none()
     if (
         locked is None or locked.lifecycle_status != TenantLifecycleStatus.RELEASED.value
