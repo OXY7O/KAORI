@@ -267,7 +267,7 @@ def _present_record(
 ) -> TLSCertificateInventory:
     # Preserve persisted collection-time facts; only presentation is dynamic.
     evaluated_status = record.status or 'unknown'
-    evaluated_days = record.days_remaining
+    evaluated_days = None if evaluated_status in ('invalid', 'unknown') else record.days_remaining
     if evaluated_status not in ('invalid', 'unknown'):
         if record.not_after is not None:
             evaluated_days, evaluated_status, _ = classify_certificate_validity(

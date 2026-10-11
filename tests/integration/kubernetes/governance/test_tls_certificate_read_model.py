@@ -151,6 +151,8 @@ def test_tls_validity_projection_filters_sorts_and_preserves_committed_facts(gov
             assert [r.secret_name for r in result['records']] == [expected]
             assert result['summary']['total'] == result['pagination']['total_items'] == 1
             assert result['records'][0].presentation['validity_status'] == status
+            if status in {'invalid', 'unknown'}:
+                assert result['records'][0].presentation['validity_days_remaining'] is None
 
         source_row = next(r for r in all_rows['records'] if r.secret_name == 'expired-now')
         detail_row = service.get_tls_certificate_detail(source_row.id)
