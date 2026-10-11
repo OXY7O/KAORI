@@ -186,6 +186,8 @@ def test_compatibility_workspace_keeps_policy_contract_qualification_and_readine
     assert 'data-compatibility-policy-summary="compact"' in main
     assert 'data-compatibility-reading="compact-steps"' in main
     assert 'data-compatibility-matrix="primary"' in main
+    assert 'table_ui.cell_classes()' in main
+    assert 'cell_classes() }} align-top' not in main
     assert "table_ui.table_classes('min-w-[64rem]')" in main
     assert "table_ui.table_classes('min-w-[76rem]')" not in main
     assert 'bg-surface-subtle' not in main
