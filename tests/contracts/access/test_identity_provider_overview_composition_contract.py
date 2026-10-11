@@ -37,8 +37,10 @@ def test_posture_and_governance_form_one_audit_style_overview() -> None:
         'summary.sso',
     ):
         assert count in overview
-    assert 'summary.total == 0' in overview
-    assert 'it does not mean the connection was tested' in overview
+    # The human-approved compact Overview removes its redundant footer entirely.
+    assert 'data-kaori-idp-posture-context' not in overview
+    assert 'No external provider has been registered.' not in overview
+    assert 'Configured means the adapter contract is complete;' not in overview
     assert "table_label.status_indicator_label(summary.posture_label, summary.posture_tone)" in overview
 
     for boundary in (
@@ -49,11 +51,34 @@ def test_posture_and_governance_form_one_audit_style_overview() -> None:
     ):
         assert boundary in overview
 
+    for concise_description in (
+        'Providers define identity authority; adapters define authentication.',
+        'Secrets stay external; KAORI stores references and non-secret settings.',
+        'External identities are linked or approved-provisioned before KAORI authorization.',
+        'Authentication verifies identity; active KAORI roles and account state govern access.',
+    ):
+        assert concise_description in overview
+
     # Governance must remain within the same overview surface.
     assert 'operational_section.render(' not in overview
     assert '_directory_provisioning_strip.html' not in overview
     assert overview.count('<section ') == 1
     assert overview.count('{% for ') == overview.count('{% endfor %}')
+
+
+def test_provider_setup_guidance_and_secret_helper_are_concise() -> None:
+    runbook = read('app/templates/access/identity_providers/partials/_provider_guidance.html')
+    google = read('app/templates/access/identity_providers/providers/google/_guidance.html')
+    sso = read('app/templates/access/identity_providers/partials/_sso_configuration.html')
+
+    for template in (runbook, google, sso):
+        Environment().parse(template)
+
+    assert 'Provider setup, validation, and controlled enablement.' in runbook
+    assert 'From client registration to KAORI authorization.' in google
+    assert 'Enter the variable name; KAORI loads the secret at runtime without storing it.' in sso
+    assert "data_client_secret_input='true'" in sso
+    assert 'form.client_secret_env.errors' in sso
 
 
 def test_index_keeps_overview_above_activity_style_record_tabs() -> None:
