@@ -9,6 +9,34 @@ Target integration: `kaori/review/staging-uat` only. No developer check,
 pytest, Ruff, pyright, CI/CD, DAST, live API UAT, promotion or deployment until
 a separate explicit instruction.
 
+## G0 typed Kubernetes SDK inventory dispatch correction (#1229)
+
+A local `kaori-demo` preflight surfaced a retained blocker
+`Capsule related quota/limit/RBAC authoritative inventory is incomplete.`
+After the diagnostic extension, its failure stage was
+`namespaced_quota_limit_rbac_inventory` with `AttributeError`.
+Independent `kubectl auth can-i list` checks passed, with one
+ResourceQuota, one LimitRange and two Capsule RoleBindings, and the
+GlobalResourceQuota v1beta2 CRD served correctly (zero instances).
+
+Source review confirmed a **KAORI SDK dispatch defect**: the
+`capsule_handoff_related_inventory._listing` method constructed a
+dictionary by eagerly dereferencing **all three** methods from a single
+API object. `CoreV1Api` has quota/limit LIST but not RoleBinding LIST;
+`RbacAuthorizationV1Api` has RoleBinding LIST but not quota/limit LIST.
+The eager lookup raised `AttributeError` before the actual typed LIST
+could execute. It now selects the method **name** first and dereferences
+only that method on the already-selected Core or RBAC client.
+
+The source regression uses separate Core-only and RBAC-only client
+fixtures, matches the real Python Kubernetes SDK API surfaces, and
+asserts exactly three read-only scoped LISTs and four resource records.
+No provider changes or admission relaxations are introduced. This
+fixes the demonstrated source defect; it **does not assert** that fresh
+Capsule preflight, successor authority, mutation, G2/G3 execution,
+G4 Release or G5 Re-Adopt has passed. Tests are authored but not
+executed under the operator's standing CI/CD and runtime HOLD.
+
 ## G0 Capsule inventory diagnostics for local DevContainer troubleshooting (#1229)
 
 When the full read-only Capsule Release preflight cannot complete its
