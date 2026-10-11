@@ -273,7 +273,7 @@ def test_tenant_contributions_stacked_list_exposes_request_metrics_and_namespace
     assert "row.source" in dialog
     assert "row.tenant.provider_key" in dialog
     assert "View {{ row.namespace_count }} Namespace" in dialog
-    assert '<details class="group mt-2">' in dialog
+    assert '<details class="group mt-3">' in dialog
     for dimension in ("CPU Requests", "Memory Requests", "Pod Slots", "Logical Storage"):
         assert dimension in dialog
     for key in ("cpu", "memory", "pods", "storage"):
@@ -443,3 +443,39 @@ def test_terminal_capsule_generation_does_not_count_historical_shared_quota() ->
     assert rows[0]["tenant"].id == active.id
     assert rows[0]["source"] == "Shared Tenant Quota"
     assert rows[0]["allocation"]["cpu"] == "4.00 cores"
+
+
+def test_tenant_contribution_modal_uses_approved_bordered_card_hierarchy() -> None:
+    """Review-only layout: reused Violet surfaces, not new allocation arithmetic."""
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[3]
+    page = (root / "app/templates/kubernetes/tenant/partials/_tenant_allocation_overview.html").read_text(
+        encoding="utf-8"
+    )
+    Environment(autoescape=True).parse(page)
+    dialog = page.split('<dialog id="{{ contributions_dialog_id }}"', 1)[1].split("</dialog>", 1)[0]
+    summary = dialog.split('aria-label="Committed Tenant allocation summary"', 1)[1].split(
+        "</section>", 1
+    )[0]
+    scroll = dialog.split('aria-label="Scroll through Tenant contributions"', 1)[1]
+    record = scroll.split('aria-label="{{ row.tenant.name }} allocation"', 1)[0]
+
+    assert 'grid grid-cols-2 gap-2 sm:grid-cols-4' in summary
+    assert 'rounded-lg border border-outline-subtle bg-surface-card' in summary
+    assert 'tabular-nums leading-6 text-content-primary' in summary
+    assert 'bg-surface-elevated px-3 py-4' in dialog
+    assert '<ol class="space-y-3"' in scroll
+    assert '<li class="min-w-0">' in scroll
+    assert 'rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm' in record
+    assert 'md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]' in record
+    assert 'rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5' in scroll
+    assert 'data-lucide="layers-3"' in scroll
+    assert 'View {{ row.namespace_count }} Namespace' in scroll
+    assert 'title="Tenant ID: {{ row.tenant.id }}"' in scroll
+    assert 'border border-dashed border-outline-subtle' in scroll
+    assert 'hx-target="#{{ contributions_body_id }}"' in dialog
+    assert 'hx-select="#{{ contributions_body_id }}"' in dialog
+    assert 'tabindex="0"' in dialog
+    assert "registry_ui.footer" not in dialog
+    assert "<table" not in dialog

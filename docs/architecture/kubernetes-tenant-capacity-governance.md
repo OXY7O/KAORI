@@ -392,15 +392,16 @@ constitutes a physical node-resource reservation.
 Tenant count and opens the canonical native KAORI dialog. After DevContainer
 visual feedback, this detail workspace uses **one visual hierarchy**: concise
 cluster header with a lightweight **Tenant Registry** navigation link on the
-right, low-emphasis inline summary strip, compact search and a responsive,
-vertically scrollable stacked Tenant contribution list. This modal intentionally
+right, four compact outlined summary tiles, compact search and a responsive,
+vertically scrollable list of bordered Tenant record cards. This modal intentionally
 has **no Rows selector or pagination footer**.
 Each list record groups Tenant name, ownership badge, stable ID and quota
 authority/provider with a simple keyboard-accessible Namespace disclosure;
-the four governed request amounts are displayed as a two-column metric grid.
+the four governed request amounts are displayed as a two-column grid of compact,
+outlined metric tiles using existing KAORI Violet surfaces.
 There are no table columns, nested cards or horizontal table scrolling.
 
-The inline summary metrics come from the **unfiltered committed contribution ledger** (committed Tenants, linked Namespaces, shared-quota Tenants, and
+The summary metrics come from the **unfiltered committed contribution ledger** (committed Tenants, linked Namespaces, shared-quota Tenants, and
 incomplete / ambiguous records). Linked Namespace count is a count of
 Namespace identities and **not** a second summation of Capsule shared quota.
 Incomplete / ambiguous counts are evidence-quality indicators, never inferred
@@ -414,6 +415,11 @@ native-height-bounded, keyboard-scrollable content region. The header, summary
 and search remain outside the scrolling list; the modal body alone is swapped
 during HTMX searches. Matching and total counts are distinct, and the unchanged
 canonical five-row pagination remains in other KAORI registry surfaces.
+The #1153 human visual-feedback refinement supersedes the prior borderless
+summary-strip and divider-only record treatment, reusing the bordered card and
+inset metric hierarchy already established in Namespace & Resource Profile
+Mapping. Scroll-area contrast, record padding/gaps and the Namespace disclosure
+are presentation-only; there is no new card component or capacity metric.
 On narrower screens the summary uses two columns and the Tenant list stacks
 identity above its four allocation metrics without horizontal scrolling;
 the complete Tenant ID remains available via its `title` attribute.
