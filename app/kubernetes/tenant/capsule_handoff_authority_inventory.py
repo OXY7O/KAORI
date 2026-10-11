@@ -134,9 +134,11 @@ def observe_capsule_global_quotas(*, custom: Any, tenant_name: str) -> dict[str,
         'served_version': version,
         'list_resource_version': payload['metadata']['resourceVersion'],
         'resources': resources, 'count': len(resources),
+        # Collection LIST RV is evidence of complete/current LIST, but it
+        # may advance without changing a single relevant GlobalResourceQuota.
+        # Bind each object UID/RV and complete policy/metadata SHA instead.
         'scope_sha256': _digest({
             'api_version': version,
-            'list_resource_version': payload['metadata']['resourceVersion'],
             'resources': resources,
         }),
         'blockers': sorted(set(blockers)),
