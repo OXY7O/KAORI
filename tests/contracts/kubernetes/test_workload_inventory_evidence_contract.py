@@ -80,6 +80,39 @@ def test_workload_detail_distinguishes_missing_template_and_conditions() -> None
     assert 'search=workload.name' in template
 
 
+def test_workload_table_prioritizes_long_workload_and_scope_names() -> None:
+    table = _read('app/templates/kubernetes/inventory/workloads/partials/_table_content.html')
+    shared = _read('app/templates/components/table.html')
+    primitives = _read('app/templates/components/table_primitives.html')
+
+    widths = {
+        'Workload': 26,
+        'Scope': 23,
+        'Operational State': 14,
+        'Managed Pods': 12,
+        'Update Strategy': 15,
+        'Details': 10,
+    }
+    assert sum(widths.values()) == 100
+    for heading, percent in widths.items():
+        header = table.split(f'>{heading}</th>', 1)[0].rsplit('<th', 1)[-1]
+        assert f'w-[{percent}%]' in header
+
+    assert "table_ui.table_classes('min-w-[78rem] !table-fixed')" in table
+    assert 'overflow-x-auto overscroll-x-contain' in table
+    assert 'w-[26%] min-w-[17rem]' in table
+    assert 'w-[23%] min-w-[15rem]' in table
+    assert "table_ui.title_cell(workload.name, workload.identity_supporting, 'boxes')" in table
+    assert (
+        'table_ui.namespaced_scope_identity(workload.cluster_name, '
+        'workload.cluster_environment, workload.namespace)'
+    ) in table
+    assert 'title="{{ namespace or \'-\' }}"' in shared
+    assert 'title="{{ name }}"' in primitives
+    assert table.count('scope="col"') == 6
+    assert 'colspan="6"' in table
+
+
 def test_workload_table_keeps_age_in_detail_and_update_strategy_in_row() -> None:
     table = _read('app/templates/kubernetes/inventory/workloads/partials/_table_content.html')
     service = _read('app/kubernetes/inventory/resources/workloads.py')
