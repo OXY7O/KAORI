@@ -732,6 +732,98 @@ All test/lint/CI/CD, schema migration, DB writes, Kubernetes/UAT,
 deployment, and staging/main promotion remain HOLD. Issue #1229
 stays OPEN and #1230/#1231 remain BLOCKED.
 
+## Backend-only collector key resolution and independent IdP consent identity — source only
+
+The next Capsule proof slice separates **server-governed trust from
+caller-supplied evidence**. No runtime adapter, endpoint, writer, Vault
+request, authentication callback or provider Kubernetes API operation has
+been enabled.
+
+### Collector key broker and independent pin policy
+
+`capsule_handoff_collector_key_resolution.py` defines two backend
+protocols: `CapsuleCollectorKeyBroker` (read exact
+cluster/collector/key-identity pin and secret) and
+`CapsuleCollectorPinPolicy` (read the independently governed
+expected fingerprint). These dependencies MUST be registered by trusted
+server configuration rather than accepted from a browser request,
+collector claim, environment flag or mutable resource label. The
+staged resolver cross-checks exact cluster/collector/key IDs, active
+rotation window and fingerprint, then validates the normalized batch
+claims and MAC without returning key material, credentials or raw
+provider policy. Broker exceptions must not leak key paths/tokens.
+
+**Two immutable source gates are currently false:**
+`_COLLECTOR_RESOLVER_ENABLED` and
+`_TRUSTED_COLLECTOR_INGRESS_ENABLED`. All calls therefore raise
+`PermissionError` before invoking the broker or policy. They are
+not feature flags and cannot be switched on by caller-supplied input.
+Even if both source gates were removed by a separate authorized PR,
+a matched key fingerprint and MAC would only establish **receipt
+integrity under that server-provided key**, not genuine Kubernetes
+apiserver event integrity, complete audit capture, controller
+ServiceAccount authorship or replay-safe database commit. Independent
+Vault/KMS onboarding, key rotation/revocation validation and immutable
+audit-ingress attestation remain unresolved.
+
+### Two authenticated-human claims, not assumed authentic identities
+
+`capsule_handoff_consent_identity.py` supplies an exact, bounded
+`capsule-resource-human-session-attestation/v1` envelope for the
+independent reviewer and accepted successor. Each claimed
+authentication event must have its own canonical UUID, distinct
+hashed session and one-time challenge, trusted expected IdP/key
+identity, claimed phishing-resistant MFA, UTC-aware recent
+authentication/issue/expiry times, and the **same** exact
+Tenant/cluster/generation/plan/worklist/resource-review/manifest
+and approved metadata-only target-scope SHA. The requester's,
+reviewer's and successor's independence remains governed by the
+existing approved-plan/consent validator. Review action must precede
+successor acceptance and the manifest's recorded acceptance timestamp.
+Unknown claim fields, stale or duplicated sessions/challenges, actor
+substitution and changed target hashes fail closed.
+
+The pure inspector **does not verify an actual login or MAC**.
+The optional IdP MAC verifier is unregistered and guarded by two
+source booleans fixed `False`:
+`_IDENTITY_MAC_VERIFIER_ENABLED` and
+`_AUTHENTICATED_HUMAN_SESSION_INGRESS_ENABLED`.
+After future explicit authorization it would need a server-owned
+IdP key resolver and independently configured issuer/key fingerprint.
+Even an authentic MAC cannot prove the upstream human completed MFA,
+that the challenge was issued/consumed only once, or that authenticated
+consent has been durably recorded. Consequently
+`idp_session_origin_authenticated=false`,
+`mfa_challenge_verified=false`,
+`one_time_challenge_consumed=false`,
+`consent_source_authenticated=false` and
+`provider_execution_admitted=false` remain fixed.
+
+`review_capsule_origin_consent_docket` now supports an **optional**
+pair of asserted IdP session envelopes, tying their SHA digest into
+the existing non-executable review docket. No acceptance of these
+claims, with or without MAC bytes, elevates proof to execution
+authority. Previously prepared audit/consent evidence without
+attestations remains **unverified**; issuer IDs supplied without
+attestations are rejected.
+
+### Independent gates still required
+
+A later separately authorized workflow must implement and verify
+authenticated backend key broker and independent pin policy, trusted
+TLS-authenticated Kubernetes audit ingress/collector identity,
+correct controller-to-resource causality, real IdP session issuer
+verification and phishing-resistant step-up MFA, one-use
+transactionally fenced challenge consumption, separate durable human
+action with correct role mapping, and current provider UID/RV read-back.
+Only after controlled database migration, role/trigger/anti-replay
+verification, tests and authorized UAT can any proposed writer be
+considered for activation. The START writer, audit/consent writer
+and provider executor all remain disabled. #1229 stays OPEN;
+#1230/#1231 remain BLOCKED. No tests, CI/CD, migrations, SQL writes,
+Kubernetes provider operations, Released state, or promotion are
+permitted without fresh explicit operator authorization.
+
 ## Required before completing #1229
 
 1. Build on the SHA-bound Namespace and cluster-scoped
