@@ -1,39 +1,79 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/table_registry.html" as registry_ui %}
+{% import "components/loading_bar.html" as loading_bar %}
 {% import "components/pagination.html" as pagination_ui %}
 <section id="activity-administrative-evidence"
          class="{{ '' if embedded|default(false) else table_ui.block_classes() }}"
          data-activity-evidence-source="administrative-audit-events">
     <header class="{{ table_ui.block_header_classes() }}">
-        <div class="flex min-w-0 items-start gap-3">
-            <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
-                <i data-lucide="file-clock" class="h-5 w-5"></i>
-            </span>
-            <div class="min-w-0">
-                <h2 class="{{ table_ui.block_title_classes() }}">Administrative Source Evidence</h2>
-                <p class="{{ table_ui.block_description_classes() }}">
-                    Browse distinct hot AuditEvent records without mixing them into Notification activity.
-                </p>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
+                    <i data-lucide="file-clock" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <h2 class="{{ table_ui.block_title_classes() }}">Administrative Source Evidence</h2>
+                    <p class="{{ table_ui.block_description_classes() }}">
+                        Review committed administrative actions by source, outcome and recorded time.
+                    </p>
+                </div>
+            </div>
+            <div class="flex shrink-0 flex-wrap items-center gap-2">
+                <span class="inline-flex min-h-7 items-center rounded-md border border-outline-subtle bg-surface-hover px-2.5 text-xs font-semibold text-content-secondary">
+                    {{ administrative_evidence.pagination.total_items }} Recorded
+                </span>
+                {% if administrative_evidence.has_active_filters %}
+                    {% set reset_url = url_for('access.activity_audit.index',
+                        view='administrative',
+                        admin_per_page=administrative_evidence.pagination.per_page) %}
+                    {{ registry_ui.clear_filters_action(
+                        reset_url,
+                        table_ui.action_classes(),
+                        hx_get=reset_url,
+                        target='#activity-administrative-evidence',
+                        select='#activity-administrative-evidence',
+                        indicator='#administrative-activity-loading',
+                        push_url='true',
+                        sync='closest section:replace',
+                        marker='activity-administrative-evidence'
+                    ) }}
+                {% endif %}
             </div>
         </div>
-        <span class="inline-flex min-h-7 shrink-0 items-center rounded-md border border-outline-subtle bg-surface-hover px-2.5 text-xs font-semibold text-content-secondary">
-            {{ administrative_evidence.pagination.total_items }} Recorded
-        </span>
+        {{ loading_bar.render('administrative-activity-loading', label='Refreshing Administrative Evidence') }}
     </header>
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
-        <form method="get"
+        <form id="administrative-evidence-filter-form"
+              method="get"
               action="{{ url_for('access.activity_audit.index') }}"
               hx-get="{{ url_for('access.activity_audit.index') }}"
               hx-target="#activity-administrative-evidence"
+              hx-select="#activity-administrative-evidence"
               hx-swap="outerHTML"
               hx-push-url="true"
-              hx-trigger="change from:select"
-              hx-sync="#activity-administrative-evidence:replace"
+              hx-trigger="change from:select, input changed delay:450ms from:input[name='admin_search']"
+              hx-indicator="#administrative-activity-loading"
+              hx-sync="closest section:replace"
+              data-kaori-canonical-registry-filter="activity-administrative-evidence"
               aria-label="Administrative source filters"
-              class="flex flex-wrap items-end gap-3">
+              class="grid w-full grid-cols-1 items-end gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
             <input type="hidden" name="view" value="administrative">
             <input type="hidden" name="admin_page" value="1">
-            <div class="min-w-0 flex-1 sm:max-w-xs">
+            <input type="hidden" name="admin_per_page"
+                   value="{{ administrative_evidence.pagination.per_page }}">
+            <div class="min-w-0 lg:col-span-2">
+                <label class="{{ table_ui.filter_label_classes() }}" for="administrative-search">
+                    Search Activity
+                </label>
+                {{ table_ui.search_field(
+                    'admin_search',
+                    administrative_evidence.filters.search,
+                    'Action, summary or source ID',
+                    'administrative-search'
+                ) }}
+            </div>
+            <div class="min-w-0">
                 <label class="{{ table_ui.filter_label_classes() }}" for="administrative-source-scope">
                     Source Scope
                 </label>
@@ -48,8 +88,38 @@
                     {% endfor %}
                 </select>
             </div>
+            <div class="min-w-0">
+                <label class="{{ table_ui.filter_label_classes() }}" for="administrative-outcome">
+                    Outcome
+                </label>
+                <select id="administrative-outcome"
+                        name="admin_outcome"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    {% for value, label in administrative_evidence.outcome_options %}
+                        <option value="{{ value }}"
+                                {% if value == administrative_evidence.filters.outcome %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="min-w-0">
+                <label class="{{ table_ui.filter_label_classes() }}" for="administrative-time-range">
+                    Recorded Time
+                </label>
+                <select id="administrative-time-range"
+                        name="admin_time_range"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    {% for value, label in administrative_evidence.time_range_options %}
+                        <option value="{{ value }}"
+                                {% if value == administrative_evidence.filters.time_range %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
             <noscript>
-                <button type="submit" class="{{ table_ui.action_classes() }}">Apply Scope</button>
+                <button type="submit" class="{{ table_ui.action_classes() }}">Apply Filters</button>
             </noscript>
         </form>
     </div>
@@ -112,50 +182,24 @@
         {% set empty_state_min_height = "min-h-[260px]" %}
         {% include "components/states/_empty_state.html" %}
     {% endif %}
-    <footer class="{{ pagination_ui.footer_classes() }}">
-        <p>
-            Showing <span class="font-semibold text-content-primary">{{ administrative_evidence.pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ administrative_evidence.pagination.end_item }}</span>
-            of <span class="font-semibold text-content-primary">{{ administrative_evidence.pagination.total_items }}</span>
-            {{ pagination_ui.resource_name('Administrative Events', administrative_evidence.pagination.total_items) |trim }}
-        </p>
-        <nav class="{{ pagination_ui.navigation_group_classes() }}"
-             aria-label="Administrative evidence pagination"
-             hx-push-url="true">
-            {% set admin_page_params = {'view': 'administrative', 'admin_scope': administrative_evidence.scope} %}
-            {% if administrative_evidence.pagination.has_prev %}
-                {% set prev_url = url_for('access.activity_audit.index', view='administrative', admin_scope=administrative_evidence.scope, admin_page=administrative_evidence.pagination.prev_page) %}
-                <a href="{{ prev_url }}"
-                   hx-get="{{ prev_url }}"
-                   hx-target="#activity-administrative-evidence"
-                   hx-swap="outerHTML"
-                   hx-push-url="true"
-                   class="{{ pagination_ui.navigation_classes(false) }}">Previous</a>
-            {% else %}
-                <span class="{{ pagination_ui.navigation_classes(true) }}">Previous</span>
-            {% endif %}
-            {{ pagination_ui.numeric_pages(
-                administrative_evidence.pagination.page,
-                administrative_evidence.pagination.total_pages,
-                page_param='admin_page',
-                endpoint='access.activity_audit.index',
-                query_params=admin_page_params,
-                hx_target='#activity-administrative-evidence',
-                hx_swap='outerHTML'
-            ) }}
-            {% if administrative_evidence.pagination.has_next %}
-                {% set next_url = url_for('access.activity_audit.index', view='administrative', admin_scope=administrative_evidence.scope, admin_page=administrative_evidence.pagination.next_page) %}
-                <a href="{{ next_url }}"
-                   hx-get="{{ next_url }}"
-                   hx-target="#activity-administrative-evidence"
-                   hx-swap="outerHTML"
-                   hx-push-url="true"
-                   class="{{ pagination_ui.navigation_classes(false) }}">Next</a>
-            {% else %}
-                <span class="{{ pagination_ui.navigation_classes(true) }}">Next</span>
-            {% endif %}
-        </nav>
-    </footer>
-    <p class="border-t border-outline-subtle px-5 py-3 text-xs leading-5 text-content-muted sm:px-6">
-        AuditEvent is hot, source-owned evidence. Actor IDs are references, not immutable identity snapshots; historical archive continuity is separate.
-    </p>
+    {% set administrative_query = {
+        'view': 'administrative',
+        'admin_scope': administrative_evidence.scope,
+        'admin_search': administrative_evidence.filters.search,
+        'admin_outcome': administrative_evidence.filters.outcome,
+        'admin_time_range': administrative_evidence.filters.time_range
+    } %}
+    {{ registry_ui.footer(
+        'access.activity_audit.index',
+        'activity-administrative-evidence',
+        'administrative-activity-loading',
+        administrative_evidence.pagination,
+        administrative_query,
+        administrative_evidence.pagination.allowed_per_page,
+        resource_label='Administrative Events',
+        rows_aria_label='Administrative Events per page',
+        control_name='administrative-evidence',
+        page_param='admin_page',
+        per_page_param='admin_per_page'
+    ) }}
 </section>
