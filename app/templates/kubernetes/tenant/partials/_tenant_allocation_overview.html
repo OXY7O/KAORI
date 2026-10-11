@@ -197,17 +197,18 @@
                             <p class="mt-1 text-sm text-content-secondary">
                                 {{ allocation_overview.cluster.name }} · {{ allocation_overview.cluster.environment|title }}
                             </p>
-                            <p id="{{ contributions_dialog_id }}-description" class="mt-1 text-xs leading-5 text-content-muted">
-                                Governed Namespace requests; Capsule shared quota counted once per Tenant.
+                            <p id="{{ contributions_dialog_id }}-description"
+                               class="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs leading-5 text-content-muted">
+                                <span>Governed Namespace requests; Capsule shared quota counted once per Tenant.</span>
+                                <a href="{{ url_for('tenant.tenants', section='registry') }}"
+                                   class="inline-flex min-h-7 shrink-0 items-center gap-1 rounded-md text-xs font-semibold text-kaori-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
+                                   aria-label="Open Tenant Registry">
+                                    Tenant Registry
+                                    <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                </a>
                             </p>
                         </div>
                         <div class="flex shrink-0 items-center gap-2">
-                            <a href="{{ url_for('tenant.tenants', section='registry') }}"
-                               class="inline-flex min-h-9 items-center gap-1.5 rounded-md px-1 text-xs font-semibold text-kaori-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
-                               aria-label="Open Tenant Registry">
-                                Tenant Registry
-                                <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                            </a>
                             <button type="button"
                                     data-kaori-dialog-close
                                     class="{{ table_ui.action_classes() }} shrink-0"
