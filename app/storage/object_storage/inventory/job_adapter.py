@@ -2,10 +2,14 @@ from __future__ import annotations
 
 from typing import Any
 
+from sqlalchemy import func
+
+from app.extensions.db import db
+
 from app.common.job_execution_contract import OBJECT_STORAGE_INVENTORY_SYNC_OPERATION
 from app.common.job_execution_presentation import present_job_execution
 from app.models.job import JobExecution, JobPolicy
-from app.models.object_storage import ObjectStorageSystem
+from app.models.object_storage import ObjectStorageBucket, ObjectStorageSystem
 from app.platform_operations.jobs.constants import ACTIVE_JOB_STATUSES
 from app.platform_operations.jobs.definitions.base import RegisteredJobDispatchResult
 from app.platform_operations.jobs.policies.presentation import present_interval
@@ -47,11 +51,28 @@ def dispatch_object_storage_inventory_sync(
     trigger_type: str,
     parameters: dict[str, Any] | None = None,
 ) -> RegisteredJobDispatchResult:
-    del parameters
+    confirmation_system_id: str | None = None
+    if parameters and parameters.get('empty_reconciliation'):
+        if (
+            trigger_type != 'manual'
+            or requested_by_user_id is None
+            or parameters.get('empty_reconciliation') != 'confirm'
+            or parameters.get('confirmation_phrase') != 'CONFIRM EMPTY'
+        ):
+            return RegisteredJobDispatchResult(
+                status='blocked',
+                message='Explicit manual confirmation (CONFIRM EMPTY) is required to reconcile an empty snapshot.',
+            )
+        confirmation_system_id = str(parameters.get('confirm_empty_system_id') or '').strip()
+        if not confirmation_system_id:
+            return RegisteredJobDispatchResult(
+                status='blocked', message='Select the exact managed system to reconcile.'
+            )
     try:
         job, created = enqueue_all_object_storage_inventory_sync(
             requested_by_user_id=requested_by_user_id,
             trigger_type=trigger_type,
+            confirm_empty_system_id=confirmation_system_id,
         )
     except NoEligibleObjectStorageTargets as exc:
         return RegisteredJobDispatchResult(status='blocked', message=str(exc))
@@ -71,6 +92,25 @@ def build_object_storage_inventory_sync_context(policy: JobPolicy) -> dict[str, 
     registered_system_count = ObjectStorageSystem.query.count()
     eligible_targets = build_object_storage_inventory_targets()
     eligible_system_count = len(eligible_targets)
+    eligible_ids = [target['system_id'] for target in eligible_targets]
+    counts = (
+        db.session.query(
+            ObjectStorageBucket.object_storage_system_id, func.count(ObjectStorageBucket.id)
+        ).join(
+            ObjectStorageSystem,
+            ObjectStorageSystem.id == ObjectStorageBucket.object_storage_system_id,
+        ).filter(
+            ObjectStorageBucket.object_storage_system_id.in_(eligible_ids),
+            ObjectStorageSystem.inventory_observed_at.is_not(None),
+        ).group_by(ObjectStorageBucket.object_storage_system_id).all()
+        if eligible_ids else []
+    )
+    count_by_system = {system_id: int(count) for system_id, count in counts}
+    empty_reconciliation_targets = [
+        {**target, 'previous_bucket_count': count_by_system[target['system_id']]}
+        for target in eligible_targets
+        if count_by_system.get(target['system_id'], 0) > 0
+    ]
     blocked_system_count = max(registered_system_count - eligible_system_count, 0)
 
     jobs_query = JobExecution.query.filter(
@@ -178,6 +218,7 @@ def build_object_storage_inventory_sync_context(policy: JobPolicy) -> dict[str, 
         'eligible_target_count': eligible_system_count,
         'blocked_system_count': blocked_system_count,
         'eligible_targets': eligible_targets,
+        'empty_reconciliation_targets': empty_reconciliation_targets,
         'scheduler_state': scheduler_state,
         'readiness_state': readiness_state,
         'configuration_state': configuration_state,

@@ -33,3 +33,28 @@ def test_object_storage_inventory_result_reports_all_failed() -> None:
     assert result['status'] == 'error'
     assert result['failed_count'] == 2
     assert 'All 2 eligible object-storage systems failed' in result['message']
+
+
+def test_confirmed_empty_job_result_is_explicit_and_preserves_actor_evidence() -> None:
+    record = {
+        'system_id': 'storage-1',
+        'confirmed_by_user_id': 7,
+        'previous_bucket_count': 3,
+        'removed_bucket_count': 3,
+        'discovery_confirmations': 2,
+        'result': 'confirmed_empty',
+    }
+    result = _build_result(
+        requested_by_user_id=7,
+        total_count=1,
+        synced_count=1,
+        bucket_count=0,
+        failed_systems=[],
+        started_at='2026-10-12T00:00:00+00:00',
+        duration_seconds=1.5,
+        empty_reconciliation_evidence=[record],
+    )
+    assert result['status'] == 'success'
+    assert result['title'] == 'Object Storage Empty Inventory Reconciled'
+    assert '3 previously committed' in result['detail']
+    assert result['empty_reconciliation_evidence'] == [record]
