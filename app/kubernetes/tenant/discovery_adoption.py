@@ -254,7 +254,13 @@ def _released_predecessor_evidence(
         release_evidence=release,
         provider_uid=provider_uid,
         resource_version=resource_version,
-        namespace=str(tenant.provider_reference or ''),
+        # Native Tenant identity is the Namespace; Capsule Tenant identity
+        # is the cluster-scoped CR. A Capsule CR must use its own verified
+        # handback RV, never a Namespace RV from provider_resource_versions.
+        namespace=(
+            str(tenant.provider_reference or '')
+            if tenant.provider_key == 'native_kubernetes' else None
+        ),
     )
     return {
         'predecessor_tenant_id': previous.id,
