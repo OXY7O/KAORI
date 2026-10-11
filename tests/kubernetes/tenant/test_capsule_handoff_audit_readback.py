@@ -1067,3 +1067,98 @@ def test_g2_no_global_quota_does_not_claim_live_quota_readback_pass():
     assert review['source_provider_authenticated'] is False
     assert review['start_committed'] is False
     assert review['release_authorized'] is False
+
+
+@pytest.mark.parametrize('attack', [
+    'lineage_sha_foreign',
+    'lineage_origin_self_attested',
+    'lineage_status_altered',
+    'source_inventory_status_altered',
+    'missing_source_quota_posture',
+    'malformed_source_findings',
+])
+def test_g3_source_rbac_lineage_and_inventory_are_plan_bound(attack):
+    plan, related, cr, ns, baseline = _inputs()
+    source = deepcopy(related)
+    if attack == 'lineage_sha_foreign':
+        source['rbac_lineage']['lineage_sha256'] = 'f' * 64
+    elif attack == 'lineage_origin_self_attested':
+        source['rbac_lineage']['controller_origin_verified'] = True
+    elif attack == 'lineage_status_altered':
+        source['rbac_lineage']['status'] = 'controller_provenance_verified'
+    elif attack == 'source_inventory_status_altered':
+        source['status'] = 'verified_provider_snapshot'
+    elif attack == 'missing_source_quota_posture':
+        source['global_quota'].pop('status')
+    else:
+        source['blockers'] = 'caller-supplied-string-instead-of-list'
+    # Recomputing the related LIST hash does not bind RBAC lineage,
+    # collector findings or a changed provider authority status to the plan.
+    with pytest.raises(ValueError, match='RBAC lineage or inventory posture'):
+        inspect_capsule_readback_candidate(
+            plan=plan, source_related=source,
+            current_related=deepcopy(source),
+            current_capsule_cr=cr, current_namespaces={'demo-dev': ns},
+            namespace_baselines=[baseline], tenant_id='tenant-1',
+        )
+
+
+@pytest.mark.parametrize(('area', 'failure'), [
+    ('related', 'related_inventory_has_unresolved_provider_findings'),
+    ('quota', 'global_quota_has_unresolved_provider_findings'),
+    ('lineage', 'rbac_lineage_has_unresolved_provider_findings'),
+    ('missing_status', 'related_inventory_provenance_or_coverage_unverified'),
+    ('non_string_findings', 'related_inventory_provenance_or_coverage_unverified'),
+])
+def test_g3_current_provider_findings_cannot_be_hidden_by_matching_list_hashes(area, failure):
+    plan, source, cr, ns, baseline = _inputs()
+    current = deepcopy(source)
+    if area == 'related':
+        current['blockers'].append(
+            'Capsule RoleBinding/demo-dev/foreign has conflicting provider ownership.'
+        )
+    elif area == 'quota':
+        current['global_quota']['blockers'].append(
+            'GlobalResourceQuota selector is ambiguous.'
+        )
+    elif area == 'lineage':
+        current['rbac_lineage']['blockers'].append(
+            'Capsule controller RoleBinding intent has conflicting grant evidence.'
+        )
+    elif area == 'missing_status':
+        current.pop('status')
+    else:
+        current['blockers'].append({'detail': 'untrusted'})
+    # No policy, LIST RV or global-quota hash changed; these source
+    # observations still must prevent any structurally clean claim.
+    review = inspect_capsule_readback_candidate(
+        plan=plan, source_related=source, current_related=current,
+        current_capsule_cr=cr, current_namespaces={'demo-dev': ns},
+        namespace_baselines=[baseline], tenant_id='tenant-1',
+    )
+    assert failure in review['blockers']
+    assert review['provider_handoff_verified'] is False
+    assert review['auto_retry_authorized'] is False
+    assert review['release_authorized'] is False
+
+
+def test_g3_known_kaori_handoff_warning_not_mistaken_for_foreign_provenance():
+    plan, source, current, cr, namespace, baseline, evidence, foreign = (
+        _full_related_case('ResourceQuota', include_foreign=True)
+    )
+    warning = (
+        'Capsule ResourceQuota/demo-dev/controlled retains KAORI '
+        'provider controls requiring separately admitted handoff.'
+    )
+    source['blockers'] = [warning]
+    # The canonical classifier may still report original KAORI controls
+    # as pending handoff; no arbitrary warning gets a general exemption.
+    receipt = inspect_capsule_readback_candidate(
+        plan=plan, source_related=source, current_related=current,
+        current_capsule_cr=cr, current_namespaces={'demo-dev': namespace},
+        namespace_baselines=[baseline], tenant_id=plan['tenant_id'],
+        related_transfer_evidence=evidence,
+    )
+    assert 'related_inventory_has_unresolved_provider_findings' not in receipt['blockers']
+    assert 'capsule_controller_provenance_unverified' in receipt['blockers']
+    assert receipt['provider_handoff_verified'] is False
