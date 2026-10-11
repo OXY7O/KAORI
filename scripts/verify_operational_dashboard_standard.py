@@ -1217,6 +1217,27 @@ def verify() -> None:
         'Kubernetes refreshed Data Freshness copy',
     )
     _require(
+        freshness,
+        (
+            'def _fleet_coverage(',
+            'fleet_cluster_count: int = 0',
+            'fleet_metrics_count: int = 0',
+            'fleet_alerts_count: int = 0',
+        ),
+        'Kubernetes committed fleet evidence coverage',
+    )
+    if "'Per Cluster'" in freshness:
+        raise AssertionError('Kubernetes fleet freshness must report evidence readiness, not a scope hint')
+    _require(
+        service,
+        (
+            'read_snapshots(',
+            'fleet_metrics_count = sum(result.available',
+            'fleet_alerts_count = sum(result.available',
+        ),
+        'Kubernetes bounded committed fleet snapshot source',
+    )
+    _require(
         object_dashboard_service,
         (
             'Available alerts from committed 24h analytics snapshots;',
