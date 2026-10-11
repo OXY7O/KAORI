@@ -169,7 +169,7 @@ def test_artifact_registry_operations_overview_matches_reference_dashboard_gramm
         assert label in presentation
     for label in (
         "'Inventory Snapshot'",
-        "'Metrics Snapshot'",
+        "'Metrics Source'",
         "'Security Snapshot'",
         "'Analytics Snapshot'",
     ):
@@ -200,7 +200,7 @@ def test_artifact_registry_overview_keeps_reference_information_hierarchy() -> N
 
     for label in (
         "'Inventory Snapshot'",
-        "'Metrics Snapshot'",
+        "'Metrics Source'",
         "'Security Snapshot'",
         "'Analytics Snapshot'",
     ):
