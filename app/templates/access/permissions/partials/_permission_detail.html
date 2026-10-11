@@ -70,7 +70,7 @@
                 {% if permission.is_access_administration %}
                     {{ detail_ui.stacked_detail_row('Authority', 'Only the Local Database Super Admin break-glass authority may delegate Access administration through Roles, User Management, JIT defaults, or Directory Provisioning.') }}
                 {% else %}
-                    {{ detail_ui.stacked_detail_row('Authority', 'Non-Super Admin delegation requires this permission in the actor's effective access. Server-side checks remain authoritative.') }}
+                    {{ detail_ui.stacked_detail_row('Authority', 'Non-Super Admin delegation requires this permission in the actor’s effective access. Server-side checks remain authoritative.') }}
                 {% endif %}
             {% endcall %}
             {% call detail_ui.detail_card('Registry Boundary', 'database-zap', permission.state.label, badge_type='status', badge_tone=permission.state.tone, badge_size='detail', stretch=false, density='compact') %}
