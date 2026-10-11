@@ -1162,3 +1162,23 @@ def test_g3_known_kaori_handoff_warning_not_mistaken_for_foreign_provenance():
     assert 'related_inventory_has_unresolved_provider_findings' not in receipt['blockers']
     assert 'capsule_controller_provenance_unverified' in receipt['blockers']
     assert receipt['provider_handoff_verified'] is False
+
+
+def test_g3_transferred_resource_cannot_retain_current_kaori_pending_warning():
+    plan, source, current, cr, namespace, baseline, evidence, foreign = (
+        _full_related_case('RoleBinding', include_foreign=True)
+    )
+    current['blockers'] = [
+        'Capsule RoleBinding/demo-dev/controlled retains KAORI '
+        'provider controls requiring separately admitted handoff.'
+    ]
+    readback = inspect_capsule_readback_candidate(
+        plan=plan, source_related=source, current_related=current,
+        current_capsule_cr=cr, current_namespaces={'demo-dev': namespace},
+        namespace_baselines=[baseline], tenant_id=plan['tenant_id'],
+        related_transfer_evidence=evidence,
+    )
+    assert readback['related_resource_observations'][0]['state'] == 'provider_markers_transferred'
+    assert 'related_current_handoff_finding_contradicts_readback' in readback['blockers']
+    assert readback['provider_handoff_verified'] is False
+    assert readback['release_authorized'] is False
