@@ -1,7 +1,7 @@
 from pathlib import Path
 import re
 
-ROOT = Path(__file__).resolve().parents[4]
+ROOT = Path(__file__).resolve().parents[5]
 TEMPLATES = ROOT / 'app/templates/storage/object_storage/inventory'
 
 
