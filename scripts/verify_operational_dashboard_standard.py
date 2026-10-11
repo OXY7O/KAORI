@@ -338,6 +338,16 @@ def _verify_artifact_registry_dashboard(
         'Registry unselected scope matches canonical dashboard warning status',
     )
     _require(
+        signal_overview,
+        (
+            'overview.last_updated',
+            "'Updated ' ~ overview.last_updated",
+        ),
+        'Registry relative committed inventory Updated label',
+    )
+    if 'latest_committed_at|user_datetime' in signal_overview:
+        raise AssertionError('Registry Signal Overview must use relative, not absolute, Updated time')
+    _require(
         kpi_cards,
         (
             'components/operational_metric_card.html',
@@ -499,6 +509,28 @@ def _verify_artifact_registry_dashboard(
         ),
         'Registry active-provider committed KPI evidence and source coverage',
     )
+    _require(
+        presentation,
+        (
+            "'last_updated': _human_time(latest)",
+            'has_committed_inventory=bool(committed_provider_ids)',
+        ),
+        'Registry Fast Shell relative freshness and bounded Inventory Snapshot evidence',
+    )
+    inventory_items = presentation.split('def _overview_inventory_items(', 1)[1].split(
+        'def _security_freshness_status(', 1
+    )[0]
+    _require(
+        inventory_items,
+        (
+            'has_committed_inventory: bool',
+            'if not has_committed_inventory:',
+            "item['value'] = 'Not Collected'",
+        ),
+        'Registry Inventory Snapshot runtime regression guard',
+    )
+    if 'committed_count' in inventory_items:
+        raise AssertionError('Registry Inventory Snapshot cannot reference KPI-local committed_count')
     capacity_section = presentation.split("if section == 'capacity':", 1)[1].split(
         "if section == 'signals':", 1
     )[0]
