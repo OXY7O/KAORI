@@ -272,8 +272,23 @@ def handback_capsule_successor_governance_committed(
     )
     if _identity(live_cr) != (cr['name'], cr['uid'], cr['resource_version']):
         raise ValueError('Capsule CR changed before successor handback.')
-    # Verify ALL selected sources before starting, not just the first patch.
+    # CR and every foreign/preserved related object are part of the exact
+    # Released inventory. They must remain unchanged even though no provider
+    # PATCH is directed at them.
     core, rbac = provider.core_api(), provider.rbac_authorization_api()
+    preserved = [
+        row for row in release['verified_components']
+        if row['kind'] in ('ResourceQuota', 'LimitRange', 'RoleBinding')
+        and row['state'] == 'preserved'
+    ]
+    for row in preserved:
+        read, _ = _provider_methods(core=core, rbac=rbac, kind=row['kind'])
+        observed = _provider_read(
+            read, kind=row['kind'], name=row['name'], namespace=row['namespace'],
+        )
+        if _identity(observed) != (row['name'], row['uid'], row['resource_version']):
+            raise ValueError('Foreign provider resource changed before Capsule handback.')
+    # Verify ALL selected sources before starting, not just the first patch.
     source: list[tuple[dict[str, Any], Any]] = []
     for row in targets:
         read, _ = _provider_methods(core=core, rbac=rbac, kind=row['kind'])
@@ -355,6 +370,17 @@ def handback_capsule_successor_governance_committed(
                 raise ValueError('Capsule CR changed during successor handback.')
         except Exception as exc:
             errors.append(f"CapsuleTenant/{cr['name']}: {type(exc).__name__}")
+    if not errors:
+        try:
+            for row in preserved:
+                read, _ = _provider_methods(core=core, rbac=rbac, kind=row['kind'])
+                observed = _provider_read(
+                    read, kind=row['kind'], name=row['name'], namespace=row['namespace'],
+                )
+                if _identity(observed) != (row['name'], row['uid'], row['resource_version']):
+                    raise ValueError('Preserved related resource changed during Capsule handback.')
+        except Exception as exc:
+            errors.append(f"Capsule preserved scope: {type(exc).__name__}")
     success = not errors and len(completed) == len(targets)
     receipt = {
         'status': 'verified' if success else 'partial_handback_recovery_required',
