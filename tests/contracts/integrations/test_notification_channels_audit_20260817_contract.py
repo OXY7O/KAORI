@@ -175,3 +175,5 @@ def test_delivery_registry_supports_exact_source_linked_event_filter() -> None:
     assert "hx-select=\"#notification-channels-workspace\"" in page
     assert "'delivery_event_key': payload.delivery_filter" in page
     assert 'Delivery attempts and channel retries are provider-delivery evidence' in page
+    assert 'No Matching Deliveries' in page
+    assert 'No committed channel delivery matches this exact event key.' in page

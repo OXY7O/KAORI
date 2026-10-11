@@ -1,6 +1,6 @@
 # Activity Audit — Cross-Domain Evidence Source Review (2026-10-11)
 
-**Status:** Review proposal; authority decision and browser/security acceptance pending.
+**Status:** Source-linked architecture direction approved 2026-10-11; bounded review-branch implementation underway. Runtime/security/retention admission and human UAT pending.
 **Issue:** #1208. Security audit authority: #640 / #638. Tenant provider correlation authority: #122.
 **Reviewed baseline:** `kaori/review/staging-uat@6aaa0c5f7c52a3d3626fbc3e370758ded2c45e48`.
 
@@ -24,9 +24,9 @@
 5. `AuditEvent` is an administrative audit source, while `JobExecution` is task execution authority. Treating them as interchangeable events or copying their payloads into `notifications` would change their meaning, RBAC and retention contracts.
 6. Existing `operational_activity`, `job_execution` and `tenant_audit_evidence` archive domains are independent. Reconstructing historical correlation across hot and archive must be explicit, not a live-provider lookup.
 
-## Decision Needed Before Implementation
+## Approved Architecture Direction — bounded implementation only
 
-**Recommended approach:** preserve Activity Audit as the current Notification-backed administrative register; add **source-linked correlation/read models over committed KAORI evidence** only after an authority decision. Prioritize known business-event-to-job/audit links and count missing coverage explicitly. Do not implement a universal raw-table SQL union and do not duplicate Tenant's existing idempotent bridge.
+**Approved 2026-10-11:** preserve Activity Audit as the Notification-backed administrative register; implement **permissioned source-linked correlation over committed KAORI evidence**, without a universal SQL union or duplicate event persistence. Prioritize known business-event-to-job/audit links and count missing coverage explicitly. Do not implement a universal raw-table SQL union and do not duplicate Tenant's existing idempotent bridge.
 
 An approved contract must specify:
 - **Event identity:** source model, source primary/public identifier, event key, recorded vs source-occurrence time, provenance, normalized outcome, correlation refs (`job_public_id`, tenant ID, target ID, request/decision ID as available), and de-duplication rule.
@@ -82,7 +82,7 @@ No new audit event source in this review, no multi-store migration, no new categ
 - **Confirmed missing automatic fan-in:** `AuditEvent`-only automatic Job/Tenant governance records and outbound-only `NotificationDelivery` are not automatically part of the Notification-backed Activity Audit query. This does **not** prove those business operations lack domain audit evidence.
 - **Unverified producers:** remaining Kubernetes governance, Ansible/orchestration, asset/registry synchronization, Analytics/Intelligence decision persistence, miscellaneous Reporting, and any route not explicitly inventoried above. Do **not** infer coverage from event-category YAML or the presence of an outbound notification.
 - **Canonical separation:** written KAORI administrative action ≠ provider-observed API action ≠ JobExecution terminal ≠ delivery attempt. Correlation references point to authoritative stores; copying payloads or guessing actors breaks governance.
-- **Decision requested under #1208:** approve scoped source-linked navigation/projection with permission checks (preferred), or explicitly choose another authority model. Until that approval, #1219 and #1220 remain blocked design workstreams and no new Notification writes are authorized.
+- **Decision approved under #1208 (2026-10-11):** scoped permissioned source-linked navigation/projection. PR #1226 implements exact hot Job/Tenant source links in Activity Audit detail; #1220 implements exact event-key filtering of the existing provider-delivery ledger and permissioned matching links only when Notification metadata carries a persisted key. Administrative-only AuditEvent fan-in, producer additions, broader retention/correlation and UAT remain independent open work; **no new Notification writes are authorized by this approval**.
 
 ### Focused DevContainer Acceptance Plan (not yet executed)
 
@@ -115,3 +115,10 @@ These checks extend the inventory above and resolve the earlier **unverified** f
 **Remaining unverified scope:** deeper analytics/forecast terminal operations, remaining Kubernetes resources, resolver delivery execution, reports artifact generation details, storage fleet jobs, all background archive tasks, and failure/retry paths not listed in the matrix. A full feature-by-feature UAT matrix and architecture acceptance remain outstanding.
 
 **Lifecycle note:** This inventory does not close #1208. #1218 is a scoped evidence contract; #1219 and #1220 require the explicit architecture/security decision before implementation.
+
+
+## Approved Correlation Slices and Remaining Boundaries (2026-10-11)
+
+- **#1219 / PR #1226:** existing Notification Activity Audit details can offer source-owned Job Execution and Tenant Governance navigation only for exact committed hot references under `jobs.view` or `tenant.view/manage`. The Tenant destination is the governed Tenant workspace; it is not a raw Kubernetes audit viewer. Missing or archived sources generate no hot link. Administrative-only `AuditEvent` remains outside the Notification register pending reviewed source-specific read projection, no false actor snapshot and no universal retention claim.
+- **#1220:** outbound `NotificationDelivery` ledger remains authoritative for channel fan-out, retries and per-channel event-key deduplication. Existing Notification Channels Delivery Activity gains an exact `delivery_event_key` GET/HTMX filter, preserving pagination and `integrations.manage`. Activity Audit links to filtered delivery evidence only when a real Notification metadata event key matches an existing persisted delivery; it **does not** create a business audit event from outbound deliveries. Event-free Report/Automation NotificationEvent dispatches remain source-owned and are not silently backfilled.
+- **Admission:** Static contracts/source review only; browser interaction, negative permission paths, fallback GET, hot/archived continuity, sensitive event key handling, DAST/security tests, Developer Check and Full Admission remain HOLD until authorized. Neither child issue should be closed on source merge alone.
