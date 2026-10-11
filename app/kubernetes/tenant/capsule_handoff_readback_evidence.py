@@ -15,6 +15,8 @@ from app.kubernetes.tenant.capsule_handoff_contract import (
 from app.kubernetes.tenant.capsule_handoff_recovery import classify_capsule_namespace_handoff
 from app.kubernetes.tenant.capsule_handoff_related_inventory import _digest
 from app.kubernetes.tenant.capsule_handoff_worklist import build_capsule_handoff_worklist
+from app.kubernetes.tenant.release_handoff_approval import _plan_hash
+from app.kubernetes.tenant.release_handoff_inventory import handoff_fingerprint
 
 _MAX_RESOURCES = 300
 
@@ -72,6 +74,13 @@ def inspect_capsule_readback_candidate(
     ):
         raise ValueError('Capsule read-back requires canonical provider and Tenant scope.')
     cr, namespaces = validate_capsule_handoff_scope(plan.get('handoff_components'))
+    if (
+        plan.get('provider') != 'capsule'
+        or not isinstance(plan.get('plan_sha256'), str)
+        or _plan_hash(dict(plan)) != plan['plan_sha256']
+        or handoff_fingerprint(plan['handoff_components']) != plan.get('handoff_fingerprint')
+    ):
+        raise ValueError('Capsule read-back plan SHA or handoff fingerprint is invalid.')
     worklist = build_capsule_handoff_worklist(plan=plan, related=source_related)
     base_related_sha, base_quota_sha = _fingerprints(source_related)
     if (
@@ -158,9 +167,21 @@ def inspect_capsule_readback_candidate(
     rows.sort(key=lambda x: x['name'])
     transferred = sum(r['state'] == 'provider_markers_transferred' for r in rows)
     pending = sum(r['state'] == 'pending_provider_transfer' for r in rows)
-    unknown = len(rows) - transferred - pending
+    candidate_related = [
+        item for item in worklist['items']
+        if item['decision'] == 'explicit_kaori_metadata_handoff_review'
+    ]
+    expected_count = len(required_baselines) + len(candidate_related)
+    # Related resource origin and ownership never transfer through the
+    # Namespace-only patch contract. An unchanged full resource LIST can be
+    # classified as pending, but cannot establish successor handback.
+    if source_related.get('resources') == current_related.get('resources'):
+        pending += len(candidate_related)
+    else:
+        blockers.append('related_kaori_control_recovery_unverified')
+    unknown = expected_count - transferred - pending
     if unknown:
-        blockers.append('incomplete_namespace_readback_proof')
+        blockers.append('incomplete_transfer_candidate_readback_proof')
     # Even an exact all-transferred status cannot prove proper admission,
     # independent actor authority, controller provenance or successor consent.
     blockers.append('capsule_controller_provenance_unverified')
@@ -175,7 +196,7 @@ def inspect_capsule_readback_candidate(
         'candidate_namespaced_sha256': current_related_sha,
         'source_global_quota_sha256': base_quota_sha,
         'candidate_global_quota_sha256': current_quota_sha,
-        'expected_count': len(required_baselines),
+        'expected_count': expected_count,
         'observed_count': transferred + pending,
         'pending_count': pending,
         'transferred_count': transferred,
