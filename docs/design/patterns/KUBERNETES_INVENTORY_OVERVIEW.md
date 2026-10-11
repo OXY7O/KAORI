@@ -132,3 +132,15 @@ or absent `collection_evidence`. Unknown connection status means `Not Observed`,
 not a confirmed disconnection. A zero asset count without a committed snapshot
 is not proof that zero objects were collected. All readings are committed-state
 only and use existing KAORI semantic labels.
+
+
+## Bounded Cluster Comparison and Modal Reads
+
+Overview comparison uses canonical SQL pagination (5/10/25/50) **before**
+materializing its per-cluster detail-ready row projections. Exact global fleet
+counts and active signal counts still use grouped committed aggregate evidence;
+only page clusters become full cluster detail records. The Cluster detail endpoint
+projects exactly one committed cluster and its current resource-family counts,
+without invoking a full Overview projection. Table-only HTMX and modal fragments
+do not re-query the Snapshot Context Bar, while full page and workspace renders
+retain committed freshness context. Scope, RBAC and canonical modal stay intact.
