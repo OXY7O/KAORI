@@ -363,6 +363,68 @@ live provider executor**, with authoritative Capsule controller lineage,
 individual resource handoff and independent human consent, not an
 automatic promotion of this source merge. All gates remain HOLD.
 
+## Transactional START writer — source-staged, permanently disabled under HOLD
+
+`capsule_handoff_start_writer.py` implements the next review slice:
+`build_capsule_start_candidate` is a **pure** event builder which
+recomputes the canonical plan hash and component fingerprint, the exact
+Namespace/quota/RBAC worklist SHA, and the original bounded transfer count.
+The event contains an attempt UUID, accepted actor ID, canonical START time,
+zero observations, zero provider writes, no credentials or raw Kubernetes
+policy and a chained SHA-256 digest. It must pass the existing attempt
+state projection before a future writer can consume it.
+
+`commit_capsule_start_staged` is intentionally **not registered or callable
+for production handoff**. A source constant
+`_CAPSULE_START_WRITER_ENABLED = False` rejects every call **before** opening
+a database session, querying actor credentials or writing an event. No
+environment flag, request body or user confirmation can change this.
+Even a separate code modification removing that source gate would still
+encounter the existing immutable Capsule admission decision:
+`provider_execution_admitted=false` and `dry_run_admitted=false`
+until controller provenance and resource-specific metadata authority are
+independently implemented and reviewed.
+
+The staged SQL path is for architectural review only. It specifies an
+isolated PostgreSQL transaction, Tenant `SELECT ... FOR UPDATE`, current
+adopted/Ready Capsule lifecycle check, full legacy-attempt and immutable
+ledger scan, reloading of current committed plan/approval/successor consent
+under the Tenant lock, and a second check of exact actor and provider scope.
+It also requires **separate explicit operator confirmation**, not just an
+accepted successor receipt. Only after future authorization could an
+INSERT of the canonical START envelope happen; SQL constraint validation
+(`flush`) alone is **not** a committed barrier. The transaction must
+commit before a separate ledger read-back; no Kubernetes operation belongs
+inside this writer, and its return value must never authorize provider
+PATCH, retry or Released.
+
+Before a hypothetical START INSERT, PostgreSQL inspection requires all
+four enabled database ledger triggers (insert guard and update/delete/
+truncate deny), normal replication role, `fsync=on`, synchronous commit,
+and a dedicated **INSERT-only** (for mutations) application role which is
+neither superuser nor table owner/owner-role member and cannot UPDATE,
+DELETE or TRUNCATE the ledger. These checks are defensive source gates,
+**not** proof of backup durability, immutable DBA-level history, approved
+migration status or real provider authority. SQLite schema remains
+inspectable and reviewable but is **not admitted as this distributed
+transactional writer backend**.
+
+### Required before operator authorization
+
+1. Obtain explicit approval to execute the schema migration and database
+   verification in the intended DevContainer/UAT environment; check
+   PostgreSQL trigger behavior, concurrent START fencing, safe downgrade
+   refusal, privilege isolation, WAL durability and backup/recovery.
+2. Independently validate Capsule controller-generated RoleBinding origins,
+   the entire affected resource set, per-resource transfer consent, fresh
+   TLS X.509 SelfSubjectReview/SAR and guarded dryRun=All.
+3. Security-review a separate source change to activate only a fully
+   admitted START transaction, then verify durable commit before **any**
+   eligible Kubernetes PATCH. Validate partial/timeouts/crashes and an
+   authoritative post-write provider read-back with no automatic retry.
+4. Keep #1229 OPEN, #1230/#1231 BLOCKED, and all CI/CD, tests, migration,
+   provider operations and Release actions HOLD until individually authorized.
+
 ## Required before completing #1229
 
 1. Build on the SHA-bound Namespace and cluster-scoped
