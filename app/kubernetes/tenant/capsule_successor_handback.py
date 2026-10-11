@@ -16,6 +16,9 @@ from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_a
 from app.kubernetes.tenant.capsule_handoff_contract import (
     _identity, _labels, _successor, capsule_preservation_digest,
 )
+from app.kubernetes.tenant.capsule_handoff_authority_inventory import (
+    observe_capsule_global_quotas,
+)
 from app.kubernetes.tenant.capsule_handoff_live_patch import (
     _provider_methods, _provider_patch, _provider_read,
 )
@@ -83,27 +86,28 @@ def _capsule_handback_scope(
         name = row.get('name')
         uid, rv = row.get('uid'), row.get('resource_version')
         if (
-            kind not in _KINDS | {'CapsuleTenant'}
+            kind not in _KINDS | {'CapsuleTenant', 'GlobalResourceQuota'}
             or not isinstance(name, str) or not name
             or not isinstance(uid, str) or not uid
             or not isinstance(rv, str) or not rv
             or (kind == 'Namespace' and namespace not in ('', name))
-            or (kind in ('CapsuleTenant', 'Namespace') and namespace not in ('', name))
-            or (kind not in ('CapsuleTenant', 'Namespace') and not namespace)
+            or (kind in ('CapsuleTenant', 'Namespace', 'GlobalResourceQuota') and namespace not in ('', name))
+            or (kind not in ('CapsuleTenant', 'Namespace', 'GlobalResourceQuota') and not namespace)
         ):
             raise ValueError('Capsule Released resource is missing exact scoped UID/RV.')
         key = (namespace if kind not in ('CapsuleTenant', 'Namespace') else '', kind, name)
         if key in keys:
             raise ValueError('Duplicate provider identity in Released Capsule handback scope.')
         keys.add(key)
-        if kind == 'CapsuleTenant':
+        if kind in ('CapsuleTenant', 'GlobalResourceQuota'):
             if row.get('state') != 'preserved':
-                raise ValueError('Capsule CR was not conclusively provider-preserved.')
+                raise ValueError('Capsule CR or GlobalResourceQuota was not provider-preserved.')
         elif kind == 'Namespace':
-            if row.get('state') != 'provider_markers_transferred':
-                raise ValueError('Capsule Namespace does not have exact transferred ownership evidence.')
+            if row.get('state') not in ('provider_markers_transferred', 'preserved'):
+                raise ValueError('Capsule Namespace has no definitive ownership outcome.')
             observed_namespaces.add(name)
-            targets.append({**row, 'namespace': name})
+            if row['state'] == 'provider_markers_transferred':
+                targets.append({**row, 'namespace': name})
         elif row.get('state') == 'provider_markers_transferred':
             targets.append(row)
         elif row.get('state') != 'preserved':
@@ -249,7 +253,7 @@ def handback_capsule_successor_governance_committed(
             'handoff': 'external_acceptance_required',
         }
         for obj in [cr] + [
-            row for row in targets if row['kind'] == 'Namespace'
+            row for row in release['verified_components'] if row['kind'] == 'Namespace'
         ]
     ]
     authority = verify_capsule_provider_admin_authority(
@@ -277,10 +281,33 @@ def handback_capsule_successor_governance_committed(
     # PATCH is directed at them.
     core, rbac = provider.core_api(), provider.rbac_authorization_api()
     preserved = [
-        row for row in release['verified_components']
-        if row['kind'] in ('ResourceQuota', 'LimitRange', 'RoleBinding')
+        {**row, 'namespace': row['name'] if row['kind'] == 'Namespace' else row.get('namespace') or ''}
+        for row in release['verified_components']
+        if row['kind'] in ('Namespace', 'ResourceQuota', 'LimitRange', 'RoleBinding')
         and row['state'] == 'preserved'
     ]
+    expected_global = {
+        row['name']: row for row in release['verified_components']
+        if row['kind'] == 'GlobalResourceQuota'
+    }
+    global_inventory = observe_capsule_global_quotas(
+        custom=custom, tenant_name=cr['name'],
+    )
+    approved_cr = next(
+        item for item in previous['handoff_components']
+        if item['kind'] == 'CapsuleTenant'
+    )
+    if (
+        global_inventory.get('blockers')
+        or global_inventory.get('scope_sha256') != approved_cr.get('capsule_shared_quota_sha256')
+        or set(expected_global) != {row['name'] for row in global_inventory['resources']}
+        or any(
+            expected_global[row['name']]['uid'] != row['uid']
+            or expected_global[row['name']]['resource_version'] != row['resource_version']
+            for row in global_inventory['resources']
+        )
+    ):
+        raise ValueError('Capsule GlobalResourceQuota provider preservation changed before handback.')
     for row in preserved:
         read, _ = _provider_methods(core=core, rbac=rbac, kind=row['kind'])
         observed = _provider_read(
@@ -372,6 +399,11 @@ def handback_capsule_successor_governance_committed(
             errors.append(f"CapsuleTenant/{cr['name']}: {type(exc).__name__}")
     if not errors:
         try:
+            final_global = observe_capsule_global_quotas(
+                custom=custom, tenant_name=cr['name'],
+            )
+            if final_global != global_inventory:
+                raise ValueError('Capsule GlobalResourceQuota changed during handback.')
             for row in preserved:
                 read, _ = _provider_methods(core=core, rbac=rbac, kind=row['kind'])
                 observed = _provider_read(
@@ -415,7 +447,16 @@ def handback_capsule_successor_governance_committed(
             ).filter(TenantEnvironment.tenant_id == tenant_id)
             .order_by(TenantNamespace.id.asc()).with_for_update().all()
         )
-        ns = {row['name']: row for row in completed if row['kind'] == 'Namespace'}
+        ns = {
+            row['name']: row for row in completed if row['kind'] == 'Namespace'
+        }
+        ns.update({
+            row['name']: {
+                'name': row['name'], 'uid': row['uid'],
+                'resource_version': row['resource_version'],
+            }
+            for row in preserved if row['kind'] == 'Namespace'
+        })
         if len(rows) != len(ns):
             raise ValueError('Capsule released Namespace history coverage is incomplete.')
         for item in rows:
@@ -439,7 +480,7 @@ def handback_capsule_successor_governance_committed(
             'provider_uid': cr['uid'], 'resource_version': cr['resource_version'],
             'provider_resource_versions': {
                 row['name']: row['resource_version']
-                for row in completed if row['kind'] == 'Namespace'
+                for row in ns.values()
             },
             'successor_owner': release['successor_owner'],
         }
