@@ -87,8 +87,16 @@ def reject(title: str, message: str, *, status: str = 'warning', target: User | 
 def index():
     filters = normalize_user_filters(request.args.to_dict())
     payload = build_users_payload(filters, actor=cast(User, current_user))
-    template = 'access/users/partials/_content.html' if request.headers.get('HX-Request') else 'access/users/index.html'
-    return render_template(template, **payload)
+    if (
+        request.headers.get('HX-Request') == 'true'
+        and request.headers.get('HX-History-Restore-Request') != 'true'
+    ):
+        # Registry interactions own only the directory fragment. Lifecycle
+        # mutations continue to refresh the entire users-page-content + OOB Hero.
+        if request.headers.get('HX-Target') == 'user-directory':
+            return render_template('access/users/partials/_directory.html', **payload)
+        return render_template('access/users/partials/_content.html', **payload)
+    return render_template('access/users/index.html', **payload)
 
 
 @bp.route('/new', methods=['GET', 'POST'])
