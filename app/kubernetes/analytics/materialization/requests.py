@@ -498,7 +498,10 @@ def resolve_materialized_request(
 
     dispatched = False
     dispatch_error = None
-    if not result.available or result.stale:
+    # An existing pending generation is already owned by a worker/job.
+    # Polling must not queue a duplicate just because its retained payload
+    # is intentionally hidden from the normal ready-snapshot reader.
+    if result.state != 'pending' and (not result.available or result.stale):
         try:
             outcome = dispatch_registered_job(
                 job_key=job_key,

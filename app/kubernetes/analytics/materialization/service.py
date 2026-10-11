@@ -50,6 +50,11 @@ def get_snapshot(
 
 
 def _read_snapshot_result(snapshot: AnalyticsSnapshot | None, *, dataset_key: str) -> SnapshotResult:
+    # A retained payload is last-known evidence, not a successful current
+    # generation when its worker attempt is pending or failed. Keep continuity
+    # restricted to read_last_known_snapshot(), which exposes that lifecycle.
+    if snapshot is not None and snapshot.status in ('pending', 'failed'):
+        return SnapshotResult(None, snapshot, snapshot.status, False)
     if snapshot is None or snapshot.payload_json is None or snapshot.generated_at is None:
         return SnapshotResult(None, snapshot, snapshot.status if snapshot else 'missing', False)
 

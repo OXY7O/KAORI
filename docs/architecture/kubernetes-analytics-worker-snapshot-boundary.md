@@ -238,3 +238,19 @@ worker, and Beat. No database migration is introduced. Existing snapshots remain
 compatible; snapshots whose payload contains `dependency_blocker` are rejected
 by this version and may be regenerated after rollback if the old behavior is
 restored.
+
+
+### Snapshot lifecycle regression contract (#1347)
+
+A retained AnalyticsSnapshot payload must **never** be interpreted as Fresh or
+Ready by the normal `read_snapshot` / batch `read_snapshots` reader while its
+row has `pending` or `failed` lifecycle status. Those readers return no
+current context and preserve the authoritative lifecycle status; only the
+explicit `read_last_known_snapshot` continuity reader can return an older
+payload while labeling it `refreshing` / `failed`. Normal requests do not
+redispatch a pending generation already under JobExecution ownership. A failed
+snapshot may be retried through the existing page retry/registered-job path,
+subject to standard deduplication; no provider work is performed by the web
+request. A subsequent successful worker commit is the only way to restore a
+Fresh ready projection. This ensures Overview status and detailed analytics
+agree on failed and pending committed generations.
