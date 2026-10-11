@@ -29,7 +29,7 @@ def test_account_tabs_use_same_simple_navigation_contract_as_general() -> None:
         assert 'workspace_tabs.render_query_tabs(' in source
         assert 'role="tablist"' not in source
 
-    assert 'border-b border-outline-default bg-surface-subtle px-5 pt-4' in shared
+    assert 'border-b border-outline-default bg-surface-hover px-5 pt-4' in shared
     assert 'flex gap-2 overflow-x-auto' in shared
     assert 'data-kaori-tab-variant="query-backed-htmx"' in shared
     assert 'Account Profile & Access' in tabs
@@ -101,7 +101,7 @@ def test_authentication_activity_is_full_width_with_inline_evidence_boundary() -
     assert '>Provider</th>' not in activity
     assert '>IP Address</th>' not in activity
     assert 'Access Granted' in activity
-    assert 'Sign-In Rejected' in activity
+    assert 'Sign-In Failed' in activity
     assert 'Session Ended' in activity
     assert "metadata.get('result_reason')" not in activity
     assert "table_label.status_indicator_label('Success', 'normal')" in activity
@@ -110,9 +110,22 @@ def test_authentication_activity_is_full_width_with_inline_evidence_boundary() -
 
     assert 'data-authentication-evidence-boundary="inline"' in activity
     assert 'Authentication Evidence' in activity
-    assert 'Identity & Source' in activity
-    assert 'Connection' in activity
-    assert 'Result & Time' in activity
+    assert 'Recent Event Snapshot' in activity
+    assert 'activity_summary.total' in activity
+    assert 'up to 5 latest events, not full history' in activity
+    assert "if activity_summary.failed" in activity
+    assert "table_label.status_indicator_label('None', 'normal')" in activity
+    assert "table_label.status_indicator_label('Observed', 'critical')" in activity
+    assert "table_label.status_indicator_label('Review', 'critical')" not in activity
+    assert 'Sign-In Failed' in activity
+    assert 'Authentication did not complete' in activity
+    assert 'Credentials not accepted' not in activity
+    assert 'Recorded IP:' in activity
+    assert 'trusted proxy or container network' in activity
+    assert "metadata.get('browser')" in activity
+    assert "metadata.get('device_type')" in activity
+    assert 'Identity & Source' not in activity
+    assert 'Result & Time' not in activity
     assert 'Secrets are excluded' in activity
     assert 'Authentication Evidence Boundary' not in activity
     assert 'Recorded Evidence' not in activity
