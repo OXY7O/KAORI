@@ -43,16 +43,16 @@ def test_audit_identity_and_source_evidence_remain_present() -> None:
     assert 'item.created_at|user_datetime' in detail
     assert 'Actor & Access' in detail
     assert 'Target Context' in detail
-    assert "detail_ui.detail_row('Email', item.user_email or 'Not recorded')" in detail
-    assert "detail_ui.detail_row('Authentication', item.user_auth_source)" in detail
-    assert "detail_ui.detail_row('Module', item.module_label)" in detail
+    assert "detail_ui.stacked_detail_row('Email', item.user_email or 'Not recorded')" in detail
+    assert "detail_ui.stacked_detail_row('Authentication', item.user_auth_source)" in detail
+    assert "detail_ui.stacked_detail_row('Module', item.module_label)" in detail
     assert 'data-activity-related-sources="committed-only"' in detail
     assert 'No duplicate event is created.' in detail
     assert 'item.trace_references' in detail
     assert 'item.changed_fields' in detail
     assert 'item.execution_evidence' in detail
     assert 'item.technical_evidence' in detail
-    assert 'detail_ui.evidence_grid(item.additional_evidence, columns=3, compact=true)' in detail
+    assert 'detail_ui.stacked_detail_row(evidence.label, evidence.value)' in detail
 
 
 def test_optional_evidence_uses_shared_accessible_disclosure_not_custom_js() -> None:
