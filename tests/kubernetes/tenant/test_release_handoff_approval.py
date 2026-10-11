@@ -186,6 +186,19 @@ def _capsule_g1_related_kaori_control_snapshot() -> dict:
     return snapshot
 
 
+def test_capsule_g1_recognizes_related_warning_and_executor_warning_separately():
+    snapshot = _capsule_g1_related_kaori_control_snapshot()
+    from app.kubernetes.tenant.release_handoff_approval import (
+        _capsule_g1_only_origin_obligation,
+    )
+    assert len(snapshot['blockers']) == 2
+    assert all(_capsule_g1_only_origin_obligation(snapshot, reason)
+               for reason in snapshot['blockers'])
+    assert not _capsule_g1_only_origin_obligation(
+        snapshot, 'Capsule foreign owner requires verification.',
+    )
+
+
 def test_capsule_g1_allows_real_sha_bound_kaori_related_obligation_without_granting_execution():
     snapshot = _capsule_g1_related_kaori_control_snapshot()
     _can_confirm_plan(snapshot)
