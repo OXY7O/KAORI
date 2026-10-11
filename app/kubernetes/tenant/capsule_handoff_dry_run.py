@@ -17,6 +17,7 @@ from app.kubernetes.tenant.capsule_handoff_contract import (
 from app.kubernetes.tenant.capsule_handoff_recovery import capture_capsule_namespace_baseline
 from app.kubernetes.tenant.capsule_handoff_contract import (
     build_capsule_related_metadata_handoff_patch,
+    verify_capsule_related_metadata_preview,
 )
 from app.kubernetes.tenant.capsule_handoff_related_inventory import (
     _digest, classify_capsule_related_resource,
@@ -313,6 +314,98 @@ def build_capsule_scope_patch_review(
         'start_committed': False, 'server_dry_run_completed': False,
         'provider_execution_admitted': False,
         'provider_mutation_performed': False,
+        'auto_retry_authorized': False,
+        'release_authorized': False,
+        'secret_material_persisted': False,
+    }
+
+
+def inspect_capsule_complete_dry_run_shapes(
+    *, plan: Mapping[str, Any], related: Mapping[str, Any],
+    current_capsule_cr: Any, source_namespaces: Mapping[str, Any],
+    source_related_objects: Mapping[tuple[str, str, str], Any],
+    approval: Mapping[str, Any], acceptance: Mapping[str, Any],
+    consent_manifest: Mapping[str, Any],
+    preview_objects: Mapping[tuple[str, str, str], Any],
+) -> dict[str, Any]:
+    """Correlate ALL preview shapes with the entire source patch manifest.
+
+    Raw objects are caller-supplied; this pure function cannot prove the
+    provider executed server dryRun=All or that an actor was authorized.
+    """
+    work = build_capsule_scope_patch_review(
+        plan=plan, related=related, current_capsule_cr=current_capsule_cr,
+        source_namespaces=source_namespaces,
+        source_related_objects=source_related_objects,
+        approval=approval, acceptance=acceptance,
+        consent_manifest=consent_manifest,
+    )
+    if not isinstance(preview_objects, Mapping):
+        raise ValueError('Capsule G2 requires complete separately obtained dry-run objects.')
+    candidates = {
+        (item['namespace'], item['kind'], item['name']): item
+        for item in work['scope_items']
+        if item['operation'] == 'conditional_metadata_dry_run_candidate'
+    }
+    if set(preview_objects) != set(candidates):
+        raise ValueError('Capsule dry-run preview is partial, repeated or includes foreign targets.')
+    cr, namespaces = validate_capsule_handoff_scope(plan['handoff_components'])
+    source_by_name = {ns['name']: ns for ns in namespaces}
+    source_related = {
+        (row['namespace'], row['kind'], row['name']): row
+        for row in related['resources']
+    }
+    consent_by_key = {
+        (item['namespace'], item['kind'], item['name']): item
+        for item in consent_manifest['transfer_targets']
+    }
+    receipts: list[dict[str, Any]] = []
+    for key, item in sorted(candidates.items()):
+        namespace, kind, name = key
+        preview = preview_objects[key]
+        if kind == 'Namespace':
+            before = source_namespaces[name]
+            verify_capsule_namespace_preview(
+                before=before, preview=preview,
+                successor_owner=plan['successor_owner'],
+            )
+            outcome = {
+                'kind': kind, 'namespace': '', 'name': name,
+                'uid': item['uid'],
+                'preview_sha256': _digest({
+                    'identity': _identity(preview),
+                    'labels': _labels(preview),
+                    'preserved': capsule_preservation_digest(preview),
+                }),
+            }
+        else:
+            outcome = verify_capsule_related_metadata_preview(
+                record=source_related[key], before=source_related_objects[key],
+                preview=preview, kind=kind, namespace=namespace,
+                tenant_id=plan['tenant_id'], capsule_name=cr['name'],
+                capsule_uid=cr['uid'], successor_owner=plan['successor_owner'],
+                approved_label_keys=consent_by_key[key]['proposed_label_keys'],
+            )
+            outcome = {
+                'kind': kind, 'namespace': namespace, 'name': name,
+                'uid': item['uid'], 'preview_sha256': outcome['preview_sha256'],
+            }
+        receipts.append(outcome)
+    return {
+        'status': 'full_dry_run_shapes_correlated_not_provider_authenticated',
+        'plan_sha256': work['plan_sha256'],
+        'worklist_sha256': work['worklist_sha256'],
+        'consent_manifest_sha256': work['consent_manifest_sha256'],
+        'scope_items_sha256': work['scope_items_sha256'],
+        'scope_candidate_count': work['transfer_candidate_count'],
+        'preview_count': len(receipts),
+        'preview_receipts_sha256': _digest(receipts),
+        'provider_dry_run_source_authenticated': False,
+        'server_dry_run_completed': False,
+        'start_committed': False,
+        'provider_execution_admitted': False,
+        'provider_mutation_performed': False,
+        'provider_handoff_verified': False,
         'auto_retry_authorized': False,
         'release_authorized': False,
         'secret_material_persisted': False,
