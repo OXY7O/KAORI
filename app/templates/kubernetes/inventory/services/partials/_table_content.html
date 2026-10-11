@@ -1,4 +1,3 @@
-{% import "components/info_tip.html" as info_tip %}
 {% import "components/table.html" as table_ui %}
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table_label.html" as table_label %}
@@ -14,11 +13,11 @@
                 <th scope="col"
                     class="{{ table_ui.header_cell_classes() }} min-w-[14rem]">Scope</th>
                 <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} min-w-[14rem]"><span class="inline-flex items-center gap-1">Access Model {{ info_tip.render('k8s-inventory-services-access-model', 'Service Access Model', 'How a Kubernetes Service is exposed, such as ClusterIP, NodePort, LoadBalancer, or ExternalName.', placement='right') }}</span></th>
+                    class="{{ table_ui.header_cell_classes() }} min-w-[14rem]">Access Model</th>
                 <th scope="col"
                     class="{{ table_ui.header_cell_classes() }} min-w-[13rem]">Port Mapping</th>
                 <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} min-w-[14rem]"><span class="inline-flex items-center gap-1">Backend Registration {{ info_tip.render('k8s-inventory-services-backend-registration', 'Service Backends', 'Observed endpoint or backend registration for the Service; configuration alone does not prove traffic can reach a healthy backend.', placement='right') }}</span></th>
+                    class="{{ table_ui.header_cell_classes() }} min-w-[14rem]">Backend Registration</th>
                 <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Details</th>
             </tr>
         </thead>
