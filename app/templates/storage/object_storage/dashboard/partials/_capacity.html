@@ -1,3 +1,4 @@
+{% import "components/operational_callout.html" as operational_callout %}
 {% import "components/operational_flow_steps.html" as operational_flow_steps %}
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/peer_content_grid.html" as peer_content_grid %}
@@ -114,6 +115,23 @@
                                                                         aria_label='Recommended Object Storage Capacity Action Flow') }}
                                 </div>
                             </div>
+                            {% call operational_callout.render(
+                                'Capacity Decision Notes',
+                                'Use committed usable capacity before approving storage or quota changes.',
+                                icon='clipboard-check',
+                                tone='info'
+                                ) %}
+                                <div class="grid gap-3 sm:grid-cols-2">
+                                    <div>
+                                        <p class="font-semibold text-content-primary">Planning Check</p>
+                                        <p class="mt-1">Check remaining usable capacity against expected bucket growth.</p>
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold text-content-primary">Evidence Handoff</p>
+                                        <p class="mt-1">Compare Storage Forecast and top bucket consumers before acting.</p>
+                                    </div>
+                                </div>
+                            {% endcall %}
                         </div>
                     {% else %}
                         {% set empty_state_icon = "database-zap" %}
