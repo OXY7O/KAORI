@@ -187,29 +187,45 @@ def edit(user_id: int):
         if removes_active_super_admin_authority:
             lock_active_super_admin_boundary(user)
 
-        allowed, message = can_edit_user(
-            actor,
-            user,
-            requested_role_id=form.role_id.data,
-            requested_is_active=bool(form.is_active.data),
-            requested_is_super_admin=bool(form.is_super_admin.data),
-        )
-        if not allowed:
-            return reject('User update blocked', message or 'This account cannot be modified.', target=user)
-        try:
-            create_or_update_user(form, user)
-            persist_updated_user(actor=actor, user=user)
-            feedback = user_management_feedback(
-                actor=actor,
-                event_type='user_updated',
-                status='success',
-                title='User updated',
-                message=f'{user.username} administrative profile was updated.',
-                target=user,
+        # Serialized read + persisted version comparison prevents stale
+        # administrative forms from overwriting newer profile or access state.
+        locked_user = lock_user_for_mutation(user_id)
+        if locked_user is None:
+            return reject('User unavailable', 'The requested user record was not found.', status='error')
+        user = locked_user
+        if not user_version_matches(user, form.user_version.data):
+            from app.extensions.db import db
+
+            db.session.rollback()
+            user = get_user(user_id)
+            form.user_version.errors = [
+                *form.user_version.errors,
+                'This user changed after the page was opened. Reload the latest user state before saving.',
+            ]
+        else:
+            allowed, message = can_edit_user(
+                actor,
+                user,
+                requested_role_id=form.role_id.data,
+                requested_is_active=bool(form.is_active.data),
+                requested_is_super_admin=bool(form.is_super_admin.data),
             )
-            return finish(feedback)
-        except IntegrityError:
-            form.username.errors = [*form.username.errors, 'Username or email already exists.']
+            if not allowed:
+                return reject('User update blocked', message or 'This account cannot be modified.', target=user)
+            try:
+                create_or_update_user(form, user)
+                persist_updated_user(actor=actor, user=user)
+                feedback = user_management_feedback(
+                    actor=actor,
+                    event_type='user_updated',
+                    status='success',
+                    title='User updated',
+                    message=f'{user.username} administrative profile was updated.',
+                    target=user,
+                )
+                return finish(feedback)
+            except IntegrityError:
+                form.username.errors = [*form.username.errors, 'Username or email already exists.']
 
     return render_template(
         'access/users/form.html',
