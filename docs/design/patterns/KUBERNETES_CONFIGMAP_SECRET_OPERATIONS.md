@@ -240,3 +240,8 @@ selected target **before** the first PATCH and aborts the entire batch
 without partial writes if any target is blocked. There is no silent
 override; exceptional rotation requires separately reviewed policy.
 The server repeats the check even if the UI validation trigger was bypassed.
+
+
+Bulk TLS requests must resolve **every** unique selected certificate ID at
+preview and apply time. Missing, duplicated, or malformed identities fail the
+whole group; the provider is never called with an silently narrowed target set.
