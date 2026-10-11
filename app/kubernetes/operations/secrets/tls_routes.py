@@ -67,7 +67,7 @@ def _tls_csrf_guard(location: str):
 
 def _build_tls_rotation_preview_response(rendered_html: str, payload: dict[str, Any]):
     response = make_response(rendered_html)
-    trigger = validation_trigger(payload, form_id='tls-secret-rotate-form')
+    trigger = validation_trigger(payload, form_id='tls-secret-rotate-form', require_targets=True)
     if trigger is not None:
         response.headers['HX-Trigger'] = trigger
     return response
@@ -112,6 +112,11 @@ def _record_validation_activity(
         title = 'TLS Certificate Validation Failed'
         message = 'The uploaded certificate and private key could not be validated.'
         detail = ' '.join(validation.errors) if validation.errors else None
+    elif any(item.get('status') != 'ready' for item in target_previews):
+        status = 'warning'
+        title = 'TLS Certificate Validation Blocked by Coverage'
+        message = 'At least one target lacks confirmed Ingress mapping or complete SAN coverage.'
+        detail = '; '.join(item.get('message', '') for item in target_previews if item.get('status') != 'ready')
     elif uncovered_hosts:
         status = 'warning'
         title = 'TLS Certificate Validation Completed With Warnings'
