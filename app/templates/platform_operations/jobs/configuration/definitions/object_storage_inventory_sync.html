@@ -119,5 +119,67 @@
             </footer>
         </form>
     </section>
+    {% set can_reconcile = current_user.has_permission(definition.execute_permission) and current_user.has_permission(definition.domain_execute_permission) %}
+    {% if selected_job.empty_reconciliation_targets and can_reconcile %}
+        <section class="{{ operational_section.shell_classes() }}" aria-labelledby="object-storage-empty-reconciliation-title">
+            <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+                <p class="text-xs font-semibold text-status-warning-text">Guarded Recovery · Manual Only</p>
+                <h3 id="object-storage-empty-reconciliation-title" class="mt-1 text-base font-semibold text-content-primary">
+                    Confirm an Empty Bucket Inventory
+                </h3>
+                <p class="mt-2 text-xs leading-5 text-content-secondary">
+                    Use only after independently verifying that every bucket was deliberately removed from this system.
+                    Automatic jobs retain the last committed assets when ListBuckets unexpectedly returns zero.
+                    This action checks provider eligibility and performs two complete bucket discovery requests before
+                    atomically replacing the selected system snapshot with zero assets.
+                </p>
+            </header>
+            <form method="post"
+                  action="{{ url_for('jobs.run_now', job_key=definition.key) }}"
+                  hx-post="{{ url_for('jobs.run_now', job_key=definition.key) }}"
+                  hx-target="#job-configuration-workspace"
+                  hx-swap="outerHTML"
+                  class="space-y-4 p-5 sm:p-6">
+                {{ manual_form.hidden_tag() }}
+                <input type="hidden" name="empty_reconciliation" value="confirm">
+                <div class="grid gap-4 md:grid-cols-2">
+                    <div>
+                        <label for="object-storage-confirm-empty-system" class="block text-xs font-semibold text-content-secondary">
+                            System to reconcile
+                        </label>
+                        <select id="object-storage-confirm-empty-system" name="confirm_empty_system_id"
+                                required class="mt-2 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary">
+                            <option value="">Select a managed system</option>
+                            {% for candidate in selected_job.empty_reconciliation_targets %}
+                                <option value="{{ candidate.system_id }}">
+                                    {{ candidate.system_name }} · {{ candidate.previous_bucket_count }} committed assets
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="object-storage-confirm-empty-phrase" class="block text-xs font-semibold text-content-secondary">
+                            Enter CONFIRM EMPTY to authorize verification
+                        </label>
+                        <input id="object-storage-confirm-empty-phrase" type="text" name="confirmation_phrase"
+                               placeholder="CONFIRM EMPTY" required autocomplete="off"
+                               class="mt-2 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary">
+                    </div>
+                </div>
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <p class="max-w-2xl text-xs leading-5 text-content-muted">
+                        A confirmation is bound to the current snapshot identity, the signed-in operator, and the selected system.
+                        If bucket discovery disagrees or committed evidence changes, recovery fails closed without deleting any records.
+                    </p>
+                    <button type="submit"
+                            {% if selected_job.active_job or selected_job.execution_disabled %}disabled{% endif %}
+                            class="{{ action_button.classes('secondary') }}">
+                        <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>
+                        Verify &amp; Reconcile Empty
+                    </button>
+                </div>
+            </form>
+        </section>
+    {% endif %}
     {% include "platform_operations/jobs/configuration/_execution_activity.html" %}
 </div>
