@@ -16,6 +16,7 @@ from typing import Any
 from app.kubernetes.tenant.capsule_handoff_contract import validate_capsule_handoff_scope
 from app.kubernetes.tenant.capsule_handoff_related_inventory import _digest
 from app.kubernetes.tenant.capsule_handoff_worklist import build_capsule_handoff_worklist
+from app.kubernetes.tenant.capsule_handoff_resource_admission import assess_capsule_resource_handoff_scope
 from app.kubernetes.tenant.capsule_platform_admin_authority import _capsule_admin_scope
 from app.kubernetes.tenant.release_handoff_approval import (
     _REQUIRED_DEPENDENCIES, _checked_recently, _plan_hash,
@@ -258,6 +259,8 @@ def assess_capsule_handoff_admission(
         problems.append('provider_preflight_not_admitted')
     worklist_sha256: str | None = None
     manual_review_count: int | None = None
+    per_resource_review_sha256: str | None = None
+    per_resource_review_count: int | None = None
     if cr is not None:
         try:
             problems.extend(_inspect_related(snapshot=preflight, cr=cr, namespaces=namespaces))
@@ -274,6 +277,21 @@ def assess_capsule_handoff_admission(
         else:
             worklist_sha256 = worklist['inventory_sha256']
             manual_review_count = worklist['manual_review_count']
+            try:
+                provenance = assess_capsule_resource_handoff_scope(
+                    plan=plan, related=preflight.get('capsule_related_inventory'),
+                )
+            except (TypeError, ValueError, KeyError, OverflowError):
+                problems.append('resource_specific_provenance_review_incomplete')
+            else:
+                per_resource_review_sha256 = provenance['resource_review_sha256']
+                per_resource_review_count = provenance['resource_count']
+                if provenance['worklist_sha256'] != worklist_sha256:
+                    problems.append('resource_specific_provenance_worklist_changed')
+                if provenance['source_candidate_count']:
+                    problems.append('resource_specific_controller_origin_and_successor_consent_unverified')
+                if provenance['blockers']:
+                    problems.append('resource_specific_preservation_or_handoff_blocked')
     if (
         provider_authority.get('verification_source') != 'kubernetes_self_subject_review'
         or provider_authority.get('authorization_source') != 'kubernetes_self_subject_access_review'
@@ -315,6 +333,9 @@ def assess_capsule_handoff_admission(
         'blockers': sorted(set(problems)),
         'worklist_sha256': worklist_sha256,
         'manual_review_count': manual_review_count,
+        'per_resource_review_sha256': per_resource_review_sha256,
+        'per_resource_review_count': per_resource_review_count,
+        'resource_specific_handoff_admitted': False,
         'controller_origin_verified': False,
         'dry_run_admitted': False, 'provider_execution_admitted': False,
         'resume_authorized': False, 'auto_retry_authorized': False,

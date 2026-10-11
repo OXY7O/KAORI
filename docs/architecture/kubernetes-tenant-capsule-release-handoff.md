@@ -425,6 +425,74 @@ transactional writer backend**.
 4. Keep #1229 OPEN, #1230/#1231 BLOCKED, and all CI/CD, tests, migration,
    provider operations and Release actions HOLD until individually authorized.
 
+## Controller provenance and exact per-resource admission matrix — source only
+
+`capsule_handoff_resource_admission.py` now produces an exact-scope,
+deterministically SHA-bound **per-object** investigation matrix for the
+Capsule Tenant CR, every governed Namespace, each namespaced
+ResourceQuota/LimitRange/RoleBinding and the complete cluster-scoped
+GlobalResourceQuota LIST. This matrix is derived only from the approved
+plan fingerprint, resource UID/resourceVersion, policy/metadata digests,
+per-kind LIST counts, quota scope SHA and Capsule RBAC intent/effective
+lineage. Every object has its own decision, explicit blockers and
+`controller_origin_attested=false`,
+`independent_resource_consent_verified=false`,
+`metadata_only_handoff_admitted=false`. A correlation of KAORI labels
+is **not** evidence of authenticated controller causality.
+
+### Source classification boundaries
+
+| Resource | Source correlation | Remaining proof / permitted future behavior |
+| --- | --- | --- |
+| CapsuleTenant CR | UID/RV and canonical entire-spec SHA | Capsule remains authoritative; never patch spec/owners/finalizers |
+| Namespace | Exact Capsule membership, KAORI Tenant ownership and UID/RV | Only precise KAORI metadata could be a candidate; foreign/unknown origin is investigation, not a transfer |
+| ResourceQuota | Exact KAORI origin markers, namespaced UID/RV, policy and metadata digests | Verify authenticated creating controller and allocation policy preservation; quota hard/used/spec never rewritten |
+| LimitRange | Same exact origin, scope, policy and metadata digests | Verify controller lineage and preservation of all default/min/max limits; no policy rewrite |
+| RoleBinding | Same-Tenant Capsule rule intent vs effective grant/roleRef/subjects SHA and UID/RV | Verify authenticated controller and exact grant ownership; no foreign subject, roleRef or RBAC mutation |
+| GlobalResourceQuota | Entire bounded cluster LIST, selectors and policy SHA | Always preserve; unresolved selectors and KAORI markers require manual investigation |
+
+**Fixes:** Capsule RBAC intent with a KAORI label for a different
+`kaori.io/tenant-id`, partial manager/grant labels or unknown KAORI
+keys no longer correlates to the current Tenant. An effective
+`ambiguous_kaori` RoleBinding cannot satisfy the intended grant.
+KAORI-labeled quota/limit/RBAC with a foreign ownerReference,
+mismatched Capsule Tenant label or mismatched Capsule owner UID now
+classifies as **ambiguous origin** rather than `kaori_correlated`.
+Resource LIST snapshots must match **each** kind/Namespace resource
+count even if an attacker recomputes a top-level digest. A Namespace
+with `external_or_unattributed` ownership is never a transfer candidate.
+
+`capsule_handoff_controller_audit_claims.py` provides a strict
+normalization/correlation contract for a future *trusted Kubernetes
+apiserver audit collector*. A bounded claim must match exact target
+cluster/Tenant/kind/Namespace/name/UID/resourceVersion,
+policy/metadata digests, unique audit ID, complete response stage and
+successful API response. It carries only a SHA of controller principal
+identity; no raw RBAC subjects, credentials or provider payloads are
+persisted. Any foreign, duplicate, stale or unexpected field fails
+closed. Even perfect claim correlation **does not** authenticate
+the apiserver audit source, controller ServiceAccount, operation
+causality or consent: `audit_source_authenticated=false`,
+`controller_origin_attested=false`, and
+`resource_specific_handoff_admitted=false` remain fixed.
+
+The existing `assess_capsule_handoff_admission` is integrated with
+the new per-object review digest and adds explicit blockers when
+evidence is missing or candidate origins/consent are unverified.
+Provider dry-run, PATCH, retry, Release and controller-origin
+verification are **still unadmitted**. No new endpoint, provider
+API call, live patch, audit writer, migration execution or lifecycle
+transition is introduced here.
+
+**Future admission prerequisites:** obtain trustworthy,
+TLS-authenticated apiserver audit collection with independently
+verified controller principal lineage (not managedFields or labels),
+prove all source/current UID/RV and exact per-resource metadata-only
+authority with independent successor consent, re-check actor-bound
+X.509 SSR/SAR and provider read-back, and perform explicitly authorized
+dry-run/UAT before considering any executor activation. #1229 remains
+OPEN, #1230/#1231 BLOCKED. All tests, CI/CD and provider gates HOLD.
+
 ## Required before completing #1229
 
 1. Build on the SHA-bound Namespace and cluster-scoped

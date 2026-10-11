@@ -254,3 +254,34 @@ def test_changed_provider_list_revision_invalidates_related_scope_digest():
     assert first['resource_count'] == changed['resource_count'] == 0
     assert first['resource_sha256'] != changed['resource_sha256']
     assert changed['list_snapshots'][0]['list_resource_version'] == 'new-list-rv'
+
+
+@pytest.mark.parametrize('conflict', ['foreign_owner', 'wrong_capsule_tenant', 'wrong_capsule_uid'])
+def test_kaori_labels_cannot_override_foreign_or_conflicting_capsule_origin(conflict):
+    labels = {
+        'app.kubernetes.io/managed-by': 'kaori',
+        'kaori.io/tenant-id': 'tenant-uuid',
+        'capsule.clastix.io/tenant': 'demo',
+    }
+    owners = [
+        {'kind': 'Tenant', 'apiVersion': 'capsule.clastix.io/v1beta2',
+         'name': 'demo', 'uid': 'cr-uid'},
+    ]
+    if conflict == 'foreign_owner':
+        owners.append({
+            'kind': 'ConfigMap', 'apiVersion': 'v1',
+            'name': 'foreign-controller', 'uid': 'foreign-uid',
+        })
+    elif conflict == 'wrong_capsule_tenant':
+        labels['capsule.clastix.io/tenant'] = 'another-tenant'
+    else:
+        owners[0]['uid'] = 'foreign-capsule-uid'
+    for kind in ('ResourceQuota', 'LimitRange', 'RoleBinding'):
+        source = _resource(kind, labels={
+            **labels,
+            **({'kaori.io/access-grant': 'grant-id'} if kind == 'RoleBinding' else {}),
+        }, owner_refs=owners)
+        evidence, problems = _classify(source, kind=kind)
+        assert evidence['origin'] == 'ambiguous_kaori'
+        assert evidence['mutation_authorized'] == 'false'
+        assert problems

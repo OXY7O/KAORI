@@ -52,12 +52,21 @@ def build_capsule_handoff_worklist(
     ]
     if len(list_keys) != len(lists) or len(set(list_keys)) != len(lists) or set(list_keys) != expected_lists:
         raise ValueError('Capsule worklist provider LIST scopes are incomplete or duplicated.')
+    counts: dict[tuple[str, str], int] = {key: 0 for key in expected_lists}
+    for obj in rows:
+        if not isinstance(obj, Mapping):
+            raise ValueError('Capsule resource LIST contains malformed object evidence.')
+        key = (obj.get('namespace'), obj.get('kind'))
+        if key not in counts:
+            raise ValueError('Capsule related inventory contains a foreign Namespace or kind.')
+        counts[key] += 1
     if (
         any(
             not isinstance(item, Mapping)
             or not isinstance(item.get('list_resource_version'), str)
             or not item['list_resource_version']
             or type(item.get('count')) is not int or not 0 <= item['count'] <= 100
+            or item['count'] != counts[(item['namespace'], item['kind'])]
             for item in lists
         )
         or _digest({'resources': rows, 'lists': lists})
@@ -111,7 +120,12 @@ def build_capsule_handoff_worklist(
             action=(
                 'candidate_kaori_metadata_handoff_review'
                 if ns['handoff'] == 'external_acceptance_required'
-                else 'preserve_existing_provider_namespace'
+                and ns['ownership'] == 'kaori_marker_correlated'
+                else (
+                    'operator_origin_investigation'
+                    if ns['handoff'] == 'external_acceptance_required'
+                    else 'preserve_existing_provider_namespace'
+                )
             ),
         )
     for obj in rows:

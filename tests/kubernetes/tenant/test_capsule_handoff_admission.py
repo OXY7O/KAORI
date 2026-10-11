@@ -272,3 +272,24 @@ def test_unhashable_provider_list_scope_is_a_fail_closed_finding_not_server_erro
     assert 'related_inventory_malformed' in result['blockers']
     assert result['provider_execution_admitted'] is False
     assert result['release_authorized'] is False
+
+
+def test_admission_exposes_bounded_per_object_origin_review_without_granting_mutation():
+    case = _fixture()
+    report = _assess(case)
+    assert report['per_resource_review_count'] == 2
+    assert len(report['per_resource_review_sha256']) == 64
+    assert report['resource_specific_handoff_admitted'] is False
+    assert report['controller_origin_verified'] is False
+    assert report['dry_run_admitted'] is False
+    assert report['provider_execution_admitted'] is False
+
+
+def test_admission_rejects_missing_per_object_lineage_instead_of_trusting_labels():
+    case = _fixture()
+    related = case['preflight']['capsule_related_inventory']
+    related.pop('rbac_lineage')
+    report = _assess(case)
+    assert 'resource_specific_provenance_review_incomplete' in report['blockers']
+    assert report['per_resource_review_sha256'] is None
+    assert report['provider_execution_admitted'] is False
