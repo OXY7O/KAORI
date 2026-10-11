@@ -756,3 +756,120 @@ def test_g2g3_trace_requires_start_and_matching_preview_readback_claim():
             preview_review={**dryrun, 'scope_items_sha256': '0'*64},
             readback_candidate=readback,
         )
+
+
+def _g2_related_case(kind):
+    case = _full_related_case(kind, include_foreign=True)
+    plan, related, _, cr, namespace, _, evidence, foreign = case
+    report = assess_capsule_resource_handoff_scope(plan=plan, related=related)
+    now = datetime.now(UTC).isoformat()
+    approval = {
+        'status': 'acknowledged_pending_provider_handoff',
+        'plan_sha256': plan['plan_sha256'],
+        'approved_by': 11, 'requested_by': 10, 'approved_at': now,
+        'provider_handoff_verified': False, 'release_authorized': False,
+    }
+    acceptance = {
+        'status': 'platform_admin_handoff_accepted',
+        'accepted_by': 12, 'reviewed_by': 11,
+        'tenant_id': plan['tenant_id'], 'cluster_id': plan['cluster_id'],
+        'generation': plan['generation'], 'plan_sha256': plan['plan_sha256'],
+        'handoff_fingerprint': plan['handoff_fingerprint'],
+        'accepted_at': now, 'consent_verified': True,
+        'provider_mutation_performed': False,
+        'provider_handoff_verified': False,
+        'release_authorized': False,
+        'secret_material_persisted': False,
+    }
+    targets = []
+    for row in report['resources']:
+        if row['inventory_decision'] not in (
+            'candidate_kaori_metadata_handoff_review',
+            'explicit_kaori_metadata_handoff_review',
+        ):
+            continue
+        labels = (
+            ['app.kubernetes.io/managed-by', 'kaori.io/tenant-id']
+            if row['kind'] == 'Namespace'
+            else next(iter(evidence.values()))['approved_label_keys']
+        )
+        targets.append({
+            'kind': row['kind'], 'namespace': row['namespace'],
+            'name': row['name'], 'uid': row['uid'],
+            'resource_version': row['resource_version'],
+            'policy_sha256': row['policy_sha256'],
+            'metadata_sha256': row['metadata_sha256'],
+            'decision': 'proposed_metadata_labels_only',
+            'proposed_label_keys': list(labels),
+        })
+    manifest = {
+        'contract_version': 'capsule-resource-successor-consent/v1',
+        'tenant_id': plan['tenant_id'], 'cluster_id': plan['cluster_id'],
+        'generation': plan['generation'], 'plan_sha256': plan['plan_sha256'],
+        'handoff_fingerprint': plan['handoff_fingerprint'],
+        'worklist_sha256': report['worklist_sha256'],
+        'resource_review_sha256': report['resource_review_sha256'],
+        'change_reference': plan['change_reference'],
+        'reviewed_by': 11, 'accepted_by': 12, 'accepted_at': now,
+        'transfer_targets': targets,
+    }
+    original = {
+        key: value['before'] for key, value in evidence.items()
+    }
+    original[('demo-dev', kind, 'external-control')] = foreign
+    params = dict(
+        plan=plan, related=related, current_capsule_cr=cr,
+        source_namespaces={'demo-dev': namespace},
+        source_related_objects=original, approval=approval,
+        acceptance=acceptance, consent_manifest=manifest,
+    )
+    ns_preview = deepcopy(namespace)
+    ns_preview.metadata.labels['app.kubernetes.io/managed-by'] = 'platform-team'
+    del ns_preview.metadata.labels['kaori.io/tenant-id']
+    preview = {
+        ('', 'Namespace', 'demo-dev'): ns_preview,
+        next(iter(evidence)): next(iter(evidence.values()))['current'],
+    }
+    return params, preview
+
+
+@pytest.mark.parametrize('kind', ('ResourceQuota', 'LimitRange', 'RoleBinding'))
+def test_complete_g2_scope_covers_related_control_and_preserves_foreign(kind):
+    source, previews = _g2_related_case(kind)
+    prepared = build_capsule_scope_patch_review(**source)
+    assert prepared['transfer_candidate_count'] == 2
+    assert prepared['preserved_namespaced_count'] == 1
+    assert prepared['globally_preserved_count'] == 1
+    assert len(prepared['scope_items']) == 4
+    assert len([row for row in prepared['scope_items'] if row.get('patch_sha256')]) == 2
+    dryrun = inspect_capsule_complete_dry_run_shapes(
+        **source, preview_objects=previews,
+    )
+    assert dryrun['preview_count'] == 2
+    assert dryrun['server_dry_run_completed'] is False
+    assert dryrun['provider_execution_admitted'] is False
+    assert dryrun['release_authorized'] is False
+    assert 'existing-serviceaccount' not in str(dryrun)
+
+
+@pytest.mark.parametrize('kind', ('ResourceQuota', 'LimitRange', 'RoleBinding'))
+def test_complete_g2_scope_rejects_missing_foreign_control_or_related_dryrun(kind):
+    source, previews = _g2_related_case(kind)
+    source['source_related_objects'].pop(('demo-dev', kind, 'external-control'))
+    with pytest.raises(ValueError, match='every namespaced'):
+        build_capsule_scope_patch_review(**source)
+    source, previews = _g2_related_case(kind)
+    previews.pop(('demo-dev', kind, 'controlled'))
+    with pytest.raises(ValueError, match='partial'):
+        inspect_capsule_complete_dry_run_shapes(
+            **source, preview_objects=previews,
+        )
+    source, previews = _g2_related_case(kind)
+    if kind == 'RoleBinding':
+        previews[('demo-dev', kind, 'controlled')].subjects[0]['name'] = 'changed'
+    else:
+        previews[('demo-dev', kind, 'controlled')].spec['forged'] = True
+    with pytest.raises(ValueError):
+        inspect_capsule_complete_dry_run_shapes(
+            **source, preview_objects=previews,
+        )
