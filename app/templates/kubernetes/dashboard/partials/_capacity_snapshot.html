@@ -96,6 +96,23 @@
                     {{ operational_flow_steps.render(capacity_action_rows, aria_label='Recommended Capacity Action Flow') }}
                 </div>
             </div>
+            {% call operational_callout.render(
+                'Capacity Decision Notes',
+                'Use committed worker capacity as the baseline before changing resources.',
+                icon='clipboard-check',
+                tone='info'
+                ) %}
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <div>
+                        <p class="font-semibold text-content-primary">Planning Check</p>
+                        <p class="mt-1">Validate worker headroom against planned workload demand.</p>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-content-primary">Evidence Handoff</p>
+                        <p class="mt-1">Review Forecast and Top Consumers before adjusting requests, limits, or nodes.</p>
+                    </div>
+                </div>
+            {% endcall %}
         </div>
     {% endif %}
 {% endcall %}
