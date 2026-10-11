@@ -523,3 +523,17 @@ Resource Forecast follows `docs/design/components/ANALYTICS_RESOURCE_FORECAST.md
 CPU, memory, and active-Pod demand are scoped to Ready worker nodes and exclude `control-plane|master`. Duplicate container, Pod, node, and PVC series are normalized before aggregation. Storage compares PVC usage with observed mounted-volume capacity. Resource status uses the highest projected point inside the selected horizon; threshold ETA walks projected points from the latest observation and is bounded by that horizon. Low signal quality is Limited Evidence, never Healthy.
 
 Forecast ownership is split across `contracts.py`, `calculation.py`, `resource.py`, `service.py`, `presentation.py`, and `routes.py`. `/analytics/forecast` is the only workspace route; the unused `/forecast/section` compatibility surface is removed. The chart aligns all resources to one timestamp axis and preserves missing observations as null.
+
+
+### Alert-source payload completeness (#1348)
+
+An observed empty Alerts result is authoritative **only** when the owning
+Alertmanager or Metrics Source query returns a valid, complete list response.
+The Analytics worker rejects missing or malformed Alertmanager `alerts` and
+Metrics Source `data.result` vectors, mixed invalid records, and inconsistent
+success/error evidence. Such results are classified as unavailable, not as
+zero live alerts or Healthy; the existing `source=auto` fallback remains in
+control and independent restart/readiness anomaly evidence remains separate.
+Provider transport details stay server-side; committed status contains only
+sanitized operational source errors. Normal UI reads committed snapshots and
+never queries Alertmanager or Metrics Source synchronously.
