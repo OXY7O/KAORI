@@ -54,7 +54,7 @@ _REDACTED = '[REDACTED]'
 _URL_CREDENTIAL = re.compile(r'(?i)(https?://)[^/@\s]+:[^/@\s]+@')
 _AUTHORIZATION_VALUE = re.compile(r'(?i)\b(bearer|basic)\s+[a-z0-9._~+/\-]+=*')
 _SENSITIVE_ASSIGNMENT = re.compile(
-    r'''(?i)(["']?(?:password|passwd|passphrase|token|access[-_]?token|refresh[-_]?token|secret|client[-_]?secret|(?:x[-_])?api[-_]?key|apikey|authorization|cookie|session[-_]?key|private[-_]?key|kubeconfig)["']?\s*[:=]\s*)(["']?)([^\s,'";&}\]]+)'''
+    r'''(?i)(["']?(?:password|passwd|passphrase|token|access[-_]?token|refresh[-_]?token|secret|client[-_]?secret|(?:x[-_])?api[-_]?key|apikey|authorization|cookie|session[-_]?key|private[-_]?key|kubeconfig)["']?\s*[:=]\s*)(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|[^\s,'";&}\]]+)'''
 )
 _PRIVATE_KEY_MARKER = re.compile(r'(?i)-----BEGIN\s+(?:[A-Z ]*\s)?PRIVATE KEY-----')
 _CONTROL_CHARACTERS = re.compile(r'[\x00-\x08\x0b-\x1f\x7f]')

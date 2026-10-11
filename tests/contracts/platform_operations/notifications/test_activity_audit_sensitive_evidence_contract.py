@@ -40,6 +40,8 @@ def test_technical_text_scrubber_handles_encoded_keys_urls_headers_and_controls(
         'api_key%3Dsynthetic-hidden-encoded',
         'secret%253Dsynthetic-hidden-double-encoded',
         'password: synthetic-hidden-password',
+        'token: "synthetic-hidden-multi word value"',
+        "client_secret: 'synthetic-hidden-space separated'",
         'private_key=synthetic-hidden-private',
         'cookie=synthetic-hidden-cookie',
         'x-api-key=synthetic-hidden-api',
