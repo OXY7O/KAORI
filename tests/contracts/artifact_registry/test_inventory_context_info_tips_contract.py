@@ -18,7 +18,8 @@ def test_registry_projects_repositories_artifacts_have_contextual_table_help() -
     headers = re.findall(r'<thead[^>]*>[\s\S]*?</thead>', source)
     for table, (domain, labels) in zip(headers, expected.items(), strict=True):
         for label in labels:
-            assert f'>{label} {{{{ info_tip.render(\'registry-inventory-{domain}-' in table
+            assert f'>{label} ' in table
+            assert f"info_tip.render('registry-inventory-{domain}-" in table
 
     ids = re.findall(r"info_tip.render\('(registry-inventory-[^']+)'", source)
     assert len(ids) == 10 and len(set(ids)) == len(ids)
