@@ -4,13 +4,14 @@ from typing import Any, cast
 
 from flask import (
     Blueprint,
+    current_app,
     redirect,
     render_template,
     request,
     url_for,
 )
 from flask_login import current_user
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.access.rbac.decorators import permission_required
 from app.access.users.directory import (
@@ -251,7 +252,11 @@ def activate(user_id: int):
     allowed, message = can_activate_user(actor, user)
     if not allowed:
         return reject('Activation blocked', message or 'This account cannot be activated.', target=user)
-    activate_user_account(actor=actor, user=user)
+    try:
+        activate_user_account(actor=actor, user=user)
+    except SQLAlchemyError:
+        current_app.logger.exception('User activation transaction failed for user id %s.', user.id)
+        return reject('Activation failed', 'This account could not be activated. No change was saved.', status='error', target=user)
     return finish(
         user_management_feedback(
             actor=actor,
@@ -275,7 +280,11 @@ def deactivate(user_id: int):
     allowed, message = can_deactivate_user(actor, user)
     if not allowed:
         return reject('Deactivation blocked', message or 'This account cannot be deactivated.', target=user)
-    deactivate_user_account(actor=actor, user=user)
+    try:
+        deactivate_user_account(actor=actor, user=user)
+    except SQLAlchemyError:
+        current_app.logger.exception('User deactivation transaction failed for user id %s.', user.id)
+        return reject('Deactivation failed', 'This account could not be deactivated. No change was saved.', status='error', target=user)
     return finish(
         user_management_feedback(
             actor=actor,
@@ -302,17 +311,25 @@ def reset_password(user_id: int):
         )
     form = ResetPasswordForm()
     if form.validate_on_submit():
-        reset_user_password(actor=actor, user=user, password=form.password.data or '')
-        return finish(
-            user_management_feedback(
-                actor=actor,
-                event_type='user_password_reset',
-                status='success',
-                title='Password reset completed',
-                message=f'A new Local Database password was set for {user.username}; existing sessions were revoked.',
-                target=user,
+        try:
+            reset_user_password(actor=actor, user=user, password=form.password.data or '')
+        except SQLAlchemyError:
+            current_app.logger.exception('User password-reset transaction failed for user id %s.', user.id)
+            form.password.errors = [
+                *form.password.errors,
+                'The password could not be reset. No change was saved; please retry.',
+            ]
+        else:
+            return finish(
+                user_management_feedback(
+                    actor=actor,
+                    event_type='user_password_reset',
+                    status='success',
+                    title='Password reset completed',
+                    message=f'A new Local Database password was set for {user.username}; existing sessions were revoked.',
+                    target=user,
+                )
             )
-        )
     return render_template('access/users/reset_password.html', form=form, user=user)
 
 
@@ -326,7 +343,11 @@ def restore(user_id: int):
     allowed, message = can_restore_user(actor, user)
     if not allowed:
         return reject('Restore blocked', message or 'This account cannot be restored.', target=user)
-    restore_user_account(actor=actor, user=user)
+    try:
+        restore_user_account(actor=actor, user=user)
+    except SQLAlchemyError:
+        current_app.logger.exception('User restoration transaction failed for user id %s.', user.id)
+        return reject('Restoration failed', 'This account could not be restored. No change was saved.', status='error', target=user)
     return finish(
         user_management_feedback(
             actor=actor,
@@ -350,7 +371,11 @@ def delete(user_id: int):
     allowed, message = can_delete_user(actor, user)
     if not allowed:
         return reject('Deletion blocked', message or 'This account cannot be deleted.', target=user)
-    delete_user_account(actor=actor, user=user)
+    try:
+        delete_user_account(actor=actor, user=user)
+    except SQLAlchemyError:
+        current_app.logger.exception('User soft deletion transaction failed for user id %s.', user.id)
+        return reject('Deletion failed', 'This account could not be deleted. No change was saved.', status='error', target=user)
     return finish(
         user_management_feedback(
             actor=actor,
