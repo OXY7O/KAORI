@@ -84,19 +84,19 @@
             {% call detail_ui.detail_card('Registry Boundary', 'database-zap', stretch=false, density='compact') %}
                 <div class="flex min-w-0 max-w-4xl flex-col gap-3">
                     {% if permission.state_key == 'canonical' %}
-                    {{ detail_ui.stacked_detail_row('Registry State', 'Registry metadata matches the application code contract.') }}
-                {% elif permission.state_key == 'missing' %}
-                    {{ detail_ui.stacked_detail_row('Registry State', 'This code-owned permission is missing from the RBAC registry.') }}
-                    {{ detail_ui.stacked_detail_row('Recovery', 'Review the RBAC baseline, then run the governed flask seed-rbac deployment step.') }}
-                {% elif permission.state_key == 'metadata_drift' %}
-                    {{ detail_ui.stacked_detail_row('Registry State', 'Persisted metadata differs from the code-owned contract.') }}
-                    {{ detail_ui.detail_row('Stored Module', permission.database_module or '-') }}
-                    {{ detail_ui.detail_row('Stored Action', permission.database_action or '-') }}
-                    {{ detail_ui.stacked_detail_row('Recovery', 'Run the governed flask seed-rbac deployment step to synchronize metadata.') }}
-                {% else %}
-                    {{ detail_ui.stacked_detail_row('Registry State', 'This database permission is absent from the current code baseline.') }}
-                    {{ detail_ui.stacked_detail_row('Cleanup Boundary', 'Review role mappings before a controlled RBAC cleanup migration.') }}
-                {% endif %}
+                        {{ detail_ui.stacked_detail_row('Registry State', 'Registry metadata matches the application code contract.') }}
+                    {% elif permission.state_key == 'missing' %}
+                        {{ detail_ui.stacked_detail_row('Registry State', 'This code-owned permission is missing from the RBAC registry.') }}
+                        {{ detail_ui.stacked_detail_row('Recovery', 'Review the RBAC baseline, then run the governed flask seed-rbac deployment step.') }}
+                    {% elif permission.state_key == 'metadata_drift' %}
+                        {{ detail_ui.stacked_detail_row('Registry State', 'Persisted metadata differs from the code-owned contract.') }}
+                        {{ detail_ui.stacked_detail_row('Stored Module', permission.database_module or '-') }}
+                        {{ detail_ui.stacked_detail_row('Stored Action', permission.database_action or '-') }}
+                        {{ detail_ui.stacked_detail_row('Recovery', 'Run the governed flask seed-rbac deployment step to synchronize metadata.') }}
+                    {% else %}
+                        {{ detail_ui.stacked_detail_row('Registry State', 'This database permission is absent from the current code baseline.') }}
+                        {{ detail_ui.stacked_detail_row('Cleanup Boundary', 'Review role mappings before a controlled RBAC cleanup migration.') }}
+                    {% endif %}
                     <div class="border-t border-outline-subtle pt-3">
                         {{ detail_ui.stacked_detail_row('Read Boundary', 'Permission Catalog never mutates or synchronizes the RBAC registry during HTTP GET requests.') }}
                     </div>
