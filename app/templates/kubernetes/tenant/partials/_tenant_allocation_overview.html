@@ -188,27 +188,21 @@
                     aria-describedby="{{ contributions_dialog_id }}-description"
                     class="kaori-native-dialog m-auto w-[calc(100vw-1.5rem)] max-w-5xl overflow-hidden rounded-2xl border border-outline-default bg-surface-card p-0 shadow-2xl sm:w-[calc(100vw-3rem)]">
                 <section class="flex max-h-[calc(100dvh-2rem)] min-h-0 flex-col overflow-hidden" role="document">
-                    <header class="flex shrink-0 items-start justify-between gap-4 border-b border-outline-subtle px-4 py-5 sm:px-6">
-                        <div class="min-w-0">
-                            <p class="text-xs font-semibold text-kaori-primary">Committed Allocation Evidence</p>
-                            <h2 id="{{ contributions_dialog_id }}-title" class="mt-1 text-lg font-semibold text-content-primary">
-                                Tenant Contributions
-                            </h2>
-                            <p class="mt-1 text-sm text-content-secondary">
-                                {{ allocation_overview.cluster.name }} · {{ allocation_overview.cluster.environment|title }}
-                            </p>
-                            <p id="{{ contributions_dialog_id }}-description"
-                               class="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs leading-5 text-content-muted">
-                                <span>Governed Namespace requests; Capsule shared quota counted once per Tenant.</span>
-                                <a href="{{ url_for('tenant.tenants', section='registry') }}"
-                                   class="inline-flex min-h-7 shrink-0 items-center gap-1 rounded-md text-xs font-semibold text-kaori-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
-                                   aria-label="Open Tenant Registry">
-                                    Tenant Registry
-                                    <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                </a>
-                            </p>
-                        </div>
-                        <div class="flex shrink-0 items-center gap-2">
+                    <header class="shrink-0 border-b border-outline-subtle px-4 py-5 sm:px-6">
+                        <div class="flex min-w-0 items-start justify-between gap-4">
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold text-kaori-primary">Committed Allocation Evidence</p>
+                                <div class="mt-1 flex min-w-0 flex-wrap items-center gap-2">
+                                    <h2 id="{{ contributions_dialog_id }}-title"
+                                        class="text-lg font-semibold text-content-primary">
+                                        Tenant Contributions
+                                    </h2>
+                                    {{ table_label.status_label('Read-only', 'info') }}
+                                </div>
+                                <p class="mt-1 text-sm text-content-secondary">
+                                    {{ allocation_overview.cluster.name }} · {{ allocation_overview.cluster.environment|title }}
+                                </p>
+                            </div>
                             <button type="button"
                                     data-kaori-dialog-close
                                     class="{{ table_ui.action_classes() }} shrink-0"
@@ -216,18 +210,30 @@
                                 <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
                             </button>
                         </div>
+                        <div class="mt-2 flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-1">
+                            <p id="{{ contributions_dialog_id }}-description"
+                               class="min-w-0 text-xs leading-5 text-content-muted">
+                                Governed Namespace requests; Capsule shared quota counted once per Tenant.
+                            </p>
+                            <a href="{{ url_for('tenant.tenants', section='registry') }}"
+                               class="ml-auto inline-flex min-h-7 shrink-0 items-center gap-1 rounded-md text-xs font-semibold text-kaori-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
+                               aria-label="Open Tenant Registry">
+                                Tenant Registry
+                                <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                            </a>
+                        </div>
                     </header>
                     <section class="shrink-0 border-b border-outline-subtle px-4 py-3 sm:px-6"
                              aria-label="Committed Tenant allocation summary">
-                        {# A single segmented facts strip is easier to scan than four floating KPI cards. #}
-                        <dl class="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle sm:grid-cols-4">
+                        {# Four unboxed facts separated only by vertical rules; two columns on mobile. #}
+                        <dl class="grid grid-cols-2 gap-y-2 sm:grid-cols-4">
                             {% for label, value in [
                                 ('Committed Tenants', allocation_tenant_summary.tenants),
                                 ('Namespaces', allocation_tenant_summary.namespaces),
                                 ('Shared Quota', allocation_tenant_summary.shared),
                                 ('Needs Review', allocation_tenant_summary.attention)
                             ] %}
-                                <div class="min-w-0 bg-surface-card px-3 py-2.5 sm:px-4">
+                                <div class="min-w-0 border-r border-outline-subtle px-3 py-2 even:border-r-0 sm:even:border-r sm:last:border-r-0 sm:px-4">
                                     <dt class="text-xs leading-5 text-content-muted">{{ label }}</dt>
                                     <dd class="mt-0.5 text-base font-semibold tabular-nums leading-6 text-content-primary">{{ value }}</dd>
                                 </div>

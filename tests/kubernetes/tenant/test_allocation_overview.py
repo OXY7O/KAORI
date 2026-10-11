@@ -445,7 +445,7 @@ def test_terminal_capsule_generation_does_not_count_historical_shared_quota() ->
     assert rows[0]["allocation"]["cpu"] == "4.00 cores"
 
 
-def test_tenant_contribution_modal_uses_one_segmented_summary_and_unboxed_metrics() -> None:
+def test_tenant_contribution_modal_uses_divider_only_summary_and_unboxed_metrics() -> None:
     """Readable bordered records without recursively boxed summary and quota cards."""
     from pathlib import Path
 
@@ -463,10 +463,12 @@ def test_tenant_contribution_modal_uses_one_segmented_summary_and_unboxed_metric
         '</article>', 1
     )[0]
 
-    # Only one enclosing summary surface; thin separators between four facts.
-    assert 'grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-outline-subtle' in summary
-    assert 'bg-outline-subtle sm:grid-cols-4' in summary
-    assert 'min-w-0 bg-surface-card px-3 py-2.5' in summary
+    # No outer summary or four nested cards: only responsive vertical dividers.
+    assert 'grid grid-cols-2 gap-y-2 sm:grid-cols-4' in summary
+    assert 'min-w-0 border-r border-outline-subtle px-3 py-2' in summary
+    assert 'even:border-r-0 sm:even:border-r sm:last:border-r-0' in summary
+    assert 'rounded-lg border border-outline-subtle bg-outline-subtle' not in summary
+    assert 'bg-surface-card px-3 py-2.5' not in summary
     assert 'shadow-sm' not in summary
     assert 'tabular-nums leading-6 text-content-primary' in summary
 
@@ -533,8 +535,8 @@ def test_tenant_contribution_scroll_frame_and_fixed_evidence_footer() -> None:
     assert 'data-kaori-dialog-close' in dialog
 
 
-def test_tenant_contributions_registry_link_sits_after_description_not_beside_close() -> None:
-    """#1153: one responsive lightweight link at the end of the header guidance."""
+def test_tenant_contributions_header_has_title_label_and_right_aligned_registry_link() -> None:
+    """#1153: right-aligned Registry link stays on the description row, separate from Close."""
     from pathlib import Path
 
     root = Path(__file__).resolve().parents[3]
@@ -544,16 +546,21 @@ def test_tenant_contributions_registry_link_sits_after_description_not_beside_cl
     Environment(autoescape=True).parse(page)
     dialog = page.split('<dialog id="{{ contributions_dialog_id }}"', 1)[1].split("</dialog>", 1)[0]
     header = dialog.split("<header ", 1)[1].split("</header>", 1)[0]
-    guidance = header.split('id="{{ contributions_dialog_id }}-description"', 1)[1].split("</p>", 1)[0]
-    closing_controls = header.split("</p>", 1)[1]
+    title_line = header.split('id="{{ contributions_dialog_id }}-title"', 1)[1].split("</div>", 1)[0]
+    closing_control = header.split('data-kaori-dialog-close', 1)[1].split("</button>", 1)[0]
+    description_row = header.split('class="mt-2 flex min-w-0 flex-wrap items-center justify-between', 1)[1]
+    description = description_row.split('id="{{ contributions_dialog_id }}-description"', 1)[1].split("</p>", 1)[0]
+    registry_link = description_row.split('<a href=', 1)[1].split("</a>", 1)[0]
 
-    assert 'Governed Namespace requests; Capsule shared quota counted once per Tenant.' in guidance
-    assert 'url_for(\'tenant.tenants\', section=\'registry\')' in guidance
-    assert guidance.index("Governed Namespace requests") < guidance.index("Tenant Registry")
-    assert 'flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1' in guidance
-    assert 'aria-label="Open Tenant Registry"' in guidance
-    assert '<a href=' not in closing_controls
-    assert 'data-kaori-dialog-close' in closing_controls
+    assert 'Tenant Contributions' in title_line
+    assert "table_label.status_label('Read-only', 'info')" in title_line
+    assert 'Governed Namespace requests; Capsule shared quota counted once per Tenant.' in description
+    assert 'href="{{ url_for(\'tenant.tenants\', section=\'registry\') }}"' in description_row
+    assert 'ml-auto inline-flex min-h-7' in registry_link
+    assert 'aria-label="Open Tenant Registry"' in registry_link
+    assert 'Tenant Registry' in registry_link
+    assert '<a href=' not in closing_control
+    assert 'data-kaori-dialog-close' in header
     assert header.count('aria-label="Open Tenant Registry"') == 1
     assert dialog.count('data-kaori-dialog-close') == 1
     assert 'id="{{ contributions_body_id }}"' in dialog
