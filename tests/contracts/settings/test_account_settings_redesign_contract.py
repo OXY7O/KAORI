@@ -125,11 +125,19 @@ def test_authentication_activity_is_full_width_with_inline_evidence_boundary() -
     assert "table_label.status_indicator_label('Success', 'normal')" in activity
     assert "is_logout and is_success" in activity
     assert "table_label.metadata_label('Recorded', 'check')" in activity
-    assert 'bg-kaori-soft/50' in activity
+    assert 'data-authentication-summary="compact-strip"' in activity
+    assert 'data-authentication-event-feed="primary"' in activity
+    assert 'Event Summary' in activity
+    assert 'Latest Events' in activity
+    assert 'Based on {{ activity_summary.total }} latest events (max 5), not full history' in activity
+    assert 'sm:grid-cols-3 sm:divide-x sm:divide-y-0' in activity
     assert 'bg-status-normal-soft text-status-normal-text' in activity
     assert 'bg-status-critical-soft text-status-critical-text' in activity
-    assert 'p-4 shadow-sm' in activity
-    assert 'bg-kaori-soft/30' in activity
+    assert 'bg-kaori-soft/50' not in activity
+    assert 'p-4 shadow-sm' not in activity
+    assert 'bg-kaori-soft/30' not in activity
+    assert 'Scroll horizontally to see all event details.' in activity
+    assert 'aria-label="Recent authentication events, newest first"' in activity
     assert 'Counts from' not in activity
     assert 'Showing ' in activity
     assert 'max 5' in activity
@@ -138,11 +146,11 @@ def test_authentication_activity_is_full_width_with_inline_evidence_boundary() -
 
     assert 'data-authentication-evidence-boundary="inline"' in activity
     assert 'Authentication Evidence' in activity
-    assert 'Recent Event Snapshot' in activity
+    assert 'Event Summary' in activity
     assert 'activity_summary.total' in activity
     assert 'max 5' in activity
     assert "if activity_summary.failed" in activity
-    assert "table_label.status_indicator_label('None', 'normal')" in activity
+    assert 'None in this sample' in activity
     assert "table_label.status_indicator_label('Observed', 'critical')" in activity
     assert "table_label.status_indicator_label('Review', 'critical')" not in activity
     assert 'Sign-In Failed' in activity
