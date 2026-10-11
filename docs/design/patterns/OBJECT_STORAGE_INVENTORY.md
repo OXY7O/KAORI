@@ -32,9 +32,12 @@ Hero
 → Object Storage Asset Catalog
 ```
 
-`Fleet Inventory Posture` and `Object Storage Asset Catalog` use the shared plain `section_intro.html` heading/description hierarchy outside their content blocks. Fleet readings render directly as `operational_callout.html` items, and inventory destinations render directly as `inventory_asset_card.html` items. Do not wrap either section in another `operational_section_card`; nested card shells duplicate hierarchy and weaken the scan path.
+`Fleet Inventory Posture` and `Inventory Assets` retain their shared plain `section_intro.html` heading/description hierarchy outside the content blocks. Following explicit human DevContainer review in #946, both content groups intentionally use **one** shared `operational_section_card.html` each rather than flat callouts or nested shells:
 
-The posture content remains domain-owned: quota evidence, normalized protection attention, public exposure, and optional usage evidence. Fleet posture uses the existing neutral operational-callout variant: standard white/elevated blocks with semantic meaning constrained to icon/status treatment rather than full-card tint. The Asset Catalog remains provider-neutral and links to Systems and Buckets & Containers.
+- `Fleet Inventory Posture` → `Object Storage Fleet Evidence` → shared `resource_posture_grid.html` with **four** committed signals (quota assessment, protection attention, public exposure, optional usage evidence). Metric labels/values stay separate within the shared grid and preserve evidence-qualified tones. No collected assets produce `No Evidence`, not a fabricated normal/zero state.
+- `Inventory Assets` → `Object Storage Asset Catalog` → dynamic `2 Asset Types` badge plus two shared `inventory_asset_card.html` links (Systems and Buckets & Containers) in the responsive two-column grid.
+
+The four metrics remain domain-owned, not mechanically copied from Registry. Green clean-state protection or public exposure requires complete corresponding committed control evidence; partial or unknown evidence is explicitly qualified, never interpreted as compliance. There is **no additional outer section-card shell** around the two approved content cards. `docs/design/patterns/KUBERNETES_INVENTORY_OVERVIEW.md` and #946 are the review authority for this current composition.
 
 Systems and Buckets & Containers reuse the canonical Inventory Resource Page hierarchy:
 
