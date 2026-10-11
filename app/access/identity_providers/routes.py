@@ -96,6 +96,17 @@ def create():
             provider = create_identity_provider(configuration_from_form(form))
         except IntegrityError:
             form.key.errors = [*form.key.errors, 'Provider key already exists.']
+        except SQLAlchemyError:
+            rollback_identity_provider_transaction()
+            current_app.logger.exception('Failed to create identity provider configuration.')
+            form.key.errors = [*form.key.errors, 'The provider could not be saved. Please retry.']
+            identity_provider_feedback(
+                actor=actor,
+                event_type='identity_provider_create_failed',
+                status='error',
+                title='Provider creation failed',
+                message='No provider configuration was saved.',
+            )
         else:
             identity_provider_feedback(
                 actor=actor,
@@ -135,6 +146,19 @@ def edit(provider_id: int):
                 form.key.errors = [*form.key.errors, str(exc)]
         except IntegrityError:
             form.key.errors = [*form.key.errors, 'Provider key already exists.']
+        except SQLAlchemyError:
+            rollback_identity_provider_transaction()
+            current_app.logger.exception('Failed to update identity provider id %s.', provider.id)
+            form.key.errors = [*form.key.errors, 'The provider changes could not be saved. Please retry.']
+            identity_provider_feedback(
+                actor=actor,
+                event_type='identity_provider_update_failed',
+                status='error',
+                title='Provider update failed',
+                message='No provider configuration changes were saved.',
+                provider_id=provider.id,
+                provider_key=provider.provider_key,
+            )
         else:
             identity_provider_feedback(
                 actor=actor,
