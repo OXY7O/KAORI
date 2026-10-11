@@ -211,9 +211,11 @@ def classify_capsule_related_resource(
         role_ref = _get(resource, 'role_ref') or _get(resource, 'roleRef')
         role = _get(role_ref, 'name')
         role_kind = _get(role_ref, 'kind')
+        role_group = _get(role_ref, 'api_group') or _get(role_ref, 'apiGroup')
         if (
             not isinstance(grant, str) or not grant
             or role_kind != 'ClusterRole'
+            or role_group != 'rbac.authorization.k8s.io'
             or not isinstance(role, str) or not role
             or kaori_id != tenant_id
         ):
