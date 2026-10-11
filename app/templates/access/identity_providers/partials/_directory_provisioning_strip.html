@@ -1,44 +1,23 @@
-{% import "components/table_primitives.html" as surface_ui %}
-<section class="{{ surface_ui.block_classes() }}">
-    <header class="flex flex-col gap-4 border-b border-outline-subtle px-5 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
-        <div class="flex min-w-0 items-start gap-3">
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                  aria-hidden="true">
-                <i data-lucide="contact-round" class="h-5 w-5"></i>
-            </span>
-            <div class="min-w-0">
-                <div class="flex flex-wrap items-center gap-2">
-                    <h2 class="text-base font-semibold text-content-primary">Directory Provisioning</h2>
-                    <span class="inline-flex min-h-6 items-center rounded-md border border-outline-subtle bg-surface-subtle px-2 text-xs font-semibold text-content-secondary">Directory Workflow</span>
-                </div>
-                <p class="mt-1 text-sm leading-6 text-content-secondary">Project approved directory identities into KAORI accounts, then assign local authorization without taking ownership of directory credentials.</p>
-            </div>
-        </div>
-        {% if current_user.has_permission('identity_providers.provision') %}
-            <a href="{{ url_for('identity_providers.directory_provisioning') }}"
-               class="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:border-outline-strong hover:bg-surface-hover">
-                <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                Open Directory Provisioning
-            </a>
-        {% else %}
-            <span class="inline-flex min-h-6 items-center rounded-md border border-outline-subtle bg-surface-subtle px-2 text-xs font-semibold text-content-secondary">Read Only</span>
-        {% endif %}
-    </header>
-    <div class="grid border-b border-outline-subtle sm:grid-cols-3 sm:divide-x sm:divide-outline-subtle">
-        <div class="px-5 py-4 sm:px-6">
-            <p class="text-xs font-semibold text-content-muted">Directory Providers</p>
-            <p class="mt-1 text-2xl font-bold tracking-tight text-content-primary">{{ summary.directory }}</p>
-            <p class="mt-1 text-xs leading-5 text-content-muted">Configured directory providers available to the provisioning workflow.</p>
-        </div>
-        <div class="border-t border-outline-subtle px-5 py-4 sm:border-t-0 sm:px-6">
-            <p class="text-xs font-semibold text-content-muted">Identity Links</p>
-            <p class="mt-1 text-2xl font-bold tracking-tight text-content-primary">{{ summary.directory_identity_links }}</p>
-            <p class="mt-1 text-xs leading-5 text-content-muted">Projected directory identities already linked to KAORI accounts.</p>
-        </div>
-        <div class="border-t border-outline-subtle px-5 py-4 sm:border-t-0 sm:px-6">
-            <p class="text-xs font-semibold text-content-muted">Authorization Owner</p>
-            <p class="mt-1 text-sm font-bold text-content-primary">KAORI Role</p>
-            <p class="mt-1 text-xs leading-5 text-content-muted">Authentication remains directory-owned; application access remains local.</p>
-        </div>
+{% import "components/operational_section_card.html" as operational_section %}
+{% import "components/operational_point_flow.html" as point_flow %}
+{% import "components/table_label.html" as table_label %}
+{% set can_provision = current_user.has_permission('identity_providers.provision') %}
+{% call operational_section.render(
+    'Directory Provisioning',
+    'Controlled projection of directory identities into KAORI accounts, without taking ownership of external credentials.',
+    'contact-round',
+    action_href=url_for('identity_providers.directory_provisioning') if can_provision else none,
+    action_label='Open Directory Provisioning' if can_provision else none,
+    header_badge=table_label.status_indicator_label('Read Only', 'unknown') if not can_provision else none,
+    body_classes='px-4 py-4 sm:px-5 sm:py-5',
+    aria_label='Directory Provisioning overview'
+) %}
+    {% set directory_flow = [
+        ('network', 'Directory Sources', summary.directory ~ (' configured provider' if summary.directory == 1 else ' configured providers') ~ ' available for the workflow.'),
+        ('contact-round', 'Identity Projection', summary.directory_identity_links ~ (' projected identity link' if summary.directory_identity_links == 1 else ' projected identity links') ~ ' committed to KAORI.'),
+        ('shield-check', 'Local Authorization', 'KAORI roles determine application access; directory credentials remain external.')
+    ] %}
+    <div data-kaori-idp-directory-flow>
+        {{ point_flow.render(directory_flow, aria_label='Directory identity projection and authorization flow') }}
     </div>
-</section>
+{% endcall %}
