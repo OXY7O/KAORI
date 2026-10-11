@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
@@ -117,6 +118,92 @@ def _capsule_g1_snapshot() -> dict:
         'rbac_lineage': {'lineage_sha256': 'd' * 64, 'blockers': []},
     }
     return snapshot
+
+
+@pytest.mark.parametrize(('field', 'value', 'expected'), [
+    ('capsule_related_resources_sha256', 'e', 'quota/limit/RBAC scope digest'),
+    ('capsule_shared_quota_sha256', 'e', 'GlobalResourceQuota scope digest'),
+    ('capsule_rbac_lineage_sha256', 'e', 'Capsule RBAC lineage digest'),
+    ('capsule_spec_sha256', 'e', 'Capsule Tenant spec digest'),
+    ('resource_version', '30', 'provider object resourceVersion'),
+    ('uid', 'replacement-cr', 'provider resource identity'),
+    ('handoff', 'observe_only', 'ownership or handoff classification'),
+])
+def test_capsule_g1_approval_drift_diagnostic_identifies_changed_scope_without_waiver(
+    field, value, expected,
+):
+    from app.kubernetes.tenant.release_handoff_approval import (
+        _handoff_approval_drift_categories, _handoff_approval_drift_message,
+    )
+
+    original = _capsule_g1_snapshot()
+    plan = {
+        **_plan_from_snapshot(original),
+        'handoff_components': deepcopy(original['handoff_components']),
+    }
+    changed = deepcopy(original)
+    changed['handoff_components'][0][field] = (
+        value * 64 if field.endswith('_sha256') else value
+    )
+    changed['handoff_fingerprint'] = handoff_fingerprint(
+        changed['handoff_components']
+    )
+    categories = _handoff_approval_drift_categories(plan=plan, fresh=changed)
+    assert any(expected in label for label in categories)
+    message = _handoff_approval_drift_message(plan=plan, fresh=changed)
+    assert expected in message
+    assert 'prepare a new plan' in message
+    assert len(message) < 300
+    # Diagnosing a revised provider scope must never approve changed evidence.
+    assert plan['handoff_fingerprint'] != changed['handoff_fingerprint']
+
+
+def test_capsule_g1_approval_diagnostic_identifies_changed_list_scope_without_policy_exposure():
+    from app.kubernetes.tenant.release_handoff_approval import (
+        _handoff_approval_drift_categories, _handoff_approval_drift_message,
+    )
+    original = _capsule_g1_snapshot()
+    plan = {
+        **_plan_from_snapshot(original),
+        'handoff_components': deepcopy(original['handoff_components']),
+    }
+    assert _handoff_approval_drift_categories(plan=plan, fresh=original) == ()
+    changing = deepcopy(original)
+    changing['handoff_components'][0]['capsule_related_resources_sha256'] = 'f' * 64
+    changing['handoff_components'][0]['capsule_shared_quota_sha256'] = 'e' * 64
+    changing['handoff_fingerprint'] = handoff_fingerprint(changing['handoff_components'])
+    changing['capsule_related_inventory']['resources'].append(
+        {'subject': 'PRIVATE_SUBJECT_DO_NOT_EXPOSE'}
+    )
+    message = _handoff_approval_drift_message(plan=plan, fresh=changing)
+    assert 'quota/limit/RBAC scope digest' in message
+    assert 'GlobalResourceQuota scope digest' in message
+    assert 'PRIVATE_SUBJECT' not in message
+    assert 'v1beta2' not in message
+
+
+def test_capsule_g1_approval_changed_identity_is_never_accepted_by_safe_diagnostic():
+    from app.kubernetes.tenant.release_handoff_approval import (
+        _handoff_approval_drift_categories,
+    )
+    snapshot = _capsule_g1_snapshot()
+    plan = {
+        **_plan_from_snapshot(snapshot),
+        'handoff_components': deepcopy(snapshot['handoff_components']),
+    }
+    drifted = deepcopy(snapshot)
+    drifted['live_provider_identity'][0]['resource_version'] = '17'
+    assert 'provider object resourceVersion' in _handoff_approval_drift_categories(
+        plan=plan, fresh=drifted,
+    )
+    assert plan['provider_identity'] != drifted['live_provider_identity']
+    drifted['live_provider_identity'].append({
+        'kind': 'RoleBinding', 'name': 'unexpected',
+        'uid': 'rb-uid', 'resource_version': '9',
+    })
+    assert 'provider resource identity or coverage' in _handoff_approval_drift_categories(
+        plan=plan, fresh=drifted,
+    )
 
 
 def test_capsule_g1_can_consent_to_known_executor_origin_obligation_only():
@@ -437,6 +524,45 @@ def test_prepare_handoff_commits_plan_without_provider_mutation(monkeypatch):
     assert len(session.events) == 1
     assert session.events[0].action == 'tenant.release.handoff_plan_prepared'
     assert session.events[0].target_id == 'tenant-a'
+
+
+def test_capsule_independent_reviewer_is_blocked_with_safe_drift_category(monkeypatch):
+    from app.kubernetes.tenant import release_handoff_approval as module
+
+    original = _capsule_g1_snapshot()
+    plan = {
+        **_plan_from_snapshot(original),
+        'handoff_components': deepcopy(original['handoff_components']),
+    }
+    changed = deepcopy(original)
+    changed['handoff_components'][0]['capsule_spec_sha256'] = 'e' * 64
+    changed['handoff_fingerprint'] = handoff_fingerprint(changed['handoff_components'])
+
+    class _Query:
+        def filter_by(self, **kwargs):
+            return self
+
+        def with_for_update(self):
+            return self
+
+        def one_or_none(self):
+            return SimpleNamespace(lifecycle_status='ready', ownership_status='adopted')
+
+    session = _FakeSession()
+    monkeypatch.setattr(module, 'db', SimpleNamespace(session=session))
+    monkeypatch.setattr(module, 'Tenant', SimpleNamespace(query=_Query()))
+    monkeypatch.setattr(module, 'latest_release_handoff_plan', lambda _: plan)
+    monkeypatch.setattr(module, 'latest_release_handoff_approval', lambda _: None)
+    monkeypatch.setattr(
+        module, 'review_tenant_release_preflight_committed', lambda **_: changed,
+    )
+    with pytest.raises(ValueError, match='Capsule Tenant spec digest'):
+        approve_release_handoff_plan_committed(
+            tenant_id='tenant-a', actor_user_id=43,
+            plan_sha256=plan['plan_sha256'], approved=True,
+        )
+    assert session.events == []
+    assert session.commits == 0
 
 
 def test_independent_handoff_approval_commits_pending_provider_state(monkeypatch):
