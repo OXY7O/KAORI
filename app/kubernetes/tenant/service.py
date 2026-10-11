@@ -709,6 +709,11 @@ def change_native_namespace_allocation(source: Mapping[str, Any]) -> TenantNames
         raise ValueError('Selected Resource Profile is unavailable.')
     if record.environment.tenant.lifecycle_status != TenantLifecycleStatus.READY.value:
         raise ValueError('Tenant is not Ready; namespace allocation changes are frozen during decommission.')
+    if record.provisioning_status in (
+        TenantNamespaceProvisioningStatus.RELEASED.value,
+        TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+    ):
+        raise ValueError('Released or deprovisioned Namespace generations cannot change allocation.')
     if record.environment.tenant.provider_key != 'native_kubernetes':
         raise ValueError('This UAT slice can change only Native Kubernetes Tenant allocations.')
     if allocation_control_state(record) != 'kaori_managed':
@@ -829,6 +834,11 @@ def cutover_adopted_namespace_allocation(source: Mapping[str, Any]) -> TenantNam
     tenant = record.environment.tenant
     if tenant.lifecycle_status != TenantLifecycleStatus.READY.value:
         raise ValueError('Tenant is not Ready; allocation governance cutover is frozen during teardown.')
+    if record.provisioning_status in (
+        TenantNamespaceProvisioningStatus.RELEASED.value,
+        TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+    ):
+        raise ValueError('Released or deprovisioned Namespace generations cannot undergo allocation cutover.')
 
     cutover = build_allocation_cutover_state(record)
     if not cutover['supported']:

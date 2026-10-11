@@ -973,6 +973,39 @@ def get_tenant_namespace_profile_mapping_context(
     return {'rows': rows, 'total': total, 'limit': limit}
 
 
+def _allocation_workflow_target_options(
+    namespaces: list[TenantNamespace],
+) -> tuple[list[TenantNamespace], list[TenantNamespace]]:
+    """Offer active Namespace generations only; preserve Released history in the registry.
+
+    Allocation Change executes Native-only. Cutover intentionally retains
+    Capsule observed records as disabled / Control Unavailable for explanation.
+    """
+    active = [
+        record
+        for record in namespaces
+        if record.environment.tenant.lifecycle_status == TenantLifecycleStatus.READY.value
+        and record.provisioning_status
+        not in (
+            TenantNamespaceProvisioningStatus.RELEASED.value,
+            TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+        )
+    ]
+    managed = [
+        record
+        for record in active
+        if record.environment.tenant.provider_key == 'native_kubernetes'
+        and allocation_control_state(record) == 'kaori_managed'
+    ]
+    cutover = [
+        record
+        for record in active
+        if record.ownership_status == TenantOwnershipStatus.ADOPTED.value
+        and allocation_control_state(record) not in {'kaori_managed', 'provider_mirrored_policy'}
+    ]
+    return managed, cutover
+
+
 def get_namespace_registry_context(
     *,
     page: int = 1,
@@ -1011,19 +1044,9 @@ def get_namespace_registry_context(
         return base_context
 
     namespace_options = TenantNamespace.query.order_by(TenantNamespace.created_at.desc()).all()
-    namespace_allocation_options = [
-        record
-        for record in namespace_options
-        if allocation_control_state(record) == 'kaori_managed'
-        and record.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value
-    ]
-    namespace_cutover_options = [
-        record
-        for record in namespace_options
-        if record.ownership_status == TenantOwnershipStatus.ADOPTED.value
-        and allocation_control_state(record) not in {'kaori_managed', 'provider_mirrored_policy'}
-        and record.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value
-    ]
+    namespace_allocation_options, namespace_cutover_options = _allocation_workflow_target_options(
+        namespace_options
+    )
     namespace_cutover_state = {
         str(record.id): build_allocation_cutover_state(record) for record in namespace_cutover_options
     }
