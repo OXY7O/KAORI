@@ -206,3 +206,62 @@ def test_matching_verified_managed_handback_is_reviewable_but_not_automatic_read
         provider_evidence=provider, release_evidence=release,
         provider_uid='ns-uid-1', resource_version='41',
     ) is None
+
+
+@pytest.mark.parametrize(('provider_key', 'reference', 'namespace_versions'), [
+    ('capsule', 'capsule-demo', {'demo-dev': 'unrelated-ns-rv'}),
+    ('native_kubernetes', 'demo-dev', {'demo-dev': '57'}),
+])
+def test_released_predecessor_selects_own_provider_handback_resource_version(
+    monkeypatch, provider_key, reference, namespace_versions,
+):
+    """Capsule cluster-scoped Tenant CR must not resolve its RV from a Namespace map."""
+    prior = SimpleNamespace(
+        id='old-tenant', generation=3, correlation_id='prior-correlation',
+        provider_key=provider_key,
+        provider_evidence_json={
+            'provider_uid': 'old-uid',
+            'provider_mutation_performed': True,
+            'release_governance': {
+                'status': 'released', 'release_mode': 'managed_handoff',
+                'tenant_id': 'old-tenant', 'plan_sha256': 'prior-plan',
+                'successor_owner': 'platform-team', 'released_at': '2026-10-11T00:00:00+00:00',
+            },
+            'handback_governance': {
+                'status': 'verified', 'provider_uid': 'old-uid',
+                'release_plan_sha256': 'prior-plan',
+                'successor_owner': 'platform-team',
+                'resource_version': '57' if provider_key == 'capsule' else 'stale-tenant-field',
+                'provider_resource_versions': namespace_versions,
+            },
+        },
+    )
+
+    class _Query:
+        def filter_by(self, **_kwargs):
+            return self
+
+        def filter(self, *_args):
+            return self
+
+        def order_by(self, *_args):
+            return self
+
+        def first(self):
+            return prior
+
+    model = SimpleNamespace(
+        query=_Query(), lifecycle_status='released',
+        generation=SimpleNamespace(desc=lambda: 'newest-first'),
+    )
+    monkeypatch.setattr(adoption, 'Tenant', model)
+    current = SimpleNamespace(
+        cluster_id='cluster-1', slug='demo',
+        provider_key=provider_key, provider_reference=reference,
+    )
+    lineage = adoption._released_predecessor_evidence(
+        current, provider_uid='old-uid', resource_version='57',
+    )
+    assert lineage['predecessor_tenant_id'] == 'old-tenant'
+    assert lineage['predecessor_generation'] == 3
+    assert lineage['provider_uid_verified'] is True
