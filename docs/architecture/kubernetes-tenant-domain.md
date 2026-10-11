@@ -806,6 +806,32 @@ acceptance or Release occurs. Any future changes to handoff blocker copy
 must update its admission classification and coupled regression tests in
 the same issue/PR.
 
+## Capsule Release authoritative spec scope digest (#1227; preflight-only)
+
+The existing `release_handoff_inventory.capsule_tenant_handoff_evidence`
+records the authoritative Capsule Tenant **UID/resourceVersion**, ownership
+classification and provider-controlled quota presence. It now additionally
+computes a **bounded canonical SHA-256 of the complete live Capsule Tenant
+spec**. This digest is stored as `capsule_spec_sha256` in the same committed
+`handoff_components` entry and participates in the existing
+`handoff_fingerprint` / exact independent handoff plan scope. The digest
+covers quota, LimitRange, Namespace options, owner, additional RoleBindings,
+RBAC rules and future provider spec dimensions without copying their raw
+contents into KAORI. Canonical JSON preserves object-order independence;
+malformed, non-JSON or oversized specs **fail closed**. The digest is a
+correlation/integrity receipt, **not** authority to manage or patch Capsule
+fields.
+
+The existing Release **Provider IDs** disclosure displays the Capsule
+spec digest when newer committed preflight evidence contains it; older
+records remain readable without a fabricated digest. The existing blocker
+text and provider mutation/managed Resource Profile gates, X.509, actor
+separation, live UID/RV guards and handoff consent requirements remain
+unchanged. This task does **not** implement successor acceptance, Capsule
+PATCH/executor, verified read-back, Released finalizer or UAT. Those are
+separate children #1228–#1231 under #991, and the present DevContainer
+review is **source-only with CI/CD and Kubernetes mutation HOLD**.
+
 ## Tenant Release Step 2 — compact two-line resource summaries (#1085; latest detail UI authority)
 
 Human DevContainer review of the #1085 initial evidence-first design found

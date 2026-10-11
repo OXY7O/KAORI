@@ -14,6 +14,7 @@ from typing import Any
 from app.kubernetes.tenant.allocation_observation import _CAPSULE_TENANT_LABEL_KEYS
 
 _MAX_COMPONENTS = 100
+_MAX_CAPSULE_SPEC_BYTES = 262_144
 _MANAGER_KEY = 'app.kubernetes.io/managed-by'
 _TENANT_ID_KEY = 'kaori.io/tenant-id'
 
@@ -119,14 +120,46 @@ def native_namespace_handoff_evidence(
     return components, blockers
 
 
+def _capsule_spec_sha256(spec: Any) -> str:
+    """Bound and fingerprint the *entire* live Capsule spec; never persist its contents.
+
+    Spec is provider-owned; the hash only binds the preflight to exact observed
+    quota, limit, owner, Namespace options and RBAC contract for later consent.
+    """
+    if not isinstance(spec, Mapping):
+        raise ValueError('Capsule Tenant handoff requires a complete provider spec.')
+    for name, expected in (
+        ('resourceQuotas', Mapping),
+        ('limitRanges', Mapping),
+        ('namespaceOptions', Mapping),
+        ('permissions', Mapping),
+        ('owners', list),
+        ('additionalRoleBindings', list),
+        ('rules', list),
+    ):
+        if name in spec and not isinstance(spec[name], expected):
+            raise ValueError(f'Capsule Tenant {name} handoff schema is unsupported.')
+    try:
+        canonical = json.dumps(
+            spec, sort_keys=True, separators=(',', ':'), ensure_ascii=True,
+            allow_nan=False,
+        ).encode('utf-8')
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError('Capsule Tenant handoff spec is not canonical JSON.') from exc
+    if len(canonical) > _MAX_CAPSULE_SPEC_BYTES:
+        raise ValueError('Capsule Tenant handoff spec exceeds bounded evidence size.')
+    return hashlib.sha256(canonical).hexdigest()
+
+
 def capsule_tenant_handoff_evidence(
     *, tenant: Any, tenant_item: Mapping[str, Any]
 ) -> tuple[list[dict[str, str]], list[str]]:
-    """Observe Capsule Tenant allocation authority, never assume KAORI owns CR fields."""
+    """Observe and fingerprint Capsule authority; never infer Release authorization."""
     metadata = tenant_item.get('metadata') or {}
-    spec = tenant_item.get('spec') or {}
-    if not isinstance(metadata, Mapping) or not isinstance(spec, Mapping):
+    spec = tenant_item.get('spec')
+    if not isinstance(metadata, Mapping):
         raise ValueError('Capsule Tenant handoff schema is incomplete.')
+    spec_sha256 = _capsule_spec_sha256(spec)
     component = _component(
         kind='CapsuleTenant', name=_string(metadata.get('name')),
         uid=_string(metadata.get('uid')),
@@ -136,6 +169,7 @@ def capsule_tenant_handoff_evidence(
     )
     component['authority'] = 'capsule'
     component['resource_quotas_present'] = str('resourceQuotas' in spec).lower()
+    component['capsule_spec_sha256'] = spec_sha256
     existing = tenant.provider_evidence_json or {}
     blockers = []
     if existing.get('provider_mutation_performed') is True:
