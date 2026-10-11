@@ -29,6 +29,7 @@ Status: **FINAL LOCKED**
 - The shared query-backed tab strip uses `bg-surface-hover` behind a selected `bg-surface-card` tab in both light/dark modes; this reuses the existing semantic surface palette, not a new Settings tab style.
 - Time Zone and Regional Format keep their scope/data boundaries inline.
 - Account Profile and Authentication Activity remain full-width.
+- Account Profile shows identity/link state rather than suggesting a live provider validation result; RBAC Role and Super Admin tier remain independent. Last Verified Sign-In records the canonical source and request IP with proxy caveat. Read-only identity and presentation settings retain a separate General Settings edit workflow.
 - Recent Authentication Activity scopes metric counts to the latest five committed events, renders evidence-aware failure badges, safely summarizes failed sign-ins without leaking internal audit reasons, and labels recorded request IP as proxy-dependent. Its snapshot uses existing Violet-soft/semantic contrast, elevated metrics and a compact inline evidence note; sign-out audit records display as Recorded rather than Sign-In Success.
 - Credential Management uses natural-height action/context columns.
 - Shared table/status/operational-feedback primitives own reusable semantics.
