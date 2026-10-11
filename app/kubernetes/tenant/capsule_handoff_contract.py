@@ -237,6 +237,14 @@ def verify_capsule_namespace_preview(
 # removed. No policy/spec, subjects, roleRef, ownerReferences or finalizer ops.
 _RELATED_TRANSFER_KINDS = frozenset({'ResourceQuota', 'LimitRange', 'RoleBinding'})
 _RELATED_TRANSFER_LABELS = frozenset(_MARKER_KEYS) | {'kaori.io/access-grant'}
+_RELATED_CONSENT_ALLOWLIST = {
+    'ResourceQuota': frozenset(_MARKER_KEYS),
+    'LimitRange': frozenset(_MARKER_KEYS),
+    'RoleBinding': frozenset({
+        'app.kubernetes.io/managed-by', 'kaori.io/tenant-id',
+        'kaori.io/access-grant',
+    }),
+}
 
 
 def _related_transfer_source(
@@ -283,7 +291,7 @@ def _related_transfer_source(
         if key in _RELATED_TRANSFER_LABELS
     }
     if (
-        not selected.issubset(_RELATED_TRANSFER_LABELS)
+        not selected.issubset(_RELATED_CONSENT_ALLOWLIST[kind])
         or selected != set(approved_label_keys)
         or not {'app.kubernetes.io/managed-by', 'kaori.io/tenant-id'}.issubset(selected)
         or (kind == 'RoleBinding') != ('kaori.io/access-grant' in selected)
@@ -369,8 +377,12 @@ def _verify_related_after(
         record['name'], record['uid'], record['resource_version'],
     ):
         raise ValueError('Capsule related read-back source UID/RV is stale.')
-    if _related_provider_invariants(before) != _related_provider_invariants(after):
-        raise ValueError('Capsule related handoff changed owner, annotations or finalizers.')
+    if (
+        _get(_get(before, 'metadata'), 'namespace')
+        != _get(_get(after, 'metadata'), 'namespace')
+        or _related_provider_invariants(before) != _related_provider_invariants(after)
+    ):
+        raise ValueError('Capsule related handoff changed namespace, owner, annotations or finalizers.')
     # The inventory classifier canonicalizes quota/limit spec and RoleBinding
     # roleRef+subjects. Recompute the same policy digest on read-back.
     if kind == 'RoleBinding':
