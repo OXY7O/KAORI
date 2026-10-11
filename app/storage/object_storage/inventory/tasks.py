@@ -231,6 +231,10 @@ def sync_all_object_storage_task(
                     and str(empty_reconciliation.get('system_id')) == str(target['system_id'])
                     else None
                 )
+                if empty_reconciliation is not None and scoped_confirmation is None:
+                    raise RuntimeError(
+                        'The confirmed-empty reconciliation was not bound to this exact inventory target.'
+                    )
                 result = sync_object_storage_inventory(
                     instance,
                     progress_callback=report_bucket_progress,
