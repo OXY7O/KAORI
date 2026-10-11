@@ -208,6 +208,8 @@ def assess_capsule_resource_handoff_scope(
     return {
         'status': 'resource_specific_controller_provenance_unverified',
         'tenant_id': plan['tenant_id'],
+        'cluster_id': plan['cluster_id'],
+        'generation': plan.get('generation'),
         'plan_sha256': plan['plan_sha256'],
         'handoff_fingerprint': plan['handoff_fingerprint'],
         'worklist_sha256': worklist['inventory_sha256'],
