@@ -14,4 +14,6 @@ def validation_trigger(
     is_valid = bool(validation is not None and validation.is_valid and validation.parsed_certificate is not None)
     if not is_valid or (require_targets and not targets):
         return None
+    if targets and not all(isinstance(item, dict) and item.get('status') == 'ready' for item in targets):
+        return None
     return f'{{"kaori:operation-validated":{{"formId":"{form_id}"}}}}'

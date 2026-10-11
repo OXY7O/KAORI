@@ -101,6 +101,14 @@ def _load_updates(monkeypatch: pytest.MonkeyPatch, *, commit_error: bool = False
         (),
         {'query': SimpleNamespace(get=lambda cluster_id: None)},
     )
+    original_get = session.get
+
+    def get_with_collected_mapping(model, identifier):
+        if model is models.TLSCertificateCollectionState:
+            return SimpleNamespace(ingress_mapping_status='collected')
+        return original_get(model, identifier)
+
+    session.get = get_with_collected_mapping
     models.TLSCertificateInventory = Inventory
     models.TLSCertificateUpdateEvent = Event
     models.User = type('User', (), {})
@@ -132,7 +140,11 @@ def test_single_tls_update_reports_provider_failure_separately(
 ) -> None:
     updates = _load_updates(monkeypatch)
     record = _record()
-    updates.db.session.get = lambda model, certificate_id: record if model is updates.TLSCertificateInventory else None
+    updates.db.session.get = lambda model, certificate_id: (
+        record if model is updates.TLSCertificateInventory else
+        SimpleNamespace(ingress_mapping_status='collected')
+        if model is updates.TLSCertificateCollectionState else None
+    )
     monkeypatch.setattr(
         updates,
         'patch_tls_secret',
@@ -152,7 +164,11 @@ def test_single_tls_provider_failure_reports_unconfirmed_failure_event_when_data
 ) -> None:
     updates = _load_updates(monkeypatch, commit_error=True)
     record = _record()
-    updates.db.session.get = lambda model, certificate_id: record if model is updates.TLSCertificateInventory else None
+    updates.db.session.get = lambda model, certificate_id: (
+        record if model is updates.TLSCertificateInventory else
+        SimpleNamespace(ingress_mapping_status='collected')
+        if model is updates.TLSCertificateCollectionState else None
+    )
     monkeypatch.setattr(
         updates,
         'patch_tls_secret',
@@ -172,7 +188,11 @@ def test_single_tls_update_warns_when_provider_succeeds_but_persistence_fails(
 ) -> None:
     updates = _load_updates(monkeypatch, commit_error=True)
     record = _record()
-    updates.db.session.get = lambda model, certificate_id: record if model is updates.TLSCertificateInventory else None
+    updates.db.session.get = lambda model, certificate_id: (
+        record if model is updates.TLSCertificateInventory else
+        SimpleNamespace(ingress_mapping_status='collected')
+        if model is updates.TLSCertificateCollectionState else None
+    )
     provider_calls: list[int] = []
     monkeypatch.setattr(
         updates,

@@ -227,3 +227,16 @@ This candidate is for `kaori/review/staging-uat` devcontainer visual and functio
 ### Navigation discovery correction (#1018)
 
 The active Sidebar v2.2 menu and integrated Level-3 page tabs are projected from `app/common/workspace_navigation_catalog.py` through `app/common/workspace_navigation.py`, not from the deprecated `components/navigation/kubernetes_operations_menu.html` template. The Operations capability resolves to `kubernetes_operations.overview`; authorized users then select **Overview**, **ConfigMaps**, or **Secrets** in the canonical page-level workspace navigation. The overview is always in the same permission boundary as the operation families, including users with access to only one family. Workflow-specific views preserve the existing explicit permission checks and default to their own active tab; only `kubernetes_operations.overview` selects the Overview tab.
+
+
+### TLS coverage admission (#1306)
+
+The TLS rotation preview and final server mutation require a committed
+**Collected** Ingress-mapping state and complete SAN coverage of mapped
+Ingress hosts. Unavailable mappings show **Not Reported** and block the
+operation; known uncovered hosts also block it. A certificate/key pair
+valid by itself cannot authorize rotation. Bulk rotation checks every
+selected target **before** the first PATCH and aborts the entire batch
+without partial writes if any target is blocked. There is no silent
+override; exceptional rotation requires separately reviewed policy.
+The server repeats the check even if the UI validation trigger was bypassed.
