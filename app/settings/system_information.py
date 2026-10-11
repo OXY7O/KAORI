@@ -13,21 +13,21 @@ _RELEASE_HIGHLIGHTS: tuple[dict[str, str], ...] = (
         'title': 'Provider-Neutral Integration Lifecycle',
         'icon': 'unplug',
         'description': (
-            'Kubernetes, Prometheus, Thanos Query, Alertmanager, and MinIO now follow clearer provider, compatibility, capability, validation, binding, and consumer-readiness ownership boundaries.'
+            'Clearer integration ownership for Kubernetes, metrics, alerts, and MinIO across compatibility, validation, and consumption.'
         ),
     },
     {
         'title': 'Operations & Data Lifecycle Control Plane',
         'icon': 'workflow',
         'description': (
-            'Jobs, execution evidence, Data Lifecycle, notifications, object-storage analytics, and controlled automation surfaces converge on shared operational feedback and worker-owned execution contracts.'
+            'Governed jobs, data lifecycle, notifications, and storage analytics share execution and evidence contracts.'
         ),
     },
     {
         'title': 'Release Reliability & Identity Hardening',
         'icon': 'shield-check',
         'description': (
-            'Release metadata, final gates, Access and Identity Provider boundaries, runtime imports, type safety, and regression contracts are tightened for a reproducible 2.3.0 deployment baseline.'
+            'Stronger release traceability, identity boundaries, runtime safety, and regression coverage.'
         ),
     },
 )
