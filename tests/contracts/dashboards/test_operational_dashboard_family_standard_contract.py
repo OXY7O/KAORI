@@ -179,6 +179,12 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
     object_summary = read('app/templates/storage/object_storage/dashboard/partials/_reporting_summary.html')
 
     assert 'Committed analytics available' in freshness
+    assert "'Partial', 'warning'" in freshness
+    assert "'Required', 'unknown'" in freshness
+    assert 'fleet_cluster_count: int = 0' in freshness
+    assert 'fleet_metrics_count: int = 0' in freshness
+    assert 'fleet_alerts_count: int = 0' in freshness
+    assert "'Per Cluster'" not in freshness
     assert 'Generated reports are retained artifacts, separate from current Kubernetes health.' in freshness
     assert 'No immediate scaling required.' in capacity
     assert 'Validate requests/limits, growth, and planned deployments against current worker headroom.' in capacity
