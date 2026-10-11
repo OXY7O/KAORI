@@ -100,3 +100,65 @@ def inspect_capsule_audit_event_envelopes(
         'auto_retry_authorized': False,
         'release_authorized': False,
     }
+
+
+def inspect_capsule_audit_readback_link(
+    *, plan: Mapping[str, Any], related: Mapping[str, Any],
+    accepted_actor_user_id: int, rows: list[Any],
+    readback_candidate: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Correlate a recorded read-back claim with a pure observation candidate.
+
+    A matching SHA/count is not independent provenance, persistence proof,
+    consent or authorization. Never infer a successful provider transfer.
+    """
+    if not isinstance(readback_candidate, Mapping):
+        raise ValueError('Capsule read-back candidate evidence is required.')
+    audit = inspect_capsule_audit_event_envelopes(
+        plan=plan, related=related,
+        accepted_actor_user_id=accepted_actor_user_id, rows=rows,
+    )
+    if not rows or audit['last_event_type'] not in (
+        'readback_candidate', 'recovery_reviewed',
+    ):
+        return {
+            'status': 'no_complete_readback_claim',
+            'recorded_readback_matches_candidate': False,
+            'readback_authoritative_verified': False,
+            'provider_handoff_verified': False,
+            'resume_authorized': False, 'release_authorized': False,
+        }
+    source = _field(rows[-1], 'metadata_json')
+    if (
+        not isinstance(source, Mapping)
+        or readback_candidate.get('status') != 'readback_candidate_recovery_review_required'
+        or readback_candidate.get('plan_sha256') != plan.get('plan_sha256')
+        or readback_candidate.get('handoff_fingerprint') != plan.get('handoff_fingerprint')
+        or readback_candidate.get('worklist_sha256') != audit['worklist_sha256']
+        or source.get('readback_sha256') != readback_candidate.get('readback_sha256')
+        or any(
+            type(readback_candidate.get(key)) is not int
+            or source.get(key) != readback_candidate[key]
+            for key in (
+                'expected_count', 'observed_count', 'pending_count',
+                'transferred_count', 'ambiguous_count',
+            )
+        )
+        or readback_candidate.get('provider_handoff_verified') is not False
+        or readback_candidate.get('release_authorized') is not False
+        or readback_candidate.get('provider_snapshot_authenticity_verified') is not False
+    ):
+        raise ValueError('Capsule audit read-back claim disagrees with observed scope.')
+    return {
+        'status': 'readback_claim_correlated_unverified',
+        'plan_sha256': plan['plan_sha256'],
+        'worklist_sha256': audit['worklist_sha256'],
+        'readback_claim_sha256': audit['readback_claim_sha256'],
+        'recorded_readback_matches_candidate': True,
+        'audit_storage_append_only_verified': False,
+        'readback_authoritative_verified': False,
+        'provider_handoff_verified': False,
+        'provider_execution_admitted': False,
+        'auto_retry_authorized': False,
+        'resume_authorized': False, 'release_authorized': False,
+    }
