@@ -87,6 +87,10 @@ def test_regional_format_is_one_full_width_workspace_with_inline_boundary() -> N
     assert 'data-regional-format-workspace-layout="full-width"' in page
     assert 'data-regional-format-workspace="unified"' in template
     assert 'data-regional-format-controls="inline-grid"' in template
+    assert 'Formats regional labels and dates; interface language stays unchanged.' in template
+    assert 'Sets the date format across KAORI views and reports.' in template
+    assert 'Sets regional month labels and formatting conventions.' not in template
+    assert 'Used for inventory, governance, reports, activity' not in template
     assert 'data-regional-preference-boundary="inline"' in template
     assert 'settings/general/partials/_impact_information.html' not in page
     assert template.count('rounded-xl border border-outline-default bg-surface-subtle p-4') == 0

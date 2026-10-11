@@ -50,7 +50,7 @@
                         </label>
                         {{ regional_form.locale(class_='mt-3 h-11 w-full rounded-xl border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-primary outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10') }}
                         <p class="mt-2 text-xs leading-5 text-content-muted">
-                            Sets regional month labels and formatting conventions. It does not translate the application.
+                            Formats regional labels and dates; interface language stays unchanged.
                         </p>
                         {% for error in regional_form.locale.errors %}
                             <p class="mt-2 text-xs font-semibold text-status-critical-text">{{ error }}</p>
@@ -66,7 +66,7 @@
                         </label>
                         {{ regional_form.date_format(class_='mt-3 h-11 w-full rounded-xl border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-primary outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10') }}
                         <p class="mt-2 text-xs leading-5 text-content-muted">
-                            Used for inventory, governance, reports, activity, and operational detail timestamps.
+                            Sets the date format across KAORI views and reports.
                         </p>
                         {% for error in regional_form.date_format.errors %}
                             <p class="mt-2 text-xs font-semibold text-status-critical-text">{{ error }}</p>
