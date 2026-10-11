@@ -17,6 +17,9 @@ def test_authentication_audit_uses_immutable_actor_and_target_semantics() -> Non
     assert 'actor_snapshot_for_user(authenticated_actor)' in source
     assert 'unauthenticated_actor_snapshot()' in source
     assert 'activity.actor_snapshot_json = actor.as_json()' in source
+    assert 'activity.metadata_json = redact_operational_metadata(activity.metadata_json)' in source
+    assert 'activity.message = redact_operational_text(activity.message, limit=255)' in source
+    assert 'activity.detail = redact_operational_text(activity.detail)' in source
     assert 'activity.actor_key = actor.key' in source
     assert 'activity.actor_label = actor.label' in source
 

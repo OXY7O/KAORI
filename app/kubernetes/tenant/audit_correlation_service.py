@@ -19,6 +19,7 @@ from app.models import Notification, User
 from app.models.tenant import TenantCredential, TenantCredentialType, TenantMembership, TenantNamespace
 from app.models.tenant_audit import TenantAuditEvidence
 from app.platform_operations.notifications.event_catalog import event_category_key
+from app.platform_operations.notifications.metadata import redact_operational_metadata, redact_operational_text
 
 _EVENT_TYPE = 'kubernetes_tenant_audit'
 
@@ -213,6 +214,11 @@ def _project_activity(evidence: TenantAuditEvidence) -> None:
         'jumpserver_reference': evidence.jumpserver_reference,
         'secret_material_persisted': False,
     }
+    # Preserve the one-to-one idempotent Tenant audit bridge while applying the
+    # same safe metadata projection used by the shared Notification writer.
+    activity.message = redact_operational_text(activity.message, limit=255)
+    activity.detail = redact_operational_text(activity.detail)
+    activity.metadata_json = redact_operational_metadata(activity.metadata_json)
     activity.created_at = evidence.observed_at
     activity.deck_visible = False
     activity.read_at = evidence.observed_at

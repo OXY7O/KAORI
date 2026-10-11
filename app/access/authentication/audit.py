@@ -13,6 +13,7 @@ from app.models.notification import Notification
 from app.models.user import User
 from app.platform_operations.notifications.actors import actor_snapshot_for_user, unauthenticated_actor_snapshot
 from app.platform_operations.notifications.event_catalog import event_category_key
+from app.platform_operations.notifications.metadata import redact_operational_metadata, redact_operational_text
 
 AUTHENTICATION_EVENT_TYPE = 'authentication'
 AUTHENTICATION_AUDIT_SCHEMA = 'authentication.v2'
@@ -135,6 +136,11 @@ def record_authentication_activity(
         'request_endpoint': _bounded_text(request.endpoint, limit=160),
         'target_user_id': user.id if user is not None else None,
     }
+    # Defense in depth for this direct audit-only Notification producer; the
+    # standard operational writer is not on the authentication commit path.
+    activity.message = redact_operational_text(activity.message, limit=255)
+    activity.detail = redact_operational_text(activity.detail)
+    activity.metadata_json = redact_operational_metadata(activity.metadata_json)
     activity.created_at = created_at
     activity.deck_visible = False
     # Authentication events are audit-only and must not create unread items in

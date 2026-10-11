@@ -33,6 +33,10 @@ def test_ingestion_boundary_is_bounded_idempotent_and_projects_activity() -> Non
     assert 'activity.event_type = _EVENT_TYPE' in service
     assert 'deck_visible = False' in service
     assert "'secret_material_persisted': False" in service
+    assert 'activity.metadata_json = redact_operational_metadata(activity.metadata_json)' in service
+    assert 'activity.message = redact_operational_text(activity.message, limit=255)' in service
+    assert 'activity.detail = redact_operational_text(activity.detail)' in service
+    assert 'activity.deck_visible = False' in service
     assert 'requestObject' not in service
     assert 'responseObject' not in service
 
