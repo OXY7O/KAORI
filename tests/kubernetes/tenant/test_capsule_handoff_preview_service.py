@@ -91,6 +91,10 @@ def _arrange(monkeypatch, *, changed=False):
             'provider_mutation_performed': False, 'namespace_count': 1,
         }
     monkeypatch.setattr(service, 'preview_capsule_handoff_scope', _preview)
+    def _preview_related(**kwargs):
+        calls.append(('related_dry_run',))
+        return {'related_preview_count': 1, 'related_preserved_count': 0}
+    monkeypatch.setattr(service, '_preview_related_provider_scope', _preview_related)
     return plan, accepted, calls
 
 
@@ -100,12 +104,14 @@ def test_accepting_actor_records_only_incomplete_server_preview(monkeypatch):
         tenant_id='tenant-1', actor_user_id=43, plan_sha256=plan['plan_sha256'],
         confirmed=True,
     )
-    assert [item[0] for item in calls] == ['dry_run', 'audit', 'commit']
-    assert result['status'] == 'namespace_server_dry_run_only'
+    assert [item[0] for item in calls] == ['dry_run', 'related_dry_run', 'audit', 'commit']
+    assert result['status'] == 'complete_scope_server_dry_run_only'
     assert result['provider_execution_admitted'] is False
     assert result['provider_handoff_verified'] is False
     assert result['release_authorized'] is False
     assert result['quota_limit_rbac_dry_run_verified'] is False
+    assert result['related_preview_count'] == 1
+    assert result['whole_scope_source_unchanged'] is True
 
 
 @pytest.mark.parametrize('case', ['unconfirmed', 'wrong_actor', 'drift', 'unexpected_ready'])
@@ -138,4 +144,5 @@ def test_capsule_preview_route_retains_csrf_rbac_and_read_only_copy():
     markup = Path('app/templates/kubernetes/tenant/partials/_tenant_management_detail.html').read_text()
     assert 'tenant.preview_capsule_release_namespace_route' in markup
     assert 'confirm_capsule_namespace_preview' in markup
-    assert 'Quota, LimitRange, RoleBinding, and final Release are not yet admitted.' in markup
+    assert 'Preview Capsule provider handoff' in markup
+    assert 'Preview is not transfer approval, PATCH execution or governance Release.' in markup
