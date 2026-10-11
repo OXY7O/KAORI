@@ -416,3 +416,49 @@ def test_access_grants_included_capsule_evidence_template_compiles_and_renders()
     assert "{% set plan = event.metadata_json or {} %}" in read(
         'app/templates/kubernetes/tenant/partials/_external_capsule_access_inventory.html'
     )
+
+
+def test_access_grant_registry_actions_fit_desktop_and_use_existing_native_more_dialog() -> None:
+    """#1215: no clipped actions or mutation form trapped in horizontally scrolling table."""
+    from jinja2 import Environment
+
+    registry = read('app/templates/kubernetes/tenant/partials/_access_grant_registry.html')
+    Environment(autoescape=True).parse(registry)
+    credentials = read('app/templates/kubernetes/tenant/partials/_credential_registry.html')
+    assert "table_ui.table_classes('min-w-[980px] table-fixed lg:min-w-0')" in registry
+    assert 'overflow-x-auto lg:overflow-visible' in registry
+    assert "table_ui.table_classes('min-w-[1300px] !table-fixed')" not in registry
+    assert 'w-[17%]">Actions' in registry
+    assert 'min-w-[15rem] flex-wrap' not in registry
+    assert 'flex items-center justify-end gap-1.5 whitespace-nowrap' in registry
+    assert registry.count('data-kaori-dialog-open') == 1
+    assert registry.count('data-kaori-native-dialog') == 1
+    assert registry.count('data-kaori-dialog-close') == 1
+    assert 'access-grant-more-actions-{{ grant.id }}' in registry
+    assert 'aria-haspopup="dialog"' in registry
+    assert 'aria-labelledby="access-grant-more-actions-{{ grant.id }}-title"' in registry
+    assert 'aria-describedby="access-grant-more-actions-{{ grant.id }}-description"' in registry
+    assert 'data-kaori-native-dialog' in credentials
+    assert 'data-dialog-target="credential-more-actions-{{ credential.id }}"' in credentials
+
+    viewport_end = registry.index('</table>')
+    footer_end = registry.index('registry_ui.footer(', viewport_end)
+    dialog_start = registry.index('<dialog id="access-grant-more-actions-{{ grant.id }}"')
+    assert viewport_end < footer_end < dialog_start
+    assert registry.index('inspect_access_grant_route') < viewport_end
+    assert registry.index('reconcile_access_grant_route') > dialog_start
+    assert registry.index('revoke_access_grant_route') > dialog_start
+    assert "if can_manage and (grant.status == 'active' or grant.reconciliation_status != 'revoked')" in registry
+    assert "{% if grant.status == 'active' %}" in registry
+
+    for route in ('inspect', 'reconcile', 'revoke'):
+        endpoint = f"tenant.{route}_access_grant_route"
+        assert registry.count(f"action=\"{{{{ url_for('{endpoint}', grant_id=grant.id) }}}}\"") == 1
+        assert registry.count(f"hx-post=\"{{{{ url_for('{endpoint}', grant_id=grant.id) }}}}\"") == 1
+    assert registry.count('name="csrf_token"') == 3
+    assert registry.count('hx-target="#tenant-admin-workspace"') == 3
+    assert registry.count('hx-select="#tenant-admin-workspace"') == 3
+    assert registry.count('hx-disabled-elt="find button"') == 3
+    assert 'registry_ui.filter_form' in registry
+    assert 'registry_ui.footer' in registry
+    assert 'access_grant_pagination.allowed_per_page' in registry
