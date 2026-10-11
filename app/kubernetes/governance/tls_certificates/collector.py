@@ -95,6 +95,8 @@ def _collect_pages(
         response = fetch_page(continuation)
         items = _response_items(response)
         try:
+            if len(items) > _TLS_PAGE_SIZE:
+                raise ValueError(f'Kubernetes returned an oversized {kind} collection page.')
             consume_page(items)
             next_token = _next_token(response)
         finally:
@@ -174,6 +176,9 @@ def collect_ingress_tls_usage(cluster: Cluster) -> dict[tuple[str, str], dict[st
 
     def consume_page(ingresses: list[Any]) -> None:
         for ingress in ingresses:
+            metadata = getattr(ingress, 'metadata', None)
+            if not metadata or not getattr(metadata, 'namespace', None) or not getattr(metadata, 'name', None):
+                raise ValueError('Kubernetes Ingress collection returned a resource without identity.')
             for usage in _ingress_tls_usage(ingress):
                 key = _secret_key(usage.get('namespace'), usage.get('secret_name'))
                 if key is None:
