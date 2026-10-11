@@ -98,8 +98,8 @@ def test_resource_profile_allocation_preflight_copy_is_approved_handoff_obligati
     )
     blockers = _release_blockers(tenant, [namespace], counts={})
     assert len(blockers) == 1
-    assert 'has a KAORI-managed allocation linked to a Resource Profile.' in blockers[0]
-    assert 'independent approval and authoritative provider read-back' in blockers[0]
+    assert 'has a KAORI-managed Resource Profile allocation.' in blockers[0]
+    assert 'independent approval, verified provider handoff and read-back' in blockers[0]
     # Expected provider handoff is an obligation, not a waiver of any other gate.
     _can_confirm_plan(_snapshot(blockers=blockers))
 

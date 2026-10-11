@@ -70,12 +70,11 @@ def test_managed_allocation_blocker_gives_provider_handoff_and_readback_context(
     )
     assert len(blockers) == 1
     explanation = blockers[0]
-    assert explanation.startswith('tenant-uat-demo has a KAORI-managed allocation')
+    assert explanation.startswith('tenant-uat-demo has a KAORI-managed Resource Profile allocation')
     assert 'Resource Profile' in explanation
     assert 'independent approval' in explanation
-    assert 'authoritative provider read-back' in explanation
-    assert 'cannot silently abandon the committed allocation' in explanation
-    assert 'delete provider resources' in explanation
+    assert 'verified provider handoff and read-back' in explanation
+    assert 'cannot abandon the allocation or delete provider resources' in explanation
 
     # Only Resource Profile linkage triggers this specific blocker; wording
     # must not silently reinterpret clean adopted allocation as managed.
