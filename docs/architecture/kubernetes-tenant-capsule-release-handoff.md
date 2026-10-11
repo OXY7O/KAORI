@@ -1034,6 +1034,42 @@ collection, installed write-once START, fresh authorized
 conditional executor, exact GlobalResourceQuota preservation
 read-back and complete UAT all pass by separate operator authority.
 
+## G3 source consistency — plan-pinned RBAC lineage and unresolved findings (source only)
+
+The existing full-scope `inspect_capsule_readback_candidate` also
+checks the source RBAC controller/intent lineage, rather than treating
+valid quota/limit/RoleBinding LIST digests as sufficient evidence.
+Its **source** `rbac_lineage.lineage_sha256` must match the canonical
+Capsule CR component's `capsule_rbac_lineage_sha256` under the
+SHA-bound plan, with the unadmitted lineage status and
+`controller_origin_verified=false` intact. An altered source
+lineage, missing inventory status or malformed `blockers` field is
+rejected even when related LIST and GlobalResourceQuota digests match.
+
+Both source and current snapshots must retain explicit
+`read_only_related_inventory` posture, `observed_not_handoff_authorized`
+GlobalResourceQuota status, and unverified RBAC lineage contract status.
+Their bounded blocker lists cannot hide unresolved foreign-owner,
+RBAC grant/controller, GlobalResourceQuota selector or collection
+findings behind recomputed resource digests. The one permitted
+non-authoritative observation warning is the exact canonical message
+that an approved KAORI-correlated related resource still requires
+handoff; in **current** inventory that warning is valid only while
+the same target is classified `pending_provider_transfer`.
+A claimed `provider_markers_transferred` resource with a leftover
+KAORI-owned warning is inconsistent and remains a G3 blocker.
+
+Regression fixtures were **authored but not executed** for source
+lineage SHA mismatch, caller-switched `controller_origin_verified`,
+changed inventory/lineage status, source and current malformed blocker
+lists, unresolved current RBAC/global quota/foreign findings, permitted
+pending warning, and contradictory transferred warning. This is
+**source correlation**, not authenticated apiserver audit, proof of
+actual controller identity or successful handoff. All source/runtime
+writer, Kubernetes server `dryRun=All`, provider PATCH, SQL commit,
+UAT, CI/CD and Released gates remain HOLD. #1229 stays OPEN;
+#1230/#1231 remain BLOCKED.
+
 ## Required before completing #1229
 
 1. Build on the SHA-bound Namespace and cluster-scoped

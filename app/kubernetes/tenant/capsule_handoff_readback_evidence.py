@@ -258,6 +258,24 @@ def inspect_capsule_readback_candidate(
     ):
         raise ValueError('Capsule read-back plan SHA or handoff fingerprint is invalid.')
     worklist = build_capsule_handoff_worklist(plan=plan, related=source_related)
+    # The plan also pins the RBAC intent/lineage scope, not merely the
+    # quota/limit/RoleBinding LIST hash. Without this comparison a caller
+    # could replace the source lineage, recompute unrelated list digests,
+    # and obtain a structurally complete but misleading G3 receipt.
+    lineage = source_related.get('rbac_lineage')
+    if (
+        not isinstance(lineage, Mapping)
+        or lineage.get('status') != 'contract_correlated_controller_origin_unverified'
+        or lineage.get('lineage_sha256') != cr.get('capsule_rbac_lineage_sha256')
+        or lineage.get('controller_origin_verified') is not False
+        or not isinstance(lineage.get('blockers'), list)
+        or source_related.get('status') != 'read_only_related_inventory'
+        or not isinstance(source_related.get('blockers'), list)
+        or source_related.get('global_quota', {}).get('status')
+            != 'observed_not_handoff_authorized'
+        or not isinstance(source_related['global_quota'].get('blockers'), list)
+    ):
+        raise ValueError('Capsule G3 source RBAC lineage or inventory posture is not plan-bound.')
     scoped_names = {row['name'] for row in namespaces}
     base_related_sha, base_quota_sha = _fingerprints(source_related, names=scoped_names)
     if (
@@ -286,6 +304,46 @@ def inspect_capsule_readback_candidate(
         raise ValueError('Capsule read-back Namespace baseline coverage is not exact.')
 
     blockers: list[str] = []
+    # The classifier legitimately reports a KAORI-managed related object as
+    # requiring handoff. Only those known candidate warnings may accompany
+    # an otherwise coherent source/current observation; arbitrary collector,
+    # foreign-owner or controller/RBAC findings must not disappear behind a
+    # valid source/current resource_sha256.
+    allowed_handoff_warnings = {
+        (
+            f"Capsule {item['kind']}/{item['namespace']}/{item['name']} "
+            "retains KAORI provider controls requiring separately admitted handoff."
+        )
+        for item in worklist['items']
+        if item['decision'] == 'explicit_kaori_metadata_handoff_review'
+    }
+    for snapshot in (source_related, current_related):
+        evidence = snapshot.get('blockers')
+        quota_evidence = snapshot.get('global_quota')
+        lineage_evidence = snapshot.get('rbac_lineage')
+        if (
+            snapshot.get('status') != 'read_only_related_inventory'
+            or not isinstance(evidence, list)
+            or not isinstance(quota_evidence, Mapping)
+            or quota_evidence.get('status') != 'observed_not_handoff_authorized'
+            or not isinstance(quota_evidence.get('blockers'), list)
+            or not isinstance(lineage_evidence, Mapping)
+            or lineage_evidence.get('status')
+                != 'contract_correlated_controller_origin_unverified'
+            or lineage_evidence.get('controller_origin_verified') is not False
+            or not isinstance(lineage_evidence.get('blockers'), list)
+            or any(not isinstance(item, str) for item in evidence)
+            or any(not isinstance(item, str) for item in quota_evidence['blockers'])
+            or any(not isinstance(item, str) for item in lineage_evidence['blockers'])
+        ):
+            blockers.append('related_inventory_provenance_or_coverage_unverified')
+            continue
+        if any(warning not in allowed_handoff_warnings for warning in evidence):
+            blockers.append('related_inventory_has_unresolved_provider_findings')
+        if quota_evidence['blockers']:
+            blockers.append('global_quota_has_unresolved_provider_findings')
+        if lineage_evidence['blockers']:
+            blockers.append('rbac_lineage_has_unresolved_provider_findings')
     try:
         cr_observation = verify_capsule_cr_preserved(cr, current_capsule_cr)
     except (TypeError, ValueError, KeyError, AttributeError):
@@ -298,6 +356,25 @@ def inspect_capsule_readback_candidate(
         )
     )
     blockers.extend(related_blockers)
+    # An original KAORI handoff warning can remain on a still-pending
+    # resource. It cannot remain on an allegedly transferred current object:
+    # this would contradict the current canonical controller inventory.
+    pending_kaori_warnings = {
+        (
+            f"Capsule {item['kind']}/{item['namespace']}/{item['name']} "
+            "retains KAORI provider controls requiring separately admitted handoff."
+        )
+        for item in related_rows
+        if item['state'] == 'pending_provider_transfer'
+    }
+    current_findings = current_related.get('blockers')
+    if isinstance(current_findings, list) and any(
+        warning in allowed_handoff_warnings
+        and warning not in pending_kaori_warnings
+        for warning in current_findings
+        if isinstance(warning, str)
+    ):
+        blockers.append('related_current_handoff_finding_contradicts_readback')
     if current_related_sha != base_related_sha and related_blockers:
         blockers.append('namespaced_provider_object_or_list_changed')
     if current_quota_sha != base_quota_sha:
