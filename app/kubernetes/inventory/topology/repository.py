@@ -76,7 +76,7 @@ def load_topology_records(
     max_nodes: int | None = None,
 ) -> TopologyRecords:
     cluster_ids = [cluster.id for cluster in clusters]
-    pods = _load_pods(cluster_ids, namespace, selection)
+    pods = [] if selection.depth == '1' else _load_pods(cluster_ids, namespace, selection)
     # Depth 1 creates only cluster, namespace and node elements. These can be
     # bounded independently without breaking Pod/Service or PVC/PV relationships.
     shallow_budget = max_nodes if selection.depth == '1' else None
@@ -156,10 +156,22 @@ def _load_nodes(
         return []
     query = _current_query(NodeInventory, cluster_ids)
     if namespace:
-        referenced_nodes = sorted({pod.node_name for pod in pods if pod.node_name})
-        query = (
-            query.filter(NodeInventory.node_name.in_(referenced_nodes)) if referenced_nodes else query.filter(false())
-        )
+        if selection.depth == '1':
+            # Avoid materializing the namespace's entire Pod family just to
+            # resolve Node placement in a shallow graph. Correlated SQL retains
+            # cluster/namespace identity and latest committed generation.
+            referenced_pod = _namespaced_query(PodInventory, cluster_ids, namespace).filter(
+                PodInventory.cluster_id == NodeInventory.cluster_id,
+                PodInventory.node_name == NodeInventory.node_name,
+            )
+            query = query.filter(referenced_pod.exists())
+        else:
+            referenced_nodes = sorted({pod.node_name for pod in pods if pod.node_name})
+            query = (
+                query.filter(NodeInventory.node_name.in_(referenced_nodes))
+                if referenced_nodes
+                else query.filter(false())
+            )
     query = query.order_by(NodeInventory.cluster_id.asc(), NodeInventory.node_name.asc())
     if max_nodes is not None:
         if totals is not None:
