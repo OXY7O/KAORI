@@ -288,10 +288,51 @@ def build_capsule_scope_patch_review(
             })
         else:
             raise ValueError('Capsule G2 noncandidate related control is ambiguous.')
-    checked.sort(key=lambda item: (item['namespace'], item['kind'], item['name']))
-    transfer = sum(row['operation'] == 'conditional_metadata_dry_run_candidate' for row in checked)
-    if transfer != len(candidates):
-        raise ValueError('Capsule G2 omitted an approved per-resource transfer.')
+    # The complete manifest must include all non-namespaced preservation
+    # targets, not count CR/GlobalResourceQuota objects invisibly by subtraction.
+    # Their source inventory is bound to the approved plan; this is NOT
+    # authenticated current provider read-back of GlobalResourceQuota.
+    preserved_global: list[dict[str, Any]] = [{
+        'namespace': '', 'kind': 'CapsuleTenant', 'name': cr['name'],
+        'uid': cr['uid'], 'source_resource_version': cr['resource_version'],
+        'operation': 'preserve_source_only_unverified',
+        'policy_sha256': cr['capsule_spec_sha256'],
+    }]
+    for item in worklist['items']:
+        if item['kind'] != 'GlobalResourceQuota':
+            continue
+        if item['decision'] != 'preserve_cluster_scoped_quota':
+            raise ValueError('Capsule shared quota scope remains ambiguous.')
+        preserved_global.append({
+            'namespace': '', 'kind': 'GlobalResourceQuota',
+            'name': item['name'], 'uid': item['uid'],
+            'source_resource_version': item['resource_version'],
+            'operation': 'preserve_source_only_unverified',
+            'policy_sha256': item['policy_sha256'],
+        })
+    complete = checked + preserved_global
+    complete.sort(key=lambda item: (item['namespace'], item['kind'], item['name']))
+    transfer = sum(
+        row['operation'] == 'conditional_metadata_dry_run_candidate'
+        for row in complete
+    )
+    approved = {
+        (row['namespace'], row['kind'], row['name']): row
+        for row in worklist['items']
+    }
+    if (
+        transfer != len(candidates)
+        or len(complete) != worklist['item_count']
+        or {(row['namespace'], row['kind'], row['name']) for row in complete}
+            != set(approved)
+        or any(
+            (row['uid'], row['source_resource_version'])
+            != (approved[(row['namespace'], row['kind'], row['name'])]['uid'],
+                approved[(row['namespace'], row['kind'], row['name'])]['resource_version'])
+            for row in complete
+        )
+    ):
+        raise ValueError('Capsule G2 preservation manifest omitted or changed a provider resource.')
     return {
         'status': 'complete_offline_scope_patch_review_unadmitted',
         'tenant_id': plan['tenant_id'],
@@ -304,11 +345,11 @@ def build_capsule_scope_patch_review(
         'complete_scope_count': worklist['item_count'],
         'transfer_candidate_count': transfer,
         'preserved_namespaced_count': len(checked) - transfer,
-        'globally_preserved_count': (
-            worklist['item_count'] - len(checked)
-        ),
-        'scope_items_sha256': _digest(checked),
-        'scope_items': checked,
+        'globally_preserved_count': len(preserved_global),
+        'global_quota_source_preservation_only': True,
+        'global_quota_provider_readback_verified': False,
+        'scope_items_sha256': _digest(complete),
+        'scope_items': complete,
         'source_provider_authenticated': False,
         'human_consent_authenticated': False,
         'start_committed': False, 'server_dry_run_completed': False,
