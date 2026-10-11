@@ -15,6 +15,10 @@ from app.kubernetes.tenant.native_handoff_dry_run import (
     _retained_provider_metadata, _spec, _stable_sha256,
 )
 from app.kubernetes.tenant.release_handoff_inventory import _capsule_spec_sha256
+from app.kubernetes.tenant.capsule_handoff_related_inventory import (
+    _KAORI_MARKERS, _digest, _get, _owner_refs, _scope_identity, _strings,
+    classify_capsule_related_resource,
+)
 
 _OWNER_LABEL = re.compile(r'[A-Za-z0-9](?:[A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?\Z')
 _MAX_SCOPE = 31
@@ -226,3 +230,256 @@ def verify_capsule_namespace_preview(
         or any(key in _labels(preview) for key in _MARKER_KEYS if key != 'app.kubernetes.io/managed-by')
     ):
         raise ValueError('Capsule handoff dry-run would change provider-owned state.')
+
+
+# Related-resource operations are pure **candidates**, not PATCH permissions.
+# Unlike Namespace transfer, RoleBinding's access-grant label must also be
+# removed. No policy/spec, subjects, roleRef, ownerReferences or finalizer ops.
+_RELATED_TRANSFER_KINDS = frozenset({'ResourceQuota', 'LimitRange', 'RoleBinding'})
+_RELATED_TRANSFER_LABELS = frozenset(_MARKER_KEYS) | {'kaori.io/access-grant'}
+
+
+def _related_transfer_source(
+    *, record: Mapping[str, Any], before: Any, kind: str, namespace: str,
+    tenant_id: str, capsule_name: str, capsule_uid: str,
+    approved_label_keys: list[str],
+) -> tuple[dict[str, str], dict[str, str], set[str]]:
+    """Recheck exact inventory and all human-proposed metadata key coverage.
+
+    Correlated KAORI labels and correctly shaped consent are NOT
+    independently authenticated ownership or execution authorization.
+    """
+    if (
+        kind not in _RELATED_TRANSFER_KINDS
+        or not isinstance(record, Mapping)
+        or record.get('kind') != kind or record.get('namespace') != namespace
+        or record.get('origin') != 'kaori_correlated'
+        or record.get('mutation_authorized') != 'false'
+        or not isinstance(approved_label_keys, list)
+        or not all(isinstance(key, str) for key in approved_label_keys)
+        or len(approved_label_keys) != len(set(approved_label_keys))
+    ):
+        raise ValueError('Capsule related metadata transfer is not in the approved source scope.')
+    observed, findings = classify_capsule_related_resource(
+        resource=before, kind=kind, namespace=namespace,
+        tenant_id=tenant_id, capsule_name=capsule_name, capsule_uid=capsule_uid,
+    )
+    required = {
+        'kind', 'namespace', 'name', 'uid', 'resource_version', 'origin',
+        'policy_sha256', 'metadata_sha256', 'mutation_authorized',
+    }
+    if kind == 'RoleBinding':
+        required |= {'binding_contract_sha256', 'grant_scope_sha256'}
+    if (
+        not required.issubset(record)
+        or any(record[key] != observed.get(key) for key in required)
+        or any('conflicting' in reason or 'incomplete' in reason for reason in findings)
+    ):
+        raise ValueError('Capsule related policy, identity, RBAC or ownership source changed.')
+    metadata = _get(before, 'metadata')
+    labels = _strings(_get(metadata, 'labels'), label='labels')
+    selected = {
+        key for key in labels
+        if key in _RELATED_TRANSFER_LABELS
+    }
+    if (
+        not selected.issubset(_RELATED_TRANSFER_LABELS)
+        or selected != set(approved_label_keys)
+        or not {'app.kubernetes.io/managed-by', 'kaori.io/tenant-id'}.issubset(selected)
+        or (kind == 'RoleBinding') != ('kaori.io/access-grant' in selected)
+        or any(key.startswith('kaori.io/') and key not in _KAORI_MARKERS for key in labels)
+        or _get(metadata, 'deletion_timestamp') is not None
+        or _get(metadata, 'deletionTimestamp') is not None
+    ):
+        raise ValueError('Capsule related consent is partial, unsafe or resource is deleting.')
+    return observed, labels, selected
+
+
+def _related_provider_invariants(resource: Any) -> dict[str, str]:
+    """Exclude labels and resourceVersion; preserve every other governed field."""
+    meta = _get(resource, 'metadata')
+    refs = _owner_refs(meta)
+    annotations = _strings(_get(meta, 'annotations'), label='annotations')
+    finalizers = _get(meta, 'finalizers')
+    if finalizers is None:
+        finalizers = []
+    if not isinstance(finalizers, (list, tuple)) or any(
+        not isinstance(item, str) for item in finalizers
+    ):
+        raise ValueError('Capsule related finalizers are malformed.')
+    if (
+        _get(meta, 'deletion_timestamp') is not None
+        or _get(meta, 'deletionTimestamp') is not None
+    ):
+        raise ValueError('Capsule related object is terminating.')
+    return {
+        'owner_annotations_finalizers_sha256': _digest({
+            'ownerReferences': refs, 'annotations': annotations,
+            'finalizers': list(finalizers),
+        }),
+    }
+
+
+def build_capsule_related_metadata_handoff_patch(
+    *, record: Mapping[str, Any], before: Any, kind: str, namespace: str,
+    tenant_id: str, capsule_name: str, capsule_uid: str,
+    successor_owner: str, approved_label_keys: list[str],
+) -> list[dict[str, Any]]:
+    """Offline UID/RV/label guarded patch for ONE correlated related object.
+
+    NEVER call Kubernetes here. The eventual executor MUST independently
+    verify authenticated controller provenance, per-object successor consent,
+    current scope and START-before-write, then authorize server dryRun=All.
+    """
+    owner = _successor(successor_owner)
+    observed, labels, selected = _related_transfer_source(
+        record=record, before=before, kind=kind, namespace=namespace,
+        tenant_id=tenant_id, capsule_name=capsule_name, capsule_uid=capsule_uid,
+        approved_label_keys=approved_label_keys,
+    )
+    _related_provider_invariants(before)
+    patch: list[dict[str, Any]] = [
+        {'op': 'test', 'path': '/metadata/uid', 'value': observed['uid']},
+        {'op': 'test', 'path': '/metadata/resourceVersion', 'value': observed['resource_version']},
+        {'op': 'test', 'path': '/metadata/labels', 'value': labels},
+    ]
+    for key in sorted(selected):
+        patch.append({'op': 'remove', 'path': _label_path(key)})
+    patch.append({
+        'op': 'add', 'path': _label_path('app.kubernetes.io/managed-by'),
+        'value': owner,
+    })
+    return patch
+
+
+def _verify_related_after(
+    *, before: Any, after: Any, record: Mapping[str, Any],
+    kind: str, namespace: str, labels: Mapping[str, str],
+    approved_keys: set[str], successor_owner: str,
+) -> str:
+    name, uid, rv, _ = _scope_identity(after, namespace=namespace)
+    if (
+        (name, uid) != (record['name'], record['uid'])
+        or not isinstance(rv, str) or not rv
+    ):
+        raise ValueError('Capsule related read-back changed resource identity.')
+    source, source_uid, source_rv, _ = _scope_identity(before, namespace=namespace)
+    if (source, source_uid, source_rv) != (
+        record['name'], record['uid'], record['resource_version'],
+    ):
+        raise ValueError('Capsule related read-back source UID/RV is stale.')
+    if _related_provider_invariants(before) != _related_provider_invariants(after):
+        raise ValueError('Capsule related handoff changed owner, annotations or finalizers.')
+    # Reclassify the policy using the same canonical inventory normalizer;
+    # RoleBinding roleRef/subjects remain compared even after grant labels leave.
+    old_policy = classify_capsule_related_resource(
+        resource=before, kind=kind, namespace=namespace,
+        tenant_id=labels['kaori.io/tenant-id'],
+        capsule_name='', capsule_uid='',
+    ) if False else None
+    # Never calculate policy from arbitrary response metadata: the inventory
+    # classifier canonicalizes roleRef+subjects and namespaced quota/limit spec.
+    if kind == 'RoleBinding':
+        policy = {
+            'roleRef': _get(after, 'role_ref') or _get(after, 'roleRef'),
+            'subjects': _get(after, 'subjects'),
+        }
+    else:
+        policy = _get(after, 'spec')
+    if policy is None or _digest(policy) != record['policy_sha256']:
+        raise ValueError('Capsule related handoff changed quota, limits or RBAC policy.')
+    expected = {
+        **{key: value for key, value in labels.items() if key not in approved_keys},
+        'app.kubernetes.io/managed-by': _successor(successor_owner),
+    }
+    actual = _strings(_get(_get(after, 'metadata'), 'labels'), label='labels')
+    if actual == labels and rv == source_rv:
+        return 'pending_provider_transfer'
+    if actual == expected and rv != source_rv:
+        return 'provider_markers_transferred'
+    raise ValueError('Capsule related handoff has stale or partially transferred ownership.')
+
+
+def verify_capsule_related_metadata_preview(
+    *, record: Mapping[str, Any], before: Any, preview: Any,
+    kind: str, namespace: str, tenant_id: str, capsule_name: str,
+    capsule_uid: str, successor_owner: str, approved_label_keys: list[str],
+) -> dict[str, Any]:
+    """Validate the returned dryRun=All object, not a live provider success."""
+    _related_transfer_source(
+        record=record, before=before, kind=kind, namespace=namespace,
+        tenant_id=tenant_id, capsule_name=capsule_name, capsule_uid=capsule_uid,
+        approved_label_keys=approved_label_keys,
+    )
+    source, labels, keys = _related_transfer_source(
+        record=record, before=before, kind=kind, namespace=namespace,
+        tenant_id=tenant_id, capsule_name=capsule_name, capsule_uid=capsule_uid,
+        approved_label_keys=approved_label_keys,
+    )
+    expected = {
+        **{key: value for key, value in labels.items() if key not in keys},
+        'app.kubernetes.io/managed-by': _successor(successor_owner),
+    }
+    result = _verify_related_after(
+        before=before, after=preview, record=record, kind=kind,
+        namespace=namespace, labels=labels, approved_keys=keys,
+        successor_owner=successor_owner,
+    ) if _scope_identity(preview, namespace=namespace)[2] != source['resource_version'] else None
+    # Kubernetes dry-run is not guaranteed to return a new RV. Verify the
+    # same exact label/spec/metadata invariants even when the RV is unchanged.
+    if (
+        _strings(_get(_get(preview, 'metadata'), 'labels'), label='labels') != expected
+        or _related_provider_invariants(before) != _related_provider_invariants(preview)
+    ):
+        raise ValueError('Capsule related dry-run would mutate unauthorized provider metadata.')
+    if kind == 'RoleBinding':
+        policy = {'roleRef': _get(preview, 'role_ref') or _get(preview, 'roleRef'),
+                  'subjects': _get(preview, 'subjects')}
+    else:
+        policy = _get(preview, 'spec')
+    if (
+        _scope_identity(preview, namespace=namespace)[:2] != (source['name'], source['uid'])
+        or policy is None or _digest(policy) != source['policy_sha256']
+    ):
+        raise ValueError('Capsule related dry-run changed UID, quota, limits or RoleBinding.')
+    return {
+        'kind': kind, 'namespace': namespace, 'name': source['name'],
+        'uid': source['uid'], 'source_resource_version': source['resource_version'],
+        'preview_sha256': _digest({
+            'policy_sha256': source['policy_sha256'],
+            'labels': expected, 'invariants': _related_provider_invariants(preview),
+        }),
+        'status': 'dry_run_shape_checked_not_admitted',
+        'provider_mutation_performed': False,
+        'provider_execution_admitted': False,
+        'release_authorized': False,
+    }
+
+
+def classify_capsule_related_metadata_readback(
+    *, record: Mapping[str, Any], before: Any, current: Any,
+    kind: str, namespace: str, tenant_id: str, capsule_name: str,
+    capsule_uid: str, successor_owner: str, approved_label_keys: list[str],
+) -> dict[str, Any]:
+    """Pure G3 candidate status; neither authenticates observations nor retries."""
+    source, labels, keys = _related_transfer_source(
+        record=record, before=before, kind=kind, namespace=namespace,
+        tenant_id=tenant_id, capsule_name=capsule_name, capsule_uid=capsule_uid,
+        approved_label_keys=approved_label_keys,
+    )
+    state = _verify_related_after(
+        before=before, after=current, record=source, kind=kind,
+        namespace=namespace, labels=labels, approved_keys=keys,
+        successor_owner=successor_owner,
+    )
+    return {
+        'kind': kind, 'namespace': namespace, 'name': source['name'],
+        'uid': source['uid'],
+        'resource_version': _scope_identity(current, namespace=namespace)[2],
+        'state': state, 'policy_preserved': True,
+        'owner_annotations_finalizers_preserved': True,
+        'provider_snapshot_authenticity_verified': False,
+        'provider_handoff_verified': False,
+        'auto_retry_authorized': False,
+        'release_authorized': False,
+    }
