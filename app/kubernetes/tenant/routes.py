@@ -85,6 +85,9 @@ from app.kubernetes.tenant.native_successor_handback import (
 from app.kubernetes.tenant.capsule_successor_handback import (
     handback_capsule_successor_governance_committed,
 )
+from app.kubernetes.tenant.capsule_release_finalizer import (
+    release_verified_capsule_tenant_committed,
+)
 from app.kubernetes.tenant.native_residual_recovery_assessment import (
     assess_legacy_native_profile_residue_readonly,
 )
@@ -1352,6 +1355,50 @@ def finalize_verified_native_release_route(tenant_id: str):
             message=f"Generation {result['generation']} released; {result['released_namespace_count']} namespaces retained.",
             detail='Provider ownership belongs to the verified successor. New adoption requires its explicit handback.',
             metadata={'tenant_id': tenant_id, 'operation': 'native_release_finalization'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-managed-capsule')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+@permission_required('clusters.manage')
+def finalize_verified_capsule_release_route(tenant_id: str):
+    """Finalize only authoritative whole-scope G3 Capsule provider read-back."""
+    try:
+        _csrf()
+        result = release_verified_capsule_tenant_committed(
+            tenant_id=tenant_id, actor_user_id=int(current_user.id),
+            plan_sha256=str(request.form.get('plan_sha256') or ''),
+            approved=request.form.get('confirm_capsule_release_finalization') == 'release',
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_capsule_release_finalization_blocked',
+            status='warning', title='Capsule Governance Release Blocked',
+            message=str(exc),
+            detail='No Kubernetes PATCH or object deletion occurs in this finalizer. Complete G2/G3 proof is mandatory.',
+            metadata={'tenant_id': tenant_id, 'operation': 'capsule_release_finalization'},
+        )
+    except Exception:
+        _record(
+            event_type='kubernetes_tenant_capsule_release_finalization_unverified',
+            status='error', title='Capsule Release Requires Operator Review',
+            message='Release commit or provider verification outcome is uncertain.',
+            detail='Inspect canonical Tenant/Namespace lifecycle and provider evidence before any retry.',
+            metadata={'tenant_id': tenant_id, 'operation': 'capsule_release_finalization'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_capsule_release_finalization_completed',
+            status='success', title='Capsule Governance Released',
+            message=(
+                f"Generation {result['generation']} Released; "
+                f"{result['released_namespace_count']} Namespaces and "
+                f"{result['verified_resource_count']} provider objects preserved."
+            ),
+            detail='Fresh Discovery and explicit successor handback are required before any new-generation Re-Adopt.',
+            metadata={'tenant_id': tenant_id, 'operation': 'capsule_release_finalization'},
         )
     return _tenant_section_redirect('registry')
 
