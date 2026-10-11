@@ -3,11 +3,10 @@ import re
 
 ROOT = Path(__file__).resolve().parents[3] / 'app/templates/kubernetes/inventory'
 
-
-TABLE_TIPS = {
+TABLE_TERMS = {
     'overview': ('Last Snapshot', 'Inventory Signals'),
     'nodes': ('Readiness', 'Capacity'),
-    'namespaces': ('Resource Controls', 'Security Context'),
+    'namespaces': ('Resource Controls', 'Security Context', 'Pod Security Admission (PSA)'),
     'workloads': ('Managed Pods', 'Update Strategy'),
     'pods': ('Runtime State', 'Ownership & Activity'),
     'services': ('Access Model', 'Backend Registration'),
@@ -18,54 +17,69 @@ TABLE_TIPS = {
 
 
 def _table_source(resource: str) -> str:
-    rel = (
-        'overview/partials/_resources_by_cluster_content.html'
+    path = (
+        ROOT / 'overview/partials/_resources_by_cluster_content.html'
         if resource == 'overview'
-        else f'{resource}/partials/_table_content.html'
+        else ROOT / resource / 'partials/_table_content.html'
     )
-    return (ROOT / rel).read_text(encoding='utf-8')
+    return path.read_text(encoding='utf-8')
 
 
-def test_every_kubernetes_inventory_table_explains_technical_columns() -> None:
-    ids: list[str] = []
-    for resource, labels in TABLE_TIPS.items():
-        template = _table_source(resource)
-        assert '{% import "components/info_tip.html" as info_tip %}' in template
-        assert template.count('info_tip.render(') == len(labels) + (resource == 'namespaces')
-        assert '<thead' in template and '</thead>' in template
-        assert '<tbody' in template and '</tbody>' in template
-        for label in labels:
-            assert f'>{label} {{{{ info_tip.render(' in template
-        ids.extend(re.findall(r"info_tip.render\('(k8s-inventory-[^']+)'", template))
-
-    assert len(ids) == len(set(ids)), 'Header tooltip IDs must be globally distinct.'
+def _title_source(resource: str) -> str:
+    path = (
+        ROOT / 'overview/partials/_resources_by_cluster.html'
+        if resource == 'overview'
+        else ROOT / resource / 'partials/_table_card.html'
+    )
+    return path.read_text(encoding='utf-8')
 
 
-def test_namespace_psa_explains_enforcement_without_compliance_assumptions() -> None:
-    source = _table_source('namespaces')
-    assert 'PSA Enforce {{ info_tip.render(' in source
-    assert "'k8s-namespace-psa-enforce-' ~ namespace.id" in source
-    assert "'Pod Security Admission (PSA)'" in source
-    assert 'Privileged, Baseline, and Restricted' in source
-    assert 'does not prove the namespace is secure' in source
+def test_kubernetes_inventory_help_is_on_table_titles_not_column_headers() -> None:
+    ids = []
+    for resource, terms in TABLE_TERMS.items():
+        table = _table_source(resource)
+        title = _title_source(resource)
+        assert 'info_tip.render(' not in table
+        assert 'components/info_tip.html' not in table
+        assert 'components/info_tip.html' in title
+        assert title.count('info_tip.render(') == 1
+        assert 'items=[' in title
+        for term in terms:
+            assert term in title
+        assert '<thead' in table and '</thead>' in table
+        assert '<tbody' in table and '</tbody>' in table
+        ids += re.findall(r"info_tip.render\('(k8s-inventory-[^']+)'", title)
+
+    assert len(ids) == 9 and len(set(ids)) == len(ids)
+    assert "'k8s-inventory-overview-title'" in _title_source('overview')
+    assert "'k8s-inventory-nodes-title'" in _title_source('nodes')
 
 
-def test_topology_and_tls_inventory_tables_explain_technical_evidence() -> None:
-    templates = ROOT.parents[0]
+def test_namespace_psa_remains_a_plain_column_value_with_title_guidance() -> None:
+    table = _table_source('namespaces')
+    title = _title_source('namespaces')
+    assert '<span class="text-content-muted">PSA Enforce</span>' in table
+    assert 'k8s-namespace-psa-enforce-' not in table
+    assert 'Pod Security Admission (PSA)' in title
+    assert 'Privileged, Baseline, and Restricted' in title
+    assert 'does not prove the namespace is secure' in title
+
+
+def test_topology_and_tls_help_are_at_the_respective_table_titles() -> None:
     topology = (ROOT / 'topology/partials/_workspace.html').read_text(encoding='utf-8')
     tls = (
-        templates / 'governance/tls_certificates/partials/_table.html'
+        ROOT.parent / 'governance/tls_certificates/partials/_table.html'
     ).read_text(encoding='utf-8')
-    for source in (topology, tls):
-        assert '{% import "components/info_tip.html" as info_tip %}' in source
-    assert 'k8s-inventory-topology-status' in topology
-    assert 'k8s-inventory-topology-relationships' in topology
+    for template in (topology, tls):
+        assert template.count('info_tip.render(') == 1
+        header = template.split('<thead', 1)[1].split('</thead>', 1)[0]
+        assert 'info_tip.render(' not in header
+
+    assert '<h3 class="text-sm font-semibold text-content-primary">Resource List</h3>' in topology
+    assert "'k8s-inventory-topology-title'" in topology
     assert 'missing or filtered evidence' in topology
-    assert 'k8s-inventory-tls-validity' in tls
-    assert 'k8s-inventory-tls-host-coverage' in tls
-    assert 'k8s-inventory-tls-ingress-usage' in tls
+    assert "title_extra=info_tip.render('k8s-inventory-tls-title'" in tls
     assert 'not a live handshake test' in tls
-    assert 'not proof of successful TLS termination' in tls
 
 
 def test_shared_info_tip_supports_pointer_keyboard_touch_and_htmx() -> None:
