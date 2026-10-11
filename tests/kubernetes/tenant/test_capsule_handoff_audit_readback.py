@@ -18,7 +18,9 @@ from app.kubernetes.tenant.capsule_handoff_readback_evidence import (
     inspect_capsule_readback_candidate,
 )
 from app.kubernetes.tenant.capsule_handoff_recovery import capture_capsule_namespace_baseline
-from app.kubernetes.tenant.capsule_handoff_related_inventory import _digest
+from app.kubernetes.tenant.capsule_handoff_related_inventory import (
+    _digest, classify_capsule_related_resource,
+)
 from app.kubernetes.tenant.capsule_handoff_worklist import build_capsule_handoff_worklist
 from app.kubernetes.tenant.release_handoff_approval import _plan_hash
 from app.kubernetes.tenant.release_handoff_inventory import (
@@ -367,3 +369,209 @@ def test_audit_readback_link_does_not_infer_completed_scope_from_started_alone()
     )
     assert result['recorded_readback_matches_candidate'] is False
     assert result['status'] == 'no_complete_readback_claim'
+
+
+def _full_related_case(kind='ResourceQuota', *, include_foreign=False):
+    """One full canonical Capsule LIST plus optional protected foreign control."""
+    plan, related, cr, namespace, baseline = _inputs()
+    labels = {
+        'app.kubernetes.io/managed-by': 'kaori',
+        'kaori.io/tenant-id': plan['tenant_id'],
+        'capsule.clastix.io/tenant': 'demo',
+        'foreign.example/keep': 'untouched',
+    }
+    if kind == 'RoleBinding':
+        labels['kaori.io/access-grant'] = 'grant-1'
+
+    def object_with(name, manager='kaori'):
+        obj = SimpleNamespace(metadata=SimpleNamespace(
+            name=name, namespace='demo-dev', uid='uid-' + name,
+            resource_version='15',
+            labels=deepcopy(labels) if manager == 'kaori' else {
+                'app.kubernetes.io/managed-by': manager,
+                'capsule.clastix.io/tenant': 'demo',
+                'foreign.example/keep': 'untouched',
+            },
+            annotations={'external.example/note': 'preserve'},
+            owner_references=[{
+                'kind': 'Tenant', 'apiVersion': 'capsule.clastix.io/v1beta2',
+                'name': 'demo', 'uid': 'cr-uid',
+            }],
+            finalizers=['capsule.clastix.io/preserve'],
+        ))
+        if kind == 'RoleBinding':
+            obj.role_ref = {
+                'kind': 'ClusterRole', 'name': 'view',
+                'apiGroup': 'rbac.authorization.k8s.io',
+            }
+            obj.subjects = [{
+                'kind': 'ServiceAccount', 'namespace': 'demo-dev',
+                'name': 'existing-serviceaccount',
+            }]
+        elif kind == 'ResourceQuota':
+            obj.spec = {'hard': {'requests.cpu': '2'}}
+        else:
+            obj.spec = {'limits': [{'type': 'Container', 'max': {'memory': '1Gi'}}]}
+        return obj
+
+    before = object_with('controlled')
+    foreign = object_with('external-control', manager='provider') if include_foreign else None
+
+    def projected(obj):
+        result, _ = classify_capsule_related_resource(
+            resource=obj, kind=kind, namespace='demo-dev',
+            tenant_id=plan['tenant_id'], capsule_name='demo', capsule_uid='cr-uid',
+        )
+        return result
+
+    source_rows = [projected(before)] + ([projected(foreign)] if foreign else [])
+    source_rows.sort(key=lambda x: (x['namespace'], x['kind'], x['name']))
+    related['resources'] = source_rows
+    related['resource_count'] = len(source_rows)
+    for entry in related['list_snapshots']:
+        if entry['kind'] == kind:
+            entry['count'] = len(source_rows)
+    related['resource_sha256'] = _digest({
+        'resources': related['resources'], 'lists': related['list_snapshots'],
+    })
+    plan['handoff_components'][0]['capsule_related_resources_sha256'] = related['resource_sha256']
+    plan['handoff_components'][0]['capsule_related_resources_count'] = str(len(source_rows))
+    plan['handoff_fingerprint'] = handoff_fingerprint(plan['handoff_components'])
+    plan['plan_sha256'] = _plan_hash(plan)
+    updated = deepcopy(before)
+    updated.metadata.resource_version = '16'
+    updated.metadata.labels = {
+        key: val for key, val in labels.items()
+        if not key.startswith('kaori.io/') and key != 'app.kubernetes.io/managed-by'
+    }
+    updated.metadata.labels['app.kubernetes.io/managed-by'] = 'platform-team'
+    current = deepcopy(related)
+    current['resources'] = [projected(updated)] + ([projected(foreign)] if foreign else [])
+    current['resources'].sort(key=lambda x: (x['namespace'], x['kind'], x['name']))
+    for entry in current['list_snapshots']:
+        if entry['kind'] == kind:
+            entry['list_resource_version'] = 'list-after-handoff'
+    current['resource_sha256'] = _digest({
+        'resources': current['resources'], 'lists': current['list_snapshots'],
+    })
+    key = ('demo-dev', kind, 'controlled')
+    evidence = {
+        key: {
+            'before': before, 'current': updated,
+            'approved_label_keys': [
+                k for k in labels
+                if k.startswith('kaori.io/') or k == 'app.kubernetes.io/managed-by'
+            ],
+        },
+    }
+    return plan, related, current, cr, namespace, baseline, evidence, foreign
+
+
+def _full_readback(case, *, current=None, evidence='provided'):
+    plan, source, after, cr, namespace, baseline, snapshots, _foreign = case
+    return inspect_capsule_readback_candidate(
+        plan=plan, source_related=source,
+        current_related=after if current is None else current,
+        current_capsule_cr=cr, current_namespaces={'demo-dev': namespace},
+        namespace_baselines=[baseline], tenant_id=plan['tenant_id'],
+        related_transfer_evidence=(snapshots if evidence == 'provided' else evidence),
+    )
+
+
+@pytest.mark.parametrize('kind', ('ResourceQuota', 'LimitRange', 'RoleBinding'))
+def test_whole_scope_explains_exact_related_metadata_transfer_without_list_drift(kind):
+    case = _full_related_case(kind, include_foreign=True)
+    observed = _full_readback(case)
+    assert observed['expected_count'] == 2
+    assert observed['pending_count'] == 1  # Namespace not transferred yet
+    assert observed['transferred_count'] == 1
+    assert observed['ambiguous_count'] == 0
+    assert observed['related_transfer_candidate_count'] == 1
+    assert observed['related_resource_observations'][0]['state'] == 'provider_markers_transferred'
+    assert 'namespaced_provider_object_or_list_changed' not in observed['blockers']
+    assert 'namespaced_list_revision_drift' not in observed['blockers']
+    assert 'related_foreign_or_unadmitted_control_drift' not in observed['blockers']
+    assert observed['provider_snapshot_authenticity_verified'] is False
+    assert observed['provider_handoff_verified'] is False
+    assert observed['release_authorized'] is False
+    assert 'existing-serviceaccount' not in str(observed)
+
+
+def test_whole_scope_changed_digest_without_complete_object_evidence_is_ambiguous():
+    case = _full_related_case()
+    result = _full_readback(case, evidence=None)
+    assert result['expected_count'] == 2
+    assert result['transferred_count'] == 0
+    assert result['ambiguous_count'] == 1
+    assert 'related_kaori_control_recovery_unverified' in result['blockers']
+    assert result['auto_retry_authorized'] is False
+
+
+@pytest.mark.parametrize('change', ('policy', 'foreign_label', 'foreign_rv', 'owner'))
+def test_whole_scope_foreign_control_or_policy_change_remains_a_blocker(change):
+    case = _full_related_case(include_foreign=True)
+    after = deepcopy(case[2])
+    if change == 'policy':
+        controlled = next(row for row in after['resources'] if row['name'] == 'controlled')
+        controlled['policy_sha256'] = 'f' * 64
+    elif change == 'foreign_label':
+        other = next(row for row in after['resources'] if row['name'] == 'external-control')
+        other['metadata_sha256'] = 'a' * 64
+    elif change == 'foreign_rv':
+        other = next(row for row in after['resources'] if row['name'] == 'external-control')
+        other['resource_version'] = 'changed-by-other-actor'
+    else:
+        other = next(row for row in after['resources'] if row['name'] == 'external-control')
+        other['origin'] = 'ambiguous_kaori'
+    after['resource_sha256'] = _digest({
+        'resources': after['resources'], 'lists': after['list_snapshots'],
+    })
+    result = _full_readback(case, current=after)
+    assert result['ambiguous_count'] or 'related_foreign_or_unadmitted_control_drift' in result['blockers']
+    assert result['provider_handoff_verified'] is False
+
+
+def test_whole_scope_partial_evidence_and_missing_or_duplicated_list_fail_closed():
+    case = _full_related_case()
+    with pytest.raises(ValueError, match='cover exactly'):
+        _full_readback(case, evidence={})
+    current = deepcopy(case[2])
+    current['list_snapshots'].pop()
+    with pytest.raises(ValueError):
+        _full_readback(case, current=current)
+
+
+def test_whole_scope_does_not_accept_unexplained_list_revision_or_grq_drift():
+    case = _full_related_case('LimitRange')
+    current = deepcopy(case[2])
+    for row in current['list_snapshots']:
+        if row['kind'] == 'ResourceQuota':
+            row['list_resource_version'] = 'foreign-list-change'
+    current['resource_sha256'] = _digest({
+        'resources': current['resources'], 'lists': current['list_snapshots'],
+    })
+    receipt = _full_readback(case, current=current)
+    assert 'namespaced_list_revision_drift' in receipt['blockers']
+    current = deepcopy(case[2])
+    current['global_quota']['list_resource_version'] = 'changed'
+    current['global_quota']['scope_sha256'] = _digest({
+        'api_version': 'v1beta2', 'list_resource_version': 'changed',
+        'resources': [],
+    })
+    receipt = _full_readback(case, current=current)
+    assert 'cluster_global_quota_or_list_changed' in receipt['blockers']
+    assert receipt['release_authorized'] is False
+
+
+def test_whole_scope_premature_transfer_without_list_revision_is_blocked():
+    case = _full_related_case('RoleBinding')
+    current = deepcopy(case[2])
+    for row in current['list_snapshots']:
+        if row['kind'] == 'RoleBinding':
+            row['list_resource_version'] = 'list-rv'
+    current['resource_sha256'] = _digest({
+        'resources': current['resources'], 'lists': current['list_snapshots'],
+    })
+    receipt = _full_readback(case, current=current)
+    assert 'related_transfer_list_revision_not_observed' in receipt['blockers']
+    assert receipt['provider_handoff_verified'] is False
