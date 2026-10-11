@@ -71,6 +71,81 @@ def _digest(value: Any) -> str:
     return hashlib.sha256(_canonical(value)).hexdigest()
 
 
+def capsule_related_scope_sha256(
+    *, resources: list[dict[str, str]],
+    list_snapshots: list[dict[str, str | int]],
+) -> str:
+    """SHA-bind exact objects and bounded LIST coverage, not volatile LIST RV.
+
+    Each LIST must first be complete, versioned, non-paginated and bounded.
+    That LIST resourceVersion stays committed for provenance, but Kubernetes
+    may increment the collection RV without changing any relevant object.
+    Individual resource UID/RV, policy and metadata hashes remain included.
+    """
+    scopes: list[dict[str, str | int]] = []
+    for row in list_snapshots:
+        if (
+            not isinstance(row, Mapping)
+            or not isinstance(row.get('list_resource_version'), str)
+            or not row['list_resource_version']
+            or not isinstance(row.get('namespace'), str) or not row['namespace']
+            or row.get('kind') not in _KINDS
+            or type(row.get('count')) is not int
+            or not 0 <= row['count'] <= _MAX_PER_NS
+        ):
+            raise ValueError('Capsule scope digest requires complete versioned LIST coverage.')
+        scopes.append({
+            'namespace': row['namespace'], 'kind': row['kind'],
+            'count': row['count'],
+        })
+    if (
+        not isinstance(resources, list) or len(resources) > _MAX_TOTAL
+        or len(scopes) > _MAX_NS * len(_KINDS)
+    ):
+        raise ValueError('Capsule scope digest exceeds bounded resource coverage.')
+    return _digest({'resources': resources, 'lists': scopes})
+
+
+def capsule_related_scope_unchanged(before: Any, after: Any) -> bool:
+    """Match *all* whole-scope evidence except collection LIST revisions.
+
+    Only raw LIST RV values are excluded. This does not waive a missing LIST,
+    any changed object UID/resourceVersion/spec/metadata, governance warning,
+    GlobalResourceQuota scope digest, or RBAC lineage.
+    """
+    def stable_copy(value: Any) -> dict[str, Any] | None:
+        if not isinstance(value, Mapping):
+            return None
+        scopes = value.get('list_snapshots')
+        quota = value.get('global_quota')
+        if not isinstance(scopes, list) or not isinstance(quota, Mapping):
+            return None
+        if not isinstance(quota.get('list_resource_version'), str) or not quota['list_resource_version']:
+            return None
+        clean_scopes: list[dict[str, Any]] = []
+        for scope in scopes:
+            if (
+                not isinstance(scope, Mapping)
+                or not isinstance(scope.get('list_resource_version'), str)
+                or not scope['list_resource_version']
+            ):
+                return None
+            clean_scopes.append({
+                key: item for key, item in scope.items()
+                if key != 'list_resource_version'
+            })
+        return {
+            **value,
+            'list_snapshots': clean_scopes,
+            'global_quota': {
+                key: item for key, item in quota.items()
+                if key != 'list_resource_version'
+            },
+        }
+    prior, current = stable_copy(before), stable_copy(after)
+    return prior is not None and current is not None and prior == current
+
+
 def _role_contract_sha256(*, role: Any, subjects: Any, grant: Any, tenant: Any) -> str:
     """Hash only the exact Capsule access contract, never persist principals."""
     if not all(isinstance(val, str) and val for val in (role, grant, tenant)):
@@ -312,7 +387,9 @@ def observe_capsule_related_inventory(
         'status': 'read_only_related_inventory',
         'resources': rows, 'resource_count': len(rows),
         'list_snapshots': list_snapshots,
-        'resource_sha256': _digest({'resources': rows, 'lists': list_snapshots}),
+        'resource_sha256': capsule_related_scope_sha256(
+            resources=rows, list_snapshots=list_snapshots,
+        ),
         'blockers': blockers,
         'provider_mutation_performed': False,
         'provider_handoff_verified': False,
