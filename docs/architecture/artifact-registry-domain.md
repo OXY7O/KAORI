@@ -190,7 +190,7 @@ same nested-card geometry for every domain.
 
 | Workspace | Hero / evidence authority | Summary / section-intro treatment | Navigation / table pattern | Audit decision |
 | --- | --- | --- | --- | --- |
-| Overview | Operational Dashboard Hero and committed operational signals | Four KPI cells use shared divider grid **inside existing** Operational Signal Overview shell, with no extra card shell | Dashboard four operational workspace views | **Align** bounded lazy KPI content only under #1087; preserve #911/#923 shell |
+| Overview | Operational Dashboard Hero and committed operational signals | Four independent `operational_metric_card` KPI cards inside the existing Operational Signal Overview shell; canonical padded body and scoped evidence footer | Dashboard four operational workspace views | **Align** to Kubernetes/Object Storage dashboard KPI card family under #1087; preserve #911/#923 shell |
 | Inventory | Shared Hero / committed snapshot context | Overview **Fleet Inventory Posture** external intro + grouped three-metric estate shell; **Inventory Assets** intro + Kubernetes-style **Registry Asset Catalog** panel; resource pages retain Operational Posture intro + grouped resource metrics | Shared Projects/Repositories/Artifacts navigation cards; bounded resource inventory tables, HTMX filters and 5-row pagination | **Align** #946 follow-up to the accepted grouped Registry summary and Kubernetes catalog family without provider/data changes |
 | Security | Shared Hero / Security Sync / committed scan evidence | External **Security Snapshot** intro + shared grouped four-metric posture grid, independently scoped for Vulnerabilities / Supply Chain | Small content-tabs family for Supply Chain; shared vulnerability/evidence registry and 5-row footer | **Align** summary composition under #1087; preserve #948 scanner semantics |
 | Runtime Usage | Shared Hero / committed correlation snapshot | External **Runtime Correlation** intro + four-cell grouped committed correlation grid | Runtime Bindings section intro and bounded table; committed correlation, 5-row footer | **Align** summary composition under #1087, retain #897 correlation semantics |
@@ -199,18 +199,19 @@ same nested-card geometry for every domain.
 
 #### Component and composition rules applied in this audit
 
-- **Current Artifact Registry metric summary standard:** a plain
-  `section_intro` outside an existing shared operational shell containing
-  `resource_posture_grid` with thin dividers, one responsive column on mobile,
-  two on tablet and four at desktop. **Overview** keeps its already-authoritative
-  `operational_signal_overview` shell; its lazy KPI projection is the grid body
-  with no new nested shell. Inventory stays grouped within its existing
-  `operational_section_card`; Security, Runtime, Governance, and Analytics
-  use the same shared grouped presentation. Governance/Analytics retain their
-  committed status labels. No extra card borders within metric cells. The
-  Inventory Overview Fleet posture now uses the same grouped grid for three
-  committed metrics; the Inventory resource-detail pages retain their grouped
-  four-metric posture.
+- **Current Artifact Registry metric summary standard:** Inventory, Security,
+  Runtime Usage, Governance and Analytics use the shared `resource_posture_grid`
+  grouped metrics with thin dividers inside the appropriate section shell.
+  **The Artifact Registry Operational Dashboard is intentionally different**:
+  its existing `operational_signal_overview` section uses four independent
+  `operational_metric_card` KPI cards, canonical padding, responsive 1/2/4
+  columns, and source/`Active Scope` footers, matching Kubernetes and Object
+  Storage Operational Dashboards. This is KPI-level dashboard family parity,
+  not a new Registry-specific card component or a change to the other five
+  Registry workspace summaries. Governance/Analytics retain their committed
+  status labels; no extra card borders are added to grouped metric cells.
+  Inventory Overview Fleet posture retains the grouped grid for three metrics
+  and resource-detail posture retains its grouped four-metric presentation.
 - The **Inventory Operational Posture** on resource pages and **Fleet Inventory
   Posture** on the Inventory Overview are coordinated evidence panels using the
   approved `operational_section_card` and `posture_grid`, retaining provider,
@@ -244,9 +245,10 @@ behaviors. Work is grouped only for fast DevContainer review at
 `kaori/review/staging-uat`; no CI/CD Full Admission, deployment, staging
 promotion or main promotion occurs without explicit approval.
 
-**Developer / human Visual QA:** verify summary headings and shared grouped
-metric cells on all six Registry pages, original Overview shell and Inventory
-posture header, no double borders, responsive 1/2/4-column grids,
+**Developer / human Visual QA:** verify independent KPI cards on Operational
+Dashboard Overview and shared grouped metric cells on the other five Registry
+workspaces, original Overview shell and Inventory posture header, no double
+borders, responsive 1/2/4-column grids,
 Violet light/dark contrasts, meaningful per-metric badges, Security
 Vulnerabilities/Supply Chain view switching, Policies/Replication HTMX,
 Analytics framed seven-domain URL transitions, 5-row pagination, and zero/
@@ -301,20 +303,24 @@ Replication transitions, back/forward navigation, sync completion refresh,
 and the shared pagination footer. CI/CD, Full Admission, staging/UAT and
 promotion remain **HOLD**.
 
-### Entire Artifact Registry grouped summary adoption (#1087, latest feedback)
+### Registry grouped summary adoption (#1087, superseded for Dashboard Overview)
 
-Human feedback explicitly requires the selected Kubernetes Tenant Estate
-**grouped metric-grid pattern across the entire Artifact Registry**, not only
-Governance. This supersedes the earlier proposal to keep independent summary
-cards on Security, Runtime and Analytics. The six-page audit has been updated
-accordingly; page-specific navigation and provider authority do **not** change.
+The 2026-10-10 human feedback adopted the Kubernetes Tenant Estate grouped
+metric-grid pattern across the six Registry workspace summaries. **The later
+2026-10-11 human review explicitly supersedes that decision for Operational
+Dashboard Overview KPI cards only**: this slot must instead match the
+independent `operational_metric_card` layout of Kubernetes and Object Storage
+Operational Dashboards. Inventory, Security, Runtime Usage, Governance and
+Analytics continue using grouped `resource_posture_grid` summaries; page
+navigation, provider scope, evidence authority and loading boundaries do not
+change.
 
-- **Overview:** use the existing `operational_signal_overview.render` with a
-  new backward-compatible `body_classes='p-5'` default, requested as
-  `body_classes='p-0'` by Registry. Bounded/lazy KPI rows render through the
-  existing `resource_posture_grid` within this shell—do **not** nest another
-  `operational_section_card`. Retain four dashboard tabs, provider scope,
-  freshness/status context and the lazy HTMX KPI endpoint.
+- **Overview:** reuse `operational_signal_overview.render` with its default
+  `body_classes='p-5'` and four independent `operational_metric_card` KPI
+  cards; no extra `operational_section_card` or grouped posture grid inside
+  this shell. Preserve `Committed Inventory` source and `Active Scope`
+  footers, four dashboard tabs, provider scope, freshness/status context,
+  four-card lazy skeleton and the original bounded HTMX KPI endpoint.
 - **Inventory:** the existing `operational_section_card` +
   `resource_posture_grid` meets the reference and remains unchanged.
 - **Security:** both Vulnerabilities and Supply Chain summary scopes now
@@ -335,8 +341,11 @@ accordingly; page-specific navigation and provider authority do **not** change.
   focused lazy HTMX sections under canonical eight-view page-level navigation
   (#1097), without a second framed tab bar.
 
-All six areas reuse **existing** icon/tone/divider geometry; only a
-backward-compatible optional Overview shell-body argument was added.
+All six areas reuse **existing** presentation primitives; the Operational
+Dashboard Overview follows independent KPI card geometry while the other five
+Registry summaries preserve their approved grouped icon/tone/divider geometry.
+The shared shell's backward-compatible optional body-padding argument remains
+available but requires no Registry-specific override.
 No new provider request, authentication, database change, job dispatch,
 scanner, backend metric computation or inventory/analytics authoritative
 source is involved. Tests follow the existing contract and Operational

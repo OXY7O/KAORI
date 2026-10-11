@@ -322,6 +322,32 @@ def test_operational_dashboard_inner_presentation_is_shared_across_three_consume
     assert "'Open Object Storage Integrations'" in object_hero
 
 
+def test_operational_signal_kpi_cards_share_independent_geometry_across_three_domains() -> None:
+    registry_cards = read('app/templates/artifact_registry/partials/_overview_kpi_cards.html')
+    registry_signal = read('app/templates/artifact_registry/partials/_overview_signal_overview.html')
+    registry_loading = read('app/templates/components/operational_section_loading.html')
+    standard = read('docs/design/patterns/OPERATIONAL_DASHBOARD.md')
+
+    for source in (
+        read('app/templates/kubernetes/dashboard/partials/_kpi_cards.html'),
+        read('app/templates/storage/object_storage/dashboard/partials/_kpi_cards.html'),
+        registry_cards,
+    ):
+        assert 'components/operational_metric_card.html' in source
+        assert 'operational_metric_card.render(' in source
+        assert 'grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4' in source
+        assert "scope_label='Active Scope'" in source
+
+    assert "source_label='Committed Inventory'" in registry_cards
+    assert 'resource_posture_grid.html' not in registry_cards
+    assert "body_classes='p-0'" not in registry_signal
+    assert 'grouped=true' not in registry_signal
+    assert 'section_loading.kpis(item_count=4,' in registry_signal
+    assert 'h-28 animate-pulse rounded-lg bg-surface-hover' in registry_loading
+    assert 'Operational Signal KPI indicators as **independent cards**' in standard
+    assert 'Inventory, Security, Runtime Usage, Governance, and Analytics summaries' in standard
+
+
 def test_operational_dashboard_standard_is_family_owned() -> None:
     standard = read('docs/design/patterns/OPERATIONAL_DASHBOARD.md')
     audit = read('docs/design/audits/OPERATIONAL_DASHBOARD_FAMILY_FAST_TRACK_ALIGNMENT_AUDIT_2026_09_29.md')
