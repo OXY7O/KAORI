@@ -182,6 +182,23 @@ def test_cross_evidence_drift_is_a_blocker(field, mutation, expected):
     assert result['dry_run_admitted'] is False
 
 
+
+@pytest.mark.parametrize('field,key,value,reason', [
+    ('acceptance', 'provider_username', '', 'successor_acceptance_changed_or_expired'),
+    ('acceptance', 'provider_groups', [], 'successor_acceptance_changed_or_expired'),
+    ('provider_authority', 'provider_username', '', 'provider_x509_ssr_sar_identity_changed'),
+    ('provider_authority', 'provider_groups', [], 'provider_x509_ssr_sar_identity_changed'),
+    ('preflight', 'status', 'released', 'provider_preflight_drift_or_stale'),
+    ('preflight', 'release_executed', True, 'provider_preflight_drift_or_stale'),
+])
+def test_empty_provider_identity_and_nonpreflight_state_block(field, key, value, reason):
+    case = _fixture()
+    case[field][key] = value
+    result = _assess(case)
+    assert reason in result['blockers']
+    assert result['dry_run_admitted'] is False
+
+
 def test_stale_request_approval_acceptance_and_preflight_blocked():
     for field, key in [
         ('plan', 'requested_at'),
