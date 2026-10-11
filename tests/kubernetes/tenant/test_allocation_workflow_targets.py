@@ -87,11 +87,13 @@ def test_stale_post_cannot_mutate_terminal_managed_generation(monkeypatch, termi
     record = _row('ready-tenant', namespace_status=terminal)
     profile = SimpleNamespace(enabled=True)
     monkeypatch.setattr(
-        tenant_service.db.session,
-        'get',
-        lambda model, _object_id: (
-            record if model is tenant_service.TenantNamespace else profile
-        ),
+        tenant_service,
+        'db',
+        SimpleNamespace(session=SimpleNamespace(
+            get=lambda model, _object_id: (
+                record if model is tenant_service.TenantNamespace else profile
+            )
+        )),
     )
     with pytest.raises(ValueError, match='Released or deprovisioned Namespace'):
         tenant_service.change_native_namespace_allocation({
@@ -104,7 +106,8 @@ def test_stale_post_cannot_mutate_terminal_managed_generation(monkeypatch, termi
 def test_stale_post_cannot_cutover_terminal_observed_generation(monkeypatch, terminal):
     record = _row('ready-tenant', namespace_status=terminal, control='adopted_observed')
     monkeypatch.setattr(
-        tenant_service.db.session, 'get', lambda _model, _object_id: record,
+        tenant_service, 'db',
+        SimpleNamespace(session=SimpleNamespace(get=lambda _model, _object_id: record)),
     )
     with pytest.raises(ValueError, match='Released or deprovisioned Namespace'):
         tenant_service.cutover_adopted_namespace_allocation({
