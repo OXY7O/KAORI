@@ -81,7 +81,12 @@ def _validate_event(
         or event['event_type'] not in _STATES
         or type(event['sequence']) is not int or event['sequence'] != index + 1
         or type(event['actor_user_id']) is not int
-        or event['actor_user_id'] != accepted_actor_user_id
+        or event['actor_user_id'] <= 0
+        or (
+            event['actor_user_id'] == accepted_actor_user_id
+            if event['event_type'] == 'recovery_reviewed'
+            else event['actor_user_id'] != accepted_actor_user_id
+        )
         or event['tenant_id'] != plan.get('tenant_id')
         or event['cluster_id'] != plan.get('cluster_id')
         or event['generation'] != plan.get('generation')
@@ -129,6 +134,8 @@ def _validate_event(
     expected_count = sum(
         row['decision'] in _TRANSFER_DECISIONS for row in worklist['items']
     )
+    if expected_count < 1:
+        raise ValueError('Capsule attempt has no exact KAORI ownership transfer candidates.')
     counts = tuple(event[k] for k in (
         'expected_count', 'observed_count', 'pending_count',
         'transferred_count', 'ambiguous_count',
@@ -148,6 +155,10 @@ def _validate_event(
             or event['transferred_count'] > event['observed_count']
             or event['pending_count'] > event['observed_count']
             or event['ambiguous_count'] > event['observed_count']
+            or (
+                event['pending_count'] + event['transferred_count']
+                + event['ambiguous_count'] > event['observed_count']
+            )
         ):
             raise ValueError('Partial provider outcome is incomplete or was overstated.')
     elif event['event_type'] == 'readback_candidate':
@@ -182,6 +193,7 @@ def project_capsule_attempt_history(
         not isinstance(plan, Mapping)
         or not isinstance(related, Mapping)
         or type(accepted_actor_user_id) is not int
+        or accepted_actor_user_id <= 0
         or not isinstance(events, list) or len(events) > _MAX_HISTORY
         or any(not isinstance(event, Mapping) for event in events)
         or not isinstance(plan.get('plan_sha256'), str)
