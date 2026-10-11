@@ -138,6 +138,12 @@ def create():
                 return finish(feedback)
             except IntegrityError:
                 form.username.errors = [*form.username.errors, 'Username or email already exists.']
+            except SQLAlchemyError:
+                current_app.logger.exception('User creation transaction failed.')
+                form.username.errors = [
+                    *form.username.errors,
+                    'The user could not be created due to a database error. Please retry.',
+                ]
 
     return render_template(
         'access/users/form.html',
@@ -227,6 +233,12 @@ def edit(user_id: int):
                 return finish(feedback)
             except IntegrityError:
                 form.username.errors = [*form.username.errors, 'Username or email already exists.']
+            except SQLAlchemyError:
+                current_app.logger.exception('User edit transaction failed.')
+                form.username.errors = [
+                    *form.username.errors,
+                    'The user changes could not be saved due to a database error. Please retry.',
+                ]
 
     return render_template(
         'access/users/form.html',
