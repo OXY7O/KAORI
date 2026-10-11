@@ -34,10 +34,22 @@ class _ProvidersQuery:
 
 def test_registry_provider_choices_exclude_inactive_disabled_and_blocked(monkeypatch) -> None:
     rows = [
-        SimpleNamespace(id=7, name='Harbor A', environment='UAT', enabled=True, lifecycle_status='active', readiness_status='ready'),
-        SimpleNamespace(id=8, name='Harbor B', environment='UAT', enabled=False, lifecycle_status='active', readiness_status='ready'),
-        SimpleNamespace(id=9, name='Harbor C', environment='UAT', enabled=True, lifecycle_status='retired', readiness_status='ready'),
-        SimpleNamespace(id=10, name='Harbor D', environment='UAT', enabled=True, lifecycle_status='active', readiness_status='blocked'),
+        SimpleNamespace(
+            id=7, name='Harbor A', environment='UAT', enabled=True,
+            lifecycle_status='active', readiness_status='ready',
+        ),
+        SimpleNamespace(
+            id=8, name='Harbor B', environment='UAT', enabled=False,
+            lifecycle_status='active', readiness_status='ready',
+        ),
+        SimpleNamespace(
+            id=9, name='Harbor C', environment='UAT', enabled=True,
+            lifecycle_status='retired', readiness_status='ready',
+        ),
+        SimpleNamespace(
+            id=10, name='Harbor D', environment='UAT', enabled=True,
+            lifecycle_status='active', readiness_status='blocked',
+        ),
     ]
     column = _Column()
     fake_model = SimpleNamespace(
