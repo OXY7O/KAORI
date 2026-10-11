@@ -9,6 +9,52 @@ Target integration: `kaori/review/staging-uat` only. No developer check,
 pytest, Ruff, pyright, CI/CD, DAST, live API UAT, promotion or deployment until
 a separate explicit instruction.
 
+## Capsule single-attempt handoff executor — #1229 integration
+
+The actual Capsule wizard now has a second, explicit **Execute Guarded Capsule
+Handoff** confirmation after a successful, fresh whole-scope server
+`dryRun=All` preview. The committed preview contains the exact SHA-bound
+original worklist and every proposed transfer object identity (kind, Namespace,
+name, UID, resourceVersion). On invocation the accepting human Platform Admin
+must retain the exact X.509 Kubernetes identity, the approved plan,
+independent second-operator acknowledgement, zero dependencies and the
+current complete provider scope. Any stale or changed resource, unknown
+provenance, foreign owner or unverified **KAORI-correlated RoleBinding**
+origin blocks execution. Provider/foreign RoleBindings are preserved, never
+changed by this path.
+
+`capsule_handoff_executor.py` reuses the existing canonical metadata-only
+patch builders and typed server-side dry-run APIs; it **does not enable**
+the earlier separately staged `capsule_handoff_live_patch.py` adapter. One
+specific workflow acquires a locked Tenant row and PostgreSQL immutable
+attempt ledger, checks operational write-once trigger/role/WAL safeguards
+and commits exactly one START in its own database transaction **before the
+first provider live PATCH**. It verifies the Capsule CR, Namespace and
+complete quota/limit/RBAC/GlobalResourceQuota provider scope, performing
+only UID/RV/full-label compare-and-swap for exact consented KAORI Namespace,
+ResourceQuota and LimitRange markers. Quota limits, subjects/roleRef, Capsule
+v1beta2 CR spec, ownership references, foreign labels and workloads are
+untouched. All provider-owned/foreign resources are read and preserved.
+
+If any provider write returns an error/timeout, the workflow stops; it does
+not skip to another PATCH or retry. START stays committed even on process
+death, preventing a second execution request. The terminal append-only
+ledger event is `partial` or `readback_candidate` after an exhaustive
+fresh provider read-back. A full-scope AuditEvent links the START/terminal
+read-back hashes and a count of all preserved and transferred resource
+identities. **This is G3 observation evidence, never itself a G4 Released
+transition.** If terminal/SQL commit acknowledgement is missing or unknown,
+manual recovery remains mandatory.
+
+G2/G3 **still require authorized** migration and DB role/guard verification,
+source validation tests, live Kubernetes dry-run/PATCH, recovery/security
+UAT, and human acceptance before a PASS can be claimed. The current
+RoleBinding provenance limitation must be investigated before handoff of
+KAORI-owned RoleBindings; an operator cannot paper over it with a source
+flag. All earlier audit/proof collectors remain gated and are not silently
+enabled by this minimal path. G4 and G5 remain independently verified
+steps in the approved workflow.
+
 ## Disabled live metadata PATCH adapter — #1229 executor source boundary
 
 `app/kubernetes/tenant/capsule_handoff_live_patch.py` stages the actual
