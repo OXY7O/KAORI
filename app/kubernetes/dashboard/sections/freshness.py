@@ -24,7 +24,7 @@ def build_data_freshness(
             'Committed analytics available' if has_metrics_source_data else 'No committed analytics snapshot'
         )
         metrics_source_description = (
-            'Metrics-backed cluster usage and forecasts from committed analytics snapshots.'
+            'Metrics-backed cluster usage and forecasts from committed snapshots.'
             if has_metrics_source_data
             else (
                 'Run or validate analytics materialization for the selected cluster before using '
@@ -69,7 +69,7 @@ def build_data_freshness(
                 else 'No committed inventory snapshot'
             ),
             icon='database-zap',
-            description=('Latest Kubernetes object counts from committed inventory snapshots.'),
+            description=('Latest Kubernetes object counts from committed inventory.'),
         ),
         FreshnessItem(
             label='Metrics Snapshot',
