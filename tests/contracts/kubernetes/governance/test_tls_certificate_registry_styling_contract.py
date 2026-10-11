@@ -30,19 +30,33 @@ def test_tls_registry_uses_governance_resource_registry_pattern() -> None:
     assert 'Host Coverage</th>' in table
     assert 'Ingress Usage</th>' in table
     assert 'w-full table-fixed' in table
-    assert 'w-[29%]' in table
-    assert 'w-[12%]' in table
+    widths = {
+        'Certificate': 27,
+        'Scope': 22,
+        'Validity': 12,
+        'Host Coverage': 20,
+        'Ingress Usage': 9,
+        'Details': 10,
+    }
+    assert sum(widths.values()) == 100
+    assert widths['Certificate'] > widths['Scope'] > widths['Host Coverage']
+    assert min(widths['Certificate'], widths['Scope'], widths['Host Coverage']) > max(
+        widths['Validity'], widths['Ingress Usage'], widths['Details']
+    )
+    for heading, width in widths.items():
+        header = table.split(f'>{heading}</th>', 1)[0].rsplit('<th', 1)[-1]
+        assert f'w-[{width}%]' in header
     assert 'overflow-x-auto' not in table
     assert 'min-w-[78rem]' not in table
     assert 'Current State' not in table
     assert 'Coverage State' not in table
     assert 'CN ·' in table
     assert 'Issuer ·' not in table
-    assert 'hidden w-[13%]' in table
-    assert 'hidden w-[10%]' in table
+    assert 'hidden w-[20%]' in table
+    assert 'hidden w-[9%]' in table
     assert 'resource_detail_modal.detail_button' in table
     assert "'whitespace-nowrap'" in table
-    assert '<th scope="col" class="w-[12%] px-3 py-3 text-right">Details</th>' in table
+    assert '<th scope="col" class="w-[10%] px-3 py-3 text-right">Details</th>' in table
     assert '<td class="px-3 py-3 text-right align-middle">' in table
     assert 'inline-flex h-9 w-9' not in table
     assert 'data-lucide="server"' in table
@@ -89,3 +103,21 @@ def test_tls_governance_uses_canonical_permissions_and_evidence() -> None:
     assert 'Collection &amp; Governance' in detail_template
     assert 'Inventory Updated' in detail_template
     assert 'data-kaori-tls-detail-layout="evidence-workspace-v2"' in detail_template
+
+
+def test_tls_registry_condenses_redundant_evidence_copy() -> None:
+    table = _read('app/templates/kubernetes/governance/tls_certificates/partials/_table.html')
+    assert ' days left' in table
+    assert ' days expired' in table
+    assert 'title="Expires · {{ record.not_after' in table
+    assert 'Coverage evidence unavailable' in table
+    assert 'Host mapping evidence unavailable' not in table
+    assert 'status_indicator_label(presentation.coverage_label' in table
+    assert '{% elif (record.declared_host_count or 0) == 0 %}' in table
+    assert 'No Declared Hosts</p>' not in table
+    assert '{% if record.uncovered_hosts %}' in table
+    assert '{% if (presentation.declared_host_count or 0) > 0 %}' in table
+    assert 'Ingress mapping unavailable' in table
+    assert 'presentation.ingress_mapping_reported' in table
+    assert 'presentation.coverage_reported' in table
+    assert 'resource_detail_modal.detail_button(record.id' in table
