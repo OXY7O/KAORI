@@ -981,6 +981,44 @@ def _filtered_buckets(filters: BucketFilters):
     return query.order_by(ObjectStorageBucket.name.asc(), ObjectStorageBucket.id.asc())
 
 
+
+def _bucket_empty_state(total_committed_assets: int, snapshot: dict[str, Any]) -> dict[str, str]:
+    """Distinguish missing evidence from a legitimate empty committed collection."""
+    if total_committed_assets:
+        return {
+            'label': 'No Matches',
+            'title': 'No Buckets or Containers Match These Filters',
+            'description': 'Adjust the active search or filters to review committed bucket and container inventory.',
+            'icon': 'search-x',
+        }
+    if snapshot.get('latest_collected_at') is None:
+        return {
+            'label': 'Collection Pending',
+            'title': 'No Buckets or Containers Collected Yet',
+            'description': 'Run Object Storage Inventory Sync from Job Execution after the registered provider is Ready.',
+            'icon': 'database-zap',
+        }
+    if snapshot.get('coverage_tone') != 'normal':
+        return {
+            'label': 'Partial Inventory',
+            'title': 'No Buckets or Containers in Collected Systems',
+            'description': (
+                'Some systems have committed empty inventory; other systems still need collection. '
+                'Review the Inventory Data Snapshot coverage before interpreting the fleet.'
+            ),
+            'icon': 'database-zap',
+        }
+    return {
+        'label': 'Observed Empty',
+        'title': 'No Buckets or Containers Observed',
+        'description': (
+            'The last committed Inventory Sync successfully observed zero buckets or containers '
+            'across all registered systems. This is not a live provider check.'
+        ),
+        'icon': 'database',
+    }
+
+
 def build_buckets(filters: BucketFilters) -> dict[str, Any]:
     query = _filtered_buckets(filters)
     total, bucket_count, container_count, systems_count, providers_count, latest = (
@@ -1008,12 +1046,14 @@ def build_buckets(filters: BucketFilters) -> dict[str, Any]:
     systems = ObjectStorageSystem.query.with_entities(
         ObjectStorageSystem.id, ObjectStorageSystem.name
     ).order_by(ObjectStorageSystem.name.asc(), ObjectStorageSystem.id.asc()).all()
+    total_committed_assets = ObjectStorageBucket.query.count()
+    snapshot = _committed_system_snapshot()
     return {
         'assets': rows,
         'buckets': rows,
         'pagination': pagination,
         'total_assets': int(total or 0),
-        'total_committed_assets': ObjectStorageBucket.query.count(),
+        'total_committed_assets': total_committed_assets,
         'total_buckets': int(bucket_count or 0),
         'total_containers': int(container_count or 0),
         'systems_in_scope': int(systems_count or 0),
@@ -1024,7 +1064,8 @@ def build_buckets(filters: BucketFilters) -> dict[str, Any]:
         ],
         'latest_observed_at': latest,
         'setup': _setup_state(ObjectStorageSystem.query.count()),
-        'snapshot': _committed_system_snapshot(),
+        'snapshot': snapshot,
+        'empty_state': _bucket_empty_state(total_committed_assets, snapshot),
         'systems': [{'id': system_id, 'name': name} for system_id, name in systems],
         **_system_options(),
     }
