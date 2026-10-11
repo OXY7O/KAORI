@@ -839,7 +839,7 @@
                                                         <p class="mt-2 rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5 text-xs leading-5 text-content-secondary"
                                                            role="status" aria-label="Independent Platform Admin required">
                                                             You requested this plan. Another authorized Platform Admin must verify provider identity and explicitly accept the handoff.
-                                                            The dry-run and external reference are not acceptance; no resources have been transferred.
+                                                            The dry-run and external reference do not prove consent or provider handoff.
                                                         </p>
                                                     {% elif row.release_handoff_preparation_state == 'acknowledged'
                                                             and handoff_plan.requested_by != current_user.id
