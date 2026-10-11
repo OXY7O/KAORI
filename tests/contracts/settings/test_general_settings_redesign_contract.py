@@ -130,7 +130,8 @@ def test_system_information_is_explicitly_read_only_and_traceable() -> None:
     assert "table_label.metadata_label('Supplied', 'git-commit-horizontal')" in main
     assert "table_label.status_label('Incomplete', 'warning')" not in main
     assert 'text-status-warning-text' not in main
-    assert 'bg-surface-muted/40' in main
+    assert 'border-b border-outline-default bg-surface-card" aria-labelledby="release-focus-heading"' in main
+    assert 'bg-surface-muted/40' not in main
     assert 'lg:divide-x lg:divide-outline-subtle' in main
     assert 'lg:divide-x lg:divide-outline-default' in main
     assert 'shadow-sm' not in main
