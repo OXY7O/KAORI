@@ -124,14 +124,27 @@ def test_system_information_is_explicitly_read_only_and_traceable() -> None:
     assert 'data-system-build-evidence="runtime-config"' in main
     assert "system_information.build_sha == 'Not provided'" in main
     assert "system_information.build_date == 'Not provided'" in main
-    assert "table_label.status_label('Incomplete', 'warning')" in main
+    assert "table_label.status_label('Not supplied', 'unknown')" in main
+    assert 'build_metadata_missing' in main
     assert 'artifact lineage cannot be verified here' in main
+    assert "table_label.metadata_label('Supplied', 'git-commit-horizontal')" in main
+    assert "table_label.status_label('Incomplete', 'warning')" not in main
+    assert 'text-status-warning-text' not in main
+    assert 'bg-surface-muted/40' in main
+    assert 'lg:divide-x lg:divide-outline-subtle' in main
+    assert 'lg:divide-x lg:divide-outline-default' in main
+    assert 'shadow-sm' not in main
+    assert 'Release Governance' in main
     assert 'Product Release Focus' in main
     assert 'not a live provider-readiness check' in main
     assert 'runtime provider readiness and RBAC determine availability' in main
     assert 'open:bg-surface-hover' in main
     assert 'open:bg-surface-subtle' not in main
     assert 'for highlight in system_information.release_highlights' in main
+    source = read('app/settings/system_information.py')
+    assert 'Clearer integration ownership for Kubernetes' in source
+    assert 'Governed jobs, data lifecycle, notifications' in source
+    assert 'Stronger release traceability, identity boundaries' in source
     assert 'for group in system_information.feature_groups' in main
     assert 'for feature in group.features' in main
     assert '<details' in main
