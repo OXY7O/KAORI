@@ -494,6 +494,7 @@ def _capsule_namespace_records(
         _verify_released_namespace_lineage(
             cluster_id=str(context.cluster.id), namespace=namespace_name,
             provider_uid=provider_uid, tenant_slug=context.tenant.slug,
+            resource_version=resource_version,
         )
         record = TenantNamespace()
         record.environment = environment
@@ -685,7 +686,11 @@ def _adopt_capsule(context: _AdoptionContext) -> tuple[TenantEnvironment, Tenant
         'provider_mutation_performed': False,
         'secret_material_persisted': False,
     }
-    lineage = _released_predecessor_evidence(tenant, provider_uid=provider_uid)
+    # Match the fresh Capsule Tenant CR resourceVersion against immutable
+    # Released handback evidence, not just the provider UID and name.
+    lineage = _released_predecessor_evidence(
+        tenant, provider_uid=provider_uid, resource_version=resource_version,
+    )
     if lineage is not None:
         tenant.provider_evidence_json['re_adoption_lineage'] = lineage
     db.session.add(tenant)
