@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 from types import SimpleNamespace
 
 from app.artifact_registry.presentation_common import _overview_inventory_kpi_evidence
+from app.artifact_registry.presentation_overview import _overview_inventory_items
 from app.artifact_registry.sync import (
     _mark_inventory_collection_failed,
     _mark_inventory_collection_started,
@@ -77,3 +78,45 @@ def test_dashboard_fleet_kpi_evidence_excludes_inactive_and_discloses_partial_co
         'Committed Inventory',
     )
     assert _overview_inventory_kpi_evidence([], [retired]) == ([], 'Not Collected')
+
+
+def test_registry_operations_inventory_snapshot_never_uses_unbound_committed_count() -> None:
+    """Reproduce the previous /overview section 500 from the inventory-item projection."""
+    counts = {'projects': 2, 'repositories': 3, 'artifacts': 5, 'tags': 8}
+
+    pending = _overview_inventory_items(
+        counts,
+        artifact_total=5,
+        total_size_bytes=4096,
+        public_project_count=1,
+        has_committed_inventory=False,
+    )
+    assert len(pending) == 6
+    assert {item['value'] for item in pending} == {'Not Collected'}
+
+    observed = _overview_inventory_items(
+        counts,
+        artifact_total=5,
+        total_size_bytes=4096,
+        public_project_count=1,
+        has_committed_inventory=True,
+    )
+    assert {item['label']: item['value'] for item in observed} == {
+        'Projects': 2,
+        'Repositories': 3,
+        'Artifacts': 5,
+        'Tags': 8,
+        'Artifact Footprint': '4.00 KiB',
+        'Public Projects': 1,
+    }
+
+
+def test_registry_operations_committed_empty_snapshot_is_numeric_zero() -> None:
+    observed = _overview_inventory_items(
+        {'projects': 0, 'repositories': 0, 'artifacts': 0, 'tags': 0},
+        artifact_total=0,
+        total_size_bytes=0,
+        public_project_count=0,
+        has_committed_inventory=True,
+    )
+    assert [item['value'] for item in observed] == [0, 0, 0, 0, '0 B', 0]
