@@ -148,3 +148,121 @@ def test_capsule_source_snapshot_rejects_no_g0_evidence(monkeypatch):
     )
     with pytest.raises(ValueError, match='Original Capsule source'):
         finalizer._source_snapshot(tenant_id='tenant-1', plan=_plan())
+
+
+def _ledger_and_g3_receipt():
+    from app.kubernetes.tenant.capsule_handoff_attempt_state import _event_checksum
+    from app.kubernetes.tenant.capsule_handoff_related_inventory import _digest
+
+    plan = _plan()
+    work = _worklist()
+    start = {
+        'tenant_id': plan['tenant_id'], 'cluster_id': plan['cluster_id'],
+        'generation': plan['generation'], 'plan_sha256': plan['plan_sha256'],
+        'handoff_fingerprint': plan['handoff_fingerprint'],
+        'actor_user_id': 21, 'worklist_sha256': work['inventory_sha256'],
+        'event_type': 'started',
+    }
+    start['event_sha256'] = _event_checksum(start)
+    complete_items = [
+        {'kind': 'CapsuleTenant', 'namespace': '', 'name': 'demo',
+         'uid': 'cr-uid', 'resource_version': '2', 'state': 'preserved'},
+        {'kind': 'Namespace', 'namespace': '', 'name': 'demo-dev',
+         'uid': 'ns-uid', 'resource_version': '6',
+         'state': 'provider_markers_transferred'},
+        {'kind': 'GlobalResourceQuota', 'namespace': '', 'name': 'global',
+         'uid': 'g-uid', 'resource_version': '8', 'state': 'preserved'},
+    ]
+    sha = _digest(complete_items)
+    terminal = {
+        'tenant_id': plan['tenant_id'], 'cluster_id': plan['cluster_id'],
+        'generation': plan['generation'], 'plan_sha256': plan['plan_sha256'],
+        'handoff_fingerprint': plan['handoff_fingerprint'],
+        'actor_user_id': 21, 'worklist_sha256': work['inventory_sha256'],
+        'event_type': 'readback_candidate',
+        'readback_sha256': sha, 'expected_count': 1,
+        'observed_count': 1, 'transferred_count': 1, 'pending_count': 0,
+        'ambiguous_count': 0,
+    }
+    terminal['event_sha256'] = _event_checksum(terminal)
+    attempt_id = 'attempt-1'
+    rows = [
+        SimpleNamespace(
+            event_json=start, event_sha256=start['event_sha256'],
+            sequence=1, event_type='started', attempt_id=attempt_id,
+            previous_event_sha256=None, worklist_sha256=work['inventory_sha256'],
+        ),
+        SimpleNamespace(
+            event_json=terminal, event_sha256=terminal['event_sha256'],
+            sequence=2, event_type='readback_candidate', attempt_id=attempt_id,
+            previous_event_sha256=start['event_sha256'],
+            worklist_sha256=work['inventory_sha256'],
+        ),
+    ]
+    receipt = {
+        'status': 'provider_handoff_verified', 'provider_handoff_verified': True,
+        'whole_scope_readback_verified': True,
+        'resource_specific_consent_verified': True,
+        'controller_origin_verified': False,
+        'controller_generated_rbac_preserved': True,
+        'provider_authority_verified': True,
+        'source_worklist_sha256': work['inventory_sha256'],
+        'plan_sha256': plan['plan_sha256'],
+        'handoff_fingerprint': plan['handoff_fingerprint'],
+        'attempt_id': attempt_id,
+        'start_event_sha256': start['event_sha256'],
+        'readback_sha256': sha, 'actor_user_id': 21, 'errors': [],
+        'auto_retry_authorized': False,
+        'verified_components': complete_items, 'verified_resource_count': 3,
+    }
+    return plan, work, rows, receipt
+
+
+def _mock_complete_g3_source(monkeypatch, rows, receipt):
+    from app.kubernetes.tenant import capsule_handoff_ledger_review as ledger
+
+    monkeypatch.setattr(
+        ledger, 'inspect_capsule_ledger_rows',
+        lambda **_: {
+            'status': 'readback_claim_requires_independent_provider_verification',
+            'event_count': 2, 'worklist_sha256': 'd' * 64,
+        },
+    )
+    monkeypatch.setattr(
+        finalizer, 'CapsuleHandoffLedgerEvent',
+        SimpleNamespace(query=_Query(rows)),
+    )
+    monkeypatch.setattr(
+        finalizer, 'AuditEvent',
+        SimpleNamespace(query=_Query([SimpleNamespace(metadata_json=receipt)])),
+    )
+
+
+def test_capsule_g4_accepts_source_shape_with_foreign_rbac_preserved_but_never_auto_releases(monkeypatch):
+    plan, work, rows, receipt = _ledger_and_g3_receipt()
+    _mock_complete_g3_source(monkeypatch, rows, receipt)
+    assert finalizer._committed_full_handoff(
+        tenant_id='tenant-1', plan=plan, related={}, work=work,
+        actor_user_id=21,
+    ) is receipt
+
+
+@pytest.mark.parametrize('mutation', [
+    lambda w, r: r.update(controller_generated_rbac_preserved=False),
+    lambda w, r: r.update(controller_origin_verified=True),
+    lambda w, r: r['verified_components'][0].update(resource_version='changed'),
+    lambda w, r: r.update(resource_specific_consent_verified=False),
+    lambda w, r: w['items'].append({
+        'kind': 'RoleBinding', 'namespace': 'demo-dev', 'name': 'kaori-rb',
+        'decision': 'explicit_kaori_metadata_handoff_review',
+    }),
+])
+def test_capsule_g4_blocks_forged_origin_consent_changed_sha_and_kaori_rolebinding(monkeypatch, mutation):
+    plan, work, rows, receipt = _ledger_and_g3_receipt()
+    mutation(work, receipt)
+    _mock_complete_g3_source(monkeypatch, rows, receipt)
+    with pytest.raises(ValueError, match='canonical complete read-back proof'):
+        finalizer._committed_full_handoff(
+            tenant_id='tenant-1', plan=plan, related={}, work=work,
+            actor_user_id=21,
+        )
