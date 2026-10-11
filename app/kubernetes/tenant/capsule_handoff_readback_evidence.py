@@ -201,6 +201,17 @@ def _review_related_scope(
             blockers.append('related_foreign_or_unadmitted_control_drift')
     for scope, original in original_lists.items():
         after = new_lists[scope]
+        # Only a version bump may be explained by a permitted transfer;
+        # additional or changed LIST envelope fields are never exempt.
+        if (
+            set(original) != {'namespace', 'kind', 'list_resource_version', 'count'}
+            or set(after) != set(original)
+            or any(
+                after[field] != original[field]
+                for field in ('namespace', 'kind', 'count')
+            )
+        ):
+            blockers.append('related_list_schema_scope_or_count_changed')
         list_changed = (
             after['list_resource_version'] != original['list_resource_version']
         )
