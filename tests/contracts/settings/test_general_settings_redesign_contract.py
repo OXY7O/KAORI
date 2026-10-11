@@ -194,7 +194,8 @@ def test_compatibility_workspace_keeps_policy_contract_qualification_and_readine
     assert 'hx-target="#compatibility-registry"' in registry
     assert 'hx-swap="outerHTML"' in registry
     assert 'hx-push-url="true"' in registry
-    assert 'action="{{ url_for(\'settings.general\') }}"' in registry
+    assert 'method="get"' in registry
+    assert "url_for('settings.general')" in registry
     assert 'aria-current="true"' in registry
     assert 'No matching integrations' in registry
     assert 'Version Qualification' in registry
