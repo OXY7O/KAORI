@@ -104,3 +104,8 @@ Evidence scope is deliberately precise: Activity Audit lists persisted `notifica
 ### Source-linked Activity Audit detail (issue #1219)
 
 For currently committed Notification records, related links appear only after domain-specific permission and exact source lookup. Jobs requires `jobs.view`; Tenant governance requires `tenant.view` or `tenant.manage` and a matching `TenantAuditEvidence`/Tenant association. Links navigate source-owned workspaces; no new audit entries, fabricated actor snapshots, unauthorized source details, or archive continuity are implied. Administrative-only AuditEvent coverage remains governed by #1219 and parent #1208.
+
+
+### Source-linked outbound delivery journal (issue #1220)
+
+Notification Channels' existing **Delivery Activity** table can be narrowed by an **exact committed event key** via a normal GET or HTMX workspace refresh; the filter is retained on pagination. Activity Audit may link to this journal only when its own committed Notification metadata explicitly provides `event_key`/`delivery_event_key`, a matching `NotificationDelivery` exists, and the actor has `integrations.manage`. A channel fan-out, retry, duplicate suppression, or `NotificationEvent` dispatch is not an additional authored KAORI business-action audit event. Report and Automation Control actions that have no Notification record are **not** manufactured or silently bridged by this view.

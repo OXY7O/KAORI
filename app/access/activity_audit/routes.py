@@ -47,6 +47,7 @@ def detail(notification_id: int) -> ResponseReturnValue:
     item['related_sources'] = build_related_source_links(
         notification_id=notification_id,
         can_view_jobs=current_user.has_permission('jobs.view'),
+        can_view_deliveries=current_user.has_permission('integrations.manage'),
         can_view_tenants=(
             current_user.has_permission('tenant.view') or current_user.has_permission('tenant.manage')
         ),

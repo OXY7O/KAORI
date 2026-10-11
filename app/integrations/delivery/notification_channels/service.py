@@ -164,9 +164,13 @@ def get_notification_channels_payload(
     channel_per_page: int = 5,
     delivery_page: int = 1,
     delivery_per_page: int = 5,
+    delivery_event_key: str = '',
 ) -> dict[str, Any]:
     channel_rows, channel_pagination = _channel_registry_page(page=channel_page, per_page=channel_per_page)
-    delivery_rows, delivery_pagination = _delivery_registry_page(page=delivery_page, per_page=delivery_per_page)
+    normalized_delivery_key = str(delivery_event_key or '').strip()[:255]
+    delivery_rows, delivery_pagination = _delivery_registry_page(
+        page=delivery_page, per_page=delivery_per_page, event_key=normalized_delivery_key
+    )
     summary = notification_channel_summary()
     provider_counts = {
         str(provider_key): int(count)
@@ -192,6 +196,7 @@ def get_notification_channels_payload(
         'channel_pagination': channel_pagination,
         'deliveries': delivery_rows,
         'delivery_pagination': delivery_pagination,
+        'delivery_filter': normalized_delivery_key,
         'providers': providers,
         'domain_options': domain_options(),
         'event_type_options': event_type_options(),
@@ -221,8 +226,13 @@ def _channel_registry_page(*, page: int, per_page: int) -> tuple[list[dict[str, 
     return [_channel_view(channel, usage=usage_map.get(channel.id)) for channel in rows], pagination
 
 
-def _delivery_registry_page(*, page: int, per_page: int) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    query = NotificationDelivery.query.order_by(NotificationDelivery.created_at.desc(), NotificationDelivery.id.desc())
+def _delivery_registry_page(
+    *, page: int, per_page: int, event_key: str = ''
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    query = NotificationDelivery.query
+    if event_key:
+        query = query.filter(NotificationDelivery.event_key == event_key)
+    query = query.order_by(NotificationDelivery.created_at.desc(), NotificationDelivery.id.desc())
     rows, pagination = paginate_query(query, page=page, per_page=per_page)
     return [_delivery_view(row) for row in rows], pagination
 
