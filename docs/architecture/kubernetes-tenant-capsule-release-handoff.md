@@ -826,6 +826,63 @@ and provider executor all remain disabled. #1229 stays OPEN;
 Kubernetes provider operations, Released state, or promotion are
 permitted without fresh explicit operator authorization.
 
+## G2–G3 namespaced quota/limit/RBAC metadata-only handoff candidates — source-only
+
+The existing Capsule Namespace patch and dry-run source contract now has
+a corresponding **pure** per-object variant in
+`capsule_handoff_contract.py` for each
+`ResourceQuota`, `LimitRange` and `RoleBinding`. It does not create
+another source-of-truth framework: it consumes the existing
+`capsule_handoff_related_inventory.classify_capsule_related_resource`
+record (exact Tenant/Namespace, kind/name, UID/resourceVersion, origin,
+policy SHA and full original metadata SHA), and it reclassifies the live
+**before** object against that evidence.
+
+For KAORI-correlated controls only, the offline
+`build_capsule_related_metadata_handoff_patch` constructs RFC 6902
+JSON Patch operations with **test** preconditions on UID,
+resourceVersion and **all original labels**; removes precisely the
+KAORI ownership labels listed in the independently reviewed target
+scope; and assigns the separately selected successor's
+`app.kubernetes.io/managed-by` marker. The approved label-key set must
+equal **all** present KAORI handoff keys (no partial grant/profile
+ownership). Unlike ResourceQuota/LimitRange, a RoleBinding must
+additionally include the `kaori.io/access-grant` marker, while its
+original grant scope and binding contract SHA are required to match.
+Foreign labels and all Capsule membership labels remain untouched.
+Foreign/unknown ownerReferences, missing source grant, altered UID/RV,
+invalid metadata and spoofed/partial KAORI control fail closed.
+
+`verify_capsule_related_metadata_preview` compares a **separately
+supplied** server-side dryRun=All result to the exact expected labels,
+policy SHA, original UID/Namespace and preserved annotations,
+ownerReferences and finalizers. Dry-run resourceVersion is allowed to
+remain the same; the preview is never a live successful handoff.
+`classify_capsule_related_metadata_readback` instead distinguishes
+unmodified **pending** from fully **transferred** state only when an
+actual separately supplied read-back includes a **new** resourceVersion
+and the exact transferred marker set. Unexpected label, policy,
+RoleBinding subjects/roleRef, external metadata, owner or finalizer
+mutation, and partial/stale RV are **FAIL** requiring operator review.
+Every result still has
+`provider_snapshot_authenticity_verified=false`,
+`provider_handoff_verified=false`,
+`auto_retry_authorized=false` and
+`release_authorized=false`.
+
+**Critical remaining G2–G3 integration:** these are offline
+per-object functions only. They do **not** authorize or call the
+Kubernetes API, integrate an authenticated per-resource consent
+decision into the stopped executor, verify operator identity, or
+authenticate fresh provider LIST snapshots. The existing
+`inspect_capsule_readback_candidate` retains its conservative
+whole-inventory-drift blockers until the complete quota/limit/RBAC
+provider LIST/read-back proof and immutable START/execution linkage are
+implemented and separately reviewed. A scoped per-resource preview
+must not be substituted for **complete** provider read-back,
+successor acknowledgment, or a verified Released finalizer.
+Regression fixtures were authored but **not run** under HOLD.
+
 ## Required before completing #1229
 
 1. Build on the SHA-bound Namespace and cluster-scoped
