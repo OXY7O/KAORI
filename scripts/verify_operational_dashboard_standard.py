@@ -1189,6 +1189,7 @@ def verify() -> None:
                 'alert_summary.render(',
                 'up to five recent',
                 "empty_label='No Active Cases'",
+                "empty_title='No Active Alert Cases'",
                 'No active recommendation-origin AlertCases',
                 'Intelligence findings are separate.',
                 row_token,
