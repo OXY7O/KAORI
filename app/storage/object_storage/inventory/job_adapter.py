@@ -96,8 +96,12 @@ def build_object_storage_inventory_sync_context(policy: JobPolicy) -> dict[str, 
     counts = (
         db.session.query(
             ObjectStorageBucket.object_storage_system_id, func.count(ObjectStorageBucket.id)
+        ).join(
+            ObjectStorageSystem,
+            ObjectStorageSystem.id == ObjectStorageBucket.object_storage_system_id,
         ).filter(
-            ObjectStorageBucket.object_storage_system_id.in_(eligible_ids)
+            ObjectStorageBucket.object_storage_system_id.in_(eligible_ids),
+            ObjectStorageSystem.inventory_observed_at.is_not(None),
         ).group_by(ObjectStorageBucket.object_storage_system_id).all()
         if eligible_ids else []
     )
