@@ -51,8 +51,8 @@ def test_namespace_psa_explains_enforcement_without_compliance_assumptions() -> 
 
 
 def test_shared_info_tip_supports_pointer_keyboard_touch_and_htmx() -> None:
-    shared = (ROOT.parents[2] / 'components/info_tip.html').read_text(encoding='utf-8')
-    js = (ROOT.parents[3] / 'static/js/info_tips.js').read_text(encoding='utf-8')
+    shared = (ROOT.parents[1] / 'components/info_tip.html').read_text(encoding='utf-8')
+    js = (ROOT.parents[2] / 'static/js/info_tips.js').read_text(encoding='utf-8')
     assert 'data-kaori-info-tip-trigger' in shared
     assert 'aria-describedby=' in shared
     assert 'role="tooltip"' in shared
