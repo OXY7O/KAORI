@@ -68,6 +68,25 @@ def test_node_table_keeps_seven_columns_and_surfaces_conditions() -> None:
     assert content.count('scope="col"') == 7
     assert 'node.condition_summary' in content
     assert "technical_value.render(node.internal_ip or 'Not Reported')" in content
+    assert "table_ui.title_cell(node.node_name, node.identity_supporting, 'server')" in content
+    assert "node.os_image" not in content
+
+
+def test_node_table_shows_os_family_but_detail_retains_complete_platform_evidence() -> None:
+    backend = read('app/kubernetes/inventory/resources/nodes.py')
+    detail = read('app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html')
+    standard = read('docs/design/patterns/KUBERNETES_NODE_INVENTORY.md')
+
+    assert 'def _node_os_family(node: NodeInventory) -> str:' in backend
+    assert "node.operating_system or labels.get('kubernetes.io/os')" in backend
+    assert "'identity_supporting': _node_os_family(node)" in backend
+    assert "('node.os_image', 'container_runtime')" not in backend
+    assert "'operating_system_display': _node_os_family(node)" in backend
+    assert "detail.inspector_row('Operating System', node.operating_system_display)" in detail
+    assert "detail.inspector_row('OS Image', node.os_image, nowrap=true)" in detail
+    assert "detail.inspector_technical_row('Kernel Version', node.kernel_version" in detail
+    assert "detail.inspector_technical_row('Container Runtime', node.container_runtime_identifier" in detail
+    assert 'OS family' in standard
 
 
 def test_node_detail_reuses_shared_metadata_and_avoids_duplicate_badges() -> None:
