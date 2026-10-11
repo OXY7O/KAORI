@@ -82,14 +82,45 @@ def _capsule_g1_only_origin_obligation(snapshot: dict[str, Any], blocker: str) -
         or not isinstance(related.get('resources'), list)
         or not isinstance(related.get('list_snapshots'), list)
         or related.get('resource_sha256') != cr['capsule_related_resources_sha256']
-        or related.get('blockers') != []
+        or not isinstance(related.get('blockers'), list)
         or not isinstance(quota, Mapping) or quota.get('blockers') != []
         or quota.get('scope_sha256') != cr['capsule_shared_quota_sha256']
         or not isinstance(lineage, Mapping) or lineage.get('blockers') != []
         or lineage.get('lineage_sha256') != cr['capsule_rbac_lineage_sha256']
     ):
         return False
-    return True
+    handoff_warnings = related['blockers']
+    if not handoff_warnings:
+        return blocker == _CAPSULE_G1_EXECUTOR_OBLIGATION
+    # KAORI-correlated related controls are a *review obligation* at G1.
+    # Worklist revalidates complete LIST coverage/digests and rejects any
+    # ambiguous resource. Never treat correlated labels as G2 provenance.
+    from app.kubernetes.tenant.capsule_handoff_worklist import build_capsule_handoff_worklist
+
+    try:
+        work = build_capsule_handoff_worklist(
+            plan={'handoff_components': components}, related=related,
+        )
+    except (ValueError, TypeError, KeyError):
+        return False
+    allowed = {
+        (
+            f"Capsule {item['kind']}/{item['namespace']}/{item['name']} "
+            "retains KAORI provider controls requiring separately admitted handoff."
+        )
+        for item in work['items']
+        if item['decision'] == 'explicit_kaori_metadata_handoff_review'
+    }
+    if (
+        any(item['decision'] in ('operator_origin_investigation', 'operator_selector_investigation')
+            for item in work['items'])
+        or not allowed
+        or any(not isinstance(warning, str) or warning not in allowed for warning in handoff_warnings)
+    ):
+        return False
+    return blocker == _CAPSULE_G1_EXECUTOR_OBLIGATION or (
+        blocker in allowed and blocker in handoff_warnings
+    )
 
 
 _REQUIRED_DEPENDENCIES = frozenset({
