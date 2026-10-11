@@ -57,7 +57,17 @@ def test_identity_and_authentication_evidence_is_retained() -> None:
     assert 'data-kaori-user-identity-facts' in detail
     assert 'data-kaori-user-authentication-facts' in detail
     assert 'sm:grid-cols-2' in detail
-    assert 'sm:col-span-2' in detail  # long email
+    assert "stacked_detail_row('Email', user.email, break_all=true)" in detail
+    # Email and Display Name must share the same two-column Identity row.
+    identity = detail.split('data-kaori-user-identity-facts>', 1)[1].split(
+        '{% endcall %}', 1
+    )[0]
+    assert 'sm:grid-cols-2' in detail.split(
+        'data-kaori-user-identity-facts>', 1
+    )[0].split('<div class="grid')[-1]
+    assert "stacked_detail_row('Display Name'," in identity
+    assert "stacked_detail_row('Email'," in identity
+    assert 'sm:col-span-2' not in identity
     assert 'data-kaori-user-credential-boundary' in detail
     assert 'max-w-4xl break-words text-sm leading-6' in detail
 
@@ -80,6 +90,56 @@ def test_authorization_and_lifecycle_long_values_have_readable_rows() -> None:
     assert 'data-kaori-user-effective-access' in detail
     assert 'data-kaori-user-lifecycle-facts' in detail
     assert 'max-w-4xl flex-1 break-words text-sm leading-6' in detail
+
+
+def test_user_detail_uses_adaptive_grids_without_empty_right_columns() -> None:
+    detail = source('app/templates/access/users/partials/_user_detail.html')
+    Environment().parse(detail)
+
+    def fact_grid(marker: str) -> tuple[str, str]:
+        # Inspect each specific grid and its content, not unrelated sibling bands.
+        header = detail.split(f'data-kaori-user-{marker}-facts>', 1)[0]
+        classes = header.rsplit('<div class="', 1)[1].split('"', 1)[0]
+        fields = detail.split(f'data-kaori-user-{marker}-facts>', 1)[1].split(
+            '{% endcall %}', 1
+        )[0]
+        return classes, fields
+
+    identity_classes, identity = fact_grid('identity')
+    assert 'sm:grid-cols-2' in identity_classes
+    assert 'lg:grid-cols-3' not in identity_classes
+    assert identity.index("stacked_detail_row('Display Name'") < identity.index(
+        "stacked_detail_row('Email'"
+    )
+    assert 'sm:col-span-2' not in identity
+    assert "stacked_detail_row('Email', user.email, break_all=true)" in identity
+
+    auth_classes, authentication = fact_grid('authentication')
+    assert 'sm:grid-cols-2' in auth_classes
+    assert 'lg:grid-cols-3' in auth_classes
+    assert authentication.index('Identity Source') < authentication.index(
+        'Credential Owner'
+    ) < authentication.index("'Provider'")
+    assert 'lg:col-span-2' in authentication
+    assert "stacked_detail_row('Last Authentication'," in authentication
+
+    authorization_classes, authorization = fact_grid('authorization')
+    assert 'sm:grid-cols-2' in authorization_classes
+    assert 'lg:grid-cols-3' in authorization_classes
+    for label in ('Assigned Role', 'Role State', 'Emergency Access'):
+        assert label in authorization
+
+    lifecycle_classes, lifecycle = fact_grid('lifecycle')
+    assert 'sm:grid-cols-2' in lifecycle_classes
+    assert 'lg:grid-cols-4' in lifecycle_classes
+    for label in ('Account State', 'Created', 'Updated', 'Deleted'):
+        assert label in lifecycle
+
+    assert 'data-kaori-user-credential-boundary' in detail
+    assert 'data-kaori-user-effective-access' in detail
+    assert 'max-w-4xl break-words text-sm leading-6' in detail
+    assert 'max-w-4xl flex-1 break-words text-sm leading-6' in detail
+    assert 'gap-2 lg:justify-end' in detail
 
 
 def test_user_actions_stay_guarded_without_duplicate_edit() -> None:
