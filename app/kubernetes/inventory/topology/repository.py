@@ -110,7 +110,14 @@ def load_topology_records(
             cluster_ids, namespace, selection, max_nodes=family_budget, totals=source_totals
         ),
         services=_load_services(
-            cluster_ids, namespace, selection, max_nodes=family_budget, totals=source_totals
+            cluster_ids, namespace, selection,
+            # Networking Pods are selected against all committed Service
+            # selectors, including Services omitted by the visible graph.
+            max_nodes=(
+                None if selection.scope == 'networking' and selection.include_pods
+                else family_budget
+            ),
+            totals=source_totals,
         ),
         ingresses=_load_ingresses(
             cluster_ids, namespace, selection, max_nodes=family_budget, totals=source_totals
