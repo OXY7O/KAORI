@@ -88,7 +88,7 @@ def create():
     form = IdentityProviderForm()
     assign_provider_role_choices(form, actor=actor)
     if form.validate_on_submit():
-        role_error = provider_default_role_assignment_error(actor, form.default_role_id.data)
+        role_error = provider_default_role_assignment_error(actor, form.default_role_id.data, jit_enabled=bool(form.jit_enabled.data))
         if role_error:
             form.default_role_id.errors = [*form.default_role_id.errors, role_error]
             return render_template('access/identity_providers/form.html', **_form_context(form, None))
@@ -122,7 +122,7 @@ def edit(provider_id: int):
     if request.method == 'GET':
         populate_form(form, provider)
     if form.validate_on_submit():
-        role_error = provider_default_role_assignment_error(actor, form.default_role_id.data)
+        role_error = provider_default_role_assignment_error(actor, form.default_role_id.data, jit_enabled=bool(form.jit_enabled.data))
         if role_error:
             form.default_role_id.errors = [*form.default_role_id.errors, role_error]
             return render_template('access/identity_providers/form.html', **_form_context(form, provider))
@@ -161,7 +161,7 @@ def test_configuration(provider_id: int | None = None):
     assign_provider_role_choices(form, actor=actor)
     test_result: dict[str, str]
     if form.validate_on_submit():
-        role_error = provider_default_role_assignment_error(actor, form.default_role_id.data)
+        role_error = provider_default_role_assignment_error(actor, form.default_role_id.data, jit_enabled=bool(form.jit_enabled.data))
         if role_error:
             form.default_role_id.errors = [*form.default_role_id.errors, role_error]
             return render_template('access/identity_providers/form.html', **_form_context(form, provider))
