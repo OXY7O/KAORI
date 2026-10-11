@@ -200,6 +200,53 @@ successor, Kubernetes TLS, X.509 SSR/SAR and resource origins immediately
 before every permitted mutation. This projection does none of those
 operations, has no route and never provides an execution capability.
 
+## AuditEvent envelopes and candidate provider read-back — source-only boundary
+
+`capsule_handoff_audit_envelope.py` validates supplied **chronological**
+`AuditEvent` rows (not a database query or writer). Each record must have
+the dedicated Capsule execution target, correct Tenant, strictly increasing
+row ID and timestamp, matching actor, exact event action/type, and validated
+`capsule-handoff-attempt/v1` checksum chain. An incomplete, duplicated,
+malformed, reordered or wrongly attributed envelope fails closed.
+These source checks **do not** establish database append-only guarantees,
+audit-stream completeness, SQL durability, or authentic Kubernetes execution:
+those require independently enforced operational controls.
+
+`capsule_handoff_readback_evidence.py` compares separately acquired
+Capsule Tenant CR, bounded Namespace baselines, all namespaced
+ResourceQuota/LimitRange/RoleBinding LISTs and cluster-scoped
+GlobalResourceQuota records against the exact original approved source.
+It recomputes provider LIST digests and enforces each kind/Namespace's
+unique list scope, resource counts, identity, UID and resourceVersion.
+It checks provider spec, preserved ownership/finalizer/annotation digests
+for KAORI Namespace handoff baselines. Any missing Namespace/baseline/LIST,
+wrong kind, stale digest, changed global quota, provider CR/spec drift
+or foreign constraint change is rejected or flagged for recovery.
+
+The read-back candidate counts **all** KAORI transfer worklist objects,
+including residual ResourceQuota/LimitRange/RoleBinding ownership, never
+only Namespaces. Candidate metadata transfer is classified separately
+from untouched provider-owned resources. An unchanged KAORI-related control
+is still only *pending*; a changed one without separately admitted
+resource-specific handoff remains unverified.
+
+`inspect_capsule_audit_readback_link` correlates the recorded
+`readback_candidate` SHA, worklist, plan and every transfer counter with
+this observation. An exact match produces
+`readback_claim_correlated_unverified`, not provider verification.
+A partial/unknown operation, a matching checksum, or a manually reviewed
+claim **never** authorizes retry or Released.
+
+**Hard trust boundary:** no GitHub source merge, test fixture, audit-event
+mapping or caller-supplied Kubernetes response is authenticated evidence of
+a live handoff. A future guarded, explicitly consented executor must use
+fresh TLS-validated Kubernetes clients, exact SAR permissions, independent
+read-back after each permitted mutation, trustworthy append-only persistence,
+and human recovery for incomplete operations. This slice introduces no
+endpoint, scheduler, persistence, dry-run invocation or live PATCH; all
+`provider_handoff_verified`, `readback_authoritative_verified`,
+`auto_retry_authorized`, and `release_authorized` values remain false.
+
 ## Required before completing #1229
 
 1. Build on the SHA-bound Namespace and cluster-scoped
