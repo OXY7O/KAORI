@@ -50,6 +50,13 @@ class CapsuleHandoffLedgerEvent(db.Model):
         db.UniqueConstraint('tenant_id', 'event_sha256', name='uq_capsule_ledger_tenant_digest'),
         db.CheckConstraint('generation > 0', name='ck_capsule_ledger_generation'),
         db.CheckConstraint(
+            'length(plan_sha256) = 64 AND length(handoff_fingerprint) = 64 '
+            'AND length(worklist_sha256) = 64 AND length(event_sha256) = 64 '
+            'AND (previous_event_sha256 IS NULL OR length(previous_event_sha256) = 64) '
+            'AND length(attempt_id) = 36',
+            name='ck_capsule_ledger_bound_reference_lengths',
+        ),
+        db.CheckConstraint(
             "(sequence = 1 AND event_type = 'started') OR "
             "(sequence = 2 AND event_type IN ('partial', 'readback_candidate')) OR "
             "(sequence = 3 AND event_type = 'recovery_reviewed')",
