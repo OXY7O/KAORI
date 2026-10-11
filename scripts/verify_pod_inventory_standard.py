@@ -156,10 +156,11 @@ def main() -> int:
     require(
         '>Owner & Restarts</th>' in table_content
         and 'table_label.metadata_label(pod.owner_kind_label)' in table_content
-        and 'title="{{ pod.owner_name_display }}"' in table_content
         and 'pod.restart_summary' in table_content
-        and 'pod.owner_display' not in table_content,
-        'Pod owner and restart evidence must use the compact three-level layout.',
+        and 'pod.owner_name_display' not in table_content
+        and 'pod.owner_display' not in table_content
+        and "table_ui.table_classes('min-w-[72rem] !table-fixed')" in table_content,
+        'Pod owner and restart table must remain two-level and omit long owner names.',
         errors,
     )
     require(
