@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% call operational_section_card.render(
     'Cluster Inventory Summary',
@@ -9,7 +10,11 @@
     action_icon='external-link',
     loading_bar_id='resources-by-cluster-loading',
     loading_bar_label='Refreshing Cluster Inventory',
-    body_classes='p-0'
+    body_classes='p-0',
+    header_badge=info_tip.render('k8s-inventory-overview-title', 'Cluster Inventory Summary Guide', 'Read the committed evidence in this cluster summary.', items=[
+        'Committed Snapshot: Time of the latest retained inventory generation for this cluster; this does not mean the cluster is live right now.',
+        'Inventory Signals: Counts observed readiness, pressure, scheduling, or inventory exceptions from committed cluster evidence.'
+    ], placement='right')
     ) %}
     <div id="resources-by-cluster-content">
         {% include "kubernetes/inventory/overview/partials/_resources_by_cluster_content.html" %}
