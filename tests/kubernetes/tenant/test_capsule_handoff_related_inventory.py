@@ -237,3 +237,20 @@ def test_preflight_keeps_native_shape_and_binds_capsule_sha_to_current_fingerpri
     assert 'if tenant.provider_key == \'capsule\':' in preflight
     assert 'observe_capsule_related_inventory(' in preflight
     assert 'resource_sha256' in preflight
+
+
+def test_changed_provider_list_revision_invalidates_related_scope_digest():
+    first = _observe(_API(), _API())
+    core = _API()
+    original_list = core._list
+
+    def changed_list(kind, namespace, **kwargs):
+        payload = original_list(kind, namespace, **kwargs)
+        payload.metadata.resource_version = 'new-list-rv'
+        return payload
+
+    core._list = changed_list
+    changed = _observe(core, _API())
+    assert first['resource_count'] == changed['resource_count'] == 0
+    assert first['resource_sha256'] != changed['resource_sha256']
+    assert changed['list_snapshots'][0]['list_resource_version'] == 'new-list-rv'
