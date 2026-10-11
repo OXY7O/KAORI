@@ -6,7 +6,9 @@ from datetime import UTC, datetime
 
 import pytest
 
-from app.kubernetes.tenant.capsule_handoff_related_inventory import _digest
+from app.kubernetes.tenant.capsule_handoff_related_inventory import (
+    _digest, capsule_related_scope_sha256,
+)
 from app.kubernetes.tenant.capsule_handoff_worklist import build_capsule_handoff_worklist
 from app.kubernetes.tenant.capsule_handoff_resource_admission import assess_capsule_resource_handoff_scope
 from app.kubernetes.tenant.release_handoff_approval import _plan_hash
@@ -36,15 +38,16 @@ def _case():
         {'namespace': 'demo-dev', 'kind': kind, 'list_resource_version': 'list-rv', 'count': amount}
         for kind, amount in [('ResourceQuota', 1), ('LimitRange', 1), ('RoleBinding', 1)]
     ]
-    related_sha = _digest({'resources': objects, 'lists': lists})
+    related_sha = capsule_related_scope_sha256(
+        resources=objects, list_snapshots=lists,
+    )
     shared_items = [{
         'kind': 'GlobalResourceQuota', 'name': 'shared',
         'uid': 'global-uid', 'resource_version': '19',
         'scope': 'direct_tenant_selector', 'policy_sha256': 'a' * 64,
     }]
     shared_sha = _digest({
-        'api_version': 'v1beta2', 'list_resource_version': 'cluster-rv',
-        'resources': shared_items,
+        'api_version': 'v1beta2', 'resources': shared_items,
     })
     plan = {
         'plan_sha256': 'c' * 64,
@@ -116,20 +119,34 @@ def test_worklist_fails_closed_on_changed_provider_scope_or_unknown_state(mutati
         build_capsule_handoff_worklist(plan=plan, related=related)
 
 
+def test_worklist_sha_survives_version_only_collection_list_changes():
+    plan, related = _case()
+    baseline = build_capsule_handoff_worklist(plan=plan, related=related)
+    related['list_snapshots'][0]['list_resource_version'] = 'rv-after-scan'
+    related['global_quota']['list_resource_version'] = 'grq-rv-after-scan'
+    stable = build_capsule_handoff_worklist(plan=plan, related=related)
+    assert baseline['inventory_sha256'] == stable['inventory_sha256']
+    assert baseline['items'] == stable['items']
+    assert stable['provider_execution_admitted'] is False
+    assert stable['release_authorized'] is False
+
+
 def test_worklist_tracks_resource_version_and_policy_change():
     plan, related = _case()
     first = build_capsule_handoff_worklist(plan=plan, related=related)
     related['resources'][0]['resource_version'] = '8'
-    related['resource_sha256'] = _digest({
-        'resources': related['resources'], 'lists': related['list_snapshots'],
-    })
+    related['resource_sha256'] = capsule_related_scope_sha256(
+        resources=related['resources'],
+        list_snapshots=related['list_snapshots'],
+    )
     plan['handoff_components'][0]['capsule_related_resources_sha256'] = related['resource_sha256']
     second = build_capsule_handoff_worklist(plan=plan, related=related)
     assert first['inventory_sha256'] != second['inventory_sha256']
     related['resources'][0]['policy_sha256'] = '9' * 64
-    related['resource_sha256'] = _digest({
-        'resources': related['resources'], 'lists': related['list_snapshots'],
-    })
+    related['resource_sha256'] = capsule_related_scope_sha256(
+        resources=related['resources'],
+        list_snapshots=related['list_snapshots'],
+    )
     plan['handoff_components'][0]['capsule_related_resources_sha256'] = related['resource_sha256']
     third = build_capsule_handoff_worklist(plan=plan, related=related)
     assert second['inventory_sha256'] != third['inventory_sha256']
@@ -157,9 +174,10 @@ def _provenance_case():
     plan, related = _case()
     for obj in related['resources']:
         obj['metadata_sha256'] = '9' * 64
-    related['resource_sha256'] = _digest({
-        'resources': related['resources'], 'lists': related['list_snapshots'],
-    })
+    related['resource_sha256'] = capsule_related_scope_sha256(
+        resources=related['resources'],
+        list_snapshots=related['list_snapshots'],
+    )
     plan['handoff_components'][0]['capsule_related_resources_sha256'] = related['resource_sha256']
     plan['handoff_components'][0]['capsule_rbac_lineage_sha256'] = 'b' * 64
     related.update(
@@ -214,9 +232,10 @@ def test_per_resource_provenance_denies_capsule_quota_limit_rbac_transfer():
 def test_incorrect_per_kind_list_count_is_rejected_even_with_recomputed_digest():
     plan, related = _case()
     related['list_snapshots'][0]['count'] = 0
-    related['resource_sha256'] = _digest({
-        'resources': related['resources'], 'lists': related['list_snapshots'],
-    })
+    related['resource_sha256'] = capsule_related_scope_sha256(
+        resources=related['resources'],
+        list_snapshots=related['list_snapshots'],
+    )
     plan['handoff_components'][0]['capsule_related_resources_sha256'] = related['resource_sha256']
     with pytest.raises(ValueError, match='digest|count|inconsistent'):
         build_capsule_handoff_worklist(plan=plan, related=related)
@@ -236,9 +255,10 @@ def test_kaori_role_binding_needs_source_contract_not_only_manager_label():
     record = next(row for row in related['resources'] if row['kind'] == 'RoleBinding')
     record['origin'] = 'kaori_correlated'
     record['metadata_sha256'] = 'e' * 64
-    related['resource_sha256'] = _digest({
-        'resources': related['resources'], 'lists': related['list_snapshots'],
-    })
+    related['resource_sha256'] = capsule_related_scope_sha256(
+        resources=related['resources'],
+        list_snapshots=related['list_snapshots'],
+    )
     plan['handoff_components'][0]['capsule_related_resources_sha256'] = related['resource_sha256']
     plan['handoff_fingerprint'] = handoff_fingerprint(plan['handoff_components'])
     plan['plan_sha256'] = _plan_hash(plan)
