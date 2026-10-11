@@ -510,6 +510,8 @@ def test_registry_dashboard_kpi_projection_respects_active_committed_scope_and_e
     )[0]
     assert '_overview_inventory_kpi_evidence(scoped_providers, states)' in ops
     assert '_overview_inventory_evidence(committed_provider_ids)' in ops
+    assert 'committed_id_set = set(committed_provider_ids)' in ops
+    assert 'if provider_id in committed_id_set' in ops
     inventory = projection.split('def _overview_inventory_evidence(', 1)[1].split(
         'def _overview_inventory_items(', 1
     )[0]
