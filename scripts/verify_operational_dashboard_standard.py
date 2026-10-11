@@ -328,13 +328,23 @@ def _verify_artifact_registry_dashboard(
         'Artifact Registry scope and signal overview',
     )
     _require(
+        signal_overview,
+        (
+            'Select a Registry Provider for Detailed Signals',
+            "scope_tone = overview.posture.tone if overview.selected_provider else 'warning'",
+            '    scope_status,',
+            '    scope_tone,',
+        ),
+        'Registry unselected scope matches canonical dashboard warning status',
+    )
+    _require(
         kpi_cards,
         (
             'components/operational_metric_card.html',
             'operational_metric_card.render(',
             'for kpi in overview.kpis',
             'grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4',
-            "source_label='Committed Inventory'",
+            'source_label=overview.kpi_source_label',
             "scope_label='Active Scope'",
             'data-kaori-artifact-registry-operational-kpis',
         ),
@@ -475,6 +485,19 @@ def _verify_artifact_registry_dashboard(
             'func.sum(RegistryArtifact.size_bytes)',
         ),
         'Artifact Registry committed bounded dashboard projection',
+    )
+    _require(
+        presentation,
+        (
+            'def _overview_inventory_kpi_evidence(',
+            'RegistryCollectionState.integration_instance_id.in_(scoped_provider_ids)',
+            'RegistryProject.integration_instance_id.in_(committed_provider_ids)',
+            "'kpi_source_label': source_label",
+            "if committed_count else 'Not Collected'",
+            "'Partial Inventory (",
+            '_overview_inventory_evidence(committed_provider_ids)',
+        ),
+        'Registry active-provider committed KPI evidence and source coverage',
     )
     capacity_section = presentation.split("if section == 'capacity':", 1)[1].split(
         "if section == 'signals':", 1
