@@ -1,4 +1,3 @@
-{% import "components/info_tip.html" as info_tip %}
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/resource_detail_modal.html" as resource_detail_modal %}
 {% import "components/table.html" as table_ui %}
@@ -10,8 +9,8 @@
                 <th class="{{ table_ui.header_cell_classes() }}">Cluster</th>
                 <th class="{{ table_ui.header_cell_classes() }}">Connection</th>
                 <th class="{{ table_ui.header_cell_classes() }}">Total Objects</th>
-                <th class="{{ table_ui.header_cell_classes() }}"><span class="inline-flex items-center gap-1">Last Snapshot {{ info_tip.render('k8s-inventory-overview-last-snapshot', 'Committed Snapshot', 'Time of the latest retained inventory generation for this cluster; this does not mean the cluster is live right now.', placement='right') }}</span></th>
-                <th class="{{ table_ui.header_cell_classes() }}"><span class="inline-flex items-center gap-1">Inventory Signals {{ info_tip.render('k8s-inventory-overview-inventory-signals', 'Inventory Signals', 'Counts observed readiness, pressure, scheduling, or inventory exceptions from committed cluster evidence.', placement='right') }}</span></th>
+                <th class="{{ table_ui.header_cell_classes() }}">Last Snapshot</th>
+                <th class="{{ table_ui.header_cell_classes() }}">Inventory Signals</th>
                 <th class="{{ table_ui.header_cell_classes(action=true) }}">Details</th>
             </tr>
         </thead>
