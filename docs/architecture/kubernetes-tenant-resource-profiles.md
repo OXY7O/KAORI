@@ -347,6 +347,28 @@ Multiple legacy sources, unsupported LimitRange constraints, foreign controller 
 
 After successful takeover, subsequent allocation changes continue through the governed capacity/preflight and provider-verification path while Namespace `ownership_status` remains `adopted`.
 
+**Native optional LimitRange recovery (#1163):** A managed Resource Profile with
+no Container Defaults and no Storage Guardrails has no active LimitRange.
+Provisioning intentionally omits/deletes it. On verified allocation reconcile,
+`managed_resource_names.limit_range` is recorded only when the resource is
+actually part of the new effective contract; prior history remains immutable.
+For older records carrying a stale name, Native Allocation Change may treat
+the LimitRange as intentionally absent **only** when (a) the committed frozen
+`allocation_limit_defaults_json` and `allocation_storage_policy_json`
+are both explicitly present and empty, (b) the live provider observation
+reports neither an effective LimitRange nor any LimitRange source, and (c)
+its effective hash equals the committed `effective_hash`. Missing hash,
+provider drift, unknown/foreign LimitRange, or a frozen policy requiring
+Container/PVC bounds remains **fail-closed**; this is not a blanket ignore
+of missing resources, and ResourceQuota/UID/RV/authority checks are unchanged.
+A pre-mutation verification refusal records `allocation_reconcile_failure`
+with `provider_mutation_may_have_started=false`, without incorrectly marking
+the Namespace as failed or replacing its last-successful reconcile timestamp.
+Post-mutation failure still sets the existing failure status. Validate the
+exact active Tenant generation/Namespace UID and committed/live evidence in
+DevContainer before any provider UAT write; source integration alone never
+reconfigures Kubernetes.
+
 **Allocation workflow target lifecycle (#1159):** Resource Profiles → Allocation Change
 offers only `kaori_managed` Native Namespace allocations belonging to a
 `ready` Tenant and a non-terminal Namespace generation. Adopted / Observed
