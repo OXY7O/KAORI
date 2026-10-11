@@ -1,4 +1,4 @@
-"""Identity Providers Overview uses canonical KAORI Access composition contracts."""
+"""Identity Providers overview and workspace follow the Activity Audit pattern."""
 
 from pathlib import Path
 
@@ -11,87 +11,128 @@ def read(path: str) -> str:
     return (ROOT / path).read_text(encoding='utf-8')
 
 
-def test_posture_has_compact_metrics_and_explicit_configuration_evidence() -> None:
+def test_posture_and_governance_form_one_audit_style_overview() -> None:
     overview = read('app/templates/access/identity_providers/partials/_overview.html')
+    audit = read('app/templates/access/activity_audit/partials/_activity_summary_cards.html')
     Environment().parse(overview)
 
-    assert "operational_section.render(" in overview
-    assert "'Authentication Source Posture'" in overview
-    assert "table_label.status_indicator_label(summary.posture_label, summary.posture_tone)" in overview
+    assert 'data-kaori-idp-overview' in overview
     assert 'data-kaori-idp-overview-metrics' in overview
+    assert 'data-kaori-idp-governance-boundaries' in overview
     assert 'data-kaori-idp-posture-metric' in overview
-    assert 'sm:grid-cols-2' in overview
-    assert 'xl:grid-cols-4' in overview
-    assert 'divide-x' not in overview
-    assert 'gap-px bg-outline-subtle' not in overview
+    assert 'data-kaori-idp-governance-item' in overview
 
-    for evidence in (
+    for shared_structure in (
+        'grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4',
+        'border-t border-outline-subtle bg-surface-hover px-5 py-4 lg:px-6',
+        'grid gap-3 md:grid-cols-2 xl:grid-cols-4',
+    ):
+        assert shared_structure in audit
+        assert shared_structure in overview
+
+    for count in (
         'summary.configured',
         'summary.enabled',
         'summary.directory',
         'summary.sso',
-        'summary.total == 0',
-        'Configured means the adapter contract is complete',
-        'it does not mean the connection was tested',
     ):
-        assert evidence in overview
+        assert count in overview
+    assert 'summary.total == 0' in overview
+    assert 'it does not mean the connection was tested' in overview
+    assert "table_label.status_indicator_label(summary.posture_label, summary.posture_tone)" in overview
 
-    assert 'data-kaori-idp-posture-context' in overview
-
-
-def test_governance_preserves_four_distinct_authority_boundaries() -> None:
-    overview = read('app/templates/access/identity_providers/partials/_overview.html')
-
-    assert "'Identity Governance'" in overview
-    assert 'data-kaori-idp-governance-boundaries' in overview
-    assert 'data-kaori-idp-governance-item' in overview
-    assert 'md:grid-cols-2' in overview
-    for contract in (
+    for boundary in (
         'Provider / Adapter Boundary',
         'Credential Ownership',
         'Identity Projection',
         'Authorization Boundary',
     ):
-        assert contract in overview
-    assert 'providers identify external identity authorities' in overview.lower()
-    assert 'credential values remain external' in overview.lower()
-    assert 'active kaori roles and account lifecycle state determine access' in overview.lower()
+        assert boundary in overview
+
+    # Governance must remain within the same overview surface.
+    assert 'operational_section.render(' not in overview
+    assert '_directory_provisioning_strip.html' not in overview
+    assert overview.count('<section ') == 1
+    assert overview.count('{% for ') == overview.count('{% endfor %}')
 
 
-def test_directory_workflow_keeps_projection_and_permission_scopes() -> None:
+def test_index_keeps_overview_above_activity_style_record_tabs() -> None:
+    page = read('app/templates/access/identity_providers/index.html')
+    workspace = read('app/templates/access/identity_providers/partials/_workspace.html')
+    tabs = read('app/templates/access/identity_providers/partials/_tabs.html')
+    audit_workspace = read(
+        'app/templates/access/activity_audit/partials/_audit_records_workspace.html'
+    )
+
+    for template in (page, workspace, tabs):
+        Environment().parse(template)
+
+    assert page.index('partials/_overview.html') < page.index('partials/_workspace.html')
+    assert "section_intro.render(" in page
+    assert '<section id="identity-provider-workspace"' in workspace
+    assert "table_ui.block_classes()" in workspace
+    assert 'data-kaori-idp-records-workspace' in workspace
+    assert "active_tab == 'directory'" in workspace
+    assert "partials/_registry.html" in workspace
+    assert "partials/_directory_provisioning_strip.html" in workspace
+    assert '{% set embedded = true %}' in workspace
+
+    assert 'framed_tabs.render_navigation(' in tabs
+    assert 'framed_tabs.render_navigation(' in audit_workspace
+    assert "'Provider Registry'" in tabs
+    assert "'Directory Provisioning'" in tabs
+    assert "'Overview'" not in tabs
+    assert "url_for('identity_providers.index', tab='providers')" in tabs
+    assert "url_for('identity_providers.index', tab='directory')" in tabs
+    assert "hx_target='#identity-provider-workspace'" in tabs
+    assert "hx_select='#identity-provider-workspace'" in tabs
+
+
+def test_registry_filters_preserved_and_separately_targeted() -> None:
+    registry = read('app/templates/access/identity_providers/partials/_registry.html')
+    routes = read('app/access/identity_providers/routes.py')
+    shared = read('app/templates/components/framed_workspace_tabs.html')
+    Environment().parse(registry)
+    Environment().parse(shared)
+
+    assert "embedded|default(false)" in registry
+    assert 'id="identity-provider-registry"' in registry
+    assert "registry_ui.filter_form(" in registry
+    assert "registry_ui.clear_filters_link(" in registry
+    assert "registry_ui.footer(" in registry
+    assert 'name="tab" value="providers"' in registry
+    assert "footer_query.pop('per_page', none)" in registry
+    assert 'expandable.static_detail_row(' in registry
+    assert "'identity-provider-registry'," in registry
+    assert "'identity-provider-registry-loading'," in registry
+
+    assert "payload['active_tab'] = 'directory' if request.args.get('tab') == 'directory' else 'providers'" in routes
+    assert "request.headers.get('HX-Target') == 'identity-provider-workspace'" in routes
+    assert "request.headers.get('HX-History-Restore-Request') != 'true'" in routes
+    assert "render_template('access/identity_providers/partials/_workspace.html'" in routes
+    assert "render_template('access/identity_providers/partials/_registry.html'" in routes
+    assert "render_template('access/identity_providers/index.html'" in routes
+    assert 'hx-select="{{ hx_select }}"' in shared
+    assert 'hx-push-url="{{ hx_push_url }}"' in shared
+
+
+def test_directory_tab_is_read_only_summary_with_scoped_workflow_launch() -> None:
     directory = read(
         'app/templates/access/identity_providers/partials/_directory_provisioning_strip.html'
     )
     Environment().parse(directory)
 
     assert "current_user.has_permission('identity_providers.provision')" in directory
-    assert "action_href=url_for('identity_providers.directory_provisioning') if can_provision else none" in directory
-    assert "header_badge=table_label.status_indicator_label('Read Only', 'unknown') if not can_provision else none" in directory
+    assert '{% if can_provision %}' in directory
+    assert '{% if not can_provision %}' in directory
+    assert "url_for('identity_providers.directory_provisioning')" in directory
+    assert 'data-kaori-idp-directory-launch' in directory
+    assert 'Open Directory Provisioning' in directory
+    assert "table_label.status_indicator_label('Read Only', 'unknown')" in directory
+    assert 'data-kaori-idp-directory-flow' in directory
     assert 'summary.directory' in directory
     assert 'summary.directory_identity_links' in directory
-    for title in ('Directory Providers', 'Identity Links', 'Authorization Owner'):
-        assert title in directory
     assert 'KAORI Roles' in directory
-    assert 'data-kaori-idp-directory-flow' in directory
-    assert 'sm:grid-cols-2 lg:grid-cols-3' in directory
     assert 'provider-owned' in directory
     assert 'credentials remain external' in directory.lower()
-
-
-def test_server_owned_framed_navigation_does_not_change_route_authority() -> None:
-    tabs = read('app/templates/access/identity_providers/partials/_tabs.html')
-    shared = read('app/templates/components/framed_workspace_tabs.html')
-    Environment().parse(tabs)
-    Environment().parse(shared)
-
-    assert 'framed_tabs.render_navigation(' in tabs
-    assert 'data-kaori-idp-workspace-navigation' in tabs
-    assert 'Identity Provider workspace' in tabs
-    assert "active_tab," in tabs
-    assert "url_for('identity_providers.index', tab='overview')" in tabs
-    assert "url_for('identity_providers.index', tab='providers')" in tabs
-    assert "current_user.has_permission('identity_providers.provision')" in tabs
-    assert "url_for('identity_providers.directory_provisioning')" in tabs
-    assert 'hx_target=' not in tabs  # normal links, separate Directory page
-    assert 'aria-current="page"' in shared
-    assert 'data-kaori-tab-variant="framed-workspace-v2-server"' in shared
+    assert '<form ' not in directory

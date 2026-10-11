@@ -75,8 +75,17 @@ def _form_context(form: IdentityProviderForm, provider: IdentityProvider | None,
 def index():
     filters = normalize_provider_filters(request.args.to_dict())
     payload = build_identity_provider_payload(filters)
-    payload['active_tab'] = 'providers' if request.args.get('tab') == 'providers' else 'overview'
-    if request.headers.get('HX-Request') == 'true':
+    # Overview is always visible. The tab selects only the records workspace.
+    # Legacy ?tab=overview links continue to resolve to the default registry.
+    payload['active_tab'] = 'directory' if request.args.get('tab') == 'directory' else 'providers'
+    if (
+        request.headers.get('HX-Request') == 'true'
+        and request.headers.get('HX-History-Restore-Request') != 'true'
+    ):
+        # Workspace navigation and registry filters have distinct HTMX targets.
+        # Returning the registry for a tab swap would discard its wrapper/tabs.
+        if request.headers.get('HX-Target') == 'identity-provider-workspace':
+            return render_template('access/identity_providers/partials/_workspace.html', **payload)
         return render_template('access/identity_providers/partials/_registry.html', **payload)
     return render_template('access/identity_providers/index.html', **payload)
 
