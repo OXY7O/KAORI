@@ -117,18 +117,20 @@
             Unreachable clusters are not inferred from stale data; review Tenant Collection Snapshot above.
         </div>
     {% endif %}
-    <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[1300px] !table-fixed') }}">
+    {# Fit desktop cards. On narrow screens, keep overflow inside this table
+       rather than pushing the Review action outside the page. #}
+    <div class="w-full min-w-0 max-w-full overflow-x-auto">
+        <table class="{{ table_ui.table_classes('min-w-[960px] lg:min-w-0 !table-fixed') }}">
             <caption class="sr-only">Live read-only Tenant provider discovery.</caption>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
-                    <th class="{{ table_ui.header_cell_classes() }} w-[18%]">Provider Object</th>
-                    <th class="{{ table_ui.header_cell_classes() }} w-[16%]">Cluster</th>
-                    <th class="{{ table_ui.header_cell_classes() }} w-[12%]">Provider</th>
-                    <th class="{{ table_ui.header_cell_classes() }} w-[12%]">Live Status</th>
-                    <th class="{{ table_ui.header_cell_classes() }} w-[14%]">KAORI Classification</th>
-                    <th class="{{ table_ui.header_cell_classes() }} w-[15%]">Governed Tenant</th>
-                    <th class="{{ table_ui.header_cell_classes(action=true) }} w-[13%]">Review</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[20%]">Provider Object</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[16%]">Cluster</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[11%]">Provider</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[9%]">Live Status</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">KAORI Classification</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[13%]">Governed Tenant</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[17%]">Review</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
@@ -138,7 +140,7 @@
                             {{ table_ui.title_cell(row.resource_name, row.resource_kind, 'boxes') }}
                         </td>
                         <td class="{{ table_ui.cell_classes() }} align-middle min-w-0">
-                            {{ table_ui.cluster_identity(row.cluster.name, row.cluster.environment) }}
+                            {{ table_ui.cluster_identity(row.cluster.name, row.cluster.environment, 'min-w-0 max-w-full') }}
                         </td>
                         <td class="{{ table_ui.cell_classes() }} align-middle min-w-0">
                             <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ row.provider_label }}">{{ row.provider_label }}</p>
@@ -159,7 +161,7 @@
                             {% endif %}
                         </td>
                         <td class="{{ table_ui.cell_classes(action=true) }} align-middle">
-                            <div class="ml-auto flex w-fit items-center justify-end">
+                            <div class="ml-auto flex min-w-0 w-full items-center justify-end">
                                 {% if row.management_status == 'Managed' and row.provider_status == 'Missing' %}
                                     {{ table_label.special_label('Provider Missing', 'critical', 'triangle-alert') }}
                                 {% elif row.management_status == 'Managed' %}
@@ -173,7 +175,7 @@
                                             hx-swap="innerHTML"
                                             hx-indicator="#tenant-discovery-loading"
                                             hx-disabled-elt="this"
-                                            class="{{ table_ui.action_classes() }}"
+                                            class="{{ table_ui.action_classes() }} min-w-0 max-w-full text-center"
                                             title="{{ 'Verify provider membership, UID and resourceVersion before attaching this Namespace to its existing Capsule Tenant.' if is_capsule_attachment else 'Review provider authority and allocation evidence before adopting this Tenant.' }}">
                                         <i data-lucide="{{ 'link-2' if is_capsule_attachment else 'clipboard-check' }}" class="h-4 w-4" aria-hidden="true"></i>
                                         {{ 'Review Attachment' if is_capsule_attachment else 'Review Adoption' }}

@@ -21,7 +21,6 @@ REGISTRIES = {
     "_operations_namespace_registry": (1100, (23, 20, 27, 15, 15)),
     "_operations_access_reconciliation_registry": (1100, (22, 20, 25, 12, 21)),
     "_capacity_governance": (980, (30, 38, 14, 18)),
-    "_tenant_discovery": (1300, (18, 16, 12, 12, 14, 15, 13)),
     "_capsule_shared_allocation_drift": (1450, (19, 23, 35, 23)),
     "_capsule_tenant_quota_drift": (1450, (19, 23, 35, 23)),
 }
@@ -54,6 +53,31 @@ def test_tenant_registry_tables_use_bounded_existing_table_primitives() -> None:
         assert "table_ui.cell_classes(" in template, name
         assert "truncate" in template, name
         assert "title=" in template, name
+
+
+def test_tenant_discovery_desktop_fit_with_bounded_narrow_table_overflow() -> None:
+    discovery = _template("_tenant_discovery")
+    shared = (ROOT / "app/templates/components/table.html").read_text(encoding="utf-8")
+
+    # No 1300px minimum can force desktop's Review CTA out of view.
+    assert "min-w-[1300px]" not in discovery
+    assert "table_ui.table_classes('min-w-[960px] lg:min-w-0 !table-fixed')" in discovery
+    assert 'class="w-full min-w-0 max-w-full overflow-x-auto"' in discovery
+    assert _header_widths(discovery) == (20, 16, 11, 9, 14, 13, 17)
+    assert sum(_header_widths(discovery)) == 100
+    assert discovery.count('scope="col"') == 7
+
+    # Preserve every other table's existing shared Cluster Identity default.
+    assert "macro cluster_identity(name, environment='', container_width='min-w-[12rem]')" in shared
+    assert 'class="flex {{ container_width }} items-start gap-2.5"' in shared
+    assert "cluster_identity(row.cluster.name, row.cluster.environment, 'min-w-0 max-w-full')" in discovery
+
+    assert 'class="{{ table_ui.action_classes() }} min-w-0 max-w-full text-center"' in discovery
+    assert 'data-tenant-adoption-load' in discovery
+    assert 'Review Adoption' in discovery and 'Review Attachment' in discovery
+    assert 'hx-target="#tenant-adoption-preflight-slot"' in discovery
+    assert 'colspan="7"' in discovery
+    assert "registry_ui.footer('tenant.tenants'" in discovery
 
 
 def test_operational_evidence_table_preserves_each_conditional_column_model() -> None:
