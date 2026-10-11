@@ -328,3 +328,50 @@ def test_unknown_or_deleted_sql_history_cannot_be_declared_immutable():
     assert result['historical_attempts_exhaustively_proven'] is False
     assert result['storage_durability_proven'] is False
     assert result['audit_storage_append_only_verified'] is False
+
+
+def test_partial_recovery_is_quarantined_without_automatic_retry():
+    plan, related = _fixtures()
+    started = _event(plan, related)
+    partial = _event(
+        plan, related, event_type='partial', prior=started, elapsed=4,
+    )
+    case = _review(
+        plan, related,
+        [_row(started, record_id=100), _row(partial, record_id=101)],
+    )
+    assert case['status'] == 'partial_provider_outcome_quarantined'
+    assert case['readback_claim_correlated'] is False
+    assert case['auto_retry_authorized'] is False
+    assert case['release_authorized'] is False
+
+
+def test_independent_recovery_review_does_not_make_provider_claim_trusted():
+    plan, related = _fixtures()
+    started = _event(plan, related)
+    readback = _event(
+        plan, related, event_type='readback_candidate', prior=started, elapsed=4,
+    )
+    review = _event(
+        plan, related, event_type='recovery_reviewed', prior=readback, elapsed=8,
+    )
+    rows = [
+        _row(started, record_id=100),
+        _row(readback, record_id=101),
+        _row(review, record_id=102),
+    ]
+    case = _review(plan, related, rows)
+    assert case['status'] == 'provider_readback_missing_manual_recovery'
+    assert case['readback_authoritative_verified'] is False
+    assert case['resume_authorized'] is False
+    assert case['audit_storage_append_only_verified'] is False
+    next_event = deepcopy(review)
+    next_event['sequence'] = 4
+    next_event['previous_event_sha256'] = review['event_sha256']
+    next_event['event_sha256'] = _event_checksum(next_event)
+    with pytest.raises(ValueError):
+        store.review_capsule_audit_append_candidate(
+            tenant_id='tenant-1', plan=plan, related=related,
+            accepted_actor_user_id=30, committed_rows=rows,
+            candidate_event=next_event,
+        )
