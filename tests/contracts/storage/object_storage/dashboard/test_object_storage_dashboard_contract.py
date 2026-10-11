@@ -378,7 +378,7 @@ def test_fleet_freshness_renders_four_distinct_committed_evidence_types(monkeypa
         'Forecast Fleet',
         'Alert Evidence Fleet',
     ]
-    assert [row['status'] for row in rows] == ['Available', 'Ready', 'Partial', 'Partial']
+    assert [row['status'] for row in rows] == ['Ready', 'Ready', 'Partial', 'Partial']
     assert rows[1]['value'] == '2 / 2 systems'
     assert rows[2]['value'] == '1 / 2 systems'
     assert rows[3]['value'] == '1 / 2 systems'
@@ -571,3 +571,64 @@ def test_object_storage_alert_source_indicator_uses_validated_row_fields_and_ton
         assert 'normalize_dashboard_page_size' in route
     for tab in ("'overview'", "'capacity'", "'signals'", "'reporting'"):
         assert tab in application
+
+
+def test_object_storage_fleet_inventory_freshness_qualifies_partial_and_missing() -> None:
+    from datetime import UTC, datetime
+    from types import SimpleNamespace
+
+    from app.storage.object_storage.dashboard import service
+
+    one = SimpleNamespace(id=1, inventory_observed_at=datetime.now(UTC))
+    missing = SimpleNamespace(id=2, inventory_observed_at=None)
+
+    def snapshot(_system):
+        return None, {'usable': False}
+
+    from unittest.mock import patch
+
+    with (
+        patch.object(service, '_snapshot_payload', snapshot),
+        patch.object(service, 'get_forecast_snapshot', return_value=None),
+        patch.object(service, 'forecast_snapshot_state', return_value={'usable': False}),
+    ):
+        partial = service._freshness(None, [one, missing])[0]
+        assert (partial['status'], partial['tone'], partial['value']) == (
+            'Partial', 'warning', '1 / 2 systems'
+        )
+        assert 'Latest inventory' in partial['description']
+
+        none = service._freshness(None, [missing])[0]
+        assert (none['status'], none['tone'], none['value']) == (
+            'Not Collected', 'unknown', '0 / 1 systems'
+        )
+
+        empty = service._freshness(None, [])[0]
+        assert empty['status'] == 'Not Collected'
+        assert empty['value'] == '0 / 0 systems'
+
+
+def test_object_storage_selected_freshness_distinguishes_primary_fallback_and_missing(monkeypatch) -> None:
+    from types import SimpleNamespace
+
+    from app.storage.object_storage.dashboard import service
+
+    system = SimpleNamespace(id='sys-1', inventory_observed_at=None)
+    monkeypatch.setattr(service, 'get_analytics_snapshot', lambda **_kwargs: None)
+    monkeypatch.setattr(service, 'analytics_snapshot_state', lambda _snapshot: {'usable': False})
+    monkeypatch.setattr(service, 'get_forecast_snapshot', lambda **_kwargs: None)
+    monkeypatch.setattr(service, 'forecast_snapshot_state', lambda _snapshot: {'usable': False})
+
+    for stream, expected in (
+        ({'connected': True, 'fallback_used': False, 'resolved_label': 'Alertmanager'},
+         ('Available', 'normal')),
+        ({'connected': True, 'fallback_used': True, 'resolved_label': 'Metrics Source'},
+         ('Fallback', 'warning')),
+        ({'connected': False, 'fallback_used': False, 'resolved_label': 'Unavailable'},
+         ('Unavailable', 'unknown')),
+    ):
+        monkeypatch.setattr(service, '_snapshot_payload', lambda _system: (None, {'usable': False}))
+        monkeypatch.setattr(service, '_alert_view', lambda _payload, answer=stream: (answer, {}))
+        alert = service._freshness(system, [system])[3]
+        assert (alert['status'], alert['tone']) == expected
+        assert alert['value'] == stream['resolved_label']
