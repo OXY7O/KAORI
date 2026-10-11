@@ -100,17 +100,25 @@ def test_storage_and_ingress_keep_full_identity_available_in_title() -> None:
 
 def test_ingress_publication_uses_proportional_space_and_two_level_evidence() -> None:
     ingress = read('ingresses/partials/_table_content.html')
+    proportions = {'Ingress': 24, 'Scope': 22, 'Publication': 25, 'TLS References': 10, 'Routing': 9, 'Details': 10}
+    assert sum(proportions.values()) == 100
+    assert proportions['Publication'] > proportions['Ingress'] > proportions['Scope']
+    assert min(proportions['Ingress'], proportions['Scope'], proportions['Publication']) > max(
+        proportions['TLS References'], proportions['Routing'], proportions['Details']
+    )
     for heading, width in (
-        ('Ingress', '19%'),
-        ('Scope', '16%'),
-        ('Publication', '30%'),
-        ('TLS References', '13%'),
-        ('Routing', '10%'),
-        ('Details', '12%'),
+        ('Ingress', '24%'),
+        ('Scope', '22%'),
+        ('Publication', '25%'),
+        ('TLS References', '10%'),
+        ('Routing', '9%'),
+        ('Details', '10%'),
     ):
         assert f'w-[{width}]">{heading}' in ingress
 
-    assert 'class="flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1"' in ingress
+    assert 'class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1"' in ingress
+    assert 'class="min-w-0 max-w-full truncate text-sm font-semibold text-content-primary"' in ingress
+    assert 'justify-between gap-x-3' not in ingress
     assert 'title="{{ ingress.host }}"' in ingress
     assert 'title="{{ ingress.host_supporting }}"' in ingress
     assert 'title="{{ ingress.address }}"' in ingress

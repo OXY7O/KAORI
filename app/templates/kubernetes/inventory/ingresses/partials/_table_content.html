@@ -9,16 +9,16 @@
         <thead class="{{ table_ui.head_classes() }}">
             <tr>
                 <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} w-[19%]">Ingress</th>
+                    class="{{ table_ui.header_cell_classes() }} w-[24%]">Ingress</th>
                 <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} w-[16%]">Scope</th>
+                    class="{{ table_ui.header_cell_classes() }} w-[22%]">Scope</th>
                 <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} w-[30%]">Publication</th>
+                    class="{{ table_ui.header_cell_classes() }} w-[25%]">Publication</th>
                 <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} w-[13%]">TLS References</th>
+                    class="{{ table_ui.header_cell_classes() }} w-[10%]">TLS References</th>
                 <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} w-[10%]">Routing</th>
-                <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[12%]">Details</th>
+                    class="{{ table_ui.header_cell_classes() }} w-[9%]">Routing</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[10%]">Details</th>
             </tr>
         </thead>
         <tbody class="{{ table_ui.body_classes() }}">
@@ -28,8 +28,8 @@
                     <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(ingress.name, ingress.class ~ ' · ' ~ ingress.class_supporting, 'route') }}</td>
                     <td class="{{ table_ui.cell_classes() }}">{{ table_ui.namespaced_scope_identity(ingress.cluster_name, ingress.cluster_environment, ingress.namespace) }}</td>
                     <td class="{{ table_ui.cell_classes() }}">
-                        <div class="flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1">
-                            <p class="min-w-0 flex-1 truncate text-sm font-semibold text-content-primary"
+                        <div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                            <p class="min-w-0 max-w-full truncate text-sm font-semibold text-content-primary"
                                title="{{ ingress.host }}">{{ ingress.host }}</p>
                             {{ table_label.status_indicator_label(ingress.publication_label, ingress.publication_tone) }}
                         </div>
