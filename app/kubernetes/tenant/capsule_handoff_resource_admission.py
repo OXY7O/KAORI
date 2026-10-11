@@ -13,6 +13,9 @@ from collections.abc import Mapping
 from typing import Any
 
 from app.kubernetes.tenant.capsule_handoff_contract import validate_capsule_handoff_scope
+from app.kubernetes.tenant.capsule_handoff_controller_audit_claims import (
+    correlate_capsule_controller_audit_claims,
+)
 from app.kubernetes.tenant.capsule_handoff_related_inventory import _digest
 from app.kubernetes.tenant.capsule_handoff_worklist import build_capsule_handoff_worklist
 from app.kubernetes.tenant.release_handoff_approval import _plan_hash
@@ -38,6 +41,7 @@ def _sha(value: Any) -> bool:
 
 def assess_capsule_resource_handoff_scope(
     *, plan: Mapping[str, Any], related: Mapping[str, Any],
+    controller_audit_claims: list[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Index every Capsule/Namespace/quota/limit/RBAC identity, grant no rights.
 
@@ -48,6 +52,8 @@ def assess_capsule_resource_handoff_scope(
     if (
         not isinstance(plan, Mapping) or not isinstance(related, Mapping)
         or plan.get('provider') != 'capsule'
+        or not isinstance(plan.get('tenant_id'), str) or not plan['tenant_id']
+        or not isinstance(plan.get('cluster_id'), str) or not plan['cluster_id']
         or not _sha(plan.get('plan_sha256'))
         or _plan_hash(dict(plan)) != plan['plan_sha256']
         or handoff_fingerprint(plan.get('handoff_components')) != plan.get('handoff_fingerprint')
@@ -162,6 +168,10 @@ def assess_capsule_resource_handoff_scope(
             'kind': kind, 'namespace': namespace, 'name': name,
             'uid': item['uid'], 'resource_version': item['resource_version'],
             'policy_sha256': item.get('policy_sha256'),
+            'metadata_sha256': (
+                related_map[(namespace, kind, name)].get('metadata_sha256')
+                if kind in _RELATED else None
+            ),
             'inventory_decision': decision,
             'observed_origin': origin,
             'provenance_status': (
@@ -179,6 +189,18 @@ def assess_capsule_resource_handoff_scope(
         })
     if len(results) != worklist['item_count']:
         raise ValueError('Capsule per-resource investigation omitted provider objects.')
+    audit = correlate_capsule_controller_audit_claims(
+        tenant_id=plan['tenant_id'], cluster_id=plan['cluster_id'],
+        resources=results,
+        claims=[] if controller_audit_claims is None else controller_audit_claims,
+    )
+    for row in results:
+        key = (row['namespace'], row['kind'], row['name'])
+        claim = audit['claims_by_resource'].get(key)
+        row['controller_audit_claim_sha256'] = claim
+        row['controller_audit_claim_correlated'] = claim is not None
+        if claim is not None:
+            row['blockers'].append('controller_audit_claim_source_authentication_not_proven')
     candidates = [row for row in results if row['inventory_decision'] in _TRANSFER_CANDIDATES]
     unresolved = [
         row for row in results if row['inventory_decision'] not in _NO_TRANSFER
@@ -195,6 +217,8 @@ def assess_capsule_resource_handoff_scope(
         'unresolved_origin_or_consent_count': len(unresolved),
         'resources': results,
         'resource_review_sha256': _digest(results),
+        'controller_audit_claim_count': audit['claim_count'],
+        'controller_audit_source_authenticated': False,
         'blockers': sorted(set(
             reason for row in results for reason in row['blockers']
         ) | set(related['blockers']) | set(quota['blockers']) | set(lineage['blockers'])),
