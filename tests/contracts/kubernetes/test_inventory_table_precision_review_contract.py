@@ -152,3 +152,28 @@ def test_pod_columns_prioritize_identity_scope_and_placement() -> None:
     assert 'technical_value.render(pod.placement_secondary)' in table
     assert 'table_label.metadata_label(pod.owner_kind_label)' in table
     assert 'resource_detail_modal.detail_button(pod.id' in table
+
+def test_service_columns_prioritize_long_identity_and_scope() -> None:
+    table = read('services/partials/_table_content.html')
+    widths = {
+        'Service': 27,
+        'Scope': 24,
+        'Access Model': 14,
+        'Port Mapping': 14,
+        'Backend Registration': 11,
+        'Details': 10,
+    }
+    assert sum(widths.values()) == 100
+    assert widths['Service'] > widths['Scope'] > widths['Access Model']
+    assert widths['Scope'] > widths['Port Mapping'] > widths['Backend Registration']
+    for heading, percent in widths.items():
+        header = table.split(f'>{heading}</th>', 1)[0].rsplit('<th', 1)[-1]
+        assert f'w-[{percent}%]' in header
+
+    assert "table_ui.table_classes('min-w-[72rem] !table-fixed')" in table
+    assert 'overflow-x-auto overscroll-x-contain' in table
+    assert 'table_ui.title_cell(service.service_name, service.service_type' in table
+    assert 'table_ui.namespaced_scope_identity(service.cluster_name' in table
+    assert 'technical_value.render(service.access_address)' in table
+    assert 'table_label.status_indicator_label(service.backend.label' in table
+    assert 'resource_detail_modal.detail_button(service.id' in table
