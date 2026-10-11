@@ -256,6 +256,25 @@ def test_artifact_registry_dashboard_state_semantics_and_jinja_mapping_safety() 
 
     assert 'overview.capacity.items' not in capacity_snapshot
     assert 'overview.capacity.metrics' in capacity_snapshot
+    assert 'components/operational_metric_card.html' not in forecast
+    assert 'operational_metric_card.render(' not in forecast
+    for token in (
+        'grid gap-3 sm:grid-cols-3',
+        'overview.forecast.size_growth_per_day',
+        'overview.forecast.artifact_growth_per_day',
+        'overview.forecast.nearest_quota_days',
+        'Forecast Basis',
+        'Registry Analytics',
+        'No historical daily series is available for a trend chart.',
+        'Scope: {{ overview.scope_label }}',
+        'Forecast Conclusion',
+        'overview.forecast.risk',
+        'overview.capacity.risk_detail',
+        'overview.forecast.detail',
+        "action_label='Review Forecast'",
+    ):
+        assert token in forecast
+    assert 'forecast_projection_chart' not in forecast
     assert "'metrics': [" in presentation
     assert "'source_ready': metrics_ready_count > 0" in presentation
     assert "'security_not_applicable': security_not_applicable" in presentation

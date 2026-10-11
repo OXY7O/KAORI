@@ -1,4 +1,3 @@
-{% import "components/operational_metric_card.html" as operational_metric_card %}
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/table_label.html" as table_label %}
 {% call operational_section_card.render(
@@ -11,18 +10,53 @@
     extra_classes='h-full'
     ) %}
     {% if overview.forecast.available %}
-        <div class="grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
-            {{ operational_metric_card.render('Footprint Growth', overview.forecast.size_growth_per_day, 'Committed artifact footprint delta per day.', 'database', source_label='Registry Analytics', scope_label=overview.scope_label) }}
-            {{ operational_metric_card.render('Artifact Growth', overview.forecast.artifact_growth_per_day, 'Committed artifact-count delta per day.', 'package-plus', source_label='Registry Analytics', scope_label=overview.scope_label) }}
-            {{ operational_metric_card.render('Nearest Quota', overview.forecast.nearest_quota_days, 'Nearest project quota exhaustion horizon when positive growth is observed.', 'timer', source_label='Registry Analytics', scope_label=overview.scope_label) }}
-        </div>
-        <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
-            <div class="flex flex-wrap items-center justify-between gap-3">
-                <p class="text-sm font-semibold text-content-primary">Forecast Evidence</p>
-                {% set forecast_tone = 'critical' if overview.forecast.risk == 'Critical' else ('warning' if overview.forecast.risk == 'Medium' else ('normal' if overview.forecast.risk == 'Low' else 'unknown')) %}
-                {{ table_label.status_label(overview.forecast.risk, forecast_tone, size='detail') }}
+        <div class="space-y-4">
+            {% set forecast_metrics = [
+                ('database', 'Footprint Growth', overview.forecast.size_growth_per_day, 'Committed footprint delta per day.'),
+                ('package-plus', 'Artifact Growth', overview.forecast.artifact_growth_per_day, 'Committed artifact-count delta per day.'),
+                ('timer', 'Nearest Quota', overview.forecast.nearest_quota_days, 'Project quota horizon when positive growth is observed.')
+            ] %}
+            <div class="grid gap-3 sm:grid-cols-3">
+                {% for icon, label, value, helper in forecast_metrics %}
+                    <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+                        <div class="flex items-center gap-2 text-xs font-semibold text-content-muted">
+                            <i data-lucide="{{ icon }}"
+                               class="h-4 w-4 shrink-0 text-kaori-primary"
+                               aria-hidden="true"></i>
+                            <span>{{ label }}</span>
+                        </div>
+                        <p class="mt-2 break-words text-xl font-semibold tabular-nums text-content-primary">{{ value }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
+                    </article>
+                {% endfor %}
             </div>
-            <p class="mt-2 text-xs leading-5 text-content-muted">{{ overview.forecast.detail }}</p>
+            <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <h3 class="text-sm font-semibold text-content-primary">Forecast Basis</h3>
+                    <span class="text-xs font-medium text-content-muted">Registry Analytics</span>
+                </div>
+                <p class="mt-2 text-xs leading-5 text-content-secondary">
+                    Growth rates use committed snapshot deltas when available; quota horizons use committed project evidence.
+                    No historical daily series is available for a trend chart.
+                </p>
+                <p class="mt-2 text-xs text-content-muted">Scope: {{ overview.scope_label }}</p>
+            </div>
+            {% set forecast_tone = 'critical' if overview.forecast.risk == 'Critical' else ('warning' if overview.forecast.risk == 'Medium' else ('normal' if overview.forecast.risk == 'Low' else 'unknown')) %}
+            <div class="flex items-start gap-3 rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {% if forecast_tone == 'critical' %}bg-status-critical-soft text-status-critical{% elif forecast_tone == 'warning' %}bg-status-warning-soft text-status-warning{% elif forecast_tone == 'normal' %}bg-status-normal-soft text-status-normal{% else %}bg-status-info-soft text-status-info{% endif %}"
+                      aria-hidden="true">
+                    <i data-lucide="{% if forecast_tone == 'critical' %}octagon-alert{% elif forecast_tone == 'warning' %}triangle-alert{% elif forecast_tone == 'normal' %}circle-check{% else %}trending-up{% endif %}"
+                       class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0 flex-1">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <h3 class="text-sm font-semibold text-content-primary">Forecast Conclusion</h3>
+                        {{ table_label.status_label(overview.forecast.risk, forecast_tone, size='detail') }}
+                    </div>
+                    <p class="mt-2 text-xs leading-5 text-content-secondary">{{ overview.capacity.risk_detail }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ overview.forecast.detail }}</p>
+                </div>
+            </div>
         </div>
     {% elif not overview.forecast.source_ready %}
         {% set empty_state_icon = "chart-no-axes-combined" %}

@@ -35,6 +35,7 @@ ARTIFACT_SIGNAL_OVERVIEW = (
 ARTIFACT_KPI_CARDS = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_kpi_cards.html'
 ARTIFACT_REPORTING = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_reporting.html'
 ARTIFACT_CAPACITY = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_capacity.html'
+ARTIFACT_FORECAST = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_forecast_risk.html'
 ARTIFACT_SIGNALS = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_signals.html'
 ARTIFACT_OPERATIONS = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_operations.html'
 ARTIFACT_PROVIDER_HEALTH = (
@@ -413,6 +414,27 @@ def _verify_artifact_registry_dashboard(
         ),
         'Artifact Registry capacity peer dashboard grammar',
     )
+    registry_forecast = _read(ARTIFACT_FORECAST)
+    _require(
+        registry_forecast,
+        (
+            'grid gap-3 sm:grid-cols-3',
+            'overview.forecast.size_growth_per_day',
+            'overview.forecast.artifact_growth_per_day',
+            'overview.forecast.nearest_quota_days',
+            'Forecast Basis',
+            'Registry Analytics',
+            'No historical daily series is available for a trend chart.',
+            'Forecast Conclusion',
+            'overview.capacity.risk_detail',
+            'overview.forecast.detail',
+            "action_label='Review Forecast'",
+        ),
+        'Registry snapshot-delta forecast and conclusion use peer dashboard grammar',
+    )
+    for forbidden in ('operational_metric_card.render(', 'forecast_projection_chart'):
+        if forbidden in registry_forecast:
+            raise AssertionError(f'Registry Forecast must not invent KPI repetition or chart series: {forbidden}')
     _require(
         capacity,
         (
