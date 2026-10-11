@@ -172,6 +172,8 @@ def _inventory_guidance(
             'description': (
                 'Reconnect the cluster before relying on future inventory updates or '
                 'using this snapshot for operational decisions.'
+                if connection_status == 'failed'
+                else 'Check provider readiness: the cluster connection state has not been observed.'
             ),
             'tone': 'critical' if connection_status == 'failed' else 'unknown',
             'icon': 'plug-zap',
