@@ -224,7 +224,10 @@ def _health_rows(systems: list[ObjectStorageSystem]) -> list[dict[str, Any]]:
         elif snapshot_state.get('state') in {'pending', 'failed'} or snapshot_state.get('stale'):
             overall_status = 'Warning'
             overall_tone = 'warning'
-            status_reason = f'Analytics snapshot is {snapshot_state.get("label") or "not ready"}; prior evidence may be retained.'
+            status_reason = (
+                f'Analytics snapshot is {snapshot_state.get("label") or "not ready"}; '
+                'prior evidence may be retained.'
+            )
         elif warning_alerts > 0:
             overall_status = 'Warning'
             overall_tone = 'warning'
