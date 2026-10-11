@@ -237,7 +237,7 @@ def test_redesigned_contributions_modal_keeps_header_summary_and_search_outside_
     assert "<thead" not in dialog
     assert "min-w-[900px]" not in dialog
     assert 'aria-label="Committed Tenant contributions"' in dialog
-    assert "md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]" in dialog
+    assert "md:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]" in dialog
     assert "overflow-y-auto overscroll-contain" in dialog
     assert "data-kaori-native-dialog" in dialog
     assert "data-kaori-dialog-close" in dialog
@@ -273,7 +273,7 @@ def test_tenant_contributions_stacked_list_exposes_request_metrics_and_namespace
     assert "row.source" in dialog
     assert "row.tenant.provider_key" in dialog
     assert "View {{ row.namespace_count }} Namespace" in dialog
-    assert '<details class="group mt-3">' in dialog
+    assert '<details class="group mt-2">' in dialog
     for dimension in ("CPU Requests", "Memory Requests", "Pod Slots", "Logical Storage"):
         assert dimension in dialog
     for key in ("cpu", "memory", "pods", "storage"):
@@ -445,8 +445,8 @@ def test_terminal_capsule_generation_does_not_count_historical_shared_quota() ->
     assert rows[0]["allocation"]["cpu"] == "4.00 cores"
 
 
-def test_tenant_contribution_modal_uses_approved_bordered_card_hierarchy() -> None:
-    """Review-only layout: reused Violet surfaces, not new allocation arithmetic."""
+def test_tenant_contribution_modal_uses_one_segmented_summary_and_unboxed_metrics() -> None:
+    """Readable bordered records without recursively boxed summary and quota cards."""
     from pathlib import Path
 
     root = Path(__file__).resolve().parents[3]
@@ -459,23 +459,38 @@ def test_tenant_contribution_modal_uses_approved_bordered_card_hierarchy() -> No
         "</section>", 1
     )[0]
     scroll = dialog.split('aria-label="Scroll through Tenant contributions"', 1)[1]
-    record = scroll.split('aria-label="{{ row.tenant.name }} allocation"', 1)[0]
+    record = scroll.split('aria-label="{{ row.tenant.name }} allocation"', 1)[1].split(
+        '</article>', 1
+    )[0]
 
-    assert 'grid grid-cols-2 gap-2 sm:grid-cols-4' in summary
-    assert 'rounded-lg border border-outline-subtle bg-surface-card' in summary
+    # Only one enclosing summary surface; thin separators between four facts.
+    assert 'grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-outline-subtle' in summary
+    assert 'bg-outline-subtle sm:grid-cols-4' in summary
+    assert 'min-w-0 bg-surface-card px-3 py-2.5' in summary
+    assert 'shadow-sm' not in summary
     assert 'tabular-nums leading-6 text-content-primary' in summary
-    assert 'bg-surface-elevated px-3 py-4' in dialog
-    assert '<ol class="space-y-3"' in scroll
+
+    # One outer border per record, not another four outlined quota tiles.
+    assert '<ol class="space-y-2.5"' in scroll
     assert '<li class="min-w-0">' in scroll
-    assert 'rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm' in record
-    assert 'md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]' in record
-    assert 'rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5' in scroll
-    assert 'data-lucide="layers-3"' in scroll
-    assert 'View {{ row.namespace_count }} Namespace' in scroll
-    assert 'title="Tenant ID: {{ row.tenant.id }}"' in scroll
-    assert 'border border-dashed border-outline-subtle' in scroll
+    assert 'rounded-lg border border-outline-default bg-surface-card p-4' in scroll
+    assert 'md:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]' in scroll
+    assert 'grid min-w-0 grid-cols-2 gap-x-4 gap-y-3 self-center md:border-l' in record
+    assert '<div class="min-w-0">' in record
+    assert 'rounded-lg border border-outline-subtle bg-surface-elevated' not in record
+    assert 'data-lucide="layers-3"' not in record
+    assert 'shadow-sm' not in scroll
+
+    # Read-only evidence, disclosure and HTMX behavior are still canonical.
+    assert 'View {{ row.namespace_count }} Namespace' in record
+    assert 'title="Tenant ID: {{ row.tenant.id }}"' in record
+    assert "row.unknown" in record
+    for metric in ('cpu', 'memory', 'pods', 'storage'):
+        assert 'row.allocation.' + metric in record
+    assert 'tabindex="0"' in dialog
     assert 'hx-target="#{{ contributions_body_id }}"' in dialog
     assert 'hx-select="#{{ contributions_body_id }}"' in dialog
-    assert 'tabindex="0"' in dialog
+    assert 'overflow-y-auto overscroll-contain' in dialog
+    assert 'data-kaori-dialog-close' in dialog
     assert "registry_ui.footer" not in dialog
     assert "<table" not in dialog

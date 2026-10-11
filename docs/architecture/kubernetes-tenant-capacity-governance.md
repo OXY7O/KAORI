@@ -392,14 +392,14 @@ constitutes a physical node-resource reservation.
 Tenant count and opens the canonical native KAORI dialog. After DevContainer
 visual feedback, this detail workspace uses **one visual hierarchy**: concise
 cluster header with a lightweight **Tenant Registry** navigation link on the
-right, four compact outlined summary tiles, compact search and a responsive,
-vertically scrollable list of bordered Tenant record cards. This modal intentionally
-has **no Rows selector or pagination footer**.
-Each list record groups Tenant name, ownership badge, stable ID and quota
-authority/provider with a simple keyboard-accessible Namespace disclosure;
-the four governed request amounts are displayed as a two-column grid of compact,
-outlined metric tiles using existing KAORI Violet surfaces.
-There are no table columns, nested cards or horizontal table scrolling.
+right, one compact **segmented summary strip** within a subtle shared border,
+compact search and a responsive, vertically scrollable list of Tenant records.
+Each Tenant record has a single readable outline, without nested cards or shadows.
+This modal intentionally has **no Rows selector or pagination footer**.
+Each record groups Tenant name, ownership badge, stable ID, provider/authority,
+and a keyboard-accessible Namespace disclosure. Four governed requests use an
+unboxed two-column definition grid with one dividing rule at desktop widths.
+There are no table columns, nested metric tiles or horizontal table scrolling.
 
 The summary metrics come from the **unfiltered committed contribution ledger** (committed Tenants, linked Namespaces, shared-quota Tenants, and
 incomplete / ambiguous records). Linked Namespace count is a count of
@@ -415,11 +415,14 @@ native-height-bounded, keyboard-scrollable content region. The header, summary
 and search remain outside the scrolling list; the modal body alone is swapped
 during HTMX searches. Matching and total counts are distinct, and the unchanged
 canonical five-row pagination remains in other KAORI registry surfaces.
-The #1153 human visual-feedback refinement supersedes the prior borderless
-summary-strip and divider-only record treatment, reusing the bordered card and
-inset metric hierarchy already established in Namespace & Resource Profile
-Mapping. Scroll-area contrast, record padding/gaps and the Namespace disclosure
-are presentation-only; there is no new card component or capacity metric.
+The #1153 human visual-feedback iteration supersedes both the original
+borderless/divider-only records **and** the over-boxed interim treatment
+(four independent KPI cards plus four nested quota cards per Tenant). A single
+segmented summary container and a single bordered record per Tenant provide
+structure without visual noise; quotas and the expanded Namespace list remain
+unboxed. This stays within existing Violet surface, border, spacing, and
+native disclosure semantics. No new shared component or capacity metric is
+introduced.
 On narrower screens the summary uses two columns and the Tenant list stacks
 identity above its four allocation metrics without horizontal scrolling;
 the complete Tenant ID remains available via its `title` attribute.
