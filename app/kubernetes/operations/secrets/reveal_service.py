@@ -453,6 +453,10 @@ def create_reveal_request(
     if namespace_policy not in {'step_up', 'approval_required'}:
         raise ValueError('Protected Secret Reveal is disabled for the selected namespace.')
 
+    secret_uid = str(target.uid or '').strip()
+    if not secret_uid:
+        raise ValueError('Kubernetes did not return a Secret UID. Reload the live target before requesting access.')
+
     key_name = _required(form.get('key_name'), 'Secret key', max_length=255)
     if key_name not in _allowed_keys(target):
         raise ValueError('The selected key is unavailable or protected from plaintext reveal.')
@@ -513,6 +517,7 @@ def create_reveal_request(
     record.namespace = target.namespace
     record.secret_name = target.name
     record.secret_type = target.secret_type or 'Opaque'
+    record.secret_uid = secret_uid
     record.key_name = key_name
     record.policy = namespace_policy
     record.reason = reason
@@ -566,6 +571,22 @@ def decide_reveal_request(
         raise ValueError('Requestors cannot approve or deny their own Secret reveal requests.')
 
     if approve:
+        # Approval belongs to the exact live Kubernetes object, not merely
+        # the namespace/name tuple. Fail closed for pre-migration requests.
+        approved_uid = str(record.secret_uid or '').strip()
+        if not approved_uid:
+            raise ValueError('This request lacks approved Secret identity evidence. Submit a new request.')
+        live_target = read_live_secret(
+            record.cluster_id,
+            record.namespace,
+            record.secret_name,
+            supported_types=set(SUPPORTED_REVEAL_TYPES),
+            blocked_types=BLOCKED_SECRET_TYPES,
+        )
+        if str(live_target.uid or '').strip() != approved_uid or live_target.secret_type != record.secret_type:
+            raise ValueError('The live Secret identity changed. Submit a new reveal request.')
+        if record.key_name not in _allowed_keys(live_target):
+            raise ValueError('The approved Secret key is no longer available. Submit a new request.')
         cluster = Cluster.query.filter_by(id=record.cluster_id).first()
         current_policy = get_namespace_policy(record.cluster_id, record.namespace)
         if (
@@ -687,7 +708,14 @@ def reveal_secret_value(request_id: str, *, user_id: int) -> RevealedSecretValue
                 namespace=record.namespace,
                 _request_timeout=10,
             )
+        live_metadata = getattr(secret_object, 'metadata', None)
+        live_uid = str(getattr(live_metadata, 'uid', None) or '').strip()
+        approved_uid = str(record.secret_uid or '').strip()
+        if not approved_uid or live_uid != approved_uid:
+            raise ValueError('The approved Secret object was replaced or its identity cannot be verified.')
         live_secret_type = str(getattr(secret_object, 'type', None) or 'Opaque')
+        if live_secret_type != record.secret_type:
+            raise ValueError('The approved Secret type changed. Submit a new reveal request.')
         if live_secret_type not in SUPPORTED_REVEAL_TYPES or live_secret_type in BLOCKED_SECRET_TYPES:
             raise ValueError('The live Secret type is no longer revealable. Submit a new request after review.')
         if record.key_name in BLOCKED_KEY_NAMES:

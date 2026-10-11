@@ -296,3 +296,20 @@ If a Namespace is policy-enabled but the Protected Kubernetes Secret Reveal Clus
 - The 4/12 right context column owns `Info Flow` plus one compact safety/policy guide; it never owns the mutation action or Secret values.
 - Protected Reveal uses Form + Right Context only in the `New Request` tab. `My Requests` and `Approvals` remain full-width registries.
 - TLS rotation keeps its dedicated reviewed full-width composition.
+
+
+## Protected Reveal live object provenance (#1303)
+
+New requests commit only the Kubernetes Secret `metadata.uid` alongside
+cluster/namespace/name/key/type approval scope, never credential values or
+value digests. The requester must have a nonempty live UID. Approval under
+`approval_required` and final one-time reveal independently verify that
+the live Secret UID still matches the requested object, and type/key remain
+valid. A Secret deleted and recreated under an identical namespace/name is
+**not** covered by the old approval. Request rows predating the migration
+(with null UID) fail closed and must be submitted again. Kubernetes
+`resourceVersion` may legitimately change on the *same* UID; it is not
+frozen into the approval. Existing policy, session reauthentication and
+single-consume checks remain mandatory. Run the migration only after the
+explicit admission gate is lifted; adding the migration file does not
+execute it.

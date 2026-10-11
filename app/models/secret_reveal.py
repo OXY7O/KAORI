@@ -85,6 +85,8 @@ class SecretRevealRequest(db.Model):
     namespace: Mapped[str] = mapped_column(db.String(255), nullable=False, index=True)
     secret_name: Mapped[str] = mapped_column(db.String(255), nullable=False, index=True)
     secret_type: Mapped[str] = mapped_column(db.String(255), nullable=False)
+    # Null only for requests predating #1303. They fail closed on approval/reveal.
+    secret_uid: Mapped[str | None] = mapped_column(db.String(255), nullable=True)
     key_name: Mapped[str] = mapped_column(db.String(255), nullable=False)
     policy: Mapped[str] = mapped_column(db.String(32), nullable=False)
     reason: Mapped[str] = mapped_column(db.Text(), nullable=False)
