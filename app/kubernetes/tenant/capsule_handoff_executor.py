@@ -150,6 +150,15 @@ def _exact_current_scope(
         preview.get('status') != 'complete_scope_server_dry_run_only'
         or preview.get('plan_sha256') != plan_sha256
         or preview.get('source_worklist_sha256') != expected_worklist_sha256
+        or preview.get('transfer_items') != [
+            {
+                'kind': item['kind'], 'namespace': item['namespace'],
+                'name': item['name'], 'uid': item['uid'],
+                'resource_version': item['resource_version'],
+            }
+            for item in worklist['items'] if item['decision'] in _CANDIDATE
+        ]
+        or preview.get('unverified_kaori_rolebinding_origin') is not False
         or preview.get('actor_user_id') != actor_user_id
         or preview.get('whole_scope_source_unchanged') is not True
         or not _checked_recently(preview.get('checked_at'))
@@ -350,10 +359,11 @@ def _terminal(
         'event_sha256': None,
         'outcome': 'readback_observed' if complete else 'unknown',
         'readback_sha256': readback_sha,
-        'observed_count': count,
+        # Unknown objects are not misrepresented as observed provider state.
+        'observed_count': count if complete else transferred + pending,
         'pending_count': 0 if complete else pending,
         'transferred_count': transferred,
-        'ambiguous_count': 0 if complete else max(0, count - transferred - pending),
+        'ambiguous_count': 0,
     }
     event['event_sha256'] = _event_checksum(event)
     _write_ledger_event(
@@ -373,8 +383,10 @@ def _terminal(
         'provider_username': authority['provider_username'],
         'provider_credential_id': authority['provider_credential_id'],
         'resource_specific_consent_verified': True,
-        # Provider-generated RoleBindings are *preserved*, not transferred.
+        # Do not fabricate controller provenance: all RoleBindings in this
+        # admitted worklist are provider/foreign and remain untouched.
         'controller_generated_rbac_preserved': complete,
+        'controller_origin_verified': False,
         'provider_authority_verified': True,
         'whole_scope_readback_verified': complete,
         'verified_components': items,
