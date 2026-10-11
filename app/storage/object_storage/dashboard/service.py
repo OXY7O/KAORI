@@ -167,6 +167,17 @@ def _health_rows(systems: list[ObjectStorageSystem]) -> list[dict[str, Any]]:
         )
         provider_status = str(system.status or 'unknown').replace('_', ' ').title()
         analytics_usable = bool(snapshot_state.get('usable'))
+        alert_stream, _alert_posture = _alert_view(payload)
+        alerts_connected = analytics_usable and bool(alert_stream.get('connected'))
+        alerts_fallback = alerts_connected and bool(alert_stream.get('fallback_used'))
+        if alerts_fallback:
+            alert_source_label = 'Metrics Source fallback · committed alert evidence'
+        elif alerts_connected and alert_stream.get('resolved_source') == 'alertmanager':
+            alert_source_label = 'Alertmanager · committed alert evidence'
+        elif alerts_connected:
+            alert_source_label = 'Committed alert evidence available'
+        else:
+            alert_source_label = 'No usable committed alert evidence'
         critical_alerts = int(posture.get('critical') or 0)
         warning_alerts = int(posture.get('warning') or 0)
 
@@ -205,6 +216,9 @@ def _health_rows(systems: list[ObjectStorageSystem]) -> list[dict[str, Any]]:
                 'snapshot_label': str(snapshot_state.get('label') or 'Worker Data'),
                 'snapshot_tone': str(snapshot_state.get('tone') or 'unknown'),
                 'snapshot_ready': analytics_usable,
+                'alerts_connected': alerts_connected,
+                'alerts_fallback': alerts_fallback,
+                'alert_source_label': alert_source_label,
                 'utilization_display': str(overview.get('utilization_display') or 'N/A'),
                 'utilization_tone': str(overview.get('utilization_tone') or 'unknown'),
                 'active_alerts': int(posture.get('total') or 0),
