@@ -1014,3 +1014,56 @@ def test_g2_rejects_unresolved_shared_quota_selector_instead_of_omitting_it():
     plan['plan_sha256'] = _plan_hash(plan)
     with pytest.raises(ValueError):
         build_capsule_scope_patch_review(**source)
+
+
+@pytest.mark.parametrize('mutation', [
+    'drop_capsule_cr',
+    'add_unknown_global_quota',
+    'turn_preservation_into_patch',
+    'replace_cr_resource_version',
+    'forge_preserved_policy',
+])
+def test_g2g3_trace_rejects_rehashed_tampered_full_preservation_manifest(mutation):
+    source, previews, _ = _g2_source_case()
+    patch = build_capsule_scope_patch_review(**source)
+    changed = deepcopy(patch)
+    items = changed['scope_items']
+    capsule = next(item for item in items if item['kind'] == 'CapsuleTenant')
+    if mutation == 'drop_capsule_cr':
+        items.remove(capsule)
+    elif mutation == 'add_unknown_global_quota':
+        items.append({
+            'namespace': '', 'kind': 'GlobalResourceQuota',
+            'name': 'injected', 'uid': 'foreign',
+            'source_resource_version': '1',
+            'operation': 'preserve_source_only_unverified',
+            'policy_sha256': 'c' * 64,
+        })
+    elif mutation == 'turn_preservation_into_patch':
+        capsule['operation'] = 'conditional_metadata_dry_run_candidate'
+        capsule['patch_sha256'] = 'a' * 64
+    elif mutation == 'replace_cr_resource_version':
+        capsule['source_resource_version'] = 'different-provider-object-version'
+    else:
+        capsule['policy_sha256'] = 'f' * 64
+    changed['scope_items_sha256'] = _digest(items)
+    changed['complete_scope_count'] = len(items)
+    with pytest.raises(ValueError, match='manifest|provider|preservation'):
+        inspect_capsule_scope_g2g3_trace(
+            plan=source['plan'], related=source['related'],
+            accepted_actor_user_id=30, rows=[],
+            patch_review=changed, preview_review={},
+            readback_candidate={},
+        )
+
+
+def test_g2_no_global_quota_does_not_claim_live_quota_readback_pass():
+    source, previews, _ = _g2_source_case()
+    review = build_capsule_scope_patch_review(**source)
+    assert review['globally_preserved_count'] == 1
+    assert review['scope_items'][0]['kind'] == 'CapsuleTenant'
+    assert review['scope_items'][0]['operation'] == 'preserve_source_only_unverified'
+    assert review['global_quota_provider_readback_verified'] is False
+    assert review['source_provider_authenticated'] is False
+    assert review['start_committed'] is False
+    assert review['release_authorized'] is False
