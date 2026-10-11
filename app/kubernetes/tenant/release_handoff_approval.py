@@ -30,7 +30,13 @@ _EXPECTED_HANDOFF_PREFIXES = (
 )
 _EXPECTED_HANDOFF_FRAGMENTS = (
     'has KAORI-managed allocation; explicit provider handoff is required.',
-    # Keep the full known handoff obligation in sync with release_preflight.
+    (
+        'has a KAORI-managed Resource Profile allocation. '
+        'Release requires independent approval, verified provider handoff and read-back; '
+        'KAORI cannot abandon the allocation or delete provider resources.'
+    ),
+    # Preserve the legacy committed preflight reason for historical plan
+    # compatibility. New evidence uses the shorter approved wording.
     # Do not accept arbitrary provider/identity/governance blocker text.
     (
         'has a KAORI-managed allocation linked to a Resource Profile. '

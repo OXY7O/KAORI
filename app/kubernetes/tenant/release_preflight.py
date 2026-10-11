@@ -78,10 +78,9 @@ def _release_blockers(tenant: Tenant, namespace_rows: list[TenantNamespace], *, 
             blockers.append(f'{record.namespace} is KAORI-created/managed, not safely releasable.')
         if record.resource_profile_id is not None:
             blockers.append(
-                f'{record.namespace} has a KAORI-managed allocation linked to a Resource Profile. '
-                'Before Release, its Namespace allocation controls must be handed over explicitly '
-                'with independent approval and authoritative provider read-back. '
-                'KAORI cannot silently abandon the committed allocation or delete provider resources.'
+                f'{record.namespace} has a KAORI-managed Resource Profile allocation. '
+                'Release requires independent approval, verified provider handoff and read-back; '
+                'KAORI cannot abandon the allocation or delete provider resources.'
             )
     return blockers
 

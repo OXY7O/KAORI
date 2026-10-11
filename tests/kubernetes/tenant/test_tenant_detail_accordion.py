@@ -140,3 +140,26 @@ def test_missing_tenant_returns_404(monkeypatch):
     )
     with pytest.raises(NotFound):
         route_common._tenant_detail_context('missing')
+
+
+def test_release_wizard_explains_platform_admin_ownership_without_bypassing_approval() -> None:
+    """#1183: Step 3/4 show the next safe actor/action instead of generic 2/5."""
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[3]
+    template = (
+        root / 'app/templates/kubernetes/tenant/partials/_tenant_management_detail.html'
+    ).read_text(encoding='utf-8')
+    assert 'aria-label="Independent Platform Admin required"' in template
+    assert 'handoff_plan.requested_by == current_user.id' in template
+    assert 'Another authorized Platform Admin must verify provider identity' in template
+    assert 'not native_cycle.verified_successor_acceptance' in template
+    assert 'not native_cycle.provider_transfer_verified' in template
+    assert 'Verify Provider &amp; Accept as Platform Admin' in template
+    assert 'Execute Native Handoff' in template
+    assert 'Dry-run and external references are not consent.' in template
+    assert 'a new-generation Re-adopt is a separate governed action' in template
+    assert "row.native_release_readiness.approval_complete" in template
+    assert 'tenant_release_step_urls[\'approval\']' in template
+    assert "hx-post=\"{{ url_for('tenant.accept_native_successor_handoff_route'" in template
+    assert "hx-post=\"{{ url_for('tenant.execute_native_release_handoff_route'" in template

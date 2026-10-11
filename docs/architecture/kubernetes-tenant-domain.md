@@ -715,6 +715,29 @@ plan, read-back and post-expiry navigation QA pending. pytest/lint,
 Developer Check, CI/CD, Full Admission, staging UAT, promotion and
 deployment remain **HOLD** until explicit direction.
 
+## Release Step 3→4 actionable handoff guidance (#1183; 2026-10-11 DevContainer)
+
+Native Release readiness is evidence-only. Independent Review Recorded and a
+successful **Preview Native Transfer** (dry-run) do **not** prove Platform Admin
+acceptance or a provider mutation. `External Reference Unverified` is not
+consent. Step 4 shows **2/5** when only review and independent approval pass.
+The correct next operation is in Step 3: a distinct authorized Platform Admin
+(non-requester) must verify the registered Kubernetes X.509 TLS connection,
+provider SelfSubjectReview and scoped SelfSubjectAccessReview, and explicitly
+record acceptance for the same Plan SHA. Only after accepted, current dry-run
+and independently admitted provider execution/read-back may an authorized
+Platform Admin execute the Native handoff; the canonical finalizer is separate.
+If the logged-in account created the plan, its acceptance form remains absent
+and the UI now explains why, instead of silently hiding the action.
+No new provider mutation, bypass, account privilege, successor token or
+Release shortcut is introduced.
+
+The Resource Profile allocation blocker is shortened for faster reading but
+still states independent approval, verified provider handoff/read-back, and
+non-destructive preservation. The original long blocker remains in the
+explicit trusted-reason allowlist for historical plan compatibility only; new
+reviews produce the shorter reason.
+
 ## Tenant Release Step 3 — structured independent approval evidence (#1089; current presentation authority)
 
 Human DevContainer review of Release wizard **Step 3: Independent approval and handoff**

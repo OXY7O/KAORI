@@ -835,6 +835,13 @@
                                                             Existing kubeconfig verified through SelfSubjectReview and scoped SelfSubjectAccessReview. Provider transfer is still separate.
                                                         </p>
                                                     {% elif row.release_handoff_preparation_state == 'acknowledged'
+                                                            and handoff_plan.requested_by == current_user.id %}
+                                                        <p class="mt-2 rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5 text-xs leading-5 text-content-secondary"
+                                                           role="status" aria-label="Independent Platform Admin required">
+                                                            You requested this plan. Another authorized Platform Admin must verify provider identity and explicitly accept the handoff.
+                                                            The dry-run and external reference do not prove consent or provider handoff.
+                                                        </p>
+                                                    {% elif row.release_handoff_preparation_state == 'acknowledged'
                                                             and handoff_plan.requested_by != current_user.id
                                                             and row.get('native_release_readiness')
                                                             and row.native_release_readiness.approval_complete
@@ -1532,7 +1539,32 @@
                                     {% else %}
                                         <div class="mt-3 space-y-2">
                                             {{ table_label.status_label('Verification Required', 'info') }}
-                                            <p class="text-xs leading-5 text-content-secondary">Independent approval is current. Verify successor identity, authorized provider handoff and read-back before Release.</p>
+                                            {% if not native_cycle.verified_successor_acceptance %}
+                                                {% if row.release_handoff_plan and row.release_handoff_plan.requested_by == current_user.id %}
+                                                    <p class="text-xs leading-5 text-content-secondary">
+                                                        Your independent review is recorded. Ask a different authorized Platform Admin to complete
+                                                        <span class="font-semibold">Verify Provider &amp; Accept as Platform Admin</span> in Step 3.
+                                                        Dry-run and external references are not consent.
+                                                    </p>
+                                                {% else %}
+                                                    <p class="text-xs leading-5 text-content-secondary">
+                                                        Open Step 3 to complete
+                                                        <span class="font-semibold">Verify Provider &amp; Accept as Platform Admin</span>.
+                                                        The registered Kubernetes connection must verify TLS and scoped provider permissions.
+                                                    </p>
+                                                {% endif %}
+                                            {% elif not native_cycle.provider_transfer_verified %}
+                                                <p class="text-xs leading-5 text-content-secondary">
+                                                    Platform Admin acceptance is recorded. Complete a current Native dry-run if needed,
+                                                    then the accepting Platform Admin must execute <span class="font-semibold">Execute Native Handoff</span>
+                                                    in Step 3 and verify every provider resource.
+                                                </p>
+                                            {% else %}
+                                                <p class="text-xs leading-5 text-content-secondary">
+                                                    Provider handoff is verified. Complete the canonical Release finalization checks;
+                                                    a new-generation Re-adopt is a separate governed action.
+                                                </p>
+                                            {% endif %}
                                             <a href="{{ tenant_release_step_urls['approval'] }}"
                                hx-get="{{ tenant_release_step_urls['approval'] }}"
                                hx-target="#tenant-release-governance"
