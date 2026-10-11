@@ -780,7 +780,7 @@ def _get_forecast_snapshot(*, cluster_id: str, time_range: str) -> dict[str, Any
         risk_count = 1
 
     risk_note = raw.get('risk_note') or (
-        f'{risk_count} metric(s) may breach warning thresholds in the forecast window.'
+        f'{risk_count} metric{"s" if risk_count != 1 else ""} may breach forecast warning thresholds.'
         if risk_count > 0
         else 'No forecast risk detected in the selected time range.'
     )
