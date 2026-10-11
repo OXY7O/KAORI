@@ -23,10 +23,16 @@ def test_pod_inventory_applies_resource_page_pattern() -> None:
     assert '>Scope</th>' in table
     assert '>Runtime State</th>' in table
     assert '>Placement</th>' in table
-    assert '>Ownership & Activity</th>' in table
+    assert '>Owner & Restarts</th>' in table
     assert 'table_ui.namespaced_scope_identity(' in table
     assert 'pod.operational_state_label' in table
     assert 'pod.state_evidence' in table
+    assert 'table_label.metadata_label(pod.owner_kind_label)' in table
+    assert 'pod.owner_name_display' in table
+    assert 'pod.restart_summary' in table
+    assert 'line-clamp-2 break-words' in table
+    assert 'title="{{ pod.owner_name_display }}"' in table
+    assert 'pod.owner_display' not in table
 
 
 def test_pod_filters_are_owner_aware_and_workspace_scoped() -> None:
