@@ -54,6 +54,7 @@ def _create_batch() -> None:
                   server_default=sa.text('CURRENT_TIMESTAMP')),
         sa.ForeignKeyConstraint(['tenant_id'], ['tenants.id'], ondelete='RESTRICT'),
         sa.UniqueConstraint('batch_id', name='uq_capsule_audit_batch_global_id'),
+        sa.UniqueConstraint('tenant_id', name='uq_capsule_audit_batch_tenant_once'),
         sa.UniqueConstraint('tenant_id', 'plan_sha256', name='uq_capsule_audit_batch_plan_once'),
         sa.UniqueConstraint(
             'batch_id', 'tenant_id', 'plan_sha256', 'worklist_sha256',
