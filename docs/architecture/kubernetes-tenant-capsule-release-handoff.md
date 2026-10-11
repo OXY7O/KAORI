@@ -657,6 +657,81 @@ Kubernetes PATCH, dryRun=All, retry, Release or provider handoff
 is allowed by these tables or their readers. #1229 OPEN,
 #1230/#1231 BLOCKED; all test/CI/CD/provider gates HOLD.
 
+## Transactional Capsule audit+consent proof writer — disabled staged source
+
+`capsule_handoff_proof_writer.py` prepares the **single atomic PostgreSQL
+transaction** required before future trusted audit evidence could be
+committed. It is **not** an operational writer. Two unconditional source
+constants are `False`:
+`_CAPSULE_PROOF_WRITER_ENABLED` and
+`_AUTHENTICATED_PROVENANCE_AND_CONSENT_WRITER_ENABLED`.
+`commit_capsule_proof_pair_staged` raises `PermissionError` before any
+database session, key lookup, actor check or SQL write. No environment
+switch, API parameter, boolean `confirmed` or self-asserted source
+receipt can enable it. There is no registered endpoint, job, queue,
+Kubernetes client or invocation by START/executor.
+
+### Future transaction design (NOT activated)
+
+The staged path requires explicit operator confirmation and a fresh
+isolated transaction on an **admitted PostgreSQL** database. It
+authenticates the Platform Admin actor from existing KAORI access
+controls; locks the exact Tenant with `SELECT ... FOR UPDATE`; rejects
+a changed Capsule/Ready/Adopted lifecycle, wrong generation or cluster;
+refuses **any previous batch/consent for that Tenant**, even from an
+earlier plan; and refuses evidence that could retroactively excuse a
+`CapsuleHandoffLedgerEvent` START or legacy Capsule executor record.
+The approved plan, independent approval, current successor acceptance
+and committed release preflight are read again under the Tenant lock.
+The preflight's provider identity, handoff components and fingerprint
+must match exactly; consent requester, independent reviewer and
+accepted successor must be distinct and current.
+
+Pure `build_capsule_proof_pair_candidate` verifies the complete
+MAC-checked normalized audit-claim coverage and exact-scope
+resource consent proposal, then constructs two safe ORM INSERT
+payloads with the same batch UUID, Tenant, plan, worklist and
+resource-review SHA. It never includes a key, raw subjects,
+provider policy, Kubernetes API body or user credential. Under a
+**future** separately admitted writer, the batch parent is flushed
+first, followed by the exact composite-FK consent child, then the
+enclosing SQL transaction is committed once. `flush` is NOT a
+durability acknowledgment; the writer performs a separate SQL read-back
+only after commit. If commit is uncertain, the caller must investigate
+historical evidence rather than automatically replay the transaction.
+
+Before those writes the staged PostgreSQL inspector requires all
+UPDATE/DELETE/TRUNCATE-deny triggers enabled for both evidence
+tables; validated uniqueness, shape, independent actor and composite
+FK constraints; a non-owner, non-elevated, INSERT/SELECT-only
+application role with no CREATE privilege on the table schema;
+`fsync=on`, synchronous commit and normal replication role.
+The proof schema/migration has additionally been tightened to unique
+`tenant_id` on **both** batch and consent tables. This implements the
+same conservative one-irreversible-history-per-Tenant boundary as
+the earlier Capsule START ledger; a separately sanctioned recovery
+would need an additive design, not an overwrite or retry.
+
+### Pending trust and UAT
+
+**Do not confuse source inspection with a successful DB transaction,
+installed triggers, backup durability, authenticated controller identity,
+or authenticated/committed human consent.** Those remain unproven. A
+separate future operator authorization must install/review migration
+and role privileges, establish a genuine Vault/KMS-backed collector
+key resolver and independently validated apiserver audit provenance,
+and provide an authenticated separate per-resource human approval
+workflow. Only then may a security-reviewed source change remove
+the two hardcoded blockers and independently verify concurrent replay,
+ambiguous commit, crash, partial evidence and WAL/backup scenarios.
+The START writer and provider executor remain disabled; even a future
+committed proof record would **not** grant dry-run, Kubernetes PATCH,
+retry, Released, or provider mutation rights on its own.
+
+All test/lint/CI/CD, schema migration, DB writes, Kubernetes/UAT,
+deployment, and staging/main promotion remain HOLD. Issue #1229
+stays OPEN and #1230/#1231 remain BLOCKED.
+
 ## Required before completing #1229
 
 1. Build on the SHA-bound Namespace and cluster-scoped

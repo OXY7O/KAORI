@@ -18,7 +18,7 @@ class CapsuleHandoffAuditBatch(db.Model):
     __tablename__ = 'capsule_handoff_audit_batches'
 
     id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
-    batch_id: Mapped[str] = mapped_column(db.String(36), nullable=False, unique=True)
+    batch_id: Mapped[str] = mapped_column(db.String(36), nullable=False)
     tenant_id: Mapped[str] = mapped_column(
         db.String(36), db.ForeignKey('tenants.id', ondelete='RESTRICT'), nullable=False,
     )
@@ -39,6 +39,8 @@ class CapsuleHandoffAuditBatch(db.Model):
 
     __table_args__ = (
         # Conservative once-only policy: never replace or replay one plan.
+        db.UniqueConstraint('batch_id', name='uq_capsule_audit_batch_global_id'),
+        db.UniqueConstraint('tenant_id', name='uq_capsule_audit_batch_tenant_once'),
         db.UniqueConstraint('tenant_id', 'plan_sha256', name='uq_capsule_audit_batch_plan_once'),
         db.UniqueConstraint(
             'batch_id', 'tenant_id', 'plan_sha256',
@@ -98,6 +100,7 @@ class CapsuleHandoffResourceConsentRecord(db.Model):
             ondelete='RESTRICT',
             name='fk_capsule_resource_consent_exact_audit_batch',
         ),
+        db.UniqueConstraint('tenant_id', name='uq_capsule_resource_consent_tenant_once'),
         db.UniqueConstraint('tenant_id', 'plan_sha256', name='uq_capsule_resource_consent_plan_once'),
         db.UniqueConstraint('tenant_id', 'consent_manifest_sha256', name='uq_capsule_resource_consent_manifest'),
         db.CheckConstraint(

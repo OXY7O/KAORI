@@ -38,7 +38,7 @@ def _create_batch() -> None:
     op.create_table(
         _BATCH,
         sa.Column('id', sa.Integer(), primary_key=True, nullable=False),
-        sa.Column('batch_id', sa.String(36), nullable=False, unique=True),
+        sa.Column('batch_id', sa.String(36), nullable=False),
         sa.Column('tenant_id', sa.String(36), nullable=False),
         sa.Column('cluster_id', sa.String(36), nullable=False),
         sa.Column('generation', sa.Integer(), nullable=False),
@@ -53,6 +53,8 @@ def _create_batch() -> None:
         sa.Column('recorded_at', sa.DateTime(timezone=True), nullable=False,
                   server_default=sa.text('CURRENT_TIMESTAMP')),
         sa.ForeignKeyConstraint(['tenant_id'], ['tenants.id'], ondelete='RESTRICT'),
+        sa.UniqueConstraint('batch_id', name='uq_capsule_audit_batch_global_id'),
+        sa.UniqueConstraint('tenant_id', name='uq_capsule_audit_batch_tenant_once'),
         sa.UniqueConstraint('tenant_id', 'plan_sha256', name='uq_capsule_audit_batch_plan_once'),
         sa.UniqueConstraint(
             'batch_id', 'tenant_id', 'plan_sha256', 'worklist_sha256',
@@ -102,6 +104,7 @@ def _create_consent() -> None:
             ondelete='RESTRICT',
             name='fk_capsule_resource_consent_exact_audit_batch',
         ),
+        sa.UniqueConstraint('tenant_id', name='uq_capsule_resource_consent_tenant_once'),
         sa.UniqueConstraint('tenant_id', 'plan_sha256', name='uq_capsule_resource_consent_plan_once'),
         sa.UniqueConstraint(
             'tenant_id', 'consent_manifest_sha256', name='uq_capsule_resource_consent_manifest',
