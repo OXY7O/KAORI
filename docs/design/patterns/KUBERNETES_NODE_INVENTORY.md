@@ -109,7 +109,8 @@ Rules:
 - default page size is 5; available sizes are 5/10/25/50;
 - header cells use `scope="col"`;
 - a screen-reader caption describes the current scope;
-- Node identity uses the shared title-cell presentation;
+- Node identity uses the shared title-cell presentation. Its supporting line shows only the **OS family** (for example, `Linux`, `Windows`, or another reported platform) from committed `operating_system`, with a `kubernetes.io/os` label fallback. Missing OS family remains `Not Reported`; do not guess from distro/image text.
+- Full OS distribution/image/version, architecture, kernel, and container runtime stay in **View Details → Runtime & Platform**, not in the compact table subtitle.
 - Role is metadata, not status;
 - Readiness uses a semantic status indicator;
 - active conditions are summarized under readiness without adding a wide extra column;
