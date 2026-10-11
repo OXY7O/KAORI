@@ -24,9 +24,9 @@
                     {% if page_key == 'capacity' %}
                         Review bucket usage, system share, objects, and quota pressure. Metrics are preferred; Inventory is the explicit fallback when bucket metrics are absent.
                     {% elif page_key == 'performance' %}
-                        Review bucket request and error pressure. Request metrics never fall back to Inventory; source labels identify missing series, unscraped metrics, or query failure.
+                        Review bucket requests and errors. Request metrics never fall back to Inventory; labels distinguish missing series, unscraped metrics, and query failure.
                     {% else %}
-                        Review ranked storage, objects, requests, and errors. Metrics are preferred; Inventory is an explicit field-level fallback where supported.
+                        Rank storage, objects, requests, and errors. Prefer metrics; Inventory fallback is per field and only where supported.
                     {% endif %}
                 </p>
             </div>

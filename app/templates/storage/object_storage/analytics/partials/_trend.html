@@ -27,7 +27,7 @@
                     {% if trend_mode == 'forecast' %}
                         Committed forecast history is solid; the linear 30-day projection is dashed.
                     {% elif trend_mode == 'performance' %}
-                        {{ metrics_source.provider_label }} range evidence for {{ selected_time_range }}. Request demand and error activity remain separate series so higher traffic is not automatically classified as unhealthy.
+                        {{ metrics_source.provider_label }} range for {{ selected_time_range }}. Requests and errors remain separate; traffic alone is not unhealthy.
                     {% else %}
                         {{ metrics_source.provider_label }} {{ selected_time_range }} range. Use slope and change for direction; Inventory remains point-in-time.
                     {% endif %}

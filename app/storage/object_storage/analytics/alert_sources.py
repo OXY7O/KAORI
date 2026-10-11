@@ -254,7 +254,7 @@ def build_alert_posture(stream: dict[str, Any]) -> dict[str, Any]:
         detail = 'Active alerts are present without critical or warning severity evidence.'
     else:
         status, tone = 'No Active Alerts', 'normal'
-        detail = 'The selected alert source is operational and currently returns no active alerts for this Object Storage system.'
+        detail = 'The selected alert source is operational and currently reports no active alerts for this Object Storage system. This observed empty result is not proof of overall system health.'
     return {
         **counts,
         'status': status,

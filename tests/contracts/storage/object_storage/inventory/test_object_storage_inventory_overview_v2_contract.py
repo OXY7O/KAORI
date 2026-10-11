@@ -86,7 +86,7 @@ def test_overview_snapshot_and_signals_are_committed_inventory_only() -> None:
     assert 'Stale Snapshot' in presentation
     assert 'Provider Attention' in presentation
     assert (
-        'Committed Object Storage Inventory; provider configuration and live health remain integration-owned.' in detail
+        'Committed inventory; provider configuration and live health remain integration-owned.' in detail
     )
     assert 'client.list_buckets' not in presentation
 
