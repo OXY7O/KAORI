@@ -205,7 +205,7 @@ def _provider_health_projection(
 
 
 def _overview_inventory_evidence(
-    selected_provider: IntegrationInstance | None,
+    committed_provider_ids: list[int],
 ) -> tuple[int, int, Any]:
     artifact_summary_query = (
         RegistryArtifact.query.join(RegistryRepository)
@@ -232,16 +232,15 @@ def _overview_inventory_evidence(
             func.max(RegistryScanSnapshot.observed_at),
         )
     )
-    if selected_provider is not None:
-        artifact_summary_query = artifact_summary_query.filter(
-            RegistryProject.integration_instance_id == selected_provider.id
-        )
-        public_projects_query = public_projects_query.filter(
-            RegistryProject.integration_instance_id == selected_provider.id
-        )
-        security_freshness_query = security_freshness_query.filter(
-            RegistryProject.integration_instance_id == selected_provider.id
-        )
+    artifact_summary_query = artifact_summary_query.filter(
+        RegistryProject.integration_instance_id.in_(committed_provider_ids)
+    )
+    public_projects_query = public_projects_query.filter(
+        RegistryProject.integration_instance_id.in_(committed_provider_ids)
+    )
+    security_freshness_query = security_freshness_query.filter(
+        RegistryProject.integration_instance_id.in_(committed_provider_ids)
+    )
     observed_by_provider = {
         int(provider_id): observed_at
         for provider_id, observed_at in security_freshness_query.group_by(RegistryProject.integration_instance_id).all()
@@ -261,10 +260,10 @@ def _overview_inventory_items(
     public_project_count: int,
 ) -> list[dict[str, Any]]:
     return [
-        {'label': 'Projects', 'value': counts['projects'], 'icon': 'folder-kanban', 'role': 'Scope'},
-        {'label': 'Repositories', 'value': counts['repositories'], 'icon': 'package-open', 'role': 'Catalog'},
+        {'label': 'Projects', 'value': counts['projects'] if committed_count else 'Not Collected', 'icon': 'folder-kanban', 'role': 'Scope'},
+        {'label': 'Repositories', 'value': counts['repositories'] if committed_count else 'Not Collected', 'icon': 'package-open', 'role': 'Catalog'},
         {'label': 'Artifacts', 'value': artifact_total, 'icon': 'fingerprint', 'role': 'Immutable'},
-        {'label': 'Tags', 'value': counts['tags'], 'icon': 'tags', 'role': 'Aliases'},
+        {'label': 'Tags', 'value': counts['tags'] if committed_count else 'Not Collected', 'icon': 'tags', 'role': 'Aliases'},
         {'label': 'Artifact Footprint', 'value': _fmt_bytes(total_size_bytes), 'icon': 'database', 'role': 'Storage'},
         {'label': 'Public Projects', 'value': public_project_count, 'icon': 'globe-2', 'role': 'Exposure'},
     ]
@@ -470,10 +469,11 @@ def _overview_operations_projection(
         provider_health_page=provider_health_page,
         provider_health_per_page=provider_health_per_page,
     )
-    counts = _overview_kpi_values(selected_provider)
-    total_size_bytes, public_project_count, latest_security_at = _overview_inventory_evidence(selected_provider)
-    state_by_provider = {int(state.integration_instance_id): state for state in states}
     committed_states = [state for state in states if state.last_committed_at is not None]
+    committed_provider_ids = [int(state.integration_instance_id) for state in committed_states]
+    counts = _overview_kpi_values(committed_provider_ids)
+    total_size_bytes, public_project_count, latest_security_at = _overview_inventory_evidence(committed_provider_ids)
+    state_by_provider = {int(state.integration_instance_id): state for state in states}
     artifact_total = counts['artifacts']
     scanned_count = sum(item['scanned'] for item in security_counts.values())
     analytics_by_provider = _latest_registry_analytics(scoped_providers)
@@ -611,31 +611,43 @@ def build_overview_section(
     )
 
     if section == 'kpi_cards':
-        counts = _overview_kpi_values(selected_provider)
+        committed_provider_ids = [
+            int(state.integration_instance_id) for state in states if state.last_committed_at is not None
+        ]
+        committed_count = len(committed_provider_ids)
+        provider_count = len(scoped_providers)
+        counts = _overview_kpi_values(committed_provider_ids)
+        if not committed_count:
+            source_label = 'Not Collected'
+        elif committed_count < provider_count:
+            source_label = f'Partial Inventory ({committed_count}/{provider_count})'
+        else:
+            source_label = 'Committed Inventory'
         return {
             **context,
+            'kpi_source_label': source_label,
             'kpis': [
                 {
                     'label': 'Projects',
-                    'value': counts['projects'],
+                    'value': counts['projects'] if committed_count else 'Not Collected',
                     'description': 'Committed provider-neutral namespaces.',
                     'icon': 'folder-kanban',
                 },
                 {
                     'label': 'Repositories',
-                    'value': counts['repositories'],
+                    'value': counts['repositories'] if committed_count else 'Not Collected',
                     'description': 'Committed Registry repositories.',
                     'icon': 'package-open',
                 },
                 {
                     'label': 'Artifacts',
-                    'value': counts['artifacts'],
+                    'value': counts['artifacts'] if committed_count else 'Not Collected',
                     'description': 'Digest-oriented committed identities.',
                     'icon': 'fingerprint',
                 },
                 {
                     'label': 'Tags',
-                    'value': counts['tags'],
+                    'value': counts['tags'] if committed_count else 'Not Collected',
                     'description': 'Mutable aliases linked to committed digests.',
                     'icon': 'tags',
                 },
