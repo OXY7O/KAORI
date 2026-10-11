@@ -26,7 +26,6 @@ from app.kubernetes.tenant.release_handoff_approval import _plan_hash
 from app.kubernetes.tenant.release_handoff_inventory import handoff_fingerprint
 
 _KEY = b'nonproduction-fixture-only-collector-key-material-32bytes'
-_NOW = None
 
 
 def _fixture():
