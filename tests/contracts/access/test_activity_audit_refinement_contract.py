@@ -284,3 +284,36 @@ def test_activity_source_link_to_delivery_requires_permission_and_exact_committe
     assert "url_for('notification_channels.index', tab='delivery', delivery_event_key=delivery_key)" in links
     assert 'can_view_deliveries: bool = False' in links
     assert 'Never infer delivery from a shared domain' in links
+
+def test_activity_audit_administrative_source_scope_is_read_only_and_permission_bound() -> None:
+    routes = read('app/access/activity_audit/routes.py')
+    source = read('app/access/activity_audit/administrative_sources.py')
+    page = read('app/templates/access/activity_audit/index.html')
+    partial = read('app/templates/access/activity_audit/partials/_administrative_evidence.html')
+
+    assert "@bp.get('/administrative-evidence')" in routes
+    assert "current_user.has_permission('jobs.view')" in routes
+    assert "current_user.has_permission('tenant.manage')" in routes
+    assert 'build_administrative_evidence_context(' in routes
+    assert "if evidence is None:" in routes
+    assert 'abort(403)' in routes
+    assert "response.headers['Cache-Control'] = 'no-store, max-age=0'" in routes
+    assert "'automatic-jobs': {" in source
+    assert "'tenant-sync': {" in source
+    assert "AuditEvent.action.startswith(specification['prefix'], autoescape=True)" in source
+    assert "request.headers.get('HX-History-Restore-Request') != 'true'" in routes
+    assert "AuditEvent.target_type.in_(specification['target_types'])" in source
+    assert 'paginate_query(query, page=page, per_page=5)' in source
+    assert 'if selected not in available:' in source
+    assert 'if can_view_jobs and event.target_type' in source
+    assert "job = JobExecution.query.filter_by(public_id=event.target_id).first()" in source
+    assert 'redact_operational_text(event.summary, limit=255)' in source
+    assert 'FK only (not a snapshot)' in source
+    assert 'metadata_json' not in partial
+    assert 'data-activity-evidence-source="administrative-audit-events"' in partial
+    assert 'administrative_evidence.rows' in partial
+    assert 'administrative_evidence.scope_options' in partial
+    assert 'aria-label="Separate administrative AuditEvent register"' in partial
+    assert 'hx-target="#activity-administrative-evidence"' in partial
+    assert 'No Administrative Source Evidence' in partial
+    assert '{% if administrative_evidence %}' in page

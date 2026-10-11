@@ -177,3 +177,23 @@ def test_delivery_registry_supports_exact_source_linked_event_filter() -> None:
     assert 'Delivery attempts and channel retries are provider-delivery evidence' in page
     assert 'No Matching Deliveries' in page
     assert 'No committed channel delivery matches this exact event key.' in page
+
+def test_report_delivery_source_link_is_exact_committed_and_permissioned() -> None:
+    routes = read('app/integrations/delivery/notification_channels/routes.py')
+    service = read('app/integrations/delivery/notification_channels/service.py')
+    page = read('app/templates/integrations/delivery/notification_channels/index.html')
+    producer = read('app/reports/notifications.py')
+    source_routes = read('app/reports/generated/routes.py')
+
+    assert "current_user.has_permission('reports.view')" in routes
+    assert 'can_view_reports: bool = False' in service
+    assert "'report_source_url': _report_source_url(row) if can_view_reports else None" in service
+    assert "delivery.event_type != 'report.generated'" in service
+    assert "delivery.asset_type != 'report'" in service
+    assert "delivery.event_key != f'report.generated:{report_id}'" in service
+    assert 'Report.query.filter_by(id=int(report_id)).first()' in service
+    assert "url_for('reports.generated_report_detail', report_id=report.id)" in service
+    assert "event_key=f'report.generated:{report.id}'" in producer
+    assert "@permission_required('reports.view')" in source_routes
+    assert 'delivery.report_source_url' in page
+    assert 'Open Report' in page

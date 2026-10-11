@@ -185,3 +185,36 @@ def test_service_columns_prioritize_long_identity_and_scope() -> None:
     assert 'technical_value.render(service.access_address)' in table
     assert 'table_label.status_indicator_label(service.backend.label' in table
     assert 'resource_detail_modal.detail_button(service.id' in table
+
+
+def test_configuration_columns_prioritize_object_and_scope_with_precise_compact_evidence() -> None:
+    table = read('configuration/partials/_table_content.html')
+    widths = {
+        'Configuration Object': 27,
+        'Scope': 23,
+        'Object Type': 11,
+        'Key Index & Mutation': 15,
+        'Current Pod References': 14,
+        'Details': 10,
+    }
+    assert sum(widths.values()) == 100
+    assert widths['Configuration Object'] > widths['Scope'] > widths['Key Index & Mutation']
+    for heading, width in widths.items():
+        header = table.split(f'>{heading}</th>', 1)[0].rsplit('<th', 1)[-1]
+        assert f'w-[{width}%]' in header
+
+    assert "table_ui.table_classes('min-w-[72rem] !table-fixed')" in table
+    assert 'overflow-x-auto overscroll-x-contain' in table
+    assert 'table_ui.title_cell(item.name, item.identity_supporting' in table
+    assert 'table_ui.namespaced_scope_identity(item.cluster_name' in table
+    assert "item.type_supporting if item.type == 'Secret' else 'Values not stored'" in table
+    assert 'title="{{ item.type_supporting }}"' in table
+    assert 'flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1' in table
+    assert 'table_label.status_indicator_label(item.mutation_label, item.mutation_tone)' in table
+    assert '{% if item.reference_count is none %}' in table
+    assert "{{ item.reference_count }} {{ 'Pod' if item.reference_count == 1 else 'Pods' }}" in table
+    assert 'In committed snapshot' in table
+    assert 'title="{{ item.reference_label }}"' in table
+    assert 'title="{{ item.reference_supporting }}"' in table
+    assert 'resource_detail_modal.detail_button(item.id' in table
+    assert 'hx-target="#configuration-table-content"' in table

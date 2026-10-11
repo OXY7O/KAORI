@@ -4,6 +4,7 @@ import json
 from datetime import UTC, datetime
 from typing import Any
 
+from flask import url_for
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
@@ -33,6 +34,7 @@ from app.integrations.delivery.notification_channels.providers import (
     provider_labels,
 )
 from app.models.notification_channel import NotificationChannel, NotificationDelivery
+from app.models.report import Report
 
 _PROVIDER_LABELS = provider_labels()
 _SEVERITY_RANK = {'info': 1, 'warning': 2, 'critical': 3}
@@ -165,11 +167,15 @@ def get_notification_channels_payload(
     delivery_page: int = 1,
     delivery_per_page: int = 5,
     delivery_event_key: str = '',
+    can_view_reports: bool = False,
 ) -> dict[str, Any]:
     channel_rows, channel_pagination = _channel_registry_page(page=channel_page, per_page=channel_per_page)
     normalized_delivery_key = str(delivery_event_key or '').strip()[:255]
     delivery_rows, delivery_pagination = _delivery_registry_page(
-        page=delivery_page, per_page=delivery_per_page, event_key=normalized_delivery_key
+        page=delivery_page,
+        per_page=delivery_per_page,
+        event_key=normalized_delivery_key,
+        can_view_reports=can_view_reports,
     )
     summary = notification_channel_summary()
     provider_counts = {
@@ -227,14 +233,35 @@ def _channel_registry_page(*, page: int, per_page: int) -> tuple[list[dict[str, 
 
 
 def _delivery_registry_page(
-    *, page: int, per_page: int, event_key: str = ''
+    *, page: int, per_page: int, event_key: str = '', can_view_reports: bool = False
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     query = NotificationDelivery.query
     if event_key:
         query = query.filter(NotificationDelivery.event_key == event_key)
     query = query.order_by(NotificationDelivery.created_at.desc(), NotificationDelivery.id.desc())
     rows, pagination = paginate_query(query, page=page, per_page=per_page)
-    return [_delivery_view(row) for row in rows], pagination
+    return [
+        {
+            **_delivery_view(row),
+            'report_source_url': _report_source_url(row) if can_view_reports else None,
+        }
+        for row in rows
+    ], pagination
+
+
+def _report_source_url(delivery: NotificationDelivery) -> str | None:
+    """Link only an exact source-owned event with a still-committed report."""
+    if delivery.event_type != 'report.generated' or delivery.asset_type != 'report':
+        return None
+    report_id = str(delivery.asset_key or '')
+    if not report_id.isascii() or not report_id.isdecimal() or len(report_id) > 18:
+        return None
+    if delivery.event_key != f'report.generated:{report_id}':
+        return None
+    report = Report.query.filter_by(id=int(report_id)).first()
+    if report is None:
+        return None
+    return url_for('reports.generated_report_detail', report_id=report.id)
 
 
 def _reset_channel_validation(channel: NotificationChannel) -> None:
