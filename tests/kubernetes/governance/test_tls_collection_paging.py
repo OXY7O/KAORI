@@ -117,3 +117,32 @@ def test_ingress_pagination_merges_consumer_evidence_across_pages(monkeypatch):
     ]
     assert [call['_continue'] for call in calls] == [None, 'next']
     assert all(call['_request_timeout'] == 10 for call in calls)
+
+
+def test_oversized_secret_page_fails_closed_and_scrubs_all_payloads():
+    entries = [secret(f'secret-{i}') for i in range(101)]
+    with pytest.raises(ValueError, match='oversized Secret'):
+        collector._collect_pages(
+            lambda token: page(entries),
+            lambda items: None,
+            kind='Secret',
+            scrub_secrets=True,
+        )
+    assert all(entry.data is None and entry.string_data is None for entry in entries)
+
+
+def test_ingress_missing_identity_does_not_claim_complete_mapping(monkeypatch):
+    cluster = SimpleNamespace(name='Example')
+    invalid = SimpleNamespace(
+        metadata=SimpleNamespace(namespace=None, name='missing-namespace'),
+        spec=SimpleNamespace(tls=[SimpleNamespace(secret_name='example', hosts=['api.example.com'])]),
+    )
+    monkeypatch.setattr(collector, 'build_kubernetes_client', lambda cluster: SimpleNamespace(
+        networking_api=lambda: SimpleNamespace(
+            list_ingress_for_all_namespaces=lambda **kwargs: page([invalid]),
+        ),
+    ))
+    monkeypatch.setattr(collector, 'tls_policy_for_cluster', lambda cluster: (None, False))
+    monkeypatch.setattr(collector, 'weak_tls_context', lambda **kwargs: nullcontext())
+    with pytest.raises(ValueError, match='without identity'):
+        collector.collect_ingress_tls_usage(cluster)
