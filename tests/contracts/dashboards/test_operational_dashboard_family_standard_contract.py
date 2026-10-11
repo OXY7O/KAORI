@@ -209,10 +209,11 @@ def test_capacity_metric_cards_follow_kubernetes_visual_grammar() -> None:
     assert 'percentage not applicable' in registry
     assert "operational_callout.render('Data Scope'" not in registry
     assert 'Worker capacity headroom chart' in kubernetes
-    for template in (storage, registry):
-        assert "'Capacity Decision Notes'" in template
-        assert 'Planning Check' in template
-        assert 'Evidence Handoff' in template
+    assert 'Object Storage utilization balance chart' in storage
+    assert 'progress_bar.bar(free_percent,' in storage
+    assert "'Capacity Decision Notes'" in registry
+    assert 'Planning Check' in registry
+    assert 'Evidence Handoff' in registry
 
 
 def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
