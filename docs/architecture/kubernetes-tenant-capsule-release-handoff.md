@@ -9,6 +9,46 @@ Target integration: `kaori/review/staging-uat` only. No developer check,
 pytest, Ruff, pyright, CI/CD, DAST, live API UAT, promotion or deployment until
 a separate explicit instruction.
 
+## G1 live feedback — separate complete LIST evidence from stable object identity (#1228)
+
+A `kaori-demo` independent reviewer correctly reached G1, but the exact
+SHA-bound fresh preflight repeatedly rejected the prepared handoff plan
+with **only two** changed categories: quota/limit/RBAC scope digest and
+GlobalResourceQuota scope digest. The source cause is confirmed: each
+collector SHA previously mixed object identity/policy with the
+collection-wide Kubernetes **LIST resourceVersion**. This value may move
+for independent collection activity while the current related object
+scope and content are unchanged. Even a complete **empty**
+GlobalResourceQuota collection has a moving LIST revision.
+
+The approved two-part contract is now:
+
+- **Completeness provenance (mandatory every read):** each typed scoped
+  LIST supplies a non-empty provider `metadata.resourceVersion`; bounded
+  item count, non-paginated response, exact Namespace/kind scope and every
+  observed object UID/RV/policy/retained metadata are validated and
+  recorded. An incomplete, unserved or forbidden LIST is **FAIL**.
+- **Stable G1/G2/G3 scope fingerprint:** hash exact served API version,
+  per-scope Namespace/kind/count and **every** current object UID, object
+  resourceVersion, origin class, full policy and retained metadata SHA.
+  Exclude *only the collection LIST resourceVersion*, not the resource's
+  own `metadata.resourceVersion`. Distinguish collection revision churn
+  from object drift; an object's mutation, missing/new object, changed
+  policy/ownership/spec or RBAC correlation still rejects the plan.
+- **Complete-scope dry-run:** two fresh, versioned full LIST preflights
+  around provider server dry-run are compared after stripping only the
+  collection revision fields. Exact object/owner/spec/RBAC and complete
+  list scope must still match. The live executor continues to enforce
+  independent X.509/SSR/SAR, per-object consent, UID/RV CAS PATCH and
+  full authoritative read-back with PostgreSQL START/recovery; G1 never
+  grants these authorities.
+
+Older pending G1 plans carry the previous digest contract and **must not**
+be silently rewritten or approved; original requester must use existing
+governed expiry/re-prepare policy to bind fresh evidence. The change is
+source-only under HOLD, with authored but unexecuted regression checks.
+No provider mutation, CI/CD, G2/G3 PASS, Released or Re-Adopt is claimed.
+
 ## G0 typed Kubernetes SDK inventory dispatch correction (#1229)
 
 A local `kaori-demo` preflight surfaced a retained blocker
@@ -345,11 +385,13 @@ incomplete LIST/pagination, duplicated scope, malformed spec and unbounded
 inventory create **blocking evidence**, not silent adoption.
 
 The committed result is placed in `capsule_related_inventory` for Capsule
-only (Native evidence remains unchanged). The deterministic SHA-256 of scoped
-objects **and LIST revisions** is bound into the existing Capsule Tenant
-handoff component as `capsule_related_resources_sha256`; its existing
-`handoff_fingerprint` now detects drift without changing route or database
-schema. An incomplete read never emits a trusted resource digest.
+only (Native evidence remains unchanged). The deterministic SHA-256 of exact scoped objects (including their own
+UID/resourceVersion and policy/metadata) and complete Namespace/kind/count
+coverage is bound into the existing Capsule Tenant handoff component as
+`capsule_related_resources_sha256`. Collection LIST revisions remain
+recorded **as mandatory completeness evidence**, but are not themselves
+part of the cross-request stability digest. An incomplete read never emits
+a trusted resource digest.
 
 **Remaining hard stop:** Kubernetes namespaced lists do not prove
 cluster-scoped GlobalResourceQuota variants, the exact Capsule CR-to-generated
@@ -363,9 +405,10 @@ The preview remains `dry_run_complete=false`. No provider write is introduced.
 
 `capsule_handoff_authority_inventory.py` adds **read-only, bounded**
 observation for `globalresourcequotas.capsule.clastix.io` using the served
-`v1beta2` API (with a `v1beta1` fallback only after 404). The observer binds
-the full cluster LIST resourceVersion, each CR UID/resourceVersion, SHA-256
-canonical spec and metadata, and source API version. It never clones or
+`v1beta2` API (with a `v1beta1` fallback only after 404). The observer records and validates the full cluster LIST resourceVersion
+for authoritative completeness, and SHA-binds exact CR UID/resourceVersion,
+canonical spec/metadata and served API version. The collection-wide LIST
+revision is not included in the cross-request scope digest. It never clones or
 updates quota. Missing CRD, partial/paginated/oversized LISTs, malformed
 specs or unsupported tenant selector expressions fail closed. Foreign quota
 objects are fingerprinted without claiming their management.

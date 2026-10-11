@@ -15,7 +15,8 @@ from app.kubernetes.tenant.capsule_handoff_dry_run import (
     preview_capsule_handoff_scope, preview_capsule_related_handoff_with_provider,
 )
 from app.kubernetes.tenant.capsule_handoff_related_inventory import (
-    _get, _strings, classify_capsule_related_resource,
+    _get, _strings, capsule_related_scope_unchanged,
+    classify_capsule_related_resource,
 )
 from app.kubernetes.tenant.capsule_handoff_contract import _RELATED_TRANSFER_LABELS
 from app.kubernetes.tenant.capsule_handoff_worklist import build_capsule_handoff_worklist
@@ -218,16 +219,23 @@ def preview_capsule_release_namespace_committed(
         provider=provider, plan=plan,
         related=fresh['capsule_related_inventory'],
     )
-    # Provider-owned CR, foreign objects and cluster-scoped GlobalResourceQuota
-    # are preserved by a second complete authoritative preflight. Any changed
-    # LIST, RBAC lineage, UID/RV or scope fails closed, not a partial PASS.
+    # Repeat complete provider LISTs and exact object evidence after dry-run.
+    # A collection LIST RV may advance for unrelated apiserver activity;
+    # require both complete versioned LISTs but compare object-scoped UID/RV,
+    # policy/metadata SHA, count, warnings, cluster quota and RBAC lineage.
     after = review_tenant_release_preflight_committed(
         tenant_id=tenant_id, actor_user_id=actor_user_id,
     )
-    if any(after.get(field) != fresh.get(field) for field in (
-        'live_provider_identity', 'handoff_fingerprint',
-        'handoff_components', 'capsule_related_inventory', 'dependency_counts',
-    )):
+    if (
+        any(after.get(field) != fresh.get(field) for field in (
+            'live_provider_identity', 'handoff_fingerprint',
+            'handoff_components', 'dependency_counts',
+        ))
+        or not capsule_related_scope_unchanged(
+            fresh.get('capsule_related_inventory'),
+            after.get('capsule_related_inventory'),
+        )
+    ):
         raise ValueError('Capsule provider changed during complete-scope dry-run; refresh Release preflight.')
     complete_worklist = build_capsule_handoff_worklist(
         plan=plan, related=fresh['capsule_related_inventory'],

@@ -77,7 +77,7 @@ def test_cluster_scoped_quotas_read_only_bounded_and_sha_bound():
     assert 'foreign.example/retained' not in str(evidence)
 
 
-def test_global_quota_digest_tracks_full_policy_object_and_list_revision():
+def test_global_quota_digest_tracks_exact_objects_but_not_volatile_collection_revision():
     obj = _quota()
     original = observe_capsule_global_quotas(custom=_Custom(items=[obj]), tenant_name='demo')
     drift = deepcopy(obj)
@@ -87,7 +87,16 @@ def test_global_quota_digest_tracks_full_policy_object_and_list_revision():
     updated_rv = observe_capsule_global_quotas(
         custom=_Custom(items=[obj], version='8'), tenant_name='demo',
     )
-    assert original['scope_sha256'] != updated_rv['scope_sha256']
+    assert original['scope_sha256'] == updated_rv['scope_sha256']
+    assert original['list_resource_version'] == '7'
+    assert updated_rv['list_resource_version'] == '8'
+    # Per-object UID/RV still changes the handoff plan fingerprint.
+    object_revision = deepcopy(obj)
+    object_revision['metadata']['resourceVersion'] = '4'
+    changed_object = observe_capsule_global_quotas(
+        custom=_Custom(items=[object_revision]), tenant_name='demo',
+    )
+    assert original['scope_sha256'] != changed_object['scope_sha256']
     shuffled = deepcopy(obj)
     shuffled['spec'] = dict(reversed(list(shuffled['spec'].items())))
     assert original['scope_sha256'] == observe_capsule_global_quotas(

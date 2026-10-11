@@ -206,6 +206,56 @@ def test_capsule_g1_approval_changed_identity_is_never_accepted_by_safe_diagnost
     )
 
 
+def test_capsule_g1_plan_fingerprint_stays_identical_when_only_list_rvs_advance():
+    """Two complete provider LISTs may have new collection revisions, not new objects."""
+    from copy import deepcopy
+    from app.kubernetes.tenant.capsule_handoff_related_inventory import (
+        capsule_related_scope_sha256,
+    )
+
+    snapshot = _capsule_g1_snapshot()
+    related = snapshot['capsule_related_inventory']
+    related['list_snapshots'] = [
+        {
+            'namespace': 'sandbox', 'kind': kind,
+            'list_resource_version': 'list-100', 'count': 0,
+        }
+        for kind in ('ResourceQuota', 'LimitRange', 'RoleBinding')
+    ]
+    related['resource_sha256'] = capsule_related_scope_sha256(
+        resources=related['resources'], list_snapshots=related['list_snapshots'],
+    )
+    cr = snapshot['handoff_components'][0]
+    cr['capsule_related_resources_sha256'] = related['resource_sha256']
+    cr['capsule_related_resources_count'] = '0'
+    shared = {'api_version': 'v1beta2', 'resources': []}
+    related['global_quota'].update({
+        'status': 'observed_not_handoff_authorized',
+        'served_version': 'v1beta2', 'resources': [],
+        'count': 0, 'list_resource_version': 'global-100',
+        'scope_sha256': _digest(shared),
+    })
+    cr['capsule_shared_quota_sha256'] = related['global_quota']['scope_sha256']
+    snapshot['handoff_fingerprint'] = handoff_fingerprint(snapshot['handoff_components'])
+    _can_confirm_plan(snapshot)
+    prepared = _plan_from_snapshot(snapshot)
+
+    fresh = deepcopy(snapshot)
+    for row in fresh['capsule_related_inventory']['list_snapshots']:
+        row['list_resource_version'] = 'list-200'
+    fresh['capsule_related_inventory']['global_quota']['list_resource_version'] = 'global-200'
+    _can_confirm_plan(fresh)
+    assert fresh['handoff_fingerprint'] == prepared['handoff_fingerprint']
+    assert fresh['live_provider_identity'] == prepared['provider_identity']
+    assert fresh['handoff_components'] == snapshot['handoff_components']
+    assert _plan_hash(prepared) == prepared['plan_sha256']
+    # The preview/executor still reject object identity, policy or owner drift.
+    drift = deepcopy(fresh)
+    drift['handoff_components'][0]['resource_version'] = 'source-mutated'
+    drift['handoff_fingerprint'] = handoff_fingerprint(drift['handoff_components'])
+    assert drift['handoff_fingerprint'] != prepared['handoff_fingerprint']
+
+
 def test_capsule_g1_can_consent_to_known_executor_origin_obligation_only():
     # Independent consent is not a G2/G3 permission to PATCH or Release.
     _can_confirm_plan(_capsule_g1_snapshot())
