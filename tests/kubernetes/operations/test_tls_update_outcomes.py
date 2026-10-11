@@ -101,6 +101,14 @@ def _load_updates(monkeypatch: pytest.MonkeyPatch, *, commit_error: bool = False
         (),
         {'query': SimpleNamespace(get=lambda cluster_id: None)},
     )
+    original_get = session.get
+
+    def get_with_collected_mapping(model, identifier):
+        if model is models.TLSCertificateCollectionState:
+            return SimpleNamespace(ingress_mapping_status='collected')
+        return original_get(model, identifier)
+
+    session.get = get_with_collected_mapping
     models.TLSCertificateInventory = Inventory
     models.TLSCertificateUpdateEvent = Event
     models.User = type('User', (), {})
