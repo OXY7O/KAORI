@@ -995,7 +995,7 @@ def _bucket_empty_state(total_committed_assets: int, snapshot: dict[str, Any]) -
         return {
             'label': 'Collection Pending',
             'title': 'No Buckets or Containers Collected Yet',
-            'description': 'Run Object Storage Inventory Sync after the registered provider is Ready.',
+            'description': 'Run Object Storage Inventory Sync from Job Execution after the registered provider is Ready.',
             'icon': 'database-zap',
         }
     if snapshot.get('coverage_tone') != 'normal':
