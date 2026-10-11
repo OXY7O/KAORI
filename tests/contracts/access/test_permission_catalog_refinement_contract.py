@@ -242,7 +242,7 @@ def test_permission_catalog_detail_uses_count_free_shared_modal_hierarchy() -> N
     assert 'sm:border-r' in shared
     assert 'gap-x-6 gap-y-3' in shared
     assert "('Role Mapping', 'Mapped' if permission.role_count else 'Unassigned', '')" in detail
-    assert "('Active Usage', 'In Use' if permission.active_user_count else 'No Active Users', '')" in detail
+    assert "('Active Usage', 'In Use' if permission.active_user_count else 'No Effective Users', '')" in detail
     assert "('JIT Projection', 'Configured' if permission.jit_provider_count else 'Not Configured', '')" in detail
     assert "('Requires', 'Present' if effective_requires else 'None', '')" in detail
     assert "('Control Module', permission.module_label" not in detail
@@ -295,10 +295,37 @@ def test_permission_catalog_detail_uses_count_free_shared_modal_hierarchy() -> N
     assert '{{ role.active_user_count }}' not in detail
     assert '{{ role.jit_provider_count }}' not in detail
     assert "badge='Mapped' if role_rows else 'Unassigned'" in detail
-    assert "'In Use' if role.active_user_count else 'No Active Users'" in detail
+    assert "'In Use' if role.active_user_count else 'No Effective Users'" in detail
     assert "'Configured' if role.jit_provider_count else 'Not Configured'" in detail
     assert 'permission.key' in detail
     assert 'permission.delegation_tier' in detail
     assert 'permission.state_key' in detail
     assert 'requires' in detail and 'required_by' in detail
     assert 'Permission Catalog never mutates or synchronizes the RBAC registry during HTTP GET requests.' in detail
+
+
+def test_permission_effective_usage_excludes_inactive_role_assignments() -> None:
+    """Active membership through an inactive role must not claim active access."""
+    from types import SimpleNamespace
+
+    from app.access.permissions.service import _role_impact
+
+    active_user = SimpleNamespace(id=101, is_active=True)
+    inactive_role_only_user = SimpleNamespace(id=202, is_active=True)
+    inactive_user = SimpleNamespace(id=303, is_active=False)
+    active_role = SimpleNamespace(id=11, is_active=True, users=[active_user, active_user, inactive_user])
+    disabled_role = SimpleNamespace(id=12, is_active=False, users=[inactive_role_only_user, active_user])
+    enabled_jit_provider = SimpleNamespace(id=55)
+
+    assert _role_impact(
+        [disabled_role], enabled_jit_providers_by_role={12: [enabled_jit_provider]}
+    ) == {'active_user_count': 0, 'jit_provider_count': 1}
+    assert _role_impact(
+        [active_role, disabled_role], enabled_jit_providers_by_role={}
+    ) == {'active_user_count': 1, 'jit_provider_count': 0}
+    assert _role_impact([active_role], enabled_jit_providers_by_role={})[
+        'active_user_count'
+    ] == 1
+    assert _role_impact([], enabled_jit_providers_by_role={})[
+        'active_user_count'
+    ] == 0

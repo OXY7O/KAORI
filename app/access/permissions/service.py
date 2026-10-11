@@ -79,7 +79,15 @@ def _role_impact(
     *,
     enabled_jit_providers_by_role: dict[int, list[IdentityProvider]],
 ) -> dict[str, int]:
-    active_user_ids = {int(user.id) for role in roles for user in role.users if user.id is not None and user.is_active}
+    # Role membership alone is not effective access. An inactive role is
+    # denied by User.has_permission(), even when its members are active.
+    active_user_ids = {
+        int(user.id)
+        for role in roles
+        if role.is_active
+        for user in role.users
+        if user.id is not None and user.is_active
+    }
     jit_provider_ids = {
         int(provider.id)
         for role in roles

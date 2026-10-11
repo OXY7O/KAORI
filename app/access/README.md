@@ -82,6 +82,8 @@ This Roles & Access presentation is part of Access Final Lock v1. RBAC seed/conv
 
 ## Permission Catalog review status
 
+The permission **Active Usage** projection counts unique active users only through **active mapped roles**, consistent with the inactive-role denial enforced by `User.has_permission()`. Permission role-mapping counts retain inactive roles as mapping evidence. Enabled JIT provider defaults remain separate configuration evidence, not proof of active effective user access. The registry and detail label this projection **Effective Users** and **No Effective Users**, not all users assigned to a role or break-glass authority.
+
 Permission Registry and Role Coverage use the existing `table_registry.filter_form`, `clear_filters_link`, and `footer` interaction contract against the server-owned `#permission-workspace` response. Filter changes reset to page 1; the shared HTMX latest-request-wins synchronization, GET fallback, push-history, loading indication, Clear Filters, numeric pagination, and Rows 5/10/25/50 remain canonical. The Rows form excludes a duplicate hidden `per_page` value so the selected size is authoritative. No local JavaScript is added.
 
 
