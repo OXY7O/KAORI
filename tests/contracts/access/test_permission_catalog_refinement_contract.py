@@ -214,6 +214,24 @@ def test_permission_detail_modal_supports_string_permission_keys() -> None:
     assert 'h-auto max-h-[calc(100dvh-1rem)]' in modal
 
 
+def test_permission_delegation_authority_shares_evidence_column_alignment() -> None:
+    detail = read('app/templates/access/permissions/partials/_permission_detail.html')
+
+    # Shared inventory_section controls section padding. A nested Violet
+    # border/padding shifts Authority to the right of adjacent evidence rows.
+    assert '<div class="min-w-0 max-w-3xl" data-kaori-permission-policy>' in detail
+    authority = detail.split('data-kaori-permission-policy>', 1)[1].split(
+        '{% endcall %}', 1
+    )[0]
+    assert 'border-l-2' not in authority
+    assert 'pl-3.5' not in authority
+    assert '<p class="text-xs font-semibold text-content-secondary">Authority</p>' in authority
+    assert 'Only the Local Database Super Admin break-glass authority' in authority
+    assert 'Non-Super Admin delegation requires this permission' in authority
+    assert '<div class="min-w-0 max-w-3xl" data-kaori-permission-registry-facts>' in detail
+    Environment().parse(detail)
+
+
 def test_permission_catalog_detail_uses_count_free_shared_modal_hierarchy() -> None:
     workspace = read('app/templates/access/permissions/partials/_workspace.html')
     detail = read('app/templates/access/permissions/partials/_permission_detail.html')
@@ -259,7 +277,8 @@ def test_permission_catalog_detail_uses_count_free_shared_modal_hierarchy() -> N
     assert 'data-kaori-permission-dependency-facts' in detail
     assert 'data-kaori-permission-policy' in detail
     assert 'data-kaori-permission-registry-facts' in detail
-    assert 'border-l-2 border-brand-outline' in detail
+    assert '<div class="min-w-0 max-w-3xl" data-kaori-permission-policy>' in detail
+    assert 'border-l-2 border-brand-outline pl-3.5' not in detail
     assert "table_ui.table_classes('min-w-[32rem]')" in detail
     assert "table_ui.table_classes('min-w-[38rem]')" not in detail
     assert detail.count("detail_ui.inventory_section(") == 5
