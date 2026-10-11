@@ -181,3 +181,7 @@ Activate, Deactivate, Restore, Delete, and Local Database administrative Reset P
 ## User Create/Edit database failure feedback
 
 User Create/Edit services remain the sole transaction owner and atomically persist the user with administrative audit evidence. Unique username/email conflicts retain dedicated form errors; other `SQLAlchemyError` failures are rolled back by the service and translated by the route into sanitized retry guidance on the existing form, without leaking server diagnostics or fabricating a successful account change. CSRF, role delegation, local credential ownership and the User Edit committed-version check remain unchanged.
+
+## User Directory canonical registry interaction
+
+User Directory retains `#users-page-content` for mutation feedback, domain summary and out-of-band Hero/toast refresh. The standalone `#user-directory` surface owns only search, account state, identity source, role, Clear Filters, Rows and pagination via the approved `table_registry.filter_form`, `clear_filters_link`, and `footer` macros. These registry GETs return only the directory fragment, preserving the canonical latest-request-wins synchronization, loading indicator, query history, default five rows and 5/10/25/50 options. `per_page` is not duplicated in the Rows form. HTMX history restore and ordinary browser navigation return a full page; user lifecycle HTMX actions continue to refresh the full users-page-content and OOB Hero/toast. User detail expansion, action permission guards, CSRF and soft deletion remain unchanged.
