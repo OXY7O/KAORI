@@ -52,7 +52,7 @@ from app.kubernetes.tenant.capsule_platform_admin_authority import (
 from app.kubernetes.tenant.capsule_successor_acceptance import require_current_capsule_acceptance
 from app.kubernetes.tenant.native_platform_admin_authority import require_platform_admin_actor
 from app.kubernetes.tenant.release_handoff_approval import (
-    _capsule_g1_only_origin_obligation, _checked_recently, _plan_hash,
+    _can_confirm_plan, _capsule_g1_only_origin_obligation, _checked_recently, _plan_hash,
     latest_release_handoff_approval, latest_release_handoff_plan,
 )
 from app.kubernetes.tenant.release_preflight import (
@@ -120,8 +120,6 @@ def _exact_current_scope(
         or preflight.get('live_provider_identity') != plan.get('provider_identity')
         or preflight.get('dependency_counts') != plan.get('dependency_counts')
         or not isinstance(preflight.get('blockers'), list)
-        or any(not _capsule_g1_only_origin_obligation(preflight, reason)
-               for reason in preflight['blockers'])
         or related.get('global_quota', {}).get('blockers')
         or related.get('rbac_lineage', {}).get('blockers')
         or not isinstance(related.get('blockers'), list)
@@ -129,6 +127,9 @@ def _exact_current_scope(
                for warning in related['blockers'])
     ):
         raise ValueError('Capsule approved provider identity, RBAC or dependencies drifted.')
+    # Approved G1 explicitly tolerates only canonical handoff obligations
+    # (including managed allocations) while rejecting *other* blockers.
+    _can_confirm_plan(preflight)
     worklist = build_capsule_handoff_worklist(plan=plan, related=related)
     if (
         worklist['inventory_sha256'] != expected_worklist_sha256
@@ -457,10 +458,6 @@ def execute_capsule_handoff_committed(
             else:
                 record = next(x for x in related['resources']
                               if (x['namespace'], x['kind'], x['name']) == key)
-                keys = [
-                    op['path'].replace('~1', '/') for op in ops
-                    if op['op'] == 'remove'
-                ]
                 # Reconstruct the original approved label-key set, never take
                 # mutation keys from a dry-run response.
                 labels = _strings(_get(_get(before, 'metadata'), 'labels'), label='labels')
