@@ -40,6 +40,8 @@ from app.kubernetes.tenant.release_preflight import latest_tenant_release_prefli
 from app.kubernetes.tenant.capsule_successor_acceptance import (
     require_current_capsule_acceptance,
 )
+from app.models.audit import AuditEvent
+from app.models.capsule_handoff_ledger import CapsuleHandoffLedgerEvent
 from app.models.capsule_handoff_proof import (
     CapsuleHandoffAuditBatch, CapsuleHandoffResourceConsentRecord,
 )
