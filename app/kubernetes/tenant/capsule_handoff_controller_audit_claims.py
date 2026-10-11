@@ -16,7 +16,7 @@ from uuid import UUID
 from app.kubernetes.tenant.capsule_handoff_related_inventory import _digest
 
 _SHA = re.compile(r'[a-f0-9]{64}\Z')
-_MAX_CLAIMS = 300
+_MAX_CLAIMS = 330
 _FIELDS = frozenset({
     'source', 'audit_id', 'event_at', 'stage', 'verb',
     'cluster_id', 'tenant_id', 'kind', 'namespace', 'name',
