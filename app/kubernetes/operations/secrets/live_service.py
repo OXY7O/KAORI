@@ -140,7 +140,7 @@ def list_live_namespaces(
     cluster = get_cluster(normalized)
     try:
         with weak_tls_context(enabled=tls_policy_for_cluster(cluster)[1]):
-            response = cast(V1NamespaceList, core_api(cluster).list_namespace())
+            response = cast(V1NamespaceList, core_api(cluster).list_namespace(_request_timeout=10))
     except ApiException as exc:
         raise _api_error(exc, 'namespace lookup') from exc
     except ConfigException as exc:
@@ -163,7 +163,7 @@ def verify_live_namespace(cluster: Cluster, namespace: str | None) -> str:
     normalized = validate_resource_name(namespace, 'Namespace', namespace=True)
     try:
         with weak_tls_context(enabled=tls_policy_for_cluster(cluster)[1]):
-            core_api(cluster).read_namespace(name=normalized)
+            core_api(cluster).read_namespace(name=normalized, _request_timeout=10)
     except ApiException as exc:
         raise _api_error(exc, 'namespace verification') from exc
     except ConfigException as exc:
@@ -195,7 +195,7 @@ def list_verified_namespaces(
             api = core_api(cluster)
             for namespace in candidates:
                 try:
-                    api.read_namespace(name=namespace)
+                    api.read_namespace(name=namespace, _request_timeout=10)
                 except ApiException as exc:
                     status = getattr(exc, 'status', None)
                     if status == 404:
@@ -242,45 +242,60 @@ def list_live_secrets(
         'Namespace',
         namespace=True,
     )
-    response: V1SecretList | None = None
+    options: list[LiveSecretOption] = []
+    continuation: str | None = None
+    seen_tokens: set[str] = set()
+    # Keep every response bounded; never silently return a truncated selector
+    # as though the result represented the full live Kubernetes namespace.
     try:
         with weak_tls_context(enabled=tls_policy_for_cluster(cluster)[1]):
-            response = cast(
-                V1SecretList,
-                core_api(cluster).list_namespaced_secret(
-                    namespace=normalized_namespace,
-                    _request_timeout=10,
-                ),
-            )
-        options: list[LiveSecretOption] = []
-        for item in response.items or []:
-            name = getattr(getattr(item, 'metadata', None), 'name', None)
-            secret_type = str(getattr(item, 'type', None) or 'Opaque')
-            if not name:
-                continue
-            if supported_types is not None and secret_type not in supported_types:
-                continue
-            if blocked_types is not None and secret_type in blocked_types:
-                continue
-            options.append(
-                LiveSecretOption(
-                    name=name,
-                    secret_type=secret_type,
-                    immutable=bool(getattr(item, 'immutable', False)),
-                )
-            )
-        return sorted(options, key=lambda item: item.name)
+            api = core_api(cluster)
+            for _ in range(100):
+                response: V1SecretList | None = None
+                try:
+                    response = cast(
+                        V1SecretList,
+                        api.list_namespaced_secret(
+                            namespace=normalized_namespace,
+                            limit=100,
+                            _continue=continuation,
+                            _request_timeout=10,
+                        ),
+                    )
+                    for item in response.items or []:
+                        name = getattr(getattr(item, 'metadata', None), 'name', None)
+                        secret_type = str(getattr(item, 'type', None) or 'Opaque')
+                        if not name:
+                            continue
+                        if supported_types is not None and secret_type not in supported_types:
+                            continue
+                        if blocked_types is not None and secret_type in blocked_types:
+                            continue
+                        options.append(
+                            LiveSecretOption(
+                                name=name,
+                                secret_type=secret_type,
+                                immutable=bool(getattr(item, 'immutable', False)),
+                            )
+                        )
+                    continuation = str(getattr(getattr(response, 'metadata', None), '_continue', None) or '')
+                finally:
+                    # Scrub each response page, including when parsing fails.
+                    if response is not None:
+                        for item in response.items or []:
+                            scrub_secret_payload(item)
+                if not continuation:
+                    return sorted(options, key=lambda item: item.name)
+                if continuation in seen_tokens:
+                    raise ValueError('Kubernetes repeated a Secret list continuation token; target selection stopped.')
+                seen_tokens.add(continuation)
+        raise ValueError('Too many live Secrets to load safely. Narrow the operation namespace.')
     except ApiException as exc:
         raise _api_error(exc, 'list operation') from exc
     except ConfigException as exc:
         raise ValueError('The selected cluster kubeconfig is invalid or incomplete.') from exc
     except (OSError, Urllib3HTTPError) as exc:
         raise _connection_error('list operation') from exc
-    finally:
-        if response is not None:
-            for item in response.items or []:
-                scrub_secret_payload(item)
-
 
 def read_live_secret(
     cluster_id: str | None,
