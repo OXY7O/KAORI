@@ -36,7 +36,13 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
     selected_asset_key = _selected_asset_key(args, assets, domain=domain)
     scope_invalid = selected_asset_key == _INVALID_REGISTRY_SCOPE
     if scope_invalid:
-        assets.append({'value': _INVALID_REGISTRY_SCOPE, 'label': 'Unavailable Registry Provider', 'environment': 'Select an active provider'})
+        assets.append(
+            {
+                'value': _INVALID_REGISTRY_SCOPE,
+                'label': 'Unavailable Registry Provider',
+                'environment': 'Select an active provider',
+            }
+        )
     selected_asset_name = next(
         (row['label'] for row in assets if row['value'] == selected_asset_key),
         'All Managed Assets',
@@ -137,7 +143,9 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
             'closed': sum(case.workflow_state == 'closed' for case in history_cases),
             'false_positive': sum(case.closure_reason == 'false_positive' for case in history_cases),
             'accepted_risk': sum(case.closure_reason == 'accepted_risk' for case in history_cases),
-            'delivery_failures': 0 if scope_invalid else _delivery_failure_count(domain=domain, asset_key=selected_asset_key),
+            'delivery_failures': (
+                0 if scope_invalid else _delivery_failure_count(domain=domain, asset_key=selected_asset_key)
+            ),
             'postmortem_required': sum(case.postmortem_status in {'required', 'draft'} for case in history_cases),
             'routing_policies': len(all_routing),
             'channels': channel_summary.get('eligible', 0),
