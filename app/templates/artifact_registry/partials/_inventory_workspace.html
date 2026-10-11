@@ -100,6 +100,28 @@
             {% endif %}
             <section id="artifact-registry-inventory-table"
                      class="{{ table_ui.block_classes() }}">
+                {% set registry_title_tip %}
+                    {% if inventory.resource == 'projects' %}
+        {{ info_tip.render('registry-inventory-projects-title', 'Projects Inventory Guide', 'Definitions of fields shown in the committed Registry inventory.', items=[
+            'Project Visibility: Public projects may be readable without project membership; Private projects require provider-side access. The value is observed provider metadata, not a KAORI access decision.',
+            'Project Repositories: Number of repositories observed inside this Registry project in the committed snapshot; not a live provider count.',
+            'Project Last Observed: Latest committed inventory observation for this project. A timestamp does not establish current provider health.'
+        ], placement='right') }}
+                    {% elif inventory.resource == 'repositories' %}
+        {{ info_tip.render('registry-inventory-repositories-title', 'Repositories Inventory Guide', 'Definitions of fields shown in the committed Registry inventory.', items=[
+            'Repository Artifacts: Count of artifact identities observed for this repository in committed Registry inventory.',
+            'Repository Pulls: Provider-reported pull count when available; Not Collected is different from zero downloads.',
+            'Repository Last Observed: Latest committed repository observation, not an on-demand Registry request.'
+        ], placement='right') }}
+                    {% else %}
+        {{ info_tip.render('registry-inventory-artifacts-title', 'Artifacts Inventory Guide', 'Definitions of fields shown in the committed Registry inventory.', items=[
+            'Artifact Digest: Content-addressed artifact identifier such as sha256. Tags may change, but digest identifies a specific manifest.',
+            'Artifact Tags: Human-readable artifact references reported by the Registry provider; an artifact may have multiple tags or none.',
+            'Artifact Type: Provider-reported artifact/package format or media type, not a security or compliance classification.',
+            'Artifact Last Observed: Latest committed observation of this artifact. It is not proof the artifact is currently present or scanned.'
+        ], placement='right') }}
+                    {% endif %}
+                {% endset %}
                 {{ table_ui.inventory_block_header(inventory.resource_icon,
                                 inventory.resource_label ~ ' Inventory',
                                 inventory.resource_description,
@@ -108,7 +130,7 @@
                                 none,
                                 none,
                                 header_actions=inventory_header_actions,
-                                title_extra=result_badge) }}
+                                title_extra=registry_title_tip ~ result_badge) }}
                 <div id="artifact-registry-inventory-content">
                     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
                         {% call registry.filter_form(
@@ -175,9 +197,9 @@
                                     <tr>
                                         <th class="{{ table_ui.header_cell_classes() }}">Project</th>
                                         <th class="{{ table_ui.header_cell_classes() }}">Provider</th>
-                                        <th class="{{ table_ui.header_cell_classes() }}"><span class="inline-flex items-center gap-1">Visibility {{ info_tip.render('registry-inventory-projects-visibility', 'Project Visibility', 'Public projects may be readable without project membership; Private projects require provider-side access. The value is observed provider metadata, not a KAORI access decision.', placement='right') }}</span></th>
-                                        <th class="{{ table_ui.header_cell_classes() }}"><span class="inline-flex items-center gap-1">Repositories {{ info_tip.render('registry-inventory-projects-repositories', 'Project Repositories', 'Number of repositories observed inside this Registry project in the committed snapshot; not a live provider count.', placement='right') }}</span></th>
-                                        <th class="{{ table_ui.header_cell_classes() }}"><span class="inline-flex items-center gap-1">Last Observed {{ info_tip.render('registry-inventory-projects-last-observed', 'Project Last Observed', 'Latest committed inventory observation for this project. A timestamp does not establish current provider health.', placement='right') }}</span></th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Visibility</th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Repositories</th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Last Observed</th>
                                         <th class="{{ table_ui.header_cell_classes(true) }}">Details</th>
                                     </tr>
                                 </thead>
@@ -234,9 +256,9 @@
                                     <tr>
                                         <th class="{{ table_ui.header_cell_classes() }}">Repository</th>
                                         <th class="{{ table_ui.header_cell_classes() }}">Provider</th>
-                                        <th class="{{ table_ui.header_cell_classes() }}"><span class="inline-flex items-center gap-1">Artifacts {{ info_tip.render('registry-inventory-repositories-artifacts', 'Repository Artifacts', 'Count of artifact identities observed for this repository in committed Registry inventory.', placement='right') }}</span></th>
-                                        <th class="{{ table_ui.header_cell_classes() }}"><span class="inline-flex items-center gap-1">Pulls {{ info_tip.render('registry-inventory-repositories-pulls', 'Repository Pulls', 'Provider-reported pull count when available; Not Collected is different from zero downloads.', placement='right') }}</span></th>
-                                        <th class="{{ table_ui.header_cell_classes() }}"><span class="inline-flex items-center gap-1">Last Observed {{ info_tip.render('registry-inventory-repositories-last-observed', 'Repository Last Observed', 'Latest committed repository observation, not an on-demand Registry request.', placement='right') }}</span></th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Artifacts</th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Pulls</th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Last Observed</th>
                                         <th class="{{ table_ui.header_cell_classes(true) }}">Details</th>
                                     </tr>
                                 </thead>
@@ -284,13 +306,13 @@
                             {% else %}
                                 <thead class="{{ table_ui.head_classes() }}">
                                     <tr>
-                                        <th class="{{ table_ui.header_cell_classes() }}"><span class="inline-flex items-center gap-1">Digest {{ info_tip.render('registry-inventory-artifacts-digest', 'Artifact Digest', 'Content-addressed artifact identifier such as sha256. Tags may change, but digest identifies a specific manifest.', placement='right') }}</span></th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Digest</th>
                                         <th class="{{ table_ui.header_cell_classes() }}">Repository</th>
                                         <th class="{{ table_ui.header_cell_classes() }}">Provider</th>
-                                        <th class="{{ table_ui.header_cell_classes() }}"><span class="inline-flex items-center gap-1">Tags {{ info_tip.render('registry-inventory-artifacts-tags', 'Artifact Tags', 'Human-readable artifact references reported by the Registry provider; an artifact may have multiple tags or none.', placement='right') }}</span></th>
-                                        <th class="{{ table_ui.header_cell_classes() }}"><span class="inline-flex items-center gap-1">Type {{ info_tip.render('registry-inventory-artifacts-type', 'Artifact Type', 'Provider-reported artifact/package format or media type, not a security or compliance classification.', placement='right') }}</span></th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Tags</th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Type</th>
                                         <th class="{{ table_ui.header_cell_classes() }}">Size</th>
-                                        <th class="{{ table_ui.header_cell_classes() }}"><span class="inline-flex items-center gap-1">Last Observed {{ info_tip.render('registry-inventory-artifacts-last-observed', 'Artifact Last Observed', 'Latest committed observation of this artifact. It is not proof the artifact is currently present or scanned.', placement='right') }}</span></th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Last Observed</th>
                                         <th class="{{ table_ui.header_cell_classes(true) }}">Details</th>
                                     </tr>
                                 </thead>
