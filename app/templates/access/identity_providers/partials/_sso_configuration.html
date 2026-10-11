@@ -33,7 +33,7 @@
             <label class="block min-w-0">
                 <span class="text-sm font-semibold text-content-primary">{{ form.client_secret_env.label.text }}</span>
                 {{ form.client_secret_env(class_='mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', placeholder=selected_definition.client_secret_placeholder if browser_selected else 'KAORI_IDP_CLIENT_SECRET', data_client_secret_input='true') }}
-                <span class="mt-2 block text-xs leading-5 text-content-muted">Enter the environment-variable name. KAORI resolves the secret at runtime and never stores its value.</span>
+                <span class="mt-2 block text-xs leading-5 text-content-muted">Enter the variable name; KAORI loads the secret at runtime without storing it.</span>
                 {% for error in form.client_secret_env.errors %}
                     <span class="mt-1 block text-xs font-medium text-status-critical">{{ error }}</span>
                 {% endfor %}
