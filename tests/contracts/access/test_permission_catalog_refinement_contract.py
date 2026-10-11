@@ -149,3 +149,44 @@ def test_permission_detail_modal_supports_string_permission_keys() -> None:
     modal = read('app/templates/components/resource_detail_modal.html')
     assert 'content_driven=false' in modal
     assert 'h-auto max-h-[calc(100dvh-1rem)]' in modal
+
+
+def test_permission_catalog_detail_uses_count_free_shared_modal_hierarchy() -> None:
+    workspace = read('app/templates/access/permissions/partials/_workspace.html')
+    detail = read('app/templates/access/permissions/partials/_permission_detail.html')
+    shared = read('app/templates/components/details/_detail_content.html')
+
+    assert "('registry', 'Permission Registry', 'list-tree', url_for('access.permissions.index', view='registry'))" in workspace
+    assert "('coverage', 'Role Coverage', 'table-properties', url_for('access.permissions.index', view='coverage'))" in workspace
+    assert 'summary.canonical_permissions' not in workspace
+    assert 'roles|length' not in workspace
+    assert 'framed_tabs.render_navigation(' in workspace
+
+    # Preserve the canonical modal and extracted shared summary boundary.
+    assert 'data-resource-detail-header' in detail
+    assert 'data-kaori-detail-variant="full-workspace-modal"' in detail
+    assert 'detail_ui.summary_strip([' in detail
+    assert 'data-resource-detail-summary' in shared
+    assert "('Role Mapping', 'Mapped' if permission.role_count else 'Unassigned'" in detail
+    assert "('Active Usage', 'In Use' if permission.active_user_count else 'No Active Users'" in detail
+    assert "('JIT Projection', 'Configured' if permission.jit_provider_count else 'Not Configured'" in detail
+    assert "('Requires', 'Present' if effective_requires else 'None'" in detail
+    assert "('Control Module', permission.module_label" not in detail
+    assert 'lg:grid-cols-2' in detail
+    assert 'lg:col-span-2' in detail
+
+    # Keep source-derived semantics, but never render count badges or numeric KPIs in the detail.
+    assert 'permission.role_count ~' not in detail
+    assert '{{ permission.role_count }}' not in detail
+    assert '{{ permission.active_user_count }}' not in detail
+    assert '{{ permission.jit_provider_count }}' not in detail
+    assert '{{ role.active_user_count }}' not in detail
+    assert '{{ role.jit_provider_count }}' not in detail
+    assert "table_label.status_label('Mapped' if role_rows else 'Unassigned'" in detail
+    assert "'In Use' if role.active_user_count else 'No Active Users'" in detail
+    assert "'Configured' if role.jit_provider_count else 'Not Configured'" in detail
+    assert 'permission.key' in detail
+    assert 'permission.delegation_tier' in detail
+    assert 'permission.state_key' in detail
+    assert 'requires' in detail and 'required_by' in detail
+    assert 'Permission Catalog never mutates or synchronizes the RBAC registry during HTTP GET requests.' in detail

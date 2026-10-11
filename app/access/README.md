@@ -89,6 +89,8 @@ The catalog owns two views:
 - **Permission Registry** — code-owned contracts, dependencies, current role mapping count, registry drift, shared filters/loading, and standard pagination.
 - **Role Coverage** — cross-role effective permission comparison. Roles & Access intentionally keeps only role-specific permission coverage in its detail modal.
 
+The two framed Permission Registry / Role Coverage tabs carry no record-count badges. The read-only permission detail retains the shared content-driven modal and committed RBAC evidence, using a balanced four-fact semantic summary (role mapping, active usage, enabled JIT default projection, transitive dependencies) rather than displaying raw counts. The role table retains the exact role/state/type evidence while showing usage and JIT presence; absent JIT paths must not be characterized as an identity provider being globally disabled. This is presentation-only: authorization, dependency closure, role/user/JIT counts, and governed RBAC recovery remain authoritative in their existing sources.
+
 This Permission Catalog presentation is part of Access Final Lock v1.
 
 
