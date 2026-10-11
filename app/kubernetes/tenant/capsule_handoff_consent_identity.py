@@ -143,7 +143,12 @@ def inspect_capsule_consent_session_attestations(
         challenges.add(item['challenge_sha256'])
         assertion_ids.add(item['attestation_id'])
         times.append(signed_at)
-    if not times[0] <= times[1] <= accepted_at <= instant:
+    reviewed_at = _date(approval.get('approved_at'))
+    prior_acceptance_at = _date(acceptance.get('accepted_at'))
+    if not (
+        reviewed_at <= times[0] <= times[1] <= accepted_at <= instant
+        and prior_acceptance_at <= times[1]
+    ):
         raise ValueError('Capsule review and successor confirmation chronology is invalid.')
     return {
         'status': 'distinct_idp_session_claims_correlated_not_authenticated',
