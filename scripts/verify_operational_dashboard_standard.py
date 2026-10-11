@@ -499,6 +499,18 @@ def _verify_artifact_registry_dashboard(
     _require(
         presentation,
         (
+            "'label': 'Metrics Source'",
+            "'value': f'{metrics_ready_count} / {provider_count} providers'",
+            'Validated Metrics Source binding readiness; not a committed metrics snapshot.',
+            'Validated Registry Metrics Source bindings; not committed metrics snapshots.',
+        ),
+        'Registry Metrics Source validation is not a numeric committed snapshot',
+    )
+    if "'label': 'Metrics Snapshot'" in presentation:
+        raise AssertionError('Registry Data Freshness must not present binding readiness as Metrics Snapshot')
+    _require(
+        presentation,
+        (
             'def _overview_inventory_kpi_evidence(',
             'RegistryCollectionState.integration_instance_id.in_(scoped_provider_ids)',
             'RegistryProject.integration_instance_id.in_(committed_provider_ids)',
