@@ -465,6 +465,8 @@ def test_system_health_alert_signals_reflect_committed_snapshot_source(monkeypat
 
     from app.storage.object_storage.dashboard import service
 
+    monkeypatch.setattr(service, 'bucket_usage_by_system', lambda _ids: {})
+
     system = SimpleNamespace(
         id='system-1',
         name='Storage One',
@@ -659,6 +661,8 @@ def test_system_health_requires_complete_committed_evidence_for_healthy(monkeypa
 
     from app.storage.object_storage.dashboard import service
 
+    monkeypatch.setattr(service, 'bucket_usage_by_system', lambda _ids: {})
+
     observed = datetime.now(UTC)
     system = SimpleNamespace(
         id='storage-1', name='Storage', environment='dev', status='connected',
@@ -703,6 +707,8 @@ def test_system_health_keeps_observed_critical_alerts_prioritized(monkeypatch) -
 
     from app.storage.object_storage.dashboard import service
 
+    monkeypatch.setattr(service, 'bucket_usage_by_system', lambda _ids: {})
+
     system = SimpleNamespace(
         id='storage-1', name='Storage', environment='dev', status='ready',
         inventory_observed_at=None, buckets=[],
@@ -715,3 +721,23 @@ def test_system_health_keeps_observed_critical_alerts_prioritized(monkeypatch) -
     row = service._health_rows([system])[0]
     assert row['overall_status'] == 'Critical'
     assert row['overall_tone'] == 'critical'
+
+
+def test_object_storage_dashboard_bucket_reads_are_bounded_to_visible_scope() -> None:
+    service = read('app/storage/object_storage/dashboard/service.py')
+    aggregates = read('app/storage/object_storage/inventory/aggregates.py')
+    shell = service.split('def _systems(', 1)[1].split('def _selected_system(', 1)[0]
+    summary = service.split('def _inventory_summary(', 1)[1].split('def _health_rows(', 1)[0]
+    health = service.split('def _health_rows(', 1)[1].split('def _dashboard_kpis(', 1)[0]
+    section = service.split('def get_dashboard_section(', 1)[1]
+
+    assert 'load_only(' in shell and 'selectinload(' not in shell
+    assert 'ObjectStorageSystem.buckets' not in shell
+    assert 'bucket_usage_summary(' in summary and '~ObjectStorageSystem.buckets.any()' in summary
+    assert 'system.buckets' not in summary
+    assert 'bucket_usage_by_system([str(system.id) for system in systems])' in health
+    assert 'system.buckets' not in health
+    assert "visible_systems, pagination = paginate_sequence(" in section
+    assert "dashboard['health_rows'] = _health_rows(visible_systems)" in section
+    assert "bucket.object_storage_system_id.in_(system_ids)" in aggregates
+    assert 'group_by(bucket.object_storage_system_id)' in aggregates
