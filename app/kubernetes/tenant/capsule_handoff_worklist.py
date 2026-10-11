@@ -9,7 +9,9 @@ from collections.abc import Mapping
 from typing import Any
 
 from app.kubernetes.tenant.capsule_handoff_contract import validate_capsule_handoff_scope
-from app.kubernetes.tenant.capsule_handoff_related_inventory import _digest
+from app.kubernetes.tenant.capsule_handoff_related_inventory import (
+    _digest, capsule_related_scope_sha256,
+)
 
 _MAX_RELATED = 300
 _MAX_GLOBAL = 100
@@ -69,12 +71,12 @@ def build_capsule_handoff_worklist(
             or item['count'] != counts[(item['namespace'], item['kind'])]
             for item in lists
         )
-        or _digest({'resources': rows, 'lists': lists})
-        != related.get('resource_sha256')
+        or capsule_related_scope_sha256(
+            resources=rows, list_snapshots=lists,
+        ) != related.get('resource_sha256')
         or related['resource_sha256'] != cr.get('capsule_related_resources_sha256')
         or _digest({
             'api_version': quota['served_version'],
-            'list_resource_version': quota['list_resource_version'],
             'resources': quota['resources'],
         }) != quota.get('scope_sha256')
         or quota['scope_sha256'] != cr.get('capsule_shared_quota_sha256')
