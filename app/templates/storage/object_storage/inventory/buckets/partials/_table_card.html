@@ -3,7 +3,7 @@
 {% import "components/table_registry.html" as registry_ui %}
 <section class="{{ table_ui.block_classes() }}">
     {% set inventory_header_actions = none %}
-    {% if selected_system_id or selected_provider or selected_native_type or search %}
+    {% if selected_system_id or selected_provider or selected_native_type or selected_environment or search %}
         {% set inventory_header_actions %}
             {{ registry_ui.clear_filters_action(url_for('object_storage_inventory.buckets', per_page=inventory.pagination.per_page) ,
             table_ui.action_classes(),
@@ -64,6 +64,19 @@
                     {% for option in inventory.providers %}
                         <option value="{{ option.value }}"
                                 {% if selected_provider == option.value %}selected{% endif %}>{{ option.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="object-storage-buckets-environment"
+                       class="{{ table_ui.filter_label_classes() }}">Environment</label>
+                <select id="object-storage-buckets-environment"
+                        name="environment"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Environments</option>
+                    {% for option in inventory.environments %}
+                        <option value="{{ option.value }}"
+                                {% if selected_environment == option.value %}selected{% endif %}>{{ option.label }}</option>
                     {% endfor %}
                 </select>
             </div>

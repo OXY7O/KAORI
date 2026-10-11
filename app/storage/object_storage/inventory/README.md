@@ -28,3 +28,12 @@ from it.
 ## Inventory Table Contextual Help
 
 The **Systems** and **Buckets & Containers** table titles each expose one shared `components/info_tip.html` guide describing technical columns (including provider release, inventory coverage, quota, protection and snapshot freshness). Column headers and row values remain plain, with no per-column hover icons. Help is hover/focus/touch accessible, does not modify provider facts, and never treats an unreported quota, protection control, or snapshot value as a healthy/compliant state. The existing detail workspace remains the source of full technical evidence; inventory reads stay committed-state only.
+
+
+## Bucket Environment Filter
+
+Buckets & Containers exposes the committed system Environment as an explicit filter
+alongside System, Provider, Type and Search. The selected environment remains visible
+and is preserved across HTMX pagination and page-size changes; Clear Filters resets
+it with the other active filters. This is a database snapshot filter, not a live
+provider query.
