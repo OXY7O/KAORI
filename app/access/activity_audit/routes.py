@@ -31,7 +31,12 @@ def index() -> ResponseReturnValue:
     can_view_jobs = current_user.has_permission('jobs.view')
     can_manage_tenants = current_user.has_permission('tenant.manage')
     has_administrative_sources = can_view_jobs or can_manage_tenants
-    selected_audit_tab = 'administrative' if request.args.get('view') == 'administrative' else 'activity'
+    requested_view = request.args.get('view')
+    # Previously published administrative source URLs carried admin_scope only.
+    admin_view_requested = requested_view == 'administrative' or (
+        requested_view is None and ('admin_scope' in request.args or 'admin_page' in request.args)
+    )
+    selected_audit_tab = 'administrative' if admin_view_requested else 'activity'
     if selected_audit_tab == 'administrative' and not has_administrative_sources:
         abort(403)
     tab_context = {
