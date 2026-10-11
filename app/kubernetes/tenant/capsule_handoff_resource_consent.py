@@ -54,7 +54,14 @@ _ALLOWED_LABELS = {
 
 
 def _target_key(item: Mapping[str, Any]) -> tuple[str, str, str]:
-    return (item['namespace'], item['kind'], item['name'])
+    ns, kind, name = (item.get(field) for field in ('namespace', 'kind', 'name'))
+    if (
+        not isinstance(ns, str)
+        or not isinstance(kind, str) or not kind
+        or not isinstance(name, str) or not name
+    ):
+        raise ValueError('Capsule consent resource identity is malformed.')
+    return ns, kind, name
 
 
 def inspect_capsule_resource_consent(
@@ -138,7 +145,7 @@ def inspect_capsule_resource_consent(
         raise ValueError('Capsule resource consent must follow successor acceptance.')
     resources = resource_report.get('resources')
     targets = manifest.get('transfer_targets')
-    if not isinstance(resources, list) or not isinstance(targets, list) or len(targets) > 300:
+    if not isinstance(resources, list) or not isinstance(targets, list) or len(targets) > 330:
         raise ValueError('Capsule consent target list is malformed or unbounded.')
     candidates: dict[tuple[str, str, str], Mapping[str, Any]] = {}
     for row in resources:
