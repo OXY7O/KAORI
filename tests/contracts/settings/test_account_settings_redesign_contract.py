@@ -105,6 +105,16 @@ def test_authentication_activity_is_full_width_with_inline_evidence_boundary() -
     assert 'Session Ended' in activity
     assert "metadata.get('result_reason')" not in activity
     assert "table_label.status_indicator_label('Success', 'normal')" in activity
+    assert "is_logout and is_success" in activity
+    assert "table_label.metadata_label('Recorded', 'check')" in activity
+    assert 'bg-kaori-soft/50' in activity
+    assert 'bg-status-normal-soft text-status-normal-text' in activity
+    assert 'bg-status-critical-soft text-status-critical-text' in activity
+    assert 'p-4 shadow-sm' in activity
+    assert 'bg-kaori-soft/30' in activity
+    assert 'Counts from' not in activity
+    assert 'Latest ' in activity
+    assert 'Trusted proxy' not in activity
     assert "table_label.status_indicator_label('Failed', 'critical')" in activity
     assert "category='access', search=current_user.username" in activity
 
