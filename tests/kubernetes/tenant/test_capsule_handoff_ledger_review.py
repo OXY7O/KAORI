@@ -272,3 +272,19 @@ def test_migration_source_has_write_once_triggers_fencing_and_no_data_drop():
     assert 'uq_capsule_ledger_tenant_sequence' in source
     assert 'RAISE(ABORT' in source  # SQLite write-once
     assert 'Cannot drop a Capsule handoff ledger containing evidence.' in source
+
+
+def test_capsule_ledger_model_declares_tenant_type_before_foreign_key():
+    """Import/mapping regression for SQLAlchemy 2 mapped_column SchemaItem order."""
+    from sqlalchemy import String
+
+    from app.models.capsule_handoff_ledger import CapsuleHandoffLedgerEvent
+
+    tenant_column = CapsuleHandoffLedgerEvent.__table__.c.tenant_id
+    assert isinstance(tenant_column.type, String)
+    assert tenant_column.type.length == 36
+    assert tenant_column.nullable is False
+    assert len(tenant_column.foreign_keys) == 1
+    foreign_key = next(iter(tenant_column.foreign_keys))
+    assert foreign_key.target_fullname == 'tenants.id'
+    assert foreign_key.ondelete == 'RESTRICT'
