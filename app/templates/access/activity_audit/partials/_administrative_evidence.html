@@ -48,10 +48,9 @@
                     {% endfor %}
                 </select>
             </div>
-            <button type="submit"
-                    class="sr-only focus:not-sr-only rounded-md border border-outline-default px-3 py-2 text-sm text-content-secondary focus-visible:ring-2 focus-visible:ring-outline-focus">
-                Apply Source Scope
-            </button>
+            <noscript>
+                <button type="submit" class="{{ table_ui.action_classes() }}">Apply Scope</button>
+            </noscript>
         </form>
     </div>
     {% if administrative_evidence.rows %}
