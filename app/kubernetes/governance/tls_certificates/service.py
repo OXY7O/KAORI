@@ -510,7 +510,11 @@ def _persist_collection_state(
     state.ingress_mapping_status = ingress_status
     state.secret_collection_detail = secret_detail
     state.ingress_mapping_detail = ingress_detail
-    state.collected_at = collected_at
+    # The state row records each attempt via updated_at. Only a successful
+    # Secret collection advances the durable source-evidence clock; failure
+    # must not rewrite the age of retained certificate rows.
+    if secret_status == TLS_COLLECTION_COLLECTED:
+        state.collected_at = collected_at
     state.updated_at = datetime.now(UTC)
     return state
 

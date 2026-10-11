@@ -1,17 +1,18 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+
+from sqlalchemy import func
 from typing import Any
 
 from app.common.presentation import present_user_datetime
+from app.models.cluster import Cluster
 from app.models.governance import TLSCertificateCollectionState, TLSCertificateInventory
 from app.models.job import JobExecution
 from app.platform_operations.jobs.constants import ACTIVE_JOB_STATUSES
 from app.platform_operations.jobs.policies.service import get_or_create_job_policy
 
-from .constants import TLS_SYNC_JOB_TYPE, TLS_SYNC_OPERATION
-
-_SUCCESS_STATUSES = ('succeeded', 'partially_succeeded')
+from .constants import TLS_COLLECTION_COLLECTED, TLS_SYNC_JOB_TYPE, TLS_SYNC_OPERATION
 
 
 def _as_utc(value: datetime | None) -> datetime | None:
@@ -35,6 +36,39 @@ def _first_relevant(jobs: list[JobExecution], cluster_id: str | None) -> JobExec
     return next((job for job in jobs if _job_applies_to_cluster(job, cluster_id)), None)
 
 
+def _collection_freshness(
+    *,
+    cluster_ids: list[str],
+    states: dict[str, TLSCertificateCollectionState],
+    record_times: dict[str, datetime],
+    stale_after: timedelta,
+    now: datetime,
+) -> tuple[datetime | None, bool, bool]:
+    """Derive freshness only from committed successful source evidence.
+
+    Certificate record timestamps remain last-known-good on a failed refresh.
+    A collection-state timestamp is eligible only while its Secret source
+    explicitly reports Collected; updated_at records attempt time, not success.
+    """
+    candidates: list[datetime] = []
+    stale = False
+    exceptions = False
+    for cluster_id in cluster_ids:
+        state = states.get(cluster_id)
+        record_time = _as_utc(record_times.get(cluster_id))
+        secret_ok = state is not None and state.secret_collection_status == TLS_COLLECTION_COLLECTED
+        ingress_ok = state is not None and state.ingress_mapping_status == TLS_COLLECTION_COLLECTED
+        state_time = _as_utc(state.collected_at) if secret_ok else None
+        source_time = max((t for t in (record_time, state_time) if t is not None), default=None)
+        if source_time is not None:
+            candidates.append(source_time)
+        if source_time is None or now - source_time > stale_after:
+            stale = True
+        if not secret_ok or not ingress_ok:
+            exceptions = True
+    return max(candidates, default=None), stale, exceptions
+
+
 def build_tls_sync_state(*, cluster_id: str | None = None) -> dict[str, Any]:
     policy = get_or_create_job_policy('governance.tls_certificates.sync')
     base_query = JobExecution.query.filter(
@@ -49,43 +83,36 @@ def build_tls_sync_state(*, cluster_id: str | None = None) -> dict[str, Any]:
     )
     recent_jobs = base_query.order_by(JobExecution.created_at.desc(), JobExecution.id.desc()).limit(100).all()
     latest_job = _first_relevant(recent_jobs, cluster_id)
-    latest_success = _first_relevant(
-        [job for job in recent_jobs if job.status in _SUCCESS_STATUSES],
-        cluster_id,
-    )
-
-    collected_query = TLSCertificateInventory.query
-    if cluster_id:
-        collected_query = collected_query.filter(TLSCertificateInventory.cluster_id == cluster_id)
-    latest_collected_at = (
-        collected_query.with_entities(TLSCertificateInventory.collected_at)
-        .order_by(TLSCertificateInventory.collected_at.desc())
-        .limit(1)
-        .scalar()
-    )
-    collection_state_query = TLSCertificateCollectionState.query
-    if cluster_id:
-        collection_state_query = collection_state_query.filter(TLSCertificateCollectionState.cluster_id == cluster_id)
-    latest_collection_state_at = (
-        collection_state_query.with_entities(TLSCertificateCollectionState.collected_at)
-        .order_by(TLSCertificateCollectionState.collected_at.desc())
-        .limit(1)
-        .scalar()
-    )
-
-    last_success_at = _as_utc(latest_success.completed_at if latest_success else None)
-    latest_collected_at = _as_utc(latest_collected_at)
-    freshness_source = max(
-        (
-            value
-            for value in (last_success_at, latest_collected_at, _as_utc(latest_collection_state_at))
-            if value is not None
-        ),
-        default=None,
-    )
     interval_minutes = max(int(policy.interval_minutes or 360), 1)
     stale_after = timedelta(minutes=interval_minutes + min(max(interval_minutes // 4, 15), 180))
-    is_stale = freshness_source is not None and datetime.now(UTC) - freshness_source > stale_after
+    scoped_ids = (
+        [str(cluster_id)] if cluster_id
+        else [
+            str(row[0]) for row in db.session.query(Cluster.id).all()
+        ]
+    )
+    states = {
+        str(state.cluster_id): state
+        for state in TLSCertificateCollectionState.query.filter(
+            TLSCertificateCollectionState.cluster_id.in_(scoped_ids)
+        ).all()
+    } if scoped_ids else {}
+    record_times = {
+        str(cid): collected
+        for cid, collected in db.session.query(
+            TLSCertificateInventory.cluster_id,
+            func.max(TLSCertificateInventory.collected_at),
+        ).filter(
+            TLSCertificateInventory.cluster_id.in_(scoped_ids)
+        ).group_by(TLSCertificateInventory.cluster_id).all()
+    } if scoped_ids else {}
+    freshness_source, is_stale, collection_exceptions = _collection_freshness(
+        cluster_ids=scoped_ids,
+        states=states,
+        record_times=record_times,
+        stale_after=stale_after,
+        now=datetime.now(UTC),
+    )
 
     if active_job is not None and active_job.status == 'queued':
         label, tone, icon = 'Queued', 'pending', 'clock-3'
@@ -99,6 +126,9 @@ def build_tls_sync_state(*, cluster_id: str | None = None) -> dict[str, Any]:
     elif freshness_source is None:
         label, tone, icon = 'Not Collected', 'warning', 'clock-alert'
         helper = 'Run the first TLS sync to establish certificate inventory freshness.'
+    elif collection_exceptions:
+        label, tone, icon = 'Collection Exceptions', 'warning', 'shield-alert'
+        helper = 'One or more TLS Secret or Ingress evidence sources are unavailable or incomplete.'
     elif is_stale:
         label, tone, icon = 'Stale', 'warning', 'clock-alert'
         helper = 'TLS inventory is older than the configured automatic synchronization window.'
