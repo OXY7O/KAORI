@@ -80,9 +80,9 @@ def classify_capsule_namespace_handoff(
     release_keys = baseline.get('label_keys_to_release')
     if (
         not isinstance(release_keys, list)
+        or any(not isinstance(key, str) or key not in _MARKER_KEYS for key in release_keys)
         or len(release_keys) != len(set(release_keys))
         or not {'app.kubernetes.io/managed-by', 'kaori.io/tenant-id'}.issubset(release_keys)
-        or any(not isinstance(key, str) or key not in _MARKER_KEYS for key in release_keys)
     ):
         raise ValueError('Capsule ownership baseline marker inventory is invalid.')
     labels = _labels(current)
