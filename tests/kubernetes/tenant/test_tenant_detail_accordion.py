@@ -163,3 +163,63 @@ def test_release_wizard_explains_platform_admin_ownership_without_bypassing_appr
     assert 'tenant_release_step_urls[\'approval\']' in template
     assert "hx-post=\"{{ url_for('tenant.accept_native_successor_handoff_route'" in template
     assert "hx-post=\"{{ url_for('tenant.execute_native_release_handoff_route'" in template
+
+
+def test_capsule_release_condition_cards_keep_verbatim_evidence() -> None:
+    """#1204: concise titles are display-only; exact original evidence is inspectable."""
+    from pathlib import Path
+    from jinja2 import Environment
+
+    root = Path(__file__).resolve().parents[3]
+    page = (root / 'app/templates/kubernetes/tenant/partials/_tenant_management_detail.html').read_text(
+        encoding='utf-8'
+    )
+    Environment(autoescape=True).parse(page)
+    panel = page.split('aria-label="Release blockers"', 1)[1].split(
+        "{% endif %}\n                    </section>", 1
+    )[0]
+    for pattern in (
+        "blocker.startswith('Adoption performed KAORI-owned provider mutations.')",
+        "' active Access Grants must be governed/handoff-reviewed before release.' in blocker",
+        "' active Memberships must be governed/handoff-reviewed before release.' in blocker",
+        "' has a KAORI-managed Resource Profile allocation.' in blocker",
+        "blocker.startswith('Capsule allocation was modified by KAORI;')",
+        "blocker.startswith('Inspect external Capsule owners and RBAC before Release Governance.')",
+    ):
+        assert pattern in panel
+    assert "condition_title = 'Review recorded condition'" in panel
+    assert "condition_action = blocker" in panel
+    assert 'aria-label="Recorded Release conditions"' in panel
+    assert '<ol class="mt-3 grid min-w-0 gap-3 sm:grid-cols-2"' in panel
+    assert 'Exact recorded reason' in panel
+    assert '{{ blocker }}</p>' in panel
+    assert '{% for blocker in row.release_preflight.blockers %}' in panel
+    assert '{{ loop.index }}' in panel
+    assert 'role="status"' in panel
+    assert 'active_release_dependencies = release_dependency_counts.values()|sum' in panel
+
+
+def test_capsule_release_review_shows_dependency_block_even_for_eligible_reviewer() -> None:
+    """#1204: a valid reviewer identity does not mean an eligible approval."""
+    from pathlib import Path
+    from jinja2 import Environment
+
+    root = Path(__file__).resolve().parents[3]
+    page = (root / 'app/templates/kubernetes/tenant/partials/_tenant_management_detail.html').read_text(
+        encoding='utf-8'
+    )
+    Environment(autoescape=True).parse(page)
+    reviewer = page.split(
+        "row.release_handoff_preparation_state == 'pending' and handoff_plan.requested_by != current_user.id",
+        1,
+    )[1].split('</form>', 1)[0]
+    assert 'approval_dependency_counts = row.release_preflight.dependency_counts' in reviewer
+    assert 'approval_active_dependencies = approval_dependency_counts.values()|sum' in reviewer
+    assert 'Reviewer eligible · Approval blocked.' in reviewer
+    assert 'Review Release again in Step 1.' in reviewer
+    assert 'Submission rechecks provider and dependency evidence.' in reviewer
+    assert 'Independent review available.' in reviewer
+    assert "url_for('tenant.approve_tenant_release_handoff_route'" in reviewer
+    assert 'name="confirm_handoff_approval"' in reviewer
+    assert 'name="plan_sha256"' in reviewer
+    assert 'name="csrf_token"' in reviewer
