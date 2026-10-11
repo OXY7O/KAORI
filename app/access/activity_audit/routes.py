@@ -27,6 +27,44 @@ def index() -> ResponseReturnValue:
         request.headers.get('HX-Request') == 'true'
         and request.headers.get('HX-History-Restore-Request') != 'true'
     )
+    target = request.headers.get('HX-Target') if is_htmx else None
+    can_view_jobs = current_user.has_permission('jobs.view')
+    can_manage_tenants = current_user.has_permission('tenant.manage')
+    has_administrative_sources = can_view_jobs or can_manage_tenants
+    requested_view = request.args.get('view')
+    # Previously published administrative source URLs carried admin_scope only.
+    admin_view_requested = requested_view == 'administrative' or (
+        requested_view is None and ('admin_scope' in request.args or 'admin_page' in request.args)
+    )
+    selected_audit_tab = 'administrative' if admin_view_requested else 'activity'
+    if selected_audit_tab == 'administrative' and not has_administrative_sources:
+        abort(403)
+    tab_context = {
+        'selected_audit_tab': selected_audit_tab,
+        'has_administrative_sources': has_administrative_sources,
+    }
+    if is_htmx and selected_audit_tab == 'administrative' and target in (
+        'activity-audit-records', 'activity-administrative-evidence'
+    ):
+        evidence = build_administrative_evidence_context(
+            scope=request.args.get('admin_scope'),
+            page=_request_int('admin_page', 1),
+            can_view_jobs=can_view_jobs,
+            can_manage_tenants=can_manage_tenants,
+        )
+        if evidence is None:
+            abort(403)
+        tab_context['administrative_evidence'] = evidence
+        if target == 'activity-administrative-evidence':
+            return render_template(
+                'access/activity_audit/partials/_administrative_evidence.html',
+                administrative_evidence=evidence,
+                embedded=True,
+            )
+        return render_template(
+            'access/activity_audit/partials/_audit_records_workspace.html', **tab_context
+        )
+
     context = build_activity_audit_context(
         actor_key=request.args.get('actor_key'),
         page=_request_int('page', 1),
@@ -37,15 +75,23 @@ def index() -> ResponseReturnValue:
         search=request.args.get('search', ''),
         include_summary=not is_htmx,
     )
-    if not is_htmx:
+    context.update(tab_context)
+    if is_htmx:
+        if target == 'activity-audit-records':
+            return render_template(
+                'access/activity_audit/partials/_audit_records_workspace.html', **context
+            )
+        return render_template(
+            'access/activity_audit/partials/_activity_table_card.html', embedded=True, **context
+        )
+
+    if selected_audit_tab == 'administrative':
         context['administrative_evidence'] = build_administrative_evidence_context(
             scope=request.args.get('admin_scope'),
             page=_request_int('admin_page', 1),
-            can_view_jobs=current_user.has_permission('jobs.view'),
-            can_manage_tenants=current_user.has_permission('tenant.manage'),
+            can_view_jobs=can_view_jobs,
+            can_manage_tenants=can_manage_tenants,
         )
-    if is_htmx:
-        return render_template('access/activity_audit/partials/_activity_table_card.html', **context)
     return render_template('access/activity_audit/index.html', **context)
 
 
@@ -82,6 +128,7 @@ def administrative_evidence() -> ResponseReturnValue:
         return redirect(
             url_for(
                 'access.activity_audit.index',
+                view='administrative',
                 admin_scope=evidence['scope'],
                 admin_page=evidence['pagination']['page'],
             )

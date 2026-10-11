@@ -63,6 +63,19 @@ def build_administrative_evidence_context(
     events, pagination = paginate_query(query, page=page, per_page=5)
     rows: list[dict[str, Any]] = []
     for event in events:
+        action_suffix = event.action.removeprefix(specification['prefix'])
+        outcome_key = (
+            'partially_succeeded'
+            if action_suffix.endswith('partially_succeeded')
+            else action_suffix.rsplit('_', 1)[-1]
+        )
+        status_tone = {
+            'succeeded': 'success',
+            'failed': 'error',
+            'partially_succeeded': 'warning',
+            'canceled': 'warning',
+            'queued': 'info',
+        }.get(outcome_key, 'info')
         # The administrative model has only a nullable actor FK, never a
         # committed identity/role/auth-source snapshot: do not reconstruct it.
         job_url = None
@@ -73,6 +86,12 @@ def build_administrative_evidence_context(
         rows.append({
             'id': event.id,
             'action': redact_operational_text(event.action, limit=120),
+            'display_action': f"{specification['label']} · {action_suffix.replace('_', ' ').title()}",
+            'source_label': specification['source'],
+            'status_label': outcome_key.replace('_', ' ').title(),
+            'status_tone': status_tone,
+            'actor_label': f'User ID #{event.actor_user_id}' if event.actor_user_id is not None else 'Not recorded',
+            'actor_detail': 'Actor FK · not a snapshot' if event.actor_user_id is not None else 'No actor FK',
             'summary': redact_operational_text(event.summary, limit=255),
             'created_at': event.created_at,
             'actor_reference': (

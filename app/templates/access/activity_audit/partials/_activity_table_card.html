@@ -2,7 +2,7 @@
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/loading_bar.html" as loading_bar %}
 <section id="activity-register-workspace"
-         class="{{ table_ui.block_classes() }}">
+         class="{{ '' if embedded|default(false) else table_ui.block_classes() }}">
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex min-w-0 items-start gap-3">
@@ -15,9 +15,9 @@
             <div class="flex flex-wrap items-center gap-2">
                 <span class="inline-flex min-h-7 items-center rounded-md border border-outline-subtle bg-surface-hover px-2.5 text-xs font-semibold text-content-secondary">{{ pagination.total }} Matching {{ 'Activity' if pagination.total == 1 else 'Activities' }}</span>
                 {% if filters.search or filters.category != 'all' or filters.status != 'all' or filters.actor_key or filters.time_range != '7d' %}
-                    {{ registry_ui.clear_filters_action(url_for('access.activity_audit.index', per_page=pagination.per_page, time_range='7d') ,
+                    {{ registry_ui.clear_filters_action(url_for('access.activity_audit.index', view='activity', per_page=pagination.per_page, time_range='7d') ,
                     table_ui.action_classes(),
-                    hx_get=url_for('access.activity_audit.index', per_page=pagination.per_page, time_range='7d'),
+                    hx_get=url_for('access.activity_audit.index', view='activity', per_page=pagination.per_page, time_range='7d'),
                     target='#activity-register-workspace',
                     indicator='#operational-activity-loading',
                     push_url='true'
@@ -36,6 +36,7 @@
               hx-trigger="change from:select, keyup changed delay:450ms from:input[name='search']"
               hx-indicator="#operational-activity-loading"
               class="{{ table_ui.filter_layout_classes() }}">
+            <input type="hidden" name="view" value="activity">
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
             <div>
