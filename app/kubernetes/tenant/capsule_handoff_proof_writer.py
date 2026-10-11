@@ -205,15 +205,16 @@ def _require_postgres_proof_storage_guards(session: Any) -> None:
     ):
         raise ValueError('Capsule proof write-once trigger is missing or disabled.')
     constraints = session.execute(text("""
-        SELECT con.conname
+        SELECT con.conname, con.convalidated
         FROM pg_constraint AS con
         WHERE con.conrelid IN (
             'capsule_handoff_audit_batches'::regclass,
             'capsule_handoff_resource_consent_records'::regclass
         )
-    """)).scalars().all()
-    if not _REQUIRED_CONSTRAINTS.issubset(set(constraints)):
-        raise ValueError('Capsule proof uniqueness, actor or composite scope constraints are absent.')
+    """)).all()
+    validated = {name for name, is_valid in constraints if is_valid is True}
+    if not _REQUIRED_CONSTRAINTS.issubset(validated):
+        raise ValueError('Capsule proof uniqueness, actor or composite scope constraints are absent or invalid.')
     permissions = session.execute(text("""
         SELECT c.relname AS table_name,
                has_table_privilege(current_user, c.oid, 'SELECT') AS may_select,
