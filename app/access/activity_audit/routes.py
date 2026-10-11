@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from flask import Blueprint, render_template, request
+from flask import Blueprint, abort, make_response, redirect, render_template, request, url_for
 from flask_login import current_user
 from flask.typing import ResponseReturnValue
 
+from app.access.activity_audit.administrative_sources import build_administrative_evidence_context
 from app.access.activity_audit.service import build_activity_audit_context, get_activity_audit_detail
 from app.access.activity_audit.source_links import build_related_source_links
 from app.access.rbac.decorators import permission_required
@@ -22,7 +23,10 @@ def _request_int(name: str, default: int) -> int:
 @bp.get('/')
 @permission_required('activity_audit.view')
 def index() -> ResponseReturnValue:
-    is_htmx = request.headers.get('HX-Request') == 'true'
+    is_htmx = (
+        request.headers.get('HX-Request') == 'true'
+        and request.headers.get('HX-History-Restore-Request') != 'true'
+    )
     context = build_activity_audit_context(
         actor_key=request.args.get('actor_key'),
         page=_request_int('page', 1),
@@ -33,6 +37,13 @@ def index() -> ResponseReturnValue:
         search=request.args.get('search', ''),
         include_summary=not is_htmx,
     )
+    if not is_htmx:
+        context['administrative_evidence'] = build_administrative_evidence_context(
+            scope=request.args.get('admin_scope'),
+            page=_request_int('admin_page', 1),
+            can_view_jobs=current_user.has_permission('jobs.view'),
+            can_manage_tenants=current_user.has_permission('tenant.manage'),
+        )
     if is_htmx:
         return render_template('access/activity_audit/partials/_activity_table_card.html', **context)
     return render_template('access/activity_audit/index.html', **context)
@@ -53,3 +64,33 @@ def detail(notification_id: int) -> ResponseReturnValue:
         ),
     )
     return render_template('access/activity_audit/partials/_activity_detail.html', item=item)
+
+
+@bp.get('/administrative-evidence')
+@permission_required('activity_audit.view')
+def administrative_evidence() -> ResponseReturnValue:
+    """Separate permissioned administrative register; never mix Notification rows."""
+    evidence = build_administrative_evidence_context(
+        scope=request.args.get('admin_scope'),
+        page=_request_int('admin_page', 1),
+        can_view_jobs=current_user.has_permission('jobs.view'),
+        can_manage_tenants=current_user.has_permission('tenant.manage'),
+    )
+    if evidence is None:
+        abort(403)
+    if request.headers.get('HX-Request') != 'true':
+        return redirect(
+            url_for(
+                'access.activity_audit.index',
+                admin_scope=evidence['scope'],
+                admin_page=evidence['pagination']['page'],
+            )
+        )
+    response = make_response(
+        render_template(
+            'access/activity_audit/partials/_administrative_evidence.html',
+            administrative_evidence=evidence,
+        )
+    )
+    response.headers['Cache-Control'] = 'no-store, max-age=0'
+    return response

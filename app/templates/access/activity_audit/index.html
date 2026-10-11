@@ -52,6 +52,9 @@
         </section>
         {% include "access/activity_audit/partials/_activity_summary_cards.html" %}
         {% include "access/activity_audit/partials/_activity_table_card.html" %}
+        {% if administrative_evidence %}
+            {% include "access/activity_audit/partials/_administrative_evidence.html" %}
+        {% endif %}
         {{ resource_detail_modal.host('Activity',
                 url_for('access.activity_audit.detail', notification_id=0) ,
         footer_text='Activity evidence uses the immutable actor and category snapshot captured when KAORI committed the record.',
