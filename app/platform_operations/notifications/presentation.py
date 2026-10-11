@@ -307,7 +307,7 @@ def _serialize_notification(
             event_type=notification.event_type,
             status=notification.status,
         ),
-        'action_url': notification.action_url,
+        'action_url': redact_operational_text(notification.action_url, limit=500) if notification.action_url else None,
         'created_at': created_at,
         'created_label': _created_label(created_at),
         'is_read': notification.is_read,

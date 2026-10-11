@@ -71,6 +71,10 @@ Do not reintroduce `_notification_deck_content.html`, an `outerHTML` poll on the
 root, a self-replacing fragment with a `load` trigger, or separate Activity and
 Notifications polling requests.
 
+## Activity Audit sensitive evidence boundary
+
+Notification operational evidence uses the single recursive sanitizer in `metadata.py` at three boundaries: the shared Notification writer (new rows), Activity Audit/Notification Center read presentation (including existing historical hot rows), and the operational-activity Data Lifecycle archive serializer (including existing older rows). The same sanitizer suppresses secret-bearing nested object keys, credential-shaped freeform text, URL userinfo and bounded encoded assignments while retaining specifically allowlisted correlation references such as `secret_name` and `credential_id`. Detail technical evidence uses this sanitizer rather than a competing regex set. Producer input must still avoid secrets; sanitization is defensive, not permission to log secret material. Existing archives already finalized before this change are immutable and require a separate governed retrospective review to assess whether they contain legacy unsafe metadata.
+
 ## Activity Audit evidence-store boundary
 
 Activity Audit HTTP routes and templates are Access-owned under `app/access/activity_audit/`. `app/platform_operations/notifications/` owns the shared operational evidence persistence/query kernel used by Activity Audit and Notification Center. Each persisted row snapshots its event category and actor identity so later catalog changes, user renames, role changes, or user deletion do not rewrite historical evidence.

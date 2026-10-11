@@ -145,9 +145,19 @@ def test_activity_detail_uses_content_driven_curated_and_sensitive_safe_evidence
     assert 'item.event_type ==' not in detail
     assert '_ACTIVITY_EXECUTION_EVIDENCE_KEYS' in presentation
     assert '_ACTIVITY_TECHNICAL_EVIDENCE_KEYS' in presentation
-    assert "r'\\1***:***@'" in presentation
+    assert 'redact_operational_text(value, limit=1200)' in presentation
+    assert 'redact_operational_metadata(notification.metadata_json)' in presentation
     for token in ('password', 'secret', 'token', 'private_key', 'kubeconfig', 'credential_value'):
         assert repr(token) in metadata
+    assert 'def redact_operational_metadata(' in metadata
+    assert 'def redact_operational_text(' in metadata
+    assert 'metadata = redact_operational_metadata(metadata) or {}' in metadata
+    writer = read('app/platform_operations/notifications/writer.py')
+    archive = read('app/platform_operations/data_lifecycle/retention/domains/operational_activity.py')
+    assert 'notification.metadata_json = redact_operational_metadata(evidence.metadata)' in writer
+    assert "'metadata': redact_operational_metadata(notification.metadata_json)" in archive
+    assert 'redact_operational_text(notification.action_url' in archive
+    assert 'redact_operational_text(notification.action_url' in presentation
 
 
 def test_activity_hot_register_is_explicit_about_archive_lifecycle_boundary() -> None:
