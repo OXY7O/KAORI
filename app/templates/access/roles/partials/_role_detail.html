@@ -29,10 +29,15 @@
             ('Assignment Availability', 'Available' if role.is_active else 'Blocked', ''),
             ('Permissions', detail.permission_count ~ (' Permission' if detail.permission_count == 1 else ' Permissions'), '')
         ], compact=true, borderless=true) }}
-        <div class="min-w-0 space-y-4 p-3 sm:p-5" data-kaori-role-detail-layout="compact-evidence">
-            <div class="grid min-w-0 items-stretch gap-4 lg:grid-cols-2">
-                {% call detail_ui.detail_card('Role Identity', 'badge-info', detail.type_short, badge_size='detail', density='compact') %}
-                    <div class="grid min-w-0 gap-x-6 gap-y-3 sm:grid-cols-2" data-kaori-role-identity-facts>
+        <div class="min-w-0 p-3 sm:p-5" data-kaori-role-detail-layout="unified-resource-sheet">
+            {% call detail_ui.resource_sheet() %}
+                {% call detail_ui.inventory_section(
+                    'Role Identity', 'badge-info',
+                    description='Committed role identity and baseline',
+                    badge=detail.type_short,
+                    compact_layout=true
+                ) %}
+                    <div class="grid min-w-0 gap-x-8 gap-y-3 sm:grid-cols-2" data-kaori-role-identity-facts>
                         {{ detail_ui.stacked_detail_row('Role Name', role.display_name) }}
                         {{ detail_ui.stacked_detail_row('Role Key', role.name) }}
                         <div class="min-w-0">
@@ -44,118 +49,137 @@
                             <div class="mt-1">{{ table_label.status_label(detail.state_label, detail.state_tone, detail.state_icon) }}</div>
                         </div>
                     </div>
-                    <div class="mt-1 grid min-w-0 gap-x-6 gap-y-3 border-t border-outline-subtle pt-3 sm:grid-cols-2">
-                        <div class="min-w-0">
+                    <div class="mt-3 border-t border-outline-subtle pt-3" data-kaori-role-purpose>
+                        <p class="text-xs font-medium leading-5 text-content-muted">Operational Purpose</p>
+                        <p class="mt-1 max-w-4xl break-words text-sm font-normal leading-6 text-content-primary [overflow-wrap:anywhere]">{{ role.description or 'No role description is defined.' }}</p>
+                    </div>
+                    <div class="mt-3 border-t border-outline-subtle pt-3" data-kaori-role-baseline>
+                        <div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
                             <p class="text-xs font-medium leading-5 text-content-muted">Baseline Integrity</p>
-                            <div class="mt-1">{{ table_label.status_label(detail.baseline_label, detail.baseline_tone, detail.baseline_icon) }}</div>
-                            <p class="mt-1.5 text-xs leading-5 text-content-secondary">{{ detail.baseline_detail }}</p>
+                            {{ table_label.status_label(detail.baseline_label, detail.baseline_tone, detail.baseline_icon) }}
                         </div>
-                        {{ detail_ui.stacked_detail_row('Operational Purpose', role.description or 'No role description is defined.') }}
+                        <p class="mt-1 max-w-4xl break-words text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">{{ detail.baseline_detail }}</p>
                     </div>
                 {% endcall %}
-                {% call detail_ui.detail_card('Assignment Impact', 'users-round', detail.assigned_users ~ (' User' if detail.assigned_users == 1 else ' Users'), badge_size='detail', density='compact') %}
-                    <div class="grid min-w-0 gap-x-6 gap-y-3 sm:grid-cols-2" data-kaori-role-impact-facts>
+
+                {% call detail_ui.inventory_section(
+                    'Assignment Impact', 'users-round',
+                    description='Membership, provider defaults and authorization',
+                    badge='Available' if role.is_active else 'Blocked',
+                    badge_type='status', badge_tone='normal' if role.is_active else 'unknown',
+                    compact_layout=true
+                ) %}
+                    <div class="grid min-w-0 gap-x-8 gap-y-3 sm:grid-cols-3" data-kaori-role-impact-facts>
                         {{ detail_ui.stacked_detail_row('Assigned Users', detail.assigned_users) }}
                         {{ detail_ui.stacked_detail_row('Provider Defaults', detail.provider_mappings) }}
-                        <div class="sm:col-span-2 min-w-0">
+                        <div class="min-w-0">
                             <p class="text-xs font-medium leading-5 text-content-muted">Assignment Availability</p>
                             <div class="mt-1">{{ table_label.status_label('Available' if role.is_active else 'Blocked', 'normal' if role.is_active else 'unknown', detail.state_icon) }}</div>
                         </div>
                     </div>
-                    <div class="mt-1 border-t border-outline-subtle pt-3">
+                    <div class="mt-3 border-t border-outline-subtle pt-3">
                         <p class="text-xs font-medium leading-5 text-content-muted">Authorization Effect</p>
-                        <p class="mt-1 text-sm leading-6 text-content-primary">{{ detail.assignment_effect }}</p>
-                        {% if detail.delete_blocked and not detail.mutation_protected %}
-                            <div class="mt-3 rounded-lg border {{ table_label.tone_border_classes('warning') }} bg-status-warning-soft p-3 text-xs leading-5 text-status-warning-text">
-                                Remove {{ detail.assigned_users }} user assignment{{ '' if detail.assigned_users == 1 else 's' }} and {{ detail.provider_mappings }} provider default mapping{{ '' if detail.provider_mappings == 1 else 's' }} before deleting this role.
-                            </div>
-                        {% endif %}
+                        <p class="mt-1 max-w-4xl text-sm leading-6 text-content-primary">{{ detail.assignment_effect }}</p>
+                    </div>
+                    {% if detail.delete_blocked and not detail.mutation_protected %}
+                        <div class="mt-3 rounded-lg border {{ table_label.tone_border_classes('warning') }} bg-status-warning-soft px-3 py-2.5 text-sm leading-6 text-status-warning-text">
+                            Remove {{ detail.assigned_users }} user assignment{{ '' if detail.assigned_users == 1 else 's' }} and {{ detail.provider_mappings }} provider default mapping{{ '' if detail.provider_mappings == 1 else 's' }} before deleting this role.
+                        </div>
+                    {% endif %}
+                {% endcall %}
+
+                {% call detail_ui.inventory_section(
+                    'Permission Coverage', 'key-round',
+                    description='All effective capabilities by control module',
+                    badge=detail.permission_count ~ (' Permission' if detail.permission_count == 1 else ' Permissions'),
+                    compact_layout=true
+                ) %}
+                    <p class="mb-1 text-xs leading-5 text-content-muted">
+                        {{ detail.module_count }} control module{{ '' if detail.module_count == 1 else 's' }}. Cross-role comparison remains in Permission Catalog.
+                    </p>
+                    {% if detail.permission_modules %}
+                        <ul class="min-w-0 divide-y divide-outline-subtle" aria-label="Role permission coverage by module" data-kaori-role-permission-coverage>
+                            {% for module in detail.permission_modules %}
+                                <li class="grid min-w-0 gap-x-6 gap-y-3 py-3 sm:grid-cols-[minmax(0,11rem)_minmax(0,1fr)] sm:items-start" data-kaori-role-module>
+                                    <div class="flex min-w-0 items-start justify-between gap-2 sm:block">
+                                        <div class="min-w-0">
+                                            <p class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ module.label }}</p>
+                                            <p class="mt-0.5 break-all text-xs leading-5 text-content-muted">{{ module.key }}</p>
+                                        </div>
+                                        <span class="shrink-0 rounded-md bg-surface-elevated px-2 py-0.5 text-xs font-semibold tabular-nums text-content-secondary sm:mt-1 sm:inline-flex"
+                                              aria-label="{{ module.count }} permissions">{{ module.count }} permission{{ '' if module.count == 1 else 's' }}</span>
+                                    </div>
+                                    <div class="flex min-w-0 flex-wrap items-start gap-1.5" data-kaori-role-module-capabilities>
+                                        {% for permission in module.permissions %}
+                                            {{ table_label.metadata_label(permission.label, wrap=true) }}
+                                        {% endfor %}
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        {{ detail_ui.empty_evidence('No Permissions Assigned', 'This role currently grants no effective permission contracts.', 'key-round') }}
+                    {% endif %}
+                {% endcall %}
+
+                {% call detail_ui.inventory_section(
+                    'Administrative Boundary', 'shield-check',
+                    description='Ownership and permitted role actions',
+                    badge='Protected' if detail.mutation_protected else 'Custom',
+                    compact_layout=true
+                ) %}
+                    <div class="min-w-0" data-kaori-role-administrative-boundary>
+                        <div class="grid min-w-0 gap-x-8 gap-y-3">
+                            {% if detail.mutation_protected %}
+                                <div class="min-w-0">
+                                    <p class="text-xs font-medium leading-5 text-content-muted">Ownership</p>
+                                    <p class="mt-1 max-w-4xl text-sm leading-6 text-content-primary">Protected defaults are code-owned and cannot be edited or deleted directly.</p>
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="text-xs font-medium leading-5 text-content-muted">Customization Path</p>
+                                    <p class="mt-1 max-w-4xl text-sm leading-6 text-content-primary">Clone this role to create an editable custom authorization profile.</p>
+                                </div>
+                            {% else %}
+                                <div class="min-w-0">
+                                    <p class="text-xs font-medium leading-5 text-content-muted">Ownership</p>
+                                    <p class="mt-1 max-w-4xl text-sm leading-6 text-content-primary">Custom roles are administrator-managed and remain subject to delegation-ceiling, assignment, and provider-reference guardrails.</p>
+                                </div>
+                                {{ detail_ui.stacked_detail_row('Delegation Boundary', 'Within your effective access ceiling' if detail.within_delegation else 'Outside your effective access ceiling; mutation is blocked') }}
+                                {{ detail_ui.stacked_detail_row('Deletion State', 'Eligible' if detail.delete_eligible else 'Blocked by active references') }}
+                            {% endif %}
+                        </div>
+                        <div class="mt-4 flex flex-wrap items-center gap-2 border-t border-outline-subtle pt-3" data-kaori-role-actions>
+                            <a href="{{ url_for('access.roles.detail', role_id=role.id) }}"
+                               class="{{ action_button.classes('secondary', false) }}"><i data-lucide="external-link" class="h-4 w-4"></i>Open Role</a>
+                            {% if can_manage_roles and detail.mutation_protected %}
+                                <a href="{{ url_for('access.roles.clone', role_id=role.id) }}"
+                                   class="{{ action_button.classes('primary', false) }}"><i data-lucide="copy-plus" class="h-4 w-4"></i>Clone Role</a>
+                            {% elif can_mutate_role %}
+                                <a href="{{ url_for('access.roles.edit', role_id=role.id) }}"
+                                   class="{{ action_button.classes('primary', false) }}"><i data-lucide="pencil" class="h-4 w-4"></i>Edit Role</a>
+                                {% if detail.delete_eligible %}
+                                    <button type="button"
+                                            data-destructive-modal-open
+                                            data-destructive-modal-id="role-delete-confirmation"
+                                            data-destructive-target="{{ role.display_name }}"
+                                            data-destructive-scope="{{ detail.permission_count }} Permissions · No Active References"
+                                            data-destructive-submit-button-id="delete-role-submit-{{ role.id }}"
+                                            class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border {{ table_label.tone_border_classes('critical') }} bg-status-critical-soft px-4 text-sm font-semibold text-status-critical-text transition-colors hover:bg-status-critical hover:text-white">
+                                        <i data-lucide="trash-2" class="h-4 w-4"></i>Delete Role
+                                    </button>
+                                    <form method="post"
+                                          action="{{ url_for('access.roles.delete', role_id=role.id) }}"
+                                          class="hidden">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="role_id" value="{{ role.id }}">
+                                        <input type="hidden" name="role_version" value="{{ detail.version_token }}">
+                                        <button id="delete-role-submit-{{ role.id }}" type="submit">Delete</button>
+                                    </form>
+                                {% endif %}
+                            {% endif %}
+                        </div>
                     </div>
                 {% endcall %}
-            </div>
-
-            {% call detail_ui.detail_card('Permission Coverage', 'key-round', detail.permission_count ~ (' Permission' if detail.permission_count == 1 else ' Permissions'), badge_size='detail', density='compact', stretch=false) %}
-                <p class="text-xs leading-5 text-content-muted">Effective permission contracts grouped by control module. Cross-role comparison remains in Permission Catalog.</p>
-                {% if detail.permission_modules %}
-                    <div class="min-w-0 overflow-x-auto rounded-lg border border-outline-subtle" data-kaori-role-permission-coverage>
-                        <table class="{{ table_ui.table_classes('min-w-[42rem]') }}" aria-label="Role permission coverage by module">
-                            <thead class="{{ table_ui.head_classes() }}">
-                                <tr>
-                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Module</th>
-                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Permissions</th>
-                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Effective Capabilities</th>
-                                </tr>
-                            </thead>
-                            <tbody class="{{ table_ui.body_classes() }}">
-                                {% for module in detail.permission_modules %}
-                                    <tr class="{{ table_ui.row_classes() }}">
-                                        <td class="{{ table_ui.cell_classes() }}">
-                                            <div class="text-sm font-semibold text-content-primary">{{ module.label }}</div>
-                                            <div class="mt-0.5 text-xs text-content-muted">{{ module.key }}</div>
-                                        </td>
-                                        <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-semibold text-content-primary">{{ module.count }}</span></td>
-                                        <td class="{{ table_ui.cell_classes() }}">
-                                            <div class="flex min-w-0 flex-wrap gap-1" data-kaori-role-module-capabilities>
-                                                {% for permission in module.permissions %}
-                                                    {{ table_label.metadata_label(permission.label) }}
-                                                {% endfor %}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% else %}
-                    {{ detail_ui.empty_evidence('No Permissions Assigned', 'This role currently grants no effective permission contracts.', 'key-round') }}
-                {% endif %}
-            {% endcall %}
-
-            {% call detail_ui.detail_card('Administrative Boundary', 'shield-check', 'Protected' if detail.mutation_protected else 'Custom', badge_size='detail', density='compact', stretch=false) %}
-                <div class="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center" data-kaori-role-administrative-boundary>
-                    <div class="grid min-w-0 gap-x-6 gap-y-3 sm:grid-cols-2">
-                        {% if detail.mutation_protected %}
-                            {{ detail_ui.stacked_detail_row('Ownership', 'Protected defaults are code-owned and cannot be edited or deleted directly.') }}
-                            {{ detail_ui.stacked_detail_row('Customization Path', 'Clone this role to create an editable custom authorization profile.') }}
-                        {% else %}
-                            {{ detail_ui.stacked_detail_row('Ownership', 'Custom roles are administrator-managed and remain subject to delegation-ceiling, assignment, and provider-reference guardrails.') }}
-                            {{ detail_ui.stacked_detail_row('Delegation Boundary', 'Within your effective access ceiling' if detail.within_delegation else 'Outside your effective access ceiling; mutation is blocked') }}
-                            {{ detail_ui.stacked_detail_row('Deletion State', 'Eligible' if detail.delete_eligible else 'Blocked by active references') }}
-                        {% endif %}
-                    </div>
-                    <div class="min-w-0 border-t border-outline-subtle pt-3 lg:border-l lg:border-t-0 lg:py-1 lg:pl-4">
-                    <div class="flex flex-wrap items-center justify-start gap-2 lg:justify-end">
-                        <a href="{{ url_for('access.roles.detail', role_id=role.id) }}"
-                           class="{{ action_button.classes('secondary', false) }}"><i data-lucide="external-link" class="h-4 w-4"></i>Open Role</a>
-                        {% if can_manage_roles and detail.mutation_protected %}
-                            <a href="{{ url_for('access.roles.clone', role_id=role.id) }}"
-                               class="{{ action_button.classes('primary', false) }}"><i data-lucide="copy-plus" class="h-4 w-4"></i>Clone Role</a>
-                        {% elif can_mutate_role %}
-                            <a href="{{ url_for('access.roles.edit', role_id=role.id) }}"
-                               class="{{ action_button.classes('primary', false) }}"><i data-lucide="pencil" class="h-4 w-4"></i>Edit Role</a>
-                            {% if detail.delete_eligible %}
-                                <button type="button"
-                                        data-destructive-modal-open
-                                        data-destructive-modal-id="role-delete-confirmation"
-                                        data-destructive-target="{{ role.display_name }}"
-                                        data-destructive-scope="{{ detail.permission_count }} Permissions · No Active References"
-                                        data-destructive-submit-button-id="delete-role-submit-{{ role.id }}"
-                                        class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border {{ table_label.tone_border_classes('critical') }} bg-status-critical-soft px-4 text-sm font-semibold text-status-critical-text transition-colors hover:bg-status-critical hover:text-white">
-                                    <i data-lucide="trash-2" class="h-4 w-4"></i>Delete Role
-                                </button>
-                                <form method="post"
-                                      action="{{ url_for('access.roles.delete', role_id=role.id) }}"
-                                      class="hidden">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <input type="hidden" name="role_id" value="{{ role.id }}">
-                                    <input type="hidden" name="role_version" value="{{ detail.version_token }}">
-                                    <button id="delete-role-submit-{{ role.id }}" type="submit">Delete</button>
-                                </form>
-                            {% endif %}
-                        {% endif %}
-                    </div>
-                    </div>
-                </div>
             {% endcall %}
         </div>
     </div>
