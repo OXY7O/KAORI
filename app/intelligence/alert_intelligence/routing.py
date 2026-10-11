@@ -95,6 +95,8 @@ def upsert_routing_policy(
     normalized_name = str(config.name or '').strip()
     if not normalized_name:
         raise ValueError('Routing policy name is required.')
+    if 'registry' in config.domains:
+        raise ValueError('Registry notification routing is not enabled.')
     normalized_domains = sorted({value for value in config.domains if value in {'kubernetes', 'object_storage'}})
     normalized_severities = sorted(
         {value for value in config.severities if value in {'critical', 'warning', 'info', 'unknown'}}
@@ -137,6 +139,8 @@ def upsert_routing_policy(
 
 
 def matching_routing_policies(case: AlertCase) -> list[AlertRoutingPolicy]:
+    if case.domain == 'registry':
+        return []  # Registry notification routing remains unapproved.
     if case.source_type != KAORI_ALERT_SOURCE_TYPE:
         return []
     policies = AlertRoutingPolicy.query.filter_by(enabled=True).order_by(AlertRoutingPolicy.id.asc()).all()
@@ -145,7 +149,7 @@ def matching_routing_policies(case: AlertCase) -> list[AlertRoutingPolicy]:
 
 def firing_routes(case: AlertCase) -> list[FiringRoute]:
     """Return independent route/channel schedules; never collapse cadence across channels."""
-    if case.source_state != 'firing' or case.routing_state != 'enabled':
+    if case.domain == 'registry' or case.source_state != 'firing' or case.routing_state != 'enabled':
         return []
     policies = matching_routing_policies(case)
     if policies:
@@ -186,6 +190,8 @@ def acknowledgement_timeout_for_case(case: AlertCase) -> int:
 
 
 def policy_allows_resolved(case: AlertCase, channel_id: int) -> bool:
+    if case.domain == 'registry':
+        return False
     policies = matching_routing_policies(case)
     if not policies:
         return True
