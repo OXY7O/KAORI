@@ -35,6 +35,11 @@ def test_activity_audit_uses_availability_posture_without_treating_warning_event
     assert 'Successful · 24H' in summary
     assert 'Actors · 24H' in summary
     assert 'Actor Evidence' in summary
+    assert 'Hot Evidence Scope' in summary
+    assert 'Notification-backed' in summary
+    assert 'Authorized readers can review committed notification-backed activity across KAORI.' in summary
+    assert 'System-Wide Scope' not in summary
+    assert 'Actor identity, role, and authentication source are preserved at commit time.' in summary
     assert 'Immutable' in summary
     assert 'Hot + Archive' in summary
     assert "'posture_label': 'Available'" in queries
@@ -151,8 +156,8 @@ def test_activity_hot_register_is_explicit_about_archive_lifecycle_boundary() ->
     queries = read('app/platform_operations/notifications/queries.py')
     retention_domain = read('app/platform_operations/data_lifecycle/retention/domains/operational_activity.py')
 
-    assert 'This register reads hot PostgreSQL records.' in summary
-    assert 'Verified older evidence remains available through the archive-first Data Lifecycle history' in summary
+    assert 'Hot records reside in PostgreSQL; verified older evidence remains in archive-first Data Lifecycle history.' in summary
+    assert 'This register reads hot PostgreSQL records.' not in summary
     assert 'hot-record time range' in card
     assert "('all', 'All Hot Records')" in queries
     assert 'All Retained' not in queries

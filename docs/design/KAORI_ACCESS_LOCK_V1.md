@@ -25,7 +25,7 @@ Runtime ownership remains explicit: `app/access/users` owns account lifecycle, `
 6. Remember-me persistence defaults to 7 days and is bounded to 1–30 days. Super-admin remember-me remains default-deny.
 7. Identity Provider reads, mutation, and directory projection use the dedicated `identity_providers.view/manage/provision` permission family; provider records keep secret values externalized and runtime validation remains on-demand.
 8. Failed authentication attempts may remain linked to a target account for evidence, but never claim that target as the authenticated actor. Activity actor identity is snapshotted separately from the notification recipient.
-9. Activity Audit requires `activity_audit.view`, remains read-only, reads only hot PostgreSQL evidence, and links older verified evidence to Data Lifecycle archive history. User deletion cannot cascade-delete Activity Audit evidence.
+9. Activity Audit requires `activity_audit.view`, remains read-only, reads only hot PostgreSQL `notifications` evidence (including audit-only records), and links older verified evidence to Data Lifecycle archive history. The system-wide read permission does not imply an automatic union with domain-owned `audit_events`, `tenant_audit_evidence` or `JobExecution`. User deletion cannot cascade-delete Activity Audit evidence.
 
 ## Locked presentation boundaries
 
