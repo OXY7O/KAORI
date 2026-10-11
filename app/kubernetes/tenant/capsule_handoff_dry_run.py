@@ -72,10 +72,24 @@ def preview_capsule_namespace_handoff(
     elif (
         component.get('handoff') == 'observe_only'
         and component.get('ownership') == 'external_or_unattributed'
-        and not any(k in before_labels for k in ('kaori.io/tenant-id', 'app.kubernetes.io/managed-by'))
-        and not any(k.startswith('kaori.io/') for k in before_labels)
     ):
-        # No-op read-back of an externally owned Capsule Namespace. No patch.
+        # An observed Namespace can legitimately carry a *foreign* manager
+        # marker; unlike KAORI labels it is never a transfer candidate.
+        # Compare to the independently captured preflight manager (including
+        # absence) and refuse any unclassified KAORI provider-control label.
+        manager = before_labels.get('app.kubernetes.io/managed-by', '')
+        expected_manager = component.get('managed_by', '')
+        if not isinstance(expected_manager, str) or manager != expected_manager:
+            raise ValueError('Observed Capsule Namespace manager changed since preflight.')
+        if manager.lower() == 'kaori' or any(
+            key.startswith('kaori.io/') for key in before_labels
+        ):
+            raise ValueError(
+                'Observed Capsule Namespace retains unclassified KAORI control '
+                'labels; investigate ownership before preview.'
+            )
+        # No-op read-back of an externally governed Capsule Namespace.
+        # Original foreign manager, labels, spec and owners stay untouched.
         result = {
             'kind': 'Namespace', 'namespace': component['name'],
             'name': component['name'], 'uid': component['uid'],
@@ -129,16 +143,26 @@ def preview_capsule_handoff_scope(
         _request_timeout=5,
     )
     verify_capsule_cr_preserved(cr, cr_after)
-    if (
-        _labels(live_cr) != _labels(cr_after)
-        or len(rows) != len(namespaces)
-        or not any(row['operation'] == 'capsule_metadata_only_json_patch_dry_run' for row in rows)
-    ):
-        raise ValueError('Capsule CR changed, preview is partial or no transfer is provable.')
+    if _labels(live_cr) != _labels(cr_after) or len(rows) != len(namespaces):
+        raise ValueError('Capsule CR changed or Namespace preview coverage is incomplete.')
+    namespace_preview_count = sum(
+        row['operation'] == 'capsule_metadata_only_json_patch_dry_run'
+        for row in rows
+    )
+    # Zero Namespace transfers is legitimate when all Namespaces are
+    # provider-owned; only the entire related-resource worklist can establish
+    # whether *another* KAORI metadata transfer is actually possible. No
+    # observation-only result is treated as a successful handoff.
+    if namespace_preview_count + sum(
+        row['operation'] == 'observe_capsule_namespace_without_transfer'
+        for row in rows
+    ) != len(rows):
+        raise ValueError('Capsule Namespace preview returned an unexpected operation.')
     return {
         'status': 'preview_observed_coverage_incomplete',
         'capsule_cr': cr_observation, 'namespace_previews': rows,
         'namespace_count': len(rows),
+        'namespace_preview_count': namespace_preview_count,
         'quota_limit_rbac_inventory_verified': False,
         'dry_run_complete': False,
         'provider_mutation_performed': False,
