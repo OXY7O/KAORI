@@ -64,6 +64,9 @@ def require_current_capsule_acceptance(
         or accepted.get('accepted_by') == plan.get('requested_by')
         or accepted.get('verified_provider_identity') is not True
         or accepted.get('resource_authority_verified') is not True
+        or accepted.get('authenticated_provider') != 'kubernetes_self_subject_review'
+        or accepted.get('authorization_source') != 'kubernetes_self_subject_access_review'
+        or not str(accepted.get('provider_credential_id') or '').startswith('X509SHA256=')
         or accepted.get('consent_verified') is not True
         or accepted.get('provider_mutation_performed') is not False
         or accepted.get('provider_handoff_verified') is not False
