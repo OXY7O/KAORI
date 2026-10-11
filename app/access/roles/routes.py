@@ -24,6 +24,7 @@ from app.access.roles.service import (
     create_custom_role,
     delete_custom_role,
     ensure_role_within_delegation_boundary,
+    ensure_role_within_management_boundary,
     get_role,
     lock_role_for_mutation,
     role_version_matches,
@@ -260,7 +261,7 @@ def edit(role_id: int):
         )
         return redirect(url_for('access.roles.detail', role_id=role.id))
     try:
-        ensure_role_within_delegation_boundary(actor=actor, role=role)
+        ensure_role_within_management_boundary(actor=actor, role=role)
     except RoleDelegationError as exc:
         role_access_feedback(
             actor=actor,
@@ -392,7 +393,7 @@ def delete(role_id: int):
         )
         return redirect(url_for('access.roles.index'))
     try:
-        ensure_role_within_delegation_boundary(actor=actor, role=role)
+        ensure_role_within_management_boundary(actor=actor, role=role)
     except RoleDelegationError as exc:
         rollback_role_transaction()
         role_access_feedback(
