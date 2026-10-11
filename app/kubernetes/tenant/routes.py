@@ -76,6 +76,16 @@ from app.kubernetes.tenant.native_no_transfer_recovery import (
 from app.kubernetes.tenant.native_successor_handback import (
     handback_native_successor_governance_committed,
 )
+from app.kubernetes.tenant.native_residual_recovery_assessment import (
+    assess_legacy_native_profile_residue_readonly,
+)
+from app.kubernetes.tenant.native_residual_recovery_governance import (
+    prepare_native_residual_cleanup_committed,
+    approve_native_residual_cleanup_committed,
+)
+from app.kubernetes.tenant.native_residual_recovery_executor import (
+    execute_native_residual_cleanup_committed,
+)
 from app.kubernetes.tenant.native_handoff_dry_run import (
     dry_run_native_release_handoff_committed,
 )
@@ -1297,6 +1307,154 @@ def verify_native_successor_handback_route(tenant_id: str):
                 if done else 'Partial provider handback is not ready for Re-adopt.'
             ),
             metadata={'tenant_id': tenant_id, 'operation': 'native_successor_handback'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/residual-recovery/assess')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+@permission_required('clusters.manage')
+def assess_native_residual_cleanup_route(tenant_id: str):
+    """Explicit, read-only live evidence request; normal Detail GET is committed only."""
+    try:
+        _csrf()
+        result = assess_legacy_native_profile_residue_readonly(
+            tenant_id=tenant_id, actor_user_id=int(current_user.id),
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_residual_assessment_blocked',
+            status='warning', title='Recovery Assessment Blocked',
+            message=str(exc),
+            detail='No Kubernetes metadata was changed; check historical provider identity and receipt.',
+            metadata={'tenant_id': tenant_id, 'operation': 'native_residual_assessment'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_residual_assessment_candidate',
+            status='info', title='Read-only Recovery Candidate',
+            message=(
+                f"{result['residual_component_count']} of "
+                f"{result['component_count']} provider components contain profile residue."
+            ),
+            detail='This is not mutation approval. Prepare an immutable plan for independent review.',
+            metadata={'tenant_id': tenant_id, 'operation': 'native_residual_assessment'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/residual-recovery/prepare')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+@permission_required('clusters.manage')
+def prepare_native_residual_cleanup_route(tenant_id: str):
+    """Authenticated requester records exact assessment digest. No provider PATCH."""
+    try:
+        _csrf()
+        result = prepare_native_residual_cleanup_committed(
+            tenant_id=tenant_id, actor_user_id=int(current_user.id),
+            change_reference=str(request.form.get('change_reference') or ''),
+            confirmed=request.form.get('confirm_native_residual_prepare') == 'prepare',
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_residual_plan_blocked',
+            status='warning', title='Recovery Plan Blocked', message=str(exc),
+            detail='Released/Handback evidence stays intact; no provider mutation was attempted.',
+            metadata={'tenant_id': tenant_id, 'operation': 'native_residual_prepare'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_residual_plan_prepared',
+            status='info', title='Recovery Plan Prepared',
+            message=f"Change {result['change_reference']} · {result['residual_component_count']} component(s).",
+            detail='An independent Platform Admin must review the exact committed Plan SHA.',
+            metadata={'tenant_id': tenant_id, 'operation': 'native_residual_prepare'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/residual-recovery/approve')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+@permission_required('clusters.manage')
+def approve_native_residual_cleanup_route(tenant_id: str):
+    """Different authenticated Platform Admin approves; does not patch provider."""
+    try:
+        _csrf()
+        result = approve_native_residual_cleanup_committed(
+            tenant_id=tenant_id, actor_user_id=int(current_user.id),
+            plan_sha256=str(request.form.get('plan_sha256') or ''),
+            confirmed=request.form.get('confirm_native_residual_approval') == 'approve',
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_residual_approval_blocked',
+            status='warning', title='Independent Recovery Review Blocked',
+            message=str(exc),
+            detail='Plan SHA, actor separation, freshness and provider scope must agree.',
+            metadata={'tenant_id': tenant_id, 'operation': 'native_residual_approve'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_residual_approval_recorded',
+            status='info', title='Recovery Plan Independently Approved',
+            message=f"Exact plan {result['plan_sha256'][:12]}… was approved, not executed.",
+            detail='Provider metadata remains unchanged until separately confirmed execution.',
+            metadata={'tenant_id': tenant_id, 'operation': 'native_residual_approve'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/residual-recovery/execute')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+@permission_required('clusters.manage')
+def execute_native_residual_cleanup_route(tenant_id: str):
+    """Exact conditional metadata-only execution; never adopts or retries partials."""
+    try:
+        _csrf()
+        result = execute_native_residual_cleanup_committed(
+            tenant_id=tenant_id, actor_user_id=int(current_user.id),
+            plan_sha256=str(request.form.get('plan_sha256') or ''),
+            confirmed=request.form.get('confirm_native_residual_execute') == 'execute',
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_residual_execution_blocked',
+            status='error', title='Native Residual Recovery Blocked',
+            message=str(exc),
+            detail='Provider write may have started. Inspect immutable execution evidence before any recovery.',
+            metadata={'tenant_id': tenant_id, 'operation': 'native_residual_execute'},
+        )
+    except Exception:
+        # Do not expose provider exception internals/credential identifiers to
+        # clients. The committed in-progress receipt prevents blind replay.
+        _record(
+            event_type='kubernetes_tenant_residual_execution_unverified',
+            status='error', title='Provider Recovery Needs Manual Review',
+            message='Execution result is uncertain; review provider state and committed audit.',
+            detail='Do not retry, manually delete labels, or force Re-adopt.',
+            metadata={'tenant_id': tenant_id, 'operation': 'native_residual_execute'},
+        )
+    else:
+        verified = result.get('status') == 'verified'
+        _record(
+            event_type='kubernetes_tenant_residual_execution_verified'
+            if verified else 'kubernetes_tenant_residual_execution_partial',
+            status='success' if verified else 'warning',
+            title='Metadata Recovery Verified' if verified else 'Recovery Review Required',
+            message=(
+                f"{result['verified_count']} / {result['expected_component_count']} "
+                'provider components verified.'
+            ),
+            detail=(
+                'Run fresh Discovery and explicit Re-adopt; no automatic adoption occurred.'
+                if verified else 'Partial recovery requires manual provider investigation; do not retry.'
+            ),
+            metadata={'tenant_id': tenant_id, 'operation': 'native_residual_execute'},
         )
     return _tenant_section_redirect('registry')
 

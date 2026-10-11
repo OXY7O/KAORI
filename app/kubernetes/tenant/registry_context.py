@@ -354,6 +354,9 @@ def get_tenant_registry_context(
     no_transfer_assessments: dict[str, dict[str, Any]] = {}
     no_transfer_decisions: dict[str, dict[str, Any]] = {}
     successor_handbacks: dict[str, dict[str, Any]] = {}
+    residual_cleanup_plans: dict[str, dict[str, Any]] = {}
+    residual_cleanup_approvals: dict[str, dict[str, Any]] = {}
+    residual_cleanup_executions: dict[str, dict[str, Any]] = {}
     successor_claims: dict[str, dict[str, Any]] = {}
     successor_acceptances: dict[str, dict[str, Any]] = {}
     if tenant_ids and include_decommission_preflight:
@@ -366,6 +369,9 @@ def get_tenant_registry_context(
             ('kubernetes_tenant_release_native_no_transfer_assessment', no_transfer_assessments),
             ('kubernetes_tenant_release_native_no_transfer_decision', no_transfer_decisions),
             ('kubernetes_tenant_verified_native_successor_handback', successor_handbacks),
+            ('kubernetes_tenant_native_residual_cleanup_plan', residual_cleanup_plans),
+            ('kubernetes_tenant_native_residual_cleanup_approval', residual_cleanup_approvals),
+            ('kubernetes_tenant_native_residual_cleanup_execution', residual_cleanup_executions),
             ('kubernetes_tenant_release_successor_claim', successor_claims),
             ('kubernetes_tenant_release_verified_successor_acceptance', successor_acceptances),
         ):
@@ -442,6 +448,24 @@ def get_tenant_registry_context(
             row['release_native_no_transfer_assessment'] = no_transfer_assessments.get(item.id)
             row['release_native_no_transfer_decision'] = no_transfer_decisions.get(item.id)
             row['release_successor_handback'] = successor_handbacks.get(item.id)
+            row['native_residual_cleanup_plan'] = residual_cleanup_plans.get(item.id)
+            row['native_residual_cleanup_approval'] = residual_cleanup_approvals.get(item.id)
+            row['native_residual_cleanup_execution'] = residual_cleanup_executions.get(item.id)
+            # Only AuditEvent / committed Tenant state on normal UI GET.
+            # Fresh Kubernetes verification occurs through an explicit POST.
+            from app.kubernetes.tenant.release_handoff_approval import _checked_recently
+            plan = row['native_residual_cleanup_plan'] or {}
+            approved = row['native_residual_cleanup_approval'] or {}
+            row['native_residual_plan_current'] = (
+                plan.get('status') == 'pending_independent_review'
+                and _checked_recently(plan.get('requested_at'))
+            )
+            row['native_residual_approval_current'] = (
+                approved.get('status') == 'approved_for_exact_metadata_cleanup'
+                and _checked_recently(approved.get('approved_at'))
+                and approved.get('plan_sha256') == plan.get('plan_sha256')
+                and row['native_residual_plan_current']
+            )
             row['release_successor_claim'] = successor_claims.get(item.id)
             row['release_successor_acceptance'] = successor_acceptances.get(item.id)
             if item.provider_key == 'native_kubernetes' and (

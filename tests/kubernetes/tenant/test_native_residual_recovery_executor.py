@@ -244,11 +244,31 @@ def test_unverified_or_tampered_recovery_cannot_authorize_new_generation(
         )
 
 
-def test_source_only_executor_is_unexposed_to_routes():
+def test_governed_recovery_routes_require_csrf_all_platform_admin_permissions():
     from pathlib import Path
+    import ast
 
     root = Path(__file__).resolve().parents[3]
     routes = (root / 'app/kubernetes/tenant/routes.py').read_text(encoding='utf-8')
-    assert 'execute_native_residual_cleanup_committed(' not in routes
-    assert 'prepare_native_residual_cleanup_committed(' not in routes
-    assert 'approve_native_residual_cleanup_committed(' not in routes
+    tree = ast.parse(routes)
+    names = (
+        'assess_native_residual_cleanup_route',
+        'prepare_native_residual_cleanup_route',
+        'approve_native_residual_cleanup_route',
+        'execute_native_residual_cleanup_route',
+    )
+    for name in names:
+        fn = next(
+            item for item in tree.body
+            if isinstance(item, ast.FunctionDef) and item.name == name
+        )
+        decorators = [ast.unparse(item) for item in fn.decorator_list]
+        assert any("tenant_bp.post(" in item for item in decorators)
+        assert "permission_required('tenant.manage')" in decorators
+        assert "permission_required('integrations.manage')" in decorators
+        assert "permission_required('clusters.manage')" in decorators
+        assert 'execute_native_residual_cleanup_committed' not in name
+        assert '_csrf()' in ast.get_source_segment(routes, fn)
+        assert 'int(current_user.id)' in ast.get_source_segment(routes, fn)
+    assert "def execute_native_residual_cleanup_route(" in routes
+    assert "confirmed=request.form.get('confirm_native_residual_execute') == 'execute'" in routes

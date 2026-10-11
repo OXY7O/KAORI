@@ -1399,9 +1399,15 @@ helpers. Both requestor and independent reviewer must be authenticated
 KAORI Platform Admins, and their actor IDs must differ. An execution is
 allowed only under the reviewer's authenticated request identity with
 exact, unexpired reviewed plan SHA, fresh same-cluster provider assessment
-and unchanged UID/resourceVersion/component digest. There is **no
-registered HTTP route, background worker or UI entry point** for this
-new capability while the execution HOLD remains.
+and unchanged UID/resourceVersion/component digest. The #1132 implementation integrates this capability with the existing
+**Tenant Detail → Platform Admin Handback & Re-adopt** section through
+four permission-gated POST actions: **Assess live provider** (read-only),
+**Prepare** (requester), **Independent Approve** (different Platform Admin),
+and **Execute & Verify** (the independently approving actor).
+No background job, new resource administration workspace, or automatic
+Discovery/Adopt endpoint is introduced. The four routes are not used by
+ordinary Tenant Detail GET and remain subject to independent actor, CSRF,
+existing role, plan SHA and explicit confirmation checks.
 
 The only potential mutation under an authorized future execution is the
 literal `kaori.io/resource-profile` label on the **two fully evidenced**
@@ -1427,12 +1433,46 @@ verified Handback plus the exact new append-only recovery AuditEvent,
 receipt checksum, released Tenant/Namespace UID and provider RV all match.
 Discovery remains the gatekeeper and never auto-Adopts.
 
-**Authorization and validation HOLD:** This PR only introduces source,
-tests and docs on `kaori/review/staging-uat`. It neither executes any
-provider PATCH nor enables a route. Enabling the mutation entry point,
-Developer Check/Full Admission, formal Kubernetes UAT, reviewer
-approval and human acceptance requires a separately explicit HOLD lift.
-No direct changes to staging, main or external resources are permitted.
+**Authority and runtime HOLD:** The reviewed #1132 source wires an
+explicit HTTP entry point but does **not** run a Kubernetes PATCH,
+test suites, Developer Check, Full Admission or formal UAT. The live
+mutation route is sensitive: it requires the same authenticated independent
+reviewer, a fresh exact SHA/UID/RV/provider assessment and an explicit
+checkbox. Integration into the review branch is **not permission to
+exercise the operation while provider mutation/UAT HOLD remains**.
+Human security acceptance and explicit execution authorization are
+required before using the recovery action against Kubernetes. No direct
+staging/main changes or external mutations have been performed.
+
+### Released Native recovery and Discovery UX ownership (#1132)
+
+A verified Native Handback may still have older residual KAORI profile
+labels. The Handback section must **not** imply a clean Discovery simply
+because the Handback receipt is verified. The Tenant Detail uses only
+committed AuditEvent projections for the latest recovery plan, approval
+and execution. On explicit HTMX POST, Assess invokes the existing
+read-only provider assessment, which must never be stored as an approval.
+Prepare requires a change reference and confirms current provider
+scope. Independent approval must be by a distinct authenticated actor.
+Execute is only rendered to the approving actor with an unexpired
+unchanged plan and separate explicit confirmation; the service rechecks
+all original evidence and provider authority server-side.
+
+The UI distinguishes `Assessment Required`,
+`Pending Independent Review`, `Approved — Not Executed`,
+`Recovery Review Required` (including partial or in-progress), and
+`Recovery Verified`. Incomplete/expired evidence has **no retry button**
+or phantom reset; no new live provider reads occur during ordinary page
+loads. Once the append-only terminal receipt and new RV ledger are
+verified, **Open Discovery & Review Adoption** navigates to the existing
+Discovery page. This is navigation only: the new adoption generation
+still requires fresh provider UID/RV, zero residual ownership, canonical
+provider preflight, exact predecessor lineage and user submission.
+
+Responsive Violet status/steps, form CSRF, scoped HTMX swap,
+loading/disabled controls, operational toasts and permission
+boundaries reuse existing Tenant patterns; the form UI is a shared
+partial rather than duplicating a second provider dashboard.
 
 The `successor_owner` label is an administrative governance marker, **not
 a Kubernetes IdP group, RBAC entitlement or credential recipient**.

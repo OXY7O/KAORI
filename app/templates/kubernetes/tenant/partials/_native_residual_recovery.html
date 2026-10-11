@@ -1,0 +1,233 @@
+{# #1132: committed-state-only projection. All provider requests are explicit POST. #}
+{% if handback_receipt and handback_receipt.status == 'verified' %}
+    {% set recovery_plan = row.native_residual_cleanup_plan %}
+    {% set recovery_approval = row.native_residual_cleanup_approval %}
+    {% set recovery_execution = row.native_residual_cleanup_execution %}
+    {% set recovery_verified = recovery_execution and recovery_execution.status == 'verified' %}
+    <section id="tenant-native-residual-recovery"
+             class="mt-4 min-w-0 space-y-4 rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5"
+             aria-labelledby="tenant-native-residual-recovery-heading">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+            <div class="min-w-0">
+                <h4 id="tenant-native-residual-recovery-heading"
+                    class="flex items-center gap-2 text-sm font-semibold text-content-primary">
+                    <i data-lucide="shield-check" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                    Historical Namespace Recovery
+                </h4>
+                <p class="mt-1 text-sm leading-6 text-content-secondary">
+                    Handback is verified, but a previously KAORI-managed Namespace may still have
+                    a <code class="break-all font-mono text-xs">kaori.io/resource-profile</code> marker.
+                    Discovery intentionally blocks that residue until independently authorized cleanup.
+                </p>
+            </div>
+            {% if recovery_verified %}
+                {{ table_label.status_label('Recovery Verified', 'success') }}
+            {% elif recovery_execution %}
+                {{ table_label.status_label('Recovery Review Required', 'warning') }}
+            {% elif recovery_approval %}
+                {{ table_label.status_label('Approved — Not Executed', 'warning') }}
+            {% elif recovery_plan %}
+                {{ table_label.status_label('Pending Independent Review', 'info') }}
+            {% else %}
+                {{ table_label.status_label('Assessment Required', 'info') }}
+            {% endif %}
+        </div>
+        <ol class="grid min-w-0 gap-2 text-xs leading-5 text-content-secondary sm:grid-cols-2 xl:grid-cols-4"
+            aria-label="Governed recovery stages">
+            <li class="rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2">
+                <span class="block font-semibold text-content-primary">1. Assess &amp; Prepare</span>
+                <span>Verify live provider evidence and commit a bounded plan</span>
+            </li>
+            <li class="rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2">
+                <span class="block font-semibold text-content-primary">2. Independent Review</span>
+                <span>A different Platform Admin confirms the exact plan SHA</span>
+            </li>
+            <li class="rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2">
+                <span class="block font-semibold text-content-primary">3. Execute &amp; Verify</span>
+                <span>Conditional label-only PATCH with provider read-back</span>
+            </li>
+            <li class="rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2">
+                <span class="block font-semibold text-content-primary">4. Discovery</span>
+                <span>New generation adoption requires fresh provider preflight</span>
+            </li>
+        </ol>
+        {% if recovery_execution %}
+            <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3 text-sm leading-6 text-content-secondary"
+                 role="status">
+                <p class="font-semibold text-content-primary">
+                    {% if recovery_verified %}
+                        Provider recovery verified
+                    {% elif recovery_execution.status == 'in_progress' %}
+                        Execution started — manual status review required
+                    {% else %}
+                        Partial or uncertain provider recovery — manual review required
+                    {% endif %}
+                </p>
+                <p class="mt-1">
+                    {{ recovery_execution.verified_count|default(0) }} /
+                    {{ recovery_execution.expected_component_count|default(0) }} components verified.
+                    Historical Release and Handback evidence remains immutable.
+                    {% if not recovery_verified %}
+                        No retry or automatic cleanup is available.
+                    {% endif %}
+                </p>
+            </div>
+            {% if recovery_verified %}
+                <a href="{{ url_for('tenant.tenants', section='discovery') }}"
+                   class="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus sm:w-auto">
+                    <i data-lucide="radar" class="h-4 w-4" aria-hidden="true"></i>
+                    Open Discovery &amp; Review Adoption
+                    <i data-lucide="arrow-right" class="h-4 w-4" aria-hidden="true"></i>
+                </a>
+                <p class="text-xs leading-5 text-content-muted">
+                    This link does not adopt automatically. Discovery must find the same provider UID,
+                    no residual ownership marker, and pass a fresh governed preflight.
+                </p>
+            {% endif %}
+        {% elif recovery_plan %}
+            <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3 text-xs leading-5 text-content-secondary">
+                <p class="font-semibold text-content-primary">Committed recovery plan</p>
+                <p class="mt-1 break-all font-mono">{{ recovery_plan.plan_sha256 }}</p>
+                <p class="mt-1">Change reference: {{ recovery_plan.change_reference }} ·
+                    {{ recovery_plan.residual_component_count }} affected component(s).</p>
+            </div>
+            {% if recovery_approval %}
+                <div class="text-sm leading-6 text-content-secondary">
+                    Independent approval recorded.
+                    {% if row.native_residual_approval_current %}
+                        {% if recovery_approval.approved_by == current_user.id %}
+                            <form method="post"
+                                  action="{{ url_for('tenant.execute_native_residual_cleanup_route', tenant_id=tenant.id) }}"
+                                  hx-post="{{ url_for('tenant.execute_native_residual_cleanup_route', tenant_id=tenant.id) }}"
+                                  hx-target="#tenant-management-detail" hx-select="#tenant-management-detail"
+                                  hx-swap="outerHTML show:none focus-scroll:false"
+                                  hx-indicator="#tenant-management-loading"
+                                  hx-disabled-elt="find button[type='submit']"
+                                  class="mt-3 space-y-3">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                                <input type="hidden" name="tenant_detail_section" value="handback">
+                                <input type="hidden" name="plan_sha256" value="{{ recovery_plan.plan_sha256 }}">
+                                {% for state_key, state_value in registry_state.items() %}
+                                    <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
+                                {% endfor %}
+                                <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                                    <input type="checkbox" name="confirm_native_residual_execute"
+                                           value="execute" required
+                                           class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
+                                    <span>I am the independent reviewer. Execute only the approved
+                                        <code>kaori.io/resource-profile</code> metadata cleanup after
+                                        fresh UID/RV checks; preserve all Kubernetes workloads,
+                                        quotas, specs and foreign labels. Incomplete execution needs manual recovery.</span>
+                                </label>
+                                <button type="submit"
+                                        class="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-progress disabled:opacity-60 sm:w-auto">
+                                    <i data-lucide="shield-alert" class="h-4 w-4" aria-hidden="true"></i>
+                                    Execute Verified Metadata Recovery
+                                </button>
+                            </form>
+                        {% else %}
+                            <p class="mt-1">Only the independent reviewer who approved this plan may execute it.</p>
+                        {% endif %}
+                    {% else %}
+                        <p class="mt-1">Plan/approval evidence expired or changed. Execution is blocked for governance review.</p>
+                    {% endif %}
+                </div>
+            {% elif row.native_residual_plan_current %}
+                {% if recovery_plan.requested_by != current_user.id %}
+                    <form method="post"
+                          action="{{ url_for('tenant.approve_native_residual_cleanup_route', tenant_id=tenant.id) }}"
+                          hx-post="{{ url_for('tenant.approve_native_residual_cleanup_route', tenant_id=tenant.id) }}"
+                          hx-target="#tenant-management-detail" hx-select="#tenant-management-detail"
+                          hx-swap="outerHTML show:none focus-scroll:false"
+                          hx-indicator="#tenant-management-loading"
+                          hx-disabled-elt="find button[type='submit']"
+                          class="space-y-3">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                        <input type="hidden" name="tenant_detail_section" value="handback">
+                        <input type="hidden" name="plan_sha256" value="{{ recovery_plan.plan_sha256 }}">
+                        {% for state_key, state_value in registry_state.items() %}
+                            <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
+                        {% endfor %}
+                        <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                            <input type="checkbox" name="confirm_native_residual_approval"
+                                   value="approve" required
+                                   class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
+                            <span>As a different Platform Admin, independently review the exact
+                                Resource Profile residue scope and approve the current plan SHA.
+                                Approval does not patch Kubernetes.</span>
+                        </label>
+                        <button type="submit"
+                                class="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-progress disabled:opacity-60 sm:w-auto">
+                            <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>
+                            Independently Approve Recovery Plan
+                        </button>
+                    </form>
+                {% else %}
+                    <p class="text-xs leading-5 text-content-muted">Awaiting a different Platform Admin. The requester cannot self-approve.</p>
+                {% endif %}
+            {% else %}
+                <p class="text-xs leading-5 text-content-muted">Plan evidence expired. This immutable plan cannot be replayed or silently replaced; request governed review.</p>
+            {% endif %}
+        {% else %}
+            <p class="text-xs leading-5 text-content-muted">
+                Start with a read-only provider assessment. A new recovery plan
+                separately requires an explicit change reference and independent review.
+            </p>
+            <form method="post"
+                  action="{{ url_for('tenant.assess_native_residual_cleanup_route', tenant_id=tenant.id) }}"
+                  hx-post="{{ url_for('tenant.assess_native_residual_cleanup_route', tenant_id=tenant.id) }}"
+                  hx-target="#tenant-management-detail" hx-select="#tenant-management-detail"
+                  hx-swap="outerHTML show:none focus-scroll:false"
+                  hx-indicator="#tenant-management-loading"
+                  hx-disabled-elt="find button[type='submit']" class="space-y-3">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                <input type="hidden" name="tenant_detail_section" value="handback">
+                {% for state_key, state_value in registry_state.items() %}
+                    <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
+                {% endfor %}
+                <button type="submit"
+                        class="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-progress disabled:opacity-60 sm:w-auto">
+                    <i data-lucide="scan-search" class="h-4 w-4" aria-hidden="true"></i>
+                    Assess Live Provider Residue (Read-only)
+                </button>
+            </form>
+            <form method="post"
+                  action="{{ url_for('tenant.prepare_native_residual_cleanup_route', tenant_id=tenant.id) }}"
+                  hx-post="{{ url_for('tenant.prepare_native_residual_cleanup_route', tenant_id=tenant.id) }}"
+                  hx-target="#tenant-management-detail" hx-select="#tenant-management-detail"
+                  hx-swap="outerHTML show:none focus-scroll:false"
+                  hx-indicator="#tenant-management-loading"
+                  hx-disabled-elt="find button[type='submit']"
+                  class="space-y-3 border-t border-outline-subtle pt-3">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                <input type="hidden" name="tenant_detail_section" value="handback">
+                {% for state_key, state_value in registry_state.items() %}
+                    <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
+                {% endfor %}
+                <label for="tenant-residual-change-reference" class="block text-xs font-semibold text-content-primary">
+                    Approved change reference
+                </label>
+                <input id="tenant-residual-change-reference" name="change_reference" type="text"
+                       required minlength="3" maxlength="120" autocomplete="off"
+                       placeholder="CHG-2026-1234"
+                       class="min-h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                    <input type="checkbox" name="confirm_native_residual_prepare"
+                           value="prepare" required
+                           class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
+                    <span>Prepare a bounded immutable plan using a fresh provider assessment.
+                        This does not delete a resource or modify Kubernetes.</span>
+                </label>
+                <button type="submit"
+                        class="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-progress disabled:opacity-60 sm:w-auto">
+                    <i data-lucide="clipboard-list" class="h-4 w-4" aria-hidden="true"></i>
+                    Prepare Governed Recovery Plan
+                </button>
+            </form>
+        {% endif %}
+    </section>
+{% endif %}
