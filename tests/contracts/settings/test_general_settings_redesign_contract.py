@@ -121,6 +121,23 @@ def test_system_information_is_explicitly_read_only_and_traceable() -> None:
     assert 'Not Exposed' in main
     assert 'data-system-information-workspace="unified"' in main
     assert 'data-system-information-visual-hierarchy="release-led"' in main
+    assert 'data-system-build-evidence="runtime-config"' in main
+    assert "system_information.build_sha == 'Not provided'" in main
+    assert "system_information.build_date == 'Not provided'" in main
+    assert "table_label.status_label('Incomplete', 'warning')" in main
+    assert 'artifact lineage cannot be verified here' in main
+    assert 'Product Release Focus' in main
+    assert 'not a live provider-readiness check' in main
+    assert 'runtime provider readiness and RBAC determine availability' in main
+    assert 'open:bg-surface-hover' in main
+    assert 'open:bg-surface-subtle' not in main
+    assert 'for highlight in system_information.release_highlights' in main
+    assert 'for group in system_information.feature_groups' in main
+    assert 'for feature in group.features' in main
+    assert '<details' in main
+    assert '<summary' in main
+    assert 'lg:grid-cols-3' in main
+    assert 'border-brand-outline' in main
     assert 'data-system-information-workspace-layout="full-width"' in read(
         'app/templates/settings/general/partials/_page_content.html'
     )
