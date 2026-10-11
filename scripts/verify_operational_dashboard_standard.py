@@ -427,19 +427,24 @@ def _verify_artifact_registry_dashboard(
             'item.progress_label',
             'percentage not applicable',
             'Refresh evidence; verify headroom',
+            "'Capacity Decision Notes'",
+            'Planning Check',
+            'Evidence Handoff',
         ),
         'Registry Capacity Snapshot K8s visual grammar and evidence-qualified progress',
     )
-    if 'operational_callout.render(' in registry_capacity_snapshot:
+    if "operational_callout.render('Data Scope'" in registry_capacity_snapshot:
         raise AssertionError('Registry Capacity must use the compact Kubernetes Data Scope strip')
     _require(
         presentation,
         (
             "'progress_label': 'Used'",
             "'progress_label': 'Free'",
+            "'label': 'Quota Left'",
+            'No quota risk within the warning window.',
             "'progress_label': 'Inventory'",
             '100 - quota_utilization if quota_utilization is not None else None',
-            'Committed growth and Metrics Source quota evidence.',
+            'Committed growth and quota evidence.',
         ),
         'Registry committed quota progress semantics and compact evidence microcopy',
     )
@@ -472,6 +477,8 @@ def _verify_artifact_registry_dashboard(
             'overview.forecast.artifact_growth_per_day',
             'overview.forecast.nearest_quota_days',
             'Artifact change per day.',
+            'Committed analytics snapshots',
+            'Projects with quota ETA',
             'Quota ETA with positive growth.',
             'Forecast Basis',
             'Registry Analytics',
