@@ -9,6 +9,7 @@ from app.access.rbac.defaults import DEFAULT_PERMISSION_DEPENDENCIES
 from app.access.rbac.policy import (
     actor_delegable_permission_keys,
     role_is_delegable_by_actor,
+    role_is_manageable_by_actor,
     role_is_mutation_protected,
     role_is_protected_default,
 )
@@ -235,7 +236,7 @@ def build_role_form_context(
             role
             and actor.has_permission('roles.manage')
             and not role_is_mutation_protected(role)
-            and role_is_delegable_by_actor(actor, role)
+            and role_is_manageable_by_actor(actor, role)
         ),
         'can_clone_source': bool(
             clone_source
@@ -261,7 +262,7 @@ def build_role_detail_context(*, role: Role, actor: User) -> dict[str, Any]:
     baseline_state = role_baseline_state(role)
     mutation_protected = role_is_mutation_protected(role)
     can_manage_roles = actor.has_permission('roles.manage')
-    within_delegation = role_is_delegable_by_actor(actor, role)
+    within_delegation = role_is_manageable_by_actor(actor, role)
 
     permissions = sorted(role.permissions, key=lambda item: (item.module or '', item.key))
     module_map: dict[str, list[Permission]] = {}
