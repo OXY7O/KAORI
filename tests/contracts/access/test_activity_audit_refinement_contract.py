@@ -180,3 +180,48 @@ def test_activity_hot_register_is_explicit_about_archive_lifecycle_boundary() ->
     assert "'actor_snapshot': dict(notification.actor_snapshot_json or {})" in retention_domain
     assert 'outerjoin(User' not in retention_domain
     assert 'from app.models.user import User' not in retention_domain
+
+
+def test_activity_audit_cross_domain_store_boundaries_and_existing_tenant_bridge() -> None:
+    """Prevent false Activity Audit coverage claims or duplicate provider bridges."""
+    service = read('app/access/activity_audit/service.py')
+    query = read('app/platform_operations/notifications/queries.py')
+    routes = read('app/access/activity_audit/routes.py')
+    bridge = read('app/kubernetes/tenant/audit_correlation_service.py')
+    auto_jobs = read('app/platform_operations/jobs/audit.py')
+    terminal_jobs = read('app/platform_operations/jobs/service.py')
+    manual_jobs = read('app/platform_operations/jobs/routes.py')
+    tenant_sync = read('app/kubernetes/tenant/audit.py')
+    handoff = read('app/kubernetes/tenant/release_handoff_approval.py')
+    outbound = read('app/integrations/delivery/notification_channels/service.py')
+    decision = read('app/intelligence/automation_control/notifications.py')
+    reports = read('app/reports/notifications.py')
+
+    assert 'get_notification_activity_context(' in service
+    assert 'get_notification_activity_detail(' in service
+    assert 'AuditEvent' not in service
+    assert 'Notification' in query
+    assert "@permission_required('activity_audit.view')" in routes
+
+    assert 'def _project_activity(evidence: TenantAuditEvidence)' in bridge
+    assert 'activity = Notification()' in bridge
+    assert 'activity.deck_visible = False' in bridge
+    assert "'tenant_audit_evidence_id': evidence.public_id" in bridge
+    assert '_project_activity(evidence)' in bridge
+    assert 'idempotency_key=normalized.idempotency_key' in bridge
+
+    assert 'event = AuditEvent()' in auto_jobs
+    assert 'no Activity Audit Notification is created' in auto_jobs
+    assert 'Notification()' not in auto_jobs
+    assert 'event = AuditEvent()' in terminal_jobs
+    assert 'record_operational_activity(' in manual_jobs
+    assert 'AuditEvent()' in tenant_sync
+    assert 'db.session.add(AuditEvent(' in handoff
+
+    assert 'delivery = NotificationDelivery()' in outbound
+    assert 'delivery.event_key = event.event_key' in outbound
+    assert 'persist_notification(' not in outbound
+    assert 'build_decision_notification_event(' in decision
+    assert 'dispatch_matching_notification_event(' in decision
+    assert 'event = NotificationEvent(' in reports
+    assert 'dispatch_notification_event(' in reports
