@@ -234,3 +234,63 @@ def test_bulk_tls_update_converts_provider_successes_to_persistence_warnings(
     assert result['persistence_gap_count'] == 2
     assert result['failed_count'] == 0
     assert {item['status'] for item in result['results']} == {'warning'}
+
+
+def test_single_tls_update_blocks_uncovered_host_before_provider_patch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    updates = _load_updates(monkeypatch)
+    record = _record()
+    record.ingress_hosts = ['uncovered.example.org']
+    updates.db.session.get = lambda model, identifier: (
+        record if model is updates.TLSCertificateInventory else
+        SimpleNamespace(ingress_mapping_status='collected')
+    )
+    monkeypatch.setattr(updates, 'find_uncovered_hosts', lambda hosts, cert: hosts)
+    calls: list[int] = []
+    monkeypatch.setattr(updates, 'patch_tls_secret', lambda target, cert, key: calls.append(target.id))
+
+    result = updates.apply_certificate_update(record.id, {})
+
+    assert calls == []
+    assert result['status'] == 'failed'
+    assert result['provider_updated'] is False
+    assert 'does not cover' in result['message']
+
+
+def test_bulk_tls_coverage_blocker_aborts_before_any_provider_patch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    updates = _load_updates(monkeypatch)
+    first, second = _record(1), _record(2)
+    second.ingress_hosts = ['uncovered.example.org']
+    updates.TLSCertificateInventory.query = SimpleNamespace(
+        filter=lambda expression: SimpleNamespace(all=lambda: [first, second]),
+        get=lambda certificate_id: None,
+    )
+    monkeypatch.setattr(updates, 'find_uncovered_hosts', lambda hosts, cert: hosts)
+    calls: list[int] = []
+    monkeypatch.setattr(updates, 'patch_tls_secret', lambda target, cert, key: calls.append(target.id))
+
+    result = updates.apply_bulk_update({}, [1, 2])
+
+    assert calls == []
+    assert result['status'] == 'failed'
+    assert result['provider_updated_count'] == 0
+    assert len(result['errors']) == 1
+
+
+def test_tls_update_blocks_unknown_ingress_mapping_without_provider_patch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    updates = _load_updates(monkeypatch)
+    record = _record()
+    updates.db.session.get = lambda model, identifier: (
+        record if model is updates.TLSCertificateInventory else None
+    )
+    calls: list[int] = []
+    monkeypatch.setattr(updates, 'patch_tls_secret', lambda target, cert, key: calls.append(target.id))
+    result = updates.apply_certificate_update(record.id, {})
+    assert calls == []
+    assert result['status'] == 'failed'
+    assert 'Not Reported' in result['message']
