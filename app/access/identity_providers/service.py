@@ -226,12 +226,19 @@ def assign_provider_role_choices(form, *, actor: User) -> None:
     form.default_role_id.choices = [(0, 'Select role'), *((role.id, role.display_name) for role in roles)]
 
 
-def provider_default_role_assignment_error(actor: User, role_id: int | None) -> str | None:
+def provider_default_role_assignment_error(
+    actor: User, role_id: int | None, *, jit_enabled: bool = False
+) -> str | None:
     if not role_id:
         return None
     role = db.session.get(Role, role_id)
     if role is None or not role.is_active:
         return 'The selected JIT default role is unavailable.'
+    # JIT admission is always non-admin, including for Local Database Super Admin.
+    # Do not conflate a configuration actor's delegation ceiling with an
+    # untrusted external identity's automatically provisioned role.
+    if jit_enabled and role_is_access_admin_level(role):
+        return 'JIT requires an active non-admin default role.'
     if role_is_delegable_by_actor(actor, role):
         return None
     if role_is_access_admin_level(role) and not is_local_break_glass(actor):
