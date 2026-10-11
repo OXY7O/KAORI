@@ -110,17 +110,17 @@
             </div>
         {% endcall %}
     </div>
-    <div class="overflow-x-auto lg:overflow-visible">
-        <table class="{{ table_ui.table_classes('min-w-[980px] table-fixed lg:min-w-0') }}">
+    <div class="overflow-x-auto xl:overflow-visible">
+        <table class="{{ table_ui.table_classes('min-w-[1040px] table-fixed xl:min-w-0') }}">
             <caption class="sr-only">Tenant Access Grant registry.</caption>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[20%]">Principal</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[19%]">Principal</th>
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">Tenant</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">Profile</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[13%]">Profile</th>
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[17%]">Scope</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[18%]">Reconciliation</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[17%]">Actions</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[17%]">Reconciliation</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[20%]">Actions</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
@@ -257,7 +257,7 @@
                                 Inspect current scope and committed evidence before retrying provider reconciliation.
                             </p>
                             {% if grant.status == 'active' or grant.reconciliation_status != 'revoked' %}
-                            <form method="post"
+                                <form method="post"
                                   action="{{ url_for('tenant.reconcile_access_grant_route', grant_id=grant.id) }}"
                                   hx-post="{{ url_for('tenant.reconcile_access_grant_route', grant_id=grant.id) }}"
                                   hx-target="#tenant-admin-workspace"
@@ -272,7 +272,7 @@
                                     <i data-lucide="refresh-cw" class="h-4 w-4"></i>
                                     Reconcile
                                 </button>
-                            </form>
+                                </form>
                             {% endif %}
                         </div>
                         {% if grant.status == 'active' %}
