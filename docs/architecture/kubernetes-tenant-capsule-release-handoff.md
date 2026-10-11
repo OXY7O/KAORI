@@ -86,14 +86,54 @@ retains a non-allowlisted blocker until those controls are proven. The
 legacy observation-only Release path is not granted a new executor.
 The preview remains `dry_run_complete=false`. No provider write is introduced.
 
+## Cluster-scoped quota and Capsule RBAC intent lineage — follow-up
+
+`capsule_handoff_authority_inventory.py` adds **read-only, bounded**
+observation for `globalresourcequotas.capsule.clastix.io` using the served
+`v1beta2` API (with a `v1beta1` fallback only after 404). The observer binds
+the full cluster LIST resourceVersion, each CR UID/resourceVersion, SHA-256
+canonical spec and metadata, and source API version. It never clones or
+updates quota. Missing CRD, partial/paginated/oversized LISTs, malformed
+specs or unsupported tenant selector expressions fail closed. Foreign quota
+objects are fingerprinted without claiming their management.
+
+Capsule Tenant `spec.rules[].permissions.bindings` now has a **candidate**
+lineage comparison against effective KAORI-correlated RoleBindings. The
+comparison accepts only explicit Namespace-name selectors, unique bounded
+scopes, exact ClusterRole reference and canonical subject identity. Its
+committed receipt contains opaque SHA digests and counts, **not** subject
+names, authentication material or raw role policies.
+`additionalRoleBindings` with KAORI grant markers cannot be admitted as
+an unbounded successor handoff. Mismatched effective RoleBindings, residual
+KAORI access grants, unknown selectors and duplicated claims block.
+Matching content is only `contract_correlated`; it does **not** prove
+which controller created a RoleBinding or that the successor accepted it.
+
+Both complete observations are committed under the existing Capsule
+`capsule_related_inventory` evidence and SHA-bound into the same Capsule
+handoff fingerprint via `capsule_shared_quota_sha256` and
+`capsule_rbac_lineage_sha256`. The prior namespaced inventory digest remains
+unchanged, and Native/legacy observation-only Release paths remain separate.
+The existing non-allowlisted Release blocker remains until full provider
+authority/transition evidence is available.
+
+No route, provider write, persisted dry-run admission, executor,
+Release transition or automatic recovery is enabled by this source slice.
+Neither successful intent matching nor an unchanged fingerprint is consent.
+Additional cluster-scoped Capsule GlobalTenantResource/resource-pool variants
+remain subject to explicit version/capability admission rather than
+being silently interpreted as a global quota.
+
 ## Required before completing #1229
 
-1. Complete the now SHA-bound **namespaced** related inventory with
-   cluster-scoped shared quota variants, proven Capsule-generated RoleBinding
-   origins, exact KAORI allocation/access transfer worklist and matching
-   authoritative post-transfer read-back. Never relabel provider-owned objects.
-   Residual KAORI-owned ResourceQuota, LimitRange or RoleBinding remains blocked
-   until that *specific* metadata-only transfer is separately admitted.
+1. Build on the SHA-bound Namespace and cluster-scoped
+   GlobalResourceQuota observations: prove the actual Capsule controller
+   origin of generated RoleBindings, authorize any other served shared-quota
+   variants explicitly, complete exact KAORI allocation/access transfer
+   worklist and corresponding authoritative post-transfer read-back.
+   Never relabel provider-owned objects. Residual KAORI-owned ResourceQuota,
+   LimitRange or RoleBinding remains blocked until its exact metadata-only
+   transfer is separately admitted.
 2. Bind a committed dry-run receipt to the *current* independently approved
    plan SHA, provider fingerprint, live zero-dependency preflight, exact actor,
    accepted successor and fresh registered X.509 SelfSubjectReview/SAR with
