@@ -673,8 +673,9 @@ changed evidence refuses execution. Both plan and approval use the
 existing AuditEvent store, and no provider patch is made before an
 immutable `in_progress` execution receipt is written.
 
-The executor is **not registered as a route or job**. Once separately
-approved and enabled by a trusted permission-gated route, it can
+The #1132 integration registers a narrowly scoped, authenticated and
+CSRF-protected Tenant Detail POST route (with no background job);
+once independently approved and explicitly confirmed, it can
 conditionally remove only the exact `kaori.io/resource-profile` label
 on verified historical Namespace/ResourceQuota/LimitRange components.
 Each patch performs UID/RV/label-value tests, Kubernetes dry-run,
@@ -691,8 +692,55 @@ For a newer RV, the existing lineage guard additionally checks
 the *latest verified immutable recovery receipt* and checksum before
 allowing another adopted generation. It never accepts a DB flag alone.
 No cleanup, UAT, Developer Check, CI/CD or other quality gate has been
-run or authorized; do not invoke these source functions directly in
-DevContainer to mutate Kubernetes while the HOLD is active.
+run or authorized; the presence of a new execution route **does not
+lift the Kubernetes provider-mutation HOLD**. Human security review and
+explicit authorization are required before pressing Execute or calling
+the service directly in DevContainer.
+
+### Native historical recovery UI → Discovery/Re-adopt (#1132)
+
+In Tenant Registry select the **Released Native Tenant** and open
+**Platform Admin Handback & Re-adopt**. A verified Handback with a
+remaining Resource Profile label exposes **Historical Namespace Recovery**.
+The status is projected from committed KAORI AuditEvent records only.
+First use **Check Discovery First**; if already eligible, proceed with
+normal Review Adoption and do not run recovery. Only a residue-induced
+Discovery Blocked state warrants the recovery flow:
+`Recovery Check · If Blocked`, `Pending Independent Review`,
+`Approved — Not Executed`, `Recovery Review Required`, or
+`Recovery Verified`. This section never scans Kubernetes on page GET.
+
+The workflow uses exactly four existing-authority HTMX POST actions:
+**Assess Live Provider Residue (read-only)** (shows a toast and does
+not commit approval); **Prepare Governed Recovery Plan** (requester A
+with a change reference); **Independently Approve Recovery Plan**
+(Platform Admin B, different authenticated identity, plan SHA checked);
+and **Execute Verified Metadata Recovery** (the same B with explicit
+confirmation, fresh provider checks and UID/RV/label CAS dry-run,
+conditional PATCH and complete read-back). Every request checks
+`tenant.manage`, `integrations.manage`, `clusters.manage`,
+CSRF and authenticated user; the business services still require
+the unchanged historical release/Handback evidence and independent
+approval. Locked/expired, completed, partial, and unknown states fail
+closed with no retry. Controls use the existing Violet status, loading,
+toast, checkbox and keyboard-focus conventions.
+
+After `Recovery Verified`, use **Open Discovery & Review Adoption**.
+This only navigates to the already approved Discovery preflight. A
+fresh provider discovery must show the Namespace as ungoverned and
+`Discovered`, with the original UID, no residual `kaori.io/*`
+ownership label and the verified new RV ledger. The operator must
+explicitly submit a new **Adopt & Manage** generation. Do not equate
+a successful metadata cleanup to successful Re-adoption; no silent
+takeover, quota/spec changes, or automatic Adopt are made.
+
+**HOLD:** UI and backend source integration into
+`kaori/review/staging-uat` is not live recovery evidence. Do not
+press Execute, change provider resources manually, or Re-adopt
+until independent human security acceptance, a deliberate provider
+mutation authorization and the agreed gate/UAT release. Any expired
+plan or in-progress/partial attempt requires new human
+recovery governance, not replay.
 
 ### Provider Discovery and Adoption
 

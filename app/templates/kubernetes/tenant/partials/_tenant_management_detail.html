@@ -1729,7 +1729,12 @@
                     <span class="mt-1 block break-words text-sm leading-6 text-content-secondary">A new authorized Platform Admin decision is required before a Released Tenant can be Re-adopted.</span>
                 </span>
                 <span class="ml-auto inline-flex shrink-0 items-center gap-2">
-                    {{ table_label.status_label('Available', 'info') }}
+                    {{ table_label.status_label(
+                        'Recovery Verified' if row.native_residual_cleanup_execution and row.native_residual_cleanup_execution.status == 'verified'
+                        else 'Recovery Review' if row.native_residual_cleanup_execution
+                        else 'Handback Verified' if handback_receipt and handback_receipt.status == 'verified'
+                        else 'Handback Required', 'success' if row.native_residual_cleanup_execution and row.native_residual_cleanup_execution.status == 'verified' else 'info'
+                    ) }}
                     <i data-lucide="chevron-down"
                        class="h-4 w-4 text-content-muted transition-transform group-open:rotate-180" aria-hidden="true"></i>
                 </span>
@@ -1744,7 +1749,8 @@
                                 {{ handback_receipt.verified_count|default(0) }} /
                                 {{ handback_receipt.expected_component_count|default(0) }} resources retained.
                                 {% if handback_receipt.status == 'verified' %}
-                                    Run fresh Discovery, then explicitly Adopt as a new Tenant/Namespace generation.
+                                    If Discovery still blocks a historical Resource Profile marker, use the
+                                    governed recovery process below. Re-adopt only after verified cleanup.
                                 {% else %}
                                     Partial or incomplete handback requires provider recovery review; no automatic retry.
                                 {% endif %}
@@ -1785,6 +1791,7 @@
                                 </button>
                             </form>
                         {% endif %}
+                {% include 'kubernetes/tenant/partials/_native_residual_recovery.html' %}
             </div>
         </details>
                 {% endif %}
