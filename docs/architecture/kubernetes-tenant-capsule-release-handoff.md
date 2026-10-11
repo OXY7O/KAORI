@@ -568,6 +568,95 @@ This PR provides no registered writer, collector runtime, endpoint,
 Kubernetes client, Release finalizer or database migration.
 All gate execution remains HOLD; #1229 OPEN and #1230/#1231 BLOCKED.
 
+## Collector key pin and append-only audit/consent storage — source-only
+
+### Three distinct trust layers
+
+A collector key **pin** is not an operational trust store. The new pure
+`capsule_handoff_collector_key_pin.py` validates a versioned,
+cluster-scoped collector/key identity, 32+ byte backend key material,
+out-of-band pinned SHA-256 fingerprint and an active UTC rotation
+window. It rejects rotated/revoked/foreign/mismatched keys without
+returning the key. The caller cannot assert trust with a supplied
+`verified=true` field: the result **always** reports
+`backend_trust_store_source_attested=false` and
+`key_rotation_revocation_enforced=false`. Vault/KMS connection,
+authenticated key provenance, key revocation distribution and an
+operational collector authentication channel remain **unimplemented**.
+
+The preceding `capsule_handoff_collector_receipt.py` can validate a
+batch HMAC under a supplied strong key, but neither HMAC nor a key
+fingerprint proves apiserver-generated event authenticity or complete
+controller causality. Before any real admission, require a separately
+authenticated/retained Kubernetes apiserver audit channel, cluster
+controller principal identity and independent control of the key
+material. No raw key, Kubernetes principal or RoleBinding subject is
+stored in the source-only proof ledger.
+
+### Independent audit batch and consent evidence
+
+Two **staged, not migrated** ORM tables are defined in
+`app/models/capsule_handoff_proof.py` and migration
+`20261011_capsule_audit_consent_proof_ledger.py`, down-revision
+`20261011_capsule_ledger`:
+
+- `capsule_handoff_audit_batches`: one immutable collector batch
+  UUID globally and at most one collector batch per **Tenant/plan**.
+  Records the cluster, generation, plan/worklist/resource review SHA,
+  claim/receipt digests, collector/key IDs, capture time and database
+  record time, **not** the raw audit events or HMAC key.
+- `capsule_handoff_resource_consent_records`: at most one consent
+  per Tenant/plan, three independently identified actor IDs
+  (requester/reviewer/successor), exactly 1–330 transfer targets and
+  source manifest/scope digests. A composite FK requires its parent
+  audit batch to match the **same** batch UUID, Tenant, plan,
+  worklist and resource-review SHA; consent cannot refer to a
+  different provider inventory merely because its plan ID matches.
+
+Both tables have explicit unique and CHECK constraints,
+PostgreSQL **UPDATE/DELETE/TRUNCATE-deny** triggers, and SQLite
+UPDATE/DELETE-deny triggers. Unsupported SQL dialects are rejected.
+For SQLite, the migration additionally refuses creation when
+`PRAGMA foreign_keys` is not enabled, but runtime connections also
+need enforcement and independent inspection. Downgrade refuses to
+erase either non-empty evidence table. The old generic `AuditEvent`
+and Capsule `capsule_handoff_ledger_events` attempt history are
+left unchanged. No startup migration, live DDL or SQL INSERT writer
+has been introduced.
+
+`capsule_handoff_proof_storage_review.py` performs a **read-only,
+bounded Tenant-wide historical scan**, never a convenient latest-plan
+filter that could conceal prior attempts. It correlates source
+report, MAC-checked receipt, human consent proposal and any
+committed batch/consent rows. Duplicate rows, changed batch UUID,
+cross-plan/foreign Tenant, differing digests, actor mismatch, missing
+parent batch or impossible timestamp ordering fail closed. Empty or
+partially populated histories explicitly remain blocked/manual-review
+cases. Even exactly matched rows report
+`historical_replay_absence_proven=false`,
+`database_trigger_installation_verified=false`,
+`apiserver_audit_integrity_verified=false`,
+`independent_consent_authority_verified=false` and
+`resource_specific_handoff_admitted=false`: source inspection
+cannot prove database immutability or that a human actually
+authenticated and committed a consent.
+
+### Remaining operational gates
+
+**Do not activate any writer or executor from this source merge.**
+Before a separately authorized database migration and UAT, review
+schema/version compatibility, PostgreSQL INSERT-only least privilege,
+trigger immutability including privileged DDL attempts, concurrent
+batch collision, WAL/synchronous commit, backup/retention and external
+WORM audit anchoring. Then separately implement trusted collector key
+resolution and revocation, authenticated apiserver ingress,
+transactionally fenced append-once batch/consent writers under
+independent human approval, fresh provider UID/RV and policy
+read-back, and per-object metadata-only authorization. No deployment,
+Kubernetes PATCH, dryRun=All, retry, Release or provider handoff
+is allowed by these tables or their readers. #1229 OPEN,
+#1230/#1231 BLOCKED; all test/CI/CD/provider gates HOLD.
+
 ## Required before completing #1229
 
 1. Build on the SHA-bound Namespace and cluster-scoped
