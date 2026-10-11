@@ -1,0 +1,254 @@
+"""Bounded read-only Capsule-adjacent governance inventory for Release #1229.
+
+Enumerates scoped ResourceQuota, LimitRange and RoleBinding without PATCH. It
+records hashes, identities and origins, never raw policy, subjects or secrets.
+This is *evidence*, not proof of successful handoff or consent.
+"""
+from __future__ import annotations
+
+import hashlib
+import json
+from collections.abc import Mapping
+from typing import Any
+
+from app.kubernetes.tenant.allocation_observation import _CAPSULE_TENANT_LABEL_KEYS
+
+_MAX_NS = 30
+_PAGE_SIZE = 101
+_MAX_PER_NS = 100
+_MAX_TOTAL = 300
+_MAX_HASH_BYTES = 262_144
+_KINDS = ('ResourceQuota', 'LimitRange', 'RoleBinding')
+_KAORI_MARKERS = frozenset({
+    'kaori.io/tenant-id', 'kaori.io/environment', 'kaori.io/resource-profile',
+    'kaori.io/tenant-generation', 'kaori.io/profile-id',
+    'kaori.io/access-grant',
+})
+
+
+def _get(obj: Any, key: str) -> Any:
+    if isinstance(obj, Mapping):
+        return obj.get(key)
+    return getattr(obj, key, None)
+
+
+def _canonical(value: Any) -> bytes:
+    if hasattr(value, 'to_dict'):
+        value = value.to_dict()
+    if isinstance(value, Mapping):
+        if any(not isinstance(key, str) for key in value):
+            raise ValueError('Provider inventory has unsupported mapping keys.')
+        value = {key: _canonical_value(item) for key, item in value.items()}
+    else:
+        value = _canonical_value(value)
+    try:
+        rendered = json.dumps(
+            value, sort_keys=True, ensure_ascii=True,
+            separators=(',', ':'), allow_nan=False,
+        ).encode()
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError('Provider inventory has noncanonical policy data.') from exc
+    if len(rendered) > _MAX_HASH_BYTES:
+        raise ValueError('Provider inventory object exceeds maximum digest input.')
+    return rendered
+
+
+def _canonical_value(value: Any) -> Any:
+    if hasattr(value, 'to_dict'):
+        return _canonical_value(value.to_dict())
+    if isinstance(value, Mapping):
+        if any(not isinstance(key, str) for key in value):
+            raise ValueError('Provider inventory has malformed policy map.')
+        return {key: _canonical_value(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_canonical_value(item) for item in value]
+    if value is None or type(value) in (str, int, float, bool):
+        return value
+    raise ValueError('Provider inventory contains unsupported policy data.')
+
+
+def _digest(value: Any) -> str:
+    return hashlib.sha256(_canonical(value)).hexdigest()
+
+
+def _owner_refs(meta: Any) -> list[dict[str, Any]]:
+    refs = _get(meta, 'owner_references')
+    if refs is None:
+        refs = _get(meta, 'ownerReferences')
+    if refs is None:
+        return []
+    result = _canonical_value(refs)
+    if not isinstance(result, list) or any(not isinstance(item, dict) for item in result):
+        raise ValueError('Provider ownerReferences must be a list of objects.')
+    return result
+
+
+def _strings(value: Any, *, label: str) -> dict[str, str]:
+    if value is None:
+        return {}
+    if not isinstance(value, Mapping) or any(
+        not isinstance(k, str) or not isinstance(v, str) for k, v in value.items()
+    ):
+        raise ValueError(f'Provider {label} must be a string map.')
+    return dict(value)
+
+
+def _scope_identity(item: Any, *, namespace: str) -> tuple[str, str, str, Any]:
+    meta = _get(item, 'metadata')
+    name = _get(meta, 'name')
+    uid = _get(meta, 'uid')
+    rv = _get(meta, 'resource_version') or _get(meta, 'resourceVersion')
+    scope = _get(meta, 'namespace')
+    if (
+        not all(isinstance(v, str) and v for v in (name, uid, rv))
+        or scope not in (None, namespace)
+    ):
+        raise ValueError('Capsule-related resource lacks exact namespaced UID/resourceVersion.')
+    return name, uid, rv, meta
+
+
+def classify_capsule_related_resource(
+    *, resource: Any, kind: str, namespace: str,
+    tenant_id: str, capsule_name: str, capsule_uid: str,
+) -> tuple[dict[str, str], list[str]]:
+    """Correlate observed provenance, while preserving every foreign control."""
+    if kind not in _KINDS or not namespace or not tenant_id or not capsule_name or not capsule_uid:
+        raise ValueError('Capsule related inventory requires canonical provider scope.')
+    name, uid, rv, meta = _scope_identity(resource, namespace=namespace)
+    labels = _strings(_get(meta, 'labels'), label='labels')
+    annotations = _strings(_get(meta, 'annotations'), label='annotations')
+    refs = _owner_refs(meta)
+    spec = _get(resource, 'spec') if kind != 'RoleBinding' else {
+        'roleRef': _get(resource, 'role_ref') or _get(resource, 'roleRef'),
+        'subjects': _get(resource, 'subjects'),
+    }
+    if spec is None or (kind == 'RoleBinding' and (
+        spec['roleRef'] is None or not isinstance(spec['subjects'], (list, tuple))
+    )):
+        raise ValueError('Capsule-related provider policy is incomplete.')
+    spec_sha256 = _digest(spec)
+    metadata_sha256 = _digest({
+        'labels': labels, 'annotations': annotations, 'ownerReferences': refs,
+        'finalizers': _get(meta, 'finalizers') or [],
+    })
+    manager = labels.get('app.kubernetes.io/managed-by')
+    kaori_id = labels.get('kaori.io/tenant-id')
+    capsule_claims = {
+        labels[k] for k in _CAPSULE_TENANT_LABEL_KEYS if k in labels
+    }
+    capsule_refs = [
+        ref for ref in refs
+        if ref.get('kind') == 'Tenant'
+        and str(ref.get('apiVersion') or ref.get('api_version') or '').startswith('capsule.clastix.io/')
+    ]
+    capsule_ref_matches = bool(capsule_refs) and all(
+        ref.get('name') == capsule_name and ref.get('uid') == capsule_uid
+        for ref in capsule_refs
+    )
+    foreign_refs = [ref for ref in refs if ref not in capsule_refs]
+    has_kaori_controls = manager == 'kaori' or any(
+        key.startswith('kaori.io/') for key in labels
+    )
+    problems: list[str] = []
+    if (
+        (capsule_claims and capsule_claims != {capsule_name})
+        or (capsule_refs and not capsule_ref_matches)
+        or foreign_refs
+    ):
+        problems.append(f'Capsule {kind}/{namespace}/{name} has conflicting or unverified provider ownership.')
+    if has_kaori_controls:
+        if (
+            manager != 'kaori' or kaori_id != tenant_id
+            or any(k.startswith('kaori.io/') and k not in _KAORI_MARKERS for k in labels)
+            or (kind == 'RoleBinding' and not labels.get('kaori.io/access-grant'))
+            or (kind != 'RoleBinding' and 'kaori.io/access-grant' in labels)
+        ):
+            origin = 'ambiguous_kaori'
+            problems.append(f'Capsule {kind}/{namespace}/{name} KAORI ownership requires independent review.')
+        else:
+            origin = 'kaori_correlated'
+            problems.append(f'Capsule {kind}/{namespace}/{name} retains KAORI provider controls requiring separately admitted handoff.')
+    elif capsule_claims == {capsule_name} or capsule_ref_matches:
+        origin = 'capsule_provider'
+    elif isinstance(manager, str) and manager:
+        origin = 'foreign_preserved'
+    else:
+        origin = 'unattributed'
+        problems.append(f'Capsule {kind}/{namespace}/{name} ownership has no verifiable origin.')
+    return {
+        'kind': kind, 'namespace': namespace, 'name': name,
+        'uid': uid, 'resource_version': rv, 'origin': origin,
+        'policy_sha256': spec_sha256, 'metadata_sha256': metadata_sha256,
+        'mutation_authorized': 'false',
+    }, problems
+
+
+def _listing(api: Any, *, kind: str, namespace: str) -> list[Any]:
+    method = {
+        'ResourceQuota': api.list_namespaced_resource_quota,
+        'LimitRange': api.list_namespaced_limit_range,
+        'RoleBinding': api.list_namespaced_role_binding,
+    }[kind]
+    response = method(namespace, limit=_PAGE_SIZE, _request_timeout=5)
+    meta = _get(response, 'metadata')
+    if _get(meta, '_continue') or _get(meta, 'continue'):
+        raise ValueError('Capsule inventory returned a paginated partial resource list.')
+    if not isinstance(_get(meta, 'resource_version') or _get(meta, 'resourceVersion'), str):
+        raise ValueError('Capsule inventory list has no authoritative resourceVersion.')
+    items = _get(response, 'items')
+    if not isinstance(items, list) or len(items) > _MAX_PER_NS:
+        raise ValueError('Capsule inventory list is unavailable, partial or too large.')
+    return items
+
+
+def observe_capsule_related_inventory(
+    *, core: Any, rbac: Any, namespace_components: list[dict[str, Any]],
+    tenant_id: str, capsule_name: str, capsule_uid: str,
+) -> dict[str, Any]:
+    """Read the complete bounded namespaced source lists; no provider writes.
+
+    This does not discover cluster-scoped shared quota objects or prove Capsule
+    controller-translated RoleBinding lineage. These are separate admission gates.
+    """
+    if (
+        not isinstance(namespace_components, list)
+        or not 0 < len(namespace_components) <= _MAX_NS
+        or len({row.get('name') for row in namespace_components}) != len(namespace_components)
+        or any(
+            not isinstance(row, Mapping) or row.get('kind') != 'Namespace'
+            or row.get('namespace') != row.get('name') or not row.get('uid')
+            or not row.get('resource_version')
+            for row in namespace_components
+        )
+    ):
+        raise ValueError('Scoped Capsule Namespace set is not complete or bounded.')
+    rows: list[dict[str, str]] = []
+    blockers: list[str] = []
+    for ns in namespace_components:
+        for kind, api in (
+            ('ResourceQuota', core), ('LimitRange', core), ('RoleBinding', rbac),
+        ):
+            for item in _listing(api, kind=kind, namespace=ns['name']):
+                evidence, problems = classify_capsule_related_resource(
+                    resource=item, kind=kind, namespace=ns['name'],
+                    tenant_id=tenant_id, capsule_name=capsule_name,
+                    capsule_uid=capsule_uid,
+                )
+                rows.append(evidence)
+                blockers.extend(problems)
+                if len(rows) > _MAX_TOTAL:
+                    raise ValueError('Capsule related provider scope exceeds 300 resources.')
+    unique_keys = {(row['namespace'], row['kind'], row['name']) for row in rows}
+    if len(unique_keys) != len(rows):
+        raise ValueError('Duplicate namespaced provider resources were observed.')
+    rows.sort(key=lambda x: (x['namespace'], x['kind'], x['name']))
+    return {
+        'status': 'read_only_related_inventory',
+        'resources': rows, 'resource_count': len(rows),
+        'resource_sha256': _digest(rows),
+        'blockers': blockers,
+        'provider_mutation_performed': False,
+        'provider_handoff_verified': False,
+        'release_authorized': False,
+        'shared_quota_and_controller_origin_verified': False,
+    }
