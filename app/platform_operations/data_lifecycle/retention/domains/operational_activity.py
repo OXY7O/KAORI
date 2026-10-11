@@ -9,6 +9,7 @@ from sqlalchemy import and_, func, or_
 
 from app.extensions.db import db
 from app.models.notification import Notification
+from app.platform_operations.notifications.metadata import redact_operational_metadata, redact_operational_text
 from app.platform_operations.data_lifecycle.retention.policy_service import resolve_policy
 from app.platform_operations.data_lifecycle.retention.types import ArchiveBoundary, PartialCleanupError, RetentionPolicy
 
@@ -188,11 +189,11 @@ class OperationalActivityArchiveDomain:
                 'event_type': notification.event_type,
                 'category_key': notification.category_key,
                 'status': notification.status,
-                'title': notification.title,
-                'message': notification.message,
-                'detail': notification.detail,
+                'title': redact_operational_text(notification.title) if notification.title is not None else None,
+                'message': redact_operational_text(notification.message) if notification.message is not None else None,
+                'detail': redact_operational_text(notification.detail) if notification.detail is not None else None,
                 'action_url': notification.action_url,
-                'metadata': notification.metadata_json,
+                'metadata': redact_operational_metadata(notification.metadata_json),
                 'created_at': _isoformat(notification.created_at),
                 'read_at': _isoformat(notification.read_at),
             },

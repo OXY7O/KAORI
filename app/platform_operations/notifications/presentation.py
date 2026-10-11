@@ -7,7 +7,12 @@ from typing import Any
 from app.models.notification import Notification
 from app.models.user import User
 from app.platform_operations.notifications.event_catalog import build_event_context, event_category_for_key, event_label
-from app.platform_operations.notifications.metadata import changed_fields, metadata_items
+from app.platform_operations.notifications.metadata import (
+    changed_fields,
+    metadata_items,
+    redact_operational_metadata,
+    redact_operational_text,
+)
 from app.platform_operations.notifications.normalization import standardize_activity_text, standardize_activity_title
 
 
@@ -116,23 +121,7 @@ _ACTIVITY_TECHNICAL_EVIDENCE_KEYS = (
 
 
 def _technical_evidence_value(value: Any) -> str:
-    rendered = re.sub(r'\s+', ' ', str(value or '')).strip()
-    if not rendered:
-        return '-'
-
-    rendered = re.sub(
-        r'(?i)(https?://)([^/@\s:]+):([^/@\s]+)@',
-        r'\1***:***@',
-        rendered,
-    )
-    rendered = re.sub(
-        r'(?i)\b(password|passwd|token|secret|api[_-]?key)=([^&\s,;]+)',
-        r'\1=***',
-        rendered,
-    )
-    if len(rendered) > 1200:
-        rendered = f'{rendered[:1197].rstrip()}...'
-    return rendered
+    return redact_operational_text(value, limit=1200) or '-'
 
 
 def _activity_failure_type(value: str | None, fallback: str | None = None) -> str:
@@ -219,7 +208,7 @@ def _activity_detail_evidence(
     if notification.status in {'warning', 'error'}:
         failure_summary = (
             standardize_activity_text(
-                failure_raw,
+                redact_operational_text(failure_raw),
                 event_type=notification.event_type,
                 status=notification.status,
             )
@@ -258,7 +247,7 @@ def _serialize_notification(
     include_metadata: bool,
     user: User | None = None,
 ) -> dict[str, Any]:
-    metadata = notification.metadata_json or {}
+    metadata = redact_operational_metadata(notification.metadata_json) or {}
     created_at = _normalize_created_at(notification.created_at)
     actor_snapshot = notification.actor_snapshot_json or {}
     actor_type = str(actor_snapshot.get('type') or 'system').strip().lower()
@@ -301,20 +290,20 @@ def _serialize_notification(
         'status_label': status_labels.get(notification.status, 'Information'),
         'title': standardize_activity_title(
             standardize_activity_text(
-                notification.title,
+                redact_operational_text(notification.title),
                 event_type=notification.event_type,
                 status=notification.status,
             )
         )
         or 'Operational Activity',
         'message': standardize_activity_text(
-            notification.message,
+            redact_operational_text(notification.message),
             event_type=notification.event_type,
             status=notification.status,
         )
         or 'The operation was recorded by KAORI.',
         'detail': standardize_activity_text(
-            notification.detail,
+            redact_operational_text(notification.detail),
             event_type=notification.event_type,
             status=notification.status,
         ),
