@@ -183,6 +183,30 @@ def test_compatibility_workspace_keeps_policy_contract_qualification_and_readine
     assert 'Contract Ownership' in main
     assert 'data-compatibility-versions-workspace="unified"' in main
     assert 'data-compatibility-visual-hierarchy="contract-led"' in main
+    assert 'data-compatibility-policy-summary="compact"' in main
+    assert 'data-compatibility-reading="compact-steps"' in main
+    assert 'data-compatibility-matrix="primary"' in main
+    assert "table_ui.table_classes('min-w-[64rem]')" in main
+    assert "table_ui.table_classes('min-w-[76rem]')" not in main
+    assert 'bg-surface-subtle' not in main
+    assert 'Scrollable compatibility qualification matrix' in main
+    assert 'Scroll horizontally to compare all qualification details.' in main
+    assert 'Integration &amp; General Contract' in main
+    assert 'Lifecycle &amp; KAORI Support' in main
+    assert 'for item in system_information.compatibility_products' in main
+    assert 'item.capability_summary' in main
+    assert 'item.qualified_versions' in main
+    assert 'item.recommended_label' in main
+    assert 'item.policy_version' in main
+    assert 'item.policy_window' in main
+    assert 'item.profile_count' in main
+    assert 'item.upstream_lifecycle' in main
+    assert 'item.support_label' in main
+    assert 'item.support_tone' in main
+    assert 'item.validation_basis' in main
+    assert 'data-compatibility-contract-mappings="disclosure"' in main
+    assert 'View contract-to-qualification mappings' in main
+    assert 'group-open:rotate-180' in main
     assert 'data-compatibility-versions-workspace-layout="full-width"' in read(
         'app/templates/settings/general/partials/_page_content.html'
     )
