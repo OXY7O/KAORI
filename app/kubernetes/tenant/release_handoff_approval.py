@@ -61,7 +61,7 @@ def _capsule_g1_only_origin_obligation(snapshot: dict[str, Any], blocker: str) -
     controller-origin warning itself remains a hard G2/G3 executor blocker.
     Unknown identity/ownership/coverage warnings always prevent G1.
     """
-    if snapshot.get('provider') != 'capsule' or blocker != _CAPSULE_G1_EXECUTOR_OBLIGATION:
+    if snapshot.get('provider') != 'capsule':
         return False
     components = snapshot.get('handoff_components')
     related = snapshot.get('capsule_related_inventory')
