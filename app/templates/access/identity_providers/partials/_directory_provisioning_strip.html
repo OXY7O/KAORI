@@ -1,23 +1,49 @@
 {% import "components/operational_section_card.html" as operational_section %}
-{% import "components/operational_point_flow.html" as point_flow %}
 {% import "components/table_label.html" as table_label %}
 {% set can_provision = current_user.has_permission('identity_providers.provision') %}
 {% call operational_section.render(
     'Directory Provisioning',
-    'Controlled projection of directory identities into KAORI accounts, without taking ownership of external credentials.',
+    'Project approved external directory identities into KAORI accounts without taking ownership of external credentials.',
     'contact-round',
     action_href=url_for('identity_providers.directory_provisioning') if can_provision else none,
     action_label='Open Directory Provisioning' if can_provision else none,
     header_badge=table_label.status_indicator_label('Read Only', 'unknown') if not can_provision else none,
-    body_classes='px-4 py-4 sm:px-5 sm:py-5',
+    body_classes='p-4 sm:p-5',
     aria_label='Directory Provisioning overview'
 ) %}
-    {% set directory_flow = [
-        ('network', 'Directory Sources', summary.directory ~ (' configured provider' if summary.directory == 1 else ' configured providers') ~ ' available for the workflow.'),
-        ('contact-round', 'Identity Projection', summary.directory_identity_links ~ (' projected identity link' if summary.directory_identity_links == 1 else ' projected identity links') ~ ' committed to KAORI.'),
-        ('shield-check', 'Local Authorization', 'KAORI roles determine application access; directory credentials remain external.')
-    ] %}
-    <div data-kaori-idp-directory-flow>
-        {{ point_flow.render(directory_flow, aria_label='Directory identity projection and authorization flow') }}
+    <div class="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-3"
+         data-kaori-idp-directory-flow
+         aria-label="Directory provisioning evidence">
+        <div class="min-w-0 rounded-lg bg-surface-subtle px-4 py-3.5"
+             data-kaori-idp-directory-providers>
+            <div class="flex items-center gap-2 text-content-secondary">
+                <i data-lucide="network" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                <p class="text-xs font-semibold leading-5">Directory Providers</p>
+            </div>
+            <p class="mt-1.5 text-2xl font-bold leading-8 tabular-nums text-content-primary">{{ summary.directory }}</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">Committed directory provider contracts.</p>
+        </div>
+        <div class="min-w-0 rounded-lg bg-surface-subtle px-4 py-3.5"
+             data-kaori-idp-directory-links>
+            <div class="flex items-center gap-2 text-content-secondary">
+                <i data-lucide="link-2" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                <p class="text-xs font-semibold leading-5">Identity Links</p>
+            </div>
+            <p class="mt-1.5 text-2xl font-bold leading-8 tabular-nums text-content-primary">{{ summary.directory_identity_links }}</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">Committed projections into local accounts.</p>
+        </div>
+        <div class="min-w-0 rounded-lg bg-surface-subtle px-4 py-3.5 sm:col-span-2 lg:col-span-1"
+             data-kaori-idp-directory-authorization>
+            <div class="flex items-center gap-2 text-content-secondary">
+                <i data-lucide="shield-check" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                <p class="text-xs font-semibold leading-5">Authorization Owner</p>
+            </div>
+            <p class="mt-2 text-sm font-semibold leading-6 text-content-primary">KAORI Roles</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">Directory identity remains provider-owned; application authorization stays local.</p>
+        </div>
     </div>
+    <p class="mt-3 text-xs leading-5 text-content-muted"
+       data-kaori-idp-directory-guardrail>
+        Directory discovery and account projection are controlled administrative actions; credentials remain external.
+    </p>
 {% endcall %}
