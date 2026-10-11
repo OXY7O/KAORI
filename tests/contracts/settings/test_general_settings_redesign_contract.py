@@ -151,3 +151,31 @@ def test_compatibility_workspace_keeps_policy_contract_qualification_and_readine
         'app/templates/settings/general/partials/_page_content.html'
     )
     assert not (ROOT / 'app/templates/settings/general/partials/_compatibility_versions_context.html').exists()
+
+
+def test_browser_timezone_redetection_reuses_canonical_operational_toast_without_persistence() -> None:
+    template = read('app/templates/settings/general/partials/_time_locale.html')
+    runtime = read('app/static/js/settings/time_locale.js')
+    toast_template = read('app/templates/components/operational_toast.html')
+    toast_runtime = read('app/static/js/operational_toasts.js')
+    settings_docs = read('app/settings/README.md')
+
+    assert 'data-timezone-detection-toast="success"' in template
+    assert 'data-timezone-detection-toast="error"' in template
+    assert template.count('{% include "components/operational_toast.html" %}') == 2
+    assert "feedback_id='settings-browser-timezone-detection'" in template
+    assert 'data-operational-toast-message' in toast_template
+    assert 'window.showOperationalToast = (toast) =>' in toast_runtime
+    assert 'initialiseToast(toast)' in toast_runtime
+    assert "window.showOperationalToast?.(toast)" in runtime
+    assert "if (messageNode) messageNode.textContent = message" in runtime
+    assert "'Browser timezone unavailable'" in runtime
+    assert "if (!timezone)" in runtime
+    assert "const unchanged = timezone === previousTimezone" in runtime
+    assert 'No preference was saved.' in runtime
+    assert "detectButton?.addEventListener('click', () => {" in runtime
+    assert "        detect()\n        syncMode()" in runtime
+    assert "fetch(" not in runtime
+    assert "kaori:notifications-changed" not in runtime
+    assert "Activity Audit" not in runtime
+    assert 'Detect Again' in settings_docs

@@ -16,6 +16,8 @@ Create a Settings Overview only when at least three independently owned Settings
 - Successful preference and credential mutations use the shared operational toast.
 - User-triggered save/password failures also return a canonical toast; field-level validation remains inline so the operator can correct the form without losing context.
 - Automatic browser-timezone synchronization is intentionally silent because it is background preference convergence, not a user-triggered CRUD action.
+- User-clicked **Detect Again** reads the browser timezone locally and displays the shared Operational Toast: detected/unchanged result (8-second success) or unavailable result (persistent error). A failed re-detection retains the previous valid browser timezone; all result copy clarifies that no preference was saved. The toast reuses the canonical global stack and lifecycle, including keyboard/a11y semantics; normal page-load detection stays silent.
+- Browser re-detection does not POST, persist Activity Audit evidence, create Notification Deck items, or affect the explicit Save Time Zone action. Saved user preference changes remain auditable through the existing `user_preference` `AUDIT_ONLY` record.
 - Settings must not introduce page-local loading-bar heights or page-local toast implementations.
 
 ## General Settings

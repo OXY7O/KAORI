@@ -54,4 +54,5 @@ Permanent enforcement: `scripts/verify_settings_final_lock.py`.
 - General and Account use the shared KAORI loading-bar component for HTMX tab switches and mutations.
 - User-triggered Settings mutations return the canonical operational toast for success and failure; field errors remain inline.
 - Background browser-timezone convergence stays silent.
+- Explicit **Detect Again** presents the canonical Operational Toast for detected/unchanged or failure outcomes, without persisting the local browser observation, producing an Activity Audit event, or creating a Notification Deck item. It does not replace **Save Time Zone**.
 - Notification/Activity progress surfaces use one shared notification-progress geometry rather than page-local track heights.

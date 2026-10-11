@@ -198,4 +198,29 @@
             </button>
         </footer>
     </section>
+    {# Inert canonical toast templates; instantiated only on an explicit Detect Again click. #}
+    <template data-timezone-detection-toast="success">
+        {% with
+            status='success',
+            title='Browser Time Zone Detected',
+            message='Browser time zone detected. No preference was saved.',
+            feedback_id='settings-browser-timezone-detection',
+            activity_audit_saved=false,
+            notification_deck_visible=false
+            %}
+            {% include "components/operational_toast.html" %}
+        {% endwith %}
+    </template>
+    <template data-timezone-detection-toast="error">
+        {% with
+            status='error',
+            title='Browser Time Zone Detection Failed',
+            message='Unable to detect browser time zone. No preference was saved.',
+            feedback_id='settings-browser-timezone-detection',
+            activity_audit_saved=false,
+            notification_deck_visible=false
+            %}
+            {% include "components/operational_toast.html" %}
+        {% endwith %}
+    </template>
 </form>
