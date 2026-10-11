@@ -389,6 +389,7 @@ def _overview_asset_catalog(total_systems: int, total_buckets: int) -> list[dict
             'description': 'Open system identity, provider readiness, endpoint, release, and committed snapshot details.',
             'endpoint': 'object_storage_inventory.systems',
             'icon': 'server',
+            'action_label': 'Browse Systems',
         },
         {
             'title': 'Buckets & Containers',
@@ -396,6 +397,7 @@ def _overview_asset_catalog(total_systems: int, total_buckets: int) -> list[dict
             'description': 'Open bucket and container protection, capacity, lifecycle, access, and usage evidence.',
             'endpoint': 'object_storage_inventory.buckets',
             'icon': 'container',
+            'action_label': 'Browse Buckets & Containers',
         },
     ]
 
@@ -483,6 +485,25 @@ def _overview_fleet_readings(posture: dict[str, Any]) -> list[dict[str, str]]:
     ]
 
 
+
+def _overview_fleet_posture_metrics(
+    posture: dict[str, Any],
+    readings: Sequence[dict[str, str]],
+) -> list[tuple[str, str, str, str, str]]:
+    """Project committed fleet readings into the canonical grouped metric layout."""
+    total = int(posture['total_assets'])
+    metric_values = (
+        ('Quota Assessed', f"{posture['quota_assessed']}/{total}" if total else 'No Evidence'),
+        ('Protection Attention', str(posture['protection_attention']) if total else 'No Evidence'),
+        ('Public Exposure', str(posture['public_exposure']) if total else 'No Evidence'),
+        ('Usage Collected', f"{posture['usage_collected']}/{total}" if total else 'No Evidence'),
+    )
+    return [
+        (reading['icon'], label, value, reading['description'], reading['tone'])
+        for reading, (label, value) in zip(readings, metric_values, strict=True)
+    ]
+
+
 def _overview_provider_distribution(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     counts: dict[str, int] = {}
     for row in rows:
@@ -499,6 +520,7 @@ def build_overview() -> dict[str, Any]:
     buckets = ObjectStorageBucket.query.all()
     total_systems, total_buckets = len(rows), len(buckets)
     bucket_posture = _overview_bucket_posture(buckets)
+    fleet_readings = _overview_fleet_readings(bucket_posture)
     ready_systems = sum(1 for row in rows if row['status_tone'] == 'normal')
     blocked_systems = sum(1 for row in rows if row['status_tone'] == 'critical')
     inventoried_systems = sum(1 for row in rows if row['last_inventory_at'] is not None)
@@ -526,7 +548,8 @@ def build_overview() -> dict[str, Any]:
         'active_signal_count': active_signal_count,
         'asset_catalog': _overview_asset_catalog(total_systems, total_buckets),
         'bucket_posture': bucket_posture,
-        'fleet_readings': _overview_fleet_readings(bucket_posture),
+        'fleet_readings': fleet_readings,
+        'fleet_posture_metrics': _overview_fleet_posture_metrics(bucket_posture, fleet_readings),
         'provider_distribution': _overview_provider_distribution(rows),
         'setup': _setup_state(total_systems),
         'snapshot': _overview_snapshot(rows),
