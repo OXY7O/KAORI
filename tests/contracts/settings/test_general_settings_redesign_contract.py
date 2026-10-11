@@ -161,11 +161,12 @@ def test_system_information_is_explicitly_read_only_and_traceable() -> None:
 
 def test_compatibility_workspace_keeps_policy_contract_qualification_and_readiness_separate() -> None:
     main = read('app/templates/settings/general/partials/_compatibility_versions.html')
+    registry = read('app/templates/settings/general/partials/_compatibility_registry.html')
+    routes = read('app/settings/routes.py')
+    projection = read('app/settings/general/compatibility_registry.py')
+
     assert 'Integration Compatibility' in main
     assert 'Capability Evidence Required' in main
-    assert 'Compatibility Qualification Matrix' in main
-    assert 'Annual five-year lifecycle policy' in main
-    assert 'item.version_scheme' in main
     assert 'Lifecycle Policy' in main
     assert 'Support Window' in main
     assert 'General Contracts' in main
@@ -174,41 +175,60 @@ def test_compatibility_workspace_keeps_policy_contract_qualification_and_readine
     assert 'Annual Lifecycle' in main
     assert 'General Contract' in main
     assert 'Version Qualification' in main
-    assert 'Qualified Versions' in main
-    assert 'Upstream Lifecycle' in main
-    assert 'KAORI Support' in main
-    assert 'Readiness Authority' in main
     assert 'Live Readiness' in main
     assert 'Policy Boundary' in main
-    assert 'Contract Ownership' in main
     assert 'data-compatibility-versions-workspace="unified"' in main
-    assert 'data-compatibility-visual-hierarchy="contract-led"' in main
+    assert 'data-compatibility-visual-hierarchy="registry-detail"' in main
     assert 'data-compatibility-policy-summary="compact"' in main
-    assert 'data-compatibility-reading="compact-steps"' in main
-    assert 'data-compatibility-matrix="primary"' in main
-    assert 'table_ui.cell_classes()' in main
-    assert 'cell_classes() }} align-top' not in main
-    assert "table_ui.table_classes('min-w-[64rem]')" in main
-    assert "table_ui.table_classes('min-w-[76rem]')" not in main
+    assert 'data-compatibility-policy-reference="disclosure"' in main
+    assert '{% include "settings/general/partials/_compatibility_registry.html" %}' in main
     assert 'bg-surface-subtle' not in main
-    assert 'Scrollable compatibility qualification matrix' in main
-    assert 'Scroll horizontally to compare all qualification details.' in main
-    assert 'Integration &amp; General Contract' in main
-    assert 'Lifecycle &amp; KAORI Support' in main
-    assert 'for item in system_information.compatibility_products' in main
-    assert 'item.capability_summary' in main
-    assert 'item.qualified_versions' in main
-    assert 'item.recommended_label' in main
-    assert 'item.policy_version' in main
-    assert 'item.policy_window' in main
-    assert 'item.profile_count' in main
-    assert 'item.upstream_lifecycle' in main
-    assert 'item.support_label' in main
-    assert 'item.support_tone' in main
-    assert 'item.validation_basis' in main
-    assert 'data-compatibility-contract-mappings="disclosure"' in main
-    assert 'View contract-to-qualification mappings' in main
-    assert 'group-open:rotate-180' in main
+    assert 'data-compatibility-registry="server-paginated"' in registry
+    assert 'data-compatibility-registry-layout="list-detail"' in registry
+    assert 'data-compatibility-product-detail="selected-only"' in registry
+    assert "compatibility_registry['items']" in registry
+    assert 'compatibility_registry.items' not in registry
+    assert 'name="compatibility_search"' in registry
+    assert 'name="compatibility_support"' in registry
+    assert 'name="tab" value="compatibility-versions"' in registry
+    assert 'hx-target="#compatibility-registry"' in registry
+    assert 'hx-swap="outerHTML"' in registry
+    assert 'hx-push-url="true"' in registry
+    assert 'action="{{ url_for(\'settings.general\') }}"' in registry
+    assert 'aria-current="true"' in registry
+    assert 'No matching integrations' in registry
+    assert 'Version Qualification' in registry
+    assert 'General Contract' in registry
+    assert 'Qualified Versions' in registry
+    assert 'Upstream Lifecycle' in registry
+    assert 'KAORI Support' in registry
+    assert 'Readiness Authority' in registry
+    assert 'selected.version_scheme' in registry
+    assert 'selected.capability_summary' in registry
+    assert 'selected.qualified_versions' in registry
+    assert 'selected.recommended_label' in registry
+    assert 'selected.policy_version' in registry
+    assert 'selected.policy_window' in registry
+    assert 'selected.contract_profile' in registry
+    assert 'selected.upstream_lifecycle' in registry
+    assert 'selected.support_label' in registry
+    assert 'selected.support_tone' in registry
+    assert 'selected.validation_basis' in registry
+    assert 'compatibility_registry.profile_total' in registry
+    assert 'compatibility_registry.profiles' in registry
+    assert 'profile.version_constraint' in registry
+    assert 'profile.support_level' in registry
+    assert 'profile.contract_profile' in registry
+    assert 'compatibility_profile_page' in registry
+    assert 'compatibility_page' in registry
+    assert 'PAGE_SIZE = 5' in projection
+    assert "SUPPORT_FILTERS = frozenset({'all', 'includes-current', 'extended-only'})" in projection
+    assert "'profiles': qualifications[profile_offset : profile_offset + PAGE_SIZE]" in projection
+    assert "'items': listed" in projection
+    assert 'build_compatibility_registry(' in routes
+    assert "user.has_permission('system.view')" in routes
+    assert "request.headers.get('HX-Target') == 'compatibility-registry'" in routes
+    assert "render_template('settings/general/partials/_compatibility_registry.html', **context)" in routes
     assert 'data-compatibility-versions-workspace-layout="full-width"' in read(
         'app/templates/settings/general/partials/_page_content.html'
     )

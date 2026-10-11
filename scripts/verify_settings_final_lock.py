@@ -200,8 +200,15 @@ def main() -> int:
         errors,
     )
     require(
-        'data-compatibility-visual-hierarchy="contract-led"' in compatibility_workspace,
-        'Compatibility Versions must keep the contract-led full-width visual hierarchy',
+        'data-compatibility-visual-hierarchy="registry-detail"' in compatibility_workspace,
+        'Compatibility Versions must use the registry-detail full-width visual hierarchy',
+        errors,
+    )
+    compatibility_registry = read('app/templates/settings/general/partials/_compatibility_registry.html')
+    require(
+        'data-compatibility-registry="server-paginated"' in compatibility_registry
+        and 'data-compatibility-product-detail="selected-only"' in compatibility_registry,
+        'Compatibility Versions must retain the server-paginated Registry + Detail',
         errors,
     )
 
