@@ -275,6 +275,40 @@ def test_artifact_registry_dashboard_state_semantics_and_jinja_mapping_safety() 
     ):
         assert token in forecast
     assert 'forecast_projection_chart' not in forecast
+    assert 'components/operational_callout.html' in capacity_snapshot
+    assert "operational_callout.render('Data Scope'" in capacity_snapshot
+    assert 'grid gap-3 sm:grid-cols-3' in capacity_snapshot
+    for token in (
+        'Daily Utilization Trend Not Available',
+        'Historical Series Unavailable',
+        'min-h-[200px]',
+        'overview.forecast.analytics_count',
+        'overview.consumer_insights.project_count',
+        'overview.consumer_insights.horizon_count',
+    ):
+        assert token in forecast
+    for token in (
+        'macro consumer_panel(',
+        'grid gap-5 lg:grid-cols-2',
+        "consumer_panel('Storage Usage'",
+        "consumer_panel('Nearest Quota'",
+        'overview.top_consumers',
+        'overview.quota_watch',
+        'items[:3]',
+        'loop.index',
+        'progress_bar.bar(',
+        'item.utilization_percent is not none',
+        'Quota utilization N/A',
+        'Consumer Insights',
+        'overview.consumer_insights.high_utilization_count',
+        'No Numerical Quota Horizon',
+    ):
+        assert token in consumers
+    assert 'xl:grid-cols-5' not in consumers
+    assert '_registry_quota_watch(project_forecasts)' in presentation
+    assert '_registry_consumer_insights(project_forecasts)' in presentation
+    assert "'quota_watch': quota_watch" in presentation
+    assert "'consumer_insights': consumer_insights" in presentation
     assert "'metrics': [" in presentation
     assert "'source_ready': metrics_ready_count > 0" in presentation
     assert "'security_not_applicable': security_not_applicable" in presentation
