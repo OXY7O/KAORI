@@ -190,7 +190,7 @@ same nested-card geometry for every domain.
 
 | Workspace | Hero / evidence authority | Summary / section-intro treatment | Navigation / table pattern | Audit decision |
 | --- | --- | --- | --- | --- |
-| Overview | Operational Dashboard Hero and committed operational signals | Four independent `operational_metric_card` KPI cards inside the existing Operational Signal Overview shell; canonical padded body and scoped evidence footer | Dashboard four operational workspace views | **Align** to Kubernetes/Object Storage dashboard KPI card family under #1087; preserve #911/#923 shell |
+| Overview | Operational Dashboard Hero and committed operational signals | Four independent `operational_metric_card` KPI cards inside the existing Operational Signal Overview shell; canonical padded body and scoped evidence footer. `All Registry Providers` uses the warning `Select a Registry Provider for Detailed Signals` status rather than green `Ready` | Dashboard four operational workspace views | **Align** to Kubernetes/Object Storage dashboard KPI card family under #1087; preserve #911/#923 shell and committed inventory scope |
 | Inventory | Shared Hero / committed snapshot context | Overview **Fleet Inventory Posture** external intro + grouped three-metric estate shell; **Inventory Assets** intro + Kubernetes-style **Registry Asset Catalog** panel; resource pages retain Operational Posture intro + grouped resource metrics | Shared Projects/Repositories/Artifacts navigation cards; bounded resource inventory tables, HTMX filters and 5-row pagination | **Align** #946 follow-up to the accepted grouped Registry summary and Kubernetes catalog family without provider/data changes |
 | Security | Shared Hero / Security Sync / committed scan evidence | External **Security Snapshot** intro + shared grouped four-metric posture grid, independently scoped for Vulnerabilities / Supply Chain | Small content-tabs family for Supply Chain; shared vulnerability/evidence registry and 5-row footer | **Align** summary composition under #1087; preserve #948 scanner semantics |
 | Runtime Usage | Shared Hero / committed correlation snapshot | External **Runtime Correlation** intro + four-cell grouped committed correlation grid | Runtime Bindings section intro and bounded table; committed correlation, 5-row footer | **Align** summary composition under #1087, retain #897 correlation semantics |
@@ -212,6 +212,12 @@ same nested-card geometry for every domain.
   status labels; no extra card borders are added to grouped metric cells.
   Inventory Overview Fleet posture retains the grouped grid for three metrics
   and resource-detail posture retains its grouped four-metric presentation.
+  The Overview KPI read-path uses active provider identities with committed
+  inventory snapshots only, returning `Not Collected` for missing evidence and
+  `Partial Inventory (x/y)` when fleet collection coverage is incomplete.
+  Historical inventory belonging to inactive providers is not counted in
+  operational fleet summaries; selected-provider scope does not imply readiness
+  of metrics, analytics or alert evidence.
 - The **Inventory Operational Posture** on resource pages and **Fleet Inventory
   Posture** on the Inventory Overview are coordinated evidence panels using the
   approved `operational_section_card` and `posture_grid`, retaining provider,
