@@ -144,6 +144,9 @@ def _committed_full_handoff(
         or execution.get('status') != 'provider_handoff_verified'
         or execution.get('provider_handoff_verified') is not True
         or execution.get('whole_scope_readback_verified') is not True
+        or execution.get('resource_specific_consent_verified') is not True
+        or execution.get('controller_origin_verified') is not True
+        or execution.get('provider_authority_verified') is not True
         or execution.get('source_worklist_sha256') != work['inventory_sha256']
         or execution.get('plan_sha256') != plan['plan_sha256']
         or execution.get('handoff_fingerprint') != plan['handoff_fingerprint']
@@ -212,6 +215,7 @@ def _current_verified_capsule_scope(
     verify_capsule_related_admin_authority(
         provider=provider, candidates=related_candidates,
     )
+    from app.kubernetes.tenant.capsule_handoff_contract import _related_provider_invariants
     verified: list[dict[str, Any]] = []
     for key, source in source_items.items():
         ns, kind, name = key
@@ -275,7 +279,8 @@ def _current_verified_capsule_scope(
                     receipt.get('state') != 'provider_markers_transferred'
                     or _labels(live).get('app.kubernetes.io/managed-by') != owner
                     or any(k.startswith('kaori.io/') for k in _labels(live))
-                    or not isinstance(receipt.get('preservation_sha256'), str)
+                    or receipt.get('preservation_sha256')
+                       != _digest(_related_provider_invariants(live))
                 ):
                     raise ValueError('Capsule related-object ownership or preservation proof missing.')
             elif source['decision'] == 'preserve_foreign_provider_control':
