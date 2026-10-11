@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import cast
 
-from flask import Blueprint, abort, redirect, render_template, request, url_for
+from flask import Blueprint, abort, current_app, redirect, render_template, request, url_for
 from flask_login import current_user
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
@@ -325,8 +325,6 @@ def provision_identity():
         )
     except SQLAlchemyError:
         rollback_identity_provider_transaction()
-        from flask import current_app
-
         current_app.logger.exception('Directory identity projection transaction failed for provider id %s.', provider.id)
         identity_provider_feedback(
             actor=actor,
