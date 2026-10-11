@@ -90,3 +90,16 @@ same `.kaori-topology-domain-*` classes so light and dark mode cannot diverge.
 Topology is a canvas-first workspace. Controls and Topology Details remain overlay drawers at every breakpoint; they never become persistent desktop columns. The canvas therefore keeps the full workspace width until the operator intentionally opens a drawer. Selecting a resource or relationship opens the right Details drawer, while Display Controls opens from the toolbar on demand. Closing either drawer restores the unchanged full-width graph.
 
 The right drawer uses the shared visualization drawer geometry (`max-w-2xl`) and does not participate in page grid sizing. The wider inspector is reserved for technical metadata and relationship review; the left Controls drawer remains compact. `API Server` keeps the canonical horizontal field row. Its value is single-line, right aligned, and truncated only when the endpoint exceeds the available drawer width. The complete endpoint remains exposed through the native `title` attribute. A dedicated stacked-row compatibility template is prohibited.
+
+
+## Bounded Shallow Graph Source (2026-10-11)
+
+At Depth 1, only Cluster, Namespace, and Node elements participate in graph
+projection. Namespace and Node ORM fetches therefore use a deterministic
+`max_nodes` SQL window, with independent exact committed-generation SQL counts
+for omitted-type reporting. Namespace selector bootstrap projects DISTINCT scalar
+cluster/namespace values rather than full Namespace ORM records. Deeper graph
+modes intentionally retain full relationship candidate loading until a separate
+relation-preserving bounded strategy can be verified for Service selectors,
+Ingress, Pod configuration references, and PVC/PV links. Do not apply an
+unconditional SQL LIMIT to those relationship-sensitive paths.

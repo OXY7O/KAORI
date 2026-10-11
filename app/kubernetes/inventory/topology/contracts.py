@@ -47,6 +47,7 @@ class TopologyRecords:
     configurations: list[Any]
     storage_items: list[Any]
     pods: list[Any]
+    source_totals: dict[str, int] = field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)
