@@ -995,6 +995,61 @@
                                                                     Provider execution and governance Release are still blocked.
                                                                 </p>
                                                             </div>
+                                                            {% if capsule_preview.transfer_items
+                                                                  and capsule_preview.source_worklist_sha256
+                                                                  and capsule_preview.actor_user_id == current_user.id
+                                                                  and not row.release_capsule_handoff_execution %}
+                                                                <form method="post"
+                                                                      action="{{ url_for('tenant.execute_capsule_handoff_route', tenant_id=tenant.id) }}"
+                                                                      hx-post="{{ url_for('tenant.execute_capsule_handoff_route', tenant_id=tenant.id) }}"
+                                                                      hx-target="#tenant-management-detail"
+                                                                      hx-select="#tenant-management-detail"
+                                                                      hx-swap="outerHTML show:none focus-scroll:false"
+                                                                      hx-indicator="#tenant-management-loading"
+                                                                      hx-disabled-elt="find button[type='submit']"
+                                                                      class="mt-3 space-y-3 rounded-lg border border-outline-subtle bg-surface-elevated p-3 sm:p-4">
+                                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                                    <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                                                                    <input type="hidden" name="tenant_detail_section" value="release">
+                                                                    <input type="hidden" name="tenant_release_step" value="approval">
+                                                                    {% for state_key, state_value in registry_state.items() %}
+                                                                        <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
+                                                                    {% endfor %}
+                                                                    <input type="hidden" name="plan_sha256" value="{{ handoff_plan.plan_sha256 }}">
+                                                                    <input type="hidden" name="worklist_sha256" value="{{ capsule_preview.source_worklist_sha256 }}">
+                                                                    <p class="text-sm font-semibold text-content-primary">Execute exact Capsule metadata handoff</p>
+                                                                    <p class="text-xs leading-5 text-content-secondary">
+                                                                        These exact provider identities were just inspected through server dry-run.
+                                                                        Execution first commits an immutable START and applies one guarded metadata-only PATCH per approved resource.
+                                                                        Any partial or unknown response blocks Released and must never be retried automatically.
+                                                                    </p>
+                                                                    <div class="max-h-44 overflow-y-auto rounded-lg border border-outline-subtle bg-surface-card p-2"
+                                                                         aria-label="Capsule exact transfer resource list" tabindex="0">
+                                                                        <ul class="space-y-2 text-xs leading-5 text-content-secondary">
+                                                                            {% for item in capsule_preview.transfer_items %}
+                                                                                <li class="flex min-w-0 flex-col border-b border-outline-subtle pb-2 last:border-0 last:pb-0">
+                                                                                    <span class="font-semibold text-content-primary">{{ item.kind }}/{{ item.namespace or item.name }}/{{ item.name }}</span>
+                                                                                    <span class="break-all">UID {{ item.uid }} · RV {{ item.resource_version }}</span>
+                                                                                </li>
+                                                                            {% endfor %}
+                                                                        </ul>
+                                                                    </div>
+                                                                    <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                                                                        <input type="checkbox" name="confirm_capsule_handoff_execute"
+                                                                               value="execute" required
+                                                                               class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
+                                                                        <span>As the independently accepted X.509 successor, I authorize exactly
+                                                                            these {{ capsule_preview.transfer_items|length }} metadata-only ownership transfers,
+                                                                            bound to worklist {{ capsule_preview.source_worklist_sha256[:12] }}.
+                                                                            This is irreversible without a separate verified handback.</span>
+                                                                    </label>
+                                                                    <button type="submit"
+                                                                            class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-progress disabled:opacity-60">
+                                                                        <i data-lucide="arrow-left-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                                        Execute Guarded Capsule Handoff
+                                                                    </button>
+                                                                </form>
+                                                            {% endif %}
                                                         {% endif %}
                                                         {% if capsule_acceptance.accepted_by == current_user.id
                                                               and handoff_plan
