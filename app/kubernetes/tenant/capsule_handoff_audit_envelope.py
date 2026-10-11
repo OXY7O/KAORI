@@ -216,6 +216,12 @@ def inspect_capsule_scope_g2g3_trace(
         ):
             raise ValueError('Capsule G2 manifest changed immutable provider identity.')
         if kind in ('CapsuleTenant', 'GlobalResourceQuota'):
+            if decision != (
+                'provider_cr_preservation_review_required'
+                if kind == 'CapsuleTenant'
+                else 'preserve_cluster_scoped_quota'
+            ):
+                raise ValueError('Capsule G2 retained CR/shared quota ownership is ambiguous.')
             global_count += 1
             required_operation = 'preserve_source_only_unverified'
         elif decision in (
