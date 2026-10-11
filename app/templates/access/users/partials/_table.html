@@ -63,7 +63,7 @@
                                     <i data-lucide="pencil" class="h-3.5 w-3.5" aria-hidden="true"></i>Edit
                                 </a>
                             {% endif %}
-                            {{ expandable.toggle_button('users', user.id, '', detail_target_id, detail_row_id) }}
+                            {{ expandable.toggle_button('users', user.id, '', detail_target_id, detail_row_id, open_label='Details', close_label='Hide Details', compact=true) }}
                         </div>
                     </td>
                 </tr>
