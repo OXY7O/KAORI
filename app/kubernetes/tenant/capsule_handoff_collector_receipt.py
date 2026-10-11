@@ -65,7 +65,7 @@ def inspect_capsule_collector_receipt(
         or not isinstance(receipt, Mapping)
         or set(receipt) != _FIELDS
         or not isinstance(claims, list)
-        or len(claims) > 300
+        or len(claims) > 330
         or not isinstance(trusted_collector_id, str)
         or not _ID.fullmatch(trusted_collector_id)
         or not isinstance(trusted_key_id, str)
