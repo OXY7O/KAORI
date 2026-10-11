@@ -526,6 +526,45 @@ def test_prepare_handoff_commits_plan_without_provider_mutation(monkeypatch):
     assert session.events[0].target_id == 'tenant-a'
 
 
+def test_capsule_independent_reviewer_is_blocked_with_safe_drift_category(monkeypatch):
+    from app.kubernetes.tenant import release_handoff_approval as module
+
+    original = _capsule_g1_snapshot()
+    plan = {
+        **_plan_from_snapshot(original),
+        'handoff_components': deepcopy(original['handoff_components']),
+    }
+    changed = deepcopy(original)
+    changed['handoff_components'][0]['capsule_spec_sha256'] = 'e' * 64
+    changed['handoff_fingerprint'] = handoff_fingerprint(changed['handoff_components'])
+
+    class _Query:
+        def filter_by(self, **kwargs):
+            return self
+
+        def with_for_update(self):
+            return self
+
+        def one_or_none(self):
+            return SimpleNamespace(lifecycle_status='ready', ownership_status='adopted')
+
+    session = _FakeSession()
+    monkeypatch.setattr(module, 'db', SimpleNamespace(session=session))
+    monkeypatch.setattr(module, 'Tenant', SimpleNamespace(query=_Query()))
+    monkeypatch.setattr(module, 'latest_release_handoff_plan', lambda _: plan)
+    monkeypatch.setattr(module, 'latest_release_handoff_approval', lambda _: None)
+    monkeypatch.setattr(
+        module, 'review_tenant_release_preflight_committed', lambda **_: changed,
+    )
+    with pytest.raises(ValueError, match='Capsule Tenant spec digest'):
+        approve_release_handoff_plan_committed(
+            tenant_id='tenant-a', actor_user_id=43,
+            plan_sha256=plan['plan_sha256'], approved=True,
+        )
+    assert session.events == []
+    assert session.commits == 0
+
+
 def test_independent_handoff_approval_commits_pending_provider_state(monkeypatch):
     from app.kubernetes.tenant import release_handoff_approval as module
 
