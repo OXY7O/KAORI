@@ -9,6 +9,28 @@ Target integration: `kaori/review/staging-uat` only. No developer check,
 pytest, Ruff, pyright, CI/CD, DAST, live API UAT, promotion or deployment until
 a separate explicit instruction.
 
+## G1 consent vs G2/G3 execution authority
+
+A committed Capsule preflight may contain the **exact** source-known warning
+`Capsule controller-generated RoleBinding origins and provider handoff remain
+unverified; executor is blocked.`. This warning is a mandatory **G2/G3
+execution** blocker, but it is not evidence that the independently reviewed
+human is forbidden from *recording G1 consent to a plan*. The shared handoff
+approval checker now permits this single, exact warning only when the Capsule
+provider is selected, dependency counts are all zero, provider UID/RV and
+SHA-bound scope are complete, and the existing related-resource, global quota
+and RBAC inventories have matching digests and zero independently recorded
+inventory blockers. All other unknown, drift, identity, permission and
+ownership blockers continue to prohibit approval.
+
+G1 acknowledgement, subsequent X.509 successor acceptance, and the new
+Namespace `dryRun=All` control remain **non-executable**: the Capsule G2/G3
+admission evaluator still carries its unconditional controller-origin and
+per-resource successor-authorization blockers. Nothing in this change permits
+a live PATCH, a START writer, Release or Re-Adopt. The operator must still
+satisfy the separate safety, handoff and provider read-back requirements
+before progressing to #1230/#1231.
+
 ## First wired Capsule provider preview — #1229 functional slice
 
 The existing four-step Tenant Release wizard now offers **Preview Capsule Namespace**
