@@ -294,3 +294,31 @@ def test_tls_update_blocks_unknown_ingress_mapping_without_provider_patch(
     assert calls == []
     assert result['status'] == 'failed'
     assert 'Not Reported' in result['message']
+
+
+def test_bulk_tls_rejects_missing_target_without_partial_mutation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    updates = _load_updates(monkeypatch)
+    first = _record(1)
+    updates.TLSCertificateInventory.query = SimpleNamespace(
+        filter=lambda expression: SimpleNamespace(all=lambda: [first]),
+        get=lambda certificate_id: None,
+    )
+    calls: list[int] = []
+    monkeypatch.setattr(updates, 'patch_tls_secret', lambda target, cert, key: calls.append(target.id))
+    result = updates.apply_bulk_update({}, [1, 2])
+    assert calls == []
+    assert result['status'] == 'failed'
+    assert 'target set changed' in result['message']
+
+
+def test_bulk_tls_rejects_duplicate_target_ids_without_provider_calls(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    updates = _load_updates(monkeypatch)
+    calls: list[int] = []
+    monkeypatch.setattr(updates, 'patch_tls_secret', lambda target, cert, key: calls.append(target.id))
+    result = updates.apply_bulk_update({}, [1, 1])
+    assert calls == []
+    assert result['status'] == 'failed'
