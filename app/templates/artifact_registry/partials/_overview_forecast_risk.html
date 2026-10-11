@@ -13,8 +13,8 @@
         <div class="space-y-4">
             {% set forecast_metrics = [
                 ('database', 'Footprint Growth', overview.forecast.size_growth_per_day, 'Committed footprint delta per day.'),
-                ('package-plus', 'Artifact Growth', overview.forecast.artifact_growth_per_day, 'Committed artifact-count delta per day.'),
-                ('timer', 'Nearest Quota', overview.forecast.nearest_quota_days, 'Project quota horizon when positive growth is observed.')
+                ('package-plus', 'Artifact Growth', overview.forecast.artifact_growth_per_day, 'Artifact change per day.'),
+                ('timer', 'Nearest Quota', overview.forecast.nearest_quota_days, 'Quota ETA with positive growth.')
             ] %}
             <div class="grid gap-3 sm:grid-cols-3">
                 {% for icon, label, value, helper in forecast_metrics %}
