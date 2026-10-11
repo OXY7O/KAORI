@@ -70,6 +70,8 @@ The aggregate Access posture follows the approved `Critical > Warning > Info > U
 
 The posture contract now treats missing active break-glass authority, active users without role assignment, inactive roles with assigned users, permission-registry drift and enabled identity-provider configuration/admission-policy gaps as explicit review signals. Activity Audit warning/error records remain evidence counts and do not make the audit workspace itself unhealthy. On Access Overview, the 24-hour event/actor/attention counters refer only to the Notification-backed Activity Register, not to source-owned `AuditEvent`, Tenant or Job evidence or archived history. Zero attention in that store must not be presented as absence of all administrative evidence. Optional external authentication remains informational when no provider is configured.
 
+The Hero left metadata communicates domain-owned composition, permission scope and committed evidence; the right context metrics alone report the visible Workspace and Review counts. Workspace card metric labels wrap without hover-only tooltips, stack as a readable list on phones, and retain a three-column comparison from the tablet breakpoint. Mobile cards do not enforce a desktop minimum-height floor. Responsive/keyboard/light-dark/zoom Visual QA remains required in DevContainer before human acceptance.
+
 Control Boundaries expose the same authoritative posture as their source workspace instead of static architecture copy alone. This composition rule is protected by `scripts/verify_access_final_lock.py`.
 
 ## Roles & Access review status
