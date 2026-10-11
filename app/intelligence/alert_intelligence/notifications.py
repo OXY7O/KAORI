@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from urllib.parse import urlencode
 from typing import Any
 
 from flask import current_app
@@ -157,6 +158,9 @@ def _severity_escalation_due(case: AlertCase) -> bool:
 
 def _dispatch_resolved(case: AlertCase) -> dict[str, int]:
     stats = {'firing': 0, 'resolved': 0, 'failed': 0, 'skipped': 0}
+    if case.domain == 'registry':
+        stats['skipped'] += 1
+        return stats
     if case.last_resolved_notified_at is not None:
         stats['skipped'] += 1
         return stats
@@ -192,7 +196,9 @@ def _deliver_case_event(
     if channel is None:
         return {'successful': 0, 'failed': 0, 'skipped': 1}
     action_tab = 'resolved' if event_state == 'resolved' else 'active'
-    action_path = f'/intelligence/alert-intelligence?tab={action_tab}&case={case.public_id}'
+    action_path = '/intelligence/alert-intelligence?' + urlencode(
+        {'tab': action_tab, 'domain': case.domain, 'asset': case.asset_key, 'case': case.public_id}
+    )
     action_url = _notification_action_url(action_path)
     title, body, content_format = render_case_message(
         case,
