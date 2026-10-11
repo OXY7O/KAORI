@@ -227,6 +227,7 @@ def test_alert_case_empty_state_does_not_claim_provider_health() -> None:
     )
     for summary in summaries:
         assert "empty_label='No Active Cases'" in summary
+        assert "empty_title='No Active Alert Cases'" in summary
         assert 'No active recommendation-origin AlertCases' in summary
         assert 'Intelligence findings are separate.' in summary
         assert "empty_label='Healthy'" not in summary
