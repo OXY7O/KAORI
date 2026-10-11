@@ -16,17 +16,69 @@
                         {{ table_label.metadata_label(item.category_label, item.category_icon) }}
                         {{ table_label.status_label(item.status_label, item.status, none, 'detail') }}
                     {% endcall %}
-                    <p class="mt-1 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ item.message }}</p>
+                    {% if not item.failure_summary %}
+                        <p class="mt-1 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ item.message }}</p>
+                    {% endif %}
                 </div>
             </div>
         </header>
         {{ detail_ui.summary_strip([
-                ('Category', item.category_label, 'Administrative evidence domain') ,
-        ('Actor', item.user_label, item.user_role),
+                ('Actor', item.user_label, item.user_role),
         ('Target', item.target_name, item.target_type),
-        ('Recorded', item.created_at|user_datetime, item.created_label)
+        ('Recorded', item.created_at|user_datetime, item.created_label),
+        ('Evidence', 'Activity Register', 'Notification-backed')
         ], compact=true) }}
         <div class="space-y-4 p-5">
+            {% if item.failure_summary %}
+                {% set failure_icon_classes = 'bg-status-critical-soft text-status-critical-text' if item.status == 'error' else 'bg-status-warning-soft text-status-warning-text' %}
+                <section data-activity-outcome="recorded"
+                         class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
+                         aria-labelledby="activity-outcome-heading">
+                    <header class="flex flex-wrap items-start justify-between gap-3 border-b border-outline-subtle px-4 py-3.5">
+                        <div class="flex min-w-0 items-start gap-3">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {{ failure_icon_classes }}"
+                                  aria-hidden="true"><i data-lucide="triangle-alert" class="h-4 w-4"></i></span>
+                            <div class="min-w-0">
+                                <h4 id="activity-outcome-heading" class="text-sm font-semibold text-content-primary">Failure Summary</h4>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Recorded outcome and evidence to review before further action.</p>
+                            </div>
+                        </div>
+                        {% if item.failure_type and item.failure_type != 'Operational Failure' %}
+                            {{ table_label.metadata_label(item.failure_type, 'triangle-alert') }}
+                        {% endif %}
+                    </header>
+                    <div class="space-y-4 p-4">
+                        <div class="rounded-lg border border-outline-subtle bg-surface-elevated px-4 py-3.5">
+                            <p class="text-xs font-semibold text-content-secondary">Recorded Outcome</p>
+                            <p class="mt-1 break-words text-sm font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ item.failure_summary }}</p>
+                            {% if item.message and item.message != item.failure_summary %}
+                                <div class="mt-3 border-t border-outline-subtle pt-3">
+                                    <p class="text-xs font-semibold text-content-secondary">Recorded Impact</p>
+                                    <p class="mt-1 break-words text-sm leading-6 text-content-primary [overflow-wrap:anywhere]">{{ item.message }}</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                        {% if item.failure_context %}
+                            <div class="space-y-2">
+                                <h5 class="text-xs font-semibold text-content-secondary">Recorded Failure Context</h5>
+                                {{ detail_ui.evidence_grid(item.failure_context, columns=3, compact=true) }}
+                            </div>
+                        {% else %}
+                            <p class="text-xs leading-5 text-content-muted">No separate failure-context fields are available in this Activity Register entry. Review related committed evidence when available.</p>
+                        {% endif %}
+                        <div class="flex min-w-0 items-start gap-3 border-t border-outline-subtle pt-3">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true"><i data-lucide="list-checks" class="h-4 w-4"></i></span>
+                            <div class="min-w-0">
+                                <h5 class="text-xs font-semibold text-content-secondary">Next Review Step</h5>
+                                <p class="mt-1 break-words text-sm leading-6 text-content-primary [overflow-wrap:anywhere]">
+                                    Inspect {% if item.failure_context %}the recorded failure context, {% endif %}trace references{% if item.related_sources %}, and authorized related evidence{% endif %} before deciding whether to retry.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            {% endif %}
             {% if item.detail and item.detail != item.message and item.detail != item.failure_summary %}
                 <section class="rounded-xl border border-outline-subtle bg-surface-card px-4 py-3.5">
                     <div class="flex min-w-0 items-start gap-3">
@@ -36,36 +88,6 @@
                             <p class="text-xs font-semibold text-content-secondary">Activity Detail</p>
                             <p class="mt-1 break-words text-sm leading-6 text-content-primary [overflow-wrap:anywhere]">{{ item.detail }}</p>
                         </div>
-                    </div>
-                </section>
-            {% endif %}
-            {% if item.failure_summary %}
-                {% set failure_icon_classes = 'bg-status-critical-soft text-status-critical-text' if item.status == 'error' else 'bg-status-warning-soft text-status-warning-text' %}
-                <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
-                    <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
-                        <div class="flex min-w-0 items-start gap-3">
-                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {{ failure_icon_classes }}"
-                                  aria-hidden="true"><i data-lucide="triangle-alert" class="h-4 w-4"></i></span>
-                            <div class="min-w-0">
-                                <h4 class="text-sm font-semibold text-content-primary">Failure Summary</h4>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Operator-facing interpretation of the failed or warning outcome.</p>
-                            </div>
-                        </div>
-                        {{ table_label.metadata_label(item.failure_type, 'triangle-alert') }}
-                    </header>
-                    <div class="grid gap-4 p-4 lg:grid-cols-2">
-                        <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
-                            <p class="text-xs font-semibold text-content-secondary">{{ item.failure_type }}</p>
-                            <p class="mt-2 break-words text-sm leading-6 text-content-primary [overflow-wrap:anywhere]">{{ item.failure_summary }}</p>
-                        </div>
-                        {% if item.failure_context %}
-                            <div>{{ detail_ui.evidence_grid(item.failure_context, columns=2, compact=true) }}</div>
-                        {% else %}
-                            <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
-                                <p class="text-xs font-semibold text-content-secondary">Operator Action</p>
-                                <p class="mt-2 text-sm leading-6 text-content-muted">Review the related configuration, target availability, and trace references before retrying.</p>
-                            </div>
-                        {% endif %}
                     </div>
                 </section>
             {% endif %}
@@ -85,17 +107,6 @@
                     <div class="p-4">{{ detail_ui.evidence_grid(item.execution_evidence, columns=4, compact=true) }}</div>
                 </section>
             {% endif %}
-            <div class="grid items-stretch gap-4 lg:grid-cols-2">
-                {% call detail_ui.detail_card('Actor & Access', 'user-round', item.user_auth_source, badge_size='detail', stretch=true, density='compact') %}
-                    {{ detail_ui.detail_row('Email', item.user_email or 'Not recorded') }}
-                    {{ detail_ui.detail_row('Role', item.user_role) }}
-                    {{ detail_ui.detail_row('Authentication', item.user_auth_source) }}
-                {% endcall %}
-                {% call detail_ui.detail_card('Target Context', 'crosshair', item.target_type, badge_size='detail', stretch=true, density='compact') %}
-                    {{ detail_ui.detail_row('Target Type', item.target_type) }}
-                    {{ detail_ui.detail_row('Module', item.module_label) }}
-                {% endcall %}
-            </div>
             {% if item.changed_fields %}
                 <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
                     <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
@@ -184,21 +195,42 @@
                     </dl>
                 </section>
             {% endif %}
+            <section data-activity-audit-context
+                     class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                <header class="flex items-center gap-3 border-b border-outline-subtle px-4 py-3">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true"><i data-lucide="shield-check" class="h-4 w-4"></i></span>
+                    <div class="min-w-0">
+                        <h4 class="text-sm font-semibold text-content-primary">Audit Context</h4>
+                        <p class="mt-0.5 text-xs leading-5 text-content-muted">Actor snapshot and recorded target attribution.</p>
+                    </div>
+                </header>
+                <div class="grid min-w-0 md:grid-cols-2">
+                    <div class="min-w-0 space-y-3 border-b border-outline-subtle p-4 md:border-b-0 md:border-r">
+                        <h5 class="text-xs font-semibold text-content-secondary">Actor & Access</h5>
+                        {{ detail_ui.detail_row('Email', item.user_email or 'Not recorded') }}
+                        {{ detail_ui.detail_row('Role', item.user_role) }}
+                        {{ detail_ui.detail_row('Authentication', item.user_auth_source) }}
+                    </div>
+                    <div class="min-w-0 space-y-3 p-4">
+                        <h5 class="text-xs font-semibold text-content-secondary">Target Context</h5>
+                        {{ detail_ui.detail_row('Target Type', item.target_type) }}
+                        {{ detail_ui.detail_row('Module', item.module_label) }}
+                    </div>
+                </div>
+            </section>
             {% if item.additional_evidence %}
-                <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
-                    <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
-                        <div class="flex min-w-0 items-start gap-3">
-                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-subtle text-content-secondary"
-                                  aria-hidden="true"><i data-lucide="list-tree" class="h-4 w-4"></i></span>
-                            <div class="min-w-0">
-                                <h4 class="text-sm font-semibold text-content-primary">Additional Evidence</h4>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Curated metadata not already represented by the primary evidence sections.</p>
-                            </div>
-                        </div>
-                        {{ table_label.metadata_label(item.additional_evidence|length ~ ' ' ~ ('Field' if item.additional_evidence|length == 1 else 'Fields') , 'list-tree') }}
-                    </header>
-                    <div class="p-4">{{ detail_ui.evidence_grid(item.additional_evidence, columns=3, compact=true) }}</div>
-                </section>
+                {% call view_more.render(
+                    'Additional Evidence',
+                    item.additional_evidence|length ~ ' curated metadata ' ~ ('field' if item.additional_evidence|length == 1 else 'fields') ~ ' available for review.',
+                    icon='list-tree',
+                    open_by_default=false,
+                    aria_label='Additional Evidence',
+                    closed_label='View Additional Evidence',
+                    open_label='Hide Additional Evidence'
+                    ) %}
+                    {{ detail_ui.evidence_grid(item.additional_evidence, columns=3, compact=true) }}
+                {% endcall %}
             {% endif %}
             {% if item.technical_evidence %}
                 {% call view_more.render(
