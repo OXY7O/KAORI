@@ -197,3 +197,132 @@ def test_capsule_handback_refuses_changed_or_mutatable_global_quota(mutation):
     release['verified_resource_count'] = 5
     with pytest.raises(ValueError):
         _capsule_handback_scope(release=release, tenant=tenant)
+
+
+def test_capsule_handback_start_requires_postgresql_not_plain_mutable_audit():
+    from app.kubernetes.tenant.capsule_successor_handback import (
+        _require_postgres_capsule_handback_start_guards,
+    )
+    session = SimpleNamespace(
+        get_bind=lambda: SimpleNamespace(dialect=SimpleNamespace(name='sqlite')),
+        execute=lambda *_: pytest.fail('SQLite may not query or write handback evidence'),
+    )
+    with pytest.raises(ValueError, match='guarded PostgreSQL'):
+        _require_postgres_capsule_handback_start_guards(session)
+
+
+def test_capsule_handback_start_denies_missing_write_once_triggers():
+    from app.kubernetes.tenant.capsule_successor_handback import (
+        _require_postgres_capsule_handback_start_guards,
+    )
+    class Session:
+        def get_bind(self):
+            return SimpleNamespace(dialect=SimpleNamespace(name='postgresql'))
+        def execute(self, statement):
+            assert 'pg_trigger' in str(statement)
+            return SimpleNamespace(all=lambda: [])
+    with pytest.raises(ValueError, match='absent or disabled'):
+        _require_postgres_capsule_handback_start_guards(Session())
+
+
+@pytest.mark.parametrize('mutation', [
+    lambda index, posture: index.update(indisvalid=False),
+    lambda index, posture: index.update(predicate='other/unprotected'),
+    lambda index, posture: posture.update(elevated=True),
+    lambda index, posture: posture.update(is_owner=True),
+    lambda index, posture: posture.update(may_truncate=True),
+    lambda index, posture: posture.update(fsync_setting='off'),
+    lambda index, posture: posture.update(replication_role='replica'),
+])
+def test_capsule_handback_start_fail_closed_for_index_or_db_role_drift(mutation):
+    from app.kubernetes.tenant.capsule_successor_handback import (
+        _require_postgres_capsule_handback_start_guards,
+    )
+    target = 'kubernetes_tenant_verified_capsule_successor_handback'
+    action = 'tenant.release.capsule_successor_handback_started'
+    index = {
+        'indisunique': True, 'indisvalid': True,
+        'definition': 'CREATE UNIQUE INDEX ... (target_id)',
+        'predicate': f"target_type = '{target}' AND action = '{action}'",
+    }
+    posture = {
+        'fsync_setting': 'on', 'sync_commit': 'on',
+        'replication_role': 'origin', 'elevated': False,
+        'is_owner': False, 'member_of_owner': False,
+        'may_insert': True, 'may_truncate': False,
+    }
+    mutation(index, posture)
+    class Session:
+        def get_bind(self):
+            return SimpleNamespace(dialect=SimpleNamespace(name='postgresql'))
+        def execute(self, statement):
+            sql = str(statement)
+            if 'pg_trigger' in sql:
+                return SimpleNamespace(all=lambda: [
+                    (f'tr_capsule_handback_audit_deny_{kind}', 'O')
+                    for kind in ('update', 'delete', 'truncate')
+                ])
+            if 'pg_index' in sql:
+                return SimpleNamespace(
+                    mappings=lambda: SimpleNamespace(one_or_none=lambda: index),
+                )
+            if 'pg_class' in sql:
+                return SimpleNamespace(
+                    mappings=lambda: SimpleNamespace(one=lambda: posture),
+                )
+            pytest.fail('Unexpected handback START guard query')
+    with pytest.raises(ValueError, match='index|role'):
+        _require_postgres_capsule_handback_start_guards(Session())
+
+
+def test_capsule_handback_start_accepts_only_exact_protected_db_posture():
+    from app.kubernetes.tenant.capsule_successor_handback import (
+        _require_postgres_capsule_handback_start_guards,
+    )
+    target = 'kubernetes_tenant_verified_capsule_successor_handback'
+    action = 'tenant.release.capsule_successor_handback_started'
+    class Session:
+        def get_bind(self):
+            return SimpleNamespace(dialect=SimpleNamespace(name='postgresql'))
+        def execute(self, statement):
+            sql = str(statement)
+            if 'pg_trigger' in sql:
+                return SimpleNamespace(all=lambda: [
+                    (f'tr_capsule_handback_audit_deny_{kind}', 'O')
+                    for kind in ('update', 'delete', 'truncate')
+                ])
+            if 'pg_index' in sql:
+                index = {
+                    'indisunique': True, 'indisvalid': True,
+                    'definition': 'CREATE UNIQUE INDEX ... (target_id)',
+                    'predicate': f"target_type = '{target}' AND action = '{action}'",
+                }
+                return SimpleNamespace(
+                    mappings=lambda: SimpleNamespace(one_or_none=lambda: index),
+                )
+            if 'pg_class' in sql:
+                posture = {
+                    'fsync_setting': 'on', 'sync_commit': 'on',
+                    'replication_role': 'origin', 'elevated': False,
+                    'is_owner': False, 'member_of_owner': False,
+                    'may_insert': True, 'may_truncate': False,
+                }
+                return SimpleNamespace(
+                    mappings=lambda: SimpleNamespace(one=lambda: posture),
+                )
+            pytest.fail('Unexpected handback START guard query')
+    _require_postgres_capsule_handback_start_guards(Session())
+
+
+def test_capsule_handback_guard_migration_is_source_only_and_refuses_evidence_downgrade():
+    from pathlib import Path
+    source = Path(
+        'migrations/versions/20261012_capsule_handback_audit_guard.py'
+    ).read_text()
+    assert "revision = '20261012_capsule_handback_guard'" in source
+    assert "down_revision = '20261011_reveal_uid'" in source
+    assert "tr_capsule_handback_audit_deny_truncate" in source
+    assert "uq_capsule_handback_start_tenant_once" in source
+    assert "OLD.target_type =" in source
+    assert "NEW.target_type =" in source
+    assert "Cannot remove Capsule handback guards" in source
