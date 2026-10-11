@@ -24,7 +24,12 @@
         'Refreshing TLS Certificate Registry',
         url_for('integrations.kubernetes') ,
     'Open Cluster Integrations',
-    header_actions=inventory_header_actions
+    header_actions=inventory_header_actions,
+    title_extra=info_tip.render('k8s-inventory-tls-title', 'TLS Certificate Registry Guide', 'How to read certificate and Ingress evidence.', items=[
+        'Certificate Validity: Observed certificate expiry and validity posture from the committed TLS inventory; it is not a live handshake test.',
+        'TLS Host Coverage: Hostnames associated with the observed certificate and Ingress declarations. Coverage alone does not prove clients trust the certificate.',
+        'Ingress Certificate Usage: Observed Kubernetes Ingress resources referring to this certificate or Secret; references are not proof of successful TLS termination.'
+    ], placement='right')
     ) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         {% include "kubernetes/governance/tls_certificates/partials/_filters.html" %}
@@ -36,9 +41,9 @@
                 <tr>
                     <th scope="col" class="w-[29%] px-4 py-3 text-left">Certificate</th>
                     <th scope="col" class="w-[20%] px-4 py-3 text-left">Scope</th>
-                    <th scope="col" class="w-[16%] px-4 py-3 text-left"><span class="inline-flex items-center gap-1">Validity {{ info_tip.render('k8s-inventory-tls-validity', 'Certificate Validity', 'Observed certificate expiry and validity posture from the committed TLS inventory; it is not a live handshake test.', placement='right') }}</span></th>
-                    <th scope="col" class="hidden w-[13%] px-4 py-3 text-left lg:table-cell"><span class="inline-flex items-center gap-1">Host Coverage {{ info_tip.render('k8s-inventory-tls-host-coverage', 'TLS Host Coverage', 'Hostnames associated with the observed certificate and Ingress declarations. Coverage alone does not prove clients trust the certificate.', placement='right') }}</span></th>
-                    <th scope="col" class="hidden w-[10%] px-4 py-3 text-left xl:table-cell"><span class="inline-flex items-center gap-1">Ingress Usage {{ info_tip.render('k8s-inventory-tls-ingress-usage', 'Ingress Certificate Usage', 'Observed Kubernetes Ingress resources referring to this certificate or Secret; references are not proof of successful TLS termination.', placement='right') }}</span></th>
+                    <th scope="col" class="w-[16%] px-4 py-3 text-left">Validity</th>
+                    <th scope="col" class="hidden w-[13%] px-4 py-3 text-left lg:table-cell">Host Coverage</th>
+                    <th scope="col" class="hidden w-[10%] px-4 py-3 text-left xl:table-cell">Ingress Usage</th>
                     <th scope="col" class="w-[12%] px-3 py-3 text-right">Details</th>
                 </tr>
             </thead>
