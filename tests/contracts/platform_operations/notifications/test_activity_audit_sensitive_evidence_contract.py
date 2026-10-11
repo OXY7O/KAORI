@@ -42,12 +42,15 @@ def test_technical_text_scrubber_handles_encoded_keys_urls_headers_and_controls(
         'password: synthetic-hidden-password',
         'private_key=synthetic-hidden-private',
         'cookie=synthetic-hidden-cookie',
+        'x-api-key=synthetic-hidden-api',
+        'client-secret=synthetic-hidden-client',
         'failed\nrequest token=synthetic-hidden-other',
     )
     for raw in cases:
         assert 'synthetic-hidden-' not in redact_operational_text(raw)
     assert redact_operational_text('-----BEGIN PRIVATE KEY----- synthetic-hidden-material') == '[REDACTED]'
     assert redact_operational_text('Success: task_id=111, target=cluster-a') == 'Success: task_id=111, target=cluster-a'
+    assert redact_operational_text('/audit?redirect=%2Faccess%2Factivity') == '/audit?redirect=%2Faccess%2Factivity'
     assert len(redact_operational_text('x' * 20000, limit=1200)) <= 1200
 
 

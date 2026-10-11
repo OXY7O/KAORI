@@ -54,7 +54,7 @@ _REDACTED = '[REDACTED]'
 _URL_CREDENTIAL = re.compile(r'(?i)(https?://)[^/@\s]+:[^/@\s]+@')
 _AUTHORIZATION_VALUE = re.compile(r'(?i)\b(bearer|basic)\s+[a-z0-9._~+/\-]+=*')
 _SENSITIVE_ASSIGNMENT = re.compile(
-    r'''(?i)(["']?(?:password|passwd|passphrase|token|access_token|refresh_token|secret|client_secret|api_key|apikey|authorization|cookie|session_key|private_key|kubeconfig)["']?\s*[:=]\s*)(["']?)([^\s,'";&}\]]+)'''
+    r'''(?i)(["']?(?:password|passwd|passphrase|token|access[-_]?token|refresh[-_]?token|secret|client[-_]?secret|(?:x[-_])?api[-_]?key|apikey|authorization|cookie|session[-_]?key|private[-_]?key|kubeconfig)["']?\s*[:=]\s*)(["']?)([^\s,'";&}\]]+)'''
 )
 _PRIVATE_KEY_MARKER = re.compile(r'(?i)-----BEGIN\s+(?:[A-Z ]*\s)?PRIVATE KEY-----')
 _CONTROL_CHARACTERS = re.compile(r'[\x00-\x08\x0b-\x1f\x7f]')
@@ -74,13 +74,18 @@ def redact_operational_text(value: object, *, limit: int = _MAX_METADATA_TEXT) -
     from urllib.parse import unquote
 
     rendered = str(value or '')
-    # Unwrap a bounded amount of encoding so percent-encoded query parameter
-    # assignments cannot bypass the scrubber.
-    for _ in range(2):
-        decoded = unquote(rendered)
-        if decoded == rendered:
-            break
-        rendered = decoded
+    # Decode only when encoded credential markers are present. Decoding all
+    # evidence would change legitimate percent-encoded action URLs/references.
+    encoded_secret = re.search(
+        r'(?i)(?:password|passwd|passphrase|token|secret|api[_-]?key|client_secret|authorization|cookie)(?:%(?:25)?3[da])',
+        rendered,
+    ) or re.search(r'(?i)https?%3a%2f%2f', rendered)
+    if encoded_secret:
+        for _ in range(2):
+            decoded = unquote(rendered)
+            if decoded == rendered:
+                break
+            rendered = decoded
     rendered = _CONTROL_CHARACTERS.sub(' ', rendered)
     if _PRIVATE_KEY_MARKER.search(rendered):
         return _REDACTED
