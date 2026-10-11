@@ -346,6 +346,13 @@
                      aria-labelledby="topology-view-tab-list"
                      hidden
                      class="kaori-visualization-canvas overflow-auto bg-surface-card">
+                <div class="flex items-center gap-1.5 border-b border-outline-subtle bg-surface-card px-5 py-3">
+                    <h3 class="text-sm font-semibold text-content-primary">Resource List</h3>
+                    {{ info_tip.render('k8s-inventory-topology-title', 'Topology Resource List Guide', 'How to interpret relationships in the committed Kubernetes topology.', items=[
+                        'Topology Resource Status: Operational status summarized from the latest committed resource snapshot. Unknown means evidence is insufficient, not healthy.',
+                        'Resource Relationships: Links between resources inferred from committed Kubernetes references and selectors. An absent link may reflect missing or filtered evidence.'
+                    ], placement='right') }}
+                </div>
                 <div class="min-w-[760px]">
                     <table class="{{ table_ui.table_classes() }}">
                         <thead class="{{ table_ui.head_classes() }}">
@@ -354,8 +361,8 @@
                                 <th class="{{ table_ui.header_cell_classes() }}">Type</th>
                                 <th class="{{ table_ui.header_cell_classes() }}">Cluster</th>
                                 <th class="{{ table_ui.header_cell_classes() }}">Namespace</th>
-                                <th class="{{ table_ui.header_cell_classes() }}"><span class="inline-flex items-center gap-1">Status {{ info_tip.render('k8s-inventory-topology-status', 'Topology Resource Status', 'Operational status summarized from the latest committed resource snapshot. Unknown means evidence is insufficient, not healthy.', placement='right') }}</span></th>
-                                <th class="{{ table_ui.header_cell_classes() }}"><span class="inline-flex items-center gap-1">Relationships {{ info_tip.render('k8s-inventory-topology-relationships', 'Resource Relationships', 'Links between resources inferred from committed Kubernetes references and selectors. An absent link may reflect missing or filtered evidence.', placement='right') }}</span></th>
+                                <th class="{{ table_ui.header_cell_classes() }}">Status</th>
+                                <th class="{{ table_ui.header_cell_classes() }}">Relationships</th>
                                 <th class="{{ table_ui.header_cell_classes(action=true) }}">Details</th>
                             </tr>
                         </thead>
