@@ -19,7 +19,7 @@ class CapsuleHandoffLedgerEvent(db.Model):
 
     id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
     tenant_id: Mapped[str] = mapped_column(
-        db.ForeignKey('tenants.id', ondelete='RESTRICT'), db.String(36),
+        db.String(36), db.ForeignKey('tenants.id', ondelete='RESTRICT'),
         nullable=False, index=True,
     )
     cluster_id: Mapped[str] = mapped_column(db.String(36), nullable=False)
