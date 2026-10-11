@@ -7,53 +7,60 @@
     <section id="tenant-native-residual-recovery"
              class="mt-4 min-w-0 space-y-4 rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5"
              aria-labelledby="tenant-native-residual-recovery-heading">
-        <div class="flex flex-wrap items-start justify-between gap-3">
-            <div class="min-w-0">
-                <h4 id="tenant-native-residual-recovery-heading"
-                    class="flex items-center gap-2 text-sm font-semibold text-content-primary">
-                    <i data-lucide="shield-check" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
-                    Historical Namespace Recovery
-                </h4>
-                <p class="mt-1 text-sm leading-6 text-content-secondary">
-                    Handback is verified, but a previously KAORI-managed Namespace may still have
-                    a <code class="break-all font-mono text-xs">kaori.io/resource-profile</code> marker.
-                    Discovery intentionally blocks that residue until independently authorized cleanup.
-                </p>
+        <header class="flex min-w-0 flex-wrap items-start justify-between gap-3">
+            <div class="flex min-w-0 flex-1 items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="history" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <h4 id="tenant-native-residual-recovery-heading"
+                        class="text-base font-semibold leading-6 text-content-primary">
+                        Historical Namespace Recovery
+                    </h4>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary sm:text-sm sm:leading-6">
+                        A verified Handback may retain the
+                        <code class="break-all font-mono text-xs">kaori.io/resource-profile</code>
+                        marker. Discovery blocks this historical residue until independently authorized cleanup.
+                    </p>
+                </div>
             </div>
-            {% if recovery_verified %}
-                {{ table_label.status_label('Recovery Verified', 'success') }}
-            {% elif recovery_execution %}
-                {{ table_label.status_label('Recovery Review Required', 'warning') }}
-            {% elif recovery_approval %}
-                {{ table_label.status_label('Approved — Not Executed', 'warning') }}
-            {% elif recovery_plan %}
-                {{ table_label.status_label('Pending Independent Review', 'info') }}
-            {% else %}
-                {{ table_label.status_label('Recovery Check · If Blocked', 'info') }}
-            {% endif %}
-        </div>
-        <ol class="grid min-w-0 gap-2 text-xs leading-5 text-content-secondary sm:grid-cols-2 xl:grid-cols-4"
+            <div class="shrink-0">
+                {% if recovery_verified %}
+                    {{ table_label.status_label('Recovery Verified', 'success') }}
+                {% elif recovery_execution %}
+                    {{ table_label.status_label('Recovery Review Required', 'warning') }}
+                {% elif recovery_approval %}
+                    {{ table_label.status_label('Approved — Not Executed', 'warning') }}
+                {% elif recovery_plan %}
+                    {{ table_label.status_label('Pending Independent Review', 'info') }}
+                {% else %}
+                    {{ table_label.status_label('Recovery Check · If Blocked', 'info') }}
+                {% endif %}
+            </div>
+        </header>
+        {# These describe governance stages, not checkmarks or proof of progress. #}
+        <ol class="grid min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-4"
             aria-label="Governed recovery stages">
-            <li class="rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2">
-                <span class="block font-semibold text-content-primary">1. Assess &amp; Prepare</span>
-                <span>Verify live provider evidence and commit a bounded plan</span>
-            </li>
-            <li class="rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2">
-                <span class="block font-semibold text-content-primary">2. Independent Review</span>
-                <span>A different Platform Admin confirms the exact plan SHA</span>
-            </li>
-            <li class="rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2">
-                <span class="block font-semibold text-content-primary">3. Execute &amp; Verify</span>
-                <span>Conditional label-only PATCH with provider read-back</span>
-            </li>
-            <li class="rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2">
-                <span class="block font-semibold text-content-primary">4. Discovery</span>
-                <span>New generation adoption requires fresh provider preflight</span>
-            </li>
+            {% for title, description in [
+                ('Assess & Prepare', 'Verify provider evidence and record a bounded plan'),
+                ('Independent Review', 'A different Platform Admin approves the exact plan SHA'),
+                ('Execute & Verify', 'Conditional label-only PATCH and provider read-back'),
+                ('Discovery', 'Fresh preflight for new-generation adoption')
+            ] %}
+                <li class="flex min-w-0 items-start gap-3 rounded-lg border border-outline-subtle bg-surface-elevated/50 px-3 py-3">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-kaori-primary/20 bg-kaori-soft text-sm font-semibold text-kaori-primary"
+                          aria-hidden="true">{{ loop.index }}</span>
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold leading-5 text-content-primary">{{ title }}</p>
+                        <p class="mt-0.5 text-xs leading-5 text-content-secondary">{{ description }}</p>
+                    </div>
+                </li>
+            {% endfor %}
         </ol>
         {% if recovery_execution %}
-            <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3 text-sm leading-6 text-content-secondary"
-                 role="status">
+            <div class="rounded-lg border {{ 'border-outline-subtle bg-surface-elevated' if recovery_verified else 'border-status-warning-border bg-status-warning-soft' }} p-3 text-sm leading-6 text-content-secondary"
+                 role="status" aria-label="Recovery execution evidence">
                 <p class="font-semibold text-content-primary">
                     {% if recovery_verified %}
                         Provider recovery verified
@@ -85,8 +92,12 @@
                 </p>
             {% endif %}
         {% elif recovery_plan %}
-            <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3 text-xs leading-5 text-content-secondary">
-                <p class="font-semibold text-content-primary">Committed recovery plan</p>
+            <div class="rounded-lg border border-outline-subtle bg-surface-elevated/50 p-3 text-xs leading-5 text-content-secondary"
+                 role="status" aria-label="Committed recovery plan">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="file-check-2" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                    <p class="font-semibold text-content-primary">Committed recovery plan</p>
+                </div>
                 <p class="mt-1 break-all font-mono">{{ recovery_plan.plan_sha256 }}</p>
                 <p class="mt-1">Change reference: {{ recovery_plan.change_reference }} ·
                     {{ recovery_plan.residual_component_count }} affected component(s).</p>
@@ -103,7 +114,7 @@
                                   hx-swap="outerHTML show:none focus-scroll:false"
                                   hx-indicator="#tenant-management-loading"
                                   hx-disabled-elt="find button[type='submit']"
-                                  class="mt-3 space-y-3">
+                                  class="mt-3 space-y-3 rounded-lg border border-outline-subtle bg-surface-card p-3 sm:p-4">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
                                 <input type="hidden" name="tenant_detail_section" value="handback">
@@ -142,7 +153,7 @@
                           hx-swap="outerHTML show:none focus-scroll:false"
                           hx-indicator="#tenant-management-loading"
                           hx-disabled-elt="find button[type='submit']"
-                          class="space-y-3">
+                          class="mt-3 space-y-3 rounded-lg border border-outline-subtle bg-surface-card p-3 sm:p-4">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
                         <input type="hidden" name="tenant_detail_section" value="handback">
@@ -171,70 +182,128 @@
                 <p class="text-xs leading-5 text-content-muted">Plan evidence expired. This immutable plan cannot be replayed or silently replaced; request governed review.</p>
             {% endif %}
         {% else %}
-            <p class="text-xs leading-5 text-content-muted">
-                First check fresh Discovery. If your Namespace is already eligible, use the
-                normal Review Adoption action; no recovery is necessary. If Discovery is
-                blocked by historical Resource Profile residue, assess it here. A new
-                recovery plan requires an explicit change reference and independent review.
-            </p>
-            <a href="{{ url_for('tenant.tenants', section='discovery') }}"
-               class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 py-2 text-sm font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                <i data-lucide="radar" class="h-4 w-4" aria-hidden="true"></i>
-                Check Discovery First
-            </a>
-            <form method="post"
-                  action="{{ url_for('tenant.assess_native_residual_cleanup_route', tenant_id=tenant.id) }}"
-                  hx-post="{{ url_for('tenant.assess_native_residual_cleanup_route', tenant_id=tenant.id) }}"
-                  hx-target="#tenant-management-detail" hx-select="#tenant-management-detail"
-                  hx-swap="outerHTML show:none focus-scroll:false"
-                  hx-indicator="#tenant-management-loading"
-                  hx-disabled-elt="find button[type='submit']" class="space-y-3">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
-                <input type="hidden" name="tenant_detail_section" value="handback">
-                {% for state_key, state_value in registry_state.items() %}
-                    <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
-                {% endfor %}
-                <button type="submit"
-                        class="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-progress disabled:opacity-60 sm:w-auto">
-                    <i data-lucide="scan-search" class="h-4 w-4" aria-hidden="true"></i>
-                    Assess Live Provider Residue (Read-only)
-                </button>
-            </form>
-            <form method="post"
-                  action="{{ url_for('tenant.prepare_native_residual_cleanup_route', tenant_id=tenant.id) }}"
-                  hx-post="{{ url_for('tenant.prepare_native_residual_cleanup_route', tenant_id=tenant.id) }}"
-                  hx-target="#tenant-management-detail" hx-select="#tenant-management-detail"
-                  hx-swap="outerHTML show:none focus-scroll:false"
-                  hx-indicator="#tenant-management-loading"
-                  hx-disabled-elt="find button[type='submit']"
-                  class="space-y-3 border-t border-outline-subtle pt-3">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
-                <input type="hidden" name="tenant_detail_section" value="handback">
-                {% for state_key, state_value in registry_state.items() %}
-                    <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
-                {% endfor %}
-                <label for="tenant-residual-change-reference" class="block text-xs font-semibold text-content-primary">
-                    Approved change reference
-                </label>
-                <input id="tenant-residual-change-reference" name="change_reference" type="text"
-                       required minlength="3" maxlength="120" autocomplete="off"
-                       placeholder="CHG-2026-1234"
-                       class="min-h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
-                    <input type="checkbox" name="confirm_native_residual_prepare"
-                           value="prepare" required
-                           class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
-                    <span>Prepare a bounded immutable plan using a fresh provider assessment.
-                        This does not delete a resource or modify Kubernetes.</span>
-                </label>
-                <button type="submit"
-                        class="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-progress disabled:opacity-60 sm:w-auto">
-                    <i data-lucide="clipboard-list" class="h-4 w-4" aria-hidden="true"></i>
-                    Prepare Governed Recovery Plan
-                </button>
-            </form>
+            <aside class="flex min-w-0 items-start gap-3 rounded-lg border border-kaori-primary/15 bg-kaori-soft/40 px-3 py-3 sm:px-4"
+                   aria-labelledby="tenant-recovery-discovery-guidance">
+                <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="info" class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <h5 id="tenant-recovery-discovery-guidance" class="text-sm font-semibold leading-5 text-content-primary">
+                        Check Discovery First
+                    </h5>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">
+                        First check fresh Discovery. If your Namespace is already eligible, use the normal
+                        Review Adoption action; no recovery is needed. If blocked by historical Resource Profile
+                        residue, assess it below. Preparing recovery requires a change reference and independent review.
+                    </p>
+                </div>
+            </aside>
+            <section class="rounded-lg border border-outline-subtle bg-surface-card p-3 sm:p-4"
+                     aria-labelledby="tenant-recovery-assessment-heading">
+                <div class="flex min-w-0 items-start gap-2.5">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true"><i data-lucide="scan-search" class="h-4 w-4"></i></span>
+                    <div class="min-w-0">
+                        <h5 id="tenant-recovery-assessment-heading" class="text-sm font-semibold text-content-primary">
+                            Assessment Actions
+                        </h5>
+                        <p class="mt-0.5 text-xs leading-5 text-content-secondary">
+                            Verify eligibility and provider evidence before preparing a recovery plan.
+                        </p>
+                    </div>
+                </div>
+                <div class="mt-3 grid min-w-0 gap-2 sm:grid-cols-2">
+                    <a href="{{ url_for('tenant.tenants', section='discovery') }}"
+                       class="group flex min-h-16 min-w-0 items-center gap-3 rounded-lg border border-outline-default bg-surface-card px-3 py-3 transition hover:border-kaori-primary/40 hover:bg-kaori-soft/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true"><i data-lucide="radar" class="h-4 w-4"></i></span>
+                        <span class="min-w-0 flex-1">
+                            <span class="block text-xs font-semibold leading-5 text-content-primary">Check Discovery First</span>
+                            <span class="block text-xs leading-5 text-content-secondary">Verify current eligibility and status</span>
+                        </span>
+                        <i data-lucide="arrow-up-right" class="h-4 w-4 shrink-0 text-content-muted group-hover:text-kaori-primary"
+                           aria-hidden="true"></i>
+                    </a>
+                    <form method="post"
+                          action="{{ url_for('tenant.assess_native_residual_cleanup_route', tenant_id=tenant.id) }}"
+                          hx-post="{{ url_for('tenant.assess_native_residual_cleanup_route', tenant_id=tenant.id) }}"
+                          hx-target="#tenant-management-detail" hx-select="#tenant-management-detail"
+                          hx-swap="outerHTML show:none focus-scroll:false"
+                          hx-indicator="#tenant-management-loading"
+                          hx-disabled-elt="find button[type='submit']" class="min-w-0">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                        <input type="hidden" name="tenant_detail_section" value="handback">
+                        {% for state_key, state_value in registry_state.items() %}
+                            <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
+                        {% endfor %}
+                        <button type="submit"
+                                class="group flex min-h-16 w-full min-w-0 items-center gap-3 rounded-lg border border-outline-default bg-surface-card px-3 py-3 text-left transition hover:border-kaori-primary/40 hover:bg-kaori-soft/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-progress disabled:opacity-60">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true"><i data-lucide="scan-eye" class="h-4 w-4"></i></span>
+                            <span class="min-w-0 flex-1">
+                                <span class="block text-xs font-semibold leading-5 text-content-primary">Assess Live Provider Residue (Read-only)</span>
+                                <span class="block text-xs leading-5 text-content-secondary">Inspect historical provider residue evidence</span>
+                            </span>
+                            <i data-lucide="arrow-right" class="h-4 w-4 shrink-0 text-content-muted group-hover:text-kaori-primary"
+                               aria-hidden="true"></i>
+                        </button>
+                    </form>
+                </div>
+            </section>
+            <section class="rounded-lg border border-outline-subtle bg-surface-card p-3 sm:p-4"
+                     aria-labelledby="tenant-recovery-prepare-heading">
+                <div class="flex min-w-0 items-start gap-2.5">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true"><i data-lucide="clipboard-list" class="h-4 w-4"></i></span>
+                    <div class="min-w-0">
+                        <h5 id="tenant-recovery-prepare-heading" class="text-sm font-semibold text-content-primary">
+                            Prepare Recovery Plan
+                        </h5>
+                        <p class="mt-0.5 text-xs leading-5 text-content-secondary">
+                            Requires an approved change reference and subsequent independent review.
+                        </p>
+                    </div>
+                </div>
+                <form method="post"
+                      action="{{ url_for('tenant.prepare_native_residual_cleanup_route', tenant_id=tenant.id) }}"
+                      hx-post="{{ url_for('tenant.prepare_native_residual_cleanup_route', tenant_id=tenant.id) }}"
+                      hx-target="#tenant-management-detail" hx-select="#tenant-management-detail"
+                      hx-swap="outerHTML show:none focus-scroll:false"
+                      hx-indicator="#tenant-management-loading"
+                      hx-disabled-elt="find button[type='submit']"
+                      class="mt-4 space-y-3">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                    <input type="hidden" name="tenant_detail_section" value="handback">
+                    {% for state_key, state_value in registry_state.items() %}
+                        <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
+                    {% endfor %}
+                    <div class="space-y-1.5">
+                        <label for="tenant-residual-change-reference" class="block text-xs font-semibold text-content-primary">
+                            Approved change reference
+                        </label>
+                        <input id="tenant-residual-change-reference" name="change_reference" type="text"
+                               required minlength="3" maxlength="120" autocomplete="off"
+                               placeholder="CHG-2026-1234"
+                               class="min-h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                    </div>
+                    <label class="flex items-start gap-2 rounded-lg bg-surface-elevated/50 px-3 py-2.5 text-xs leading-5 text-content-secondary">
+                        <input type="checkbox" name="confirm_native_residual_prepare"
+                               value="prepare" required
+                               class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
+                        <span>Prepare a bounded immutable plan using a fresh provider assessment.
+                            This does not delete a resource or modify Kubernetes.</span>
+                    </label>
+                    <button type="submit"
+                            class="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-progress disabled:opacity-60 sm:w-auto">
+                        <i data-lucide="clipboard-list" class="h-4 w-4" aria-hidden="true"></i>
+                        Prepare Governed Recovery Plan
+                        <i data-lucide="arrow-right" class="h-4 w-4" aria-hidden="true"></i>
+                    </button>
+                </form>
+            </section>
         {% endif %}
     </section>
 {% endif %}

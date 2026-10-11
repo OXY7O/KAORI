@@ -104,3 +104,52 @@ def test_route_blocks_unknown_mutation_result_and_keeps_audit_feedback():
     assert 'Do not retry, manually delete labels, or force Re-adopt' in block
     assert '_tenant_section_redirect(\'registry\')' in block
     assert 'tenant.release.native_residual_cleanup_verified' not in block
+
+
+def test_recovery_redesign_uses_readable_steps_and_distinct_assessment_plan_sections():
+    """#1188: visual hierarchy must not imply completed recovery or add provider actions."""
+    partial = source(PARTIAL)
+    Environment().parse(partial)
+    assert 'tenant-native-residual-recovery-heading' in partial
+    assert 'text-base font-semibold leading-6' in partial
+    assert '<header class="flex min-w-0 flex-wrap' in partial
+    assert '<ol class="grid min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-4"' in partial
+    assert 'Governed recovery stages' in partial
+    assert 'These describe governance stages, not checkmarks or proof of progress.' in partial
+    assert 'loop.index' in partial
+    assert 'aria-labelledby="tenant-recovery-discovery-guidance"' in partial
+    assert 'aria-labelledby="tenant-recovery-assessment-heading"' in partial
+    assert 'aria-labelledby="tenant-recovery-prepare-heading"' in partial
+    assert 'Assessment Actions' in partial
+    assert 'Prepare Recovery Plan' in partial
+    assert 'sm:grid-cols-2' in partial
+    assert 'hover:bg-kaori-soft/30' in partial
+    assert 'bg-kaori-primary' in partial
+    assert 'No retry or automatic cleanup is available' in partial
+    assert 'only rendered' not in partial  # No invented mutation capability.
+    assert partial.count('name="csrf_token"') == 4
+    assert partial.count('type="submit"') == 4
+    assert partial.count('href="{{ url_for(\'tenant.tenants\', section=\'discovery\') }}"') == 2
+
+
+def test_recovery_redesign_preserves_distinct_sensitive_workflow_forms():
+    partial = source(PARTIAL)
+    for route in (
+        'assess_native_residual_cleanup_route',
+        'prepare_native_residual_cleanup_route',
+        'approve_native_residual_cleanup_route',
+        'execute_native_residual_cleanup_route',
+    ):
+        assert partial.count('action="{{ url_for(\'tenant.' + route) == 1
+        assert partial.count('hx-post="{{ url_for(\'tenant.' + route) == 1
+    assert partial.count('name="confirm_native_residual_prepare"') == 1
+    assert partial.count('name="confirm_native_residual_approval"') == 1
+    assert partial.count('name="confirm_native_residual_execute"') == 1
+    assert partial.count('name="plan_sha256" value="{{ recovery_plan.plan_sha256 }}"') == 2
+    assert 'recovery_approval.approved_by == current_user.id' in partial
+    assert 'recovery_plan.requested_by != current_user.id' in partial
+    assert 'row.native_residual_plan_current' in partial
+    assert 'row.native_residual_approval_current' in partial
+    assert 'if recovery_execution' in partial
+    assert 'if recovery_verified' in partial
+    assert 'This link does not adopt automatically.' in partial

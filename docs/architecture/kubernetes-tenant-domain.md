@@ -1563,6 +1563,26 @@ Human security acceptance and explicit execution authorization are
 required before using the recovery action against Kubernetes. No direct
 staging/main changes or external mutations have been performed.
 
+### Historical Namespace Recovery visual hierarchy (#1188; DevContainer)
+
+The `Historical Namespace Recovery` section preserves the existing #1132
+governed state machine and all explicit authority checks, but uses the KAORI
+Violet responsive layout: a compact icon/title and **committed-evidence status**
+badge; a four-step numbered explanation strip (numbers are **not** completion
+indicators); a persistent Discovery-first guidance note; two independently
+labeled assessment actions; and a distinct Prepare Recovery Plan card with
+required change reference, explicit confirmation and primary action. The
+separate committed Plan, independent reviewer approval, provider execution
+evidence and verified Discovery branches retain the same scoped, fail-closed
+controls and no-retry rules, with readable bordered surfaces. An unresolved
+provider execution is never presented as successful. No new provider calls,
+permissions, endpoints, scripts, automatic adoption, confirmation waivers, or
+contract semantics are introduced; 4 original CSRF/HTMX POST forms and 2
+existing Discovery navigation links are preserved. Use only existing KAORI
+surface/border/Violet/focus tokens and responsive wrapping for light/dark
+DevContainer Visual QA. This is **source-only review**, not a grant to execute
+sensitive Kubernetes cleanup while governance/security/UAT gates are HOLD.
+
 ### Released Native recovery and Discovery UX ownership (#1132)
 
 A verified Native Handback may still have older residual KAORI profile
