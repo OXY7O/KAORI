@@ -221,6 +221,13 @@ def inspect_capsule_scope_g2g3_trace(
         plan=plan, related=related, accepted_actor_user_id=accepted_actor_user_id,
         rows=rows, readback_candidate=readback_candidate,
     )
+    # These two permanent source-only authority blockers must remain on
+    # every read-back candidate. They forbid operational PASS, but should not
+    # disguise a structurally complete metadata transfer as policy drift.
+    expected_unverified = {
+        'capsule_controller_provenance_unverified',
+        'provider_execution_authority_unverified',
+    }
     consistent = (
         linked.get('recorded_readback_matches_candidate') is True
         and audit['last_event_type'] in ('readback_candidate', 'recovery_reviewed')
@@ -228,7 +235,8 @@ def inspect_capsule_scope_g2g3_trace(
         and readback_candidate.get('pending_count') == 0
         and readback_candidate.get('transferred_count')
             == patch_review['transfer_candidate_count']
-        and not readback_candidate.get('blockers')
+        and isinstance(readback_candidate.get('blockers'), list)
+        and set(readback_candidate['blockers']) == expected_unverified
     )
     return {
         'status': (
