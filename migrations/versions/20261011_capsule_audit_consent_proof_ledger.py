@@ -38,7 +38,7 @@ def _create_batch() -> None:
     op.create_table(
         _BATCH,
         sa.Column('id', sa.Integer(), primary_key=True, nullable=False),
-        sa.Column('batch_id', sa.String(36), nullable=False, unique=True),
+        sa.Column('batch_id', sa.String(36), nullable=False),
         sa.Column('tenant_id', sa.String(36), nullable=False),
         sa.Column('cluster_id', sa.String(36), nullable=False),
         sa.Column('generation', sa.Integer(), nullable=False),
