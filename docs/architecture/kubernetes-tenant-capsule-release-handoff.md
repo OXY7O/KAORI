@@ -38,11 +38,10 @@ explicit caller can supply provider clients to preview the Namespace-only
 conditional patch with Kubernetes `dryRun=All`; it then re-reads the live
 Namespace and Capsule CR to compare identity, spec and retained state. Its
 receipt is always `preview_observed_coverage_incomplete`, with
-`dry_run_complete=false` and `provider_handoff_verified=false`. It is not
-an end-to-end admitted provider dry-run because the current approved preflight
-inventory does **not** enumerate namespaced ResourceQuota/LimitRange, Capsule
-distributed RoleBindings, their origin, or every KAORI-managed allocation
-control. No caller may interpret the helper result as sufficient handoff proof.
+`dry_run_complete=false` and `provider_handoff_verified=false`. Even with
+the supplementary read-only inventory described below, this is **not** an
+admitted end-to-end provider handoff dry-run. No caller may interpret the
+helper result as sufficient handoff proof.
 
 `capsule_handoff_recovery.py` classifies exact Namespace baseline/read-back
 into `pending_provider_transfer`, `provider_markers_transferred` or
@@ -52,13 +51,49 @@ fail-closed drift/partial ambiguity; its bounded aggregate reports
 `auto_retry_authorized=false`, `resume_authorized=false`,
 `provider_handoff_verified=false`, `release_authorized=false`.
 
+## Read-only related resource inventory — follow-up source slice
+
+The existing committed Capsule preflight now calls
+`capsule_handoff_related_inventory.observe_capsule_related_inventory` only
+after it has correlated its exact governed Namespace records. For each
+Namespace, the observer reads complete **bounded** Kubernetes lists:
+
+- `ResourceQuota` and `LimitRange` from the Core API;
+- `RoleBinding` from Kubernetes RBAC API;
+- Each authoritative LIST resourceVersion, bounded count and every object's
+  UID/resourceVersion, origin class, SHA-256 policy digest and SHA-256 retained
+  metadata digest; never raw RBAC subjects, quota specs or authentication data.
+
+Records are classified as `capsule_provider`, `foreign_preserved`,
+`kaori_correlated`, `ambiguous_kaori` or `unattributed`.
+Unknown and conflicting ownerReferences, foreign controller claims, unknown
+KAORI markers, residual KAORI quota/limit controls or Access Grant RoleBindings,
+incomplete LIST/pagination, duplicated scope, malformed spec and unbounded
+inventory create **blocking evidence**, not silent adoption.
+
+The committed result is placed in `capsule_related_inventory` for Capsule
+only (Native evidence remains unchanged). The deterministic SHA-256 of scoped
+objects **and LIST revisions** is bound into the existing Capsule Tenant
+handoff component as `capsule_related_resources_sha256`; its existing
+`handoff_fingerprint` now detects drift without changing route or database
+schema. An incomplete read never emits a trusted resource digest.
+
+**Remaining hard stop:** Kubernetes namespaced lists do not prove
+cluster-scoped GlobalResourceQuota variants, the exact Capsule CR-to-generated
+RoleBinding lineage, or the complete independent successor acceptance/execution
+contract. When actual Capsule handoff is required, preflight explicitly
+retains a non-allowlisted blocker until those controls are proven. The
+legacy observation-only Release path is not granted a new executor.
+The preview remains `dry_run_complete=false`. No provider write is introduced.
+
 ## Required before completing #1229
 
-1. Extend the **existing** Capsule provider handoff inventory with verified
-   bounded ownership origins for every affected ResourceQuota, LimitRange and
-   distributed RoleBinding; classify unknown and foreign ownership without
-   relabeling provider-owned objects. Include exact Capsule CR relationship and
-   preserve complete unchanged provider policy/spec in authoritative read-back.
+1. Complete the now SHA-bound **namespaced** related inventory with
+   cluster-scoped shared quota variants, proven Capsule-generated RoleBinding
+   origins, exact KAORI allocation/access transfer worklist and matching
+   authoritative post-transfer read-back. Never relabel provider-owned objects.
+   Residual KAORI-owned ResourceQuota, LimitRange or RoleBinding remains blocked
+   until that *specific* metadata-only transfer is separately admitted.
 2. Bind a committed dry-run receipt to the *current* independently approved
    plan SHA, provider fingerprint, live zero-dependency preflight, exact actor,
    accepted successor and fresh registered X.509 SelfSubjectReview/SAR with

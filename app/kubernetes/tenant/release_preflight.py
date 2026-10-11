@@ -14,6 +14,7 @@ from app.kubernetes.tenant.decommission_service import (
 )
 from app.kubernetes.tenant.allocation_observation import observe_native_namespace_allocation
 from app.kubernetes.tenant.capsule_allocation_observation import _capsule_status_namespace_names
+from app.kubernetes.tenant.capsule_handoff_related_inventory import observe_capsule_related_inventory
 from app.kubernetes.tenant.external_access_observation import latest_external_capsule_access_evidence
 from app.kubernetes.tenant.release_handoff_inventory import (
     capsule_tenant_handoff_evidence,
@@ -132,6 +133,7 @@ def review_tenant_release_preflight_committed(*, tenant_id: str, actor_user_id: 
     blockers = _release_blockers(tenant, rows, counts=counts)
     provider: list[dict[str, str]] = []
     handoff_components: list[dict[str, str]] = []
+    capsule_related_inventory: dict[str, Any] | None = None
     if len(rows) > 30:
         blockers.append('Release handoff inventory exceeds 30 namespaces; review scope before Release.')
     cluster = db.session.get(Cluster, tenant.cluster_id)
@@ -189,6 +191,57 @@ def review_tenant_release_preflight_committed(*, tenant_id: str, actor_user_id: 
                                 f'Capsule Namespace/{record.namespace} identity or ownership '
                                 'could not be verified for Release.'
                             )
+                    # Read the authoritative namespaced quota/limit/RBAC objects
+                    # as a separate bounded inventory. Their spec/subjects are
+                    # SHA-bound, not copied into audit evidence or patched.
+                    # An incomplete scan can NEVER produce a trusted fingerprint.
+                    capsule_ns = [
+                        component for component in handoff_components
+                        if component.get('kind') == 'Namespace'
+                        and component.get('authority') == 'capsule'
+                    ]
+                    expected_ns = {
+                        record.namespace for record in rows[:30]
+                        if record.provisioning_status not in {'deprovisioned', 'released'}
+                    }
+                    observed_ns = {component['name'] for component in capsule_ns}
+                    capsule_handoff_needed = any(
+                        item.get('handoff') == 'external_acceptance_required'
+                        for item in handoff_components
+                    )
+                    if not capsule_handoff_needed:
+                        # Keep historical observation-only Capsule Release
+                        # semantics; this supplementary scan is a handoff gate.
+                        pass
+                    elif (
+                        not capsule_ns or observed_ns != expected_ns
+                        or (status_names and not status_names.issubset(observed_ns))
+                    ):
+                        blockers.append(
+                            'Capsule scoped Namespace inventory is incomplete; '
+                            'related provider resources were not trusted.'
+                        )
+                    else:
+                        try:
+                            capsule_related_inventory = observe_capsule_related_inventory(
+                                core=client.core_api(), rbac=client.rbac_authorization_api(),
+                                namespace_components=capsule_ns, tenant_id=tenant.id,
+                                capsule_name=str(tenant.provider_reference), capsule_uid=uid,
+                            )
+                            capsule_cr = next(
+                                item for item in handoff_components
+                                if item.get('kind') == 'CapsuleTenant'
+                            )
+                            capsule_cr['capsule_related_resources_sha256'] = capsule_related_inventory['resource_sha256']
+                            capsule_cr['capsule_related_resources_count'] = str(capsule_related_inventory['resource_count'])
+                            blockers.extend(capsule_related_inventory['blockers'])
+                            blockers.append(
+                                'Capsule shared quota and controller-generated RBAC origins '
+                                'are not yet fully verified for handoff.'
+                            )
+                        except (ValueError, TypeError, AttributeError, ApiException, StopIteration):
+                            capsule_related_inventory = None
+                            blockers.append('Capsule related quota/limit/RBAC authoritative inventory is incomplete.')
             except (ApiException, ValueError, AttributeError):
                 blockers.append('Capsule Tenant live read failed; release remains blocked.')
             external = latest_external_capsule_access_evidence(tenant_id)
@@ -270,6 +323,8 @@ def review_tenant_release_preflight_committed(*, tenant_id: str, actor_user_id: 
         'release_execution_available': False,
         'secret_material_persisted': False,
     }
+    if tenant.provider_key == 'capsule':
+        evidence['capsule_related_inventory'] = capsule_related_inventory
     db.session.add(AuditEvent(
         actor_user_id=actor_user_id, target_type=_TARGET, target_id=tenant.id,
         action='tenant.release.preflight_observed',
