@@ -170,7 +170,7 @@ def test_permission_catalog_detail_uses_count_free_shared_modal_hierarchy() -> N
     assert "('Role Mapping', 'Mapped' if permission.role_count else 'Unassigned'" in detail
     assert "('Active Usage', 'In Use' if permission.active_user_count else 'No Active Users'" in detail
     assert "('JIT Projection', 'Configured' if permission.jit_provider_count else 'Not Configured'" in detail
-    assert "('Dependencies', 'Required' if effective_requires else 'None'" in detail
+    assert "('Requires', 'Present' if effective_requires else 'None'" in detail
     assert "('Control Module', permission.module_label" not in detail
     assert 'lg:grid-cols-2' in detail
     assert 'lg:col-span-2' in detail
