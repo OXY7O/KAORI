@@ -38,7 +38,8 @@ def aggregate_posture(tones: list[str]) -> tuple[str, str]:
     ],
 )
 def test_overview_aggregates_only_visible_workspace_tones(
-    tones: list[str], expected: tuple[str, str]
+    tones: list[str],
+    expected: tuple[str, str],
 ) -> None:
     assert aggregate_posture(tones) == expected
 
