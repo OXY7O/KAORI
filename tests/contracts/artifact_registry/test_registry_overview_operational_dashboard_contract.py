@@ -275,9 +275,24 @@ def test_artifact_registry_dashboard_state_semantics_and_jinja_mapping_safety() 
     ):
         assert token in forecast
     assert 'forecast_projection_chart' not in forecast
-    assert 'components/operational_callout.html' in capacity_snapshot
-    assert "operational_callout.render('Data Scope'" in capacity_snapshot
-    assert 'grid gap-3 sm:grid-cols-3' in capacity_snapshot
+    assert 'components/operational_callout.html' not in capacity_snapshot
+    assert 'Data Scope:</span> committed inventory for footprint' in capacity_snapshot
+    assert 'bg-kaori-soft p-3 text-xs leading-5 text-content-secondary' in capacity_snapshot
+    assert 'grid gap-3 lg:grid-cols-3' in capacity_snapshot
+    assert 'components/progress_bar.html' in capacity_snapshot
+    assert 'progress_bar.bar(item.progress_percent,' in capacity_snapshot
+    assert 'item.progress_label' in capacity_snapshot
+    assert 'item.progress_percent is not none' in capacity_snapshot
+    assert 'percentage not applicable' in capacity_snapshot
+    assert 'Refresh evidence; verify headroom' in capacity_snapshot
+    assert "'progress_label': 'Used'" in presentation
+    assert "'progress_label': 'Free'" in presentation
+    assert "'progress_label': 'Inventory'" in presentation
+    assert '100 - quota_utilization if quota_utilization is not None else None' in presentation
+    assert 'committed project quota.' not in presentation
+    assert 'Committed growth and Metrics Source quota evidence.' in presentation
+    assert 'Artifact change per day.' in forecast
+    assert 'Quota ETA with positive growth.' in forecast
     for token in (
         'Daily Utilization Trend Not Available',
         'Historical Series Unavailable',
