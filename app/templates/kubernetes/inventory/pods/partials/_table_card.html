@@ -23,7 +23,7 @@
     header_actions=inventory_header_actions,
     title_extra=info_tip.render('k8s-inventory-pods-title', 'Pod Inventory Guide', 'Meaning of the committed evidence in this table.', items=[
         'Pod Runtime State: Observed Pod lifecycle and readiness evidence. A running phase alone does not guarantee containers are ready.',
-        'Pod Owner and Restarts: The badge identifies the observed controller or verified static Pod; the name is the resolved owner identity. Restarts are cumulative committed counts, not an incident severity. An unreported owner or restart value is not treated as zero.'
+        'Pod Owner and Restarts: Shows the reported controller kind and cumulative restart count. Full owner name and controller evidence remain in View Details. Missing evidence is not zero, and cumulative restarts do not establish incident severity.'
     ], placement='right')
     ) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
