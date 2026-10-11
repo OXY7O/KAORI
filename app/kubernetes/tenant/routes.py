@@ -71,6 +71,9 @@ from app.kubernetes.tenant.capsule_successor_acceptance import (
 from app.kubernetes.tenant.capsule_handoff_preview_service import (
     preview_capsule_release_namespace_committed,
 )
+from app.kubernetes.tenant.capsule_handoff_executor import (
+    execute_capsule_handoff_committed,
+)
 from app.kubernetes.tenant.native_successor_acceptance import (
     accept_native_successor_handoff_committed,
 )
@@ -1170,6 +1173,56 @@ def preview_capsule_release_namespace_route(tenant_id: str):
             ),
             detail='Whole-scope preview only. Per-resource consent, durable START, actual PATCH and Release remain blocked.',
             metadata={'tenant_id': tenant_id, 'operation': 'capsule_namespace_preview'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/capsule-execute')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+@permission_required('clusters.manage')
+def execute_capsule_handoff_route(tenant_id: str):
+    """One START-fenced exact Capsule provider metadata handoff, no retry."""
+    try:
+        _csrf()
+        result = execute_capsule_handoff_committed(
+            tenant_id=tenant_id, actor_user_id=int(current_user.id),
+            plan_sha256=str(request.form.get('plan_sha256') or ''),
+            worklist_sha256=str(request.form.get('worklist_sha256') or ''),
+            confirmed=request.form.get('confirm_capsule_handoff_execute') == 'execute',
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_capsule_provider_handoff_blocked',
+            status='warning', title='Capsule Handoff Blocked',
+            message=str(exc),
+            detail='If START was committed, provider outcome requires manual recovery. Do not retry.',
+            metadata={'tenant_id': tenant_id, 'operation': 'capsule_provider_handoff'},
+        )
+    except Exception:
+        _record(
+            event_type='kubernetes_tenant_capsule_provider_handoff_unknown',
+            status='error', title='Capsule Provider Outcome Uncertain',
+            message='Inspect the immutable START and live provider state before any recovery.',
+            detail='No auto retry or governance Released; verify the exact operation history.',
+            metadata={'tenant_id': tenant_id, 'operation': 'capsule_provider_handoff'},
+        )
+    else:
+        success = result['status'] == 'provider_handoff_verified'
+        _record(
+            event_type='kubernetes_tenant_capsule_provider_handoff_result',
+            status='success' if success else 'warning',
+            title='Capsule Provider Handoff Observed' if success else 'Capsule Recovery Required',
+            message=(
+                f"{result['verified_resource_count']} provider resources in full read-back."
+                if success
+                else "Provider transfer is partial or unknown; inspect the immutable attempt."
+            ),
+            detail=(
+                'Run a separate complete G4 provider verification before finalizing Released.'
+                if success else 'Partial or unknown PATCH outcome: never retry automatically.'
+            ),
+            metadata={'tenant_id': tenant_id, 'operation': 'capsule_provider_handoff'},
         )
     return _tenant_section_redirect('registry')
 

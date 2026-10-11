@@ -95,6 +95,17 @@ def _arrange(monkeypatch, *, changed=False):
         calls.append(('related_dry_run',))
         return {'related_preview_count': 1, 'related_preserved_count': 0}
     monkeypatch.setattr(service, '_preview_related_provider_scope', _preview_related)
+    monkeypatch.setattr(service, 'build_capsule_handoff_worklist', lambda **_: {
+        'inventory_sha256': 'c' * 64,
+        'items': [
+            {'kind': 'Namespace', 'namespace': '', 'name': 'demo-dev',
+             'uid': 'ns-1', 'resource_version': '6',
+             'decision': 'candidate_kaori_metadata_handoff_review'},
+            {'kind': 'ResourceQuota', 'namespace': 'demo-dev', 'name': 'quota',
+             'uid': 'quota-1', 'resource_version': '7',
+             'decision': 'explicit_kaori_metadata_handoff_review'},
+        ],
+    })
     return plan, accepted, calls
 
 
@@ -112,6 +123,9 @@ def test_accepting_actor_records_only_incomplete_server_preview(monkeypatch):
     assert result['quota_limit_rbac_dry_run_verified'] is False
     assert result['related_preview_count'] == 1
     assert result['whole_scope_source_unchanged'] is True
+    assert result['source_worklist_sha256'] == 'c' * 64
+    assert len(result['transfer_items']) == 2
+    assert result['unverified_kaori_rolebinding_origin'] is False
 
 
 @pytest.mark.parametrize('case', ['unconfirmed', 'wrong_actor', 'drift', 'unexpected_ready'])
