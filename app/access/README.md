@@ -169,3 +169,7 @@ An existing Identity Provider with projected `ExternalIdentityLink` records cann
 ## User Management role-recovery boundary
 
 For User Edit GET and directory action visibility, manage authority is evaluated independently of an existing inactive/missing role so authorized administrators can repair stale assignments. POST always validates the **new active delegable role** and preserves administrator-level protection, self mutation constraints, Local Database break-glass and last-active-super-admin safeguards. Inactive roles never grant runtime effective permissions.
+
+## User Edit stale-mutation protection
+
+User Edit forms include a committed user-version token. A POST serializes the current User row using `SELECT ... FOR UPDATE` with refreshed persisted state and refuses stale tokens **before** modifying profile, role, administrative tier, or lifecycle or recording success evidence. The operator must reload the newest state before retrying. A last-active-local-Super-Admin demotion still acquires the existing specialized lock/guard first; self-modification and role delegation stay fail closed. This is administrative optimistic concurrency, not external-provider account synchronization.
