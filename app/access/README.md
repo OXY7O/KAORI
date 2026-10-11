@@ -72,7 +72,7 @@ Control Boundaries expose the same authoritative posture as their source workspa
 
 ## Roles & Access review status
 
-Roles & Access now uses the KAORI operational registry pattern: read-only posture overview, compact assignment flow, full-width filtered Role Registry, expandable role evidence, shared pagination/loading, and a sticky impact rail on role forms. The old page-local Role-Permission Mapping Matrix and `role_access_tabs.js` have been removed; cross-role permission coverage belongs to Permission Catalog.
+Roles & Access uses the KAORI operational registry pattern: read-only posture overview, compact assignment flow, full-width filtered Role Registry, expandable role evidence, and a sticky impact rail on role forms. Role Registry now delegates its search/type/state filters, Clear Filters, Rows, pagination, latest-request-wins HTMX synchronization, and GET fallback to the canonical `table_registry` shared components, including exclusion of a duplicate hidden `per_page` value from the Rows form. The old page-local Role-Permission Mapping Matrix and `role_access_tabs.js` have been removed; cross-role permission coverage belongs to Permission Catalog.
 
 Custom-role edit/delete mutations are serialized with a database row lock and protected by a role version token so stale administrative forms do not silently overwrite a newer role state. Create and clone now explicitly roll back SQLAlchemy/transaction failures (including concurrent unique-slug collisions), show a recoverable form error, and issue failure feedback rather than surfacing an unhandled request error. Delete blockers for user assignments and Identity Provider defaults are rechecked at mutation time.
 
