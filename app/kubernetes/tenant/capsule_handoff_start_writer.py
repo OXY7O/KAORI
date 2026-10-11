@@ -95,6 +95,7 @@ def build_capsule_start_candidate(
 def commit_capsule_start_staged(
     *, tenant_id: str, actor_user_id: int, expected_plan_sha256: str,
     preflight: Mapping[str, Any], provider_authority: Mapping[str, Any],
+    explicit_operator_confirmation: bool = False,
 ) -> dict[str, Any]:
     """Unregistered transactional START implementation, statically disabled.
 
@@ -119,6 +120,7 @@ def commit_capsule_start_staged(
         or len(expected_plan_sha256) != 64
         or not isinstance(preflight, Mapping)
         or not isinstance(provider_authority, Mapping)
+        or explicit_operator_confirmation is not True
     ):
         raise ValueError('A valid authenticated Capsule START request is required.')
     # PostgreSQL-only write path: SQLite is supported as an inspectable schema
@@ -224,6 +226,8 @@ def commit_capsule_start_staged(
             'plan_sha256': plan['plan_sha256'],
             'event_sha256': event['event_sha256'],
             'start_commit_acknowledged': True,
+            'database_storage_durability_proven': False,
+            'schema_triggers_verified': False,
             'authenticated_provider_readback_verified': False,
             'provider_execution_admitted': False,
             'provider_mutation_performed': False,
@@ -231,6 +235,7 @@ def commit_capsule_start_staged(
             'auto_retry_authorized': False,
             'resume_authorized': False,
             'release_authorized': False,
+            'secret_material_persisted': False,
         }
     finally:
         session.close()
