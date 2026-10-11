@@ -62,7 +62,11 @@ _TABLE_GUARDS = {
 }
 _REQUIRED_CONSTRAINTS = frozenset({
     'uq_capsule_audit_batch_global_id',
+    'uq_capsule_audit_batch_tenant_once',
     'uq_capsule_audit_batch_plan_once',
+    'uq_capsule_audit_batch_full_scope',
+    'ck_capsule_audit_batch_generation',
+    'ck_capsule_audit_batch_digest_shape',
     'uq_capsule_resource_consent_plan_once',
     'fk_capsule_resource_consent_exact_audit_batch',
     'ck_capsule_resource_consent_independent_actors',
