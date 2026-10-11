@@ -4,6 +4,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from sqlalchemy import func
+from sqlalchemy.orm import lazyload
 
 from app.access.rbac.defaults import DEFAULT_PERMISSION_DEPENDENCIES
 from app.access.rbac.policy import (
@@ -14,7 +15,7 @@ from app.access.rbac.policy import (
     role_is_protected_default,
 )
 from app.access.rbac.service import get_permissions_grouped_by_module
-from app.access.roles.baseline import role_baseline_snapshot, role_baseline_state
+from app.access.roles.baseline import RoleBaselineSnapshot, role_baseline_snapshot, role_baseline_state
 from app.access.roles.forms import RoleForm
 from app.access.roles.service import delegable_permission_ids, role_version_token
 from app.common.pagination import PER_PAGE_OPTIONS, build_pagination_window, normalize_per_page, positive_int
@@ -83,6 +84,59 @@ def _role_reference_counts() -> tuple[dict[int, int], dict[int, int]]:
         )
     }
     return user_counts, provider_counts
+
+
+def _build_roles_summary(
+    roles: list[Role],
+    assignment_counts: dict[int, int],
+    baseline: RoleBaselineSnapshot,
+    *,
+    matching: int,
+) -> dict[str, Any]:
+    """One authoritative role-summary contract for registry and Overview readers."""
+
+    protected_defaults = sum(1 for role in roles if role_is_protected_default(role))
+    custom_roles = sum(1 for role in roles if not role_is_mutation_protected(role))
+    active_roles = sum(1 for role in roles if role.is_active)
+    assigned_users = sum(assignment_counts.get(role.id, 0) for role in roles)
+    inactive_assigned_users = sum(
+        assignment_counts.get(role.id, 0) for role in roles if not role.is_active
+    )
+    baseline_drift_count = int(baseline['drift_count'])
+    posture_label, posture_tone = (
+        ('Review Required', 'warning')
+        if not active_roles or inactive_assigned_users or baseline_drift_count
+        else ('Ready', 'normal')
+    )
+    return {
+        'total_roles': len(roles),
+        'system_roles': protected_defaults,
+        'custom_roles': custom_roles,
+        'active_roles': active_roles,
+        'assigned_users': assigned_users,
+        'inactive_assigned_users': inactive_assigned_users,
+        'total_permissions': Permission.query.count(),
+        'baseline_drift_count': baseline_drift_count,
+        'missing_default_roles': len(baseline['missing_defaults']),
+        'unexpected_system_roles': int(baseline['unexpected_system_count']),
+        'matching': matching,
+        'posture_label': posture_label,
+        'posture_tone': posture_tone,
+    }
+
+
+def build_roles_overview_summary() -> dict[str, Any]:
+    """Compute Role posture without building registry rows, filters, or user expansions."""
+
+    roles = (
+        Role.query.options(lazyload(Role.users), lazyload(Role.role_permissions))
+        .order_by(Role.is_system.desc(), Role.display_name.asc())
+        .all()
+    )
+    assignment_counts, _ = _role_reference_counts()
+    return _build_roles_summary(
+        roles, assignment_counts, role_baseline_snapshot(roles), matching=len(roles)
+    )
 
 
 def build_roles_index_context(*, can_manage_roles: bool, filters: Mapping[str, Any] | None = None) -> dict[str, Any]:
@@ -154,37 +208,14 @@ def build_roles_index_context(*, can_manage_roles: bool, filters: Mapping[str, A
     )
     page_rows = filtered_rows[pagination.offset : pagination.offset + pagination.per_page]
 
-    protected_defaults = sum(1 for row in role_rows if row['protected_default'])
-    custom_roles = sum(1 for row in role_rows if not row['mutation_protected'])
-    active_roles = sum(1 for row in role_rows if row['record'].is_active)
-    assigned_users = sum(row['assigned_users'] for row in role_rows)
-    inactive_assigned_users = sum(row['assigned_users'] for row in role_rows if not row['record'].is_active)
-    total_permissions = Permission.query.count()
-    baseline_drift_count = int(baseline['drift_count'])
-
-    if active_roles == 0 or inactive_assigned_users or baseline_drift_count:
-        posture_label, posture_tone = 'Review Required', 'warning'
-    else:
-        posture_label, posture_tone = 'Ready', 'normal'
+    summary = _build_roles_summary(
+        roles_list, role_assignment_counts, baseline, matching=len(filtered_rows)
+    )
 
     return {
         'role_rows': page_rows,
         'can_manage_roles': can_manage_roles,
-        'summary': {
-            'total_roles': len(role_rows),
-            'system_roles': protected_defaults,
-            'custom_roles': custom_roles,
-            'active_roles': active_roles,
-            'assigned_users': assigned_users,
-            'inactive_assigned_users': inactive_assigned_users,
-            'total_permissions': total_permissions,
-            'baseline_drift_count': baseline_drift_count,
-            'missing_default_roles': len(baseline['missing_defaults']),
-            'unexpected_system_roles': int(baseline['unexpected_system_count']),
-            'matching': len(filtered_rows),
-            'posture_label': posture_label,
-            'posture_tone': posture_tone,
-        },
+        'summary': summary,
         'filters': {
             **normalized_filters,
             'page': pagination.page,

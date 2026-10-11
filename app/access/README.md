@@ -64,7 +64,7 @@ Access v1 is final-locked across Access Overview, User Management, Identity Prov
 
 ## Access Overview review status
 
-Access Overview is a read-only composition surface. It does not query User, Identity Provider, Role, Permission, or Activity persistence directly to invent a second health model. The overview consumes domain-owned summary contracts and only aggregates permission-scoped posture.
+Access Overview is a read-only composition surface. It does not query User, Identity Provider, Role, Permission, or Activity persistence directly to invent a second health model. The overview consumes domain-owned summary contracts and only aggregates permission-scoped posture. Roles and Permission Catalog expose summary-only projections for Overview; the full registry/detail builders remain authoritative for their own workspaces, while the common summary calculators preserve identical aggregate counts and drift semantics. These request-time projections read KAORI's committed DB state and make no external-provider calls.
 
 The aggregate Access posture follows the approved `Critical > Warning > Info > Unknown > Normal` precedence across **visible, permission-scoped** workspaces. An optional, unconfigured provider or an empty visible scope is not labeled `Current / Normal`; neither is it turned into a failure. Domain-owned statuses remain authoritative, and Activity Audit event counts remain evidence rather than health signals.
 
