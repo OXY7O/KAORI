@@ -79,6 +79,7 @@ def test_sensitive_suffix_bypass_not_permitted_except_known_identifier_keys() ->
         'OAuthTokenName': 'synthetic-hidden-bypass',
         'secret_ref': 'vault-path-042',
         'token_id': 'token-record-14',
+        'secret_material_persisted': False,
         'credential_value_id': 'synthetic-hidden-invalid',
     }
     clean = redact_operational_metadata(raw)
@@ -88,6 +89,7 @@ def test_sensitive_suffix_bypass_not_permitted_except_known_identifier_keys() ->
     assert 'credential_value_id' not in clean
     assert clean['secret_ref'] == 'vault-path-042'
     assert clean['token_id'] == 'token-record-14'
+    assert clean['secret_material_persisted'] is False
 
 
 def test_sanitizer_bounds_oversized_nested_evidence() -> None:

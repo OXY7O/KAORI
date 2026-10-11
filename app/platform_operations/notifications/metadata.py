@@ -43,6 +43,7 @@ _SAFE_SENSITIVE_KEYS = frozenset({
     'certificate_id',
     'kubeconfig_name',
     'secret_recorded',
+    'secret_material_persisted',
     'secret_env',
     'secret_env_var',
 })
