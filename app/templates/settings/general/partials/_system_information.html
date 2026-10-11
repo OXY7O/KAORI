@@ -38,7 +38,7 @@
                         {% if system_information.build_sha == 'Not provided' or system_information.build_date == 'Not provided' %}
                             {{ table_label.status_label('Incomplete', 'warning') }}
                         {% else %}
-                            {{ table_label.status_label('Recorded', 'normal') }}
+                            {{ table_label.metadata_label('Supplied', 'git-commit-horizontal') }}
                         {% endif %}
                     </div>
                     <dt class="flex items-center gap-2 text-xs font-semibold text-content-muted">
