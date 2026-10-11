@@ -401,9 +401,9 @@ def get_inventory_freshness_context(cluster_id: str = '') -> dict[str, Any]:
         'collection_exception_count': collection_exception_count,
         'collection_exceptions': collection_exceptions,
         'freshness_window_hours': INVENTORY_FRESHNESS_HOURS,
-        'scope_label': selected[0].name if selected_count == 1 else f'{selected_count} Clusters',
+        'scope_label': selected[0].name if cluster_id and selected_count == 1 else f'{selected_count} Clusters',
         'scope_supporting': 'Selected cluster'
-        if selected_count == 1
+        if cluster_id and selected_count == 1
         else ('Fleet scope' if selected_count else 'No active scope'),
         'latest_supporting': f'{INVENTORY_FRESHNESS_HOURS}-hour freshness window'
         if latest

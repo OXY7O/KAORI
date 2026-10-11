@@ -205,3 +205,13 @@ L7 End-to-End Smoke
 ```
 
 The final-lock verifier protects AuthZ ordering, committed-snapshot/provider boundaries, canonical Hero/table/modal/pagination composition, Topology database ownership, retired residual helpers/files, documentation ownership, and permanent test evidence.
+
+
+## Effective Cluster Scope (2026-10-11)
+
+Inventory views use one normalized effective Cluster ID for both the resource
+query and the Snapshot Context Bar. An invalid/stale `cluster_id` selects the
+fleet rather than displaying a false empty Snapshot scope. Topology uses the
+normalized graph filter scope for the shared snapshot. A fleet with one member
+remains labeled as fleet scope unless the operator explicitly selects that cluster.
+Page/HTMX interactions preserve existing authorization-before-blocker order.
