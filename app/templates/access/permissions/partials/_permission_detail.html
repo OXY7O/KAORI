@@ -30,36 +30,42 @@
             ('JIT Projection', 'Configured' if permission.jit_provider_count else 'Not Configured', 'Enabled role-default paths'),
             ('Requires', 'Present' if effective_requires else 'None', 'Transitive dependencies')
         ], compact=true) }}
-        <div class="grid min-w-0 items-start gap-3 p-4 sm:p-5 lg:grid-cols-2">
+        {# Each evidence section owns the full modal width; only short identity facts share columns. #}
+        <div class="flex min-w-0 flex-col gap-3 p-4 sm:gap-4 sm:p-5"
+             data-kaori-permission-detail-layout="full-width-stack">
             {% call detail_ui.detail_card('Permission Identity', 'badge-info', stretch=false, density='compact') %}
-                {{ detail_ui.detail_row('Permission Key', permission.key) }}
-                {{ detail_ui.detail_row('Control Module', permission.module_label) }}
-                {{ detail_ui.detail_row('Action', permission.action|replace('_', ' ') |title) }}
-                {{ detail_ui.detail_row('Delegation Tier', permission.delegation_tier.label) }}
-                {{ detail_ui.stacked_detail_row('Description', permission.description or 'No permission description is defined.') }}
+                <div class="grid min-w-0 gap-x-8 gap-y-3 sm:grid-cols-2">
+                    {{ detail_ui.stacked_detail_row('Permission Key', permission.key) }}
+                    {{ detail_ui.stacked_detail_row('Control Module', permission.module_label) }}
+                    {{ detail_ui.stacked_detail_row('Action', permission.action|replace('_', ' ') |title) }}
+                    {{ detail_ui.stacked_detail_row('Delegation Tier', permission.delegation_tier.label) }}
+                </div>
+                <div class="min-w-0 border-t border-outline-subtle pt-3">
+                    {{ detail_ui.stacked_detail_row('Description', permission.description or 'No permission description is defined.') }}
+                </div>
             {% endcall %}
             {% call detail_ui.detail_card('Dependency Contract', 'git-merge', stretch=false, density='compact') %}
                 <div>
                     <p class="text-xs font-semibold text-content-secondary">Requires</p>
                     {% if requires %}
                         <div class="mt-2 flex flex-wrap gap-1.5">
-                            {% for item in requires %}{{ table_label.metadata_label(item.title, 'arrow-down-left') }}{% endfor %}
+                            {% for item in requires %}{{ table_label.metadata_label(item.title, 'arrow-down-left', true) }}{% endfor %}
                         </div>
                     {% else %}
                         <p class="mt-1 text-xs leading-5 text-content-muted">No direct dependencies.</p>
                     {% endif %}
                 </div>
                 {% if effective_requires|length > requires|length %}
-                    <div class="pt-1">
+                    <div class="border-t border-outline-subtle pt-3">
                         <p class="text-xs font-semibold text-content-secondary">Effective Requirements</p>
                         <p class="mt-1 text-xs leading-5 text-content-muted">Additional transitive dependencies apply.</p>
                     </div>
                 {% endif %}
-                <div class="pt-1">
+                <div class="border-t border-outline-subtle pt-3">
                     <p class="text-xs font-semibold text-content-secondary">Required By</p>
                     {% if required_by %}
                         <div class="mt-2 flex flex-wrap gap-1.5">
-                            {% for item in required_by %}{{ table_label.metadata_label(item.title, 'arrow-up-right') }}{% endfor %}
+                            {% for item in required_by %}{{ table_label.metadata_label(item.title, 'arrow-up-right', true) }}{% endfor %}
                         </div>
                     {% else %}
                         <p class="mt-1 text-xs leading-5 text-content-muted">No dependent permissions.</p>
@@ -67,14 +73,17 @@
                 </div>
             {% endcall %}
             {% call detail_ui.detail_card('Delegation Boundary', permission.delegation_tier.icon, stretch=false, density='compact') %}
-                {% if permission.is_access_administration %}
-                    {{ detail_ui.stacked_detail_row('Authority', 'Only the Local Database Super Admin break-glass authority may delegate Access administration through Roles, User Management, JIT defaults, or Directory Provisioning.') }}
-                {% else %}
-                    {{ detail_ui.stacked_detail_row('Authority', 'Non-Super Admin delegation requires this permission in the actor’s effective access. Server-side checks remain authoritative.') }}
-                {% endif %}
+                <div class="min-w-0 max-w-4xl">
+                    {% if permission.is_access_administration %}
+                        {{ detail_ui.stacked_detail_row('Authority', 'Only the Local Database Super Admin break-glass authority may delegate Access administration through Roles, User Management, JIT defaults, or Directory Provisioning.') }}
+                    {% else %}
+                        {{ detail_ui.stacked_detail_row('Authority', 'Non-Super Admin delegation requires this permission in the actor’s effective access. Server-side checks remain authoritative.') }}
+                    {% endif %}
+                </div>
             {% endcall %}
             {% call detail_ui.detail_card('Registry Boundary', 'database-zap', stretch=false, density='compact') %}
-                {% if permission.state_key == 'canonical' %}
+                <div class="flex min-w-0 max-w-4xl flex-col gap-3">
+                    {% if permission.state_key == 'canonical' %}
                     {{ detail_ui.stacked_detail_row('Registry State', 'Registry metadata matches the application code contract.') }}
                 {% elif permission.state_key == 'missing' %}
                     {{ detail_ui.stacked_detail_row('Registry State', 'This code-owned permission is missing from the RBAC registry.') }}
@@ -88,9 +97,12 @@
                     {{ detail_ui.stacked_detail_row('Registry State', 'This database permission is absent from the current code baseline.') }}
                     {{ detail_ui.stacked_detail_row('Cleanup Boundary', 'Review role mappings before a controlled RBAC cleanup migration.') }}
                 {% endif %}
-                {{ detail_ui.stacked_detail_row('Read Boundary', 'Permission Catalog never mutates or synchronizes the RBAC registry during HTTP GET requests.') }}
+                    <div class="border-t border-outline-subtle pt-3">
+                        {{ detail_ui.stacked_detail_row('Read Boundary', 'Permission Catalog never mutates or synchronizes the RBAC registry during HTTP GET requests.') }}
+                    </div>
+                </div>
             {% endcall %}
-            <section class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card lg:col-span-2">
+            <section class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
                 <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
                     <div class="flex min-w-0 items-start gap-3">
                         <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
