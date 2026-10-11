@@ -108,3 +108,43 @@ def test_registry_routing_policy_cannot_be_enabled_implicitly() -> None:
     )
     with pytest.raises(ValueError, match='Registry notification routing is not enabled'):
         routing.upsert_routing_policy(policy_id=None, config=policy, actor_user_id=1)
+
+
+def test_registry_invalid_deep_link_skips_case_and_delivery_scope_queries(monkeypatch) -> None:
+    column = _Column()
+    no_rows = _ProvidersQuery([])
+    empty_model = SimpleNamespace(query=no_rows, name=column)
+    provider_model = SimpleNamespace(
+        query=no_rows,
+        integration_type=column,
+        enabled=column,
+        lifecycle_status=column,
+        name=column,
+        id=column,
+    )
+    monkeypatch.setattr(service, 'Cluster', empty_model)
+    monkeypatch.setattr(service, 'ObjectStorageSystem', empty_model)
+    monkeypatch.setattr(service, 'IntegrationInstance', provider_model)
+
+    def unexpected(*_args, **_kwargs):
+        raise AssertionError('Invalid provider scope must not query AlertCases or deliveries.')
+
+    monkeypatch.setattr(service, '_case_rows', unexpected)
+    monkeypatch.setattr(service, '_active_silence_rows', unexpected)
+    monkeypatch.setattr(service, '_delivery_failure_count', unexpected)
+    monkeypatch.setattr(service, 'routing_policy_rows', lambda: [])
+    monkeypatch.setattr(service, 'notification_channel_options', lambda: [])
+    monkeypatch.setattr(service, 'notification_channel_summary', lambda: {'eligible': 0})
+    monkeypatch.setattr(service, 'built_in_templates', lambda: [])
+    monkeypatch.setattr(service, '_owner_options', lambda: [])
+
+    result = service.get_alert_intelligence_payload(
+        MultiDict([('domain', 'registry'), ('asset', '9999'), ('tab', 'active')])
+    )
+    assert result['domain'] == 'registry'
+    assert result['scope_invalid'] is True
+    assert result['selected_asset_key'] == service._INVALID_REGISTRY_SCOPE
+    assert result['snapshot']['available'] is False
+    assert result['summary']['active'] == 0
+    assert result['active_cases'] == []
+    assert result['selected_case'] is None
