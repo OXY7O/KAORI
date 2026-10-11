@@ -938,6 +938,24 @@ specific operator error; it is not silently installed.
 
 Access Grant revocation and Tenant Membership revocation are different operations.
 
+### Access Grant Registry row actions (#1215; DevContainer review)
+
+The Registry uses the existing shared Table & Label geometry with a
+normal-width desktop table and intentional narrow-viewport horizontal
+scrolling. Each row keeps **Inspect** visible. When the actor is authorized
+and the grant has applicable additional actions, **More** opens the existing
+native-dialog pattern (reused from Credential Registry) *outside* the table
+scroll viewport. Reconcile and Revoke retain their original scoped server
+routes, per-form CSRF, conditional visibility, HTMX workspace refresh and
+governance requirements. Revoke remains a deliberately separate destructive
+choice: it does not revoke the Tenant Membership or silently release the
+Tenant. Unauthorized actors do not receive an enabled More trigger.
+
+The filter form/clear state, default five-row pagination, committed evidence,
+and External Capsule/Native RBAC inventory panels are unchanged. Moving the
+controls is strictly a presentation/accessibility refinement, not permission
+to run provider reconciliation or revoke any grant.
+
 ### Revoke Access Grant
 
 Revoke Access Grant:
