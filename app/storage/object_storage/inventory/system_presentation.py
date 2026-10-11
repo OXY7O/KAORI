@@ -6,7 +6,7 @@ from typing import Any
 
 from sqlalchemy.orm import selectinload
 
-from app.integrations.managed_assets import object_storage_owner
+from app.integrations.managed_assets import ManagedAssetOwner, object_storage_owner
 from app.models.object_storage import ObjectStorageSystem
 
 OBJECT_STORAGE_INVENTORY_FRESHNESS_HOURS = 24
@@ -170,8 +170,11 @@ def _system_query():
     )
 
 
-def _system_row(system: ObjectStorageSystem) -> dict[str, Any]:
-    owner = object_storage_owner(system.id)
+def _system_row(
+    system: ObjectStorageSystem, *, owner: ManagedAssetOwner | None = None, owner_resolved: bool = False
+) -> dict[str, Any]:
+    if not owner_resolved:
+        owner = object_storage_owner(system.id)
     connection = owner.record if owner is not None else None
     status_label, status_tone = _status(system.status)
     buckets = list(system.buckets or ())
