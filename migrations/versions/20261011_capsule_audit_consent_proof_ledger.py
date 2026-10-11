@@ -104,6 +104,7 @@ def _create_consent() -> None:
             ondelete='RESTRICT',
             name='fk_capsule_resource_consent_exact_audit_batch',
         ),
+        sa.UniqueConstraint('tenant_id', name='uq_capsule_resource_consent_tenant_once'),
         sa.UniqueConstraint('tenant_id', 'plan_sha256', name='uq_capsule_resource_consent_plan_once'),
         sa.UniqueConstraint(
             'tenant_id', 'consent_manifest_sha256', name='uq_capsule_resource_consent_manifest',
