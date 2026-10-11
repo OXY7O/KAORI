@@ -57,9 +57,9 @@
                 <h4 id="compatibility-catalog-heading" class="text-sm font-bold text-content-primary">Integrations</h4>
                 <span class="text-xs text-content-muted">{{ compatibility_registry.start }}–{{ compatibility_registry.end }} of {{ compatibility_registry.total }}</span>
             </div>
-            {% if compatibility_registry.items %}
+            {% if compatibility_registry['items'] %}
                 <ul class="divide-y divide-outline-subtle" data-compatibility-product-list="page-5">
-                    {% for item in compatibility_registry.items %}
+                    {% for item in compatibility_registry['items'] %}
                         <li>
                             {% set is_selected = compatibility_registry.selected and item.key == compatibility_registry.selected.key %}
                             {% set item_href = url_for('settings.general', tab='compatibility-versions', compatibility_search=compatibility_registry.search, compatibility_support=compatibility_registry.support, compatibility_page=compatibility_registry.page, compatibility_key=item.key) %}
@@ -155,7 +155,9 @@
                                 <h5 id="compatibility-qualification-heading" class="text-sm font-bold text-content-primary">Version Qualification</h5>
                                 <p class="mt-1 text-xs text-content-muted">Policy {{ selected.policy_version }} · {{ selected.policy_window }} · {{ compatibility_registry.profile_total }} qualification rows</p>
                             </div>
-                            {{ table_label.metadata_label('Latest ' ~ compatibility_registry.profile_start ~ '–' ~ compatibility_registry.profile_end, 'layers-2') }}
+                            {% if compatibility_registry.profile_total %}
+                                {{ table_label.metadata_label('Rows ' ~ compatibility_registry.profile_start ~ '–' ~ compatibility_registry.profile_end, 'layers-2') }}
+                            {% endif %}
                         </div>
                         {% if compatibility_registry.profiles %}
                             <div class="mt-3 divide-y divide-outline-subtle rounded-lg border border-outline-default">
