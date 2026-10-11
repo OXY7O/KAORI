@@ -873,3 +873,70 @@ def test_complete_g2_scope_rejects_missing_foreign_control_or_related_dryrun(kin
         inspect_capsule_complete_dry_run_shapes(
             **source, preview_objects=previews,
         )
+
+
+def test_complete_g2g3_structural_match_does_not_authenticate_provider_or_authorize_release():
+    source, previews, baseline = _g2_source_case()
+    prepared = build_capsule_scope_patch_review(**source)
+    dryrun = inspect_capsule_complete_dry_run_shapes(
+        **source, preview_objects=previews,
+    )
+    plan, related = source['plan'], source['related']
+    changed = deepcopy(previews[('', 'Namespace', 'demo-dev')])
+    changed.metadata.resource_version = '10'
+    readback = _readback(
+        plan, related, source['current_capsule_cr'], changed, baseline,
+    )
+    assert readback['pending_count'] == 0
+    assert readback['transferred_count'] == 1
+    assert readback['blockers'] == [
+        'capsule_controller_provenance_unverified',
+        'provider_execution_authority_unverified',
+    ]
+    now = datetime.now(UTC)
+    start = _audit_start(plan, related, at=now)
+    observed = {
+        **start, 'event_type': 'readback_candidate', 'sequence': 2,
+        'event_at': (now + timedelta(seconds=2)).isoformat(),
+        'previous_event_sha256': start['event_sha256'],
+        'outcome': 'readback_observed',
+        'readback_sha256': readback['readback_sha256'],
+        'observed_count': readback['observed_count'],
+        'pending_count': readback['pending_count'],
+        'transferred_count': readback['transferred_count'],
+        'ambiguous_count': readback['ambiguous_count'],
+    }
+    observed['event_sha256'] = _event_checksum(observed)
+    def row(n, action, event, at):
+        return {
+            'id': n, 'actor_user_id': 30,
+            'target_type': 'kubernetes_tenant_release_capsule_handoff_execution',
+            'target_id': plan['tenant_id'], 'action': action,
+            'created_at': at, 'metadata_json': event,
+        }
+    rows = [
+        row(100, 'tenant.release.capsule_handoff_started',
+            start, now + timedelta(seconds=1)),
+        row(101, 'tenant.release.capsule_handoff_readback_candidate',
+            observed, now + timedelta(seconds=3)),
+    ]
+    trace = inspect_capsule_scope_g2g3_trace(
+        plan=plan, related=related, accepted_actor_user_id=30,
+        rows=rows, patch_review=prepared, preview_review=dryrun,
+        readback_candidate=readback,
+    )
+    assert trace['status'] == 'complete_g2g3_claims_correlated_unverified'
+    assert trace['all_candidates_structurally_transferred'] is True
+    assert trace['recorded_readback_matches_candidate'] is True
+    assert trace['start_db_commit_verified'] is False
+    assert trace['readback_authoritative_verified'] is False
+    assert trace['controller_origin_attested'] is False
+    assert trace['provider_handoff_verified'] is False
+    assert trace['release_authorized'] is False
+    spoofed = dict(readback, blockers=[*readback['blockers'], 'unexpected_policy_drift'])
+    with pytest.raises(ValueError):
+        inspect_capsule_scope_g2g3_trace(
+            plan=plan, related=related, accepted_actor_user_id=30,
+            rows=rows, patch_review=prepared, preview_review=dryrun,
+            readback_candidate=spoofed,
+        )
