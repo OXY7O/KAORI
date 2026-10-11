@@ -315,3 +315,16 @@ and Collected Ingress mapping. Exceptions take precedence over Current; the
 underlying last-known-good timestamp remains visible and must not imply current
 mapping evidence. The legacy database column's meaning is clarified in-place;
 no new schema or UI taxonomy is introduced.
+
+
+## As-of-now committed certificate validity (#1326)
+
+The committed `not_after`, parse result, certificate identity, and collection
+timestamp remain source facts. Every read derives current validity against the
+same configured critical/renewal windows without writing ORM fields or asking
+Kubernetes. SQL CASE supplies a consistent filter, severity sort, summary and
+pagination classification. Python `classify_certificate_validity` supplies
+matching row/detail/rotation presentation and current days remaining.
+Persisted Invalid/Unknown statuses take precedence over timestamp inference.
+Exact expiry uses `not_after <= evaluated_at`; `collected_at` and posture
+`validity_evaluated_at` are separate so reassessment never implies new data.

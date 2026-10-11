@@ -91,10 +91,10 @@
                                     <p class="truncate text-xs font-medium leading-5 text-content-primary"
                                        title="Expires · {{ record.not_after|user_date('N/A') }}">{{ record.not_after|user_date("N/A") }}</p>
                                     <p class="truncate text-xs leading-5 text-content-muted">
-                                        {% if record.status == 'expired' %}
-                                            {{ (record.days_remaining or 0)|abs }} days expired
+                                        {% if presentation.validity_status == 'expired' %}
+                                            {{ (presentation.validity_days_remaining or 0)|abs }} days expired
                                         {% else %}
-                                            {{ record.days_remaining }} days left
+                                            {{ presentation.validity_days_remaining }} days left
                                         {% endif %}
                                     </p>
                                 {% else %}

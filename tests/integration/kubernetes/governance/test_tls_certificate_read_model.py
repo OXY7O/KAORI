@@ -102,3 +102,59 @@ def test_tls_certificate_page_uses_sql_pagination_and_canonical_page_size(govern
         assert len(page_two['records']) == 2
         assert oversized['pagination']['per_page'] == 5
         assert len(oversized['records']) == 5
+
+
+def test_tls_validity_projection_filters_sorts_and_preserves_committed_facts(governance_repository_app) -> None:
+    now = datetime.now(UTC)
+    with governance_repository_app.app_context():
+        cluster = Cluster(id='as-of-cluster', name='As-of', environment='production', status='connected')
+        db.session.add_all([
+            cluster,
+            TLSCertificateCollectionState(
+                cluster_id=cluster.id, secret_collection_status='collected',
+                ingress_mapping_status='collected', collected_at=now,
+            ),
+        ])
+        entries = (
+            ('expired-now', now - timedelta(hours=2), 'healthy', 100),
+            ('critical-now', now + timedelta(days=3), 'healthy', 100),
+            ('renewal-now', now + timedelta(days=12), 'healthy', 100),
+            ('healthy-now', now + timedelta(days=45), 'critical', 2),
+            ('parse-invalid', now - timedelta(days=3), 'invalid', None),
+            ('parse-unknown', now - timedelta(days=3), 'unknown', None),
+        )
+        for name, expires_at, stored, days in entries:
+            db.session.add(TLSCertificateInventory(
+                cluster_id=cluster.id, namespace='default', secret_name=name,
+                status=stored, days_remaining=days, not_after=expires_at,
+                coverage_state='no_declared_hosts', collected_at=now - timedelta(days=2),
+            ))
+        db.session.commit()
+
+        all_rows = service.get_tls_certificate_page({'cluster_id': cluster.id, 'per_page': '50'})
+        assert all_rows['summary']['expired'] == 1
+        assert all_rows['summary']['critical'] == 1
+        assert all_rows['summary']['warning'] == 1
+        assert all_rows['summary']['healthy'] == 1
+        assert all_rows['summary']['invalid'] == 1
+        assert all_rows['summary']['unknown'] == 1
+        assert [row.secret_name for row in all_rows['records'][:3]] == [
+            'expired-now', 'parse-invalid', 'critical-now',
+        ]
+
+        for status, expected in (
+            ('expired', 'expired-now'), ('critical', 'critical-now'),
+            ('warning', 'renewal-now'), ('healthy', 'healthy-now'),
+            ('invalid', 'parse-invalid'), ('unknown', 'parse-unknown'),
+        ):
+            result = service.get_tls_certificate_page({'cluster_id': cluster.id, 'status': status})
+            assert [r.secret_name for r in result['records']] == [expected]
+            assert result['summary']['total'] == result['pagination']['total_items'] == 1
+            assert result['records'][0].presentation['validity_status'] == status
+
+        source_row = next(r for r in all_rows['records'] if r.secret_name == 'expired-now')
+        detail_row = service.get_tls_certificate_detail(source_row.id)
+        assert detail_row.presentation['validity_status'] == 'expired'
+        assert detail_row.presentation['validity_days_remaining'] <= 0
+        assert source_row.status == 'healthy' and source_row.days_remaining == 100
+        assert db.session.get(TLSCertificateInventory, source_row.id).status == 'healthy'
