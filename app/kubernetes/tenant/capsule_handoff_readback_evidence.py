@@ -367,10 +367,11 @@ def inspect_capsule_readback_candidate(
         for item in related_rows
         if item['state'] == 'pending_provider_transfer'
     }
-    if any(
+    current_findings = current_related.get('blockers')
+    if isinstance(current_findings, list) and any(
         warning in allowed_handoff_warnings
         and warning not in pending_kaori_warnings
-        for warning in current_related['blockers']
+        for warning in current_findings
         if isinstance(warning, str)
     ):
         blockers.append('related_current_handoff_finding_contradicts_readback')
