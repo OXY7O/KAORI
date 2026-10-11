@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_registry.html" as registry_ui %}
 <section id="workloads-table-card" class="{{ table_ui.block_classes() }}">
@@ -19,7 +20,11 @@
         'Refreshing Workload Inventory',
         url_for('integrations.kubernetes') ,
     'Open Cluster Integrations',
-    header_actions=inventory_header_actions
+    header_actions=inventory_header_actions,
+    title_extra=info_tip.render('k8s-inventory-workloads-title', 'Workload Inventory Guide', 'Meaning of the committed evidence in this table.', items=[
+        'Managed Pods: Pod replicas managed by the workload controller, including its observed desired and current state.',
+        'Update Strategy: Controls how a workload rolls out changes, such as RollingUpdate or Recreate; the displayed value is configuration evidence, not a rollout result.'
+    ], placement='right')
     ) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         <form hx-get="{{ url_for('inventory.workloads') }}"
