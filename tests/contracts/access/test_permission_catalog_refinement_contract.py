@@ -86,6 +86,22 @@ def test_permission_catalog_uses_kaori_hero_overview_tabs_tables_loading_and_pag
     assert 'xl:sticky xl:top-5' not in index
 
 
+def test_permission_role_coverage_empty_role_matrix_has_matching_columns() -> None:
+    coverage = read('app/templates/access/permissions/partials/_coverage.html')
+
+    # The empty role dimension must still have a matching table header and
+    # placeholder body cell; otherwise the default colspan=3 is invalid.
+    assert "table_ui.table_classes('min-w-[70rem]' if coverage_roles else 'min-w-[36rem]')" in coverage
+    assert '<th scope="col" class="{{ table_ui.header_cell_classes() }} text-center">Role Coverage</th>' in coverage
+    assert 'No roles match the current role filters.' in coverage
+    assert '{% for role in coverage_roles %}' in coverage
+    assert coverage.count('{% else %}') >= 2
+    assert '2 + (coverage_roles|length if coverage_roles else 1)' in coverage
+    assert '<th scope="col" class="sticky left-0' in coverage
+    assert '<th scope="col" class="min-w-[10rem]' in coverage
+    assert 'permission.key in role_permission_keys.get(role.id, [])' in coverage
+
+
 def test_permission_role_coverage_delegation_badge_aligns_with_identity_text() -> None:
     coverage = read('app/templates/access/permissions/partials/_coverage.html')
     registry = read('app/templates/access/permissions/partials/_registry.html')
