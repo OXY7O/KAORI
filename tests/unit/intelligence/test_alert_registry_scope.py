@@ -1,4 +1,5 @@
 from types import SimpleNamespace
+from urllib.parse import parse_qs, urlsplit
 
 import pytest
 from werkzeug.datastructures import MultiDict
@@ -220,3 +221,19 @@ def test_registry_case_lifecycle_and_selected_detail_stay_in_provider_scope(monk
 
     args['case'] = 'CASE-OTHER-DOMAIN'
     assert service.get_alert_intelligence_payload(args)['selected_case'] is None
+
+
+def test_case_lifecycle_notifications_keep_scope_for_all_domains() -> None:
+    from app.intelligence.alert_intelligence.lifecycle import _case_workspace_url
+
+    for domain, asset in (('registry', '7'), ('object_storage', '12'), ('kubernetes', 'cluster-1')):
+        case = SimpleNamespace(domain=domain, asset_key=asset, public_id='CASE-7')
+        for tab in ('active', 'resolved'):
+            path = _case_workspace_url(case, tab=tab)
+            assert urlsplit(path).path == '/intelligence/alert-intelligence'
+            assert parse_qs(urlsplit(path).query) == {
+                'tab': [tab],
+                'domain': [domain],
+                'asset': [asset],
+                'case': ['CASE-7'],
+            }
