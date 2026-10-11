@@ -247,8 +247,8 @@ def test_migration_contains_write_once_guards_antireplay_and_safe_downgrade():
     assert 'uq_capsule_audit_batch_plan_once' in migration
     assert 'uq_capsule_resource_consent_plan_once' in migration
     assert 'fk_capsule_resource_consent_exact_audit_batch' in migration
-    assert 'tr_capsule_batch_deny_' in migration
-    assert 'tr_capsule_consent_deny_' in migration
+    assert "((_BATCH, 'batch'), (_CONSENT, 'consent'))" in migration
+    assert "f'tr_capsule_{prefix}_deny_{operation}'" in migration
     assert "'TRUNCATE'" in migration
     assert 'PRAGMA foreign_keys' in migration
     assert 'Refusing to destroy committed Capsule audit/consent evidence.' in migration
