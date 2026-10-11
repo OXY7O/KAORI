@@ -113,8 +113,8 @@ def test_authentication_activity_is_full_width_with_inline_evidence_boundary() -
     assert 'p-4 shadow-sm' in activity
     assert 'bg-kaori-soft/30' in activity
     assert 'Counts from' not in activity
-    assert 'Latest ' in activity
-    assert 'Trusted proxy' not in activity
+    assert 'Showing ' in activity
+    assert 'max 5' in activity
     assert "table_label.status_indicator_label('Failed', 'critical')" in activity
     assert "category='access', search=current_user.username" in activity
 
