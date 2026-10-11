@@ -502,10 +502,10 @@ def _overview_scope_context(
     )
     scoped_providers = [selected_provider] if selected_provider is not None else providers
 
-    states_query = RegistryCollectionState.query
-    if selected_provider is not None:
-        states_query = states_query.filter(RegistryCollectionState.integration_instance_id == selected_provider.id)
-    states = states_query.all()
+    scoped_provider_ids = [int(provider.id) for provider in scoped_providers]
+    states = RegistryCollectionState.query.filter(
+        RegistryCollectionState.integration_instance_id.in_(scoped_provider_ids)
+    ).all()
     committed_states = [state for state in states if state.last_committed_at is not None]
     latest = max(
         (state.last_committed_at for state in committed_states if state.last_committed_at),
@@ -551,17 +551,24 @@ def _overview_scope_context(
 
 
 def _overview_kpi_values(
-    selected_provider: IntegrationInstance | None,
+    committed_provider_ids: list[int],
 ) -> dict[str, int]:
-    project_query = RegistryProject.query
-    repository_query = RegistryRepository.query.join(RegistryProject)
-    artifact_query = RegistryArtifact.query.join(RegistryRepository).join(RegistryProject)
-    tag_query = RegistryTag.query.join(RegistryArtifact).join(RegistryRepository).join(RegistryProject)
-    if selected_provider is not None:
-        project_query = project_query.filter(RegistryProject.integration_instance_id == selected_provider.id)
-        repository_query = repository_query.filter(RegistryProject.integration_instance_id == selected_provider.id)
-        artifact_query = artifact_query.filter(RegistryProject.integration_instance_id == selected_provider.id)
-        tag_query = tag_query.filter(RegistryProject.integration_instance_id == selected_provider.id)
+    """Count committed inventory only for eligible active Registry providers."""
+    if not committed_provider_ids:
+        return {'projects': 0, 'repositories': 0, 'artifacts': 0, 'tags': 0}
+
+    project_query = RegistryProject.query.filter(
+        RegistryProject.integration_instance_id.in_(committed_provider_ids)
+    )
+    repository_query = RegistryRepository.query.join(RegistryProject).filter(
+        RegistryProject.integration_instance_id.in_(committed_provider_ids)
+    )
+    artifact_query = RegistryArtifact.query.join(RegistryRepository).join(RegistryProject).filter(
+        RegistryProject.integration_instance_id.in_(committed_provider_ids)
+    )
+    tag_query = RegistryTag.query.join(RegistryArtifact).join(RegistryRepository).join(RegistryProject).filter(
+        RegistryProject.integration_instance_id.in_(committed_provider_ids)
+    )
     return {
         'projects': project_query.count(),
         'repositories': repository_query.count(),
