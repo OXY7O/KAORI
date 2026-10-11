@@ -50,7 +50,7 @@ def test_bulk_tls_rotation_requires_valid_pair_and_nonempty_targets() -> None:
 
     assert (
         validation.validation_trigger(
-            payload(valid=True, targets=[1]),
+            payload(valid=True, targets=[{'status': 'ready'}]),
             form_id='tls-secret-update-form',
             require_targets=True,
         )
@@ -69,3 +69,17 @@ def test_bulk_tls_rotation_requires_valid_pair_and_nonempty_targets() -> None:
 def test_kubernetes_administration_tab_normalization_source_contract() -> None:
     source = (ROOT / 'app/platform_operations/kubernetes/routes.py').read_text()
     assert "if normalized in {'overview', 'secret-reveal'}" in source
+
+
+def test_blocked_coverage_does_not_admit_tls_apply() -> None:
+    validation = load_validation_module()
+    assert validation.validation_trigger(
+        payload(valid=True, targets=[{'status': 'blocked'}]),
+        form_id='tls-secret-update-form',
+        require_targets=True,
+    ) is None
+    assert validation.validation_trigger(
+        payload(valid=True, targets=[{'status': 'ready'}, {'status': 'blocked'}]),
+        form_id='tls-secret-update-form',
+        require_targets=True,
+    ) is None
