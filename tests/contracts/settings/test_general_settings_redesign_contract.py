@@ -162,6 +162,7 @@ def test_system_information_is_explicitly_read_only_and_traceable() -> None:
 def test_compatibility_workspace_keeps_policy_contract_qualification_and_readiness_separate() -> None:
     main = read('app/templates/settings/general/partials/_compatibility_versions.html')
     registry = read('app/templates/settings/general/partials/_compatibility_registry.html')
+    results = read('app/templates/settings/general/partials/_compatibility_registry_results.html')
     routes = read('app/settings/routes.py')
     projection = read('app/settings/general/compatibility_registry.py')
 
@@ -177,57 +178,93 @@ def test_compatibility_workspace_keeps_policy_contract_qualification_and_readine
     assert 'Version Qualification' in main
     assert 'Live Readiness' in main
     assert 'Policy Boundary' in main
+    assert 'Blocking Rule' in main
     assert 'data-compatibility-versions-workspace="unified"' in main
     assert 'data-compatibility-visual-hierarchy="registry-detail"' in main
     assert 'data-compatibility-policy-summary="compact"' in main
     assert 'data-compatibility-policy-reference="disclosure"' in main
+    assert 'data-compatibility-policy-toggle="accessible"' in main
+    assert 'data-compatibility-policy-layout="structured-reference"' in main
+    assert 'data-compatibility-policy-guide="numbered"' in main
     assert '{% include "settings/general/partials/_compatibility_registry.html" %}' in main
     assert 'bg-surface-subtle' not in main
+
     assert 'data-compatibility-registry="server-paginated"' in registry
-    assert 'data-compatibility-registry-layout="list-detail"' in registry
-    assert 'data-compatibility-product-detail="selected-only"' in registry
-    assert "compatibility_registry['items']" in registry
-    assert 'compatibility_registry.items' not in registry
+    assert '{% include "settings/general/partials/_compatibility_registry_results.html" %}' in registry
     assert 'name="compatibility_search"' in registry
     assert 'name="compatibility_support"' in registry
     assert 'name="tab" value="compatibility-versions"' in registry
-    assert 'hx-target="#compatibility-registry"' in registry
+    assert "input changed delay:450ms from:input[name='compatibility_search']" in registry
+    assert "change from:select[name='compatibility_support']" in registry
+    assert 'hx-target="#compatibility-registry-results"' in registry
     assert 'hx-swap="outerHTML"' in registry
     assert 'hx-push-url="true"' in registry
+    assert 'hx-sync="#compatibility-registry-results:replace"' in registry
     assert 'method="get"' in registry
     assert "url_for('settings.general')" in registry
-    assert 'aria-current="true"' in registry
-    assert 'No matching integrations' in registry
-    assert 'Version Qualification' in registry
-    assert 'General Contract' in registry
-    assert 'Qualified Versions' in registry
-    assert 'Upstream Lifecycle' in registry
-    assert 'KAORI Support' in registry
-    assert 'Readiness Authority' in registry
-    assert 'selected.version_scheme' in registry
-    assert 'selected.capability_summary' in registry
-    assert 'selected.qualified_versions' in registry
-    assert 'selected.recommended_label' in registry
-    assert 'selected.policy_version' in registry
-    assert 'selected.policy_window' in registry
-    assert 'selected.contract_profile' in registry
-    assert 'selected.upstream_lifecycle' in registry
-    assert 'selected.support_label' in registry
-    assert 'selected.support_tone' in registry
-    assert 'selected.validation_basis' in registry
-    assert 'compatibility_registry.profile_total' in registry
-    assert 'compatibility_registry.profiles' in registry
-    assert 'profile.version_constraint' in registry
-    assert 'profile.support_level' in registry
-    assert 'profile.contract_profile' in registry
-    assert 'compatibility_profile_page' in registry
-    assert 'compatibility_page' in registry
+    assert '<noscript><button type="submit"' in registry
+    assert '>Apply\n' not in registry
+    assert 'hx-target="#general-settings-page"' in registry
+    assert 'Reset</a>' in registry
+    assert 'data-compatibility-product-detail=' not in registry
+
+    assert "compatibility_registry.page_size ~ ' per page'" in registry
+    assert 'compatibility_registry.total ~' not in registry
+    assert '{% import "components/table_label.html" as table_label %}' in results
+    assert 'id="compatibility-registry-results"' in results
+    assert 'data-compatibility-registry-results="partial"' in results
+    assert 'data-compatibility-registry-layout="list-detail"' in results
+    assert 'data-compatibility-catalog="bounded-scroll"' in results
+    assert 'max-h-[24rem] overflow-y-auto' in results
+    assert 'role="region"' in results
+    assert 'tabindex="0"' in results
+    assert 'aria-label="Scrollable integration catalog"' in results
+    assert 'data-compatibility-product-list="page-5"' in results
+    assert "compatibility_registry['items']" in results
+    assert 'compatibility_registry.items' not in results
+    assert 'aria-current="true"' in results
+    assert 'No matching integrations' in results
+    assert 'Integration registry pages' in results
+    assert 'hx-target="#compatibility-registry-results"' in results
+    assert 'hx-target="#compatibility-registry"' not in results
+    assert 'data-compatibility-product-detail="selected-only"' in results
+    assert 'data-compatibility-detail-overview="primary"' in results
+    assert 'data-compatibility-support-boundary="separate"' in results
+    assert 'data-compatibility-qualification="paginated"' in results
+    assert 'Version Qualification' in results
+    assert 'General Contract' in results
+    assert 'Qualified Versions' in results
+    assert 'Upstream Lifecycle' in results
+    assert 'KAORI Support' in results
+    assert 'Readiness Authority' in results
+    assert 'Live readiness authority' in results
+    assert 'selected.version_scheme' in results
+    assert 'selected.capability_summary' in results
+    assert 'selected.qualified_versions' in results
+    assert 'selected.recommended_label' in results
+    assert 'selected.policy_version' in results
+    assert 'selected.policy_window' in results
+    assert 'selected.contract_profile' in results
+    assert 'selected.upstream_lifecycle' in results
+    assert 'selected.support_label' in results
+    assert 'selected.support_tone' in results
+    assert 'selected.validation_basis' in results
+    assert 'compatibility_registry.profile_total' in results
+    assert 'compatibility_registry.profiles' in results
+    assert 'profile.version_constraint' in results
+    assert 'profile.support_level' in results
+    assert 'profile.contract_profile' in results
+    assert 'compatibility_profile_page' in results
+    assert 'compatibility_page' in results
+
     assert 'PAGE_SIZE = 5' in projection
     assert "SUPPORT_FILTERS = frozenset({'all', 'includes-current', 'extended-only'})" in projection
     assert "'profiles': qualifications[profile_offset : profile_offset + PAGE_SIZE]" in projection
     assert "'items': listed" in projection
     assert 'build_compatibility_registry(' in routes
     assert "user.has_permission('system.view')" in routes
+    assert "request.headers.get('HX-Target') == 'compatibility-registry-results'" in routes
+    assert "render_template('settings/general/partials/_compatibility_registry_results.html', **context)" in routes
     assert "request.headers.get('HX-Target') == 'compatibility-registry'" in routes
     assert "render_template('settings/general/partials/_compatibility_registry.html', **context)" in routes
     assert 'data-compatibility-versions-workspace-layout="full-width"' in read(

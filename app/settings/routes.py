@@ -146,6 +146,16 @@ def general():
         return make_response(
             render_template('settings/general/partials/_compatibility_registry.html', **context)
         )
+    if (
+        request.method == 'GET'
+        and is_htmx
+        and active_tab == 'compatibility-versions'
+        and compatibility_registry is not None
+        and request.headers.get('HX-Target') == 'compatibility-registry-results'
+    ):
+        return make_response(
+            render_template('settings/general/partials/_compatibility_registry_results.html', **context)
+        )
 
     template_name = 'settings/general/partials/_page_content.html' if is_htmx else 'settings/general/index.html'
     rendered_page = render_template(template_name, **context)
