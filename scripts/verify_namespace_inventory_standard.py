@@ -132,6 +132,34 @@ def main() -> int:
         'Age belongs to Namespace detail, not the compact table.',
         errors,
     )
+    column_percent = {
+        'Namespace': 24,
+        'Cluster': 21,
+        'Lifecycle': 8,
+        'Resource Controls': 18,
+        'Security Context': 19,
+        'Details': 10,
+    }
+    require(
+        sum(column_percent.values()) == 100
+        and all(
+            f'w-[{percent}%]' in table_content.split(f'>{name}</th>', 1)[0].rsplit('<th', 1)[-1]
+            for name, percent in column_percent.items()
+        )
+        and "table_ui.table_classes('min-w-[78rem] !table-fixed')" in table_content
+        and 'overflow-x-auto overscroll-x-contain' in table_content
+        and "table_ui.namespace_identity(namespace.namespace, 'w-full min-w-0')" in table_content
+        and "table_ui.cluster_identity(namespace.cluster_name, namespace.cluster_environment, 'w-full min-w-0')"
+        in table_content,
+        'Namespace and Cluster columns must retain the approved proportional widths.',
+        errors,
+    )
+    require(
+        table_content.count('grid-cols-[6rem_minmax(0,1fr)]') == 2
+        and table_content.count('grid-cols-[5rem_minmax(0,1fr)]') == 2,
+        'Namespace Resource Controls and Security Context labels must remain readable.',
+        errors,
+    )
     require(
         'inventory.quota_reported_namespaces < inventory.total_namespaces' in summary,
         'Quota posture must show incomplete evidence.',
