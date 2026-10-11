@@ -594,7 +594,22 @@ def _previously_managed_without_limit_range(*, frozen_limits=None, frozen_storag
     })
     record.allocation_limit_defaults_json = {} if frozen_limits is None else frozen_limits
     record.allocation_storage_policy_json = {} if frozen_storage is None else frozen_storage
+    record.allocation_quota_json = {'requests.cpu': '2'}
     return record
+
+
+def _install_present_managed_quota(api):
+    """Keep the existing provider ResourceQuota authoritative for these cases."""
+    api.patched_quotas = []
+    api.read_namespaced_resource_quota = lambda name, namespace: SimpleNamespace(
+        metadata=SimpleNamespace(
+            name=name, namespace=namespace, uid='rq-uid', resource_version='7',
+            labels={'app.kubernetes.io/managed-by': 'kaori'},
+        )
+    )
+    api.patch_namespaced_resource_quota = lambda name, namespace, body: api.patched_quotas.append(
+        (name, namespace, body)
+    )
 
 
 def _empty_managed_observation(*, hash_value='before-hash', limit_sources=None):
@@ -602,7 +617,7 @@ def _empty_managed_observation(*, hash_value='before-hash', limit_sources=None):
         'control_state': 'observed',
         'control_reason': '',
         'effective_hash': hash_value,
-        'quota': {},
+        'quota': {'requests.cpu': '2'},
         'limits': {},
         'storage_policy': {},
         'source_resources': list(limit_sources or []),
@@ -614,6 +629,7 @@ def test_optional_managed_limit_range_legacy_name_does_not_block_when_absence_is
     before = _empty_managed_observation()
     after = _empty_managed_observation(hash_value='after-hash')
     api = _install_reconcile_fakes(monkeypatch, [before, after])
+    _install_present_managed_quota(api)
 
     reconcile_adopted_native_allocation(
         record,
@@ -621,7 +637,7 @@ def test_optional_managed_limit_range_legacy_name_does_not_block_when_absence_is
         resource_profile_version=2,
         allocation_customized=False,
         capacity_decision_id=123,
-        quota_hard={},
+        quota_hard={'requests.cpu': '2'},
         limit_defaults={},
         storage_policy={},
         operation='allocation_change',
@@ -632,6 +648,7 @@ def test_optional_managed_limit_range_legacy_name_does_not_block_when_absence_is
     assert record.provisioning_evidence_json['allocation']['limits'] == {}
     assert api.created_limit_ranges == []
     assert api.created_quotas == []
+    assert len(api.patched_quotas) == 1
     assert record.provisioning_evidence_json['allocation_history'][-1]['from']['limits'] == {}
 
 
@@ -644,6 +661,7 @@ def test_optional_legacy_limit_range_can_be_created_for_newly_admitted_defaults(
         'source_resources': [{'kind': 'LimitRange', 'name': 'kaori-tenant-limits'}],
     }
     api = _install_reconcile_fakes(monkeypatch, [before, after])
+    _install_present_managed_quota(api)
 
     reconcile_adopted_native_allocation(
         record,
@@ -651,7 +669,7 @@ def test_optional_legacy_limit_range_can_be_created_for_newly_admitted_defaults(
         resource_profile_version=2,
         allocation_customized=True,
         capacity_decision_id=124,
-        quota_hard={},
+        quota_hard={'requests.cpu': '2'},
         limit_defaults={'default': {'cpu': '1'}},
         storage_policy={},
         operation='allocation_change',
@@ -668,7 +686,6 @@ def test_optional_legacy_limit_range_can_be_created_for_newly_admitted_defaults(
         ({'default': {'cpu': '1'}}, {}, 'before-hash', [], 'before-hash'),
         ({}, {'min': '1Gi'}, 'before-hash', [], 'before-hash'),
         ({}, {}, 'before-hash', [{'kind': 'LimitRange', 'name': 'foreign-limit'}], 'before-hash'),
-        ({}, {}, 'other-hash', [], 'before-hash'),
         ({}, {}, 'before-hash', [], None),
     ],
 )
@@ -684,6 +701,7 @@ def test_missing_or_unverified_optional_limit_range_stays_fail_closed_before_mut
     original_status = record.provisioning_status
     before = _empty_managed_observation(hash_value=live_hash, limit_sources=live_sources)
     api = _install_reconcile_fakes(monkeypatch, [before])
+    _install_present_managed_quota(api)
 
     with pytest.raises(ValueError, match='LimitRange/kaori-tenant-limits is no longer present'):
         reconcile_adopted_native_allocation(
@@ -692,7 +710,7 @@ def test_missing_or_unverified_optional_limit_range_stays_fail_closed_before_mut
             resource_profile_version=2,
             allocation_customized=False,
             capacity_decision_id=123,
-            quota_hard={},
+            quota_hard={'requests.cpu': '2'},
             limit_defaults={},
             storage_policy={},
             operation='allocation_change',
@@ -710,6 +728,7 @@ def test_pre_mutation_missing_required_limit_range_keeps_active_status_and_evide
     record = _previously_managed_without_limit_range(frozen_storage={'min': '1Gi'})
     before = _empty_managed_observation()
     api = _install_reconcile_fakes(monkeypatch, [before])
+    _install_present_managed_quota(api)
     with pytest.raises(ValueError, match='LimitRange/kaori-tenant-limits is no longer present'):
         reconcile_adopted_native_allocation(
             record,
@@ -717,7 +736,7 @@ def test_pre_mutation_missing_required_limit_range_keeps_active_status_and_evide
             resource_profile_version=2,
             allocation_customized=False,
             capacity_decision_id=123,
-            quota_hard={},
+            quota_hard={'requests.cpu': '2'},
             limit_defaults={},
             storage_policy={},
             operation='allocation_change',
@@ -725,3 +744,26 @@ def test_pre_mutation_missing_required_limit_range_keeps_active_status_and_evide
     assert record.provisioning_status == 'ready'
     assert record.provisioning_evidence_json['allocation_reconcile_failure']['provider_mutation_may_have_started'] is False
     assert api.patched_namespaces == []
+
+
+def test_live_effective_hash_mismatch_never_exempts_optional_limit_range(monkeypatch):
+    record = _previously_managed_without_limit_range()
+    before = _empty_managed_observation(hash_value='other-hash')
+    api = _install_reconcile_fakes(monkeypatch, [before])
+    _install_present_managed_quota(api)
+
+    with pytest.raises(ValueError, match='Live provider allocation changed'):
+        reconcile_adopted_native_allocation(
+            record,
+            profile=_profile(),
+            resource_profile_version=2,
+            allocation_customized=False,
+            capacity_decision_id=123,
+            quota_hard={'requests.cpu': '2'},
+            limit_defaults={},
+            storage_policy={},
+            operation='allocation_change',
+        )
+    assert record.provisioning_status == 'ready'
+    assert api.patched_namespaces == []
+    assert api.patched_quotas == []
