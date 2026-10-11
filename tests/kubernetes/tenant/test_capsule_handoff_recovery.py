@@ -156,3 +156,19 @@ def test_recovery_rejects_missing_extra_or_duplicated_provider_objects():
             live_namespaces={('dev', 'ns-uid'): _namespace()},
             tenant_id='tenant-1', successor_owner='platform-team',
         )
+
+
+@pytest.mark.parametrize('tampered', [
+    [],
+    ['app.kubernetes.io/managed-by'],
+    ['app.kubernetes.io/managed-by', 'kaori.io/tenant-id', 'kaori.io/tenant-id'],
+    ['app.kubernetes.io/managed-by', 'kaori.io/tenant-id', {'unknown': 'key'}],
+])
+def test_untrusted_recovery_baseline_cannot_suppress_required_owner_checks(tampered):
+    baseline = _baseline()
+    baseline['label_keys_to_release'] = tampered
+    with pytest.raises(ValueError, match='baseline'):
+        classify_capsule_namespace_handoff(
+            baseline=baseline, current=_namespace(), tenant_id='tenant-1',
+            successor_owner='platform-team',
+        )
