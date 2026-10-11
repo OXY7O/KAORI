@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from app.artifact_registry.presentation_common import (
     _human_time,
     _overview_inventory_kpi_evidence,
+    _registry_capacity_summary,
     _registry_consumer_insights,
     _registry_quota_watch,
     _registry_top_consumers,
@@ -267,3 +268,63 @@ def test_registry_consumers_high_utilization_is_evidence_qualified() -> None:
         'horizon_count': 0,
         'high_utilization_count': 1,
     }
+
+
+def test_registry_capacity_cards_distinguish_used_free_and_inventory_evidence() -> None:
+    posture = {
+        'total_usage': 53 * 1024 * 1024,
+        'total_quota': 11 * 1024 * 1024 * 1024,
+        'quota_utilization': 0.5,
+        'quota_headroom': (11 * 1024 * 1024 * 1024) - (53 * 1024 * 1024),
+        'risk': 'Low',
+        'insight': 'Within quota.',
+        'risk_detail': 'Headroom remains.',
+        'recommended_action': 'Review growth.',
+    }
+    result = _registry_capacity_summary(
+        scoped_providers=[SimpleNamespace(id=1)],
+        committed_snapshot_count=1,
+        total_size_bytes=53 * 1024 * 1024,
+        artifact_total=2,
+        analytics_count=1,
+        posture=posture,
+    )
+    footprint, used, free = result['metrics']
+
+    assert [item['progress_label'] for item in result['metrics']] == ['Inventory', 'Used', 'Free']
+    assert footprint['progress_percent'] is None
+    assert footprint['description'] == '2 committed artifact identities.'
+    assert used['progress_percent'] == 0.5
+    assert used['value'] == '0.5%'
+    assert used['description'] == '53.00 MiB / 11.00 GiB quota.'
+    assert free['progress_percent'] == 99.5
+    assert free['value'] != 'N/A'
+
+
+def test_registry_capacity_missing_quota_never_fakes_zero_or_full_progress() -> None:
+    posture = {
+        'total_usage': 0.0,
+        'total_quota': 0.0,
+        'quota_utilization': None,
+        'quota_headroom': None,
+        'risk': 'Unknown',
+        'insight': 'Unknown.',
+        'risk_detail': 'No quota denominator.',
+        'recommended_action': 'Refresh analytics.',
+    }
+    result = _registry_capacity_summary(
+        scoped_providers=[SimpleNamespace(id=1)],
+        committed_snapshot_count=1,
+        total_size_bytes=0,
+        artifact_total=0,
+        analytics_count=0,
+        posture=posture,
+    )
+    footprint, used, free = result['metrics']
+    assert result['available']
+    assert footprint['value'] == '0 B'
+    assert footprint['progress_percent'] is None
+    assert used['value'] == 'N/A'
+    assert used['progress_percent'] is None
+    assert free['value'] == 'N/A'
+    assert free['progress_percent'] is None
