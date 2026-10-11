@@ -27,6 +27,7 @@ def _case():
             'policy_sha256': 'd' * 64,
         },
     ]
+    objects.sort(key=lambda x: (x['namespace'], x['kind'], x['name']))
     lists = [
         {'namespace': 'demo-dev', 'kind': kind, 'list_resource_version': 'list-rv', 'count': amount}
         for kind, amount in [('ResourceQuota', 1), ('LimitRange', 1), ('RoleBinding', 1)]
