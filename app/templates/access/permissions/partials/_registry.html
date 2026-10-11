@@ -119,7 +119,7 @@
                         {% if permission.role_count %}
                             {{ table_label.metadata_label(permission.role_count ~ ' ' ~ ('Role' if permission.role_count == 1 else 'Roles') , 'shield-check') }}
                             {% if permission.active_user_count or permission.jit_provider_count %}
-                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ permission.active_user_count }} Active User{{ '' if permission.active_user_count == 1 else 's' }} · {{ permission.jit_provider_count }} JIT Path{{ '' if permission.jit_provider_count == 1 else 's' }}</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ permission.active_user_count }} Effective User{{ '' if permission.active_user_count == 1 else 's' }} · {{ permission.jit_provider_count }} JIT Path{{ '' if permission.jit_provider_count == 1 else 's' }}</p>
                             {% endif %}
                         {% else %}
                             <span class="text-sm text-content-muted">Unassigned</span>
