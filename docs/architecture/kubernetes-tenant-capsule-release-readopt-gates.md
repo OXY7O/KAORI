@@ -42,25 +42,31 @@ the executor can actually complete admitted dry-run, guarded operation,
 partial recovery and definitive provider read-back. #1230 and #1231 stay
 blocked by that evidence.
 
-## Re-Adopt code gap to remediate before UAT (P0 / FAIL)
+## Re-Adopt live resourceVersion caller wiring (P0 source corrected; runtime HOLD)
 
-In `app/kubernetes/tenant/discovery_adoption.py`, the Capsule
-`_adopt_capsule` flow calls
-`_released_predecessor_evidence(tenant, provider_uid=provider_uid)`
-without the observed Capsule Tenant `resource_version`.
-Likewise `_capsule_namespace_records` calls
-`_verify_released_namespace_lineage(..., provider_uid=provider_uid,
-tenant_slug=...)` without the already available Namespace
-`resource_version`. Both delegates reach
-`_require_re_adoption_handback_for_managed_release`, whose strict
-managed-handoff branch **requires** the current RV and exact verified
-handback/correction lineage. Consequently a valid
-Released→managed Capsule Re-Adopt cannot meet this contract as wired.
-**Fix the caller plumbing and author negative regressions; do not
-weaken the handback guard, infer RV from old evidence or waive lineage
-checks.** Review new generation allocation takeover separately, since
-Capsule Adoption may create KAORI-managed allocation profiles; it is
-not automatically a provider read-only operation.
+The Capsule-specific caller defect identified during baseline freeze has
+been corrected in source: `_adopt_capsule` now supplies the *live*
+Capsule Tenant CR `resourceVersion` to
+`_released_predecessor_evidence`. For namespaced resources,
+`_capsule_namespace_records` now completes its bounded, duplicate-free
+UID/RV inventory scan, then verifies **every** Released Namespace
+predecessor with that Namespace's own live `resource_version` **before
+building any new-generation KAORI governance record**. This follows the
+already-established Native live identity pattern while retaining the
+strict `_require_re_adoption_handback_for_managed_release` guard.
+It neither substitutes old database RV for current provider evidence nor
+accepts UID-only handback. Missing/stale/foreign handback remains FAIL,
+and manual verification of any later provider correction remains required.
+
+Authored-only regressions cover Capsule Tenant and multiple Namespace
+live RV forwarding, no early record allocation for a later invalid
+Namespace, generation/linkage preservation, stale/missing managed
+handback and positive exact handback. **These tests have not been
+executed. G5 remains NOT PASS pending G2–G4, CI/CD, provider-authorized
+UAT and human acceptance.** New generation allocation takeover must
+also be reviewed separately: the Capsule adoption path can establish
+KAORI-managed profiles and is not an implicit provider read-only
+operation.
 
 ## Scope-freeze and execution rules
 
