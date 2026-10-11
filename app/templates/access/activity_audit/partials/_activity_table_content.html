@@ -3,6 +3,7 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/resource_detail_modal.html" as resource_detail_modal %}
 {% set query_params = {
+    'view': 'activity',
     'per_page': pagination.per_page,
     'search': filters.search,
     'category': filters.category,
@@ -74,6 +75,7 @@
               hx-indicator="#operational-activity-loading"
               hx-push-url="true"
               class="{{ pagination_ui.rows_group_classes() }}">
+            <input type="hidden" name="view" value="activity">
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="search" value="{{ filters.search }}">
             <input type="hidden" name="category" value="{{ filters.category }}">
@@ -97,8 +99,8 @@
     <nav class="{{ pagination_ui.navigation_group_classes() }}"
          aria-label="Activity Audit pagination">
         {% if pagination.has_prev %}
-            <a href="{{ url_for('access.activity_audit.index', page=pagination.prev_num, per_page=pagination.per_page, search=filters.search, category=filters.category, status=filters.status, actor_key=filters.actor_key or '', time_range=filters.time_range) }}"
-               hx-get="{{ url_for('access.activity_audit.index', page=pagination.prev_num, per_page=pagination.per_page, search=filters.search, category=filters.category, status=filters.status, actor_key=filters.actor_key or '', time_range=filters.time_range) }}"
+            <a href="{{ url_for('access.activity_audit.index', view='activity', page=pagination.prev_num, per_page=pagination.per_page, search=filters.search, category=filters.category, status=filters.status, actor_key=filters.actor_key or '', time_range=filters.time_range) }}"
+               hx-get="{{ url_for('access.activity_audit.index', view='activity', page=pagination.prev_num, per_page=pagination.per_page, search=filters.search, category=filters.category, status=filters.status, actor_key=filters.actor_key or '', time_range=filters.time_range) }}"
                hx-target="#activity-register-workspace"
                hx-swap="outerHTML"
                hx-indicator="#operational-activity-loading"
@@ -116,8 +118,8 @@
                 query_params=query_params,
                 hx_swap='outerHTML') }}
         {% if pagination.has_next %}
-            <a href="{{ url_for('access.activity_audit.index', page=pagination.next_num, per_page=pagination.per_page, search=filters.search, category=filters.category, status=filters.status, actor_key=filters.actor_key or '', time_range=filters.time_range) }}"
-               hx-get="{{ url_for('access.activity_audit.index', page=pagination.next_num, per_page=pagination.per_page, search=filters.search, category=filters.category, status=filters.status, actor_key=filters.actor_key or '', time_range=filters.time_range) }}"
+            <a href="{{ url_for('access.activity_audit.index', view='activity', page=pagination.next_num, per_page=pagination.per_page, search=filters.search, category=filters.category, status=filters.status, actor_key=filters.actor_key or '', time_range=filters.time_range) }}"
+               hx-get="{{ url_for('access.activity_audit.index', view='activity', page=pagination.next_num, per_page=pagination.per_page, search=filters.search, category=filters.category, status=filters.status, actor_key=filters.actor_key or '', time_range=filters.time_range) }}"
                hx-target="#activity-register-workspace"
                hx-swap="outerHTML"
                hx-indicator="#operational-activity-loading"

@@ -1,0 +1,32 @@
+{% import "components/content_tabs.html" as content_tabs %}
+{% import "components/table.html" as table_ui %}
+<section id="activity-audit-records"
+         class="{{ table_ui.block_classes() }}"
+         aria-label="Activity Audit Records">
+    {% set audit_record_tabs = [
+        ('activity', 'Activity Register', 'list-filter', url_for('access.activity_audit.index', view='activity')),
+    ] %}
+    {% if has_administrative_sources %}
+        {% set audit_record_tabs = audit_record_tabs + [
+            ('administrative', 'Administrative Evidence', 'file-clock', url_for('access.activity_audit.index', view='administrative'))
+        ] %}
+    {% endif %}
+    {{ content_tabs.render_links(
+        'audit-records',
+        audit_record_tabs,
+        selected_audit_tab,
+        'Audit Record Sources',
+        embedded=true,
+        data_namespace='audit-records',
+        hx_target='#activity-audit-records',
+        hx_select='#activity-audit-records',
+        hx_sync='#activity-audit-records:replace',
+        nowrap=true
+    ) }}
+    {% set embedded = true %}
+    {% if selected_audit_tab == 'administrative' %}
+        {% include "access/activity_audit/partials/_administrative_evidence.html" %}
+    {% else %}
+        {% include "access/activity_audit/partials/_activity_table_card.html" %}
+    {% endif %}
+</section>
