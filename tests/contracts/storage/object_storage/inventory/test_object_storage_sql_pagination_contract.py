@@ -47,3 +47,16 @@ def test_object_storage_source_preserves_shared_pagination_and_modal_contract() 
         assert 'name="per_page"' in table
         assert 'data-kaori-auto-submit' in table
         assert 'partial_mode' in table
+
+
+def test_visible_inventory_rows_reuse_canonical_owner_per_system() -> None:
+    presentation = read('app/storage/object_storage/inventory/presentation.py')
+    systems = read('app/storage/object_storage/inventory/system_presentation.py')
+    wrapper = presentation.split('def _system_row(', 1)[1].split('def _overview_snapshot(', 1)[0]
+    bucket = presentation.split('def _bucket_row(', 1)[1].split('class BucketFilters:', 1)[0]
+    list_view = presentation.split('def build_buckets(', 1)[1].split('def build_bucket_detail(', 1)[0]
+    assert wrapper.count('object_storage_owner(system.id)') == 1
+    assert '_system_row_impl(system, owner=owner, owner_resolved=True)' in wrapper
+    assert 'if not owner_resolved:' in systems
+    assert 'owner_cache[str(system.id)] = owner' in bucket
+    assert 'rows = [_bucket_row(bucket, owner_cache=owner_cache) for bucket in paged]' in list_view

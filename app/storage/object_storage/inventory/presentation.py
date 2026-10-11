@@ -10,7 +10,7 @@ from sqlalchemy.orm import aliased, joinedload, selectinload
 
 from app.common.pagination import paginate_query
 from app.extensions.db import db
-from app.integrations.managed_assets import object_storage_owner
+from app.integrations.managed_assets import ManagedAssetOwner, object_storage_owner
 from app.integrations.provider_matrix import provider_kinds
 from app.models.integration import IntegrationInstance
 from app.models.minio import MinioInstance
@@ -360,8 +360,8 @@ def _system_query():
 
 def _system_row(system: ObjectStorageSystem) -> dict[str, Any]:
     """Committed row used by inventory pages. Run Object Storage Inventory Sync from Job Execution."""
-    row = _system_row_impl(system)
     owner = object_storage_owner(system.id)
+    row = _system_row_impl(system, owner=owner, owner_resolved=True)
     connection = owner.record if owner is not None else None
     row.update(
         {
@@ -808,9 +808,16 @@ def build_system_detail(system_id: str) -> dict[str, Any] | None:
     return _system_row(system) if system is not None else None
 
 
-def _bucket_row(bucket: ObjectStorageBucket) -> dict[str, Any]:
+def _bucket_row(
+    bucket: ObjectStorageBucket, *, owner_cache: dict[str, ManagedAssetOwner | None] | None = None
+) -> dict[str, Any]:
     system = bucket.object_storage_system
-    owner = object_storage_owner(system.id)
+    if owner_cache is not None and str(system.id) in owner_cache:
+        owner = owner_cache[str(system.id)]
+    else:
+        owner = object_storage_owner(system.id)
+        if owner_cache is not None:
+            owner_cache[str(system.id)] = owner
     connection = owner.record if owner is not None else None
     provider_key = owner.provider_key if owner is not None else ''
     provider_label = owner.provider.label if owner is not None else 'Object Storage'
@@ -991,7 +998,8 @@ def build_buckets(filters: BucketFilters) -> dict[str, Any]:
         page=filters.page,
         per_page=filters.per_page,
     )
-    rows = [_bucket_row(bucket) for bucket in paged]
+    owner_cache: dict[str, ManagedAssetOwner | None] = {}
+    rows = [_bucket_row(bucket, owner_cache=owner_cache) for bucket in paged]
     types = {
         value for (value,) in ObjectStorageBucket.query.with_entities(
             ObjectStorageBucket.native_type
