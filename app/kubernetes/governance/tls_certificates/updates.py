@@ -143,6 +143,17 @@ def _persist_failure_event(event: TLSCertificateUpdateEvent) -> bool:
         return False
 
 
+def _coverage_blocker(record: TLSCertificateInventory, parsed: Any) -> str | None:
+    """Require complete committed Ingress mapping and SAN coverage before PATCH."""
+    state = db.session.get(TLSCertificateCollectionState, record.cluster_id)
+    if state is None or state.ingress_mapping_status != TLS_COLLECTION_COLLECTED:
+        return 'Ingress host coverage is Not Reported. Synchronize TLS evidence before rotating this Secret.'
+    uncovered = find_uncovered_hosts(record.ingress_hosts or [], parsed)
+    if uncovered:
+        return 'Certificate SAN does not cover mapped Ingress hosts: ' + ', '.join(sorted(uncovered))
+    return None
+
+
 def preview_uploaded_pair(files: Any, target_ids: Iterable[int] | None = None) -> dict[str, Any]:
     cert_bytes, key_bytes = read_uploaded_pair(files)
     validation = validate_certificate_pair(
@@ -164,12 +175,9 @@ def preview_uploaded_pair(files: Any, target_ids: Iterable[int] | None = None) -
                 target.ingress_hosts or [],
                 validation.parsed_certificate,
             )
-            status = 'warning' if uncovered_hosts else 'ready'
-            message = (
-                'Certificate SAN does not cover all currently mapped Ingress hosts.'
-                if uncovered_hosts
-                else 'Ready to update.'
-            )
+            blocker = _coverage_blocker(target, validation.parsed_certificate)
+            status = 'blocked' if blocker else 'ready'
+            message = blocker or 'Ready to update.'
             target_previews.append(
                 {
                     'target': target_view,
@@ -214,6 +222,14 @@ def apply_certificate_update(certificate_id: int, files: Any) -> dict[str, Any]:
         }
 
     parsed = validation.parsed_certificate
+    coverage_blocker = _coverage_blocker(record, parsed)
+    if coverage_blocker:
+        return {
+            'status': 'failed',
+            'message': coverage_blocker,
+            'provider_updated': False,
+            'persistence_confirmed': False,
+        }
     actor = cast(User, current_user)
     actor_user_id = getattr(actor, 'id', None)
     old_fingerprint = record.fingerprint_sha256
@@ -337,6 +353,17 @@ def apply_bulk_update(files: Any, target_ids: Iterable[int]) -> dict[str, Any]:
         return _bulk_failure_result('No TLS Secrets were selected.')
 
     parsed = validation.parsed_certificate
+    # Admit the entire selected group before the first provider write.
+    coverage_blockers = [
+        f'{target.cluster_id}/{target.namespace}/{target.secret_name}: {blocker}'
+        for target in targets
+        if (blocker := _coverage_blocker(target, parsed))
+    ]
+    if coverage_blockers:
+        return _bulk_failure_result(
+            'TLS coverage admission blocked this bulk operation. No Secret was updated.',
+            errors=coverage_blockers,
+        )
     bulk_job_id = uuid.uuid4().hex[:16]
     actor = cast(User, current_user)
     actor_user_id = getattr(actor, 'id', None)
