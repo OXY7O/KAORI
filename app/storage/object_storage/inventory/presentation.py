@@ -2,11 +2,18 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from typing import Any, Protocol
 
-from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy import case, func
+from sqlalchemy.orm import aliased, joinedload, selectinload
 
-from app.common.pagination import paginate_sequence
+from app.extensions.db import db
+from app.integrations.provider_matrix import provider_kinds
+from app.models.integration import IntegrationInstance
+from app.models.minio import MinioInstance
+
+from app.common.pagination import paginate_query
 from app.integrations.managed_assets import object_storage_owner
 from app.models.object_storage import ObjectStorageBucket, ObjectStorageSystem
 from app.storage.object_storage.inventory.system_presentation import (
@@ -14,6 +21,7 @@ from app.storage.object_storage.inventory.system_presentation import (
     _release_display,
     _snapshot_status,
     _system_filter_options,
+    _overview_snapshot_from_counts,
 )
 from app.storage.object_storage.inventory.system_presentation import _endpoint_display as _system_endpoint_display
 from app.storage.object_storage.inventory.system_presentation import _inventory_guidance as _inventory_guidance
@@ -21,6 +29,7 @@ from app.storage.object_storage.inventory.system_presentation import _inventory_
 from app.storage.object_storage.inventory.system_presentation import _is_stale as _is_stale
 from app.storage.object_storage.inventory.system_presentation import _overview_snapshot as _overview_snapshot_impl
 from app.storage.object_storage.inventory.system_presentation import _status as _status
+from app.storage.object_storage.inventory.system_presentation import _provider_label as _provider_label
 from app.storage.object_storage.inventory.system_presentation import _system_row as _system_row_impl
 
 _NATIVE_TYPE_LABELS = {
@@ -616,30 +625,143 @@ class SystemFilters:
     per_page: int = 5
 
 
-def build_systems(filters: SystemFilters) -> dict[str, Any]:
-    all_rows = [_system_row(system) for system in _system_query().all()]
-    options = _system_filter_options(all_rows)
-    search = filters.search.strip().lower()
-    rows = [
-        row
-        for row in all_rows
-        if (not search or search in ' '.join((row['name'], row['endpoint'], row['provider_label'])).lower())
-        and (not filters.provider or row['provider_key'] == filters.provider)
-        and (not filters.environment or row['environment'] == filters.environment)
-        and (not filters.status or row['status'] == filters.status)
-    ]
-    paged, pagination = paginate_sequence(rows, page=filters.page, per_page=filters.per_page)
+def _join_system_owner(query):
+    """Join the first canonical integration owner once, without N+1 record lookups."""
+    identity = aliased(IntegrationInstance)
+    owner_ids = (
+        db.session.query(
+            identity.metadata_json['asset_key'].as_string().label('asset_key'),
+            func.min(identity.id).label('owner_id'),
+        )
+        .filter(
+            identity.integration_type == 'object_storage',
+            identity.metadata_json['asset_type'].as_string() == 'object_storage_system',
+        )
+        .group_by(identity.metadata_json['asset_key'].as_string())
+        .subquery()
+    )
+    return (
+        query.outerjoin(owner_ids, owner_ids.c.asset_key == ObjectStorageSystem.id)
+        .outerjoin(IntegrationInstance, IntegrationInstance.id == owner_ids.c.owner_id)
+        .outerjoin(MinioInstance, MinioInstance.integration_instance_id == IntegrationInstance.id)
+    )
+
+
+def _system_scope():
+    return _join_system_owner(ObjectStorageSystem.query)
+
+
+def _sql_provider_label():
+    options = provider_kinds('object_storage')
+    when = [(IntegrationInstance.provider_key == option.key, option.label) for option in options]
+    return case(*when, else_='Object Storage')
+
+
+def _system_options() -> dict[str, list[dict[str, str]]]:
+    """Return only distinct scalar filter values, never full system/bucket rows."""
+    source = _system_scope()
+    providers = {
+        value for (value,) in source.with_entities(IntegrationInstance.provider_key)
+        .distinct().all() if value
+    }
+    environments = {
+        value for (value,) in source.with_entities(ObjectStorageSystem.environment)
+        .distinct().all() if value
+    }
+    statuses = {
+        value for (value,) in source.with_entities(ObjectStorageSystem.status)
+        .distinct().all() if value
+    }
     return {
-        'systems': paged,
+        'providers': [
+            {'value': key, 'label': _provider_label(key)} for key in sorted(providers)
+        ],
+        'environments': [
+            {'value': value, 'label': value.title()} for value in sorted(environments)
+        ],
+        'statuses': [
+            {'value': value, 'label': _status(value)[0]} for value in sorted(statuses)
+        ],
+    }
+
+
+def _committed_system_snapshot() -> dict[str, Any]:
+    """Exact fleet counts/status from SQL, with shared committed snapshot copy."""
+    threshold = datetime.now(UTC) - timedelta(hours=OBJECT_STORAGE_INVENTORY_FRESHNESS_HOURS)
+    total, observed, latest, stale, exceptions = db.session.query(
+        func.count(ObjectStorageSystem.id),
+        func.count(ObjectStorageSystem.inventory_observed_at),
+        func.max(ObjectStorageSystem.inventory_observed_at),
+        func.sum(case((ObjectStorageSystem.inventory_observed_at < threshold, 1), else_=0)),
+        func.sum(case((
+            func.lower(ObjectStorageSystem.status).in_(
+                ('blocked', 'failed', 'warning', 'unknown')
+            ), 1
+        ), else_=0)),
+    ).one()
+    total_count, observed_count = int(total or 0), int(observed or 0)
+    return _overview_snapshot_from_counts(
+        total_systems=total_count,
+        inventoried_count=observed_count,
+        latest=latest,
+        missing_count=total_count - observed_count,
+        stale_count=int(stale or 0),
+        provider_exception_count=int(exceptions or 0),
+    )
+
+
+def _filtered_systems(filters: SystemFilters):
+    query = _system_scope()
+    search = filters.search.strip().lower()
+    if search:
+        searchable = func.lower(
+            func.coalesce(ObjectStorageSystem.name, '') + ' '
+            + func.coalesce(MinioInstance.endpoint, 'Not Configured') + ' '
+            + _sql_provider_label()
+        )
+        query = query.filter(searchable.contains(search, autoescape=True))
+    if filters.provider:
+        query = query.filter(IntegrationInstance.provider_key == filters.provider)
+    if filters.environment:
+        query = query.filter(ObjectStorageSystem.environment == filters.environment)
+    if filters.status:
+        query = query.filter(ObjectStorageSystem.status == filters.status)
+    return query.order_by(ObjectStorageSystem.name.asc(), ObjectStorageSystem.id.asc())
+
+
+def build_systems(filters: SystemFilters) -> dict[str, Any]:
+    query = _filtered_systems(filters)
+    total, ready, blocked, attention, inventoried = query.order_by(None).with_entities(
+        func.count(ObjectStorageSystem.id),
+        func.sum(case((
+            func.lower(ObjectStorageSystem.status).in_(('ready', 'connected')), 1
+        ), else_=0)),
+        func.sum(case((
+            func.lower(ObjectStorageSystem.status).in_(('blocked', 'failed')), 1
+        ), else_=0)),
+        func.sum(case((
+            func.lower(ObjectStorageSystem.status).in_(
+                ('blocked', 'failed', 'warning', 'unknown')
+            ), 1
+        ), else_=0)),
+        func.count(ObjectStorageSystem.inventory_observed_at),
+    ).one()
+    paged, pagination = paginate_query(
+        query.options(selectinload(ObjectStorageSystem.buckets)),
+        page=filters.page,
+        per_page=filters.per_page,
+    )
+    return {
+        'systems': [_system_row(system) for system in paged],
         'pagination': pagination,
-        'total_systems': len(rows),
-        'ready_systems': sum(1 for row in rows if row['status_tone'] == 'normal'),
-        'blocked_systems': sum(1 for row in rows if row['status_tone'] == 'critical'),
-        'attention_systems': sum(1 for row in rows if row['status_tone'] in {'critical', 'warning', 'unknown'}),
-        'inventoried_systems': sum(1 for row in rows if row['last_inventory_at'] is not None),
-        'setup': _setup_state(len(all_rows)),
-        'snapshot': _overview_snapshot(all_rows),
-        **options,
+        'total_systems': int(total or 0),
+        'ready_systems': int(ready or 0),
+        'blocked_systems': int(blocked or 0),
+        'attention_systems': int(attention or 0),
+        'inventoried_systems': int(inventoried or 0),
+        'setup': _setup_state(ObjectStorageSystem.query.count()),
+        'snapshot': _committed_system_snapshot(),
+        **_system_options(),
     }
 
 
@@ -783,43 +905,82 @@ def _bucket_matches_filters(row: dict[str, Any], filters: BucketFilters, search:
     )
 
 
-def build_buckets(filters: BucketFilters) -> dict[str, Any]:
-    systems = _system_query().all()
-    system_rows = [_system_row(system) for system in systems]
-    system_by_id = {system.id: system for system in systems}
-    buckets = (
-        ObjectStorageBucket.query.options(joinedload(ObjectStorageBucket.object_storage_system))
-        .order_by(ObjectStorageBucket.name.asc())
-        .all()
+def _filtered_buckets(filters: BucketFilters):
+    query = _join_system_owner(
+        ObjectStorageBucket.query.join(
+            ObjectStorageSystem,
+            ObjectStorageBucket.object_storage_system_id == ObjectStorageSystem.id,
+        )
     )
-    rows = [_bucket_row(bucket) for bucket in buckets]
     search = filters.search.strip().lower()
-    filtered = [row for row in rows if _bucket_matches_filters(row, filters, search)]
-    paged, pagination = paginate_sequence(filtered, page=filters.page, per_page=filters.per_page)
-    bucket_count = sum(1 for row in filtered if row['native_type'] == 'bucket')
-    container_count = sum(1 for row in filtered if row['native_type'] == 'container')
+    if search:
+        location = func.coalesce(
+            func.nullif(ObjectStorageBucket.location, ''),
+            MinioInstance.region,
+            'Not Observed',
+        )
+        searchable = func.lower(
+            ObjectStorageBucket.name + ' ' + ObjectStorageSystem.name + ' '
+            + _sql_provider_label() + ' '
+            + func.coalesce(ObjectStorageBucket.native_type, 'bucket') + ' ' + location
+        )
+        query = query.filter(searchable.contains(search, autoescape=True))
+    if filters.system_id:
+        query = query.filter(ObjectStorageBucket.object_storage_system_id == filters.system_id)
+    if filters.provider:
+        query = query.filter(IntegrationInstance.provider_key == filters.provider)
+    if filters.native_type:
+        query = query.filter(ObjectStorageBucket.native_type == filters.native_type)
+    if filters.environment:
+        query = query.filter(ObjectStorageSystem.environment == filters.environment)
+    return query.order_by(ObjectStorageBucket.name.asc(), ObjectStorageBucket.id.asc())
+
+
+def build_buckets(filters: BucketFilters) -> dict[str, Any]:
+    query = _filtered_buckets(filters)
+    total, bucket_count, container_count, systems_count, providers_count, latest = (
+        query.order_by(None).with_entities(
+            func.count(ObjectStorageBucket.id),
+            func.sum(case((ObjectStorageBucket.native_type == 'bucket', 1), else_=0)),
+            func.sum(case((ObjectStorageBucket.native_type == 'container', 1), else_=0)),
+            func.count(func.distinct(ObjectStorageBucket.object_storage_system_id)),
+            func.count(func.distinct(IntegrationInstance.provider_key)),
+            func.max(ObjectStorageBucket.observed_at),
+        ).one()
+    )
+    paged, pagination = paginate_query(
+        query.options(joinedload(ObjectStorageBucket.object_storage_system)),
+        page=filters.page,
+        per_page=filters.per_page,
+    )
+    rows = [_bucket_row(bucket) for bucket in paged]
+    types = {
+        value for (value,) in ObjectStorageBucket.query.with_entities(
+            ObjectStorageBucket.native_type
+        ).distinct().all() if value
+    }
+    systems = ObjectStorageSystem.query.with_entities(
+        ObjectStorageSystem.id, ObjectStorageSystem.name
+    ).order_by(ObjectStorageSystem.name.asc(), ObjectStorageSystem.id.asc()).all()
     return {
-        'assets': paged,
-        'buckets': paged,
+        'assets': rows,
+        'buckets': rows,
         'pagination': pagination,
-        'total_assets': len(filtered),
-        'total_committed_assets': len(rows),
-        'total_buckets': bucket_count,
-        'total_containers': container_count,
-        'systems_in_scope': len({row['system_id'] for row in filtered}),
-        'providers_in_scope': len({row['provider_key'] for row in filtered if row['provider_key']}),
+        'total_assets': int(total or 0),
+        'total_committed_assets': ObjectStorageBucket.query.count(),
+        'total_buckets': int(bucket_count or 0),
+        'total_containers': int(container_count or 0),
+        'systems_in_scope': int(systems_count or 0),
+        'providers_in_scope': int(providers_count or 0),
         'types': [
             {'value': value, 'label': _native_type_label(value)}
-            for value in sorted({row['native_type'] for row in rows if row['native_type']})
+            for value in sorted(types)
         ],
-        'latest_observed_at': max(
-            (row['observed_at'] for row in filtered if row['observed_at'] is not None),
-            default=None,
-        ),
-        'setup': _setup_state(len(system_rows)),
-        'snapshot': _overview_snapshot(system_rows),
-        'systems': [{'id': row['id'], 'name': row['name']} for row in system_rows if row['id'] in system_by_id],
-        **_system_filter_options(system_rows),
+        'latest_observed_at': latest,
+        'setup': _setup_state(ObjectStorageSystem.query.count()),
+        'snapshot': _committed_system_snapshot(),
+        'systems': [{'id': system_id, 'name': name} for system_id, name in systems],
+        **_system_options(),
     }
 
 
