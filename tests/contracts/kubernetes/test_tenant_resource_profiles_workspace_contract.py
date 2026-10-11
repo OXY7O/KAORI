@@ -1334,3 +1334,29 @@ def test_tenant_operations_provider_authority_remains_optional_without_nested_ca
     assert "grant.tenant.name" in access
     assert "grant.reconciliation_status" in access
     assert "registry_ui.footer('tenant.operations'" in access
+
+
+def test_allocation_change_all_title_info_tips_are_adjacent_not_corner_actions() -> None:
+    """#1179: mirror the canonical Allocation Change heading grammar."""
+    templates = (
+        ('_allocation_change.html', 'Allocation Change', 'namespace-allocation-change-tip'),
+        ('_allocation_cutover.html', 'Allocation Governance Cutover', 'allocation-cutover-tip'),
+        ('_capsule_tenant_quota_cutover.html', 'Capsule Tenant Quota Governance', 'capsule-tenant-quota-tip'),
+        ('_capsule_shared_allocation_cutover.html', 'Capsule Shared Allocation Governance', 'capsule-shared-cutover-tip'),
+    )
+    for filename, title, tip_id in templates:
+        template = read('app/templates/kubernetes/tenant/partials/' + filename)
+        header = template.split('<header', 1)[1].split('</header>', 1)[0]
+        assert 'info_tip.render(' in header, filename
+        assert header.count('info_tip.render(') == 1, filename
+        assert header.count(tip_id) == 1, filename
+        assert 'inline-flex' in header, filename
+        assert "placement='right'" in header, filename
+        assert header.index(title) < header.index('info_tip.render('), filename
+        # The header tip must be inside the title's adjacent wrapper, before any badge.
+        assert 'items-center gap-1.5' in header, filename
+        if filename != '_allocation_change.html':
+            assert header.index('info_tip.render(') < header.index('table_label.special_label'), filename
+            assert 'items-start justify-between gap-4' not in header, filename
+        assert template.count('name="csrf_token"') >= 1, filename
+        assert template.count('type="submit"') >= 1, filename

@@ -4,7 +4,7 @@
 {% import "components/table_label.html" as table_label %}
 <section class="overflow-visible rounded-xl border border-kaori-primary/20 bg-kaori-soft/40 shadow-sm"
          aria-labelledby="capsule-shared-cutover-heading">
-    <header class="flex items-start justify-between gap-4 border-b border-kaori-primary/15 px-5 py-4">
+    <header class="flex min-w-0 items-start gap-4 border-b border-kaori-primary/15 px-5 py-4">
         <div class="flex min-w-0 items-start gap-3">
             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                   aria-hidden="true">
@@ -12,16 +12,10 @@
             </span>
             <div>
                 <div class="flex flex-wrap items-center gap-2">
-                    <h2 id="capsule-shared-cutover-heading"
+                    <span class="inline-flex min-w-0 items-center gap-1.5">
+                        <h2 id="capsule-shared-cutover-heading"
                         class="text-base font-semibold text-content-primary">Capsule Shared Allocation Governance</h2>
-                    {{ table_label.special_label('GlobalResourceQuota', 'info', 'shield-check') }}
-                </div>
-                <p class="mt-1 text-sm leading-6 text-content-secondary">
-                    Take over one proven Tenant-level GlobalResourceQuota without copying the shared quota into each Namespace.
-                </p>
-            </div>
-        </div>
-        {{ info_tip.render('capsule-shared-cutover-tip',
+                        {{ info_tip.render('capsule-shared-cutover-tip',
                 'Capsule shared allocation',
                 'GlobalResourceQuota is one Tenant-level allocation contract. KAORI counts it once for capacity governance.',
                 [
@@ -29,7 +23,16 @@
                 'Exactly one authoritative GlobalResourceQuota with stable UID/resourceVersion is required.',
                 'Resource Profile quota values become the proposed shared contract; Namespace LimitRange evidence remains separate.',
                 'KAORI never substitutes a Native ResourceQuota write for Capsule-owned shared quota.'
-                ]) }}
+                ], placement='right') }}
+                    </span>
+                    {{ table_label.special_label('GlobalResourceQuota', 'info', 'shield-check') }}
+                </div>
+                <p class="mt-1 text-sm leading-6 text-content-secondary">
+                    Take over one proven Tenant-level GlobalResourceQuota without copying the shared quota into each Namespace.
+                </p>
+            </div>
+        </div>
+
     </header>
     <form method="post"
           action="{{ url_for('tenant.cutover_capsule_shared_allocation_route') }}"

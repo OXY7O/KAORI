@@ -4,7 +4,7 @@
 {% import "components/table_label.html" as table_label %}
 <section class="overflow-visible rounded-xl border border-kaori-primary/20 bg-kaori-soft/40 shadow-sm"
          aria-labelledby="allocation-cutover-heading">
-    <header class="flex items-start justify-between gap-4 border-b border-kaori-primary/15 px-5 py-4">
+    <header class="flex min-w-0 items-start gap-4 border-b border-kaori-primary/15 px-5 py-4">
         <div class="flex min-w-0 items-start gap-3">
             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                   aria-hidden="true">
@@ -12,14 +12,10 @@
             </span>
             <div>
                 <div class="flex flex-wrap items-center gap-2">
-                    <h2 id="allocation-cutover-heading"
+                    <span class="inline-flex min-w-0 items-center gap-1.5">
+                        <h2 id="allocation-cutover-heading"
                         class="text-base font-semibold text-content-primary">Allocation Governance Cutover</h2>
-                    {{ table_label.special_label('Explicit Takeover', 'info', 'shield-check') }}
-                </div>
-                <p class="mt-1 text-sm leading-6 text-content-secondary">Move only the allocation contract from Adopted / Observed to KAORI Managed after authority, capacity, ownership, and provider read-back checks succeed.</p>
-            </div>
-        </div>
-        {{ info_tip.render('allocation-cutover-tip',
+                        {{ info_tip.render('allocation-cutover-tip',
                 'Governance cutover',
                 'Cutover changes allocation authority only. Namespace lifecycle ownership stays adopted.',
                 [
@@ -27,7 +23,14 @@
                 'Native legacy ResourceQuota / LimitRange UID and resourceVersion must still match adoption evidence.',
                 'Provider read-back must equal the proposed Resource Profile before KAORI marks allocation control managed.',
                 'Capsule allocation stays Control Unavailable unless an admitted Capsule mutation capability owns that contract.'
-                ]) }}
+                ], placement='right') }}
+                    </span>
+                    {{ table_label.special_label('Explicit Takeover', 'info', 'shield-check') }}
+                </div>
+                <p class="mt-1 text-sm leading-6 text-content-secondary">Move only the allocation contract from Adopted / Observed to KAORI Managed after authority, capacity, ownership, and provider read-back checks succeed.</p>
+            </div>
+        </div>
+
     </header>
     <form method="post"
           action="{{ url_for('tenant.cutover_namespace_allocation_route') }}"
