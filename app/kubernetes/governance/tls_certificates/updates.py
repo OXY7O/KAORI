@@ -163,10 +163,12 @@ def preview_uploaded_pair(files: Any, target_ids: Iterable[int] | None = None) -
     )
     targets: list[TLSCertificateInventory] = []
     target_previews: list[dict[str, Any]] = []
+    requested_ids = [int(item) for item in (target_ids or []) if str(item).isdigit()]
 
-    if target_ids:
-        ids = [int(item) for item in target_ids if str(item).isdigit()]
-        targets = TLSCertificateInventory.query.filter(TLSCertificateInventory.id.in_(ids)).all() if ids else []
+    if requested_ids:
+        targets = TLSCertificateInventory.query.filter(
+            TLSCertificateInventory.id.in_(requested_ids)
+        ).all()
 
     if validation.parsed_certificate and targets:
         for target in targets:
@@ -193,6 +195,7 @@ def preview_uploaded_pair(files: Any, target_ids: Iterable[int] | None = None) -
     return {
         'validation': validation,
         'targets': target_previews,
+        'target_count_requested': len(requested_ids),
     }
 
 
@@ -348,9 +351,15 @@ def apply_bulk_update(files: Any, target_ids: Iterable[int]) -> dict[str, Any]:
     if not validation.is_valid or validation.parsed_certificate is None:
         return _bulk_failure_result(' '.join(validation.errors), errors=validation.errors)
 
-    targets = _selected_tls_targets(target_ids)
-    if not targets:
-        return _bulk_failure_result('No TLS Secrets were selected.')
+    # A missing or duplicate ID must never silently narrow a bulk operation.
+    requested_ids = [int(item) for item in target_ids if str(item).isdigit()]
+    if not requested_ids or len(set(requested_ids)) != len(requested_ids):
+        return _bulk_failure_result('Select a unique, valid set of TLS Secrets before applying.')
+    targets = _selected_tls_targets(requested_ids)
+    if {target.id for target in targets} != set(requested_ids):
+        return _bulk_failure_result(
+            'The selected TLS Secret target set changed. Refresh selection and validate again.'
+        )
 
     parsed = validation.parsed_certificate
     # Admit the entire selected group before the first provider write.
