@@ -597,6 +597,7 @@ def verify() -> None:
     object_reporting_guidance = _read(OBJECT_REPORTING_GUIDANCE)
     object_reporting_summary = _read(OBJECT_REPORTING_SUMMARY)
     object_dashboard_service = _read(OBJECT_DASHBOARD_SERVICE)
+    object_system_health = _read(OBJECT_DASHBOARD_DIR / 'partials' / '_system_health.html')
     artifact_overview = _read(ARTIFACT_OVERVIEW)
     artifact_content = _read(ARTIFACT_CONTENT)
     artifact_hero = _read(ARTIFACT_HERO)
@@ -683,6 +684,49 @@ def verify() -> None:
         artifact_provider_health,
         artifact_routes,
         artifact_presentation,
+    )
+    _require(
+        object_dashboard_service,
+        (
+            "'alerts_connected': alerts_connected",
+            "'alerts_fallback': alerts_fallback",
+            "'alert_source_label': alert_source_label",
+            "_alert_view(payload)",
+            "alerts_connected = analytics_usable and bool(alert_stream.get('connected'))",
+            "alerts_fallback = alerts_connected and bool(alert_stream.get('fallback_used'))",
+        ),
+        'Object Storage committed alert source health projection',
+    )
+    _require(
+        object_system_health,
+        (
+            'row.inventory_ready',
+            'row.snapshot_ready',
+            'row.alerts_connected',
+            'row.alerts_fallback',
+            'row.alert_source_label',
+            'bg-status-normal',
+            'bg-status-warning',
+            'bg-status-unknown',
+        ),
+        'Object Storage Snapshot Sources row/view evidence parity',
+    )
+    _require(
+        cluster_health_builder,
+        (
+            "alerts_status = 'Snapshot'",
+            'alerts_status=alerts_status',
+        ),
+        'Kubernetes Snapshot Sources alert schema ownership',
+    )
+    _require(
+        artifact_presentation,
+        (
+            "'inventory_ready': inventory_ready",
+            "'metrics_ready': metrics.get('status') == 'ready'",
+            "'security_ready': security_ready",
+        ),
+        'Artifact Registry Snapshot Sources schema ownership',
     )
     _require(
         content,
