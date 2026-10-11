@@ -42,6 +42,27 @@ the executor can actually complete admitted dry-run, guarded operation,
 partial recovery and definitive provider read-back. #1230 and #1231 stay
 blocked by that evidence.
 
+## Source implementation checkpoint — 2026-10-12
+
+The review branch contains the real `capsule_handoff_executor.py`,
+`capsule_release_finalizer.py`, `capsule_successor_handback.py`,
+their guarded POST routes and Violet/HTMX Tenant workspace controls.
+The G2 executor uses the existing write-once PostgreSQL handoff ledger
+and server-side preview; G4 separately verifies source inventory, ledger
+and fresh Kubernetes read-back before a canonical transactional Release;
+G5 removes only exact successor metadata before fresh human-approved
+Discovery/Re-Adopt. The #1229 final read-back also now verifies **full
+foreign Namespace spec/annotations/owners/finalizers preservation**,
+not merely UID/RV/labels (PR #1359).
+
+This is **implementation presence**, not authorization, quality-gate
+result, installed PostgreSQL proof, live K8s mutation or end-to-end PASS.
+#1229/#1230/#1231 remain open under the same runtime HOLD. G5 has an
+explicit unresolved START-persistence immutability review (below).
+Do not turn the route presence into `release_execution_available=true`
+or represent `kaori-demo` as Released without fresh provider evidence,
+passing tests/UAT and human acceptance.
+
 ## Guarded Capsule G4 canonical Released finalizer source — #1230
 
 `capsule_release_finalizer.py` and the existing Release wizard now expose
@@ -89,13 +110,20 @@ logical headroom **as a consequence of the same DB commit**. No manual
 budget subtraction, historical profile deletion or double release occurs.
 Predecessor IDs and resource profile history remain intact.
 
-**Source is installed but G4 is not PASS.** Current #1229 only has
-G1/dry-run, disabled START and disabled one-object provider PATCH
-primitive; there is no true G3 execution receipt satisfying these
-requirements. Consequently a synthetic `verified=true` flag, an
-incomplete AuditEvent, an uninstalled/mutable ledger or a partial outcome
-cannot yield a legitimate Capsule Released row. Tests and live UAT are
-still separately held.
+**The G2/G3 executor and G4 finalizer are now source-wired but not PASS.**
+The application calls `execute_capsule_handoff_committed`, which checks an
+accepted fresh plan, complete server-side preview and exact visible
+resource worklist, commits a PostgreSQL write-once START under Tenant lock,
+then performs guarded metadata-only `dryRun=All` / conditional PATCH,
+stops on uncertainty and writes a terminal attempt and full provider
+read-back. The independent G4 route calls
+`release_verified_capsule_tenant_committed`; it does not consume a
+preview as proof. The older staged START writer and one-object PATCH
+primitive remain disabled and are **not** the operational path.
+A synthetic `verified=true` flag, absent PostgreSQL guards, mutable
+or incomplete audit evidence or a partial outcome cannot yield a legitimate
+Capsule Released row. No tests, installed-schema proof, provider operation
+or controlled-cluster UAT has occurred under the standing HOLD.
 
 ## Capsule Released successor handback source — #1231 (G5, pending G2–G4)
 
@@ -104,15 +132,15 @@ Platform Admin handback route and Violet/HTMX Released-Tenant workspace
 form. It remains unavailable for ordinary Ready Tenants: it requires an
 already canonical `Released` Capsule generation and complete counted G4
 `release_mode=managed_handoff` and `provider_handoff_verified=true`
-evidence. This source is **not** a bypass around the unfinished G2/G3
-executor or #1230 finalizer.
+evidence. This source is **not** a bypass around the source-wired but
+runtime-unaccepted G2/G3 executor or #1230 finalizer.
 
 The handler requires the original approved Release plan, current authenticated
 Kubernetes X.509 identity and scoped get/patch SAR, exact CR/Namespace
 UID/resourceVersion, all transferred ResourceQuota/LimitRange/RoleBinding
 targets and provider/foreign resources explicitly preserved. It verifies
 the CR, all preserved Namespace generations, and every preserved related object before any metadata mutation,
-commits a single durable **in-progress** AuditEvent before the first provider
+commits an **in-progress** AuditEvent before the first provider
 write, then for every successor marker removal performs JSON Patch
 `test` on UID/resourceVersion/full labels,
 `dryRun=All`, preservation validation, fresh GET, one conditional live
@@ -122,8 +150,16 @@ external labels are never patched. After all targets the source rereads
 the CR and preserved resources; any drift fails closed.
 
 An incomplete/unknown provider outcome aborts further PATCH and produces a
-recovery-required receipt; an existing handback START prevents automatic
-retry (including after process interruption). Only complete verified
+recovery-required receipt; a previously observed handback START blocks
+another attempt (including after process interruption). **Remaining G5
+admission risk:** the handback START currently uses the generic `AuditEvent`
+table, unlike G2's independently guarded PostgreSQL write-once ledger.
+Existence checks alone do not establish tamper-resistant START retention or
+anti-replay after a privileged audit-row deletion. Before G5 PASS,
+independently demonstrate equivalent installed, role-enforced immutable
+storage for this receipt or harden its persistence via a separately
+reviewed, minimal concrete remediation. Do not equate an application
+`db.session.commit()` with proof of immutable storage. Only complete verified
 provider scope and locked existing `Released` Namespace generations may
 write `handback_governance` evidence with precise current CR RV and each
 Namespace's own RV. Capsule GlobalResourceQuota is included in the canonical Released G4
@@ -182,9 +218,10 @@ Tenant identity remains Namespace-scoped, and its existing
 Released Namespace generation verification continues to use the separately
 stored Namespace-row handback `resource_version`; no UID-only fallback or
 handback guard relaxation is permitted. Focused positive lineage regressions
-are authored but **not run**. This fixes one G5 source correlation bug, not
-Capsule successor handback implementation or UAT admission: G5 remains blocked
-by the unfinished G2/G3 executor and G4 finalizer.
+are authored but **not run**. This is a G5 source correction, not UAT admission. A Capsule successor
+handback route is now source-wired, but G5 remains unaccepted until
+G2/G3/G4 runtime evidence, immutable attempt/recovery protection,
+fresh Discovery/new-generation Adoption, negative cases and human UAT.
 
 ## Scope-freeze and execution rules
 
