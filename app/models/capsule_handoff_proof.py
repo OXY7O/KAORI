@@ -100,6 +100,7 @@ class CapsuleHandoffResourceConsentRecord(db.Model):
             ondelete='RESTRICT',
             name='fk_capsule_resource_consent_exact_audit_batch',
         ),
+        db.UniqueConstraint('tenant_id', name='uq_capsule_resource_consent_tenant_once'),
         db.UniqueConstraint('tenant_id', 'plan_sha256', name='uq_capsule_resource_consent_plan_once'),
         db.UniqueConstraint('tenant_id', 'consent_manifest_sha256', name='uq_capsule_resource_consent_manifest'),
         db.CheckConstraint(
