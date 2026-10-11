@@ -321,6 +321,16 @@ def commit_capsule_proof_pair_staged(
                 .where(CapsuleHandoffResourceConsentRecord.tenant_id == tenant_id).limit(1)
             ).first():
                 raise ValueError('Capsule proof history already exists: no replay, reset or auto-retry.')
+            if session.execute(
+                select(CapsuleHandoffLedgerEvent.id)
+                .where(CapsuleHandoffLedgerEvent.tenant_id == tenant_id).limit(1)
+            ).first() or session.execute(
+                select(AuditEvent.id).where(
+                    AuditEvent.target_type == 'kubernetes_tenant_release_capsule_handoff_execution',
+                    AuditEvent.target_id == tenant_id,
+                ).limit(1)
+            ).first():
+                raise ValueError('Prior Capsule START/legacy execution evidence forbids retroactive consent.')
             plan = latest_release_handoff_plan(tenant_id)
             approval = latest_release_handoff_approval(tenant_id)
             preflight = latest_tenant_release_preflight(tenant_id)
