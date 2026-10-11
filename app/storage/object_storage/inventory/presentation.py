@@ -702,7 +702,7 @@ def _visible_system_owners(system_ids: Sequence[str]) -> dict[str, ManagedAssetO
     ).with_entities(
         ObjectStorageSystem.id, IntegrationInstance, MinioInstance,
     ).all()
-    owners: dict[str, ManagedAssetOwner | None] = dict.fromkeys(ids)
+    owners: dict[str, ManagedAssetOwner | None] = {system_id: None for system_id in ids}
     for system_id, identity, record in rows:
         if identity is None:
             continue
