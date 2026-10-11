@@ -391,10 +391,12 @@ constitutes a physical node-resource reservation.
 **Tenant Contributions is detail on demand:** the overview shows the committed
 Tenant count and opens the canonical native KAORI dialog. After DevContainer
 visual feedback, this detail workspace uses **one visual hierarchy**: concise
-cluster header with a lightweight **Tenant Registry** navigation link directly
-after its committed-allocation helper sentence (wrapping beneath it on narrow
-screens); the top-right header corner contains only **Close**. A compact
-**segmented summary strip** remains within a subtle shared border,
+cluster header with a **Read-only** label beside the modal title, and a
+lightweight **Tenant Registry** navigation link pushed to the far right of the
+helper-description row (wrapping to its own right-aligned line on narrow screens).
+The top-right header corner contains only **Close**. Four summary metrics
+appear without any enclosing or per-metric cards, separated by thin vertical
+dividers (2-column mobile / 4-column desktop),
 compact search and a responsive, vertically scrollable list of Tenant records.
 Each Tenant record has a single readable outline, without nested cards or shadows.
 This modal intentionally has **no Rows selector or pagination controls**:
