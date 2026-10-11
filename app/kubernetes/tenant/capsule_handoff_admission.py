@@ -215,6 +215,11 @@ def assess_capsule_handoff_admission(
         or acceptance.get('consent_verified') is not True
         or acceptance.get('verified_provider_identity') is not True
         or acceptance.get('resource_authority_verified') is not True
+        or not isinstance(acceptance.get('provider_username'), str)
+        or not acceptance['provider_username']
+        or not isinstance(acceptance.get('provider_groups'), list)
+        or not acceptance['provider_groups']
+        or not all(isinstance(group, str) and group for group in acceptance['provider_groups'])
         or acceptance.get('authenticated_provider') != 'kubernetes_self_subject_review'
         or acceptance.get('authorization_source') != 'kubernetes_self_subject_access_review'
         or not isinstance(acceptance.get('provider_credential_id'), str)
@@ -235,6 +240,9 @@ def assess_capsule_handoff_admission(
         or preflight.get('handoff_fingerprint') != plan.get('handoff_fingerprint')
         or preflight.get('live_provider_identity') != plan.get('provider_identity')
         or preflight.get('handoff_components') != components
+        or preflight.get('status') not in ('blocked', 'handoff_review_required')
+        or preflight.get('release_executed') is True
+        or preflight.get('release_execution_available') is True
         or not _checked_recently(preflight.get('checked_at'))
     ):
         problems.append('provider_preflight_drift_or_stale')
@@ -266,6 +274,10 @@ def assess_capsule_handoff_admission(
         or provider_authority.get('authorization_source') != 'kubernetes_self_subject_access_review'
         or provider_authority.get('provider_username') != acceptance.get('provider_username')
         or provider_authority.get('provider_groups') != acceptance.get('provider_groups')
+        or not isinstance(provider_authority.get('provider_username'), str)
+        or not provider_authority['provider_username']
+        or not isinstance(provider_authority.get('provider_groups'), list)
+        or not provider_authority['provider_groups']
         or provider_authority.get('provider_credential_id') != acceptance.get('provider_credential_id')
         or provider_authority.get('cluster_id') != str(plan.get('cluster_id') or '')
         or provider_authority.get('resource_authority_verified') is not True
