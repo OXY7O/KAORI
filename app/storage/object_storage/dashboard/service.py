@@ -384,8 +384,8 @@ def _freshness(selected: ObjectStorageSystem | None, systems: list[ObjectStorage
                 ),
                 'value': f'{alert_ready} / {system_count} systems',
                 'description': (
-                    'Available alert streams from usable committed 24h analytics snapshots; '
-                    'Alertmanager preferred, Metrics Source fallback.'
+                    'Available alerts from committed 24h analytics snapshots; '
+                    'Alertmanager first, Metrics Source fallback.'
                     + (f' {alert_fallback} system(s) using fallback evidence.' if alert_fallback else '')
                 ),
                 'icon': 'bell-ring',
