@@ -31,8 +31,11 @@ from app.kubernetes.operations.secrets.tls_validation import validation_trigger
 
 
 def _parse_certificate_ids(values: list[str]) -> list[int]:
-    normalized_values = (value.strip() for value in values)
-    return [int(value) for value in normalized_values if value.isdigit()]
+    normalized_values = [value.strip() for value in values]
+    if any(not value.isdigit() for value in normalized_values):
+        return []
+    ids = [int(value) for value in normalized_values]
+    return ids if len(ids) == len(set(ids)) else []
 
 
 def _tls_workspace_redirect(location: str):
@@ -102,10 +105,10 @@ def _record_validation_activity(
     target_count = len(selected_ids)
     is_valid = bool(validation.is_valid and validation.parsed_certificate)
 
-    if target_count == 0:
+    if target_count == 0 or len(target_previews) != target_count:
         status = 'warning'
         title = 'TLS Certificate Validation Requires a Target'
-        message = 'Select at least one Kubernetes TLS Secret before validating the certificate pair.'
+        message = 'Select a complete, valid set of Kubernetes TLS Secrets before validating the certificate pair.'
         detail = None
     elif not is_valid:
         status = 'error'
