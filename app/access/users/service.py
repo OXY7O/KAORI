@@ -331,9 +331,10 @@ def can_edit_user(
     if target.deleted_at is not None:
         return False, 'Deleted users cannot be edited.'
 
-    allowed, message = requested_role_assignment_allowed(actor, requested_role_id)
-    if not allowed:
-        return allowed, message
+    if validate_new_role:
+        allowed, message = requested_role_assignment_allowed(actor, requested_role_id)
+        if not allowed:
+            return allowed, message
 
     requested_is_admin_level = requested_admin_level(
         role_id=requested_role_id,
