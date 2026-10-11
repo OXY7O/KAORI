@@ -37,3 +37,14 @@ alongside System, Provider, Type and Search. The selected environment remains vi
 and is preserved across HTMX pagination and page-size changes; Clear Filters resets
 it with the other active filters. This is a database snapshot filter, not a live
 provider query.
+
+
+## Fleet Evidence Completeness
+
+The grouped Fleet Inventory Posture reports positive protection attention and
+public exposure separately from assessed coverage. Missing/unknown encryption,
+immutability, versioning or exposure evidence is not a clean bill of health.
+A green zero-attention / zero-public-exposure state requires complete committed
+evidence for the corresponding inventory assets; a partial or absent assessment
+uses warning or unknown semantic tones. No live provider reads or compliance
+verdicts are involved.

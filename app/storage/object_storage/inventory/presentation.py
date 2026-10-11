@@ -405,6 +405,9 @@ def _overview_asset_catalog(total_systems: int, total_buckets: int) -> list[dict
 def _overview_bucket_posture(buckets: Sequence[_BucketPostureSource]) -> dict[str, Any]:
     total = len(buckets)
     quota_assessed = quota_configured = protection_attention = public_exposure = usage_collected = 0
+    protection_assessed = exposure_assessed = 0
+    known_protection_states = {'enabled', 'configured', 'enforced', 'disabled', 'suspended', 'not_configured'}
+    classified_exposure_states = {'public', 'private', 'restricted'}
     for bucket in buckets:
         quota_key = str(bucket.quota_state or 'not_collected').strip().lower().replace('-', '_')
         quota_assessed += int(quota_key in {'configured', 'not_configured'})
@@ -416,7 +419,15 @@ def _overview_bucket_posture(buckets: Sequence[_BucketPostureSource]) -> dict[st
             exposure_state=bucket.exposure_state,
         )
         protection_attention += int(protection['tone'] in {'warning', 'critical'})
-        public_exposure += int(str(bucket.exposure_state or '').strip().lower() == 'public')
+        protection_states = (
+            _state_view(bucket.versioning_state)['key'],
+            _state_view(bucket.immutability_state)['key'],
+            _state_view(bucket.encryption_state)['key'],
+        )
+        protection_assessed += int(all(state in known_protection_states for state in protection_states))
+        exposure_key = _state_view(bucket.exposure_state)['key']
+        exposure_assessed += int(exposure_key in classified_exposure_states)
+        public_exposure += int(exposure_key == 'public')
         usage_collected += int(str(bucket.usage_stats_state or '').strip().lower() == 'collected')
     return {
         'total_assets': total,
@@ -424,7 +435,9 @@ def _overview_bucket_posture(buckets: Sequence[_BucketPostureSource]) -> dict[st
         'quota_configured': quota_configured,
         'quota_gaps': max(total - quota_assessed, 0),
         'protection_attention': protection_attention,
+        'protection_assessed': protection_assessed,
         'public_exposure': public_exposure,
+        'exposure_assessed': exposure_assessed,
         'usage_collected': usage_collected,
     }
 
@@ -435,7 +448,9 @@ def _overview_fleet_readings(posture: dict[str, Any]) -> list[dict[str, str]]:
     quota_configured = int(posture['quota_configured'])
     quota_gaps = int(posture['quota_gaps'])
     protection_attention = int(posture['protection_attention'])
+    protection_assessed = int(posture['protection_assessed'])
     public_exposure = int(posture['public_exposure'])
+    exposure_assessed = int(posture['exposure_assessed'])
     usage_collected = int(posture['usage_collected'])
     if total == 0:
         quota_title, quota_tone = 'No Quota Evidence', 'unknown'
@@ -448,29 +463,59 @@ def _overview_fleet_readings(posture: dict[str, Any]) -> list[dict[str, str]]:
     else:
         quota_title, quota_tone = f'{quota_assessed}/{total} Quota Assessed', 'normal'
         quota_description = f'Quota evidence is complete; {quota_configured} asset(s) have a configured quota ceiling.'
+
+    if total == 0:
+        protection_title, protection_tone = 'No Protection Evidence', 'unknown'
+        protection_description = 'No committed bucket or container assets are available yet.'
+    elif protection_attention:
+        protection_title, protection_tone = f'{protection_attention} Protection Attention', 'warning'
+        protection_description = (
+            f'Review flagged controls; complete protection evidence exists for {protection_assessed}/{total} assets.'
+        )
+    elif protection_assessed < total:
+        protection_title = 'Protection Not Assessed' if protection_assessed == 0 else 'Protection Partially Assessed'
+        protection_tone = 'unknown' if protection_assessed == 0 else 'warning'
+        protection_description = (
+            f'No attention observed, but complete protection evidence exists for only {protection_assessed}/{total} assets.'
+        )
+    else:
+        protection_title, protection_tone = 'No Protection Attention', 'normal'
+        protection_description = 'All committed assets have assessed versioning, encryption, and immutability evidence.'
+
+    if total == 0:
+        exposure_title, exposure_tone = 'No Exposure Evidence', 'unknown'
+        exposure_description = 'No committed bucket or container assets are available yet.'
+    elif public_exposure:
+        exposure_title, exposure_tone = f'{public_exposure} Public Exposure', 'critical'
+        exposure_description = (
+            f'Review provider access policy evidence for publicly exposed assets; '
+            f'exposure is classified for {exposure_assessed}/{total} assets.'
+        )
+    elif exposure_assessed < total:
+        exposure_title = 'Exposure Not Assessed' if exposure_assessed == 0 else 'Exposure Partially Assessed'
+        exposure_tone = 'unknown' if exposure_assessed == 0 else 'warning'
+        exposure_description = (
+            f'No public exposure observed; classification evidence exists for only {exposure_assessed}/{total} assets.'
+        )
+    else:
+        exposure_title, exposure_tone = 'No Public Exposure', 'normal'
+        exposure_description = (
+            'No committed asset is currently classified as public in the latest Object Storage inventory evidence.'
+        )
+
     return [
         {'title': quota_title, 'description': quota_description, 'icon': 'gauge', 'tone': quota_tone},
         {
-            'title': f'{protection_attention} Protection Attention'
-            if protection_attention
-            else 'No Protection Attention',
-            'description': (
-                'Review versioning, encryption, immutability, and exposure posture for the affected assets.'
-                if protection_attention
-                else 'No committed bucket or container currently requires normalized protection review.'
-            ),
+            'title': protection_title,
+            'description': protection_description,
             'icon': 'shield-check',
-            'tone': 'warning' if protection_attention else 'normal',
+            'tone': protection_tone,
         },
         {
-            'title': f'{public_exposure} Public Exposure' if public_exposure else 'No Public Exposure',
-            'description': (
-                'Review provider access policy evidence for publicly exposed assets.'
-                if public_exposure
-                else 'No committed asset is currently classified as public in the latest Object Storage inventory evidence.'
-            ),
+            'title': exposure_title,
+            'description': exposure_description,
             'icon': 'key-round',
-            'tone': 'critical' if public_exposure else 'normal',
+            'tone': exposure_tone,
         },
         {
             'title': f'{usage_collected}/{total} Usage Collected' if total else 'No Usage Evidence',
@@ -485,7 +530,6 @@ def _overview_fleet_readings(posture: dict[str, Any]) -> list[dict[str, str]]:
     ]
 
 
-
 def _overview_fleet_posture_metrics(
     posture: dict[str, Any],
     readings: Sequence[dict[str, str]],
@@ -494,8 +538,14 @@ def _overview_fleet_posture_metrics(
     total = int(posture['total_assets'])
     metric_values = (
         ('Quota Assessed', f"{posture['quota_assessed']}/{total}" if total else 'No Evidence'),
-        ('Protection Attention', str(posture['protection_attention']) if total else 'No Evidence'),
-        ('Public Exposure', str(posture['public_exposure']) if total else 'No Evidence'),
+        (
+            'Protection Attention',
+            str(posture['protection_attention']) if posture['protection_assessed'] else 'No Evidence',
+        ),
+        (
+            'Public Exposure',
+            str(posture['public_exposure']) if posture['exposure_assessed'] else 'No Evidence',
+        ),
         ('Usage Collected', f"{posture['usage_collected']}/{total}" if total else 'No Evidence'),
     )
     return [
