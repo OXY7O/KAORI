@@ -48,7 +48,7 @@ def test_dashboard_route_and_service_are_snapshot_only() -> None:
     assert 'forecast_snapshot_state(' in service
     assert 'def _alerts(selected: ObjectStorageSystem | None)' in service
     assert "dashboard['alerts'] = _alerts(selected)" in service
-    assert "status_reason = 'Inventory & analytics ready.'" in service
+    assert "status_reason = 'Inventory, analytics, and primary alert evidence ready.'" in service
     assert 'Committed inventory and analytics evidence are available.' not in service
     assert 'ObjectStorageBucket' not in service
     for forbidden in (
@@ -651,3 +651,67 @@ def test_object_storage_selected_freshness_distinguishes_primary_fallback_and_mi
         alert = service._freshness(system, [system])[3]
         assert (alert['status'], alert['tone']) == expected
         assert alert['value'] == stream['resolved_label']
+
+
+def test_system_health_requires_complete_committed_evidence_for_healthy(monkeypatch) -> None:
+    from datetime import UTC, datetime
+    from types import SimpleNamespace
+
+    from app.storage.object_storage.dashboard import service
+
+    observed = datetime.now(UTC)
+    system = SimpleNamespace(
+        id='storage-1', name='Storage', environment='dev', status='connected',
+        inventory_observed_at=observed, buckets=[],
+    )
+    monkeypatch.setattr(
+        service, '_kaori_alert_posture',
+        lambda _system: {'total': 0, 'critical': 0, 'warning': 0, 'info': 0},
+    )
+    primary = {'alert_streams': {'alertmanager': {'connected': True, 'rows': []}}}
+    fallback = {'alert_streams': {
+        'alertmanager': {'connected': False, 'configured': True},
+        'metrics_source': {'connected': True, 'rows': []},
+    }}
+    cases = [
+        (primary, {'usable': True, 'state': 'ready', 'stale': False, 'label': 'Current'}, observed, 'Healthy'),
+        (primary, {'usable': True, 'state': 'ready', 'stale': False, 'label': 'Current'}, None, 'Warning'),
+        (primary, {'usable': True, 'state': 'failed', 'stale': False, 'label': 'Stale · Failed'}, observed, 'Warning'),
+        (primary, {'usable': True, 'state': 'pending', 'stale': False, 'label': 'Refreshing'}, observed, 'Warning'),
+        (primary, {'usable': True, 'state': 'ready', 'stale': True, 'label': 'Stale'}, observed, 'Warning'),
+        (primary, {'usable': False, 'state': 'ready', 'label': 'Expired'}, observed, 'Warning'),
+        ({'alert_streams': {}}, {'usable': True, 'state': 'ready', 'label': 'Current'}, observed, 'Warning'),
+        (fallback, {'usable': True, 'state': 'ready', 'label': 'Current'}, observed, 'Warning'),
+    ]
+    for payload, snapshot_state, inventory_at, expected in cases:
+        system.inventory_observed_at = inventory_at
+        monkeypatch.setattr(
+            service, '_snapshot_payload',
+            lambda _system, result=(payload, snapshot_state): result,
+        )
+        row = service._health_rows([system])[0]
+        assert row['overall_status'] == expected
+        if expected == 'Healthy':
+            assert row['alerts_connected'] is True
+            assert row['alerts_fallback'] is False
+        else:
+            assert row['overall_tone'] == 'warning'
+
+
+def test_system_health_keeps_observed_critical_alerts_prioritized(monkeypatch) -> None:
+    from types import SimpleNamespace
+
+    from app.storage.object_storage.dashboard import service
+
+    system = SimpleNamespace(
+        id='storage-1', name='Storage', environment='dev', status='ready',
+        inventory_observed_at=None, buckets=[],
+    )
+    monkeypatch.setattr(service, '_snapshot_payload', lambda _system: (None, {'usable': False}))
+    monkeypatch.setattr(
+        service, '_kaori_alert_posture',
+        lambda _system: {'total': 1, 'critical': 1, 'warning': 0, 'info': 0},
+    )
+    row = service._health_rows([system])[0]
+    assert row['overall_status'] == 'Critical'
+    assert row['overall_tone'] == 'critical'
