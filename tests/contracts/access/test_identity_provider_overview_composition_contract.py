@@ -77,7 +77,7 @@ def test_provider_setup_guidance_and_secret_helper_are_concise() -> None:
     assert 'Provider setup, validation, and controlled enablement.' in runbook
     assert 'From client registration to KAORI authorization.' in google
     assert 'Enter the variable name; KAORI loads the secret at runtime without storing it.' in sso
-    assert 'data-client-secret-input' not in sso or "data_client_secret_input='true'" in sso
+    assert "data_client_secret_input='true'" in sso
     assert 'form.client_secret_env.errors' in sso
 
 
