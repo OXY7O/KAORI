@@ -90,13 +90,17 @@
                                 {% if record.not_after %}
                                     <p class="truncate text-xs font-medium leading-5 text-content-primary"
                                        title="Expires · {{ record.not_after|user_date('N/A') }}">{{ record.not_after|user_date("N/A") }}</p>
-                                    <p class="truncate text-xs leading-5 text-content-muted">
-                                        {% if presentation.validity_status == 'expired' %}
+                                    {% if presentation.validity_days_remaining is not none %}
+                                        <p class="truncate text-xs leading-5 text-content-muted">
+                                            {% if presentation.validity_status == 'expired' %}
                                             {{ (presentation.validity_days_remaining or 0)|abs }} days expired
-                                        {% else %}
-                                            {{ presentation.validity_days_remaining }} days left
-                                        {% endif %}
-                                    </p>
+                                            {% else %}
+                                                {{ presentation.validity_days_remaining }} days left
+                                            {% endif %}
+                                        </p>
+                                    {% else %}
+                                        <p class="truncate text-xs leading-5 text-content-muted">Validity unavailable</p>
+                                    {% endif %}
                                 {% else %}
                                     <p class="line-clamp-2 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]"
                                        title="{{ record.parse_error or 'Validity not reported' }}">{{ record.parse_error or 'Validity not reported' }}</p>
