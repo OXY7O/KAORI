@@ -322,16 +322,9 @@ def _registry_capacity_forecast(
     }
 
 
-def _registry_top_consumers(project_forecasts: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    top_consumers = sorted(
-        project_forecasts,
-        key=lambda item: (
-            -(float(item['usage_bytes']) if item['usage_bytes'] is not None else -1.0),
-            -(float(item['utilization_percent']) if item['utilization_percent'] is not None else -1.0),
-            item['project_name'].casefold(),
-        ),
-    )[:5]
-    for item in top_consumers:
+def _format_registry_project_consumers(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Present already committed project quota evidence without inferring missing values."""
+    for item in rows:
         item['usage_display'] = (
             _fmt_bytes(round(float(item['usage_bytes']))) if item['usage_bytes'] is not None else 'N/A'
         )
@@ -344,7 +337,40 @@ def _registry_top_consumers(project_forecasts: list[dict[str, Any]]) -> list[dic
         item['days_to_quota_display'] = (
             f'{float(item["days_to_quota"]):.1f} days' if item['days_to_quota'] is not None else 'N/A'
         )
-    return top_consumers
+    return rows
+
+
+def _registry_top_consumers(project_forecasts: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    top_consumers = sorted(
+        (item for item in project_forecasts if item['usage_bytes'] is not None),
+        key=lambda item: (
+            -float(item['usage_bytes']),
+            -(float(item['utilization_percent']) if item['utilization_percent'] is not None else -1.0),
+            item['project_name'].casefold(),
+        ),
+    )[:5]
+    return _format_registry_project_consumers(top_consumers)
+
+
+def _registry_quota_watch(project_forecasts: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Rank all projects with a committed numerical horizon, not only usage top five."""
+    nearest = sorted(
+        (item for item in project_forecasts if item['days_to_quota'] is not None),
+        key=lambda item: (float(item['days_to_quota']), item['project_name'].casefold()),
+    )[:5]
+    return _format_registry_project_consumers(nearest)
+
+
+def _registry_consumer_insights(project_forecasts: list[dict[str, Any]]) -> dict[str, int]:
+    """Coverage indicators from the same already-read project evidence."""
+    return {
+        'project_count': len(project_forecasts),
+        'horizon_count': sum(item['days_to_quota'] is not None for item in project_forecasts),
+        'high_utilization_count': sum(
+            item['utilization_percent'] is not None and float(item['utilization_percent']) >= 90
+            for item in project_forecasts
+        ),
+    }
 
 
 def _registry_capacity_views(
@@ -355,7 +381,7 @@ def _registry_capacity_views(
     artifact_total: int,
     committed_snapshot_count: int,
     metrics_ready_count: int,
-) -> tuple[dict[str, Any], dict[str, Any], list[dict[str, Any]]]:
+) -> tuple[dict[str, Any], dict[str, Any], list[dict[str, Any]], list[dict[str, Any]], dict[str, int]]:
     project_forecasts, growth = _collect_registry_capacity_analytics(
         scoped_providers=scoped_providers,
         analytics_by_provider=analytics_by_provider,
@@ -374,7 +400,13 @@ def _registry_capacity_views(
         metrics_ready_count=metrics_ready_count,
         posture=posture,
     )
-    return capacity, forecast, _registry_top_consumers(project_forecasts)
+    return (
+        capacity,
+        forecast,
+        _registry_top_consumers(project_forecasts),
+        _registry_quota_watch(project_forecasts),
+        _registry_consumer_insights(project_forecasts),
+    )
 
 
 def _registry_alerts(selected_provider: IntegrationInstance | None) -> dict[str, Any]:

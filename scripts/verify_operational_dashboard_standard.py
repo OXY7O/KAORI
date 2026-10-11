@@ -36,6 +36,8 @@ ARTIFACT_KPI_CARDS = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partial
 ARTIFACT_REPORTING = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_reporting.html'
 ARTIFACT_CAPACITY = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_capacity.html'
 ARTIFACT_FORECAST = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_forecast_risk.html'
+ARTIFACT_CAPACITY_SNAPSHOT = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_capacity_snapshot.html'
+ARTIFACT_CONSUMERS = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_top_consumers.html'
 ARTIFACT_SIGNALS = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_signals.html'
 ARTIFACT_OPERATIONS = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_operations.html'
 ARTIFACT_PROVIDER_HEALTH = (
@@ -414,6 +416,32 @@ def _verify_artifact_registry_dashboard(
         ),
         'Artifact Registry capacity peer dashboard grammar',
     )
+    registry_capacity_snapshot = _read(ARTIFACT_CAPACITY_SNAPSHOT)
+    _require(
+        registry_capacity_snapshot,
+        ('components/operational_callout.html', "operational_callout.render('Data Scope'", 'grid gap-3 sm:grid-cols-3'),
+        'Registry Capacity Snapshot source-scope information and metric grid',
+    )
+    registry_consumers = _read(ARTIFACT_CONSUMERS)
+    _require(
+        registry_consumers,
+        (
+            'macro consumer_panel(',
+            'grid gap-5 lg:grid-cols-2',
+            "consumer_panel('Storage Usage'",
+            "consumer_panel('Nearest Quota'",
+            'overview.quota_watch',
+            'items[:3]',
+            'progress_bar.bar(',
+            'item.utilization_percent is not none',
+            'Consumer Insights',
+            'overview.consumer_insights.high_utilization_count',
+            'No Numerical Quota Horizon',
+        ),
+        'Registry Top Consumers independently ranked K8s-style peer panels',
+    )
+    if 'xl:grid-cols-5' in registry_consumers:
+        raise AssertionError('Registry Top Consumers still uses obsolete standalone card grid')
     registry_forecast = _read(ARTIFACT_FORECAST)
     _require(
         registry_forecast,
@@ -425,12 +453,25 @@ def _verify_artifact_registry_dashboard(
             'Forecast Basis',
             'Registry Analytics',
             'No historical daily series is available for a trend chart.',
+            'Daily Utilization Trend Not Available',
+            'overview.forecast.analytics_count',
+            'overview.consumer_insights.horizon_count',
             'Forecast Conclusion',
             'overview.capacity.risk_detail',
             'overview.forecast.detail',
             "action_label='Review Forecast'",
         ),
         'Registry snapshot-delta forecast and conclusion use peer dashboard grammar',
+    )
+    _require(
+        presentation,
+        (
+            '_registry_quota_watch(project_forecasts)',
+            '_registry_consumer_insights(project_forecasts)',
+            "'quota_watch': quota_watch",
+            "'consumer_insights': consumer_insights",
+        ),
+        'Registry committed project quota evidence includes independent numeric horizon ranking',
     )
     for forbidden in ('operational_metric_card.render(', 'forecast_projection_chart'):
         if forbidden in registry_forecast:

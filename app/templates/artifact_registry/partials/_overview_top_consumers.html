@@ -1,5 +1,61 @@
 {% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
+{% macro consumer_panel(title, icon, items, value_field, empty_title, empty_description) -%}
+    <section class="rounded-lg border border-outline-subtle bg-surface-elevated p-4"
+             aria-label="{{ title }} Registry project consumers">
+        <div class="mb-3 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+                <span class="h-2.5 w-2.5 rounded-full bg-kaori-primary" aria-hidden="true"></span>
+                <h3 class="text-sm font-semibold text-content-primary">{{ title }}</h3>
+            </div>
+            {{ table_label.metadata_label('Top 3', icon=icon) }}
+        </div>
+        {% if items %}
+            <div class="space-y-2.5">
+                {% for item in items[:3] %}
+                    <article class="rounded-lg border border-outline-subtle bg-surface-card p-3">
+                        <div class="flex items-center gap-3">
+                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-xs font-semibold text-kaori-primary">{{ loop.index }}</span>
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center justify-between gap-3 text-xs">
+                                    <span class="truncate font-semibold text-content-primary"
+                                          title="{{ item.project_name }}">{{ item.project_name }}</span>
+                                    <span class="shrink-0 font-semibold tabular-nums text-content-secondary">
+                                        {{ item.usage_display if value_field == 'usage' else item.days_to_quota_display }}
+                                    </span>
+                                </div>
+                                <div class="mt-1 flex items-center justify-between gap-3 text-xs text-content-muted">
+                                    <span class="truncate" title="{{ item.provider_name }}">{{ item.provider_name }}</span>
+                                    <span class="shrink-0">{{ item.utilization_display }} of quota</span>
+                                </div>
+                                {% if item.utilization_percent is not none %}
+                                    {% set consumer_tone = 'critical' if (item.days_to_quota is not none and item.days_to_quota <= 30) or item.utilization_percent >= 90 else ('warning' if (item.days_to_quota is not none and item.days_to_quota <= 90) or item.utilization_percent >= 75 else 'normal') %}
+                                    {% set bar_class = 'bg-status-critical' if consumer_tone == 'critical' else ('bg-status-warning' if consumer_tone == 'warning' else 'bg-kaori-primary') %}
+                                    {{ progress_bar.bar(0 if item.utilization_percent < 0 else (100 if item.utilization_percent > 100 else item.utilization_percent),
+                                        track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover',
+                                        fill_classes='h-full rounded-full ' ~ bar_class,
+                                        label=item.project_name ~ ' committed quota utilization') }}
+                                {% else %}
+                                    <p class="mt-2 text-xs text-content-muted">Quota utilization N/A — no utilization bar.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            {% set empty_state_icon = icon %}
+            {% set empty_state_label = "Evidence Unavailable" %}
+            {% set empty_state_tone = "warning" %}
+            {% set empty_state_title = empty_title %}
+            {% set empty_state_description = empty_description %}
+            {% set empty_state_variant = "panel" %}
+            {% set empty_state_min_height = "min-h-[170px]" %}
+            {% include 'components/states/_empty_state.html' %}
+        {% endif %}
+    </section>
+{%- endmacro %}
 {% call operational_section_card.render(
     'Top Consumers',
     'Highest-consuming Registry projects from the latest committed analytics snapshot.',
@@ -8,42 +64,56 @@
     action_label='Open Analytics',
     body_classes='p-5'
     ) %}
-    {% if overview.top_consumers %}
-        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-            {% for item in overview.top_consumers %}
-                <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
-                    <div class="flex items-start justify-between gap-2">
-                        <div class="min-w-0">
-                            <p class="truncate text-sm font-semibold text-content-primary"
-                               title="{{ item.project_name }}">{{ item.project_name }}</p>
-                            <p class="mt-0.5 truncate text-xs text-content-muted"
-                               title="{{ item.provider_name }}">{{ item.provider_name }}</p>
-                        </div>
-                        {% set consumer_tone = 'critical' if (item.days_to_quota is not none and item.days_to_quota <= 30) or (item.utilization_percent is not none and item.utilization_percent >= 90) else ('warning' if (item.days_to_quota is not none and item.days_to_quota <= 90) or (item.utilization_percent is not none and item.utilization_percent >= 75) else ('normal' if item.utilization_percent is not none or item.days_to_quota is not none else 'unknown')) %}
-                        {{ table_label.status_label(item.utilization_display, consumer_tone, size='detail') }}
+    {% if overview.consumer_insights.project_count %}
+        <div class="grid gap-5 lg:grid-cols-2">
+            {{ consumer_panel('Storage Usage',
+                'hard-drive',
+                overview.top_consumers,
+                'usage',
+                'Project Usage Not Collected',
+                'No numeric project usage is committed for this Registry scope.') }}
+            {{ consumer_panel('Nearest Quota',
+                'timer',
+                overview.quota_watch,
+                'horizon',
+                'No Numerical Quota Horizon',
+                'No committed project has a numeric quota exhaustion ETA. This is not proof of unlimited capacity or zero risk.') }}
+        </div>
+        <div class="mt-5 rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {{ 'bg-status-warning-soft text-status-warning' if overview.consumer_insights.high_utilization_count else ('bg-status-info-soft text-status-info' if overview.consumer_insights.project_count > overview.consumer_insights.horizon_count else 'bg-status-normal-soft text-status-normal') }}"
+                          aria-hidden="true">
+                        <i data-lucide="lightbulb" class="h-4 w-4"></i>
+                    </span>
+                    <div>
+                        <h3 class="text-sm font-semibold text-content-primary">Consumer Insights</h3>
+                        <p class="mt-1 max-w-2xl text-xs leading-5 text-content-muted">
+                            {{ overview.consumer_insights.project_count }} committed project quota record(s);
+                            {{ overview.consumer_insights.horizon_count }} with a numeric quota ETA.
+                            Missing horizons are unknown or not projected, not zero-day forecasts.
+                        </p>
                     </div>
-                    <dl class="mt-3 space-y-2 text-xs">
-                        <div class="flex items-center justify-between gap-3">
-                            <dt class="text-content-muted">Usage</dt>
-                            <dd class="font-semibold text-content-primary">
-                                {{ item.usage_display }}
-                            </dd>
-                        </div>
-                        <div class="flex items-center justify-between gap-3">
-                            <dt class="text-content-muted">Quota</dt>
-                            <dd class="font-semibold text-content-primary">
-                                {{ item.quota_display }}
-                            </dd>
-                        </div>
-                        <div class="flex items-center justify-between gap-3">
-                            <dt class="text-content-muted">Quota Horizon</dt>
-                            <dd class="font-semibold text-content-primary">
-                                {{ item.days_to_quota_display }}
-                            </dd>
-                        </div>
-                    </dl>
-                </article>
-            {% endfor %}
+                </div>
+                <dl class="grid grid-cols-2 gap-4 text-xs lg:min-w-[280px]">
+                    <div>
+                        <dt class="text-content-muted">Without ETA</dt>
+                        <dd class="mt-1 text-base font-semibold tabular-nums text-content-primary">
+                            {{ overview.consumer_insights.project_count - overview.consumer_insights.horizon_count }} Projects
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-content-muted">High Utilization</dt>
+                        <dd class="mt-1 text-base font-semibold tabular-nums text-content-primary">
+                            {{ overview.consumer_insights.high_utilization_count }} Projects
+                        </dd>
+                    </div>
+                </dl>
+            </div>
+            <div class="mt-3 flex flex-wrap gap-2">
+                {{ table_label.metadata_label('Usage: committed Registry Analytics', icon='database-zap') }}
+                {{ table_label.metadata_label('Quota ETA: positive growth only', icon='timer') }}
+            </div>
         </div>
     {% elif overview.forecast.available %}
         {% set empty_state_icon = "bar-chart-3" %}

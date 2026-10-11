@@ -30,17 +30,42 @@
                     </article>
                 {% endfor %}
             </div>
-            <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
-                <div class="flex flex-wrap items-center justify-between gap-3">
-                    <h3 class="text-sm font-semibold text-content-primary">Forecast Basis</h3>
-                    <span class="text-xs font-medium text-content-muted">Registry Analytics</span>
+            <section class="rounded-lg border border-outline-subtle bg-surface-elevated p-4"
+                     aria-label="Registry growth and quota evidence">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                        <h3 class="text-sm font-semibold text-content-primary">Forecast Basis</h3>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">
+                            Snapshot-to-snapshot growth and project quota horizons; historical trend is not materialized.
+                        </p>
+                    </div>
+                    {{ table_label.metadata_label('Registry Analytics', icon='database-zap') }}
                 </div>
-                <p class="mt-2 text-xs leading-5 text-content-secondary">
-                    Growth rates use committed snapshot deltas when available; quota horizons use committed project evidence.
-                    No historical daily series is available for a trend chart.
-                </p>
-                <p class="mt-2 text-xs text-content-muted">Scope: {{ overview.scope_label }}</p>
-            </div>
+                <div class="mt-4">
+                    {% set empty_state_icon = "chart-no-axes-combined" %}
+                    {% set empty_state_label = "Historical Series Unavailable" %}
+                    {% set empty_state_tone = "info" %}
+                    {% set empty_state_title = "Daily Utilization Trend Not Available" %}
+                    {% set empty_state_description = "No historical daily series is available for a trend chart. Registry Analytics currently commits point-in-time growth deltas and project quota horizons, not chart history." %}
+                    {% set empty_state_variant = "panel" %}
+                    {% set empty_state_min_height = "min-h-[200px]" %}
+                    {% include 'components/states/_empty_state.html' %}
+                </div>
+                <div class="mt-4 grid gap-3 sm:grid-cols-3">
+                    {% for label, value, helper in [
+                        ('Analytics Sources', overview.forecast.analytics_count, 'Committed provider analytics snapshots'),
+                        ('Quota Projects', overview.consumer_insights.project_count, 'Projects with quota evidence'),
+                        ('Quota Horizons', overview.consumer_insights.horizon_count, 'Projects with numeric exhaustion ETA')
+                    ] %}
+                        <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
+                            <p class="text-xs text-content-muted">{{ label }}</p>
+                            <p class="mt-1 text-base font-semibold tabular-nums text-content-primary">{{ value }}</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
+                        </div>
+                    {% endfor %}
+                </div>
+                <p class="mt-3 text-xs text-content-muted">Scope: {{ overview.scope_label }}</p>
+            </section>
             {% set forecast_tone = 'critical' if overview.forecast.risk == 'Critical' else ('warning' if overview.forecast.risk == 'Medium' else ('normal' if overview.forecast.risk == 'Low' else 'unknown')) %}
             <div class="flex items-start gap-3 rounded-lg border border-outline-subtle bg-surface-elevated p-4">
                 <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {% if forecast_tone == 'critical' %}bg-status-critical-soft text-status-critical{% elif forecast_tone == 'warning' %}bg-status-warning-soft text-status-warning{% elif forecast_tone == 'normal' %}bg-status-normal-soft text-status-normal{% else %}bg-status-info-soft text-status-info{% endif %}"

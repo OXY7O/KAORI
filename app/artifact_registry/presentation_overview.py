@@ -562,7 +562,7 @@ def _overview_capacity_projection(
     metrics_by_provider = {int(provider.id): registry_metrics_readiness(provider) for provider in scoped_providers}
     metrics_ready_count = sum(metrics.get('status') == 'ready' for metrics in metrics_by_provider.values())
     analytics_by_provider = _latest_registry_analytics(scoped_providers)
-    capacity, forecast, top_consumers = _registry_capacity_views(
+    capacity, forecast, top_consumers, quota_watch, consumer_insights = _registry_capacity_views(
         scoped_providers=scoped_providers,
         analytics_by_provider=analytics_by_provider,
         total_size_bytes=total_size_bytes,
@@ -575,6 +575,8 @@ def _overview_capacity_projection(
         'capacity': capacity,
         'forecast': forecast,
         'top_consumers': top_consumers,
+        'quota_watch': quota_watch,
+        'consumer_insights': consumer_insights,
     }
 
 
