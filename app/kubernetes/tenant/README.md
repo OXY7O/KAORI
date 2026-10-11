@@ -527,6 +527,9 @@ detail. The shared component owns responsive separators, metrics/icon
 layout and light/dark styles. Runtime browser Visual QA and quality gates
 remain pending.
 
+**Release Scope and Step 2–4 guidance refinement (#1144; current presentation):**
+Release Step 1 now keeps preflight evidence, the single original Review Release action, and three coverage dimensions together in one full-width responsive card. All exact blockers remain available via `View recorded conditions`; no-blockers is not handoff approval. Step 2 (Provider Scope), Step 3 (Approval & Handoff), and Step 4 (Verify & Finalize) reuse the same read-only guidance note presentation for their contextual not-reviewed/no-handoff/permission/blocked states. The common inline note does not perform an action or replace authoritative provider and committed audit evidence. Existing HTMX wizard URLs, form security/confirmation, role checks, provider-side behavior and audit remain unchanged. DevContainer human visual review pending; CI/CD, tests/gates, staging/main and deployment HOLD.
+
 **Governance Scope and Release Review refresh (#1077; historical workflow authority; scope presentation superseded by #1079):**
 The four separate Tenant KPI tiles are replaced by a grouped
 **Governance Scope** (Resource Coverage and Governance Authority) composed
