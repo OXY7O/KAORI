@@ -198,6 +198,37 @@ conditional PATCH, authoritative complete post-mutation read-back and
 manual partial recovery remain outstanding. No tests, CI/CD or actual
 provider operations were executed for this source slice.
 
+## G1 independent-review drift diagnostics — #1228 DevContainer feedback
+
+The local `kaori-demo` Release wizard successfully prepared the SHA-bound
+plan with a new requester, but the distinct authorized reviewer received
+`Provider or governance evidence changed; prepare a new plan.` at G1
+acknowledgment. No Kubernetes mutation occurred. G1 correctly re-runs a
+read-only preflight and **rejects** a different Capsule CR/Namespace UID,
+resourceVersion, canonical spec, namespaced related inventory,
+GlobalResourceQuota or RBAC-lineage digest. The original message
+inadequately distinguished the source of drift.
+
+G1 now derives **bounded category-only** diagnostics from the already
+committed plan and fresh preflight: Tenant/Cluster identity, provider object
+membership and UID, object resourceVersion, handoff/ownership class,
+Capsule spec, namespaced quota/limit/RBAC scope, GlobalResourceQuota scope
+and RoleBinding lineage. This is a presentation/error-message correction
+only; private RoleBinding subjects, provider payloads, hashes and
+credentials are never included in the UI or error. It neither treats an
+advanced Kubernetes LIST resourceVersion as harmless nor weakens any
+exact scope, actor, SHA, time-window, dependency or permission admission.
+A changed LIST digest may reflect a new snapshot revision **or** different
+object identities/policy; the diagnostic must never assert which without
+independent evidence.
+
+Regression cases for CR UID/RV, spec digest, related inventory SHA,
+shared quota SHA, RBAC lineage and ownership changes are source-authored
+but not run under the existing gate HOLD. If the latest pending plan is
+stale, the original requester must follow the existing governed
+expiration/re-preparation flow; a different reviewer cannot manufacture
+a matching SHA or bypass a fresh preflight.
+
 ## G1 consent vs G2/G3 execution authority
 
 A committed Capsule preflight may contain the **exact** source-known warning
