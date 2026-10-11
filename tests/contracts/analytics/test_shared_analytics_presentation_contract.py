@@ -153,17 +153,19 @@ def test_kubernetes_metrics_status_preserves_source_specific_query_evidence() ->
         '{% import "kubernetes/analytics/components/_metrics_source_status.html" as k8s %}'
         '{{ k8s.render(status) }}'
     )
-    base = {'configured': True, 'connected': True, 'response_time_ms': 16}
+    base = {'configured': True, 'connected': True, 'response_time_ms': 16, 'state': 'connected'}
     for delta, expected in (
         ({}, 'Query Ready'),
-        ({'observation_degraded': True}, 'Query Degraded'),
-        ({'connected': False}, 'Unavailable'),
-        ({'configured': False, 'connected': False}, 'Not Configured'),
+        ({'observation_degraded': True, 'state': 'degraded'}, 'Query Degraded'),
+        ({'connected': False, 'state': 'unavailable'}, 'Unavailable'),
+        ({'configured': False, 'connected': False, 'state': 'not_configured'}, 'Not Configured'),
     ):
-        html = source.render(status={**base, **delta})
+        status = {**base, **delta}
+        html = source.render(status=status)
         assert expected in html
-        assert 'data-analytics-metrics-source-status' in html
-        assert 'data-analytics-source-status' in html
+        assert html.count('data-analytics-metrics-source-status') == 1
+        assert html.count('data-analytics-source-status') == 1
+        assert f'data-metrics-source-state="{status["state"]}"' in html
         assert 'Response' in html
         assert 'Checked At' in html
 
@@ -183,3 +185,25 @@ def test_future_provider_does_not_require_a_domain_specific_selector_component()
     assert 'Future Object Storage Provider' in html
     assert 'name="provider_id"' in html
     assert 'grid gap-4 sm:grid-cols-2' in html
+
+
+def test_registry_and_object_storage_source_cards_keep_generic_shared_semantics() -> None:
+    registry = (TEMPLATES / 'artifact_registry/partials/_analytics_controls_readiness.html').read_text()
+    object_storage = (TEMPLATES / 'storage/object_storage/analytics/partials/_controls.html').read_text()
+    for consumer in (registry, object_storage):
+        assert 'shared_readiness.source_card(' in consumer
+        assert 'metric_source_state=' not in consumer
+
+    # Without Kubernetes-specific metric_source_state, the shared source card
+    # must retain generic domain identity rather than rendering K8s-only metadata.
+    source = _environment().from_string(
+        '{% import "analytics/components/_controls_readiness.html" as controls %}'
+        '{{ controls.source_card("Storage Source", "Source binding", "Ready", "normal",'
+        ' "Provider", "Bound", "Observation", "Committed", icon=none) }}'
+    )
+    html = source.render()
+    assert 'data-analytics-source-status' in html
+    assert 'data-analytics-metrics-source-status' not in html
+    assert 'data-metrics-source-state=' not in html
+    assert 'Storage Source' in html
+    assert 'Provider' in html and 'Observation' in html

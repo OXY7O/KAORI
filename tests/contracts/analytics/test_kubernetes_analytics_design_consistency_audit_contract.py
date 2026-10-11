@@ -16,8 +16,14 @@ def all_analytics_templates() -> str:
 def test_shared_controls_and_metrics_source_contract_are_compatible() -> None:
     workspace = read('app/templates/kubernetes/analytics/components/_analysis_workspace.html')
     metrics_source = read('app/templates/kubernetes/analytics/components/_metrics_source_status.html')
+    shared_source = read('app/templates/analytics/components/_controls_readiness.html')
 
-    assert 'data-analytics-metrics-source-status' in metrics_source
+    # Kubernetes owns the source semantics; the shared macro owns rendered markup.
+    assert 'shared_readiness.source_card(' in metrics_source
+    assert 'metric_source_state=' in metrics_source
+    assert 'data-analytics-metrics-source-status' in shared_source
+    assert 'metric_source_state is not none' in shared_source
+    assert 'data-analytics-metrics-source-status' not in metrics_source
     assert 'Metrics Source Status' in metrics_source
     assert 'Query Ready' in metrics_source
     assert 'Query Degraded' in metrics_source
