@@ -1,4 +1,3 @@
-{% import "components/info_tip.html" as info_tip %}
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/resource_detail_modal.html" as resource_detail_modal %}
 {% import "components/table.html" as table_ui %}
@@ -11,11 +10,11 @@
                 <th class="{{ table_ui.header_cell_classes() }} min-w-[16rem]">System</th>
                 <th class="{{ table_ui.header_cell_classes() }}">Provider</th>
                 <th class="{{ table_ui.header_cell_classes() }}">Environment</th>
-                <th class="{{ table_ui.header_cell_classes() }} min-w-[9rem]"><span class="inline-flex items-center gap-1">Release {{ info_tip.render('storage-inventory-systems-release', 'Provider Release', 'Software version reported by the Object Storage provider or inventory snapshot; this does not establish whether the release is currently supported.', placement='right') }}</span></th>
+                <th class="{{ table_ui.header_cell_classes() }} min-w-[9rem]">Release</th>
                 <th class="{{ table_ui.header_cell_classes() }} min-w-[14rem]">Endpoint</th>
-                <th class="{{ table_ui.header_cell_classes() }}"><span class="inline-flex items-center gap-1">Inventory Assets {{ info_tip.render('storage-inventory-systems-inventory-assets', 'Inventory Assets', 'Number of buckets or containers observed for this system in committed inventory; it is not a live listing of all provider objects.', placement='right') }}</span></th>
-                <th class="{{ table_ui.header_cell_classes() }} min-w-[11rem]"><span class="inline-flex items-center gap-1">Snapshot {{ info_tip.render('storage-inventory-systems-snapshot', 'System Inventory Snapshot', 'Most recent committed collection evidence for this system; a timestamp is not a guarantee that the system is healthy.', placement='right') }}</span></th>
-                <th class="{{ table_ui.header_cell_classes() }}"><span class="inline-flex items-center gap-1">Status {{ info_tip.render('storage-inventory-systems-status', 'System Inventory Status', 'KAORI inventory/source posture based on recorded evidence, not a substitute for live provider health checks.', placement='right') }}</span></th>
+                <th class="{{ table_ui.header_cell_classes() }}">Inventory Assets</th>
+                <th class="{{ table_ui.header_cell_classes() }} min-w-[11rem]">Snapshot</th>
+                <th class="{{ table_ui.header_cell_classes() }}">Status</th>
                 <th class="{{ table_ui.header_cell_classes(true) }}">Details</th>
             </tr>
         </thead>
