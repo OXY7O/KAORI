@@ -73,6 +73,31 @@ def test_node_table_keeps_seven_columns_and_surfaces_conditions() -> None:
     assert "node.os_image" not in content
 
 
+def test_node_table_allocates_more_space_to_node_and_cluster_names() -> None:
+    table = read('app/templates/kubernetes/inventory/nodes/partials/_table_content.html')
+    shared = read('app/templates/components/table.html')
+
+    expected = {
+        'Node': 26,
+        'Cluster': 22,
+        'Readiness': 11,
+        'Role': 10,
+        'Capacity': 12,
+        'Network': 9,
+        'Details': 10,
+    }
+    assert sum(expected.values()) == 100
+    for label, pct in expected.items():
+        assert f'w-[{pct}%]' in table.split(f'>{label}</th>', 1)[0].rsplit('<th', 1)[-1]
+    assert "table_ui.table_classes('min-w-[74rem] !table-fixed')" in table
+    assert 'overflow-x-auto overscroll-x-contain' in table
+    assert table.count('scope="col"') == 7
+    assert "table_ui.title_cell(node.node_name, node.identity_supporting, 'server')" in table
+    assert "table_ui.cluster_identity(node.cluster_name, node.cluster_environment, 'w-full min-w-0')" in table
+    assert 'title="{{ name }}"' in shared
+    assert 'title="{{ environment_label }}"' in shared
+
+
 def test_node_table_shows_os_family_but_detail_retains_complete_platform_evidence() -> None:
     backend = read('app/kubernetes/inventory/resources/nodes.py')
     detail = read('app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html')
