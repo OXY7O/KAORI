@@ -809,8 +809,8 @@ def _commit_native_allocation_reconcile(
     record.last_reconciled_at = now
     record.provisioning_status = 'ready'
     record.provisioning_message = (
-        'KAORI Managed namespace allocation verified against Native Kubernetes provider read-back. '
-        'Adoption origin remains retained in evidence.'
+        'KAORI Managed Namespace allocation verified by Native Kubernetes read-back. '
+        'Adoption origin retained in evidence.'
     )
     return record
 

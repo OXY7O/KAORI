@@ -28,9 +28,9 @@
                 "Harbor API v2.0",
                 "Endpoint identity, authentication, compatibility, and required Registry capabilities are validated before operational use.",
                 "Committed Evidence and Consumer Resolution",
-                "KAORI reads committed Registry inventory and resolves Registry operational metrics through validated Metrics Source bindings.",
+                "KAORI uses committed Registry inventory and validated Metrics Source bindings for operational metrics.",
                 "Harbor Remains Authoritative",
-                "Harbor owns repositories, artifacts, native policies, and Registry runtime state; KAORI governs validation, normalization, correlation, and committed evidence.") }}
+                "Harbor owns repositories, artifacts, policies, and runtime; KAORI validates, normalizes, correlates, and commits evidence.") }}
         {% call(tab_name) integration_tabs.render("harbor", active_tab, stats.total, stats.total) %}
             {% if tab_name == "coverage" %}
                 {% include "integrations/registry/providers/harbor/partials/_coverage.html" %}

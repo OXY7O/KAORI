@@ -157,8 +157,8 @@
                                     {% if tenant_adoption_attachment_only %}
                                         Capsule resources and external constraints stay unchanged; KAORI commits attachment evidence only.
                                     {% else %}
-                                        Kubernetes/Capsule remains the execution authority. Admitted allocation governance writes are verified
-                                        against provider read-back; foreign constraints are preserved.
+                                        Kubernetes/Capsule remains authoritative. KAORI verifies admitted allocation changes
+                                        by provider read-back and preserves external constraints.
                                     {% endif %}
                                 </p>
                             </div>

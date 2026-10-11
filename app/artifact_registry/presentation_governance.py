@@ -259,7 +259,7 @@ def _governance_posture_cards(
                 if project_total and len(project_rows) == project_total
                 else ('warning' if project_rows else 'unknown')
             ),
-            'detail': 'Committed project-scoped retention and immutability evidence.',
+            'detail': 'Committed project retention and immutability evidence.',
         },
         {
             'label': 'Retention Coverage',

@@ -1732,10 +1732,10 @@
                                role="note">
                                 <i data-lucide="info" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
                                 <span>
-                                    {% if native_cycle.dry_run_passed %}Native dry-run passed; no live handoff was executed. {% endif %}
-                                    {% if native_cycle.reference_recorded %}An external reference was recorded but is not consent. {% endif %}
-                                    {% if native_cycle.readback_observed_unverified %}Provider changes were observed without verified successor acceptance. {% endif %}
-                                    Provider handoff requires explicit successor consent, conditional mutation and authoritative read-back. Security/UAT admission remains required; Kubernetes stays authoritative.
+                                    {% if native_cycle.dry_run_passed %}Dry-run passed; no live handoff occurred. {% endif %}
+                                    {% if native_cycle.reference_recorded %}External reference recorded; not successor consent. {% endif %}
+                                    {% if native_cycle.readback_observed_unverified %}Provider changes observed; successor acceptance unverified. {% endif %}
+                                    Handoff requires successor consent, conditional mutation, and provider read-back. Security/UAT admission remains required; Kubernetes stays authoritative.
                                 </span>
                             </p>
                         {% endif %}
