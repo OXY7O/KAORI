@@ -77,12 +77,12 @@
                     </div>
                 {% endcall %}
                 {% call detail_ui.inventory_section('Delegation Boundary', permission.delegation_tier.icon, description='Delegation authority', compact_layout=true) %}
-                    <div class="max-w-3xl border-l-2 border-brand-outline pl-3.5" data-kaori-permission-policy>
+                    <div class="min-w-0 max-w-3xl" data-kaori-permission-policy>
                         <p class="text-xs font-semibold text-content-secondary">Authority</p>
                         {% if permission.is_access_administration %}
-                        <p class="mt-1 text-sm leading-6 text-content-primary">Only the Local Database Super Admin break-glass authority may delegate Access administration through Roles, User Management, JIT defaults, or Directory Provisioning.</p>
-                    {% else %}
-                        <p class="mt-1 text-sm leading-6 text-content-primary">Non-Super Admin delegation requires this permission in the actor’s effective access. Server-side checks remain authoritative.</p>
+                            <p class="mt-1 text-sm leading-6 text-content-primary">Only the Local Database Super Admin break-glass authority may delegate Access administration through Roles, User Management, JIT defaults, or Directory Provisioning.</p>
+                        {% else %}
+                            <p class="mt-1 text-sm leading-6 text-content-primary">Non-Super Admin delegation requires this permission in the actor’s effective access. Server-side checks remain authoritative.</p>
                         {% endif %}
                     </div>
                 {% endcall %}
