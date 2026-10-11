@@ -10,7 +10,7 @@ from types import SimpleNamespace
 import pytest
 
 from app.kubernetes.tenant.capsule_handoff_related_inventory import (
-    classify_capsule_related_resource,
+    capsule_related_scope_unchanged, classify_capsule_related_resource,
     observe_capsule_related_inventory,
 )
 
@@ -286,7 +286,7 @@ def test_preflight_keeps_native_shape_and_binds_capsule_sha_to_current_fingerpri
     assert 'resource_sha256' in preflight
 
 
-def test_changed_provider_list_revision_invalidates_related_scope_digest():
+def test_collection_list_revision_churn_does_not_invalidate_identical_object_scope():
     first = _observe(_API(), _API())
     core = _API()
     original_list = core._list
@@ -299,8 +299,26 @@ def test_changed_provider_list_revision_invalidates_related_scope_digest():
     core._list = changed_list
     changed = _observe(core, _API())
     assert first['resource_count'] == changed['resource_count'] == 0
-    assert first['resource_sha256'] != changed['resource_sha256']
+    assert first['resource_sha256'] == changed['resource_sha256']
     assert changed['list_snapshots'][0]['list_resource_version'] == 'new-list-rv'
+    assert capsule_related_scope_unchanged(
+        {**first, 'global_quota': {'list_resource_version': '11', 'scope_sha256': 'same'}},
+        {**changed, 'global_quota': {'list_resource_version': '20', 'scope_sha256': 'same'}},
+    )
+    changed['resources'].append({
+        'kind': 'ResourceQuota', 'namespace': 'demo-dev', 'name': 'new-quota',
+        'uid': 'new-uid', 'resource_version': '8',
+    })
+    assert not capsule_related_scope_unchanged(
+        {**first, 'global_quota': {'list_resource_version': '11', 'scope_sha256': 'same'}},
+        {**changed, 'global_quota': {'list_resource_version': '20', 'scope_sha256': 'same'}},
+    )
+    changed['resources'].pop()
+    changed['global_quota'] = {'list_resource_version': '20', 'scope_sha256': 'policy-drift'}
+    assert not capsule_related_scope_unchanged(
+        {**first, 'global_quota': {'list_resource_version': '11', 'scope_sha256': 'same'}},
+        changed,
+    )
 
 
 @pytest.mark.parametrize('conflict', ['foreign_owner', 'wrong_capsule_tenant', 'wrong_capsule_uid'])
