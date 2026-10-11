@@ -347,6 +347,22 @@ Multiple legacy sources, unsupported LimitRange constraints, foreign controller 
 
 After successful takeover, subsequent allocation changes continue through the governed capacity/preflight and provider-verification path while Namespace `ownership_status` remains `adopted`.
 
+**Allocation workflow target lifecycle (#1159):** Resource Profiles → Allocation Change
+offers only `kaori_managed` Native Namespace allocations belonging to a
+`ready` Tenant and a non-terminal Namespace generation. Adopted / Observed
+Cutover retains its existing capability-gated Native/Capsule read-only
+eligibility explanation, but likewise excludes terminal Namespace generations
+and non-Ready parent Tenants. `released` and `deprovisioned` Namespace
+records are **historical evidence**, not actionable allocation targets;
+previously Released/Decommissioned Tenant generations never re-enter selectors
+even if a stale Namespace remains `ready`. The full Namespace registry and
+verified Release/Re-adopt provenance deliberately retain these original records
+and frozen snapshots. Identical display names are **not** deduplicated: each
+legitimate active Namespace remains keyed by its immutable record ID. Both
+Allocation Change and Cutover POSTs reject terminal record IDs before any
+provider operation, including stale forms. This restores #991/#1049 Release
+governance semantics without deleting history or changing quota/admission rules.
+
 Capsule remains authoritative and fail-closed. KAORI never substitutes Native ResourceQuota writes for Capsule-owned allocation. Admitted Capsule shared-allocation controls use the existing capability-gated provider executor; Capsule-generated per-Namespace Container/PVC policy stays `provider_mirrored_policy` until an approved Capsule source-write contract exists.
 
 Provider mutation or read-back failure never marks the allocation KAORI Managed. Failure evidence records the attempted contract and provider outcome so later sync/drift reconciliation can reason from committed evidence without pretending the transaction succeeded.
