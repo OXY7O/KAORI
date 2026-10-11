@@ -295,3 +295,23 @@ No page-local fourth Hero accessory type is permitted.
 ### L0–L7 release evidence
 
 The release boundary requires Static Quality, Contract, Unit, Functional, Integration, Security Regression, Rendering/UI Contract, and End-to-End Smoke evidence. Kubernetes/provider reachability remains an Integration/worker responsibility; the E2E smoke validates Flask/session/templates/application shell deterministically without requiring a live cluster.
+
+
+## Provenance-safe TLS collection freshness (#1327)
+
+`TLSCertificateCollectionState.updated_at` means the latest collection attempt;
+`collected_at` advances only after a complete successful Secret collection.
+Failed attempts may update source status and error detail, but they do not
+refresh the committed certificate evidence clock or delete the old certificate
+snapshot. Ingress mapping remains an independently qualified evidence source.
+
+The TLS Operations `Last Successful` indicator is derived from committed
+certificate-row `collected_at` and collection-state `collected_at` **only
+when the Secret source is Collected**. Never choose a newer failed attempt's
+`updated_at` or failed collection-state timestamp, nor treat a fleet job's
+partial success as success for each target cluster. A fleet scope is `Current`
+only if **every registered cluster** has a non-stale successful Secret snapshot
+and Collected Ingress mapping. Exceptions take precedence over Current; the
+underlying last-known-good timestamp remains visible and must not imply current
+mapping evidence. The legacy database column's meaning is clarified in-place;
+no new schema or UI taxonomy is introduced.
