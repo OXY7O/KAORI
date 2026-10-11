@@ -36,6 +36,7 @@ def _resource(kind, *, owner_refs=None, labels=None):
         'capsule.clastix.io/tenant': _CAPSULE,
     }
     if kind == 'RoleBinding':
+        markers.pop('kaori.io/environment')
         markers['kaori.io/access-grant'] = 'grant-id'
     if labels is not None:
         markers = labels
@@ -278,3 +279,23 @@ def test_source_preview_never_exposes_raw_provider_policy_or_secret_material():
     assert 'SENSITIVE-PRINCIPAL' not in str(result)
     assert 'subjects' not in str(result)
     assert result['provider_execution_admitted'] is False
+
+
+def test_rolebinding_nonconsentable_kaori_profile_label_is_blocked():
+    before = _resource('RoleBinding')
+    before.metadata.labels['kaori.io/resource-profile'] = 'stale-profile'
+    args = _args('RoleBinding', before)
+    with pytest.raises(ValueError, match='partial, unsafe'):
+        build_capsule_related_metadata_handoff_patch(**args)
+
+
+@pytest.mark.parametrize('kind', _KINDS)
+def test_related_preview_and_readback_refuse_changed_namespace_metadata(kind):
+    before = _resource(kind)
+    args = _args(kind, before)
+    altered = _after(kind, before)
+    altered.metadata.namespace = 'foreign-ns'
+    with pytest.raises(ValueError):
+        verify_capsule_related_metadata_preview(**args, preview=altered)
+    with pytest.raises(ValueError):
+        classify_capsule_related_metadata_readback(**args, current=altered)
