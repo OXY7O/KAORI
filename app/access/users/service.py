@@ -395,6 +395,7 @@ def build_user_action_policies(actor: User | None, users: list[User]) -> dict[in
             requested_role_id=user.role_id,
             requested_is_active=user.account_is_active,
             requested_is_super_admin=user.is_super_admin if user.auth_source == 'database' else False,
+            validate_new_role=False,
         )
         can_reset, reset_reason = can_reset_user_password(actor, user)
         can_activate, activate_reason = can_activate_user(actor, user)
