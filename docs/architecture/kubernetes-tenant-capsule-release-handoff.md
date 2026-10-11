@@ -124,6 +124,44 @@ Additional cluster-scoped Capsule GlobalTenantResource/resource-pool variants
 remain subject to explicit version/capability admission rather than
 being silently interpreted as a global quota.
 
+## Admission evidence and recovery worklist — source-only follow-up
+
+`capsule_handoff_admission.py` is a **pure, non-executable** evaluator of
+the current Capsule Release plan hash, exact provider fingerprint,
+independent approval, accepted X.509 successor, matching authenticated
+SelfSubjectReview/SAR evidence, actor identity, zero active dependency counts,
+fresh authoritative preflight and scoped CR/Namespace/Quota/RBAC evidence.
+A record must be independently reloaded and reverified by a future guarded
+service; a caller-supplied mapping is never accepted as operational proof.
+
+The evaluator recomputes the namespaced ResourceQuota/LimitRange/RoleBinding
+inventory digest and checks the committed Capsule CR component digests and
+provider LIST coverage. It also binds the authenticated provider credential,
+principal groups and exact SAR scope to the independently accepted actor.
+A stale plan, duplicate/missing list, changed object, expired consent,
+new RBAC subject, unmatched X.509 identity, missing preflight or forged
+controller-origin boolean produces blocking reason codes **without sensitive
+principal or credential values**.
+
+`capsule_handoff_worklist.py` derives a deterministic **operator review
+worklist** for Capsule Tenant CR preservation, Namespace ownership markers,
+namespaced quota/limit/RBAC objects and GlobalResourceQuota. Every object is
+classified as provider-preserved, candidate metadata review or operator
+investigation. It recomputes source LIST + global quota digests instead of
+trusting a hash field supplied by a caller. No raw provider spec, RBAC
+subjects, live patch bodies or credentials are included. The SHA-256 worklist
+fingerprint, counts and unresolved reasons are part of the pure assessment,
+not a persisted provider execution receipt.
+
+**Deliberate hard stop:** `rbac_controller_origin_unverified` and
+`resource_specific_handoff_worklist_not_admitted` are mandatory blockers.
+`dry_run_admitted=false`, `provider_execution_admitted=false`,
+`auto_retry_authorized=false` and `release_authorized=false` are invariant,
+including when all supplied preconditions match. No route, scheduler,
+DB execution audit, live dry-run, PATCH, retry or finalizer was enabled.
+Future actual controller-provenance proof must be a separately security-reviewed
+provider authority contract, not a managedFields claim, label, or matching hash.
+
 ## Required before completing #1229
 
 1. Build on the SHA-bound Namespace and cluster-scoped
