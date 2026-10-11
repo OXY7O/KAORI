@@ -27,7 +27,7 @@
         {# Host-owned compact status row; no cell borders or vertical separators. #}
         {{ detail_ui.summary_strip([
             ('Role Mapping', 'Mapped' if permission.role_count else 'Unassigned', ''),
-            ('Active Usage', 'In Use' if permission.active_user_count else 'No Active Users', ''),
+            ('Active Usage', 'In Use' if permission.active_user_count else 'No Effective Users', ''),
             ('JIT Projection', 'Configured' if permission.jit_provider_count else 'Not Configured', ''),
             ('Requires', 'Present' if effective_requires else 'None', '')
         ], compact=true, borderless=true) }}
@@ -137,7 +137,7 @@
                                             <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(role.name, role.key, role.type_icon) }}</td>
                                             <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(role.type_label, role.type_icon) }}</td>
                                             <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(role.state_label, role.state_tone) }}</td>
-                                            <td class="{{ table_ui.cell_classes() }}"><span class="text-sm text-content-secondary">{{ 'In Use' if role.active_user_count else 'No Active Users' }}</span></td>
+                                            <td class="{{ table_ui.cell_classes() }}"><span class="text-sm text-content-secondary">{{ 'In Use' if role.active_user_count else 'No Effective Users' }}</span></td>
                                             <td class="{{ table_ui.cell_classes() }}"><span class="text-sm text-content-secondary">{{ 'Configured' if role.jit_provider_count else 'Not Configured' }}</span></td>
                                         </tr>
                                     {% endfor %}
