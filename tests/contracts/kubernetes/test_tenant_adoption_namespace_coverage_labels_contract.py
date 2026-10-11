@@ -91,3 +91,13 @@ def test_adoption_preflight_discloses_provider_mutations_and_capsule_attach_no_w
     assert 'Adoption commits <span class="font-semibold">Adopted / Observed</span> evidence only.' not in source
     assert "value={{ row.provider_resource_version }}" not in source
     assert 'name="provider_resource_version"' in source
+
+
+def test_adoption_provider_copy_retains_readback_and_external_constraints() -> None:
+    adoption = _source()
+    allocation = (ROOT / 'app/kubernetes/tenant/allocation_cutover.py').read_text(encoding='utf-8')
+    assert 'Kubernetes/Capsule remains authoritative.' in adoption
+    assert 'by provider read-back and preserves external constraints.' in adoption
+    assert 'KAORI Managed Namespace allocation verified by Native Kubernetes read-back.' in allocation
+    assert 'Adoption origin retained in evidence.' in allocation
+

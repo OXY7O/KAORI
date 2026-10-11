@@ -361,3 +361,13 @@ def test_governance_coverage_and_evidence_follow_canonical_section_layout() -> N
     assert workspace.count('[5, 10, 25, 50]') == 2
     assert "artifactRegistryGovernanceSyncFinished from:body" in workspace
     assert "url_for('artifact_registry.governance_sync')" in workspace
+
+
+def test_registry_guidance_copy_keeps_provider_and_committed_evidence_authority() -> None:
+    harbor = (ROOT / 'app/templates/integrations/registry/providers/harbor/index.html').read_text(encoding='utf-8')
+    governance = (ROOT / 'app/artifact_registry/presentation_governance.py').read_text(encoding='utf-8')
+    assert 'KAORI uses committed Registry inventory and validated Metrics Source bindings for operational metrics.' in harbor
+    assert 'Harbor owns repositories, artifacts, policies, and runtime;' in harbor
+    assert 'KAORI validates, normalizes, correlates, and commits evidence.' in harbor
+    assert 'Committed project retention and immutability evidence.' in governance
+

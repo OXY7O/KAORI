@@ -252,6 +252,16 @@ def test_incomplete_domains_are_not_classified_healthy() -> None:
 
     assert posture['label'] == 'Limited Evidence'
     assert posture['tone'] == 'unknown'
+    assert posture['reason'] == '0/3 storage evidence domains complete; gaps remain Unknown.'
+
+    with_one_complete = domain.build_storage_posture(
+        {'query_observed': True, 'evidence_complete': True, 'risk': {'tone': 'normal'}},
+        {'inventory_evidence_available': True, 'evidence_complete': False, 'risk': {'tone': 'unknown'}},
+        {'inventory_evidence_available': False, 'evidence_complete': False, 'risk': {'tone': 'unknown'}},
+    )
+    assert with_one_complete['label'] == 'Limited Evidence'
+    assert with_one_complete['tone'] == 'unknown'
+    assert with_one_complete['reason'] == '1/3 storage evidence domains complete; gaps remain Unknown.'
 
 
 def test_pvc_summary_preserves_partial_capacity_and_usage_aggregates() -> None:

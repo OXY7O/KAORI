@@ -39,3 +39,18 @@ def test_tls_rotation_keeps_its_dedicated_full_width_workflow() -> None:
     template = (ROOT / 'app/templates/kubernetes/operations/secrets/tls_rotation.html').read_text(encoding='utf-8')
     assert 'data-kubernetes-operation-layout="full-width-v2"' in template
     assert 'workflow_control(' in template
+
+
+def test_configmap_and_bulk_tls_guidance_is_compact_without_weakening_safety() -> None:
+    create = (ROOT / 'app/templates/kubernetes/operations/configmaps/create.html').read_text(encoding='utf-8')
+    update = (ROOT / 'app/templates/kubernetes/operations/configmaps/update.html').read_text(encoding='utf-8')
+    delete = (ROOT / 'app/templates/kubernetes/operations/configmaps/delete.html').read_text(encoding='utf-8')
+    rotation = (ROOT / 'app/templates/kubernetes/operations/secrets/tls_rotation.html').read_text(encoding='utf-8')
+
+    assert 'Audit records actor, target, operation, and outcome—never ConfigMap values.' in create
+    assert 'Live ConfigMap data and immutability are read from Kubernetes before editing.' in update
+    assert 'Verify the exact name and effective delete authorization without issuing DELETE.' in delete
+    assert 'Only explicitly checked TLS Secrets can be updated; all unselected targets remain untouched.' in rotation
+    assert 'Validate the uploaded certificate pair and every selected TLS Secret before applying an update.' in rotation
+    assert "workflow_control('Controlled Bulk TLS Rotation'" in rotation
+

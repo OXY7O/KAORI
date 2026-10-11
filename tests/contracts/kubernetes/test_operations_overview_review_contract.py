@@ -42,3 +42,10 @@ def test_both_delete_pages_use_shared_governed_confirmation() -> None:
     assert 'data-destructive-modal-confirm' in component
     assert 'selectedOptions[0]' in script
     assert 'opener?.focus()' in script
+
+
+def test_kubernetes_operations_copy_keeps_provider_authority_and_live_target_guidance() -> None:
+    overview = read('app/templates/kubernetes/operations/overview.html')
+    assert 'Run governed Kubernetes workflows by capability; Kubernetes remains the execution authority.' in overview
+    assert 'Open the relevant capability workspace to identify and verify the live Kubernetes target before proceeding.' in overview
+

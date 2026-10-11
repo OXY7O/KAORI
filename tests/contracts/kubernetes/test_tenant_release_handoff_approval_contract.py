@@ -101,3 +101,19 @@ def test_handoff_preparation_cannot_replace_a_current_approval_request() -> None
     assert "row.release_handoff_preparation_state == 'pending' and handoff_plan.requested_by != current_user.id" in modal
     assert "External Reference Unverified" in modal
     assert "not an additional approval" in modal
+
+
+def test_release_handoff_compact_guidance_preserves_legacy_approval_evidence() -> None:
+    ui = read('app/templates/kubernetes/tenant/partials/_tenant_management_detail.html')
+    approval = read('app/kubernetes/tenant/release_handoff_approval.py')
+
+    assert 'Dry-run passed; no live handoff occurred.' in ui
+    assert 'External reference recorded; not successor consent.' in ui
+    assert 'Provider changes observed; successor acceptance unverified.' in ui
+    assert 'Handoff requires successor consent, conditional mutation, and provider read-back.' in ui
+    assert 'Security/UAT admission remains required; Kubernetes stays authoritative.' in ui
+    assert 'Exact recorded reason' in ui
+    assert '{{ blocker }}' in ui
+    assert 'Before Release, its Namespace allocation controls must be handed over explicitly' in approval
+    assert '_EXPECTED_HANDOFF_FRAGMENTS' in approval
+
