@@ -119,3 +119,11 @@ JSON references. Namespace-selected PVC/PV bindings retain complete scoped
 candidates. Parent-heavy graph scopes preserve the previous safe full load and
 truncation path until equivalent bounded relationship closure is proven. No
 live Kubernetes API calls are permitted in read operations.
+
+
+Deep Networking Pod visibility also depends on **all** committed Service
+selectors; for Networking Depth 3/Full, Service ORM selection deliberately
+remains complete. The graph still applies its ordinary bounded visible-node
+budget afterward, but no selector may be discarded before determining which
+Pods are relevant. Benchmark and verify this fallback before any later SQL
+selector pushdown optimization.

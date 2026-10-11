@@ -29,5 +29,6 @@ def test_complex_dependency_scopes_preserve_nonbounded_candidates() -> None:
     repo = source('app/kubernetes/inventory/topology/repository.py')
     assert "max_nodes=family_budget if not namespace else None" in repo
     assert "max_nodes=family_budget if selection.scope in {'all', 'compute'} else None" in repo
+    assert "selection.scope == 'networking' and selection.include_pods" in repo
     assert "query.filter(referenced_pod.exists())" in repo
     assert "_storage_for_namespace(items, namespace)" in repo

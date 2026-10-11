@@ -111,7 +111,9 @@ def test_deep_candidate_prefixes_preserve_full_committed_type_counts(repository_
             namespace='', selection=TopologySelection.from_filters(scope='networking', depth='3'),
             max_nodes=350,
         )
-        assert len(networking.services) == 350
+        # All selectors remain available for deep Networking Pod relevance.
+        assert len(networking.services) == 355
+        assert 'service' not in networking.source_totals
         assert len(networking.pods) == 355
         assert 'pod' not in networking.source_totals
 
