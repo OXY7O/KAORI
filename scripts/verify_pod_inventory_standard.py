@@ -154,6 +154,23 @@ def main() -> int:
         errors,
     )
     require(
+        '>Owner & Restarts</th>' in table_content
+        and 'table_label.metadata_label(pod.owner_kind_label)' in table_content
+        and 'title="{{ pod.owner_name_display }}"' in table_content
+        and 'pod.restart_summary' in table_content
+        and 'pod.owner_display' not in table_content,
+        'Pod owner and restart evidence must use the compact three-level layout.',
+        errors,
+    )
+    require(
+        "'owner_kind_label': owner_kind_label" in backend
+        and "'owner_name_display': owner_name_display" in backend
+        and "'restart_summary':" in backend
+        and "'kubernetes.io/config.mirror'" in backend,
+        'Pod owner kind and static-Pod classification must use committed evidence.',
+        errors,
+    )
+    require(
         'inventory.total_pods == 0' in summary,
         'Empty Pod posture must use Unknown rather than healthy tones.',
         errors,
