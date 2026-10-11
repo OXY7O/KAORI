@@ -21,8 +21,10 @@ from app.kubernetes.tenant.release_handoff_inventory import handoff_fingerprint
 _MAX_RESOURCES = 300
 
 
-def _fingerprints(related: Mapping[str, Any]) -> tuple[str, str]:
-    """Recompute candidate LIST digests; never trust caller-provided hashes."""
+def _fingerprints(
+    related: Mapping[str, Any], *, names: set[str],
+) -> tuple[str, str]:
+    """Recompute complete candidate LIST digests, rejecting missing scopes."""
     rows, lists = related.get('resources'), related.get('list_snapshots')
     quota = related.get('global_quota')
     if (
@@ -34,6 +36,50 @@ def _fingerprints(related: Mapping[str, Any]) -> tuple[str, str]:
         or not quota['list_resource_version']
     ):
         raise ValueError('Capsule read-back provider LIST coverage is malformed.')
+    expected_lists = {
+        (ns, kind) for ns in names
+        for kind in ('ResourceQuota', 'LimitRange', 'RoleBinding')
+    }
+    observed_lists: list[tuple[str, str]] = []
+    counts: dict[tuple[str, str], int] = {}
+    for item in lists:
+        if not isinstance(item, Mapping):
+            raise ValueError('Capsule read-back has malformed provider LIST metadata.')
+        ns, kind = item.get('namespace'), item.get('kind')
+        rv, count = item.get('list_resource_version'), item.get('count')
+        if (
+            not isinstance(ns, str) or not isinstance(kind, str)
+            or not isinstance(rv, str) or not rv
+            or type(count) is not int or not 0 <= count <= 100
+        ):
+            raise ValueError('Capsule read-back has incomplete LIST scope/revisions.')
+        observed_lists.append((ns, kind))
+        counts[(ns, kind)] = count
+    if (
+        len(observed_lists) != len(expected_lists)
+        or len(set(observed_lists)) != len(observed_lists)
+        or set(observed_lists) != expected_lists
+    ):
+        raise ValueError('Capsule read-back omitted or duplicated namespaced LIST coverage.')
+    seen_resources: set[tuple[str, str, str]] = set()
+    observed_counts: dict[tuple[str, str], int] = {}
+    for item in rows:
+        if not isinstance(item, Mapping):
+            raise ValueError('Capsule read-back resource record is malformed.')
+        ns, kind, name = item.get('namespace'), item.get('kind'), item.get('name')
+        uid, rv = item.get('uid'), item.get('resource_version')
+        if (
+            not all(isinstance(v, str) and v for v in (ns, kind, name, uid, rv))
+            or (ns, kind) not in expected_lists
+            or (ns, kind, name) in seen_resources
+        ):
+            raise ValueError('Capsule read-back related resource identity is not unique and scoped.')
+        seen_resources.add((ns, kind, name))
+        observed_counts[(ns, kind)] = observed_counts.get((ns, kind), 0) + 1
+    if any(observed_counts.get(key, 0) != count for key, count in counts.items()):
+        raise ValueError('Capsule read-back listed resource counts are inconsistent.')
+    if len(quota['resources']) > 100:
+        raise ValueError('Capsule cluster quota read-back exceeds admitted list bound.')
     related_sha = _digest({'resources': rows, 'lists': lists})
     quota_sha = _digest({
         'api_version': quota['served_version'],
@@ -82,13 +128,16 @@ def inspect_capsule_readback_candidate(
     ):
         raise ValueError('Capsule read-back plan SHA or handoff fingerprint is invalid.')
     worklist = build_capsule_handoff_worklist(plan=plan, related=source_related)
-    base_related_sha, base_quota_sha = _fingerprints(source_related)
+    scoped_names = {row['name'] for row in namespaces}
+    base_related_sha, base_quota_sha = _fingerprints(source_related, names=scoped_names)
     if (
         base_related_sha != cr.get('capsule_related_resources_sha256')
         or base_quota_sha != cr.get('capsule_shared_quota_sha256')
     ):
         raise ValueError('Capsule read-back original scope is no longer SHA-bound.')
-    current_related_sha, current_quota_sha = _fingerprints(current_related)
+    current_related_sha, current_quota_sha = _fingerprints(
+        current_related, names=scoped_names,
+    )
     ns_by_name = {item['name']: item for item in namespaces}
     if set(current_namespaces) != set(ns_by_name):
         raise ValueError('Capsule read-back Namespace set is partial or includes foreign objects.')
