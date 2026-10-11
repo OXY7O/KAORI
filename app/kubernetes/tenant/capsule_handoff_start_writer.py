@@ -129,7 +129,7 @@ def _require_postgres_ledger_write_once_guards(session: Any) -> None:
                (SELECT rolsuper OR rolcreatedb OR rolcreaterole
                 FROM pg_roles WHERE rolname = current_user) AS elevated,
                pg_get_userbyid(c.relowner) = current_user AS is_owner,
-               pg_has_role(current_user, c.relowner, 'MEMBER') AS member_of_owner,
+               pg_has_role((SELECT oid FROM pg_roles WHERE rolname = current_user), c.relowner, 'MEMBER') AS member_of_owner,
                has_table_privilege(current_user, c.oid, 'INSERT') AS may_insert,
                has_table_privilege(current_user, c.oid, 'UPDATE') AS may_update,
                has_table_privilege(current_user, c.oid, 'DELETE') AS may_delete,
