@@ -71,6 +71,31 @@ def _digest(value: Any) -> str:
     return hashlib.sha256(_canonical(value)).hexdigest()
 
 
+def _role_contract_sha256(*, role: Any, subjects: Any, grant: Any, tenant: Any) -> str:
+    """Hash only the exact Capsule access contract, never persist principals."""
+    if not all(isinstance(val, str) and val for val in (role, grant, tenant)):
+        raise ValueError('Capsule RBAC contract is missing role, grant or Tenant identity.')
+    if not isinstance(subjects, (list, tuple)) or not 0 < len(subjects) <= 30:
+        raise ValueError('Capsule RBAC contract subjects are unavailable or unbounded.')
+    normalized: list[dict[str, str]] = []
+    for item in subjects:
+        kind, name = _get(item, 'kind'), _get(item, 'name')
+        group = _get(item, 'api_group') or _get(item, 'apiGroup') or ''
+        namespace = _get(item, 'namespace') or ''
+        if (
+            not isinstance(kind, str) or not kind or not isinstance(name, str) or not name
+            or not isinstance(group, str) or not isinstance(namespace, str)
+        ):
+            raise ValueError('Capsule RoleBinding has malformed subject identity.')
+        normalized.append({
+            'kind': kind, 'name': name, 'api_group': group, 'namespace': namespace,
+        })
+    normalized.sort(key=lambda x: (x['kind'], x['name'], x['namespace'], x['api_group']))
+    return _digest({
+        'role': role, 'subjects': normalized, 'grant': grant, 'tenant': tenant,
+    })
+
+
 def _owner_refs(meta: Any) -> list[dict[str, Any]]:
     refs = _get(meta, 'owner_references')
     if refs is None:
@@ -175,12 +200,31 @@ def classify_capsule_related_resource(
     else:
         origin = 'unattributed'
         problems.append(f'Capsule {kind}/{namespace}/{name} ownership has no verifiable origin.')
-    return {
+    evidence = {
         'kind': kind, 'namespace': namespace, 'name': name,
         'uid': uid, 'resource_version': rv, 'origin': origin,
         'policy_sha256': spec_sha256, 'metadata_sha256': metadata_sha256,
         'mutation_authorized': 'false',
-    }, problems
+    }
+    if kind == 'RoleBinding' and has_kaori_controls:
+        grant = labels.get('kaori.io/access-grant')
+        role_ref = _get(resource, 'role_ref') or _get(resource, 'roleRef')
+        role = _get(role_ref, 'name')
+        role_kind = _get(role_ref, 'kind')
+        if (
+            not isinstance(grant, str) or not grant
+            or role_kind != 'ClusterRole'
+            or not isinstance(role, str) or not role
+            or kaori_id != tenant_id
+        ):
+            problems.append(f'Capsule RoleBinding/{namespace}/{name} origin contract is incomplete.')
+        else:
+            evidence['grant_scope_sha256'] = _digest({'namespace': namespace, 'grant': grant})
+            evidence['binding_contract_sha256'] = _role_contract_sha256(
+                role=role, subjects=_get(resource, 'subjects'),
+                grant=grant, tenant=tenant_id,
+            )
+    return evidence, problems
 
 
 def _listing(api: Any, *, kind: str, namespace: str) -> tuple[list[Any], str]:
