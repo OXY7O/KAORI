@@ -83,3 +83,12 @@ def test_blocked_coverage_does_not_admit_tls_apply() -> None:
         form_id='tls-secret-update-form',
         require_targets=True,
     ) is None
+
+
+def test_bulk_tls_validity_requires_full_resolved_target_set() -> None:
+    validation = load_validation_module()
+    selection = payload(valid=True, targets=[{'status': 'ready'}])
+    selection['target_count_requested'] = 2
+    assert validation.validation_trigger(
+        selection, form_id='tls-secret-update-form', require_targets=True
+    ) is None
