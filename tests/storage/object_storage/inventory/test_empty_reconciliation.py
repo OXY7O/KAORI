@@ -155,3 +155,20 @@ def test_reconciliation_fails_closed_on_drift_or_disagreement(
     assert setup.rollbacks == 1
     assert not setup.deleted
     assert system.inventory_observed_at == datetime(2026, 10, 1, tzinfo=UTC)
+
+
+@pytest.mark.parametrize('payload', [
+    {},
+    {'Buckets': None},
+    {'Buckets': [], 'IsTruncated': True},
+    {'Buckets': [], 'NextContinuationToken': 'more'},
+    {'Buckets': [{'Name': ''}]},
+    {'Buckets': ['invalid-record']},
+])
+def test_incomplete_bucket_discovery_is_not_authoritative_empty(payload) -> None:
+    from app.integrations.storage.object_storage.providers.minio.client import _bucket_inventory
+    from app.integrations.storage.object_storage.providers.minio.contracts import MinioConnectionError
+
+    with pytest.raises(MinioConnectionError, match='incomplete or malformed'):
+        _bucket_inventory(payload)
+    assert _bucket_inventory({'Buckets': []}) == ()
