@@ -2,7 +2,7 @@
 {% import "components/details/_detail_content.html" as detail_ui %}
 {% import "components/action_button.html" as action_button %}
 <div data-kaori-detail-variant="full-workspace-modal"
-     data-kaori-detail-density="adaptive-stacks"
+     data-kaori-detail-density="unified-resource-sheet"
      class="{{ detail_ui.expanded_workspace_outer_classes() }}">
     <div class="{{ detail_ui.expanded_workspace_shell_classes() }}">
         <header data-resource-detail-header
@@ -106,7 +106,7 @@
                                             <p class="mt-0.5 break-all text-xs leading-5 text-content-muted">{{ module.key }}</p>
                                         </div>
                                         <span class="shrink-0 rounded-md bg-surface-elevated px-2 py-0.5 text-xs font-semibold tabular-nums text-content-secondary sm:mt-1 sm:inline-flex"
-                                              aria-label="{{ module.count }} permissions">{{ module.count }} permission{{ '' if module.count == 1 else 's' }}</span>
+                                              aria-label="{{ module.count }} permission{{ '' if module.count == 1 else 's' }}">{{ module.count }} permission{{ '' if module.count == 1 else 's' }}</span>
                                     </div>
                                     <div class="flex min-w-0 flex-wrap items-start gap-1.5" data-kaori-role-module-capabilities>
                                         {% for permission in module.permissions %}
