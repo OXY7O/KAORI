@@ -72,3 +72,33 @@ def test_shared_analytics_tracker_is_parseable_and_retains_approved_geometry() -
     assert 'data-overview-load-tracker="true"' in rendered
     assert 'role="status"' in rendered
     assert 'aria-live="polite"' in rendered
+
+
+def test_overview_section_tracker_has_single_shared_runtime_owner() -> None:
+    # This is the Overview *section* tracker, not the generic page-level
+    # tracker retained in analytics/controls.js by merged issue #391.
+    overview = (TEMPLATES / 'kubernetes/analytics/overview/index.html').read_text()
+    registry = (TEMPLATES / 'artifact_registry/analytics.html').read_text()
+    layout = (TEMPLATES / 'layouts/app.html').read_text()
+    shared = (ROOT / 'app/static/js/analytics/section_load_tracker.js').read_text()
+    readme = (ROOT / 'app/kubernetes/analytics/README.md').read_text()
+
+    legacy = ROOT / 'app/static/js/kubernetes/analytics/overview.js'
+    assert not legacy.exists(), 'Retired Overview-specific tracker must not regain event ownership.'
+    assert overview.count("filename='js/analytics/section_load_tracker.js'") == 1
+    assert registry.count("filename='js/analytics/section_load_tracker.js'") == 1
+    for page in (overview, registry, layout):
+        assert 'js/kubernetes/analytics/overview.js' not in page
+
+    assert "filename='js/analytics/controls.js'" in layout
+    assert 'app/static/js/analytics/section_load_tracker.js' in readme
+    assert 'app/static/js/kubernetes/analytics/overview.js' not in readme
+    assert shared.count('window.kaoriInitializeOverviewLoadTracker = initialize') == 1
+    assert shared.count("document.body.addEventListener('htmx:beforeRequest'") == 1
+    assert shared.count("document.body.addEventListener('htmx:afterSettle'") == 1
+    assert 'currentSection(trackedSection(event))' in shared
+    assert "setState(section, 'failed')" in shared
+    for event in ('htmx:responseError', 'htmx:sendError', 'htmx:timeout'):
+        assert event in shared
+    assert 'Requested Sections' in shared
+    assert 'JobExecution progress' in shared
