@@ -120,6 +120,16 @@ def build_capsule_shared_allocation_cutover_state(tenant: Tenant) -> dict[str, A
 
     authority = str(baseline.get('allocation_authority') or 'unknown')
     source = sources[0] if len(sources) == 1 else {}
+    # A missing/stale baseline is not proof that a Tenant quota is unconfigured.
+    # An explicit committed observation of both authority paths is required.
+    no_tenant_quota_configured = (
+        authority == 'none_observed'
+        and 'tenant_resource_quota' in baseline
+        and baseline['tenant_resource_quota'] is None
+        and 'global_resource_quota' in baseline
+        and isinstance(global_quota.get('source_resources'), list)
+        and not sources
+    )
     authority_display = {
         'capsule_global_resource_quota': 'Capsule GlobalResourceQuota',
         'capsule_tenant_resource_quotas': 'Capsule Tenant.spec.resourceQuotas',
@@ -131,6 +141,7 @@ def build_capsule_shared_allocation_cutover_state(tenant: Tenant) -> dict[str, A
         'applicable': authority == 'capsule_global_resource_quota',
         'detected_authority': authority_display.get(authority, 'Unresolved allocation authority'),
         'source_count': len(sources),
+        'no_tenant_quota_configured': no_tenant_quota_configured,
         'supported': not reasons,
         'state': 'adopted_observed' if not reasons else 'control_unavailable',
         'reason': 'Eligible for explicit Capsule shared allocation governance cutover.'

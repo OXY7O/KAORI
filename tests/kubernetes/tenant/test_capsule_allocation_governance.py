@@ -375,3 +375,54 @@ def test_capsule_shared_governance_guidance_is_read_only_and_links_only_admitted
     assert shared.count('data-tenant-shared-allocation-form') == 1
     assert shared.count('type="submit"') == 1
     assert shared.count('name="csrf_token"') == 1
+
+
+def test_no_tenant_quota_configured_requires_complete_committed_provider_observation(monkeypatch):
+    _no_existing_intent(monkeypatch)
+    tenant = _tenant(authority='none_observed', sources=[], served_version='v1beta2')
+    baseline = tenant.provider_evidence_json['allocation_baseline']
+    baseline['tenant_resource_quota'] = None
+    state = build_capsule_shared_allocation_cutover_state(tenant)
+    assert state['no_tenant_quota_configured'] is True
+    assert state['supported'] is False
+    assert state['applicable'] is False
+    assert state['source_count'] == 0
+
+
+def test_new_capsule_tenant_without_allocation_sync_does_not_claim_no_quota(monkeypatch):
+    _no_existing_intent(monkeypatch)
+    tenant = _tenant(authority='none_observed', sources=[], served_version='')
+    state = build_capsule_shared_allocation_cutover_state(tenant)
+    assert state['no_tenant_quota_configured'] is False  # Missing explicit observation.
+
+    tenant.provider_evidence_json.pop('allocation_baseline')
+    state = build_capsule_shared_allocation_cutover_state(tenant)
+    assert state['no_tenant_quota_configured'] is False
+    assert state['authority'] == 'unknown'
+    assert state['supported'] is False
+
+
+def test_committed_tenant_quota_stays_alternative_authority_not_initial_allocation(monkeypatch):
+    _no_existing_intent(monkeypatch)
+    tenant = _tenant(authority='capsule_tenant_resource_quotas', sources=[], served_version='')
+    baseline = tenant.provider_evidence_json['allocation_baseline']
+    baseline['tenant_resource_quota'] = {'scope': 'Tenant', 'quota': {'requests.cpu': '1'}}
+    state = build_capsule_shared_allocation_cutover_state(tenant)
+    assert state['no_tenant_quota_configured'] is False
+    assert state['detected_authority'] == 'Capsule Tenant.spec.resourceQuotas'
+
+
+def test_capsule_zero_quota_help_is_read_only_in_shared_allocation_ui():
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[3]
+    template = (
+        root / 'app/templates/kubernetes/tenant/partials/_capsule_shared_allocation_cutover.html'
+    ).read_text(encoding='utf-8')
+    assert "state.get('no_tenant_quota_configured')" in template
+    assert 'No Tenant Quota Configured' in template
+    assert 'this is not a failed deployment' in template
+    assert 'Initial quota configuration is a separate governed workflow' in template
+    assert 'No Tenant-level quota authority is recorded.' in template
+    assert template.count('data-tenant-shared-allocation-form') == 1
+    assert template.count('name="csrf_token"') == 1
