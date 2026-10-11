@@ -66,6 +66,28 @@ def test_namespace_widths_prioritize_names_and_preserve_control_pairs() -> None:
     assert "table_ui.cluster_identity(namespace.cluster_name, namespace.cluster_environment, 'w-full min-w-0')" in table
 
 
+def test_workload_column_widths_prioritize_long_names_and_scope() -> None:
+    table = read('workloads/partials/_table_content.html')
+    widths = {
+        'Workload': 26,
+        'Scope': 23,
+        'Operational State': 14,
+        'Managed Pods': 12,
+        'Update Strategy': 15,
+        'Details': 10,
+    }
+    assert sum(widths.values()) == 100
+    assert widths['Workload'] > widths['Update Strategy']
+    assert widths['Scope'] > widths['Operational State']
+    for heading, percent in widths.items():
+        header = table.split(f'>{heading}</th>', 1)[0].rsplit('<th', 1)[-1]
+        assert f'w-[{percent}%]' in header
+    assert "table_ui.table_classes('min-w-[78rem] !table-fixed')" in table
+    assert 'overflow-x-auto overscroll-x-contain' in table
+    assert 'table_ui.title_cell(workload.name, workload.identity_supporting' in table
+    assert 'table_ui.namespaced_scope_identity(workload.cluster_name' in table
+
+
 def test_storage_and_ingress_keep_full_identity_available_in_title() -> None:
     storage = read('storage/partials/_table_content.html')
     ingress = read('ingresses/partials/_table_content.html')
