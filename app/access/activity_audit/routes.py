@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from flask import Blueprint, render_template, request
+from flask_login import current_user
 from flask.typing import ResponseReturnValue
 
 from app.access.activity_audit.service import build_activity_audit_context, get_activity_audit_detail
+from app.access.activity_audit.source_links import build_related_source_links
 from app.access.rbac.decorators import permission_required
 
 bp = Blueprint('activity_audit', __name__)
@@ -42,4 +44,11 @@ def detail(notification_id: int) -> ResponseReturnValue:
     item = get_activity_audit_detail(notification_id=notification_id)
     if item is None:
         return ('Activity not found.', 404)
+    item['related_sources'] = build_related_source_links(
+        notification_id=notification_id,
+        can_view_jobs=current_user.has_permission('jobs.view'),
+        can_view_tenants=(
+            current_user.has_permission('tenant.view') or current_user.has_permission('tenant.manage')
+        ),
+    )
     return render_template('access/activity_audit/partials/_activity_detail.html', item=item)

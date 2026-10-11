@@ -254,3 +254,22 @@ def test_activity_audit_additional_producer_sources_preserve_separate_authoritie
     # Notification writer's pre-persist sanitization is not on these two paths.
     assert 'persist_notification(' not in auth
     assert 'persist_notification(' not in tenant
+
+def test_activity_detail_links_only_permissioned_committed_source_workspaces() -> None:
+    routes = read('app/access/activity_audit/routes.py')
+    links = read('app/access/activity_audit/source_links.py')
+    detail = read('app/templates/access/activity_audit/partials/_activity_detail.html')
+
+    assert 'build_related_source_links(' in routes
+    assert "current_user.has_permission('jobs.view')" in routes
+    assert "current_user.has_permission('tenant.view')" in routes
+    assert "current_user.has_permission('tenant.manage')" in routes
+    assert 'if not can_view_jobs and not can_view_tenants:' in links
+    assert "metadata.get('job_public_id')" in links
+    assert 'JobExecution.query.filter_by(public_id=job_id).first()' in links
+    assert "url_for('jobs.executions', execution_tab='registry', search=job_id)" in links
+    assert "metadata.get('tenant_audit_evidence_id')" in links
+    assert 'TenantAuditEvidence.query.filter_by(public_id=evidence_id).first()' in links
+    assert "url_for('tenant.tenant_detail', tenant_id=evidence.tenant_id)" in links
+    assert 'data-activity-related-sources="committed-only"' in detail
+    assert 'No duplicate event is created.' in detail
