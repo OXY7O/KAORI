@@ -103,3 +103,19 @@ modes intentionally retain full relationship candidate loading until a separate
 relation-preserving bounded strategy can be verified for Service selectors,
 Ingress, Pod configuration references, and PVC/PV links. Do not apply an
 unconditional SQL LIMIT to those relationship-sensitive paths.
+
+
+## Bounded relationship candidates (Depth 2 / 3 / Full)
+
+When the complete Cluster + Namespace parent cohort fits within 350 graph nodes,
+repository queries retain deterministic type-specific prefixes with exact SQL
+counts for omitted-by-type evidence. Namespace-backed types must have a latest
+committed Namespace parent. ConfigMap/Secret and PVC/PV candidates have separate
+budgets matching the fair group-selection algorithm. Namespace-specific Node
+placement uses committed SQL EXISTS rather than loading all Pods. All/Compute
+Pod scopes use bounded query prefixes; Networking/Configuration/Storage Pod
+scopes retain complete candidates because their selection depends on labels and
+JSON references. Namespace-selected PVC/PV bindings retain complete scoped
+candidates. Parent-heavy graph scopes preserve the previous safe full load and
+truncation path until equivalent bounded relationship closure is proven. No
+live Kubernetes API calls are permitted in read operations.
