@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from jinja2 import Environment
+
 ROOT = Path(__file__).resolve().parents[3]
 
 
@@ -116,6 +118,10 @@ def test_permission_role_coverage_empty_role_matrix_has_matching_columns() -> No
     assert '<th scope="col" class="sticky left-0' in coverage
     assert '<th scope="col" class="min-w-[10rem]' in coverage
     assert 'permission.key in role_permission_keys.get(role.id, [])' in coverage
+    # Jinja compilation catches malformed block terminators such as a
+    # misspelled `endfor` closer that source-presence checks miss entirely.
+    assert '{% endfor %>' not in coverage
+    Environment().parse(coverage)
 
 
 def test_permission_role_coverage_delegation_badge_aligns_with_identity_text() -> None:
