@@ -356,6 +356,7 @@ def _verify_related_after(
     *, before: Any, after: Any, record: Mapping[str, Any],
     kind: str, namespace: str, labels: Mapping[str, str],
     approved_keys: set[str], successor_owner: str,
+    allow_same_rv_transfer: bool = False,
 ) -> str:
     name, uid, rv, _ = _scope_identity(after, namespace=namespace)
     if (
@@ -370,15 +371,8 @@ def _verify_related_after(
         raise ValueError('Capsule related read-back source UID/RV is stale.')
     if _related_provider_invariants(before) != _related_provider_invariants(after):
         raise ValueError('Capsule related handoff changed owner, annotations or finalizers.')
-    # Reclassify the policy using the same canonical inventory normalizer;
-    # RoleBinding roleRef/subjects remain compared even after grant labels leave.
-    old_policy = classify_capsule_related_resource(
-        resource=before, kind=kind, namespace=namespace,
-        tenant_id=labels['kaori.io/tenant-id'],
-        capsule_name='', capsule_uid='',
-    ) if False else None
-    # Never calculate policy from arbitrary response metadata: the inventory
-    # classifier canonicalizes roleRef+subjects and namespaced quota/limit spec.
+    # The inventory classifier canonicalizes quota/limit spec and RoleBinding
+    # roleRef+subjects. Recompute the same policy digest on read-back.
     if kind == 'RoleBinding':
         policy = {
             'roleRef': _get(after, 'role_ref') or _get(after, 'roleRef'),
@@ -395,7 +389,7 @@ def _verify_related_after(
     actual = _strings(_get(_get(after, 'metadata'), 'labels'), label='labels')
     if actual == labels and rv == source_rv:
         return 'pending_provider_transfer'
-    if actual == expected and rv != source_rv:
+    if actual == expected and (rv != source_rv or allow_same_rv_transfer):
         return 'provider_markers_transferred'
     raise ValueError('Capsule related handoff has stale or partially transferred ownership.')
 
@@ -406,42 +400,24 @@ def verify_capsule_related_metadata_preview(
     capsule_uid: str, successor_owner: str, approved_label_keys: list[str],
 ) -> dict[str, Any]:
     """Validate the returned dryRun=All object, not a live provider success."""
-    _related_transfer_source(
-        record=record, before=before, kind=kind, namespace=namespace,
-        tenant_id=tenant_id, capsule_name=capsule_name, capsule_uid=capsule_uid,
-        approved_label_keys=approved_label_keys,
-    )
     source, labels, keys = _related_transfer_source(
         record=record, before=before, kind=kind, namespace=namespace,
         tenant_id=tenant_id, capsule_name=capsule_name, capsule_uid=capsule_uid,
         approved_label_keys=approved_label_keys,
     )
+    # Kubernetes admission previews may report the original RV. For preview
+    # ONLY accept the exact transferred labels without demanding an RV change.
+    state = _verify_related_after(
+        before=before, after=preview, record=record, kind=kind,
+        namespace=namespace, labels=labels, approved_keys=keys,
+        successor_owner=successor_owner, allow_same_rv_transfer=True,
+    )
+    if state != 'provider_markers_transferred':
+        raise ValueError('Capsule related dry-run did not apply the exact label transfer.')
     expected = {
         **{key: value for key, value in labels.items() if key not in keys},
         'app.kubernetes.io/managed-by': _successor(successor_owner),
     }
-    result = _verify_related_after(
-        before=before, after=preview, record=record, kind=kind,
-        namespace=namespace, labels=labels, approved_keys=keys,
-        successor_owner=successor_owner,
-    ) if _scope_identity(preview, namespace=namespace)[2] != source['resource_version'] else None
-    # Kubernetes dry-run is not guaranteed to return a new RV. Verify the
-    # same exact label/spec/metadata invariants even when the RV is unchanged.
-    if (
-        _strings(_get(_get(preview, 'metadata'), 'labels'), label='labels') != expected
-        or _related_provider_invariants(before) != _related_provider_invariants(preview)
-    ):
-        raise ValueError('Capsule related dry-run would mutate unauthorized provider metadata.')
-    if kind == 'RoleBinding':
-        policy = {'roleRef': _get(preview, 'role_ref') or _get(preview, 'roleRef'),
-                  'subjects': _get(preview, 'subjects')}
-    else:
-        policy = _get(preview, 'spec')
-    if (
-        _scope_identity(preview, namespace=namespace)[:2] != (source['name'], source['uid'])
-        or policy is None or _digest(policy) != source['policy_sha256']
-    ):
-        raise ValueError('Capsule related dry-run changed UID, quota, limits or RoleBinding.')
     return {
         'kind': kind, 'namespace': namespace, 'name': source['name'],
         'uid': source['uid'], 'source_resource_version': source['resource_version'],
