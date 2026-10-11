@@ -1,5 +1,7 @@
 # Capsule Release — guarded handoff and recovery source boundary (#1229)
 
+**Scope/acceptance freeze:** [Capsule Release & Re-Adopt — Minimum Secure Acceptance Baseline](kubernetes-tenant-capsule-release-readopt-gates.md) defines mandatory G0–G6 gates, exact Release/Re-Adopt exit criteria, and the outstanding Re-Adopt resourceVersion lineage defect. Follow that baseline before expanding proof machinery.
+
 Status: **DevContainer source-review slice; provider execution NOT admitted**.
 Parent #991; prerequisite source #1227 and #1228. Neither merge nor committed
 successor acceptance source is actual X.509 consent or provider authorization.
