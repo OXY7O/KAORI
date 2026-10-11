@@ -15,7 +15,7 @@ def test_freshness_consumes_normalized_route_scope() -> None:
     assert "get_inventory_freshness_context(cluster_id=effective_cluster_id)" in routes
     assert "_inventory_cluster_scope(raw_cluster_id)" in routes
     assert "g.inventory_effective_cluster_id = context['filters']['cluster_id']" in routes
-    assert "'scope_label': selected[0].name if cluster_id and selected_count == 1" in source(
+    assert "selected[0].name if cluster_id and selected_count == 1" in source(
         'app/kubernetes/inventory/overview.py'
     )
 
