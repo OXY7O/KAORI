@@ -15,9 +15,7 @@
                 {{ detail_ui.stacked_detail_row('User ID', user.id) }}
                 {{ detail_ui.stacked_detail_row('Username', user.username, break_all=true) }}
                 {{ detail_ui.stacked_detail_row('Display Name', user.display_name or 'Not Set') }}
-                <div class="min-w-0 sm:col-span-2">
-                    {{ detail_ui.stacked_detail_row('Email', user.email, break_all=true) }}
-                </div>
+                {{ detail_ui.stacked_detail_row('Email', user.email, break_all=true) }}
             </div>
         {% endcall %}
 
@@ -26,7 +24,7 @@
             description='Identity authority and credential ownership',
             compact_layout=true
         ) %}
-            <div class="grid min-w-0 gap-x-8 gap-y-3 sm:grid-cols-2"
+            <div class="grid min-w-0 gap-x-8 gap-y-3 sm:grid-cols-2 lg:grid-cols-3"
                  data-kaori-user-authentication-facts>
                 <div class="min-w-0">
                     <p class="text-xs font-medium leading-5 text-content-muted">Identity Source</p>
@@ -38,7 +36,9 @@
                     <p class="text-xs font-medium leading-5 text-content-muted">Identity Admission</p>
                     <div class="mt-1">{{ table_label.status_label(identity_context.identity_state, identity_context.identity_tone, 'fingerprint') }}</div>
                 </div>
-                {{ detail_ui.stacked_detail_row('Last Authentication', user.last_login_at|user_datetime("Never")) }}
+                <div class="min-w-0 lg:col-span-2">
+                    {{ detail_ui.stacked_detail_row('Last Authentication', user.last_login_at|user_datetime("Never")) }}
+                </div>
             </div>
             <div class="mt-3 border-t border-outline-subtle pt-3"
                  data-kaori-user-credential-boundary>
@@ -52,7 +52,7 @@
             description='Effective local role and access state',
             compact_layout=true
         ) %}
-            <div class="grid min-w-0 gap-x-8 gap-y-3 sm:grid-cols-2"
+            <div class="grid min-w-0 gap-x-8 gap-y-3 sm:grid-cols-2 lg:grid-cols-3"
                  data-kaori-user-authorization-facts>
                 {{ detail_ui.stacked_detail_row('Assigned Role', user_view.role.label) }}
                 <div class="min-w-0">
@@ -79,7 +79,7 @@
             description='Account state and committed timestamps',
             compact_layout=true
         ) %}
-            <div class="grid min-w-0 gap-x-8 gap-y-3 sm:grid-cols-2"
+            <div class="grid min-w-0 gap-x-8 gap-y-3 sm:grid-cols-2 lg:grid-cols-4"
                  data-kaori-user-lifecycle-facts>
                 <div class="min-w-0">
                     <p class="text-xs font-medium leading-5 text-content-muted">Account State</p>
@@ -96,7 +96,7 @@
             description='RBAC and account lifecycle guardrails apply',
             compact_layout=true
         ) %}
-            <div class="flex min-w-0 flex-wrap items-center gap-2"
+            <div class="flex min-w-0 flex-wrap items-center gap-2 lg:justify-end"
                  data-kaori-user-detail-actions>
                 {% if actions.get('can_reset_password') %}
                     <a href="{{ url_for('users.reset_password', user_id=user.id) }}"
