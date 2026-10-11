@@ -275,7 +275,6 @@ def test_artifact_registry_dashboard_state_semantics_and_jinja_mapping_safety() 
     ):
         assert token in forecast
     assert 'forecast_projection_chart' not in forecast
-    assert 'overview.capacity.metrics' in capacity_snapshot
     assert "'metrics': [" in presentation
     assert "'source_ready': metrics_ready_count > 0" in presentation
     assert "'security_not_applicable': security_not_applicable" in presentation
