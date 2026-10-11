@@ -56,7 +56,13 @@ def test_deep_candidate_prefixes_preserve_full_committed_type_counts(repository_
                     cluster_id=cluster.id, namespace='app', name=name,
                     workload_type='Deployment', collected_at=now,
                 ),
-                ServiceInventory(cluster_id=cluster.id, namespace='app', service_name=name, collected_at=now),
+                ServiceInventory(
+                    cluster_id=cluster.id, namespace='app', service_name=name,
+                    # A Pod selected by a Service beyond the 350 visible prefix
+                    # must remain present in deep Networking graph projections.
+                    selector={'app': 'late'} if index == 354 else {},
+                    collected_at=now,
+                ),
                 IngressInventory(cluster_id=cluster.id, namespace='app', ingress_name=name, collected_at=now),
                 ConfigurationInventory(
                     cluster_id=cluster.id, namespace='app', name=name,
@@ -77,7 +83,9 @@ def test_deep_candidate_prefixes_preserve_full_committed_type_counts(repository_
                 ),
                 PodInventory(
                     cluster_id=cluster.id, namespace='app', pod_name=name,
-                    node_name='worker', workload_type='Deployment', workload_name=name, collected_at=now,
+                    node_name='worker', workload_type='Deployment', workload_name=name,
+                    labels={'app': 'late'} if index == 354 else {},
+                    collected_at=now,
                 ),
             ])
         db.session.add(WorkloadInventory(
@@ -116,6 +124,9 @@ def test_deep_candidate_prefixes_preserve_full_committed_type_counts(repository_
         assert 'service' not in networking.source_totals
         assert len(networking.pods) == 355
         assert 'pod' not in networking.source_totals
+        assert any(
+            service.selector.get('app') == 'late' for service in networking.services
+        )
 
         scoped = load_topology_records(
             clusters=[cluster], latest_inventory={cluster.id: snapshot},
