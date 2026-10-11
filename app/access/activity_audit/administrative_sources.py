@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from typing import Any
+
+from sqlalchemy import or_
 
 from flask import abort, url_for
 
-from app.common.pagination import paginate_query
+from app.common.pagination import normalize_per_page, paginate_query
 from app.models.audit import AuditEvent
 from app.models.job import JobExecution
 from app.platform_operations.notifications.metadata import redact_operational_text
@@ -26,6 +29,28 @@ _SCOPES = {
     },
 }
 
+_OUTCOMES = (
+    ('all', 'All Outcomes'),
+    ('succeeded', 'Succeeded'),
+    ('partially_succeeded', 'Partially Succeeded'),
+    ('failed', 'Failed'),
+    ('queued', 'Queued'),
+    ('canceled', 'Canceled'),
+)
+_TIME_RANGES = (
+    ('all', 'All Hot Records'),
+    ('24h', '24 Hours'),
+    ('7d', '7 Days'),
+    ('30d', '30 Days'),
+    ('90d', '90 Days'),
+)
+_TIME_DELTA = {
+    '24h': timedelta(hours=24),
+    '7d': timedelta(days=7),
+    '30d': timedelta(days=30),
+    '90d': timedelta(days=90),
+}
+
 
 def _available_scopes(*, can_view_jobs: bool, can_manage_tenants: bool) -> tuple[str, ...]:
     result: list[str] = []
@@ -40,6 +65,10 @@ def build_administrative_evidence_context(
     *,
     scope: str | None,
     page: int,
+    per_page: int = 5,
+    search: str = '',
+    outcome: str = 'all',
+    time_range: str = 'all',
     can_view_jobs: bool,
     can_manage_tenants: bool,
 ) -> dict[str, Any] | None:
@@ -53,6 +82,10 @@ def build_administrative_evidence_context(
     if selected not in available:
         abort(403)
     specification = _SCOPES[selected]
+    normalized_search = str(search or '').strip()[:120]
+    normalized_outcome = outcome if outcome in dict(_OUTCOMES) else 'all'
+    normalized_time_range = time_range if time_range in dict(_TIME_RANGES) else 'all'
+    normalized_per_page = normalize_per_page(per_page)
     query = (
         AuditEvent.query.filter(
             AuditEvent.target_type.in_(specification['target_types']),
@@ -60,7 +93,25 @@ def build_administrative_evidence_context(
         )
         .order_by(AuditEvent.created_at.desc(), AuditEvent.id.desc())
     )
-    events, pagination = paginate_query(query, page=page, per_page=5)
+    if normalized_search:
+        query = query.filter(
+            or_(
+                AuditEvent.action.icontains(normalized_search, autoescape=True),
+                AuditEvent.summary.icontains(normalized_search, autoescape=True),
+                AuditEvent.target_id.icontains(normalized_search, autoescape=True),
+            )
+        )
+    if normalized_outcome != 'all':
+        query = query.filter(AuditEvent.action.endswith(f'_{normalized_outcome}', autoescape=True))
+        if normalized_outcome == 'succeeded':
+            query = query.filter(
+                ~AuditEvent.action.endswith('_partially_succeeded', autoescape=True)
+            )
+    if normalized_time_range != 'all':
+        query = query.filter(
+            AuditEvent.created_at >= datetime.now(UTC) - _TIME_DELTA[normalized_time_range]
+        )
+    events, pagination = paginate_query(query, page=page, per_page=normalized_per_page)
     rows: list[dict[str, Any]] = []
     for event in events:
         action_suffix = event.action.removeprefix(specification['prefix'])
@@ -108,4 +159,17 @@ def build_administrative_evidence_context(
         'source_label': specification['source'],
         'rows': rows,
         'pagination': pagination,
+        'filters': {
+            'search': normalized_search,
+            'outcome': normalized_outcome,
+            'time_range': normalized_time_range,
+        },
+        'outcome_options': _OUTCOMES,
+        'time_range_options': _TIME_RANGES,
+        'has_active_filters': (
+            selected != available[0]
+            or bool(normalized_search)
+            or normalized_outcome != 'all'
+            or normalized_time_range != 'all'
+        ),
     }

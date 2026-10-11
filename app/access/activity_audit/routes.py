@@ -49,6 +49,10 @@ def index() -> ResponseReturnValue:
         evidence = build_administrative_evidence_context(
             scope=request.args.get('admin_scope'),
             page=_request_int('admin_page', 1),
+        per_page=_request_int('admin_per_page', 5),
+        search=request.args.get('admin_search', ''),
+        outcome=request.args.get('admin_outcome', 'all'),
+        time_range=request.args.get('admin_time_range', 'all'),
             can_view_jobs=can_view_jobs,
             can_manage_tenants=can_manage_tenants,
         )
@@ -89,6 +93,10 @@ def index() -> ResponseReturnValue:
         context['administrative_evidence'] = build_administrative_evidence_context(
             scope=request.args.get('admin_scope'),
             page=_request_int('admin_page', 1),
+        per_page=_request_int('admin_per_page', 5),
+        search=request.args.get('admin_search', ''),
+        outcome=request.args.get('admin_outcome', 'all'),
+        time_range=request.args.get('admin_time_range', 'all'),
             can_view_jobs=can_view_jobs,
             can_manage_tenants=can_manage_tenants,
         )
@@ -119,6 +127,10 @@ def administrative_evidence() -> ResponseReturnValue:
     evidence = build_administrative_evidence_context(
         scope=request.args.get('admin_scope'),
         page=_request_int('admin_page', 1),
+        per_page=_request_int('admin_per_page', 5),
+        search=request.args.get('admin_search', ''),
+        outcome=request.args.get('admin_outcome', 'all'),
+        time_range=request.args.get('admin_time_range', 'all'),
         can_view_jobs=current_user.has_permission('jobs.view'),
         can_manage_tenants=current_user.has_permission('tenant.manage'),
     )
