@@ -259,15 +259,20 @@ def _overview_inventory_items(
     artifact_total: int,
     total_size_bytes: int,
     public_project_count: int,
+    has_committed_inventory: bool,
 ) -> list[dict[str, Any]]:
-    return [
-        {'label': 'Projects', 'value': counts['projects'] if committed_count else 'Not Collected', 'icon': 'folder-kanban', 'role': 'Scope'},
-        {'label': 'Repositories', 'value': counts['repositories'] if committed_count else 'Not Collected', 'icon': 'package-open', 'role': 'Catalog'},
+    items = [
+        {'label': 'Projects', 'value': counts['projects'], 'icon': 'folder-kanban', 'role': 'Scope'},
+        {'label': 'Repositories', 'value': counts['repositories'], 'icon': 'package-open', 'role': 'Catalog'},
         {'label': 'Artifacts', 'value': artifact_total, 'icon': 'fingerprint', 'role': 'Immutable'},
-        {'label': 'Tags', 'value': counts['tags'] if committed_count else 'Not Collected', 'icon': 'tags', 'role': 'Aliases'},
+        {'label': 'Tags', 'value': counts['tags'], 'icon': 'tags', 'role': 'Aliases'},
         {'label': 'Artifact Footprint', 'value': _fmt_bytes(total_size_bytes), 'icon': 'database', 'role': 'Storage'},
         {'label': 'Public Projects', 'value': public_project_count, 'icon': 'globe-2', 'role': 'Exposure'},
     ]
+    if not has_committed_inventory:
+        for item in items:
+            item['value'] = 'Not Collected'
+    return items
 
 
 def _security_freshness_status(
@@ -537,6 +542,7 @@ def _overview_operations_projection(
             artifact_total=artifact_total,
             total_size_bytes=total_size_bytes,
             public_project_count=public_project_count,
+            has_committed_inventory=bool(committed_provider_ids),
         ),
         'freshness': freshness,
     }
