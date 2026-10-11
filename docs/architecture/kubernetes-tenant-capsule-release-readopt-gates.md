@@ -68,6 +68,20 @@ also be reviewed separately: the Capsule adoption path can establish
 KAORI-managed profiles and is not an implicit provider read-only
 operation.
 
+## Capsule CR versus Namespace handback identity — source correction
+
+`_released_predecessor_evidence` now selects the historical **cluster-scoped
+Capsule Tenant CR handback resourceVersion** directly, instead of wrongly
+resolving it through the Native Tenant's per-Namespace version map. Native
+Tenant identity remains Namespace-scoped, and its existing
+`provider_resource_versions[namespace]` verification is unchanged.
+Released Namespace generation verification continues to use the separately
+stored Namespace-row handback `resource_version`; no UID-only fallback or
+handback guard relaxation is permitted. Focused positive lineage regressions
+are authored but **not run**. This fixes one G5 source correlation bug, not
+Capsule successor handback implementation or UAT admission: G5 remains blocked
+by the unfinished G2/G3 executor and G4 finalizer.
+
 ## Scope-freeze and execution rules
 
 **Must keep:** independent human authorization; exact provider
