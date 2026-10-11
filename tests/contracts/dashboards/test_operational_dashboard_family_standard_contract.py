@@ -141,8 +141,7 @@ def test_data_freshness_microcopy_and_shared_family_geometry() -> None:
         assert text in kubernetes
     assert "'Committed cluster snapshots'" not in kubernetes
     assert "'Per Cluster'" not in kubernetes
-    assert 'Available alerts from committed 24h analytics snapshots;' in storage
-    assert 'Alertmanager first, Metrics Source fallback.' in storage
+    assert 'Committed 24h alerts; Alertmanager primary, Metrics Source fallback.' in storage
     assert "f' {alert_fallback} system(s) using fallback evidence.'" in storage
     for retired in (
         'All Clusters mode summarizes committed capacity snapshots by cluster.',
