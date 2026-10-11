@@ -231,7 +231,7 @@ def _registry_capacity_posture(project_forecasts: list[dict[str, Any]]) -> dict[
         ),
         'Low': (
             'Committed quota evidence currently shows usable project headroom.',
-            'No quota risk within the warning window.',
+            'Committed project quota forecasts remain outside the warning threshold, with sufficient headroom for current demand.',
             'Continue worker materialization and review growth after major publication changes.',
         ),
         'Unknown': (
@@ -320,7 +320,7 @@ def _registry_capacity_forecast(
         'nearest_quota_days': f'{nearest_days:.1f} days' if nearest_days is not None else 'N/A',
         'risk': posture['risk'],
         'detail': (
-            'Committed growth and quota evidence.'
+            'Registry growth is evaluated using committed inventory changes and project quota evidence from the bound Metrics Source.'
         ),
     }
 
