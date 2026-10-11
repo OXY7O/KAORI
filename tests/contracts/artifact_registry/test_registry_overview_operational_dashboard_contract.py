@@ -231,6 +231,10 @@ def test_artifact_registry_overview_keeps_reference_information_hierarchy() -> N
     assert '_registry_reporting(' not in build_overview
     assert "'failed_refresh_count': failed_refresh_count" in presentation
     assert "'capacity': capacity" in presentation
+    signals_projection = presentation.split("if section == 'signals':", 1)[1].split("if section == 'reporting':", 1)[0]
+    assert 'if selected_provider is None:' in signals_projection
+    assert signals_projection.index('return context') < signals_projection.index('_registry_alerts(selected_provider)')
+    assert signals_projection.index('return context') < signals_projection.index('_registry_recommended_actions(selected_provider)')
     assert "'alerts': _registry_alerts(selected_provider)" in presentation
     assert "'recommended_actions': _registry_recommended_actions(selected_provider)" in presentation
     assert "'reporting': _registry_reporting(selected_provider)" in presentation
