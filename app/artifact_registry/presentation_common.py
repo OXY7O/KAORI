@@ -550,6 +550,26 @@ def _overview_scope_context(
     return context, providers, selected_provider, scoped_providers, states
 
 
+def _overview_inventory_kpi_evidence(
+    scoped_providers: list[IntegrationInstance],
+    states: list[RegistryCollectionState],
+) -> tuple[list[int], str]:
+    """Qualify KPI counts by active-scope committed snapshot coverage."""
+    eligible_ids = {int(provider.id) for provider in scoped_providers}
+    committed_ids = sorted(
+        {
+            int(state.integration_instance_id)
+            for state in states
+            if state.last_committed_at is not None and int(state.integration_instance_id) in eligible_ids
+        }
+    )
+    if not committed_ids:
+        return [], 'Not Collected'
+    if len(committed_ids) < len(eligible_ids):
+        return committed_ids, f'Partial Inventory ({len(committed_ids)}/{len(eligible_ids)})'
+    return committed_ids, 'Committed Inventory'
+
+
 def _overview_kpi_values(
     committed_provider_ids: list[int],
 ) -> dict[str, int]:
