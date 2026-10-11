@@ -933,3 +933,50 @@ def test_review_scope_is_scan_friendly_but_keeps_authoritative_blockers():
     assert 'Latest Release Review' not in review
     assert 'list-disc space-y-2' not in review
     assert 'row.release_preflight.status' in review
+
+
+def test_release_guidance_notes_are_consistent_across_steps_without_changing_authority():
+    detail = read(DETAIL)
+    Environment().parse(detail)
+    step_two = detail.split('id="tenant-release-stage-inventory"', 1)[1].split(
+        "{% elif tenant_release_step == 'approval' %}", 1
+    )[0]
+    step_three = detail.split('id="tenant-release-stage-approval"', 1)[1].split(
+        "{% else %}", 1
+    )[0]
+    step_four = detail.split('id="tenant-release-stage-finalize"', 1)[1].split(
+        'aria-label="Release wizard previous and next"', 1
+    )[0]
+
+    assert detail.count('{% macro release_step_guidance(') == 1
+    assert 'data-release-step-guidance' in detail
+    assert 'border-outline-subtle bg-surface-elevated' in detail
+    assert step_two.count('release_step_guidance(') == 2
+    assert 'Run Review Release to collect the provider handoff inventory' in step_two
+    assert 'This does not authorize Release.' in step_two
+    assert 'release_step_guidance(' in step_three
+    assert 'Run Review Release to determine whether handoff is required.' in step_three
+    assert 'Run Review Release to establish committed scope' in step_four
+    assert 'Resolve recorded conditions and independently verify the successor.' in step_four
+    assert detail.count('<form ') == 17
+    assert detail.count('name="csrf_token"') == 17
+    assert detail.count('hx-post=') == 17
+
+
+def test_release_review_scope_is_one_unified_committed_evidence_surface():
+    detail = read(DETAIL)
+    review = detail.split('id="tenant-release-stage-readiness"', 1)[1].split(
+        "{% elif tenant_release_step == 'handoff' %}", 1
+    )[0]
+    Environment().parse(detail)
+    assert 'aria-label="Committed Release review status"' in review
+    assert 'aria-label="Scope review coverage"' in review
+    assert 'sm:grid-cols-3' in review
+    assert 'bg-kaori-primary' in review
+    assert 'No dependency blockers recorded' in review
+    assert 'Provider handoff and independent verification are still required.' in review
+    assert 'View recorded conditions' in review
+    assert review.count('<form ') == 1
+    assert review.count('hx-post=') == 1
+    assert 'for blocker in row.release_preflight.blockers' in review
+    assert 'row.release_preflight.status' in review

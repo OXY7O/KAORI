@@ -854,6 +854,14 @@ of all forms. Runtime tests, DevContainer browser Visual QA, Developer
 Check, CI/CD/Full Admission, staging UAT, main promotion and deployment
 are HOLD pending explicit authorization.
 
+## Release Review Scope and step prerequisites (#1144; current visual refinement)
+
+The four-step Tenant Release wizard keeps its original one-active-step HTMX/URL navigation, fail-closed backend guards, exact Review Release POST and committed provider evidence. Step 1 now uses a single full-width status/action/coverage surface: the recorded preflight status and exact blocker count, one prominent Review Release button, and three compact review dimensions (provider resources, allocation ownership, governance dependencies). Exact source blocker messages are retained in the native accessible `View recorded conditions` disclosure; no-clear-blockers does not assert provider acceptance.
+
+Steps 2–4 reuse one read-only Violet/neutral **inline guidance note** (same icon, spacing, title and typography), with conditional step-specific content for not-reviewed, reviewed-without-handoff, missing Integrations Manage, and finalization-blocked cases. The note is not a toast, approval, alert severity, or executable control; it does not replace committed provider inventory, review results, independent approval, read-back or any explicit consent. The existing Release endpoint/permissions, HTMX forms, audit, 17 total Tenant forms/CSRF and all provider mutations remain unchanged.
+
+Source-only regression covers the unified scope, common note, original authoritative branches, unchanged form counts and Jinja parse on later execution. Local DevContainer visual/functional human acceptance pending (desktop/mobile, light/dark, recorded/no-record, blocked/clear). CI/CD, runtime gates, Full Admission, provider UAT, staging/main promotion and deployment remain HOLD until specifically authorized.
+
 ## Tenant Governance Scope and permanent Release wizard (#1077; historical Release/authority foundation; scope presentation superseded by #1079)
 
 Human Visual Review of #1075 rejected the generic four-KPI dashboard, the
