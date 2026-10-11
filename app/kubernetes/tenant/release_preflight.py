@@ -14,6 +14,10 @@ from app.kubernetes.tenant.decommission_service import (
 )
 from app.kubernetes.tenant.allocation_observation import observe_native_namespace_allocation
 from app.kubernetes.tenant.capsule_allocation_observation import _capsule_status_namespace_names
+from app.kubernetes.tenant.capsule_handoff_authority_inventory import (
+    inspect_capsule_role_binding_lineage,
+    observe_capsule_global_quotas,
+)
 from app.kubernetes.tenant.capsule_handoff_related_inventory import observe_capsule_related_inventory
 from app.kubernetes.tenant.external_access_observation import latest_external_capsule_access_evidence
 from app.kubernetes.tenant.release_handoff_inventory import (
@@ -228,16 +232,33 @@ def review_tenant_release_preflight_committed(*, tenant_id: str, actor_user_id: 
                                 namespace_components=capsule_ns, tenant_id=tenant.id,
                                 capsule_name=str(tenant.provider_reference), capsule_uid=uid,
                             )
+                            global_quota = observe_capsule_global_quotas(
+                                custom=client.custom_objects_api(),
+                                tenant_name=str(tenant.provider_reference),
+                            )
+                            rbac_lineage = inspect_capsule_role_binding_lineage(
+                                capsule_spec=obj.get('spec'),
+                                related=capsule_related_inventory,
+                                namespaces=capsule_ns, tenant_id=tenant.id,
+                            )
                             capsule_cr = next(
                                 item for item in handoff_components
                                 if item.get('kind') == 'CapsuleTenant'
                             )
+                            # Bind all complete, read-only authoritative scope
+                            # digests to the existing SHA-bound Release plan.
                             capsule_cr['capsule_related_resources_sha256'] = capsule_related_inventory['resource_sha256']
                             capsule_cr['capsule_related_resources_count'] = str(capsule_related_inventory['resource_count'])
+                            capsule_cr['capsule_shared_quota_sha256'] = global_quota['scope_sha256']
+                            capsule_cr['capsule_rbac_lineage_sha256'] = rbac_lineage['lineage_sha256']
+                            capsule_related_inventory['global_quota'] = global_quota
+                            capsule_related_inventory['rbac_lineage'] = rbac_lineage
                             blockers.extend(capsule_related_inventory['blockers'])
+                            blockers.extend(global_quota['blockers'])
+                            blockers.extend(rbac_lineage['blockers'])
                             blockers.append(
-                                'Capsule shared quota and controller-generated RBAC origins '
-                                'are not yet fully verified for handoff.'
+                                'Capsule controller-generated RoleBinding origins and '
+                                'provider handoff remain unverified; executor is blocked.'
                             )
                         except (ValueError, TypeError, AttributeError, ApiException, StopIteration):
                             capsule_related_inventory = None
