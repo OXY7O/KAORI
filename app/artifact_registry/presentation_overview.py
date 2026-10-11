@@ -476,7 +476,10 @@ def _overview_operations_projection(
     total_size_bytes, public_project_count, latest_security_at = _overview_inventory_evidence(committed_provider_ids)
     state_by_provider = {int(state.integration_instance_id): state for state in states}
     artifact_total = counts['artifacts']
-    scanned_count = sum(item['scanned'] for item in security_counts.values())
+    committed_id_set = set(committed_provider_ids)
+    scanned_count = sum(
+        item['scanned'] for provider_id, item in security_counts.items() if provider_id in committed_id_set
+    )
     analytics_by_provider = _latest_registry_analytics(scoped_providers)
     metrics_ready_count = sum(metrics.get('status') == 'ready' for metrics in metrics_by_provider.values())
     analytics_ready_count = sum(snapshot is not None for snapshot in analytics_by_provider.values())
