@@ -342,8 +342,8 @@ def _load_storage(
 
 def _storage_for_namespace(items: list[StorageInventory], namespace: str) -> list[StorageInventory]:
     claims = [item for item in items if item.storage_type == 'PersistentVolumeClaim' and item.namespace == namespace]
-    volume_names = {
-        str((item.details or {}).get('volume_name') or '').strip()
+    volume_keys = {
+        (item.cluster_id, str((item.details or {}).get('volume_name') or '').strip())
         for item in claims
         if str((item.details or {}).get('volume_name') or '').strip()
     }
@@ -351,5 +351,5 @@ def _storage_for_namespace(items: list[StorageInventory], namespace: str) -> lis
         item
         for item in items
         if (item.storage_type == 'PersistentVolumeClaim' and item.namespace == namespace)
-        or (item.storage_type == 'PersistentVolume' and item.name in volume_names)
+        or (item.storage_type == 'PersistentVolume' and (item.cluster_id, item.name) in volume_keys)
     ]

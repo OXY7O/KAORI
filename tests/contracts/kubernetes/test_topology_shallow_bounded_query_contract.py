@@ -25,7 +25,7 @@ def test_shallow_truncation_uses_exact_source_counts_without_dropping_relationsh
     assert 'skipped = max(int(total) - displayed[kind], 0)' in graph
     assert 'omitted_nodes = sum(omitted_by_type.values())' in graph
     assert "shallow_budget = max_nodes if selection.depth == '1' else None" in repository
-    assert "if not needs_pods:" in repository
+    assert 'if not selection.include_pods:' in repository
     assert '_storage_for_namespace(items, namespace)' in repository
 
 
