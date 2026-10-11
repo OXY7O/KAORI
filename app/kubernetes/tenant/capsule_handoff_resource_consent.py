@@ -102,6 +102,8 @@ def inspect_capsule_resource_consent(
     if (
         type(requester) is not int or type(reviewer) is not int
         or type(successor) is not int or len({requester, reviewer, successor}) != 3
+        or type(manifest.get('reviewed_by')) is not int
+        or type(manifest.get('accepted_by')) is not int
         or manifest['reviewed_by'] != reviewer
         or manifest['accepted_by'] != successor
         or acceptance.get('reviewed_by') != reviewer
@@ -122,6 +124,7 @@ def inspect_capsule_resource_consent(
             'provider_mutation_performed', 'provider_handoff_verified',
             'release_authorized', 'secret_material_persisted',
         ))
+        or not _checked_recently(plan.get('requested_at'))
         or not _checked_recently(approval.get('approved_at'))
         or not _checked_recently(acceptance.get('accepted_at'))
         or not _checked_recently(manifest.get('accepted_at'))
@@ -173,12 +176,9 @@ def inspect_capsule_resource_consent(
         labels = item.get('proposed_label_keys')
         if (
             not isinstance(labels, list) or not labels
+            or not all(isinstance(label, str) for label in labels)
             or len(labels) != len(set(labels))
-            or any(
-                not isinstance(label, str)
-                or label not in _ALLOWED_LABELS[source['kind']]
-                for label in labels
-            )
+            or any(label not in _ALLOWED_LABELS[source['kind']] for label in labels)
         ):
             raise ValueError('Capsule metadata-only consent contains foreign or unsafe label keys.')
         reviewed.append({
