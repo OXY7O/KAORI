@@ -48,6 +48,7 @@
                         {% endif %}
                     </p>
                 </div>
+                <p class="mt-1 truncate text-xs text-content-muted" title="Peak projected utilization">Peak projected utilization</p>
             </article>
             <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
                 <div class="flex items-center gap-2 text-xs font-semibold text-content-muted">
@@ -60,6 +61,7 @@
                     <p class="text-xl font-semibold text-content-primary">{{ dashboard.forecast_snapshot.at_risk_count }} of {{ dashboard.forecast_snapshot.item_count }}</p>
                     {{ table_label.status_label('Critical' if overall_tone == 'critical' else ('Warning' if overall_tone == 'warning' else 'Normal') , overall_tone) }}
                 </div>
+                <p class="mt-1 truncate text-xs text-content-muted" title="Resources nearing forecast limits">Resources nearing forecast limits</p>
             </article>
             <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
                 <div class="flex items-center gap-2 text-xs font-semibold text-content-muted">
@@ -69,7 +71,7 @@
                     Forecast Horizon
                 </div>
                 <p class="mt-2 text-xl font-semibold text-content-primary">{{ dashboard.forecast_snapshot.horizon_days }} Days</p>
-                <p class="mt-1 text-xs text-content-muted">From committed 30-day history</p>
+                <p class="mt-1 truncate text-xs text-content-muted" title="Committed 30-day history">Committed 30-day history</p>
             </article>
         </div>
         <div class="mt-4 rounded-lg border border-outline-subtle bg-surface-elevated p-4">
