@@ -42,6 +42,46 @@ the executor can actually complete admitted dry-run, guarded operation,
 partial recovery and definitive provider read-back. #1230 and #1231 stay
 blocked by that evidence.
 
+## Capsule Released successor handback source — #1231 (G5, pending G2–G4)
+
+`capsule_successor_handback.py` provides a real, explicitly confirmed
+Platform Admin handback route and Violet/HTMX Released-Tenant workspace
+form. It remains unavailable for ordinary Ready Tenants: it requires an
+already canonical `Released` Capsule generation and complete counted G4
+`release_mode=managed_handoff` and `provider_handoff_verified=true`
+evidence. This source is **not** a bypass around the unfinished G2/G3
+executor or #1230 finalizer.
+
+The handler requires the original approved Release plan, current authenticated
+Kubernetes X.509 identity and scoped get/patch SAR, exact CR/Namespace
+UID/resourceVersion, all transferred ResourceQuota/LimitRange/RoleBinding
+targets and provider/foreign resources explicitly preserved. It verifies
+the CR and every preserved related object before any metadata mutation,
+commits a single durable **in-progress** AuditEvent before the first provider
+write, then for every successor marker removal performs JSON Patch
+`test` on UID/resourceVersion/full labels,
+`dryRun=All`, preservation validation, fresh GET, one conditional live
+PATCH and a fresh authoritative GET. Related controls go before Namespace;
+the Capsule CR/spec, foreign quota/RBAC/workloads, ownerReferences, and
+external labels are never patched. After all targets the source rereads
+the CR and preserved resources; any drift fails closed.
+
+An incomplete/unknown provider outcome aborts further PATCH and produces a
+recovery-required receipt; an existing handback START prevents automatic
+retry (including after process interruption). Only complete verified
+provider scope and locked existing `Released` Namespace generations may
+write `handback_governance` evidence with precise current CR RV and each
+Namespace's own RV. The released predecessor stays Released and immutable;
+Re-Adopt still requires a **new** Discovery and distinct explicit Adoption
+authorization. The normal GET reads committed handback evidence only.
+
+Source-only implementation and regression tests are authored but **not
+runtime validated**. Actual ability to initiate this route depends on a
+valid previous G2/G3 handoff, G4 finalizer, installed infrastructure,
+CI/CD/security gates, separately authorized UAT and human acceptance.
+It must not be represented as a complete working Release→Re-Adopt result
+until those operations have been executed and verified.
+
 ## Re-Adopt live resourceVersion caller wiring (P0 source corrected; runtime HOLD)
 
 The Capsule-specific caller defect identified during baseline freeze has

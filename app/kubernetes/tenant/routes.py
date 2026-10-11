@@ -82,6 +82,9 @@ from app.kubernetes.tenant.native_no_transfer_recovery import (
 from app.kubernetes.tenant.native_successor_handback import (
     handback_native_successor_governance_committed,
 )
+from app.kubernetes.tenant.capsule_successor_handback import (
+    handback_capsule_successor_governance_committed,
+)
 from app.kubernetes.tenant.native_residual_recovery_assessment import (
     assess_legacy_native_profile_residue_readonly,
 )
@@ -1349,6 +1352,54 @@ def finalize_verified_native_release_route(tenant_id: str):
             message=f"Generation {result['generation']} released; {result['released_namespace_count']} namespaces retained.",
             detail='Provider ownership belongs to the verified successor. New adoption requires its explicit handback.',
             metadata={'tenant_id': tenant_id, 'operation': 'native_release_finalization'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-capsule-handback')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+@permission_required('clusters.manage')
+def verify_capsule_successor_handback_route(tenant_id: str):
+    """Explicit Capsule successor metadata handback, never auto-Re-Adopt."""
+    try:
+        _csrf()
+        result = handback_capsule_successor_governance_committed(
+            tenant_id=tenant_id, actor_user_id=int(current_user.id),
+            release_plan_sha256=str(request.form.get('release_plan_sha256') or ''),
+            confirmed=request.form.get('confirm_capsule_successor_handback') == 'handback',
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_capsule_successor_handback_blocked',
+            status='warning', title='Capsule Successor Handback Blocked',
+            message=str(exc),
+            detail='If a START attempt was committed, inspect provider state manually. Never retry automatically.',
+            metadata={'tenant_id': tenant_id, 'operation': 'capsule_successor_handback'},
+        )
+    except Exception:
+        _record(
+            event_type='kubernetes_tenant_capsule_successor_handback_unknown',
+            status='error', title='Capsule Handback Needs Operator Recovery',
+            message='Provider handback outcome is unknown; review the committed START and every object.',
+            detail='Do not retry or Re-Adopt until provider and ledger reconciliation is complete.',
+            metadata={'tenant_id': tenant_id, 'operation': 'capsule_successor_handback'},
+        )
+    else:
+        verified = result['status'] == 'verified'
+        _record(
+            event_type='kubernetes_tenant_capsule_successor_handback_result',
+            status='success' if verified else 'warning',
+            title='Capsule Handback Verified' if verified else 'Capsule Recovery Required',
+            message=(
+                f"{result['verified_count']} of {result['expected_component_count']} "
+                "provider resources independently read back."
+            ),
+            detail=(
+                'Run fresh Discovery, then explicitly approve the new Re-Adopt generation.'
+                if verified else 'Do not repeat PATCH; manually investigate the partial provider outcome.'
+            ),
+            metadata={'tenant_id': tenant_id, 'operation': 'capsule_successor_handback'},
         )
     return _tenant_section_redirect('registry')
 
