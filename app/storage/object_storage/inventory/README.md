@@ -60,6 +60,8 @@ scalar filter-option projections avoid full fleet row/evidence materialization o
 operational list reads. Tied asset names sort by stable ID. The Snapshot Context
 Bar uses the same committed fleet semantics through a SQL aggregate read model.
 No live provider calls are permitted on GET routes.
+For Systems and Buckets list rendering, the canonical first-owner plus current MinIO-compatible provider-record join is now projected in one scoped SQL read per **visible page**, reused for all rows sharing that managed system. Other provider-record types retain the existing integration-kernel owner resolver as a compatibility fallback. System and bucket details remain independently scoped, and the lookup must not change the authoritative committed provider identity.
+
 
 ## Bounded Inventory Overview fleet read model (#1370)
 
