@@ -484,12 +484,16 @@ def _capsule_namespace_records(
         if namespace_name in seen_names:
             raise ValueError('Capsule Namespace adoption has ambiguous duplicate Namespace correlation.')
         seen_names.add(namespace_name)
-        # Verify ALL predecessor handbacks against each live Namespace UID/RV
-        # before creating any new-generation KAORI governance record.
+
+    # First finish the complete resource identity/duplication scan above;
+    # then verify ALL historical handbacks before allocating any new rows.
+    for correlated in correlated_rows:
         _verify_released_namespace_lineage(
-            cluster_id=str(context.cluster.id), namespace=namespace_name,
-            provider_uid=provider_uid, tenant_slug=context.tenant.slug,
-            resource_version=resource_version,
+            cluster_id=str(context.cluster.id),
+            namespace=str(correlated['name']).strip(),
+            provider_uid=str(correlated['uid']).strip(),
+            tenant_slug=context.tenant.slug,
+            resource_version=str(correlated['resource_version']).strip(),
         )
 
     records: list[TenantNamespace] = []
