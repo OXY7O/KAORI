@@ -160,3 +160,40 @@ def test_capsule_handback_refuses_stale_release_rv_or_kaori_marker():
         _handback_snapshot(
             before=foreign, item=ns, owner='platform-team',
         )
+
+
+def test_capsule_handback_preserves_global_quota_and_external_namespace_without_patch():
+    tenant, release = _case()
+    release['verified_components'].append({
+        'kind': 'GlobalResourceQuota', 'name': 'shared',
+        'uid': 'global-uid', 'resource_version': '19', 'state': 'preserved',
+    })
+    release['verified_components'].append({
+        'kind': 'Namespace', 'name': 'demo-ops',
+        'uid': 'ops-uid', 'resource_version': '33', 'state': 'preserved',
+    })
+    release['verified_resource_count'] = 6
+    release['released_namespace_count'] = 2
+    cr, targets = _capsule_handback_scope(release=release, tenant=tenant)
+    assert cr['name'] == 'demo'
+    assert {row['name'] for row in targets} == {'demo-dev', 'managed-quota'}
+    assert not any(row['kind'] == 'GlobalResourceQuota' for row in targets)
+    assert not any(row['name'] == 'demo-ops' for row in targets)
+
+
+@pytest.mark.parametrize('mutation', [
+    lambda row: row.update(state='provider_markers_transferred'),
+    lambda row: row.update(uid=''),
+    lambda row: row.update(resource_version=None),
+])
+def test_capsule_handback_refuses_changed_or_mutatable_global_quota(mutation):
+    tenant, release = _case()
+    row = {
+        'kind': 'GlobalResourceQuota', 'name': 'shared',
+        'uid': 'global-uid', 'resource_version': '19', 'state': 'preserved',
+    }
+    mutation(row)
+    release['verified_components'].append(row)
+    release['verified_resource_count'] = 5
+    with pytest.raises(ValueError):
+        _capsule_handback_scope(release=release, tenant=tenant)
