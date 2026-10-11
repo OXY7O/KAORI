@@ -28,7 +28,7 @@
             ('Role Mapping', 'Mapped' if permission.role_count else 'Unassigned', 'Current role mappings'),
             ('Active Usage', 'In Use' if permission.active_user_count else 'No Active Users', 'Effective user access'),
             ('JIT Projection', 'Configured' if permission.jit_provider_count else 'Not Configured', 'Enabled role-default paths'),
-            ('Dependencies', 'Required' if effective_requires else 'None', 'Transitive requirements')
+            ('Requires', 'Present' if effective_requires else 'None', 'Transitive dependencies')
         ], compact=true) }}
         <div class="grid min-w-0 items-start gap-3 p-4 sm:p-5 lg:grid-cols-2">
             {% call detail_ui.detail_card('Permission Identity', 'badge-info', stretch=false, density='compact') %}
