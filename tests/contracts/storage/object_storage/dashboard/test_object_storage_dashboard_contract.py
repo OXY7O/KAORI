@@ -218,6 +218,17 @@ def test_capacity_dashboard_matches_kubernetes_forecast_and_top_consumer_pattern
 
     assert 'storage/object_storage/dashboard/partials/_forecast_risk.html' in capacity
     assert 'storage/object_storage/dashboard/partials/_top_consumers.html' in capacity
+    assert 'bg-kaori-soft p-3 text-xs leading-5 text-content-secondary' in capacity
+    assert "dashboard.capacity.utilization if dashboard.capacity.utilization is number else none" in capacity
+    assert "'Used Capacity'" in capacity
+    assert "'Free Capacity'" in capacity
+    assert "'Usable Capacity'" in capacity
+    assert "'Used'" in capacity and "'Free'" in capacity and "'Total'" in capacity
+    assert 'grid gap-3 lg:grid-cols-3' in capacity
+    assert 'components/progress_bar.html' in capacity
+    assert 'progress_bar.bar(percent,' in capacity
+    assert 'percentage unavailable' in capacity
+    assert 'Capacity Utilization</h3>' not in capacity
     for token in (
         'components/operational_flow_steps.html',
         'Data Scope',
