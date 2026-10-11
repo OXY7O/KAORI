@@ -1222,7 +1222,7 @@ def verify() -> None:
         (
             'All Clusters shows committed capacity by cluster.',
             'All Clusters shows committed alerts by cluster.',
-            'Committed cluster snapshots',
+            'def _fleet_coverage(',
             'Latest Kubernetes object counts from committed inventory.',
             'Metrics-backed cluster usage and forecasts from committed snapshots.',
         ),
