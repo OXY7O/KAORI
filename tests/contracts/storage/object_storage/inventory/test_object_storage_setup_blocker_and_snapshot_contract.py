@@ -78,7 +78,7 @@ def test_ready_inventory_empty_states_distinguish_filters_from_collection_pendin
     systems = read('app/templates/storage/object_storage/inventory/systems/partials/_table_content.html')
     buckets = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
 
-    assert "'total_committed_assets': len(rows)" in presentation
+    assert "'total_committed_assets': ObjectStorageBucket.query.count()" in presentation
     assert 'No Object Storage Systems Match These Filters' in systems
     assert 'No Matches' in systems
     assert 'Storage Required' not in systems

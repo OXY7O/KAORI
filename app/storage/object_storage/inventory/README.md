@@ -48,3 +48,15 @@ A green zero-attention / zero-public-exposure state requires complete committed
 evidence for the corresponding inventory assets; a partial or absent assessment
 uses warning or unknown semantic tones. No live provider reads or compliance
 verdicts are involved.
+
+
+## SQL Resource List Contract
+
+Systems and Buckets & Containers apply the active filters to SQL queries before
+canonical `paginate_query` (5/10/25/50 records). The owning integration identity
+joins through committed metadata and provider records, and only one requested page
+is normalized into full presentation dictionaries. SQL aggregation and DISTINCT
+scalar filter-option projections avoid full fleet row/evidence materialization on
+operational list reads. Tied asset names sort by stable ID. The Snapshot Context
+Bar uses the same committed fleet semantics through a SQL aggregate read model.
+No live provider calls are permitted on GET routes.
