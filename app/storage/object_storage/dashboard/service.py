@@ -189,18 +189,34 @@ def _health_rows(systems: list[ObjectStorageSystem]) -> list[dict[str, Any]]:
             overall_status = 'Critical'
             overall_tone = 'critical'
             status_reason = f'{critical_alerts} active critical alert signal(s).'
+        elif system.inventory_observed_at is None:
+            overall_status = 'Warning'
+            overall_tone = 'warning'
+            status_reason = 'Committed inventory has not been collected.'
         elif not analytics_usable:
             overall_status = 'Warning'
             overall_tone = 'warning'
             status_reason = f'Analytics snapshot is {snapshot_state.get("label") or "not ready"}.'
+        elif snapshot_state.get('state') in {'pending', 'failed'} or snapshot_state.get('stale'):
+            overall_status = 'Warning'
+            overall_tone = 'warning'
+            status_reason = f'Analytics snapshot is {snapshot_state.get("label") or "not ready"}; prior evidence may be retained.'
         elif warning_alerts > 0:
             overall_status = 'Warning'
             overall_tone = 'warning'
             status_reason = f'{warning_alerts} active warning alert signal(s).'
+        elif not alerts_connected:
+            overall_status = 'Warning'
+            overall_tone = 'warning'
+            status_reason = 'Committed alert-source evidence is unavailable.'
+        elif alerts_fallback:
+            overall_status = 'Warning'
+            overall_tone = 'warning'
+            status_reason = 'Alert evidence is using the Metrics Source fallback.'
         else:
             overall_status = 'Healthy'
             overall_tone = 'normal'
-            status_reason = 'Inventory & analytics ready.'
+            status_reason = 'Inventory, analytics, and primary alert evidence ready.'
 
         rows.append(
             {

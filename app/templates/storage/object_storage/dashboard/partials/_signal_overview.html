@@ -2,8 +2,8 @@
 {% import "components/operational_signal_overview.html" as signal_overview %}
 {% import "components/table.html" as table_ui %}
 {% set scope_label = dashboard.selected_system.name if dashboard.selected_system else 'All Systems' %}
-{% set scope_status = 'System Signals Available' if dashboard.selected_system else 'Select a System for Detailed Signals' %}
-{% set scope_tone = 'normal' if dashboard.selected_system else 'warning' %}
+{% set scope_status = 'System Selected · Review Evidence' if dashboard.selected_system else 'Select a System for Detailed Signals' %}
+{% set scope_tone = 'info' if dashboard.selected_system else 'warning' %}
 {% set scope_selector %}
     <label for="object-storage-dashboard-system" class="sr-only">Object Storage System Scope</label>
     <div class="relative min-w-0 flex-1 lg:w-72 lg:flex-none">
