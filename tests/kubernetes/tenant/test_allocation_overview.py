@@ -531,3 +531,30 @@ def test_tenant_contribution_scroll_frame_and_fixed_evidence_footer() -> None:
     assert 'registry_ui.footer' not in dialog
     assert 'pagination' not in footer.lower()
     assert 'data-kaori-dialog-close' in dialog
+
+
+def test_tenant_contributions_registry_link_sits_after_description_not_beside_close() -> None:
+    """#1153: one responsive lightweight link at the end of the header guidance."""
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[3]
+    page = (root / "app/templates/kubernetes/tenant/partials/_tenant_allocation_overview.html").read_text(
+        encoding="utf-8"
+    )
+    Environment(autoescape=True).parse(page)
+    dialog = page.split('<dialog id="{{ contributions_dialog_id }}"', 1)[1].split("</dialog>", 1)[0]
+    header = dialog.split("<header ", 1)[1].split("</header>", 1)[0]
+    guidance = header.split('id="{{ contributions_dialog_id }}-description"', 1)[1].split("</p>", 1)[0]
+    closing_controls = header.split("</p>", 1)[1]
+
+    assert 'Governed Namespace requests; Capsule shared quota counted once per Tenant.' in guidance
+    assert 'url_for(\'tenant.tenants\', section=\'registry\')' in guidance
+    assert guidance.index("Governed Namespace requests") < guidance.index("Tenant Registry")
+    assert 'flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1' in guidance
+    assert 'aria-label="Open Tenant Registry"' in guidance
+    assert '<a href=' not in closing_controls
+    assert 'data-kaori-dialog-close' in closing_controls
+    assert header.count('aria-label="Open Tenant Registry"') == 1
+    assert dialog.count('data-kaori-dialog-close') == 1
+    assert 'id="{{ contributions_body_id }}"' in dialog
+    assert 'aria-label="Scroll through Tenant contributions"' in dialog
