@@ -562,13 +562,22 @@ def decide_reveal_request(
     decision_note: str | None,
 ) -> SecretRevealRequest:
     _expire_stale_requests()
-    record = SecretRevealRequest.query.filter_by(id=request_id).first()
+    # Lock only the request table; joined eager relations can trigger an
+    # invalid FOR UPDATE on nullable outer joins in PostgreSQL.
+    record = (
+        SecretRevealRequest.query.filter_by(id=request_id)
+        .enable_eagerloads(False)
+        .with_for_update(of=SecretRevealRequest)
+        .first()
+    )
     if record is None:
         raise ValueError('Secret reveal request was not found.')
     if record.status != 'pending':
         raise ValueError('Only pending reveal requests can be approved or denied.')
     if record.requester_user_id == approver_user_id:
         raise ValueError('Requestors cannot approve or deny their own Secret reveal requests.')
+    if _as_aware(record.expires_at) is None or _as_aware(record.expires_at) <= _now():
+        raise ValueError('This Secret reveal request has expired.')
 
     if approve:
         # Approval belongs to the exact live Kubernetes object, not merely
@@ -601,18 +610,36 @@ def decide_reveal_request(
             )
 
     now = _now()
-    record.approver_user_id = approver_user_id
-    record.decided_at = now
-    record.decision_note = (decision_note or '').strip()[:500] or None
-    if approve:
-        record.status = 'approved'
-        record.expires_at = now + timedelta(
+    next_expiry = (
+        now + timedelta(
             minutes=int(current_app.config.get('KUBERNETES_SECRET_REVEAL_APPROVAL_TTL_MINUTES', 10))
         )
-    else:
-        record.status = 'denied'
-        record.expires_at = now
+        if approve else now
+    )
+    # Compare-and-set additionally protects engines that ignore FOR UPDATE,
+    # and makes duplicate POST submissions fail closed rather than notify twice.
+    changed = (
+        SecretRevealRequest.query.filter(
+            SecretRevealRequest.id == record.id,
+            SecretRevealRequest.status == 'pending',
+            SecretRevealRequest.expires_at > now,
+        )
+        .update(
+            {
+                SecretRevealRequest.status: 'approved' if approve else 'denied',
+                SecretRevealRequest.approver_user_id: approver_user_id,
+                SecretRevealRequest.decided_at: now,
+                SecretRevealRequest.decision_note: (decision_note or '').strip()[:500] or None,
+                SecretRevealRequest.expires_at: next_expiry,
+            },
+            synchronize_session=False,
+        )
+    )
+    if changed != 1:
+        db.session.rollback()
+        raise ValueError('This reveal request was already decided or expired. Refresh the approval list.')
     db.session.commit()
+    db.session.refresh(record)
     return record
 
 

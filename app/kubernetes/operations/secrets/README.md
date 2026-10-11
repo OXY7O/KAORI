@@ -313,3 +313,15 @@ frozen into the approval. Existing policy, session reauthentication and
 single-consume checks remain mandatory. Run the migration only after the
 explicit admission gate is lifted; adding the migration file does not
 execute it.
+
+
+## Concurrent decision admission (#1304)
+
+Each approval/denial locks only its SecretRevealRequest row on PostgreSQL
+and performs an atomic `pending`+unexpired compare-and-set before committing.
+The first committed decision is authoritative; a racing or replayed decision
+is rejected and cannot publish a second success notification. SQLite's
+`FOR UPDATE` support is limited; the conditional update is the safety boundary
+there. Approval still verifies live UID/type/key against the original request,
+while the separate one-time reveal lock remains unchanged. A browser success
+cannot substitute for the durable committed status.
