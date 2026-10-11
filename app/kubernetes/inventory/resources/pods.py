@@ -192,6 +192,23 @@ def _unique_image_count(query) -> int:
     return len(unique_images)
 
 
+def _pod_owner_summary(pod: PodInventory, details: dict[str, Any]) -> tuple[str, str]:
+    """Present reported owner identity without guessing controller or static-Pod authority."""
+    kind = str(pod.workload_type or '').strip()
+    name = str(pod.workload_name or '').strip()
+    if kind.casefold() == 'node':
+        annotations = details.get('annotations') or {}
+        kind_label = 'Static Pod' if annotations.get('kubernetes.io/config.mirror') else 'Node-owned'
+        return kind_label, name or 'Owner name not reported'
+    if kind:
+        return kind, name or 'Owner name not reported'
+    if name:
+        return 'Owner Not Reported', name
+    if 'owner_resolution' in details:
+        return 'Standalone', 'No controller owner'
+    return 'Owner Not Reported', 'Owner evidence unavailable'
+
+
 def _pod_list_row(pod: PodInventory, cluster_name: str, cluster_environment: str) -> dict[str, Any]:
     operational_state, state_tone, state_evidence = pod_operational_state(pod.phase, pod.ready)
     ready_values = pod_ready_values(pod.ready)
@@ -208,6 +225,7 @@ def _pod_list_row(pod: PodInventory, cluster_name: str, cluster_environment: str
         f'{pod.workload_type} · {pod.workload_name}' if pod.workload_type and pod.workload_name else 'Standalone'
     )
     restart_count = int(pod.restart_count or 0)
+    owner_kind_label, owner_name_display = _pod_owner_summary(pod, details)
     return {
         'id': pod.id,
         'cluster_name': cluster_name,
@@ -227,6 +245,11 @@ def _pod_list_row(pod: PodInventory, cluster_name: str, cluster_environment: str
         'owner_type': pod.workload_type or 'Standalone',
         'owner_name': pod.workload_name or 'Not Reported',
         'owner_display': owner_display,
+        'owner_kind_label': owner_kind_label,
+        'owner_name_display': owner_name_display,
+        'restart_summary': (
+            f'Restarts · {restart_count}' if runtime_evidence_reported else 'Restarts · Not Reported'
+        ),
         'container_count': container_count if specification_evidence_reported else None,
         'identity_supporting': (
             f'{container_count} Container' + ('s' if container_count != 1 else '')
