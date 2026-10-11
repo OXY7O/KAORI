@@ -1,4 +1,3 @@
-{% import "components/operational_callout.html" as operational_callout %}
 {% import "components/operational_flow_steps.html" as operational_flow_steps %}
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/progress_bar.html" as progress_bar %}
@@ -96,23 +95,44 @@
                     {{ operational_flow_steps.render(capacity_action_rows, aria_label='Recommended Capacity Action Flow') }}
                 </div>
             </div>
-            {% call operational_callout.render(
-                'Capacity Decision Notes',
-                'Use committed worker capacity as the baseline before changing resources.',
-                icon='clipboard-check',
-                tone='info'
-                ) %}
-                <div class="grid gap-3 sm:grid-cols-2">
-                    <div>
-                        <p class="font-semibold text-content-primary">Planning Check</p>
-                        <p class="mt-1">Validate worker headroom against planned workload demand.</p>
+            <section class="rounded-lg border border-outline-subtle bg-surface-elevated p-4"
+                     aria-label="Worker capacity headroom chart">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="chart-no-axes-column"
+                           class="h-4 w-4 text-kaori-primary"
+                           aria-hidden="true"></i>
+                        <h3 class="text-sm font-semibold text-content-primary">Available Capacity</h3>
                     </div>
-                    <div>
-                        <p class="font-semibold text-content-primary">Evidence Handoff</p>
-                        <p class="mt-1">Review Forecast and Top Consumers before adjusting requests, limits, or nodes.</p>
-                    </div>
+                    <span class="text-xs text-content-muted">Committed worker snapshot</span>
                 </div>
-            {% endcall %}
+                <div class="mt-4 grid gap-3 sm:grid-cols-3">
+                    {% for item in dashboard.capacity_snapshot.items %}
+                        {% set headroom_percent = item.headroom_percent if item.headroom_percent is not none else none %}
+                        {% set headroom_color = 'bg-kaori-primary' if 'CPU' in item.label else ('bg-status-info' if 'Memory' in item.label else 'bg-status-pending') %}
+                        <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-card p-3">
+                            <div class="flex items-center justify-between gap-2 text-xs">
+                                <span class="font-semibold text-content-secondary">{{ item.label }}</span>
+                                <strong class="shrink-0 tabular-nums text-content-primary">
+                                    {% if headroom_percent is not none %}{{ headroom_percent|round(1) }}% free{% else %}N/A{% endif %}
+                                </strong>
+                            </div>
+                            {% if headroom_percent is not none %}
+                                {{ progress_bar.bar(headroom_percent,
+                                    track_classes='mt-2 h-3 overflow-hidden rounded-full bg-surface-hover',
+                                    fill_classes='h-full rounded-full ' ~ headroom_color,
+                                    label=item.label ~ ' available worker capacity') }}
+                                <p class="mt-2 text-xs text-content-muted">{{ item.used_percent|round(1) }}% used</p>
+                            {% else %}
+                                <div class="mt-2 h-3 rounded-full bg-surface-hover"
+                                     role="img"
+                                     aria-label="{{ item.label }} headroom unavailable"></div>
+                                <p class="mt-2 text-xs text-content-muted">No committed utilization</p>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
         </div>
     {% endif %}
 {% endcall %}
