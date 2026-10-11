@@ -8,28 +8,26 @@ from typing import Any, Protocol
 from sqlalchemy import case, func
 from sqlalchemy.orm import aliased, joinedload, selectinload
 
+from app.common.pagination import paginate_query
 from app.extensions.db import db
+from app.integrations.managed_assets import object_storage_owner
 from app.integrations.provider_matrix import provider_kinds
 from app.models.integration import IntegrationInstance
 from app.models.minio import MinioInstance
-
-from app.common.pagination import paginate_query
-from app.integrations.managed_assets import object_storage_owner
 from app.models.object_storage import ObjectStorageBucket, ObjectStorageSystem
 from app.storage.object_storage.inventory.system_presentation import (
     _compatibility_profile_display,
+    _overview_snapshot_from_counts,
     _release_display,
     _snapshot_status,
-    _system_filter_options,
-    _overview_snapshot_from_counts,
 )
 from app.storage.object_storage.inventory.system_presentation import _endpoint_display as _system_endpoint_display
 from app.storage.object_storage.inventory.system_presentation import _inventory_guidance as _inventory_guidance
 from app.storage.object_storage.inventory.system_presentation import _inventory_signals as _inventory_signals
 from app.storage.object_storage.inventory.system_presentation import _is_stale as _is_stale
 from app.storage.object_storage.inventory.system_presentation import _overview_snapshot as _overview_snapshot_impl
-from app.storage.object_storage.inventory.system_presentation import _status as _status
 from app.storage.object_storage.inventory.system_presentation import _provider_label as _provider_label
+from app.storage.object_storage.inventory.system_presentation import _status as _status
 from app.storage.object_storage.inventory.system_presentation import _system_row as _system_row_impl
 
 _NATIVE_TYPE_LABELS = {
