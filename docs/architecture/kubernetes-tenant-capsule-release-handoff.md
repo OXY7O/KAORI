@@ -247,6 +247,67 @@ endpoint, scheduler, persistence, dry-run invocation or live PATCH; all
 `provider_handoff_verified`, `readback_authoritative_verified`,
 `auto_retry_authorized`, and `release_authorized` values remain false.
 
+## Committed AuditEvent scan and persistence/recovery boundary — source only
+
+`capsule_handoff_persistence_review.py` adds a read-only access path to
+the existing SQL `audit_events` table. It fetches **all Capsule execution
+records for one Tenant**, ascending by AuditEvent ID, with a fixed
+`max_attempt_events + 1` bound to reject overlong attempts instead of silently trimming records.
+The inspected records must match the canonical actor, event action, target,
+attempt UUID, plan SHA, worklist and hash chain. Rows for prior plans are
+**not** filtered away just to make a newer attempt appear empty. A START
+without outcome is a recovery-required operation, not permission to retry.
+
+The same module also reviews *proposed* next event envelopes against
+committed history without executing an INSERT. `append_authorized=false`
+and `trusted_audit_persistence_verified=false` are permanent outputs of
+this source-only helper; it does not run SQL writes, lock rows, or grant a
+Kubernetes operation. A valid event checksum establishes data consistency
+within the supplied snapshot, **not** database immutability, durable
+commit, independent human consent, or chronological stream completeness.
+
+`capsule_handoff_persisted_recovery.py` correlates that read-only
+history with an optional `readback_candidate` receipt and returns a
+non-executable recovery docket. A previously started operation without a
+definitive outcome is quarantined. A partial operation requires a fresh,
+independent human recovery decision. An exact recorded read-back SHA is
+still merely `readback_correlated_but_unverified`; it is not fresh
+authenticated Kubernetes read-back and cannot authorize Released.
+
+### Required storage/executor remediation before any live handoff
+
+The shared `AuditEvent` model has an ordinary mutable JSON column and no
+Capsule-specific database-enforced insert-only property or uniqueness
+constraint. This must be treated as an **open blocking design gap**, not a
+PASS inferred from source-only row validation.
+
+A future independently reviewed implementation needs:
+
+- A database-enforced **write-once, non-deletable** Capsule execution ledger
+  or a comparably protected append-only event store; immutable attempt
+  identity, unique `(tenant_id, plan_sha, attempt_id, sequence)`, and
+  explicit unauthorized update/delete rejection.
+- A Tenant-scoped transactional lock/fencing strategy, historical-attempt
+  scan and once-only START commitment **durably acknowledged before** any
+  Kubernetes write. A failed or uncertain commit must stop execution.
+- A new freshness/authority decision just before each operation, including
+  exact actor, independent plan approval, accepted successor, authenticated
+  Kubernetes TLS/X.509 SelfSubjectReview/SAR, source fingerprints,
+  provider-owned constraints and explicit resource-specific transfer scope.
+- Per-resource conditional metadata-only patch, immediate authoritative
+  provider read-back and separately committed partial/verified evidence.
+  Timeouts, database errors, process crashes, conflicting controller writes,
+  untracked history or uncertain outcomes remain human-recovery blockers;
+  never retry automatically.
+- Restoration/backup and retention protections for the ledger itself, plus
+  testable audit guarantees across the actual database engine and deployment.
+  SQL-model-level rules alone are insufficient to prove disaster durability.
+
+None of these missing storage and live-operation guarantees is enabled by
+this slice; no DB migration or AuditEvent writer is introduced. #1229
+remains OPEN and #1230/#1231 blocked. All test, CI/CD and real provider
+operations continue to be held pending explicit authorization.
+
 ## Required before completing #1229
 
 1. Build on the SHA-bound Namespace and cluster-scoped
