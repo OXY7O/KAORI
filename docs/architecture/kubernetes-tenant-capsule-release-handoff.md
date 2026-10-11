@@ -9,6 +9,35 @@ Target integration: `kaori/review/staging-uat` only. No developer check,
 pytest, Ruff, pyright, CI/CD, DAST, live API UAT, promotion or deployment until
 a separate explicit instruction.
 
+## First wired Capsule provider preview — #1229 functional slice
+
+The existing four-step Tenant Release wizard now offers **Preview Capsule Namespace**
+only to the X.509 Platform Admin whose independent Capsule successor consent
+was recorded for the exact current plan. The authenticated POST requires
+`tenant.manage`, `integrations.manage`, `clusters.manage`, CSRF and explicit
+checkbox confirmation. The service rechecks the committed plan SHA, independent
+approval, accepting actor, Ready adopted Capsule authority, zero governance
+dependencies, refreshed live Capsule CR/Namespace + related-resource fingerprint,
+and newly authenticated SSR/SAR with matching X.509 principal and credential ID.
+
+It executes real `dryRun=All` on **Namespace metadata-only JSON Patches** using
+the existing strict UID/RV and post-preview read-back helpers; no live
+provider PATCH, Capsule CR/spec modification or finalizer is introduced.
+It records only an `namespace_server_dry_run_only` non-secret AuditEvent:
+`provider_execution_admitted=false`, `provider_handoff_verified=false`,
+`release_authorized=false`. Quota/LimitRange/RoleBinding server dry-run
+coverage and resource-specific controller-origin/consent proof remain
+**unverified**. A passed Namespace preview is **not** G2/G3 PASS and does not
+enable Capsule Release. If preflight inventories contain blockers, it fails
+closed with an actionable warning; never bypass them to make a demo pass.
+
+The next implementation must bind related-resource previews and a durable
+START-fenced metadata-only executor to definitive whole-scope provider
+read-back, then wire #1230 transactional Released finalization and #1231
+Re-Adopt. The existing `#991` G0–G6 baseline remains authoritative.
+No local tests, provider API operation, migration, CI/CD or UAT has been run
+for this source-only slice. Review only on `kaori/review/staging-uat`.
+
 ## Authoritative inventory and transfer model
 
 Capsule Tenant `capsule.clastix.io/v1beta2` is **cluster scoped** and continues

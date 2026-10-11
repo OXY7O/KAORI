@@ -68,6 +68,9 @@ from app.kubernetes.tenant.live_connection import get_live_tenant_connection_con
 from app.kubernetes.tenant.capsule_successor_acceptance import (
     accept_capsule_successor_handoff_committed,
 )
+from app.kubernetes.tenant.capsule_handoff_preview_service import (
+    preview_capsule_release_namespace_committed,
+)
 from app.kubernetes.tenant.native_successor_acceptance import (
     accept_native_successor_handoff_committed,
 )
@@ -1125,6 +1128,38 @@ def accept_capsule_successor_handoff_route(tenant_id: str):
             ),
             detail='Independent consent recorded only. Provider transfer and Released finalization are separate.',
             metadata={'tenant_id': tenant_id, 'operation': 'capsule_successor_acceptance'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/capsule-namespace-preview')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+@permission_required('clusters.manage')
+def preview_capsule_release_namespace_route(tenant_id: str):
+    """Explicit Capsule namespace-only dry-run, not handoff execution."""
+    try:
+        _csrf()
+        result = preview_capsule_release_namespace_committed(
+            tenant_id=tenant_id, actor_user_id=int(current_user.id),
+            plan_sha256=str(request.form.get('plan_sha256') or ''),
+            confirmed=request.form.get('confirm_capsule_namespace_preview') == 'preview',
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_capsule_namespace_preview_blocked',
+            status='warning', title='Capsule Preview Blocked',
+            message=str(exc),
+            detail='No live PATCH or governance Release was authorized. Review provider scope and dependencies.',
+            metadata={'tenant_id': tenant_id, 'operation': 'capsule_namespace_preview'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_capsule_namespace_preview_observed',
+            status='info', title='Capsule Namespace Preview Recorded',
+            message=f"{result['namespace_count']} Namespaces inspected through Kubernetes server-side dry-run.",
+            detail='Related quota, limit and RBAC handoff is still unverified. Release remains blocked.',
+            metadata={'tenant_id': tenant_id, 'operation': 'capsule_namespace_preview'},
         )
     return _tenant_section_redirect('registry')
 
