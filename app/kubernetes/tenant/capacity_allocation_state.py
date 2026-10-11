@@ -7,13 +7,46 @@ from sqlalchemy.orm import joinedload
 
 from app.extensions.db import db
 from app.kubernetes.tenant.capacity import CapacityVector, quota_request_vector
-from app.models.tenant import Tenant, TenantNamespace, TenantNamespaceProvisioningStatus
+from app.models.tenant import (
+    Tenant,
+    TenantEnvironment,
+    TenantLifecycleStatus,
+    TenantNamespace,
+    TenantNamespaceProvisioningStatus,
+)
 from app.models.tenant_advanced import (
     TenantAdvancedCapabilityIntent,
     TenantAdvancedCapabilityStatus,
 )
 
 _ZERO = Decimal('0')
+# Released/decommissioned generations remain as evidence, not reserved capacity.
+_TERMINAL_TENANT_ALLOCATION_LIFECYCLES = (
+    TenantLifecycleStatus.RELEASED.value,
+    TenantLifecycleStatus.DECOMMISSIONED.value,
+)
+_TERMINAL_NAMESPACE_ALLOCATION_STATUSES = (
+    TenantNamespaceProvisioningStatus.RELEASED.value,
+    TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+)
+
+
+def _active_namespace_allocation_query():
+    """Canonical committed capacity scope, including parent Tenant lifecycle.
+
+    Failed/drifted/deprovisioning records still reserve their frozen intent.
+    Only verified terminal lifecycle transitions reclaim the logical budget.
+    """
+    return (
+        TenantNamespace.query.join(
+            TenantEnvironment, TenantNamespace.tenant_environment_id == TenantEnvironment.id
+        )
+        .join(Tenant, TenantEnvironment.tenant_id == Tenant.id)
+        .filter(
+            TenantNamespace.provisioning_status.notin_(_TERMINAL_NAMESPACE_ALLOCATION_STATUSES),
+            Tenant.lifecycle_status.notin_(_TERMINAL_TENANT_ALLOCATION_LIFECYCLES),
+        )
+    )
 
 
 def _canonical_shared_allocation_quota(
@@ -26,6 +59,7 @@ def _canonical_shared_allocation_quota(
         )
         .filter(
             Tenant.cluster_id == cluster_id,
+            Tenant.lifecycle_status.notin_(_TERMINAL_TENANT_ALLOCATION_LIFECYCLES),
             TenantAdvancedCapabilityIntent.resource_kind == 'global_resource_quota',
             TenantAdvancedCapabilityIntent.status.in_(
                 (
@@ -60,6 +94,7 @@ def _canonical_shared_allocation_quota(
     capsule_tenants = Tenant.query.filter(
         Tenant.cluster_id == cluster_id,
         Tenant.provider_key == 'capsule',
+        Tenant.lifecycle_status.notin_(_TERMINAL_TENANT_ALLOCATION_LIFECYCLES),
     ).all()
     for tenant in capsule_tenants:
         governance = (tenant.provider_evidence_json or {}).get('allocation_governance')
@@ -140,6 +175,7 @@ def _canonical_shared_allocation_quota_by_cluster(
         .join(Tenant, TenantAdvancedCapabilityIntent.tenant_id == Tenant.id)
         .filter(
             Tenant.cluster_id.in_(cluster_ids),
+            Tenant.lifecycle_status.notin_(_TERMINAL_TENANT_ALLOCATION_LIFECYCLES),
             TenantAdvancedCapabilityIntent.resource_kind == 'global_resource_quota',
             TenantAdvancedCapabilityIntent.status.in_(
                 (
@@ -174,6 +210,7 @@ def _canonical_shared_allocation_quota_by_cluster(
     capsule_tenants = Tenant.query.filter(
         Tenant.cluster_id.in_(cluster_ids),
         Tenant.provider_key == 'capsule',
+        Tenant.lifecycle_status.notin_(_TERMINAL_TENANT_ALLOCATION_LIFECYCLES),
     ).all()
     for tenant in capsule_tenants:
         normalized_cluster_id = str(tenant.cluster_id)
@@ -211,11 +248,9 @@ def _committed_tenant_allocations(
     cluster_ids: list[str],
 ) -> dict[str, tuple[CapacityVector, int, list[str]]]:
     rows = (
-        TenantNamespace.query.options(joinedload(TenantNamespace.environment))
-        .filter(
-            TenantNamespace.cluster_id.in_(cluster_ids),
-            TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
-        )
+        _active_namespace_allocation_query()
+        .options(joinedload(TenantNamespace.environment))
+        .filter(TenantNamespace.cluster_id.in_(cluster_ids))
         .order_by(TenantNamespace.cluster_id.asc(), TenantNamespace.namespace.asc())
         .all()
     )
@@ -242,10 +277,8 @@ def _committed_tenant_allocation(
     shared_overrides: Mapping[str, Mapping[str, object]] | None = None,
 ) -> tuple[CapacityVector, int, list[str]]:
     rows = (
-        TenantNamespace.query.filter(
-            TenantNamespace.cluster_id == cluster_id,
-            TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
-        )
+        _active_namespace_allocation_query()
+        .filter(TenantNamespace.cluster_id == cluster_id)
         .order_by(TenantNamespace.namespace.asc())
         .all()
     )

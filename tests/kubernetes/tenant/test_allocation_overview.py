@@ -357,3 +357,89 @@ def test_tenant_allocation_overview_template_parses_with_jinja() -> None:
     assert 'tabindex="0"' in template
     assert "analytics.capacity" in template
     assert "actual workload utilization" in template
+
+
+def test_released_generations_are_history_not_active_committed_tenant_contributions() -> None:
+    old = [
+        SimpleNamespace(
+            id=f"tenant-gen-{generation}",
+            name="tenant-uat-demo",
+            lifecycle_status="released",
+            provider_key="native_kubernetes",
+            ownership_status="adopted",
+        )
+        for generation in (1, 2)
+    ]
+    current = SimpleNamespace(
+        id="tenant-gen-3",
+        name="tenant-uat-demo",
+        lifecycle_status="ready",
+        provider_key="native_kubernetes",
+        ownership_status="adopted",
+    )
+    namespaces = [
+        _namespace(old[0].id, "tenant-uat-demo", cpu="2"),
+        _namespace(old[1].id, "tenant-uat-demo", cpu="2"),
+        _namespace(current.id, "tenant-uat-demo", cpu="2"),
+    ]
+    # Historical generation rows stay preserved for audit, even if a stale
+    # Namespace status was not updated in sync with its Released Tenant.
+    namespaces[0].provisioning_status = "released"
+    namespaces[1].provisioning_status = "ready"
+    rows = _partition_tenant_contributions([*old, current], namespaces, {}, [])
+    assert len(rows) == 1
+    assert rows[0]["tenant"].id == current.id
+    assert rows[0]["namespace_count"] == 1
+    assert rows[0]["allocation"]["cpu"] == "2.00 cores"
+    assert summarize_tenant_contributions(rows) == {
+        "tenants": 1, "namespaces": 1, "shared": 0, "attention": 0
+    }
+
+
+def test_terminal_namespaces_excluded_but_failed_and_detached_profiles_still_commit() -> None:
+    tenant = SimpleNamespace(
+        id="active",
+        name="Active",
+        lifecycle_status="degraded",
+        provider_key="native_kubernetes",
+        ownership_status="adopted",
+    )
+    released = _namespace("active", "old-generation", cpu="8")
+    released.provisioning_status = "released"
+    deleted = _namespace("active", "deleted", cpu="4")
+    deleted.provisioning_status = "deprovisioned"
+    detached = _namespace("active", "still-committed", cpu="2")
+    detached.resource_profile_id = None  # Missing profile link does not release frozen quota.
+    detached.provisioning_status = "failed"
+    rows = _partition_tenant_contributions(
+        [tenant], [released, deleted, detached], {}, []
+    )
+    assert len(rows) == 1
+    assert rows[0]["namespace_count"] == 1
+    assert rows[0]["allocation"]["cpu"] == "2.00 cores"
+    assert rows[0]["namespaces"][0]["name"] == "still-committed"
+
+
+def test_terminal_capsule_generation_does_not_count_historical_shared_quota() -> None:
+    old = SimpleNamespace(
+        id="capsule-released", name="same", lifecycle_status="released",
+        provider_key="capsule", ownership_status="adopted",
+    )
+    active = SimpleNamespace(
+        id="capsule-current", name="same", lifecycle_status="ready",
+        provider_key="capsule", ownership_status="adopted",
+    )
+    shared = {
+        old.id: {"requests.cpu": "10", "requests.memory": "10Gi", "pods": "40", "requests.storage": "40Gi"},
+        active.id: {"requests.cpu": "4", "requests.memory": "8Gi", "pods": "20", "requests.storage": "12Gi"},
+    }
+    rows = _partition_tenant_contributions(
+        [old, active],
+        [_namespace(old.id, "shared"), _namespace(active.id, "shared")],
+        shared,
+        [],
+    )
+    assert len(rows) == 1
+    assert rows[0]["tenant"].id == active.id
+    assert rows[0]["source"] == "Shared Tenant Quota"
+    assert rows[0]["allocation"]["cpu"] == "4.00 cores"
