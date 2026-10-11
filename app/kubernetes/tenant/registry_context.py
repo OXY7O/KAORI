@@ -472,6 +472,25 @@ def get_tenant_registry_context(
             row['release_successor_claim'] = successor_claims.get(item.id)
             row['release_successor_acceptance'] = successor_acceptances.get(item.id)
             row['release_capsule_successor_acceptance'] = capsule_successor_acceptances.get(item.id)
+            capsule_consent = row['release_capsule_successor_acceptance'] or {}
+            approved_capsule_plan = row['release_handoff_plan'] or {}
+            capsule_review = row['release_handoff_approval'] or {}
+            row['capsule_successor_acceptance_current'] = bool(
+                item.provider_key == 'capsule'
+                and approved_capsule_plan.get('provider') == 'capsule'
+                and capsule_consent.get('status') == 'platform_admin_handoff_accepted'
+                and capsule_consent.get('authority_mode') == 'capsule_platform_admin_governed'
+                and capsule_consent.get('plan_sha256') == approved_capsule_plan.get('plan_sha256')
+                and capsule_consent.get('handoff_fingerprint') == approved_capsule_plan.get('handoff_fingerprint')
+                and capsule_consent.get('reviewed_by') == capsule_review.get('approved_by')
+                and capsule_review.get('status') == 'acknowledged_pending_provider_handoff'
+                and capsule_consent.get('consent_verified') is True
+                and capsule_consent.get('provider_handoff_verified') is False
+                and capsule_consent.get('release_authorized') is False
+                and _checked_recently(capsule_consent.get('accepted_at'))
+                and _checked_recently(approved_capsule_plan.get('requested_at'))
+                and _checked_recently(capsule_review.get('approved_at'))
+            )
             if item.provider_key == 'native_kubernetes' and (
                 row['release_handoff_plan']
                 or (row['release_preflight'] or {}).get('handoff_required_count')

@@ -41,6 +41,15 @@ def require_current_capsule_acceptance(
     accepted = latest_capsule_successor_acceptance(tenant_id)
     if (
         not accepted or accepted.get('status') != 'platform_admin_handoff_accepted'
+        or plan.get('provider') != 'capsule'
+        or approval.get('status') != 'acknowledged_pending_provider_handoff'
+        or approval.get('plan_sha256') != plan.get('plan_sha256')
+        or approval.get('requested_by') != plan.get('requested_by')
+        or approval.get('handoff_fingerprint') != plan.get('handoff_fingerprint')
+        or type(approval.get('approved_by')) is not int
+        or approval.get('approved_by') == plan.get('requested_by')
+        or not _checked_recently(plan.get('requested_at'))
+        or not _checked_recently(approval.get('approved_at'))
         or accepted.get('authority_mode') != _MODE
         or accepted.get('tenant_id') != tenant_id
         or accepted.get('cluster_id') != plan.get('cluster_id')
@@ -51,6 +60,7 @@ def require_current_capsule_acceptance(
         or accepted.get('provider_identity') != plan.get('provider_identity')
         or accepted.get('successor_owner') != plan.get('successor_owner')
         or accepted.get('reviewed_by') != approval.get('approved_by')
+        or type(accepted.get('accepted_by')) is not int
         or accepted.get('accepted_by') == plan.get('requested_by')
         or accepted.get('verified_provider_identity') is not True
         or accepted.get('resource_authority_verified') is not True
@@ -199,7 +209,10 @@ def accept_capsule_successor_handoff_committed(
     db.session.add(AuditEvent(
         actor_user_id=actor_user_id, target_type=_TARGET, target_id=tenant_id,
         action='tenant.release.capsule_platform_admin_handoff_accepted',
-        summary='Approved exact Capsule scope after independent review and X.509 provider RBAC proof; no transfer performed.',
+        summary=(
+            'Approved exact Capsule scope after independent review and X.509 '
+            'provider RBAC proof; no transfer performed.'
+        ),
         metadata_json=accepted,
     ))
     db.session.commit()

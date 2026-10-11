@@ -326,7 +326,9 @@ def test_capsule_acceptance_rejects_scope_drift_and_same_plan_replay(monkeypatch
             plan_sha256=plan['plan_sha256'], confirmed=True,
         )
     assert session.commits == 0
-    plan, session = _bound_service(monkeypatch, previous={'plan_sha256': plan['plan_sha256']})
+    plan, session = _bound_service(
+        monkeypatch, previous={'plan_sha256': plan['plan_sha256']},
+    )
     with pytest.raises(ValueError, match='already|superseded|changed'):
         acceptance.accept_capsule_successor_handoff_committed(
             tenant_id='tenant-1', actor_user_id=44,
@@ -347,6 +349,7 @@ def test_capsule_release_step_3_uses_csrf_and_dedicated_read_model_without_enabl
         "if tenant.provider_key == 'native_kubernetes'", 1
     )[0]
     assert 'row.release_capsule_successor_acceptance' in fragment
+    assert 'row.capsule_successor_acceptance_current' in fragment
     assert "accept_capsule_successor_handoff_route" in fragment
     assert 'confirm_capsule_successor_acceptance' in fragment
     assert 'name="csrf_token"' in fragment
@@ -360,3 +363,4 @@ def test_capsule_release_step_3_uses_csrf_and_dedicated_read_model_without_enabl
     assert 'accept_capsule_successor_handoff_committed(' in route
     read = (root / 'app/kubernetes/tenant/registry_context.py').read_text(encoding='utf-8')
     assert "('kubernetes_tenant_release_capsule_successor_acceptance', capsule_successor_acceptances)" in read
+    assert "row['capsule_successor_acceptance_current'] = bool(" in read

@@ -972,10 +972,7 @@
                                                 {% endif %}
                                                 {% if tenant.provider_key == 'capsule' %}
                                                     {% set capsule_acceptance = row.release_capsule_successor_acceptance %}
-                                                    {% if capsule_acceptance and capsule_acceptance.plan_sha256 == handoff_plan.plan_sha256
-                                                          and capsule_acceptance.handoff_fingerprint == handoff_plan.handoff_fingerprint
-                                                          and capsule_acceptance.consent_verified
-                                                          and capsule_acceptance.authority_mode == 'capsule_platform_admin_governed' %}
+                                                    {% if row.capsule_successor_acceptance_current %}
                                                         <div class="mt-2 rounded-lg border border-outline-subtle bg-surface-card p-3 text-xs leading-5 text-content-secondary"
                                                              role="status" aria-label="Capsule Platform Admin consent recorded">
                                                             {{ table_label.status_label('Capsule Consent Recorded', 'success') }}
@@ -994,7 +991,9 @@
                                                     {% elif row.release_handoff_preparation_state == 'acknowledged'
                                                             and handoff_approval
                                                             and handoff_approval.approved_by != handoff_plan.requested_by
-                                                            and current_user.has_permission('clusters.manage') %}
+                                                            and current_user.has_permission('clusters.manage')
+                                                            and row.release_preflight
+                                                            and row.release_preflight.handoff_fingerprint == handoff_plan.handoff_fingerprint %}
                                                         {% if not row.cluster or not row.cluster.kubernetes_connection
                                                               or row.cluster.kubernetes_connection.verify_ssl is not true %}
                                                             <div class="mt-2 rounded-lg border border-status-warning-border bg-status-warning-soft p-3 text-xs leading-5 text-content-secondary"
