@@ -135,8 +135,8 @@ def test_data_freshness_microcopy_and_shared_family_geometry() -> None:
         'Select a cluster for detailed analytics.',
         'All Clusters shows committed alerts by cluster. Select a cluster for source details.',
         'Committed cluster snapshots',
-        'Latest Kubernetes object counts from committed inventory snapshots.',
-        'Metrics-backed cluster usage and forecasts from committed analytics snapshots.',
+        'Latest Kubernetes object counts from committed inventory.',
+        'Metrics-backed cluster usage and forecasts from committed snapshots.',
     ):
         assert text in kubernetes
     assert kubernetes.count("'Committed cluster snapshots'") == 2
