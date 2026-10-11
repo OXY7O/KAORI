@@ -558,3 +558,41 @@ def test_top_consumer_display_labels_use_title_case() -> None:
     assert labels == ['Usage Only', 'No Limit', 'Warning Usage', 'Critical Usage']
     assert snapshot.insight_title == 'Consumer Insights'
     assert 'Dominant Namespace: platform' in snapshot.insight_items
+
+
+def test_kubernetes_fleet_freshness_uses_only_two_batched_snapshot_reads(monkeypatch) -> None:
+    from app.kubernetes.dashboard.schema import DashboardOverview
+
+    ids = ('cluster-1', 'cluster-2', 'cluster-3')
+    dashboard = DashboardOverview(clusters=[SimpleNamespace(id=item) for item in ids])
+    calls: list[tuple[str, set[str]]] = []
+
+    def fake_read_snapshots(*, dataset_key, parameters_by_cluster):
+        calls.append((dataset_key, set(parameters_by_cluster)))
+        assert set(parameters_by_cluster) == set(ids)
+        return {
+            cluster_id: SimpleNamespace(
+                available=cluster_id in ({'cluster-1', 'cluster-2'} if dataset_key == service.CAPACITY_DATASET_KEY
+                                         else {'cluster-1'})
+            )
+            for cluster_id in parameters_by_cluster
+        }
+
+    monkeypatch.setattr(service, 'read_snapshots', fake_read_snapshots)
+    monkeypatch.setattr(service, '_latest_inventory_sync', lambda *_args: None)
+    monkeypatch.setattr(service, 'count_records', lambda *_args: 0)
+    monkeypatch.setattr(
+        service,
+        'read_dashboard_snapshot',
+        lambda **_kwargs: (_ for _ in ()).throw(AssertionError('Do not perform N per-cluster snapshot reads')),
+    )
+
+    service._populate_data_freshness(dashboard, selected_cluster_id=None, selected=None)
+
+    assert [dataset for dataset, _ in calls] == [
+        service.CAPACITY_DATASET_KEY, service.DASHBOARD_ALERTS_DATASET_KEY
+    ]
+    assert dashboard.data_freshness[1].value == '2 / 3 clusters'
+    assert dashboard.data_freshness[1].status == 'Partial'
+    assert dashboard.data_freshness[2].value == '1 / 3 clusters'
+    assert dashboard.data_freshness[2].status == 'Partial'
