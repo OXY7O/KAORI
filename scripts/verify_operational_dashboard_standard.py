@@ -1191,6 +1191,39 @@ def verify() -> None:
         ('Artifact Registry Operations Overview', artifact_operations),
     ):
         _require(source, ('components/operational_evidence_tile.html', 'evidence_tile.'), owner)
+    for owner, source in (
+        ('Kubernetes Data Freshness', kubernetes_freshness),
+        ('Object Storage Data Freshness', object_overview),
+        ('Artifact Registry Data Freshness', artifact_operations),
+    ):
+        _require(
+            source,
+            (
+                "'Data Freshness'",
+                "body_classes='grid gap-3 p-5 sm:grid-cols-2'",
+                'evidence_tile.freshness(',
+            ),
+            f'{owner} shared four-card presentation',
+        )
+    _require(
+        freshness,
+        (
+            'All Clusters shows committed capacity by cluster.',
+            'All Clusters shows committed alerts by cluster.',
+            'Committed cluster snapshots',
+            'Latest Kubernetes object counts from committed inventory snapshots.',
+            'Metrics-backed cluster usage and forecasts from committed analytics snapshots.',
+        ),
+        'Kubernetes refreshed Data Freshness copy',
+    )
+    _require(
+        object_dashboard_service,
+        (
+            'Available alerts from committed 24h analytics snapshots;',
+            'Alertmanager first, Metrics Source fallback.',
+        ),
+        'Object Storage refreshed Alert Evidence Fleet copy',
+    )
     _require(
         dashboard_empty_state,
         (
