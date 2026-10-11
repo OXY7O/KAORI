@@ -239,13 +239,15 @@ def _system_filter_options(rows: list[dict[str, Any]]) -> dict[str, list[dict[st
     }
 
 
-def _overview_snapshot(rows: list[dict[str, Any]]) -> dict[str, Any]:
-    total_systems = len(rows)
-    inventoried = [row for row in rows if row['last_inventory_at'] is not None]
-    latest = max((row['last_inventory_at'] for row in inventoried), default=None)
-    missing_count = total_systems - len(inventoried)
-    stale_count = sum(_is_stale(row['last_inventory_at']) for row in inventoried)
-    provider_exception_count = sum(row['status_tone'] in {'critical', 'warning', 'unknown'} for row in rows)
+def _overview_snapshot_from_counts(
+    total_systems: int,
+    inventoried_count: int,
+    latest: datetime | None,
+    missing_count: int,
+    stale_count: int,
+    provider_exception_count: int,
+) -> dict[str, Any]:
+    """Build one canonical snapshot from committed fleet aggregate evidence."""
     has_exceptions = bool(missing_count or stale_count or provider_exception_count)
 
     if total_systems == 0:
@@ -267,11 +269,11 @@ def _overview_snapshot(rows: list[dict[str, Any]]) -> dict[str, Any]:
         )
         if count
     ]
-    coverage_label = f'{len(inventoried)} / {total_systems} Systems' if total_systems else '0 / 0 Systems'
+    coverage_label = f'{inventoried_count} / {total_systems} Systems' if total_systems else '0 / 0 Systems'
     coverage_supporting = (
         'Fully committed'
-        if total_systems and len(inventoried) == total_systems
-        else ('No committed data' if not inventoried else 'Partially committed')
+        if total_systems and inventoried_count == total_systems
+        else ('No committed data' if not inventoried_count else 'Partially committed')
     )
     return {
         'source_label': 'Committed Snapshot',
@@ -288,10 +290,24 @@ def _overview_snapshot(rows: list[dict[str, Any]]) -> dict[str, Any]:
         'coverage_supporting': coverage_supporting,
         'coverage_tone': (
             'normal'
-            if total_systems and len(inventoried) == total_systems
+            if total_systems and inventoried_count == total_systems
             else ('unknown' if total_systems == 0 else 'warning')
         ),
         'exception_label': ' · '.join(exception_parts) if exception_parts else 'No Exceptions',
         'exceptions_supporting': 'Review required' if has_exceptions else 'No issues detected',
         'exceptions_tone': 'warning' if has_exceptions else 'normal',
     }
+
+
+def _overview_snapshot(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    inventoried = [row for row in rows if row['last_inventory_at'] is not None]
+    return _overview_snapshot_from_counts(
+        total_systems=len(rows),
+        inventoried_count=len(inventoried),
+        latest=max((row['last_inventory_at'] for row in inventoried), default=None),
+        missing_count=len(rows) - len(inventoried),
+        stale_count=sum(_is_stale(row['last_inventory_at']) for row in inventoried),
+        provider_exception_count=sum(
+            row['status_tone'] in {'critical', 'warning', 'unknown'} for row in rows
+        ),
+    )
