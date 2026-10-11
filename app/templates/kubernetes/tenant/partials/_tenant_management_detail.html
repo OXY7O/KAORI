@@ -995,8 +995,16 @@
                                                                     Provider execution and governance Release are still blocked.
                                                                 </p>
                                                             </div>
+                                                            {% if capsule_preview.unverified_kaori_rolebinding_origin %}
+                                                                <p role="status" class="mt-2 rounded-lg border border-outline-subtle bg-surface-elevated p-3 text-xs leading-5 text-content-secondary">
+                                                                    At least one KAORI-marked RoleBinding has unverified controller origin.
+                                                                    Its ownership must be resolved before an exact Capsule handoff can execute.
+                                                                    Provider-owned and foreign RoleBindings remain preserved.
+                                                                </p>
+                                                            {% endif %}
                                                             {% if capsule_preview.transfer_items
                                                                   and capsule_preview.source_worklist_sha256
+                                                                  and not capsule_preview.unverified_kaori_rolebinding_origin
                                                                   and capsule_preview.actor_user_id == current_user.id
                                                                   and not row.release_capsule_handoff_execution %}
                                                                 <form method="post"
