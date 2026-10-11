@@ -80,7 +80,12 @@
                                 <div class="ml-auto flex w-fit flex-col items-end gap-1.5 text-xs">
                                     <span class="inline-flex items-center gap-2 text-content-muted"><span class="h-2 w-2 rounded-full {% if row.inventory_ready %}bg-status-normal{% else %}bg-status-unknown{% endif %}"></span>Inventory</span>
                                     <span class="inline-flex items-center gap-2 text-content-muted"><span class="h-2 w-2 rounded-full {% if row.snapshot_ready %}bg-status-normal{% else %}bg-status-unknown{% endif %}"></span>Metrics Source</span>
-                                    <span class="inline-flex items-center gap-2 text-content-muted"><span class="h-2 w-2 rounded-full {% if row.alerts_connected %}bg-status-normal{% else %}bg-status-unknown{% endif %}"></span>Alert Signals</span>
+                                    <span class="inline-flex items-center gap-2 text-content-muted"
+                                          title="{{ row.alert_source_label }}">
+                                        <span class="h-2 w-2 rounded-full {% if row.alerts_fallback %}bg-status-warning{% elif row.alerts_connected %}bg-status-normal{% else %}bg-status-unknown{% endif %}"
+                                              aria-hidden="true"></span>
+                                        Alert Signals<span class="sr-only">: {{ row.alert_source_label }}</span>
+                                    </span>
                                 </div>
                             </td>
                         </tr>
