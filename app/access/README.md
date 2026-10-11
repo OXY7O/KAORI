@@ -78,6 +78,8 @@ Custom-role edit/delete mutations are serialized with a database row lock and pr
 
 Inactive custom roles remain administratively recoverable: assignment and cloning eligibility require active roles, while authorized role edit/reactivation/delete checks use a separate management ceiling independent of the target role's active flag. Protected defaults stay immutable, and stale-version, deactivation acknowledgement, and user/provider deletion blockers remain authoritative.
 
+Role Configuration shows a checkbox-derived Active/Inactive assignment badge, using *on save* wording for unsaved create/edit/clone changes. The existing role form JavaScript synchronizes both the form badge and Role Impact badge as the checkbox is toggled; read-only mode shows the committed state.
+
 The role mutation boundary also enforces a delegation boundary: a non-break-glass role manager can only grant permissions already present in their own effective role. Protected default keys remain source-controlled even if database `is_system` metadata drifts, and Roles & Access surfaces baseline drift until explicit `flask seed-rbac` convergence. Administrator-level role classification is capability-based from the RBAC catalog rather than the role slug. Deactivating a referenced custom role requires explicit impact acknowledgement.
 
 This Roles & Access presentation is part of Access Final Lock v1. RBAC seed/convergence remains an explicit deployment boundary owned by the Permission Catalog and `flask seed-rbac`.
