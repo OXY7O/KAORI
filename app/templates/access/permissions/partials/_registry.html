@@ -2,7 +2,6 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/table_label.html" as table_label %}
-{% import "components/pagination.html" as pagination_ui %}
 {% import "components/resource_detail_modal.html" as resource_detail_modal %}
 <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -16,30 +15,29 @@
         <div class="flex flex-wrap items-center gap-2">
             {{ table_label.metadata_label(matching_count ~ ' Matching ' ~ ('Permission' if matching_count == 1 else 'Permissions') , 'key-round') }}
             {% if filters.search or filters.module != 'all' or filters.coverage != 'all' or filters.delegation != 'all' %}
-                {{ registry_ui.clear_filters_action(url_for('access.permissions.index', view='registry', per_page=filters.per_page) ,
-                table_ui.action_classes(),
-                hx_get=url_for('access.permissions.index', view='registry', per_page=filters.per_page),
-                target='#permission-workspace',
-                indicator='#permission-registry-loading',
-                push_url='true'
+                {{ registry_ui.clear_filters_link(
+                    'access.permissions.index',
+                    'permission-workspace',
+                    'permission-registry-loading',
+                    filters.per_page,
+                    table_ui.action_classes(),
+                    query_params={'view': 'registry'}
                 ) }}
             {% endif %}
         </div>
     </div>
     {{ loading_bar.render('permission-registry-loading', label='Refreshing Permission Registry') }}
 </header>
-<form id="permission-registry-filter-form"
-      class="{{ table_ui.inventory_filter_bar_classes() }}"
-      method="get"
-      action="{{ url_for('access.permissions.index') }}"
-      hx-get="{{ url_for('access.permissions.index') }}"
-      hx-trigger="keyup changed delay:450ms from:input[name='search'], change from:select[name='module'], change from:select[name='coverage'], change from:select[name='delegation']"
-      hx-target="#permission-workspace"
-      hx-swap="outerHTML"
-      hx-push-url="true"
-      hx-indicator="#permission-registry-loading">
+{% call registry_ui.filter_form(
+        'access.permissions.index',
+        'permission-workspace',
+        'permission-registry-loading',
+        filters.per_page,
+        classes=table_ui.inventory_filter_bar_classes(),
+        form_id='permission-registry-filter-form',
+        aria_label='Permission Registry filters'
+    ) %}
     <input type="hidden" name="view" value="registry">
-    <div class="{{ table_ui.filter_layout_classes() }}">
         <label class="block min-w-0">
             <span class="{{ table_ui.filter_label_classes() }}">Search Permission</span>
             <div class="relative">
@@ -84,8 +82,7 @@
                         {% if filters.delegation == 'access_admin' %}selected{% endif %}>Access Administration</option>
             </select>
         </label>
-    </div>
-</form>
+{% endcall %}
 <div class="overflow-x-auto">
     <table class="{{ table_ui.table_classes('min-w-[82rem]') }}">
         <thead class="{{ table_ui.head_classes() }}">
@@ -150,58 +147,17 @@
         </tbody>
     </table>
 </div>
-<footer class="{{ pagination_ui.footer_classes() }}">
-    <div class="{{ pagination_ui.summary_group_classes() }}">
-        <span>Showing <strong class="font-semibold text-content-primary">{{ pagination.start_item }}–{{ pagination.end_item }}</strong> of <strong class="font-semibold text-content-primary">{{ pagination.total_items }}</strong> {{ pagination_ui.resource_name('Permissions', pagination.total_items) }}</span>
-        <label class="{{ pagination_ui.rows_group_classes() }}">
-            <span class="font-semibold text-content-secondary">Rows</span>
-            <select name="per_page"
-                    form="permission-registry-filter-form"
-                    aria-label="Rows Per Page"
-                    class="{{ pagination_ui.page_size_classes() }}"
-                    hx-get="{{ url_for('access.permissions.index') }}"
-                    hx-include="#permission-registry-filter-form"
-                    hx-target="#permission-workspace"
-                    hx-swap="outerHTML"
-                    hx-push-url="true"
-                    hx-indicator="#permission-registry-loading">
-                {% for option in per_page_options %}
-                    <option value="{{ option }}"
-                            {% if filters.per_page == option %}selected{% endif %}>{{ option }}</option>
-                {% endfor %}
-            </select>
-        </label>
-    </div>
-    <nav class="{{ pagination_ui.navigation_group_classes() }}"
-         aria-label="Permission Registry Pagination">
-        {% if pagination.has_prev %}
-            <a href="{{ url_for('access.permissions.index', view='registry', search=filters.search, module=filters.module, coverage=filters.coverage, delegation=filters.delegation, per_page=filters.per_page, page=pagination.prev_page) }}"
-               hx-get="{{ url_for('access.permissions.index', view='registry', search=filters.search, module=filters.module, coverage=filters.coverage, delegation=filters.delegation, per_page=filters.per_page, page=pagination.prev_page) }}"
-               hx-target="#permission-workspace"
-               hx-swap="outerHTML"
-               hx-push-url="true"
-               hx-indicator="#permission-registry-loading"
-               class="{{ pagination_ui.navigation_classes(false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
-        {% else %}
-            <span class="{{ pagination_ui.navigation_classes(true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
-        {% endif %}
-        {{ pagination_ui.numeric_pages(pagination.page,
-                pagination.total_pages,
-                hx_target='#permission-workspace',
-                hx_indicator='#permission-registry-loading',
-                endpoint='access.permissions.index',
-                query_params=pagination_query,
-                hx_swap='outerHTML') }}
-        {% if pagination.has_next %}
-            <a href="{{ url_for('access.permissions.index', view='registry', search=filters.search, module=filters.module, coverage=filters.coverage, delegation=filters.delegation, per_page=filters.per_page, page=pagination.next_page) }}"
-               hx-get="{{ url_for('access.permissions.index', view='registry', search=filters.search, module=filters.module, coverage=filters.coverage, delegation=filters.delegation, per_page=filters.per_page, page=pagination.next_page) }}"
-               hx-target="#permission-workspace"
-               hx-swap="outerHTML"
-               hx-push-url="true"
-               hx-indicator="#permission-registry-loading"
-               class="{{ pagination_ui.navigation_classes(false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
-        {% else %}
-            <span class="{{ pagination_ui.navigation_classes(true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
-        {% endif %}
-    </nav>
-</footer>
+{# Rows uses a distinct form: per_page must not be duplicated as a hidden input. #}
+{% set footer_query = pagination_query.copy() %}
+{% set _ = footer_query.pop('per_page', none) %}
+{{ registry_ui.footer(
+    'access.permissions.index',
+    'permission-workspace',
+    'permission-registry-loading',
+    pagination,
+    footer_query,
+    per_page_options,
+    resource_label='Permissions',
+    rows_aria_label='Rows Per Page',
+    control_name='permission-registry'
+) }}

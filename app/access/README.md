@@ -82,6 +82,9 @@ This Roles & Access presentation is part of Access Final Lock v1. RBAC seed/conv
 
 ## Permission Catalog review status
 
+Permission Registry and Role Coverage use the existing `table_registry.filter_form`, `clear_filters_link`, and `footer` interaction contract against the server-owned `#permission-workspace` response. Filter changes reset to page 1; the shared HTMX latest-request-wins synchronization, GET fallback, push-history, loading indication, Clear Filters, numeric pagination, and Rows 5/10/25/50 remain canonical. The Rows form excludes a duplicate hidden `per_page` value so the selected size is authoritative. No local JavaScript is added.
+
+
 Permission Catalog is a read-only Access workspace. HTTP GET routes no longer call `seed_default_rbac()` or perform RBAC convergence. Code-to-database alignment is presented as registry evidence (`Canonical`, `Missing From Registry`, `Metadata Drift`, or `Database Only`), while synchronization remains an explicit deployment/administrative step through `flask seed-rbac`.
 
 The catalog owns two views:

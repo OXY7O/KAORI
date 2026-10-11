@@ -49,17 +49,33 @@ def test_permission_catalog_uses_kaori_hero_overview_tabs_tables_loading_and_pag
     assert 'Role Coverage' in workspace
     assert 'render_navigation' in workspace
 
-    for template in (registry, coverage):
+    canonical = read('app/templates/components/table_registry.html')
+    for view, template in (('registry', registry), ('coverage', coverage)):
         assert 'components/loading_bar.html' in template
         assert 'components/table.html' in template
-        assert 'components/pagination.html' in template
-        assert 'Rows' in template
-        assert 'Previous' in template
-        assert 'Next' in template
-        assert 'hx-indicator=' in template
+        assert 'components/table_registry.html' in template
+        assert 'registry_ui.filter_form(' in template
+        assert 'registry_ui.clear_filters_link(' in template
+        assert 'registry_ui.footer(' in template
+        assert "'permission-workspace'," in template
+        assert f"form_id='permission-{view}-filter-form'" in template
+        assert f"'permission-{view}-loading'," in template
+        assert "footer_query.pop('per_page', none)" in template
+        assert f'control_name=\'permission-{view}\'' in template
+        assert 'pagination_ui.numeric_pages(' not in template
+        assert 'hx-trigger=' not in template  # shared canonical interaction owner
 
+    assert 'hx-sync="closest section:replace"' in canonical
+    assert 'hx-select="#{{ registry_id }}"' in canonical
+    assert 'data-kaori-canonical-registry-filter' in canonical
+    assert 'data-kaori-canonical-registry-footer' in canonical
+    assert 'data-kaori-auto-submit' in canonical
+    assert 'name="{{ page_param }}" value="1"' in canonical
+    assert 'name="{{ per_page_param }}" value="{{ per_page }}"' in canonical
+    assert 'Rows' in canonical and 'Previous' in canonical and 'Next' in canonical
+    assert 'hx-indicator="#{{ loading_id }}"' in canonical
     assert 'table_ui.inventory_filter_bar_classes()' in registry
-    assert 'table_ui.filter_layout_classes()' in registry
+    assert 'table_primitives.filter_layout_classes()' in canonical
     assert 'lg:grid-cols-' not in registry
     assert 'sm:col-span-2 lg:col-span-1' not in registry
     # Filter controls share one vertical rhythm. filter_label_classes() already owns
@@ -68,7 +84,7 @@ def test_permission_catalog_uses_kaori_hero_overview_tabs_tables_loading_and_pag
     assert 'relative mt-1.5' not in registry
     assert 'class="mt-1.5 {{ table_ui.filter_select_classes() }}"' not in registry
     assert 'table_ui.inventory_filter_bar_classes()' in coverage
-    assert 'table_ui.filter_layout_classes()' in coverage
+    assert 'table_primitives.filter_layout_classes()' in canonical
     assert 'lg:grid-cols-' not in coverage
     assert 'Search Permission' in registry
     assert 'Control Module' in registry
