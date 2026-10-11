@@ -131,7 +131,7 @@ def test_capsule_related_admin_sar_rejects_denied_or_duplicate_targets():
     candidate = {'namespace': 'demo-dev', 'kind': 'ResourceQuota', 'name': 'quota',
                  'uid': 'uid', 'resource_version': '7',
                  'decision': 'explicit_kaori_metadata_handoff_review'}
-    with pytest.raises(ValueError, match='denied patch'):
+    with pytest.raises(ValueError, match='denied get'):
         authority.verify_capsule_related_admin_authority(
             provider=_Provider(allowed=False), candidates=[candidate],
         )
