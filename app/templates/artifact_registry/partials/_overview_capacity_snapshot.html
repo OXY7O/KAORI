@@ -1,3 +1,4 @@
+{% import "components/operational_callout.html" as operational_callout %}
 {% import "components/operational_flow_steps.html" as operational_flow_steps %}
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/progress_bar.html" as progress_bar %}
@@ -13,7 +14,11 @@
     ) %}
     {% if overview.capacity.available %}
         <div class="space-y-4">
-            <div class="grid gap-3 lg:grid-cols-3">
+            {{ operational_callout.render('Data Scope',
+                'Committed Registry inventory provides artifact footprint; quota utilization and headroom require materialized project quota evidence.',
+                icon='info',
+                tone='info') }}
+            <div class="grid gap-3 sm:grid-cols-3">
                 {% for item in overview.capacity.metrics %}
                     <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
                         <div class="flex items-center justify-between gap-3">
