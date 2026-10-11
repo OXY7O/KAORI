@@ -1,4 +1,3 @@
-{% import "components/operational_callout.html" as operational_callout %}
 {% import "components/operational_flow_steps.html" as operational_flow_steps %}
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/peer_content_grid.html" as peer_content_grid %}
@@ -115,23 +114,47 @@
                                                                         aria_label='Recommended Object Storage Capacity Action Flow') }}
                                 </div>
                             </div>
-                            {% call operational_callout.render(
-                                'Capacity Decision Notes',
-                                'Use committed usable capacity before approving storage or quota changes.',
-                                icon='clipboard-check',
-                                tone='info'
-                                ) %}
-                                <div class="grid gap-3 sm:grid-cols-2">
-                                    <div>
-                                        <p class="font-semibold text-content-primary">Planning Check</p>
-                                        <p class="mt-1">Check remaining usable capacity against expected bucket growth.</p>
+                            <section class="rounded-lg border border-outline-subtle bg-surface-elevated p-4"
+                                     aria-label="Object Storage utilization balance chart">
+                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                    <div class="flex items-center gap-2">
+                                        <i data-lucide="chart-no-axes-column"
+                                           class="h-4 w-4 text-kaori-primary"
+                                           aria-hidden="true"></i>
+                                        <h3 class="text-sm font-semibold text-content-primary">Capacity Balance</h3>
                                     </div>
-                                    <div>
-                                        <p class="font-semibold text-content-primary">Evidence Handoff</p>
-                                        <p class="mt-1">Compare Storage Forecast and top bucket consumers before acting.</p>
-                                    </div>
+                                    <span class="text-xs text-content-muted">Committed usable capacity</span>
                                 </div>
-                            {% endcall %}
+                                {% if usage_percent is not none %}
+                                    {% set free_percent = 100 - usage_percent %}
+                                    <div class="mt-4 space-y-4">
+                                        <div>
+                                            <div class="flex items-center justify-between gap-3 text-xs">
+                                                <span class="font-semibold text-content-secondary">Used</span>
+                                                <strong class="tabular-nums text-content-primary">{{ usage_percent|round(1) }}%</strong>
+                                            </div>
+                                            {{ progress_bar.bar(usage_percent,
+                                                track_classes='mt-2 h-3 overflow-hidden rounded-full bg-surface-hover',
+                                                fill_classes='h-full rounded-full bg-kaori-primary',
+                                                label='Object Storage committed used capacity percentage') }}
+                                        </div>
+                                        <div>
+                                            <div class="flex items-center justify-between gap-3 text-xs">
+                                                <span class="font-semibold text-content-secondary">Free</span>
+                                                <strong class="tabular-nums text-content-primary">{{ free_percent|round(1) }}%</strong>
+                                            </div>
+                                            {{ progress_bar.bar(free_percent,
+                                                track_classes='mt-2 h-3 overflow-hidden rounded-full bg-surface-hover',
+                                                fill_classes='h-full rounded-full bg-status-info',
+                                                label='Object Storage committed free capacity percentage') }}
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <div class="mt-4 rounded-lg border border-dashed border-outline-subtle p-4 text-xs text-content-muted">
+                                        Utilization unavailable — committed percentage evidence required.
+                                    </div>
+                                {% endif %}
+                            </section>
                         </div>
                     {% else %}
                         {% set empty_state_icon = "database-zap" %}
