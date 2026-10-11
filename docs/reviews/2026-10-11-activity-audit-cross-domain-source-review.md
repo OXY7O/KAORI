@@ -92,4 +92,26 @@ No new audit event source in this review, no multi-store migration, no new categ
 4. Dispatch one report/automation alert to two channels and retry a failed send: validate `NotificationDelivery` dedup and distinguish delivery attempts from committed business-action audit records.
 5. Inspect hot/retained archive boundaries separately, source-specific RBAC and safe redaction (including #1207). Never test with real credential values. Security, CI/CD, Developer Check, Full Admission, staging/UAT and human acceptance remain **HOLD**.
 
+
+### Additional Reviewed Producers — Same Authority (#1218)
+
+These checks extend the inventory above and resolve the earlier **unverified** flag for the specific call sites below. They do not prove coverage for every route in the associated feature.
+
+| Feature / operation | Verified source and authority | Activity Audit interpretation | Required review |
+| --- | --- | --- | --- |
+| Kubernetes ConfigMap mutations | `app/kubernetes/operations/configmaps/routes.py::_feedback` calls `record_operational_activity` | **VISIBLE for this feedback path**; Kubernetes remains provider authority for actual ConfigMap object | Dry-run versus mutation and secret-safe change summaries |
+| Kubernetes Secret create/update/delete | `app/kubernetes/operations/secrets/crud_routes.py` uses `app/kubernetes/operations/secrets/route_support.py` feedback helper → `record_operational_activity` | **VISIBLE for feedback path**, not a copy of plaintext Secret values | DAST/security check proving secret data never persisted; #1207 direct-write scope |
+| Cluster lifecycle | `app/kubernetes/cluster/lifecycle_web.py` calls `record_operational_activity` | **VISIBLE for the explicit lifecycle web callbacks** | Check success, rejected and queued actions individually |
+| Alertmanager registration/validation | `app/integrations/observability/alert_source/providers/alertmanager/application/notifications.py` invokes shared Notification-backed operational activity | **VISIBLE when helper used** | Provider runtime remains independent, avoid interpreting configuration as live readiness |
+| MinIO Object Storage provider | `app/integrations/storage/object_storage/providers/minio/application/routes.py` has explicit `record_operational_activity` paths | **VISIBLE on these interaction paths** | Follow per-instance lifecycle and report terminal jobs separately |
+| Reporting templates | `app/reports/report_templates/routes.py::_record_template_feedback` writes operational activity | **VISIBLE for create/update/delete/duplicate feedback paths** | Report template mutation != report generation/delivery |
+| Reporting schedules | `app/reports/schedules/routes.py::_record_schedule_feedback` writes operational activity | **VISIBLE for schedule create/update/toggle/delete/run feedback paths** | Schedule configuration != job execution terminal or outbound delivery |
+| Artifact Registry governance | `app/artifact_registry/routes.py` invokes `record_operational_activity` | **VISIBLE for those governed actions** | Provider registry/image remains authoritative; verify sync/terminal separately |
+| Automation Control governance | `app/intelligence/automation_control/service.py::upsert_deployment_policy` persists an `AuditEvent`; `app/intelligence/automation_control/routes.py` also invokes `record_operational_activity` for scoped feedback and queues outbound decision alerts | **MIXED**: some UI feedback is Notification-backed, policy AuditEvent is separate, channel delivery is `NotificationDelivery` | Must correlate by real decision/action and actor; no synthetic audit for channel retries; #1219/#1220 |
+| TLS governance sync dispatch | `app/kubernetes/governance/tls_certificates/audit.py::record_tls_sync_dispatch_audit` persists `AuditEvent` | **SEPARATE**, not automatically in the Notification Activity register | Governed sync/JobExecution correlation and permission/retention review #1219 |
+
+**Additional security boundary:** `app/access/authentication/audit.py` and `app/kubernetes/tenant/audit_correlation_service.py::_project_activity()` directly construct `Notification`, bypassing the shared writer introduced in #1207. Both currently construct deliberately bounded evidence, but **the shared writer's persistence sanitization cannot be assumed to cover these direct-write paths**. This requires direct producer review under open #1207 before any claim of universal stored-evidence redaction. The read-side Activity Audit sanitizer remains relevant for those records.
+
+**Remaining unverified scope:** deeper analytics/forecast terminal operations, remaining Kubernetes resources, resolver delivery execution, reports artifact generation details, storage fleet jobs, all background archive tasks, and failure/retry paths not listed in the matrix. A full feature-by-feature UAT matrix and architecture acceptance remain outstanding.
+
 **Lifecycle note:** This inventory does not close #1208. #1218 is a scoped evidence contract; #1219 and #1220 require the explicit architecture/security decision before implementation.
