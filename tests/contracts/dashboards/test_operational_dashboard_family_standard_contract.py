@@ -219,6 +219,20 @@ def test_capacity_metric_cards_follow_kubernetes_visual_grammar() -> None:
         assert 'Capacity Decision Notes' not in template
 
 
+def test_alert_case_empty_state_does_not_claim_provider_health() -> None:
+    summaries = (
+        read('app/templates/kubernetes/dashboard/partials/_alerts_summary.html'),
+        read('app/templates/storage/object_storage/dashboard/partials/_alerts_summary.html'),
+        read('app/templates/artifact_registry/partials/_overview_alerts_summary.html'),
+    )
+    for summary in summaries:
+        assert "empty_label='No Active Cases'" in summary
+        assert 'No active recommendation-origin AlertCases' in summary
+        assert 'Intelligence findings are separate.' in summary
+        assert "empty_label='Healthy'" not in summary
+        assert 'components/operational_alert_summary.html' in summary
+
+
 def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
     freshness = read('app/kubernetes/dashboard/sections/freshness.py')
     capacity = read('app/kubernetes/dashboard/sections/capacity.py')
