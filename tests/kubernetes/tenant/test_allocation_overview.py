@@ -464,9 +464,11 @@ def test_tenant_contribution_modal_uses_divider_only_summary_and_unboxed_metrics
     )[0]
 
     # No outer summary or four nested cards: only responsive vertical dividers.
-    assert 'grid grid-cols-2 gap-y-2 sm:grid-cols-4' in summary
-    assert 'min-w-0 border-r border-outline-subtle px-3 py-2' in summary
-    assert 'even:border-r-0 sm:even:border-r sm:last:border-r-0' in summary
+    assert 'grid grid-cols-2 sm:grid-cols-4' in summary
+    assert 'min-w-0 border-outline-subtle px-3 py-3 even:border-l' in summary
+    assert 'even:border-l sm:border-l sm:first:border-l-0' in summary
+    assert 'border-r' not in summary
+    assert 'gap-y-2' not in summary
     assert 'rounded-lg border border-outline-subtle bg-outline-subtle' not in summary
     assert 'bg-surface-card px-3 py-2.5' not in summary
     assert 'shadow-sm' not in summary
@@ -565,3 +567,33 @@ def test_tenant_contributions_header_has_title_label_and_right_aligned_registry_
     assert dialog.count('data-kaori-dialog-close') == 1
     assert 'id="{{ contributions_body_id }}"' in dialog
     assert 'aria-label="Scroll through Tenant contributions"' in dialog
+
+
+def test_contribution_summary_dividers_span_height_without_right_edge_border() -> None:
+    """#1153: true between-column rules, flush with the summary strip edges."""
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[3]
+    source = (root / "app/templates/kubernetes/tenant/partials/_tenant_allocation_overview.html").read_text(
+        encoding="utf-8"
+    )
+    Environment(autoescape=True).parse(source)
+    dialog = source.split('<dialog id="{{ contributions_dialog_id }}"', 1)[1].split("</dialog>", 1)[0]
+    section = dialog.split('<section class="shrink-0 border-b border-outline-subtle px-4 sm:px-6"', 1)[1]
+    summary = section.split("</section>", 1)[0]
+    facts = summary.split("<dl ", 1)[1].split("</dl>", 1)[0]
+
+    # No inset top/bottom wrapper padding or grid row gap.
+    assert 'py-3 sm:px-6' not in section.split('aria-label="Committed Tenant allocation summary"', 1)[0]
+    assert 'class="grid grid-cols-2 sm:grid-cols-4"' in facts
+    assert 'even:border-l sm:border-l sm:first:border-l-0' in facts
+    assert 'min-w-0 border-outline-subtle px-3 py-3' in facts
+    assert 'border-r' not in facts
+    assert 'last:border-' not in facts
+    assert 'gap-y-' not in facts
+
+    # Mobile: separators before 2nd and 4th fact; desktop: before facts 2,3,4.
+    for label in ('Committed Tenants', 'Namespaces', 'Shared Quota', 'Needs Review'):
+        assert label in facts
+    assert 'allocation_tenant_summary.tenants' in facts
+    assert 'allocation_tenant_summary.attention' in facts

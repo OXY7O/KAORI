@@ -223,17 +223,17 @@
                             </a>
                         </div>
                     </header>
-                    <section class="shrink-0 border-b border-outline-subtle px-4 py-3 sm:px-6"
+                    <section class="shrink-0 border-b border-outline-subtle px-4 sm:px-6"
                              aria-label="Committed Tenant allocation summary">
-                        {# Four unboxed facts separated only by vertical rules; two columns on mobile. #}
-                        <dl class="grid grid-cols-2 gap-y-2 sm:grid-cols-4">
+                        {# Full-height interior dividers only, never a dangling rule at the right edge. #}
+                        <dl class="grid grid-cols-2 sm:grid-cols-4">
                             {% for label, value in [
                                 ('Committed Tenants', allocation_tenant_summary.tenants),
                                 ('Namespaces', allocation_tenant_summary.namespaces),
                                 ('Shared Quota', allocation_tenant_summary.shared),
                                 ('Needs Review', allocation_tenant_summary.attention)
                             ] %}
-                                <div class="min-w-0 border-r border-outline-subtle px-3 py-2 even:border-r-0 sm:even:border-r sm:last:border-r-0 sm:px-4">
+                                <div class="min-w-0 border-outline-subtle px-3 py-3 even:border-l sm:border-l sm:first:border-l-0 sm:px-4">
                                     <dt class="text-xs leading-5 text-content-muted">{{ label }}</dt>
                                     <dd class="mt-0.5 text-base font-semibold tabular-nums leading-6 text-content-primary">{{ value }}</dd>
                                 </div>
