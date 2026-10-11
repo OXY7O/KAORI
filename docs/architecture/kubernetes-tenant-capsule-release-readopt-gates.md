@@ -97,7 +97,7 @@ The handler requires the original approved Release plan, current authenticated
 Kubernetes X.509 identity and scoped get/patch SAR, exact CR/Namespace
 UID/resourceVersion, all transferred ResourceQuota/LimitRange/RoleBinding
 targets and provider/foreign resources explicitly preserved. It verifies
-the CR and every preserved related object before any metadata mutation,
+the CR, all preserved Namespace generations, and every preserved related object before any metadata mutation,
 commits a single durable **in-progress** AuditEvent before the first provider
 write, then for every successor marker removal performs JSON Patch
 `test` on UID/resourceVersion/full labels,
@@ -112,7 +112,16 @@ recovery-required receipt; an existing handback START prevents automatic
 retry (including after process interruption). Only complete verified
 provider scope and locked existing `Released` Namespace generations may
 write `handback_governance` evidence with precise current CR RV and each
-Namespace's own RV. The released predecessor stays Released and immutable;
+Namespace's own RV. Capsule GlobalResourceQuota is included in the canonical Released G4
+counted worklist as **preserve-only**; it is never a handback PATCH target.
+The handback checks the complete approved GlobalResourceQuota list
+UID/RV/scope digest before and after mutation and retains externally owned,
+already-preserved Namespaces as no-PATCH resources. Every original Released
+Namespace—transferred or preserved—must receive its own exact provider RV
+in the committed handback lineage, rather than incorrectly requiring all
+Namespaces to have carried KAORI ownership markers.
+
+The released predecessor stays Released and immutable;
 Re-Adopt still requires a **new** Discovery and distinct explicit Adoption
 authorization. The normal GET reads committed handback evidence only.
 
