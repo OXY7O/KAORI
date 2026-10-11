@@ -86,6 +86,31 @@ def test_permission_catalog_uses_kaori_hero_overview_tabs_tables_loading_and_pag
     assert 'xl:sticky xl:top-5' not in index
 
 
+def test_permission_role_coverage_delegation_badge_aligns_with_identity_text() -> None:
+    coverage = read('app/templates/access/permissions/partials/_coverage.html')
+    registry = read('app/templates/access/permissions/partials/_registry.html')
+    table = read('app/templates/components/table.html')
+    primitives = read('app/templates/components/table_primitives.html')
+
+    # Role Coverage previously rendered the delegation badge as a sibling of
+    # the icon-and-text title cell, so the badge started beneath the icon.
+    assert 'table_ui.title_cell(\n                            permission.title,' in coverage
+    assert 'table_label.status_label(permission.delegation_tier.label, permission.delegation_tier.tone, permission.delegation_tier.icon)' in coverage
+    assert '<div class="mt-1.5">{{ table_label.status_label(permission.delegation_tier.label' not in coverage
+
+    # The shared title cell owns the icon geometry. Optional content must be
+    # placed inside the existing text column, not via a hard-coded left offset.
+    assert "title_cell(name, supporting_text='', icon='', supporting_content=None)" in table
+    assert "title_cell(name, supporting_text='', icon='', supporting_content=None)" in primitives
+    assert 'table_primitives.title_cell(name, supporting_text, icon, supporting_content)' in table
+    assert '{% if supporting_content %}' in primitives
+    assert '{{ supporting_content }}' in primitives
+    assert primitives.index('{% if supporting_content %}') > primitives.index('{% if supporting_text %}', primitives.index('{% macro title_cell('))
+    assert 'ml-[3.125rem]' not in coverage
+    # Other tables continue to use the existing three-argument contract.
+    assert "table_ui.title_cell(permission.title, permission.key, 'key-round')" in registry
+
+
 def test_permission_catalog_exposes_drift_dependency_and_cross_role_coverage() -> None:
     service = read('app/access/permissions/service.py')
     detail = read('app/templates/access/permissions/partials/_permission_detail.html')
