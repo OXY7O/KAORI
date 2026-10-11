@@ -1252,8 +1252,7 @@ def verify() -> None:
     _require(
         object_dashboard_service,
         (
-            'Available alerts from committed 24h analytics snapshots;',
-            'Alertmanager first, Metrics Source fallback.',
+            'Committed 24h alerts; Alertmanager primary, Metrics Source fallback.',
         ),
         'Object Storage refreshed Alert Evidence Fleet copy',
     )
