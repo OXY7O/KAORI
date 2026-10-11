@@ -59,6 +59,7 @@ _TABLE_GUARDS = {
     }),
 }
 _REQUIRED_CONSTRAINTS = frozenset({
+    'uq_capsule_audit_batch_global_id',
     'uq_capsule_audit_batch_plan_once',
     'uq_capsule_resource_consent_plan_once',
     'fk_capsule_resource_consent_exact_audit_batch',
