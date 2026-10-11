@@ -37,7 +37,7 @@ def test_artifact_registry_overview_consumes_operational_dashboard_family() -> N
     assert 'operational_metric_card.render(' in kpis
     assert 'for kpi in overview.kpis' in kpis
     assert 'grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4' in kpis
-    assert "source_label='Committed Inventory'" in kpis
+    assert 'source_label=overview.kpi_source_label' in kpis
     assert "scope_label='Active Scope'" in kpis
     assert "body_classes='p-0'" not in signal
     assert "grouped=true" not in signal
@@ -176,6 +176,9 @@ def test_artifact_registry_operations_overview_matches_reference_dashboard_gramm
         assert label in presentation
     assert 'overview.posture.label' in signal
     assert 'overview.posture.tone' in signal
+    assert 'scope_status' in signal
+    assert 'scope_tone' in signal
+    assert 'Select a Registry Provider for Detailed Signals' in signal
 
 
 def test_artifact_registry_overview_keeps_reference_information_hierarchy() -> None:
@@ -292,6 +295,9 @@ def test_artifact_registry_dashboard_state_semantics_and_jinja_mapping_safety() 
     assert 'components/operational_signal_overview.html' in signal
     assert 'overview.posture.label' in signal
     assert 'overview.posture.tone' in signal
+    assert 'scope_status' in signal
+    assert 'scope_tone' in signal
+    assert 'Select a Registry Provider for Detailed Signals' in signal
     assert 'signal_updated' in signal
     assert 'status_indicator_label(status_label, status_tone' in shared_signal
 
@@ -452,7 +458,7 @@ def test_artifact_registry_overview_kpi_cards_match_reference_dashboard_family()
         assert 'operational_metric_card.render(' in template
         assert 'grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4' in template
         assert "scope_label='Active Scope'" in template
-    assert "source_label='Committed Inventory'" in registry
+    assert 'source_label=overview.kpi_source_label' in registry
     for field in ('kpi.icon', 'kpi.label', 'kpi.value', 'kpi.description'):
         assert field in registry
     assert "body_classes='p-5'" in shell
@@ -465,3 +471,51 @@ def test_artifact_registry_overview_kpi_cards_match_reference_dashboard_family()
     assert 'resource_posture_grid.html' not in registry
     assert 'data-kaori-artifact-registry-operational-kpis' in registry
     assert 'hx-trigger="load"' in signal
+
+
+def test_registry_dashboard_kpi_projection_respects_active_committed_scope_and_evidence() -> None:
+    common = read('app/artifact_registry/presentation_common.py')
+    projection = read('app/artifact_registry/presentation_overview.py')
+    signal = read('app/templates/artifact_registry/partials/_overview_signal_overview.html')
+    card = read('app/templates/artifact_registry/partials/_overview_kpi_cards.html')
+
+    scope = common.split('def _overview_scope_context(', 1)[1].split(
+        'def _overview_inventory_kpi_evidence(', 1
+    )[0]
+    assert 'scoped_provider_ids = [int(provider.id) for provider in scoped_providers]' in scope
+    assert 'RegistryCollectionState.integration_instance_id.in_(scoped_provider_ids)' in scope
+
+    evidence = common.split('def _overview_inventory_kpi_evidence(', 1)[1].split(
+        'def _overview_kpi_values(', 1
+    )[0]
+    for token in ('eligible_ids', 'last_committed_at is not None', 'Not Collected', 'Partial Inventory (',
+                  'Committed Inventory'):
+        assert token in evidence
+    counter = common.split('def _overview_kpi_values(', 1)[1].split(
+        'def _latest_registry_analytics(', 1
+    )[0]
+    assert counter.count('RegistryProject.integration_instance_id.in_(committed_provider_ids)') == 4
+    assert 'if not committed_provider_ids:' in counter
+
+    section = projection.split("if section == 'kpi_cards':", 1)[1].split(
+        "if section == 'provider_health':", 1
+    )[0]
+    assert '_overview_inventory_kpi_evidence(scoped_providers, states)' in section
+    assert "'kpi_source_label': source_label" in section
+    assert section.count("if committed_count else 'Not Collected'") == 4
+    assert 'source_label=overview.kpi_source_label' in card
+
+    ops = projection.split('def _overview_operations_projection(', 1)[1].split(
+        'def _overview_capacity_projection(', 1
+    )[0]
+    assert '_overview_inventory_kpi_evidence(scoped_providers, states)' in ops
+    assert '_overview_inventory_evidence(committed_provider_ids)' in ops
+    inventory = projection.split('def _overview_inventory_evidence(', 1)[1].split(
+        'def _overview_inventory_items(', 1
+    )[0]
+    assert inventory.count('RegistryProject.integration_instance_id.in_(committed_provider_ids)') == 3
+    assert "scope_status = overview.posture.label if overview.selected_provider" in signal
+    assert "'Select a Registry Provider for Detailed Signals'" in signal
+    assert "scope_tone = overview.posture.tone if overview.selected_provider else 'warning'" in signal
+    assert '    scope_status,' in signal
+    assert '    scope_tone,' in signal
