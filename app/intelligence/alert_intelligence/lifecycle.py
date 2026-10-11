@@ -4,6 +4,7 @@ import hashlib
 from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
 from typing import Any
+from urllib.parse import urlencode
 
 from app.extensions.db import db
 from app.intelligence.alert_intelligence.case_state import restore_system_routing
@@ -17,6 +18,13 @@ from app.platform_operations.notifications.service import create_notification
 _ACTIVE_SOURCE_STATES = {'firing', 'pending', 'active'}
 _OPERATOR_VERIFICATION_SEVERITIES = {'critical', 'warning'}
 _POSTMORTEM_DURATION_MINUTES = 120
+
+
+def _case_workspace_url(case: AlertCase, *, tab: str) -> str:
+    """Carry case domain and asset scope into lifecycle review links."""
+    return '/intelligence/alert-intelligence?' + urlencode(
+        {'tab': tab, 'domain': case.domain, 'asset': case.asset_key, 'case': case.public_id}
+    )
 
 
 def reconcile_alert_cases() -> dict[str, int]:
@@ -323,7 +331,7 @@ def expire_acknowledgements_and_notify() -> int:
             title='Acknowledged Alert Still Firing',
             message=f'{case.alert_name} remains active after its acknowledgement reminder window.',
             detail='KAORI channel delivery is eligible again until the condition resolves, is re-acknowledged, or is silenced.',
-            action_url=f'/intelligence/alert-intelligence?tab=active&case={case.public_id}',
+            action_url=_case_workspace_url(case, tab='active'),
             metadata={'case_id': case.public_id, 'domain': case.domain, 'asset_key': case.asset_key},
             deck_visible=True,
         )
@@ -364,7 +372,7 @@ def expire_silences_and_notify() -> int:
             title='Silence Expired · Alert Still Firing',
             message=f'{case.alert_name} is still firing after its KAORI delivery silence expired.',
             detail='Review the alert case before creating another silence or applying remediation.',
-            action_url=f'/intelligence/alert-intelligence?tab=active&case={case.public_id}',
+            action_url=_case_workspace_url(case, tab='active'),
             metadata={'case_id': case.public_id, 'domain': case.domain, 'asset_key': case.asset_key},
             deck_visible=True,
         )
@@ -415,7 +423,7 @@ def mark_case_source_resolved(
             status='warning',
             title='Resolution Verification Required',
             message=f'{case.alert_name} is source-resolved and requires operator closure evidence.',
-            action_url=f'/intelligence/alert-intelligence?tab=resolved&case={case.public_id}',
+            action_url=_case_workspace_url(case, tab='resolved'),
             metadata={'case_id': case.public_id, 'domain': case.domain, 'asset_key': case.asset_key},
             deck_visible=True,
         )
