@@ -84,7 +84,7 @@ def test_workload_table_keeps_age_in_detail_and_update_strategy_in_row() -> None
     table = _read('app/templates/kubernetes/inventory/workloads/partials/_table_content.html')
     service = _read('app/kubernetes/inventory/resources/workloads.py')
 
-    assert '>Update Strategy {{ info_tip.render(' in table
+    assert '>Update Strategy<' in table
     assert '{{ workload.update_strategy }}' in table
     assert '{{ workload.age }}' not in table
     assert "'identity_supporting': current_type" in service

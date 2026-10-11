@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_registry.html" as registry_ui %}
 <section id="storage-inventory-card" class="{{ table_ui.block_classes() }}">
@@ -19,7 +20,11 @@
         'Refreshing Storage Inventory',
         url_for('integrations.kubernetes') ,
     'Open Cluster Integrations',
-    header_actions=inventory_header_actions
+    header_actions=inventory_header_actions,
+    title_extra=info_tip.render('k8s-inventory-storage-title', 'Storage Inventory Guide', 'Meaning of the committed evidence in this table.', items=[
+        'Storage Provisioning: StorageClass provisioner and volume provisioning context. Dynamic provisioning depends on the configured storage driver.',
+        'Storage Binding and Lifecycle: Observed persistent-volume claim binding and related lifecycle state; a StorageClass is a configuration object, not a bound volume.'
+    ], placement='right')
     ) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         <form hx-get="{{ url_for('inventory.storage') }}"

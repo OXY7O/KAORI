@@ -62,10 +62,9 @@ def test_node_filters_refresh_the_complete_scope_workspace() -> None:
 def test_node_table_keeps_seven_columns_and_surfaces_conditions() -> None:
     content = read('app/templates/kubernetes/inventory/nodes/partials/_table_content.html')
 
-    for header in ('Node', 'Cluster', 'Role', 'Network', 'Details'):
+    for header in ('Node', 'Cluster', 'Readiness', 'Role', 'Capacity', 'Network', 'Details'):
         assert f'>{header}<' in content
-    for header in ('Readiness', 'Capacity'):
-        assert f'>{header} {{ info_tip.render(' in content
+    assert 'info_tip.render(' not in content
     assert '<caption class="sr-only">' in content
     assert content.count('scope="col"') == 7
     assert 'node.condition_summary' in content

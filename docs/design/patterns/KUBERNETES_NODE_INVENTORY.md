@@ -112,11 +112,11 @@ Rules:
 - Node identity uses the shared title-cell presentation. Its supporting line shows only the **OS family** (for example, `Linux`, `Windows`, or another reported platform) from committed `operating_system`, with a `kubernetes.io/os` label fallback. Missing OS family remains `Not Reported`; do not guess from distro/image text.
 - Full OS distribution/image/version, architecture, kernel, and container runtime stay in **View Details → Runtime & Platform**, not in the compact table subtitle.
 - Role is metadata, not status;
-- Readiness uses a semantic status indicator; its header and Capacity have shared pointer/keyboard/touch Info Tips explaining reported snapshot meaning.
+- Readiness uses a semantic status indicator; the Node Inventory **table title** contains one shared pointer/keyboard/touch Info Tip describing Readiness and Capacity, while column headers remain plain text.
 - active conditions are summarized under readiness without adding a wide extra column;
 - capacity groups CPU, memory, and ephemeral storage;
 - Network shows the canonical internal address and address scope;
-- complete evidence is available through the Details action; contextual help on technical table headings is short and factual, never a replacement for full detail evidence;
+- complete evidence is available through the Details action; contextual help beside the table title is short and factual, never a replacement for full detail evidence;
 - long technical values wrap in the detail workspace, not in additional table columns.
 
 ## Node condition semantics

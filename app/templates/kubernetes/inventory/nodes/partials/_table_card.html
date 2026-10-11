@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_registry.html" as registry_ui %}
 <section class="{{ table_ui.block_classes() }}">
@@ -19,7 +20,11 @@
         'Refreshing Node Inventory',
         url_for('integrations.kubernetes') ,
     'Open Cluster Integrations',
-    header_actions=inventory_header_actions
+    header_actions=inventory_header_actions,
+    title_extra=info_tip.render('k8s-inventory-nodes-title', 'Node Inventory Guide', 'Meaning of the committed evidence in this table.', items=[
+        'Node Readiness: Ready is the kubelet-reported Node condition in the committed snapshot; it does not guarantee that workloads can be scheduled.',
+        'Node Capacity: Reports Node CPU, memory, and ephemeral storage from the committed inventory. Missing measurements are not zero.'
+    ], placement='right')
     ) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         <form hx-get="{{ url_for('inventory.nodes') }}"

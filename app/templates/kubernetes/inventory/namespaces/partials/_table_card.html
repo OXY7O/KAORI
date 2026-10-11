@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_registry.html" as registry_ui %}
 <section class="{{ table_ui.block_classes() }}">
@@ -19,7 +20,12 @@
         'Refreshing Namespace Inventory',
         url_for('integrations.kubernetes') ,
     'Open Cluster Integrations',
-    header_actions=inventory_header_actions
+    header_actions=inventory_header_actions,
+    title_extra=info_tip.render('k8s-inventory-namespaces-title', 'Namespace Inventory Guide', 'Meaning of the committed evidence in this table.', items=[
+        'Resource Controls: ResourceQuota limits aggregate namespace resource consumption; LimitRange defines per-object defaults or minimum and maximum resource settings.',
+        'Namespace Security Context: NetworkPolicy defines selected pod network traffic rules. PSA is Pod Security Admission, which checks pods against namespace security requirements.',
+        'Pod Security Admission (PSA): PSA Enforce applies the namespace Pod Security Standard during admission. Privileged, Baseline, and Restricted are policy levels; an unset value does not prove the namespace is secure.'
+    ], placement='right')
     ) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         <form hx-get="{{ url_for('inventory.namespaces') }}"

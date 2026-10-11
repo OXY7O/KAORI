@@ -182,10 +182,11 @@ def main() -> int:
     )
 
     require(
-        'components/info_tip.html' in table_content
-        and "'k8s-inventory-nodes-readiness'" in table_content
-        and "'k8s-inventory-nodes-capacity'" in table_content,
-        'Node Inventory must use shared contextual help for Readiness and Capacity.',
+        "title_extra=info_tip.render('k8s-inventory-nodes-title'" in table_card
+        and "'Node Readiness:" in table_card
+        and "'Node Capacity:" in table_card
+        and 'info_tip.render(' not in table_content,
+        'Node contextual help must be beside the Node Inventory title, not in headers.',
         errors,
     )
     shared_detail = read('app/templates/components/details/_detail_content.html')

@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_registry.html" as registry_ui %}
 <section id="services-inventory-card" class="{{ table_ui.block_classes() }}">
@@ -19,7 +20,11 @@
         'Refreshing Service Inventory',
         url_for('integrations.kubernetes') ,
     'Open Cluster Integrations',
-    header_actions=inventory_header_actions
+    header_actions=inventory_header_actions,
+    title_extra=info_tip.render('k8s-inventory-services-title', 'Service Inventory Guide', 'Meaning of the committed evidence in this table.', items=[
+        'Service Access Model: How a Kubernetes Service is exposed, such as ClusterIP, NodePort, LoadBalancer, or ExternalName.',
+        'Service Backends: Observed endpoint or backend registration for the Service; configuration alone does not prove traffic can reach a healthy backend.'
+    ], placement='right')
     ) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         <form hx-get="{{ url_for('inventory.services') }}"
