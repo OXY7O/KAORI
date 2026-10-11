@@ -144,6 +144,41 @@
                         payload.posture.tone
                         ) %}
                         <div id="notification-delivery-registry">
+                            <form method="get"
+                                  action="{{ url_for('notification_channels.index') }}"
+                                  hx-get="{{ url_for('notification_channels.index') }}"
+                                  hx-target="#notification-channels-workspace"
+                                  hx-select="#notification-channels-workspace"
+                                  hx-swap="outerHTML"
+                                  hx-push-url="true"
+                                  class="flex flex-wrap items-end gap-3 border-b border-outline-subtle px-4 py-3 sm:px-5">
+                                <input type="hidden" name="tab" value="delivery">
+                                <div class="min-w-[210px] flex-1">
+                                    <label for="notification-delivery-event-key"
+                                           class="{{ table_ui.filter_label_classes() }}">Exact Event Key</label>
+                                    <input id="notification-delivery-event-key"
+                                           type="search"
+                                           name="delivery_event_key"
+                                           value="{{ payload.delivery_filter }}"
+                                           maxlength="255"
+                                           placeholder="Filter committed delivery event"
+                                           class="{{ table_ui.filter_input_classes() }}">
+                                </div>
+                                <button type="submit"
+                                        class="{{ table_ui.action_classes() }}">Find Deliveries</button>
+                                {% if payload.delivery_filter %}
+                                    <a href="{{ url_for('notification_channels.index', tab='delivery') }}"
+                                       hx-get="{{ url_for('notification_channels.index', tab='delivery') }}"
+                                       hx-target="#notification-channels-workspace"
+                                       hx-select="#notification-channels-workspace"
+                                       hx-swap="outerHTML"
+                                       hx-push-url="true"
+                                       class="{{ table_ui.action_classes() }}">Reset</a>
+                                {% endif %}
+                            </form>
+                            <p class="border-b border-outline-subtle px-4 py-2 text-xs leading-5 text-content-muted sm:px-5">
+                                Delivery attempts and channel retries are provider-delivery evidence, not additional authored Activity Audit events.
+                            </p>
                             {{ loading_bar.render('notification-delivery-loading', label='Loading notification delivery activity') }}
                             <div class="overflow-x-auto">
                                 <table class="{{ table_ui.table_classes('min-w-[1120px]') }}">
@@ -208,7 +243,7 @@
                                                                 'notification-delivery-registry',
                                                                 'notification-delivery-loading',
                                                                 payload.delivery_pagination,
-                                                                {'tab': 'delivery'},
+                                                                {'tab': 'delivery', 'delivery_event_key': payload.delivery_filter},
                                                                 payload.delivery_pagination.allowed_per_page,
                                                                 resource_label='Deliveries',
                                                                 rows_aria_label='Notification deliveries per page',

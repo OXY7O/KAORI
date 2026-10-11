@@ -273,3 +273,14 @@ def test_activity_detail_links_only_permissioned_committed_source_workspaces() -
     assert "url_for('tenant.tenant_detail', tenant_id=evidence.tenant_id)" in links
     assert 'data-activity-related-sources="committed-only"' in detail
     assert 'No duplicate event is created.' in detail
+
+def test_activity_source_link_to_delivery_requires_permission_and_exact_committed_event() -> None:
+    routes = read('app/access/activity_audit/routes.py')
+    links = read('app/access/activity_audit/source_links.py')
+
+    assert "current_user.has_permission('integrations.manage')" in routes
+    assert "metadata.get('delivery_event_key') or metadata.get('event_key')" in links
+    assert 'NotificationDelivery.query.filter_by(event_key=delivery_key).first()' in links
+    assert "url_for('notification_channels.index', tab='delivery', delivery_event_key=delivery_key)" in links
+    assert 'can_view_deliveries: bool = False' in links
+    assert 'Never infer delivery from a shared domain' in links

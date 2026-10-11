@@ -161,3 +161,17 @@ def test_notification_channel_activity_audit_uses_integrations_category_and_read
     assert "normalized.replace('.', ' ').replace('_', ' ')" in event_catalog
     assert "'channel_name': channel_name" in read('app/integrations/delivery/notification_channels/routes.py')
     assert "'provider_key': provider_key" in read('app/integrations/delivery/notification_channels/routes.py')
+
+def test_delivery_registry_supports_exact_source_linked_event_filter() -> None:
+    routes = read('app/integrations/delivery/notification_channels/routes.py')
+    service = read('app/integrations/delivery/notification_channels/service.py')
+    page = read('app/templates/integrations/delivery/notification_channels/index.html')
+
+    assert "request.args.get('delivery_event_key', '')" in routes
+    assert "query.filter(NotificationDelivery.event_key == event_key)" in service
+    assert "normalized_delivery_key = str(delivery_event_key or '').strip()[:255]" in service
+    assert "'delivery_filter': normalized_delivery_key" in service
+    assert 'name="delivery_event_key"' in page
+    assert "hx-select=\"#notification-channels-workspace\"" in page
+    assert "'delivery_event_key': payload.delivery_filter" in page
+    assert 'Delivery attempts and channel retries are provider-delivery evidence' in page
