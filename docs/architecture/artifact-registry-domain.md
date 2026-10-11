@@ -199,6 +199,7 @@ same nested-card geometry for every domain.
 
 #### Component and composition rules applied in this audit
 
+- **Operational Dashboard Data Freshness authority:** the `Metrics Source` evidence card reports validated Registry Metrics Source binding readiness, not committed numeric metrics-snapshot evidence. Both selected-provider and fleet scopes retain this label; fleet coverage is `x / y providers`, while Inventory, Security and Analytics remain committed snapshot evidence cards. No live provider query is introduced by freshness rendering.
 - **Current Artifact Registry metric summary standard:** Inventory, Security,
   Runtime Usage, Governance and Analytics use the shared `resource_posture_grid`
   grouped metrics with thin dividers inside the appropriate section shell.
