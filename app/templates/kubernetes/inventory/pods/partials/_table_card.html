@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_registry.html" as registry_ui %}
 <section id="pods-inventory-card" class="{{ table_ui.block_classes() }}">
@@ -19,7 +20,11 @@
         'Refreshing Pod Inventory',
         url_for('integrations.kubernetes') ,
     'Open Cluster Integrations',
-    header_actions=inventory_header_actions
+    header_actions=inventory_header_actions,
+    title_extra=info_tip.render('k8s-inventory-pods-title', 'Pod Inventory Guide', 'Meaning of the committed evidence in this table.', items=[
+        'Pod Runtime State: Observed Pod lifecycle and readiness evidence. A running phase alone does not guarantee containers are ready.',
+        'Pod Ownership and Activity: Controller or owner reference together with snapshot activity context; missing ownership does not prove a Pod is unmanaged.'
+    ], placement='right')
     ) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         <form hx-get="{{ url_for('inventory.pods') }}"
