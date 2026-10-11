@@ -41,8 +41,8 @@
                                                                 {{ table_primitives.row_classes() }}{%- endmacro %}
                                                                 {% macro cell_classes(action=false) -%}
                                                                     {{ table_primitives.cell_classes(action) }}{%- endmacro %}
-                                                                    {% macro title_cell(name, supporting_text='', icon='') -%}
-                                                                        {{ table_primitives.title_cell(name, supporting_text, icon) }}{%- endmacro %}
+                                                                    {% macro title_cell(name, supporting_text='', icon='', supporting_content=None) -%}
+                                                                        {{ table_primitives.title_cell(name, supporting_text, icon, supporting_content) }}{%- endmacro %}
                                                                         {% macro action_classes(destructive=false) -%}
                                                                             {{ table_primitives.action_classes(destructive) }}{%- endmacro %}
                                                                             {% macro action_grid_classes(columns=2) -%}
