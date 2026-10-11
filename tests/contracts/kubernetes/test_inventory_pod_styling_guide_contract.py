@@ -33,7 +33,7 @@ def test_pod_inventory_applies_resource_page_pattern() -> None:
     assert 'pod.owner_display' not in table
     assert 'line-clamp-2' not in table
     assert 'table_ui.table_classes(\'min-w-[72rem] !table-fixed\')' in table
-    assert 'min-w-[13rem]">Owner & Restarts</th>' in table
+    assert 'w-[13%]">Owner & Restarts</th>' in table
 
 
 def test_compact_pod_owner_table_preserves_full_owner_evidence_in_modal() -> None:

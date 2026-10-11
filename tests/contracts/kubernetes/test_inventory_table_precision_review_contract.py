@@ -126,3 +126,29 @@ def test_pod_references_use_shared_full_width_evidence_bands() -> None:
     assert 'configuration references exist.\', embedded=true)' in detail
     assert 'storage references exist.\', embedded=true)' in detail
     assert 'grid gap-4 border-t border-outline-subtle p-4 lg:grid-cols-2' not in detail
+
+
+def test_pod_columns_prioritize_identity_scope_and_placement() -> None:
+    table = read('pods/partials/_table_content.html')
+    widths = {
+        'Pod': 24,
+        'Scope': 21,
+        'Runtime State': 13,
+        'Placement': 19,
+        'Owner & Restarts': 13,
+        'Details': 10,
+    }
+    assert sum(widths.values()) == 100
+    assert widths['Pod'] > widths['Placement'] > widths['Runtime State']
+    assert widths['Scope'] > widths['Owner & Restarts']
+    for heading, percent in widths.items():
+        header = table.split(f'>{heading}</th>', 1)[0].rsplit('<th', 1)[-1]
+        assert f'w-[{percent}%]' in header
+
+    assert "table_ui.table_classes('min-w-[72rem] !table-fixed')" in table
+    assert 'overflow-x-auto overscroll-x-contain' in table
+    assert 'table_ui.title_cell(pod.name, pod.identity_supporting' in table
+    assert 'table_ui.namespaced_scope_identity(pod.cluster_name' in table
+    assert 'technical_value.render(pod.placement_secondary)' in table
+    assert 'table_label.metadata_label(pod.owner_kind_label)' in table
+    assert 'resource_detail_modal.detail_button(pod.id' in table

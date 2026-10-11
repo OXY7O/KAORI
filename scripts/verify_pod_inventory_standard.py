@@ -153,6 +153,23 @@ def main() -> int:
         'Pod table must expose six scoped columns.',
         errors,
     )
+    pod_column_widths = {
+        'Pod': 24,
+        'Scope': 21,
+        'Runtime State': 13,
+        'Placement': 19,
+        'Owner & Restarts': 13,
+        'Details': 10,
+    }
+    require(
+        sum(pod_column_widths.values()) == 100
+        and all(
+            f'w-[{width}%]' in table_content.split(f'>{heading}</th>', 1)[0].rsplit('<th', 1)[-1]
+            for heading, width in pod_column_widths.items()
+        ),
+        'Pod column widths must prioritize identity, scope, and placement while keeping compact signals and actions.',
+        errors,
+    )
     require(
         '>Owner & Restarts</th>' in table_content
         and 'table_label.metadata_label(pod.owner_kind_label)' in table_content

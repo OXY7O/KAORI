@@ -65,6 +65,8 @@ Pagination and Rows only replace the table scope because they do not change summ
 Pod | Scope | Runtime State | Placement | Owner & Restarts | Details
 ```
 
+**Column proportions:** Pod 24%, Scope 21%, Runtime State 13%, Placement 19%, Owner & Restarts 13%, Details 10%. These weights prioritize long Pod identity, cluster/namespace scope, and node placement over compact operational signals. Preserve the shared fixed table, 72rem minimum width, and bounded horizontal overflow on narrow viewports; the existing Details action and full modal evidence remain available.
+
 **Owner & Restarts** uses two compact presentation layers: (1) the observed controller/owner-kind metadata badge and (2) factual cumulative restarts. Long owner resource names are **not rendered in the table**; the full resolved owner identity and controller chain remain available in **View Details → Pod Identity**. Node ownership is labeled **Static Pod** only when the committed `kubernetes.io/config.mirror` annotation proves mirror/static-Pod identity; otherwise it is **Node-owned**. An observed absence of an owner becomes **Standalone / No controller owner** only with committed owner-resolution evidence, while an unreported owner is **Owner Not Reported**. Restart evidence missing is **Restarts · Not Reported**, never a fabricated zero. Absolute restart counts are **not** Critical/Warning signals without a governed interval-based policy; no new severity classifier is created.
 
 Age remains supporting identity text and detailed metadata. Missing specification or runtime evidence is displayed as `Not Reported`, not as a factual zero.
