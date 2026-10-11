@@ -29,7 +29,8 @@ def test_absent_or_present_failure_context_does_not_invent_blockers() -> None:
     assert 'detail_ui.evidence_grid(item.failure_context, columns=3, compact=true)' in detail
     assert 'No separate failure-context fields are available in this Activity Register entry.' in detail
     assert 'Next Review Step' in detail
-    assert 'This guidance does not confirm a root cause or authorize mutation.' in detail
+    assert 'Recorded Impact' in detail
+    assert 'This guidance does not confirm a root cause or authorize mutation.' not in detail
     assert 'before deciding whether to retry' in detail
     assert '4 blocker(s)' not in detail
     assert 'No provider resource was modified.' not in detail
