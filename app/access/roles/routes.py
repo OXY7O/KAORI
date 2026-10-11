@@ -97,6 +97,21 @@ def create():
             _permission_error(form, str(exc))
         except RoleInputError as exc:
             form.name.errors = [*form.name.errors, str(exc)]
+        except (SQLAlchemyError, ValueError):
+            rollback_role_transaction()
+            current_app.logger.exception('Failed to create custom role %s.', form.name.data)
+            form.name.errors = [
+                *form.name.errors,
+                'The role could not be saved. The slug may already be in use; review and retry.',
+            ]
+            role_access_feedback(
+                actor=actor,
+                event_type='rbac_role_create_failed',
+                status='error',
+                title='Custom role creation failed',
+                message='No role changes were saved.',
+                detail='Review the role configuration and retry.',
+            )
         else:
             role_access_feedback(
                 actor=actor,
@@ -171,6 +186,21 @@ def clone(role_id: int):
             _permission_error(form, str(exc))
         except RoleInputError as exc:
             form.name.errors = [*form.name.errors, str(exc)]
+        except (SQLAlchemyError, ValueError):
+            rollback_role_transaction()
+            current_app.logger.exception('Failed to clone default role %s.', source_role.id)
+            form.name.errors = [
+                *form.name.errors,
+                'The cloned role could not be saved. The slug may already be in use; review and retry.',
+            ]
+            role_access_feedback(
+                actor=actor,
+                event_type='rbac_role_clone_failed',
+                status='error',
+                title='Role cloning failed',
+                message='No role changes were saved.',
+                detail='Review the cloned role configuration and retry.',
+            )
         else:
             role_access_feedback(
                 actor=actor,

@@ -74,7 +74,7 @@ Control Boundaries expose the same authoritative posture as their source workspa
 
 Roles & Access now uses the KAORI operational registry pattern: read-only posture overview, compact assignment flow, full-width filtered Role Registry, expandable role evidence, shared pagination/loading, and a sticky impact rail on role forms. The old page-local Role-Permission Mapping Matrix and `role_access_tabs.js` have been removed; cross-role permission coverage belongs to Permission Catalog.
 
-Custom-role edit/delete mutations are serialized with a database row lock and protected by a role version token so stale administrative forms do not silently overwrite a newer role state. Delete blockers for user assignments and Identity Provider defaults are rechecked at mutation time.
+Custom-role edit/delete mutations are serialized with a database row lock and protected by a role version token so stale administrative forms do not silently overwrite a newer role state. Create and clone now explicitly roll back SQLAlchemy/transaction failures (including concurrent unique-slug collisions), show a recoverable form error, and issue failure feedback rather than surfacing an unhandled request error. Delete blockers for user assignments and Identity Provider defaults are rechecked at mutation time.
 
 Inactive custom roles remain administratively recoverable: assignment and cloning eligibility require active roles, while authorized role edit/reactivation/delete checks use a separate management ceiling independent of the target role's active flag. Protected defaults stay immutable, and stale-version, deactivation acknowledgement, and user/provider deletion blockers remain authoritative.
 
