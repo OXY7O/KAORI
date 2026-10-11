@@ -114,8 +114,12 @@
             {% for permission in coverage_rows %}
                 <tr class="{{ table_ui.row_classes() }}">
                     <td class="sticky left-0 z-10 bg-surface-card {{ table_ui.cell_classes() }}">
-                        {{ table_ui.title_cell(permission.title, permission.key, 'key-round') }}
-                        <div class="mt-1.5">{{ table_label.status_label(permission.delegation_tier.label, permission.delegation_tier.tone, permission.delegation_tier.icon) }}</div>
+                        {{ table_ui.title_cell(
+                            permission.title,
+                            permission.key,
+                            'key-round',
+                            table_label.status_label(permission.delegation_tier.label, permission.delegation_tier.tone, permission.delegation_tier.icon)
+                        ) }}
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(permission.module_label, 'boxes') }}</td>
                     {% for role in coverage_roles %}
