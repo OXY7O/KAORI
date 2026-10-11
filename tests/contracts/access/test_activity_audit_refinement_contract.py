@@ -316,4 +316,79 @@ def test_activity_audit_administrative_source_scope_is_read_only_and_permission_
     assert 'aria-label="Separate administrative AuditEvent register"' in partial
     assert 'hx-target="#activity-administrative-evidence"' in partial
     assert 'No Administrative Source Evidence' in partial
-    assert '{% if administrative_evidence %}' in page
+    workspace = read('app/templates/access/activity_audit/partials/_audit_records_workspace.html')
+    assert '{% if selected_audit_tab == \'administrative\' %}' in workspace
+    assert 'Administrative Evidence' in workspace
+    assert 'Activity Register' in workspace
+
+
+def test_activity_audit_inventory_hierarchy_and_shared_two_tab_workspace() -> None:
+    page = read('app/templates/access/activity_audit/index.html')
+    workspace = read('app/templates/access/activity_audit/partials/_audit_records_workspace.html')
+    activity_card = read('app/templates/access/activity_audit/partials/_activity_table_card.html')
+    activity_rows = read('app/templates/access/activity_audit/partials/_activity_table_content.html')
+    administrative = read('app/templates/access/activity_audit/partials/_administrative_evidence.html')
+    source = read('app/access/activity_audit/administrative_sources.py')
+    routes = read('app/access/activity_audit/routes.py')
+    tabs = read('app/templates/components/content_tabs.html')
+
+    assert 'components/section_intro.html' in page
+    assert "'Audit Records'" in page
+    assert "'audit-records-heading'" in page
+    assert 'Audit Evidence Overview' not in page  # overview belongs to the existing summary partial
+    assert page.index('_activity_summary_cards.html') < page.index('_audit_records_workspace.html')
+    assert page.count('_audit_records_workspace.html') == 1
+    assert "'Activity Register', 'list-filter'" in workspace
+    assert "'Administrative Evidence', 'file-clock'" in workspace
+    assert 'content_tabs.render_links(' in workspace
+    assert "hx_target='#activity-audit-records'" in workspace
+    assert "hx_select='#activity-audit-records'" in workspace
+    assert 'selected_audit_tab' in workspace
+    assert 'data-kaori-tab-variant="content-tabs-server"' in tabs
+    assert workspace.count('_activity_table_card.html') == 1
+    assert workspace.count('_administrative_evidence.html') == 1
+    assert "embedded|default(false)" in activity_card
+    assert "embedded|default(false)" in administrative
+    assert 'name="view" value="activity"' in activity_card
+    assert "'view': 'activity'" in activity_rows
+    assert 'name="view" value="activity"' in activity_rows
+    assert 'name="view" value="administrative"' in administrative
+    assert 'name="admin_scope"' in administrative
+    assert 'Source Scope' in administrative
+    assert 'administrative_evidence.scope_options' in administrative
+    assert 'table_ui.inventory_filter_bar_classes()' in administrative
+    assert "table_ui.title_cell(row.display_action, row.summary, 'file-clock')" in administrative
+    assert 'table_label.status_label(row.status_label, row.status_tone)' in administrative
+    assert "table_label.metadata_label(row.source_label, 'database')" in administrative
+    assert "page_param='admin_page'" in administrative
+    assert "pagination_ui.numeric_pages(" in administrative
+    assert 'metadata_json' not in administrative
+    assert "'display_action':" in source
+    assert "'status_tone': status_tone" in source
+    assert "'actor_detail': 'Actor FK · not a snapshot'" in source
+    assert "action_suffix.endswith('partially_succeeded')" in source
+    assert "has_administrative_sources = can_view_jobs or can_manage_tenants" in routes
+    assert "selected_audit_tab == 'administrative' and not has_administrative_sources" in routes
+    assert "target == 'activity-administrative-evidence'" in routes
+    assert "target == 'activity-audit-records'" in routes
+    assert "context['administrative_evidence'] = build_administrative_evidence_context(" in routes
+    assert "view='administrative'" in routes
+
+
+def test_activity_audit_tab_navigation_preserves_independent_permissions_and_fallback() -> None:
+    routes = read('app/access/activity_audit/routes.py')
+    administrative = read('app/templates/access/activity_audit/partials/_administrative_evidence.html')
+    workspace = read('app/templates/access/activity_audit/partials/_audit_records_workspace.html')
+
+    assert "@permission_required('activity_audit.view')" in routes
+    assert "current_user.has_permission('jobs.view')" in routes
+    assert "current_user.has_permission('tenant.manage')" in routes
+    assert "request.headers.get('HX-History-Restore-Request') != 'true'" in routes
+    assert 'if not is_htmx:' not in workspace  # server selection, no client-only tab switching
+    assert "has_administrative_sources" in workspace
+    assert 'method="get"' in administrative
+    assert "action=\"{{ url_for('access.activity_audit.index') }}\"" in administrative
+    assert 'hx-push-url="true"' in administrative
+    assert 'hx-target="#activity-administrative-evidence"' in administrative
+    assert 'hx-sync="#activity-administrative-evidence:replace"' in administrative
+    assert 'data-activity-evidence-source="administrative-audit-events"' in administrative

@@ -33,7 +33,7 @@
               class="flex flex-wrap items-end gap-3">
             <input type="hidden" name="view" value="administrative">
             <input type="hidden" name="admin_page" value="1">
-            <div class="min-w-0 sm:max-w-xs">
+            <div class="min-w-0 flex-1 sm:max-w-xs">
                 <label class="{{ table_ui.filter_label_classes() }}" for="administrative-source-scope">
                     Source Scope
                 </label>
@@ -48,6 +48,10 @@
                     {% endfor %}
                 </select>
             </div>
+            <button type="submit"
+                    class="sr-only focus:not-sr-only rounded-md border border-outline-default px-3 py-2 text-sm text-content-secondary focus-visible:ring-2 focus-visible:ring-outline-focus">
+                Apply Source Scope
+            </button>
         </form>
     </div>
     {% if administrative_evidence.rows %}
