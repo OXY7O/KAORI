@@ -11,7 +11,7 @@ from sqlalchemy.orm import aliased, joinedload, selectinload
 from app.common.pagination import paginate_query
 from app.extensions.db import db
 from app.integrations.managed_assets import ManagedAssetOwner, object_storage_owner
-from app.integrations.provider_matrix import provider_kinds
+from app.integrations.provider_matrix import provider_kind, provider_kinds
 from app.models.integration import IntegrationInstance
 from app.models.minio import MinioInstance
 from app.models.object_storage import ObjectStorageBucket, ObjectStorageSystem
@@ -358,9 +358,12 @@ def _system_query():
     )
 
 
-def _system_row(system: ObjectStorageSystem) -> dict[str, Any]:
+def _system_row(
+    system: ObjectStorageSystem, *, owner: ManagedAssetOwner | None = None, owner_resolved: bool = False
+) -> dict[str, Any]:
     """Committed row used by inventory pages. Run Object Storage Inventory Sync from Job Execution."""
-    owner = object_storage_owner(system.id)
+    if not owner_resolved:
+        owner = object_storage_owner(system.id)
     row = _system_row_impl(system, owner=owner, owner_resolved=True)
     connection = owner.record if owner is not None else None
     row.update(
@@ -689,6 +692,33 @@ def _system_scope():
     return _join_system_owner(ObjectStorageSystem.query)
 
 
+def _visible_system_owners(system_ids: Sequence[str]) -> dict[str, ManagedAssetOwner | None]:
+    """Batch the canonical first-owner and provider-record join for one SQL page."""
+    ids = tuple(dict.fromkeys(str(value) for value in system_ids if value))
+    if not ids:
+        return {}
+    rows = _system_scope().order_by(None).filter(
+        ObjectStorageSystem.id.in_(ids)
+    ).with_entities(
+        ObjectStorageSystem.id, IntegrationInstance, MinioInstance,
+    ).all()
+    owners: dict[str, ManagedAssetOwner | None] = dict.fromkeys(ids)
+    for system_id, identity, record in rows:
+        if identity is None:
+            continue
+        if record is None:
+            # A future provider with a different canonical record model keeps
+            # the existing integration-kernel owner resolver as the fallback.
+            owners[str(system_id)] = object_storage_owner(str(system_id))
+            continue
+        owners[str(system_id)] = ManagedAssetOwner(
+            identity=identity,
+            provider=provider_kind(identity.integration_type, identity.provider_key),
+            record=record,
+        )
+    return owners
+
+
 def _sql_provider_label():
     options = provider_kinds('object_storage')
     when = [(IntegrationInstance.provider_key == option.key, option.label) for option in options]
@@ -789,8 +819,12 @@ def build_systems(filters: SystemFilters) -> dict[str, Any]:
         page=filters.page,
         per_page=filters.per_page,
     )
+    owners = _visible_system_owners([system.id for system in paged])
     return {
-        'systems': [_system_row(system) for system in paged],
+        'systems': [
+            _system_row(system, owner=owners.get(str(system.id)), owner_resolved=True)
+            for system in paged
+        ],
         'pagination': pagination,
         'total_systems': int(total or 0),
         'ready_systems': int(ready or 0),
@@ -1036,7 +1070,7 @@ def build_buckets(filters: BucketFilters) -> dict[str, Any]:
         page=filters.page,
         per_page=filters.per_page,
     )
-    owner_cache: dict[str, ManagedAssetOwner | None] = {}
+    owner_cache = _visible_system_owners([bucket.object_storage_system_id for bucket in paged])
     rows = [_bucket_row(bucket, owner_cache=owner_cache) for bucket in paged]
     types = {
         value for (value,) in ObjectStorageBucket.query.with_entities(
