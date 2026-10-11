@@ -15,6 +15,7 @@ from typing import Any
 
 from app.kubernetes.tenant.capsule_handoff_contract import validate_capsule_handoff_scope
 from app.kubernetes.tenant.capsule_handoff_related_inventory import _digest
+from app.kubernetes.tenant.capsule_handoff_worklist import build_capsule_handoff_worklist
 from app.kubernetes.tenant.capsule_platform_admin_authority import _capsule_admin_scope
 from app.kubernetes.tenant.release_handoff_approval import (
     _REQUIRED_DEPENDENCIES, _checked_recently, _plan_hash,
@@ -247,8 +248,19 @@ def assess_capsule_handoff_admission(
     blockers = preflight.get('blockers')
     if not isinstance(blockers, list) or blockers:
         problems.append('provider_preflight_not_admitted')
+    worklist_sha256: str | None = None
+    manual_review_count: int | None = None
     if cr is not None:
         problems.extend(_inspect_related(snapshot=preflight, cr=cr, namespaces=namespaces))
+        try:
+            worklist = build_capsule_handoff_worklist(
+                plan=plan, related=preflight.get('capsule_related_inventory'),
+            )
+        except (TypeError, ValueError, KeyError):
+            problems.append('provider_preservation_worklist_incomplete')
+        else:
+            worklist_sha256 = worklist['inventory_sha256']
+            manual_review_count = worklist['manual_review_count']
     if (
         provider_authority.get('verification_source') != 'kubernetes_self_subject_review'
         or provider_authority.get('authorization_source') != 'kubernetes_self_subject_access_review'
@@ -284,6 +296,8 @@ def assess_capsule_handoff_admission(
         ),
         'consistent_preconditions': not problems,
         'blockers': sorted(set(problems)),
+        'worklist_sha256': worklist_sha256,
+        'manual_review_count': manual_review_count,
         'controller_origin_verified': False,
         'dry_run_admitted': False, 'provider_execution_admitted': False,
         'resume_authorized': False, 'auto_retry_authorized': False,
