@@ -4,7 +4,7 @@ from typing import cast
 
 from flask import Blueprint, abort, redirect, render_template, request, url_for
 from flask_login import current_user
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.access.authentication.identity_provider.adapters.ldap.client import ExternalProviderError
 from app.access.authentication.identity_provider.browser import SsoProviderError
@@ -320,6 +320,20 @@ def provision_identity():
             status='error',
             title='Provisioning failed',
             message=str(exc),
+            provider_id=provider.id,
+            provider_key=provider.provider_key,
+        )
+    except SQLAlchemyError:
+        rollback_identity_provider_transaction()
+        from flask import current_app
+
+        current_app.logger.exception('Directory identity projection transaction failed for provider id %s.', provider.id)
+        identity_provider_feedback(
+            actor=actor,
+            event_type='external_identity_provision_failed',
+            status='error',
+            title='Provisioning failed',
+            message='The identity could not be provisioned because the database transaction failed. Please retry.',
             provider_id=provider.id,
             provider_key=provider.provider_key,
         )
