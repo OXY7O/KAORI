@@ -18,6 +18,9 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
+from app.kubernetes.tenant.capsule_handoff_controller_audit_claims import (
+    correlate_capsule_controller_audit_claims,
+)
 from app.kubernetes.tenant.capsule_handoff_related_inventory import _canonical, _digest
 
 _SHA = re.compile(r'[a-f0-9]{64}\Z')
@@ -100,6 +103,21 @@ def inspect_capsule_collector_receipt(
         or not _utc_recent(receipt['captured_at'], now=now)
     ):
         raise ValueError('Capsule collector receipt is stale or not SHA-bound to this exact plan.')
+    resources = resource_report.get('resources')
+    if (
+        not isinstance(resources, list)
+        or type(resource_report.get('source_candidate_count')) is not int
+        or resource_report['source_candidate_count'] < 1
+    ):
+        raise ValueError('Capsule collector receipt lacks the complete transfer-candidate report.')
+    correlation = correlate_capsule_controller_audit_claims(
+        tenant_id=resource_report['tenant_id'],
+        cluster_id=resource_report['cluster_id'],
+        resources=resources,
+        claims=claims,
+    )
+    if correlation['claim_count'] != resource_report['source_candidate_count']:
+        raise ValueError('Capsule collector claims omit one or more transfer candidates.')
     payload = {key: receipt[key] for key in sorted(_FIELDS - {'auth_tag_sha256'})}
     calculated = hmac.new(trusted_hmac_key, _canonical(payload), hashlib.sha256).hexdigest()
     if not hmac.compare_digest(calculated, receipt['auth_tag_sha256']):
