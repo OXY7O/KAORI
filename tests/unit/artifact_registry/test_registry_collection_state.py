@@ -1,7 +1,7 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
-from app.artifact_registry.presentation_common import _overview_inventory_kpi_evidence
+from app.artifact_registry.presentation_common import _human_time, _overview_inventory_kpi_evidence
 from app.artifact_registry.presentation_overview import _overview_inventory_items
 from app.artifact_registry.sync import (
     _mark_inventory_collection_failed,
@@ -120,3 +120,10 @@ def test_registry_operations_committed_empty_snapshot_is_numeric_zero() -> None:
         has_committed_inventory=True,
     )
     assert [item['value'] for item in observed] == [0, 0, 0, 0, '0 B', 0]
+
+
+def test_registry_signal_updated_age_uses_relative_committed_time() -> None:
+    committed_at = datetime.now(UTC) - timedelta(minutes=28, seconds=30)
+
+    assert _human_time(committed_at) == '28m ago'
+    assert _human_time(None) == 'Not Collected'
