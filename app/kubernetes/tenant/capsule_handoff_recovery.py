@@ -77,6 +77,14 @@ def classify_capsule_namespace_handoff(
         or not rv or capsule_preservation_digest(current) != baseline['preserved']
     ):
         raise ValueError('Capsule provider identity/spec/external ownership changed.')
+    release_keys = baseline.get('label_keys_to_release')
+    if (
+        not isinstance(release_keys, list)
+        or len(release_keys) != len(set(release_keys))
+        or not {'app.kubernetes.io/managed-by', 'kaori.io/tenant-id'}.issubset(release_keys)
+        or any(not isinstance(key, str) or key not in _MARKER_KEYS for key in release_keys)
+    ):
+        raise ValueError('Capsule ownership baseline marker inventory is invalid.')
     labels = _labels(current)
     claims = {labels[k] for k in _CAPSULE_TENANT_LABEL_KEYS if k in labels}
     if claims != {baseline['capsule_tenant_name']} or any(
