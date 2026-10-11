@@ -171,7 +171,11 @@ def _expected_scopes(selector: Any, namespaces: set[str]) -> set[str]:
     return values
 
 
-def _intent_bindings(spec: Mapping[str, Any], namespaces: set[str]) -> tuple[dict[str, str], list[str]]:
+def _intent_bindings(
+    spec: Mapping[str, Any], namespaces: set[str], *, tenant_id: str,
+) -> tuple[dict[str, str], list[str]]:
+    if not isinstance(tenant_id, str) or not tenant_id:
+        raise ValueError('Capsule RBAC intent requires the exact KAORI Tenant identity.')
     intents: dict[str, str] = {}
     blockers: list[str] = []
     additional = spec.get('additionalRoleBindings', [])
@@ -202,8 +206,27 @@ def _intent_bindings(spec: Mapping[str, Any], namespaces: set[str]) -> tuple[dic
             if not isinstance(binding, Mapping):
                 raise ValueError('Capsule RBAC spec binding is malformed.')
             labels = _strings(binding.get('labels'), label='Capsule spec RBAC labels')
-            if labels.get(_KAORI_MANAGER) != 'kaori' or not labels.get(_GRANT_ID) or not labels.get(_TENANT_ID):
-                continue  # Foreign Capsule RBAC is preserved, never silently transferred.
+            claims_kaori = (
+                labels.get(_KAORI_MANAGER) == 'kaori'
+                or any(key.startswith('kaori.io/') for key in labels)
+            )
+            if not claims_kaori:
+                continue  # Pure Capsule/external intent; preserve without transfer.
+            if (
+                labels.get(_KAORI_MANAGER) != 'kaori'
+                or not isinstance(labels.get(_GRANT_ID), str)
+                or not labels[_GRANT_ID]
+                or labels.get(_TENANT_ID) != tenant_id
+                or any(
+                    key.startswith('kaori.io/')
+                    and key not in (_GRANT_ID, _TENANT_ID)
+                    for key in labels
+                )
+            ):
+                blockers.append(
+                    'Capsule RoleBinding intent has foreign, partial or unknown KAORI ownership.'
+                )
+                continue
             signature = _role_contract_sha256(
                 role=binding.get('clusterRoleName'),
                 subjects=binding.get('subjects'),
@@ -236,7 +259,7 @@ def inspect_capsule_role_binding_lineage(
     ns_set = {item.get('name') for item in namespaces if isinstance(item, Mapping)}
     if len(ns_set) != len(namespaces) or not all(isinstance(ns, str) and ns for ns in ns_set):
         raise ValueError('Capsule RBAC lineage Namespace identity is incomplete.')
-    intents, blockers = _intent_bindings(capsule_spec, ns_set)
+    intents, blockers = _intent_bindings(capsule_spec, ns_set, tenant_id=tenant_id)
     resources = related.get('resources')
     if not isinstance(resources, list) or len(resources) > 300:
         raise ValueError('Capsule related RBAC inventory is incomplete.')
@@ -244,7 +267,12 @@ def inspect_capsule_role_binding_lineage(
     for item in resources:
         if not isinstance(item, Mapping):
             raise ValueError('Capsule RBAC observed object is malformed.')
-        if item.get('kind') != 'RoleBinding' or item.get('origin') != 'kaori_correlated':
+        if item.get('kind') != 'RoleBinding':
+            continue
+        if item.get('origin') == 'ambiguous_kaori':
+            blockers.append('Capsule effective RoleBinding has ambiguous or foreign KAORI ownership.')
+            continue
+        if item.get('origin') != 'kaori_correlated':
             continue
         ns, combined = item.get('namespace'), item.get('grant_scope_sha256')
         if (
