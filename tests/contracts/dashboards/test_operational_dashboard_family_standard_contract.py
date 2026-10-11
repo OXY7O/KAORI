@@ -211,9 +211,12 @@ def test_capacity_metric_cards_follow_kubernetes_visual_grammar() -> None:
     assert 'Worker capacity headroom chart' in kubernetes
     assert 'Object Storage utilization balance chart' in storage
     assert 'progress_bar.bar(free_percent,' in storage
-    assert "'Capacity Decision Notes'" in registry
-    assert 'Planning Check' in registry
-    assert 'Evidence Handoff' in registry
+    assert 'Registry project quota balance chart' in registry
+    assert 'progress_bar.bar(quota_used_percent,' in registry
+    assert 'progress_bar.bar(quota_free_percent,' in registry
+    assert 'Quota balance unavailable' in registry
+    for template in (kubernetes, storage, registry):
+        assert 'Capacity Decision Notes' not in template
 
 
 def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
