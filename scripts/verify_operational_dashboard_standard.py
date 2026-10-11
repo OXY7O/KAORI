@@ -487,7 +487,7 @@ def _verify_artifact_registry_dashboard(
             "'recommended_actions': _registry_recommended_actions(selected_provider)",
             "'reporting': _registry_reporting(selected_provider)",
             "'label': 'Inventory Snapshot'",
-            "'label': 'Metrics Snapshot'",
+            "'label': 'Metrics Source'",
             "'label': 'Security Snapshot'",
             "'label': 'Analytics Snapshot'",
             "'kpis': [",
