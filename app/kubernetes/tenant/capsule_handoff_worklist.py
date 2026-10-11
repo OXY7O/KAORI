@@ -23,17 +23,54 @@ def build_capsule_handoff_worklist(
         raise ValueError('An exact Capsule plan and correlated related inventory are required.')
     cr, namespaces = validate_capsule_handoff_scope(plan.get('handoff_components'))
     rows = related.get('resources')
+    lists = related.get('list_snapshots')
     quota = related.get('global_quota')
     if (
         not isinstance(rows, list) or len(rows) > _MAX_RELATED
+        or not isinstance(lists, list) or len(lists) != len(namespaces) * 3
         or not isinstance(quota, Mapping)
         or not isinstance(quota.get('resources'), list)
         or len(quota['resources']) > _MAX_GLOBAL
-        or related.get('resource_sha256') != cr.get('capsule_related_resources_sha256')
-        or quota.get('scope_sha256') != cr.get('capsule_shared_quota_sha256')
+        or quota.get('served_version') not in ('v1beta1', 'v1beta2')
+        or not isinstance(quota.get('list_resource_version'), str)
+        or not quota.get('list_resource_version')
+        or type(quota.get('count')) is not int
+        or quota['count'] != len(quota['resources'])
+        or type(related.get('resource_count')) is not int
+        or related['resource_count'] != len(rows)
+        or str(len(rows)) != cr.get('capsule_related_resources_count')
     ):
         raise ValueError('Capsule worklist lacks SHA-bound complete authoritative inventory.')
     names = {row['name'] for row in namespaces}
+    expected_lists = {
+        (name, kind)
+        for name in names for kind in ('ResourceQuota', 'LimitRange', 'RoleBinding')
+    }
+    list_keys = [
+        (item.get('namespace'), item.get('kind'))
+        for item in lists if isinstance(item, Mapping)
+    ]
+    if len(list_keys) != len(lists) or len(set(list_keys)) != len(lists) or set(list_keys) != expected_lists:
+        raise ValueError('Capsule worklist provider LIST scopes are incomplete or duplicated.')
+    if (
+        any(
+            not isinstance(item, Mapping)
+            or not isinstance(item.get('list_resource_version'), str)
+            or not item['list_resource_version']
+            or type(item.get('count')) is not int or not 0 <= item['count'] <= 100
+            for item in lists
+        )
+        or _digest({'resources': rows, 'lists': lists})
+        != related.get('resource_sha256')
+        or related['resource_sha256'] != cr.get('capsule_related_resources_sha256')
+        or _digest({
+            'api_version': quota['served_version'],
+            'list_resource_version': quota['list_resource_version'],
+            'resources': quota['resources'],
+        }) != quota.get('scope_sha256')
+        or quota['scope_sha256'] != cr.get('capsule_shared_quota_sha256')
+    ):
+        raise ValueError('Capsule worklist digest no longer matches the approved scope.')
     tasks: list[dict[str, str]] = []
     identities: set[tuple[str, str, str]] = set()
 
