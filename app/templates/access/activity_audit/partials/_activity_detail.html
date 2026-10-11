@@ -130,6 +130,34 @@
                     </div>
                 </section>
             {% endif %}
+            {% if item.related_sources %}
+                <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+                         data-activity-related-sources="committed-only"
+                         aria-labelledby="activity-related-source-heading">
+                    <header class="flex items-start gap-3 border-b border-outline-subtle px-4 py-3.5">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true"><i data-lucide="git-branch" class="h-4 w-4"></i></span>
+                        <div>
+                            <h4 id="activity-related-source-heading" class="text-sm font-semibold text-content-primary">Related Committed Evidence</h4>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Source-owned workspaces with independent access and retention. No duplicate event is created.</p>
+                        </div>
+                    </header>
+                    <ul class="divide-y divide-outline-subtle">
+                        {% for source in item.related_sources %}
+                            <li class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-content-primary">{{ source.label }}</p>
+                                    <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ source.note }}</p>
+                                </div>
+                                <a href="{{ source.url }}"
+                                   class="inline-flex items-center gap-2 rounded-md border border-outline-default px-3 py-2 text-xs font-semibold text-kaori-primary transition hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                    Open Source <i data-lucide="arrow-up-right" class="h-4 w-4" aria-hidden="true"></i>
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </section>
+            {% endif %}
             {% if item.trace_references %}
                 <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
                     <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">

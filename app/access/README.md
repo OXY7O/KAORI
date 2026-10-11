@@ -99,3 +99,8 @@ Activity Audit is an Access-owned, read-only evidence workspace over the shared 
 The register reads hot PostgreSQL rows only. The `All Hot Records` option is intentionally explicit; verified older evidence remains under Platform Operations → Data Lifecycle after archive-and-cleanup. Notification recipient deletion cannot erase retained evidence because the Notification foreign key uses `ON DELETE SET NULL`, while actor identity remains in the immutable snapshot.
 
 Evidence scope is deliberately precise: Activity Audit lists persisted `notifications` activity, including audit-only rows hidden from Notification Center. It does **not** silently union `audit_events` administrative/Tenant lifecycle records, `tenant_audit_evidence` Kubernetes correlation records, or `JobExecution` records. Those evidence owners retain their own read, authorization, lifecycle and correlation contracts. Future cross-domain correlation must be a governed workstream; the Activity Audit UI must not imply universal coverage just because the reader has system-wide permissions.
+
+
+### Source-linked Activity Audit detail (issue #1219)
+
+For currently committed Notification records, related links appear only after domain-specific permission and exact source lookup. Jobs requires `jobs.view`; Tenant governance requires `tenant.view` or `tenant.manage` and a matching `TenantAuditEvidence`/Tenant association. Links navigate source-owned workspaces; no new audit entries, fabricated actor snapshots, unauthorized source details, or archive continuity are implied. Administrative-only AuditEvent coverage remains governed by #1219 and parent #1208.
