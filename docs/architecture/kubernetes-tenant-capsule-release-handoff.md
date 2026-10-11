@@ -936,6 +936,66 @@ evidence, unambiguous complete read-back and manual recovery for
 partial/lost-commit cases. No API call, database write, executor,
 Release or runtime test is performed by this source-only comparator.
 
+## G2–G3 — full-scope offline dry-run → START → read-back correlation (source-only)
+
+This slice reuses the existing
+`capsule_handoff_dry_run.py` and
+`capsule_handoff_audit_envelope.py` instead of adding another audit
+framework or activating a provider executor. The new
+`build_capsule_scope_patch_review` accepts the exact committed
+Capsule plan, full related LIST inventory, one raw source Namespace
+per plan Namespace, **every** raw namespaced quota/limit/RBAC object
+including foreign controls, the preserved Capsule CR, and a current
+independent-review/successor **consent proposal**. It checks plan
+SHA/worklist/resource-review SHA through the existing validators,
+reclassifies raw related objects against canonical provider inventory,
+and verifies the exact consent targets/label keys. Ambiguous ownership,
+incomplete input, unconsented markers, duplicate/foreign targets,
+missing policy or changed UID/resourceVersion are blocked. Capsule CR
+and non-KAORI resources remain preservation-only; no raw provider
+policy, role subjects, or credential is returned in its review digest.
+Every candidate JSON Patch is built by the existing Namespace or
+quota/limit/RBAC patch builder, but only the patch SHA and immutable
+source identity are retained in the non-executable review result.
+
+`inspect_capsule_complete_dry_run_shapes` then requires a **complete**
+set of separately supplied preview objects: one for every and only
+the approved KAORI transfer candidate. It reconstitutes the same
+source patch review, checks each Namespace/related preview via the
+existing metadata and provider-spec preservation validators, and
+returns only a digest of the normalized review receipts.
+**These caller-supplied preview bodies are not proof that Kubernetes
+actually ran `dryRun=All`**; `server_dry_run_completed=false`
+and `provider_execution_admitted=false` remain fixed.
+
+`inspect_capsule_scope_g2g3_trace` reuses the immutable-shape START
+attempt history and G3 read-back claim comparator, rejecting a missing
+START claim, altered plan/worklist/consent/patch SHA, incomplete
+preview count or mismatched recorded read-back digest/count. It
+distinguishes a merely correlated structural trace from pending,
+partial or ambiguous/manual-recovery outcomes, and **always**
+reports `start_db_commit_verified=false`,
+`provider_write_order_verified=false`,
+`server_dry_run_source_authenticated=false`,
+`readback_authoritative_verified=false`,
+`provider_execution_admitted=false`,
+`auto_retry_authorized=false`, and
+`release_authorized=false`. A matching caller-provided event chain
+cannot prove that START was committed before the first live PATCH,
+nor that any provider result came from a trusted API session.
+
+**Operational G2/G3 work still blocking #1229:** separately
+authorized/apiserver-authenticated acquisition and full-list snapshot
+integrity; verified controller ownership and separately authenticated
+per-object consent; exact SSR/SAR and server `dryRun=All`; actually
+committed write-once START prior to live work; conditional PATCH with
+fresh UID/RV under operator authorization; authoritative whole-scope
+read-back, durable event/outcome append, recovery for lost
+acknowledgment/partial mutation and independent successor acceptance.
+Source contracts cannot authorize or substitute these operations.
+Test fixtures are **authored, NOT executed**. #1230/#1231, migration,
+CI/CD and Kubernetes/UAT execution all remain **HOLD**.
+
 ## Required before completing #1229
 
 1. Build on the SHA-bound Namespace and cluster-scoped
