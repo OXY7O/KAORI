@@ -1,7 +1,13 @@
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
-from app.artifact_registry.presentation_common import _human_time, _overview_inventory_kpi_evidence
+from app.artifact_registry.presentation_common import (
+    _human_time,
+    _overview_inventory_kpi_evidence,
+    _registry_consumer_insights,
+    _registry_quota_watch,
+    _registry_top_consumers,
+)
 from app.artifact_registry.presentation_overview import (
     _fleet_freshness,
     _overview_inventory_items,
@@ -182,3 +188,82 @@ def test_registry_selected_metrics_freshness_describes_bound_source_not_snapshot
     assert rows[1]['value'] == 'Prometheus'
     assert rows[1]['status'] == 'Ready'
     assert 'not a committed metrics snapshot' in rows[1]['description']
+
+
+def test_registry_capacity_usage_and_quota_horizon_rank_from_full_committed_scope() -> None:
+    projects = [
+        {
+            'project_name': f'project-{i}',
+            'provider_name': 'Harbor',
+            'usage_bytes': float(700 - i * 100),
+            'quota_bytes': 1000.0,
+            'utilization_percent': float(70 - i * 10),
+            'days_to_quota': 2.0 if i == 6 else (15.0 if i == 5 else None),
+        }
+        for i in range(7)
+    ]
+    usage = _registry_top_consumers(projects)
+    quota = _registry_quota_watch(projects)
+    insights = _registry_consumer_insights(projects)
+
+    assert len(usage) == 5
+    assert [item['project_name'] for item in usage[:3]] == ['project-0', 'project-1', 'project-2']
+    assert [item['project_name'] for item in quota] == ['project-6', 'project-5']
+    assert quota[0]['days_to_quota_display'] == '2.0 days'
+    assert quota[0]['usage_display'] == '100 B'
+    assert insights == {'project_count': 7, 'horizon_count': 2, 'high_utilization_count': 0}
+
+
+def test_registry_consumer_rankings_preserve_zero_and_missing_evidence() -> None:
+    no_usage = {
+        'project_name': 'no-usage',
+        'provider_name': 'Harbor',
+        'usage_bytes': None,
+        'quota_bytes': 100.0,
+        'utilization_percent': None,
+        'days_to_quota': 0.0,
+    }
+    observed_zero = {
+        'project_name': 'observed-zero',
+        'provider_name': 'Harbor',
+        'usage_bytes': 0.0,
+        'quota_bytes': 100.0,
+        'utilization_percent': 0.0,
+        'days_to_quota': None,
+    }
+    projects = [no_usage, observed_zero]
+    usage = _registry_top_consumers(projects)
+    quota = _registry_quota_watch(projects)
+
+    assert [item['project_name'] for item in usage] == ['observed-zero']
+    assert usage[0]['usage_display'] == '0 B'
+    assert usage[0]['utilization_display'] == '0.0%'
+    assert [item['project_name'] for item in quota] == ['no-usage']
+    assert quota[0]['usage_display'] == 'N/A'
+    assert quota[0]['utilization_display'] == 'N/A'
+    assert quota[0]['days_to_quota_display'] == '0.0 days'
+    assert _registry_consumer_insights(projects) == {
+        'project_count': 2,
+        'horizon_count': 1,
+        'high_utilization_count': 0,
+    }
+    assert _registry_quota_watch([observed_zero]) == []
+
+
+def test_registry_consumers_high_utilization_is_evidence_qualified() -> None:
+    projects = [
+        {
+            'project_name': name,
+            'provider_name': 'Harbor',
+            'usage_bytes': 90.0,
+            'quota_bytes': 100.0,
+            'utilization_percent': percent,
+            'days_to_quota': None,
+        }
+        for name, percent in [('high', 90.0), ('unknown', None), ('low', 89.9)]
+    ]
+    assert _registry_consumer_insights(projects) == {
+        'project_count': 3,
+        'horizon_count': 0,
+        'high_utilization_count': 1,
+    }
