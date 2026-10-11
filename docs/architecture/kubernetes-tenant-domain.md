@@ -169,7 +169,12 @@ directly before the Release/Handback administration section. It reuses
 the approved Violet responsive operational **card** and empty-state patterns.
 As of #1138, the large mapping table has been replaced by **one card per
 Namespace** to keep a single Namespace readable and make multiple Namespace
-allocations scan-friendly. This is a **bounded five-card committed projection**,
+allocations scan-friendly. Follow-up #1140 makes the card grid
+**count-aware**: one Namespace consumes the full operational panel width;
+two or more use two columns at `xl` and one column on smaller viewports.
+There is no fixed half-width allocation for a single card, no page-wide
+horizontal overflow, and no change to the shared operational card or quota
+metrics. This is a **bounded five-card committed projection**,
 not a second Namespace Registry:
 select only records correlated by the exact TenantEnvironment tenant ID, eager
 load their Resource Profile, order by newest generation records and retain

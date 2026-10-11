@@ -66,7 +66,8 @@ def test_committed_mapping_uses_per_namespace_cards_and_existing_registry_link()
     assert "operational_section_card.render(" in partial
     assert "section_intro.render(" in partial
     assert 'aria-label="Namespace allocation cards"' in partial
-    assert 'grid-cols-1 gap-4 xl:grid-cols-2' in partial
+    assert 'grid-cols-1 gap-4{% if mapping.rows|length > 1 %} xl:grid-cols-2{% endif %}' in partial
+    assert 'grid-cols-1 gap-4 xl:grid-cols-2"' not in partial
     assert "<article " in partial
     assert "<table" not in partial and "overflow-x-auto" not in partial
     assert "item.namespace" in partial
@@ -87,6 +88,16 @@ def test_committed_mapping_uses_per_namespace_cards_and_existing_registry_link()
     assert "not live Kubernetes utilization" in partial
     assert "Native Release preserves verified quotas" in partial
     assert "components/states/_empty_state.html" in partial
+
+
+def test_single_namespace_card_uses_full_section_width_but_multiple_use_two_columns():
+    partial = source(PARTIAL)
+    # The same five-row committed read-model determines the responsive class.
+    assert "{% if mapping.rows|length > 1 %} xl:grid-cols-2{% endif %}" in partial
+    assert "grid-cols-1 gap-4" in partial
+    assert "for item in mapping.rows" in partial
+    assert "max-w-" not in partial[partial.index('aria-label="Namespace allocation cards"'):
+                                   partial.index("</article>")]
 
 
 def test_release_history_is_verified_optional_disclosure_not_name_matching():
