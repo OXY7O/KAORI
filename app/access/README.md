@@ -165,3 +165,7 @@ Directory search results are bound to a signed provider/actor projection proof. 
 ## Identity Providers linked-identity continuity
 
 An existing Identity Provider with projected `ExternalIdentityLink` records cannot change its stable instance key (browser callback authority) or provider type/adapter on the same row. Its existing `provider_id + subject` mapping remains bound to the original external identity authority. Ordinary configuration edits under the same key/type remain allowed. To change identity authority, create a new provider and conduct separately authorized identity relinking; editing an existing linked row is not a migration mechanism.
+
+## User Management role-recovery boundary
+
+For User Edit GET and directory action visibility, manage authority is evaluated independently of an existing inactive/missing role so authorized administrators can repair stale assignments. POST always validates the **new active delegable role** and preserves administrator-level protection, self mutation constraints, Local Database break-glass and last-active-super-admin safeguards. Inactive roles never grant runtime effective permissions.

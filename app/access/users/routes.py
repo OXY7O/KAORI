@@ -159,6 +159,7 @@ def edit(user_id: int):
         requested_role_id=user.role_id,
         requested_is_active=user.account_is_active,
         requested_is_super_admin=user.is_super_admin if user.auth_source == 'database' else False,
+        validate_new_role=False,
     )
     if not allowed:
         return reject('User update blocked', message or 'This account cannot be edited.', target=user)

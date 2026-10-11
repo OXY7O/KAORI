@@ -323,6 +323,7 @@ def can_edit_user(
     requested_role_id: int | None,
     requested_is_active: bool,
     requested_is_super_admin: bool,
+    validate_new_role: bool = True,
 ) -> tuple[bool, str | None]:
     if not actor.has_permission('users.manage'):
         return False, 'You do not have permission to edit users.'
@@ -330,9 +331,10 @@ def can_edit_user(
     if target.deleted_at is not None:
         return False, 'Deleted users cannot be edited.'
 
-    allowed, message = requested_role_assignment_allowed(actor, requested_role_id)
-    if not allowed:
-        return allowed, message
+    if validate_new_role:
+        allowed, message = requested_role_assignment_allowed(actor, requested_role_id)
+        if not allowed:
+            return allowed, message
 
     requested_is_admin_level = requested_admin_level(
         role_id=requested_role_id,
@@ -393,6 +395,7 @@ def build_user_action_policies(actor: User | None, users: list[User]) -> dict[in
             requested_role_id=user.role_id,
             requested_is_active=user.account_is_active,
             requested_is_super_admin=user.is_super_admin if user.auth_source == 'database' else False,
+            validate_new_role=False,
         )
         can_reset, reset_reason = can_reset_user_password(actor, user)
         can_activate, activate_reason = can_activate_user(actor, user)
