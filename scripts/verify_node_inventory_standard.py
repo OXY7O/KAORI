@@ -168,6 +168,29 @@ def main() -> int:
     ):
         require(token in table_content, f'Missing compact Node table contract: {token}', errors)
 
+    column_percent = {
+        'Node': 26,
+        'Cluster': 22,
+        'Readiness': 11,
+        'Role': 10,
+        'Capacity': 12,
+        'Network': 9,
+        'Details': 10,
+    }
+    require(
+        sum(column_percent.values()) == 100
+        and all(
+            f'w-[{width}%]' in table_content.split(f'>{name}</th>', 1)[0].rsplit('<th', 1)[-1]
+            for name, width in column_percent.items()
+        )
+        and "table_ui.table_classes('min-w-[74rem] !table-fixed')" in table_content
+        and 'overflow-x-auto overscroll-x-contain' in table_content
+        and "table_ui.cluster_identity(node.cluster_name, node.cluster_environment, 'w-full min-w-0')"
+        in table_content,
+        'Node/Cluster width must be prioritized with the approved proportional table layout.',
+        errors,
+    )
+
     require(
         "'identity_supporting': _node_os_family(node)" in backend
         and "node.operating_system or labels.get('kubernetes.io/os')" in backend,
