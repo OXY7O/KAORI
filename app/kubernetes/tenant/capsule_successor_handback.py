@@ -63,8 +63,12 @@ def _capsule_handback_scope(
         raise ValueError('Complete verified Capsule Released lineage is required.')
     owner = _successor(release.get('successor_owner'))
     rows = release.get('verified_components')
-    if not isinstance(rows, list) or not 2 <= len(rows) <= 500:
-        raise ValueError('Capsule handback requires complete bounded resource read-back.')
+    if (
+        not isinstance(rows, list) or not 2 <= len(rows) <= 500
+        or type(release.get('verified_resource_count')) is not int
+        or release['verified_resource_count'] != len(rows)
+    ):
+        raise ValueError('Capsule handback requires complete counted provider read-back.')
     cr = [r for r in rows if isinstance(r, dict) and r.get('kind') == 'CapsuleTenant']
     if len(cr) != 1 or cr[0].get('name') != tenant.provider_reference:
         raise ValueError('Capsule CR provider identity is not unique in Release evidence.')
@@ -104,8 +108,12 @@ def _capsule_handback_scope(
             targets.append(row)
         elif row.get('state') != 'preserved':
             raise ValueError('Related Capsule provider resource has unknown ownership outcome.')
-    if not targets or not observed_namespaces:
-        raise ValueError('Capsule handback scope contains no verified Namespace to relinquish.')
+    if (
+        not targets or not observed_namespaces
+        or type(release.get('released_namespace_count')) is not int
+        or release['released_namespace_count'] != len(observed_namespaces)
+    ):
+        raise ValueError('Capsule handback scope lacks exact Released Namespace coverage.')
     if any(
         row['namespace'] not in observed_namespaces
         for row in targets if row['kind'] != 'Namespace'
@@ -334,6 +342,19 @@ def handback_capsule_successor_governance_committed(
         except Exception as exc:
             errors.append(f"{row['kind']}/{row['namespace']}/{row['name']}: {type(exc).__name__}")
             break  # NEVER automatic retry or continuation on uncertainty.
+    # Repeat the Capsule CR preservation check *after* provider writes.
+    # It is provider-owned: not even successful Namespace/related metadata
+    # mutations may turn a changing CR/spec into a verified handback.
+    if not errors:
+        try:
+            final_cr = custom.get_cluster_custom_object(
+                'capsule.clastix.io', 'v1beta2', 'tenants', cr['name'],
+                _request_timeout=5,
+            )
+            if _identity(final_cr) != _identity(live_cr):
+                raise ValueError('Capsule CR changed during successor handback.')
+        except Exception as exc:
+            errors.append(f"CapsuleTenant/{cr['name']}: {type(exc).__name__}")
     success = not errors and len(completed) == len(targets)
     receipt = {
         'status': 'verified' if success else 'partial_handback_recovery_required',
