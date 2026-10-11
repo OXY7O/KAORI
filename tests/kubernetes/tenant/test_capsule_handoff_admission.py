@@ -24,7 +24,10 @@ def _fixture():
         'namespace': ns, 'kind': kind, 'list_resource_version': 'rv-101', 'count': 0,
     } for ns in names for kind in ('ResourceQuota', 'LimitRange', 'RoleBinding')]
     related_sha = _digest({'resources': resources, 'lists': lists})
-    global_sha = 'b' * 64
+    global_sha = _digest({
+        'api_version': 'v1beta2', 'list_resource_version': 'cluster-list-rv',
+        'resources': [],
+    })
     lineage_sha = 'c' * 64
     components = [
         {
@@ -109,6 +112,8 @@ def _fixture():
             'global_quota': {
                 'status': 'observed_not_handoff_authorized',
                 'scope_sha256': global_sha, 'resources': [], 'count': 0,
+                'served_version': 'v1beta2',
+                'list_resource_version': 'cluster-list-rv',
                 'blockers': [],
             },
             'rbac_lineage': {
