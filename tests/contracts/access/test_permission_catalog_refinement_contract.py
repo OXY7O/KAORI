@@ -188,6 +188,17 @@ def test_permission_catalog_detail_uses_count_free_shared_modal_hierarchy() -> N
     assert 'detail_ui.resource_sheet()' in detail
     assert 'data-kaori-unified-resource-sheet' in shared
     assert 'data-kaori-inventory-section-layout="resource-sheet-band"' in shared
+    assert "compact_layout=false) -%}" in shared
+    assert "'min-w-0 px-4 py-3.5 sm:px-5 xl:px-6 xl:py-4' if compact_layout" in shared
+    assert "'mt-1 break-words text-xs leading-4 text-content-muted" in shared
+    assert detail.count("compact_layout=true") == 5
+    assert 'data-kaori-permission-identity-facts' in detail
+    assert 'data-kaori-permission-dependency-facts' in detail
+    assert 'data-kaori-permission-policy' in detail
+    assert 'data-kaori-permission-registry-facts' in detail
+    assert 'border-l-2 border-brand-outline' in detail
+    assert "table_ui.table_classes('min-w-[32rem]')" in detail
+    assert "table_ui.table_classes('min-w-[38rem]')" not in detail
     assert detail.count("detail_ui.inventory_section(") == 5
     assert 'detail_ui.detail_card(' not in detail
     assert 'data-kaori-permission-detail-layout="full-width-stack"' not in detail
