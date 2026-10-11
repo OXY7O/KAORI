@@ -460,6 +460,25 @@ reported output. This is **operator evidence**, not automatic confirmation
 that KAORI's currently committed baseline is fresh; a Tenant Sync/review
 may be needed before labels reflect new observations.
 
+**KAORI-created Capsule Tenant without an initial quota (#1178):** The
+`create_tenant` flow uses the user-visible display name (for example,
+`Singa`) and a lowercase provider slug/reference (for example, `singa`).
+`create_capsule_tenant` initially provisions the authoritative Capsule Tenant
+CR with an owner identity but does not automatically write
+`Tenant.spec.resourceQuotas` or create a GlobalResourceQuota. Capsule may
+report the Tenant Active without a Tenant quota. When a **complete committed
+allocation observation** explicitly confirms neither a Tenant quota nor any
+GlobalResourceQuota source and its authority is `none_observed`, the Capsule
+Shared panel displays **No Tenant Quota Configured** as a *read-only
+operator posture*. If the baseline is absent or incomplete it retains an
+unknown/needs-sync explanation, never pretending an unverified resource is
+absent. Namespace-level constraints and other authorities retain their
+separate posture. Existing observed-authority cutover (#773) is not an
+initial-quota provisioning operation; implementing initial Capsule Tenant
+quota configuration requires a separately approved authority/admission,
+provider UID/resourceVersion/dry-run, read-back and committed evidence
+workstream. No quota is created by this status refinement.
+
 ```text
 Adopted Capsule Tenant
 → observed GlobalResourceQuota + capability evidence
