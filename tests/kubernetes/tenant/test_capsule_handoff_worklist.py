@@ -27,8 +27,20 @@ def _case():
             'policy_sha256': 'd' * 64,
         },
     ]
-    related_sha = 'a' * 64
-    shared_sha = 'b' * 64
+    lists = [
+        {'namespace': 'demo-dev', 'kind': kind, 'list_resource_version': 'list-rv', 'count': amount}
+        for kind, amount in [('ResourceQuota', 1), ('LimitRange', 1), ('RoleBinding', 1)]
+    ]
+    related_sha = _digest({'resources': objects, 'lists': lists})
+    shared_items = [{
+        'kind': 'GlobalResourceQuota', 'name': 'shared',
+        'uid': 'global-uid', 'resource_version': '19',
+        'scope': 'direct_tenant_selector', 'policy_sha256': 'a' * 64,
+    }]
+    shared_sha = _digest({
+        'api_version': 'v1beta2', 'list_resource_version': 'cluster-rv',
+        'resources': shared_items,
+    })
     plan = {
         'plan_sha256': 'c' * 64,
         'handoff_components': [
@@ -40,6 +52,7 @@ def _case():
                 'capsule_spec_sha256': 'e' * 64,
                 'capsule_related_resources_sha256': related_sha,
                 'capsule_shared_quota_sha256': shared_sha,
+                'capsule_related_resources_count': '3',
             },
             {
                 'kind': 'Namespace', 'name': 'demo-dev', 'namespace': 'demo-dev',
@@ -50,16 +63,14 @@ def _case():
         ],
     }
     related = {
-        'resources': objects, 'resource_sha256': related_sha,
+        'resources': objects, 'resource_count': 3,
+        'list_snapshots': lists, 'resource_sha256': related_sha,
         'global_quota': {
+            'served_version': 'v1beta2',
+            'list_resource_version': 'cluster-rv',
+            'count': len(shared_items),
             'scope_sha256': shared_sha,
-            'resources': [
-                {
-                    'kind': 'GlobalResourceQuota', 'name': 'shared',
-                    'uid': 'global-uid', 'resource_version': '19',
-                    'scope': 'direct_tenant_selector', 'policy_sha256': 'a' * 64,
-                },
-            ],
+            'resources': shared_items,
         },
     }
     return plan, related
@@ -104,9 +115,17 @@ def test_worklist_tracks_resource_version_and_policy_change():
     plan, related = _case()
     first = build_capsule_handoff_worklist(plan=plan, related=related)
     related['resources'][0]['resource_version'] = '8'
+    related['resource_sha256'] = _digest({
+        'resources': related['resources'], 'lists': related['list_snapshots'],
+    })
+    plan['handoff_components'][0]['capsule_related_resources_sha256'] = related['resource_sha256']
     second = build_capsule_handoff_worklist(plan=plan, related=related)
     assert first['inventory_sha256'] != second['inventory_sha256']
     related['resources'][0]['policy_sha256'] = '9' * 64
+    related['resource_sha256'] = _digest({
+        'resources': related['resources'], 'lists': related['list_snapshots'],
+    })
+    plan['handoff_components'][0]['capsule_related_resources_sha256'] = related['resource_sha256']
     third = build_capsule_handoff_worklist(plan=plan, related=related)
     assert second['inventory_sha256'] != third['inventory_sha256']
 
@@ -115,6 +134,8 @@ def test_worklist_digest_is_stable_for_resource_order_only():
     plan, related = _case()
     first = build_capsule_handoff_worklist(plan=plan, related=related)
     related['resources'].reverse()
+    # Source order changes, but the provider observer emits sorted canonical rows.
+    related['resources'].sort(key=lambda x: (x['namespace'], x['kind'], x['name']))
     second = build_capsule_handoff_worklist(plan=plan, related=related)
     assert first['inventory_sha256'] == second['inventory_sha256']
 
