@@ -338,8 +338,10 @@ def test_operational_signal_kpi_cards_share_independent_geometry_across_three_do
         assert 'grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4' in source
         assert "scope_label='Active Scope'" in source
 
-    assert "source_label='Committed Inventory'" in registry_cards
+    assert 'source_label=overview.kpi_source_label' in registry_cards
     assert 'resource_posture_grid.html' not in registry_cards
+    assert 'Select a Registry Provider for Detailed Signals' in registry_signal
+    assert "scope_tone = overview.posture.tone if overview.selected_provider else 'warning'" in registry_signal
     assert "body_classes='p-0'" not in registry_signal
     assert 'grouped=true' not in registry_signal
     assert 'section_loading.kpis(item_count=4,' in registry_signal
