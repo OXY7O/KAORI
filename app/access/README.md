@@ -81,6 +81,8 @@ The role mutation boundary also enforces a delegation boundary: a non-break-glas
 This Roles & Access presentation is part of Access Final Lock v1. RBAC seed/convergence remains an explicit deployment boundary owned by the Permission Catalog and `flask seed-rbac`.
 
 ## Permission Catalog review status
+Effective user usage in Permission Catalog is calculated only for active users **through active roles**, mirroring the inactive-role denial in `User.has_permission()`. Role mappings remain visible even when their roles are inactive. JIT projection counts remain configuration evidence (enabled provider role defaults), not proof of effective user permission. The registry and detail labels say **Effective Users** rather than implying that every active assigned user is authorized.
+
 
 Permission Catalog is a read-only Access workspace. HTTP GET routes no longer call `seed_default_rbac()` or perform RBAC convergence. Code-to-database alignment is presented as registry evidence (`Canonical`, `Missing From Registry`, `Metadata Drift`, or `Database Only`), while synchronization remains an explicit deployment/administrative step through `flask seed-rbac`.
 
