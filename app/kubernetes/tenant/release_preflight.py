@@ -14,11 +14,11 @@ from app.kubernetes.tenant.decommission_service import (
 )
 from app.kubernetes.tenant.allocation_observation import observe_native_namespace_allocation
 from app.kubernetes.tenant.capsule_allocation_observation import _capsule_status_namespace_names
-from app.kubernetes.tenant.capsule_handoff_related_inventory import observe_capsule_related_inventory
 from app.kubernetes.tenant.capsule_handoff_authority_inventory import (
     inspect_capsule_role_binding_lineage,
     observe_capsule_global_quotas,
 )
+from app.kubernetes.tenant.capsule_handoff_related_inventory import observe_capsule_related_inventory
 from app.kubernetes.tenant.external_access_observation import latest_external_capsule_access_evidence
 from app.kubernetes.tenant.release_handoff_inventory import (
     capsule_tenant_handoff_evidence,
