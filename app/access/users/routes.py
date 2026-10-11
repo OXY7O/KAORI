@@ -176,6 +176,7 @@ def edit(user_id: int):
         form.role_id.data = user.role_id or (user.role_record.id if user.role_record else 0)
         form.is_active.data = user.account_is_active
         form.is_super_admin.data = user.is_super_admin
+        form.user_version.data = user_version_token(user)
 
     if form.validate_on_submit():
         removes_active_super_admin_authority = bool(
