@@ -173,3 +173,7 @@ For User Edit GET and directory action visibility, manage authority is evaluated
 ## User Edit stale-mutation protection
 
 User Edit forms include a committed user-version token. A POST serializes the current User row using `SELECT ... FOR UPDATE` with refreshed persisted state and refuses stale tokens **before** modifying profile, role, administrative tier, or lifecycle or recording success evidence. The operator must reload the newest state before retrying. A last-active-local-Super-Admin demotion still acquires the existing specialized lock/guard first; self-modification and role delegation stay fail closed. This is administrative optimistic concurrency, not external-provider account synchronization.
+
+## User lifecycle transaction recovery
+
+Activate, Deactivate, Restore, Delete, and Local Database administrative Reset Password commit the user mutation and administrative audit evidence together. Any database error rolls back the session and does not report an operation as successful; lifecycle routes render a recoverable failure notification while password reset keeps validation feedback in its secure form. Existing last-active-local-Super-Admin serialization, soft-delete/restore-inactive, permission gates, and generation-bound session revocation remain authoritative. Forced-flush/commit failure and real PostgreSQL testing are UAT gates, not inferred from source checks.
