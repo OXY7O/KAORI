@@ -31,7 +31,7 @@
             ('Dependencies', 'Required' if effective_requires else 'None', 'Transitive requirements')
         ], compact=true) }}
         <div class="grid min-w-0 items-start gap-3 p-4 sm:p-5 lg:grid-cols-2">
-            {% call detail_ui.detail_card('Permission Identity', 'badge-info', permission.state.label, badge_type='status', badge_tone=permission.state.tone, badge_size='detail', stretch=false, density='compact') %}
+            {% call detail_ui.detail_card('Permission Identity', 'badge-info', stretch=false, density='compact') %}
                 {{ detail_ui.detail_row('Permission Key', permission.key) }}
                 {{ detail_ui.detail_row('Control Module', permission.module_label) }}
                 {{ detail_ui.detail_row('Action', permission.action|replace('_', ' ') |title) }}
@@ -73,7 +73,7 @@
                     {{ detail_ui.stacked_detail_row('Authority', 'Non-Super Admin delegation requires this permission in the actor’s effective access. Server-side checks remain authoritative.') }}
                 {% endif %}
             {% endcall %}
-            {% call detail_ui.detail_card('Registry Boundary', 'database-zap', permission.state.label, badge_type='status', badge_tone=permission.state.tone, badge_size='detail', stretch=false, density='compact') %}
+            {% call detail_ui.detail_card('Registry Boundary', 'database-zap', stretch=false, density='compact') %}
                 {% if permission.state_key == 'canonical' %}
                     {{ detail_ui.stacked_detail_row('Registry State', 'Registry metadata matches the application code contract.') }}
                 {% elif permission.state_key == 'missing' %}
@@ -120,8 +120,8 @@
                                         <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(role.name, role.key, role.type_icon) }}</td>
                                         <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(role.type_label, role.type_icon) }}</td>
                                         <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(role.state_label, role.state_tone) }}</td>
-                                        <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label('In Use' if role.active_user_count else 'No Active Users', 'normal' if role.active_user_count else 'unknown') }}</td>
-                                        <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label('Configured' if role.jit_provider_count else 'Not Configured', 'info' if role.jit_provider_count else 'unknown') }}</td>
+                                        <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-medium text-content-secondary">{{ 'In Use' if role.active_user_count else 'No Active Users' }}</span></td>
+                                        <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-medium text-content-secondary">{{ 'Configured' if role.jit_provider_count else 'Not Configured' }}</span></td>
                                     </tr>
                                 {% endfor %}
                             </tbody>
