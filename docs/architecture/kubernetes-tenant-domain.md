@@ -1458,7 +1458,9 @@ Execute is only rendered to the approving actor with an unexpired
 unchanged plan and separate explicit confirmation; the service rechecks
 all original evidence and provider authority server-side.
 
-The UI distinguishes `Assessment Required`,
+The UI initially offers a **Check Discovery First** link; when
+Discovery is already eligible, no recovery is required. Otherwise it
+distinguishes `Recovery Check · If Blocked`,
 `Pending Independent Review`, `Approved — Not Executed`,
 `Recovery Review Required` (including partial or in-progress), and
 `Recovery Verified`. Incomplete/expired evidence has **no retry button**

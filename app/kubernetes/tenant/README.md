@@ -702,8 +702,11 @@ the service directly in DevContainer.
 In Tenant Registry select the **Released Native Tenant** and open
 **Platform Admin Handback & Re-adopt**. A verified Handback with a
 remaining Resource Profile label exposes **Historical Namespace Recovery**.
-The status is projected from committed KAORI AuditEvent records only:
-`Assessment Required`, `Pending Independent Review`,
+The status is projected from committed KAORI AuditEvent records only.
+First use **Check Discovery First**; if already eligible, proceed with
+normal Review Adoption and do not run recovery. Only a residue-induced
+Discovery Blocked state warrants the recovery flow:
+`Recovery Check · If Blocked`, `Pending Independent Review`,
 `Approved — Not Executed`, `Recovery Review Required`, or
 `Recovery Verified`. This section never scans Kubernetes on page GET.
 

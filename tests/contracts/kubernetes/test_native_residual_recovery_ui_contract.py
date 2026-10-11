@@ -34,7 +34,9 @@ def test_recovery_is_scoped_to_verified_native_handback_in_tenant_detail():
     assert 'Recovery Verified' in partial
     assert 'Recovery Review Required' in partial
     assert 'Pending Independent Review' in partial
-    assert 'Assessment Required' in partial
+    assert 'Recovery Check · If Blocked' in partial
+    assert 'Check Discovery First' in partial
+    assert 'If your Namespace is already eligible' in partial
 
 
 def test_recovery_forms_use_existing_htmx_csrf_loading_and_independent_actor_guard():
