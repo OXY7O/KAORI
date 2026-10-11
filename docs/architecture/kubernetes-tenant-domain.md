@@ -165,9 +165,12 @@ remain HOLD pending explicit authorization.
 
 The canonical Tenant Detail now includes **Namespace & Resource Profile Mapping**
 directly before the Release/Handback administration section. It reuses
-`section_intro`, `operational_section_card`, the shared table/status
-primitives and the approved Violet responsive grid/empty states. This is a
-**bounded five-row committed projection**, not a second Namespace Registry:
+`section_intro`, `operational_section_card`, shared status labels and
+the approved Violet responsive operational **card** and empty-state patterns.
+As of #1138, the large mapping table has been replaced by **one card per
+Namespace** to keep a single Namespace readable and make multiple Namespace
+allocations scan-friendly. This is a **bounded five-card committed projection**,
+not a second Namespace Registry:
 select only records correlated by the exact TenantEnvironment tenant ID, eager
 load their Resource Profile, order by newest generation records and retain
 Released/Deprovisioned history with clear historical labels. A link opens
@@ -175,7 +178,7 @@ the existing Namespace Provisioning Registry filtered to that Tenant for
 the full collection. No provider GET, new management action, global
 profile mutation, schema migration or workflow branch is introduced.
 
-Each row distinguishes Native/other adopted provider-baseline lineage from
+Each card distinguishes Native/other adopted provider-baseline lineage from
 a real linked Resource Profile, shows the **profile public ID** where linked,
 the pinned Resource Profile snapshot version and customization, allocation
 control state (historical records are explicitly **last committed**),
@@ -186,6 +189,24 @@ not fabricated and **not interpreted as live Kubernetes utilization**.
 A reusable Resource Profile definition may be revised to a new version
 without changing a Namespace's already-pinned snapshot until a separately
 admitted Allocation Change or rollout.
+
+**Verified cross-Release lineage (#1138):** For Native re-adoption,
+the current Tenant's committed `re_adoption_lineage` explicitly binds
+`predecessor_tenant_id`, prior Tenant generation/correlation ID and
+`provider_uid_verified=True`. Only this bounded ancestor chain (up to
+five prior Tenant generations), matching exact cluster, Tenant slug, provider,
+prior Released lifecycle and the same immutable provider UID and namespace
+name, can expose prior Released Namespace allocation snapshots. A
+cross-Tenant name-only match is forbidden. The cards provide optional,
+keyboard-accessible `Lifecycle History` disclosure with each verified
+predecessor's pinned Resource Profile and quota snapshot. If the evidence
+does not satisfy all checks, omit that history and show that no **verified**
+cross-Tenant lineage is available; never fabricate one from Gen 3 or
+rename/reuse of a Namespace. History is a bounded committed database read,
+not a live provider request, and does not compare or claim current
+Kubernetes state. The existing filtered Namespace Registry remains the
+source for the full current Tenant list, not a cross-Tenant administration
+view.
 
 **Native verification sequence and required invariants:**
 `Discover/Adopt existing Namespace → materialize its equivalent observed
