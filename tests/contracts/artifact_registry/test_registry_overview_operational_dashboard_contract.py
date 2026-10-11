@@ -285,12 +285,20 @@ def test_artifact_registry_dashboard_state_semantics_and_jinja_mapping_safety() 
     assert 'item.progress_percent is not none' in capacity_snapshot
     assert 'percentage not applicable' in capacity_snapshot
     assert 'Refresh evidence; verify headroom' in capacity_snapshot
+    assert "'Capacity Decision Notes'" in capacity_snapshot
+    assert 'Planning Check' in capacity_snapshot
+    assert 'Evidence Handoff' in capacity_snapshot
+    assert 'project quota ownership' in capacity_snapshot
+    assert "'label': 'Quota Left'" in presentation
+    assert "'No quota risk within the warning window.'" in presentation
+    assert 'Committed analytics snapshots' in forecast
+    assert 'Projects with quota ETA' in forecast
     assert "'progress_label': 'Used'" in presentation
     assert "'progress_label': 'Free'" in presentation
     assert "'progress_label': 'Inventory'" in presentation
     assert '100 - quota_utilization if quota_utilization is not None else None' in presentation
     assert 'committed project quota.' not in presentation
-    assert 'Committed growth and Metrics Source quota evidence.' in presentation
+    assert 'Committed growth and quota evidence.' in presentation
     assert 'Artifact change per day.' in forecast
     assert 'Quota ETA with positive growth.' in forecast
     for token in (
