@@ -4,7 +4,6 @@ Authored-only fixtures. Do not execute tests or workflows during gate HOLD.
 """
 from __future__ import annotations
 
-from copy import deepcopy
 from datetime import UTC, datetime, timedelta
 
 import pytest
