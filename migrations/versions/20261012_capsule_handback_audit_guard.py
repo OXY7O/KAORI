@@ -88,8 +88,8 @@ END
 
 def downgrade() -> None:
     dialect = _dialect()
-    if op.get_bind().exec_driver_sql(
-        "SELECT 1 FROM audit_events WHERE target_type = :target LIMIT 1",
+    if op.get_bind().execute(
+        sa.text('SELECT 1 FROM audit_events WHERE target_type = :target LIMIT 1'),
         {'target': _TARGET},
     ).first():
         raise RuntimeError('Cannot remove Capsule handback guards with recorded attempt evidence.')
