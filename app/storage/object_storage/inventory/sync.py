@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable, Iterable
 from datetime import UTC, datetime
-from typing import TypedDict
+from typing import Any, NotRequired, TypedDict
 
 from flask import current_app
 from sqlalchemy import select
@@ -32,6 +32,7 @@ class ObjectStorageInventorySyncResult(TypedDict):
     latency_ms: int
     warning_count: int
     usage_stats_mode: str
+    empty_reconciliation_evidence: NotRequired[dict[str, Any]]
 
 
 def _lock_system_inventory_sync(system_id: str) -> None:
@@ -46,17 +47,19 @@ def commit_bucket_inventory(
     buckets: Iterable[MinioBucketSummary],
     *,
     observed_at: datetime,
+    confirmed_empty: bool = False,
 ) -> dict[str, int]:
     """Replace one system's committed bucket snapshot from already collected evidence."""
     observed = {bucket.name: bucket for bucket in buckets if bucket.name}
     existing = {bucket.name: bucket for bucket in system.buckets}
 
     if existing and not observed:
-        raise RuntimeError(
+        if not confirmed_empty:
+            raise RuntimeError(
             f'Provider bucket discovery returned zero assets while the last committed snapshot contains '
             f'{len(existing)} bucket/container asset(s). KAORI preserved the previous committed snapshot. '
             'Verify the S3 endpoint, credentials, and ListBuckets scope before retrying Object Storage Inventory Sync.'
-        )
+            )
 
     created = 0
     updated = 0
@@ -108,6 +111,7 @@ def sync_object_storage_inventory(
     instance: MinioInstance,
     *,
     progress_callback: InventoryProgressCallback | None = None,
+    empty_reconciliation: dict[str, Any] | None = None,
 ) -> ObjectStorageInventorySyncResult:
     """Collect and atomically commit one managed object-storage inventory snapshot.
 
@@ -125,6 +129,22 @@ def sync_object_storage_inventory(
     current_stage = 'system lock'
     try:
         _lock_system_inventory_sync(system.id)
+        previous_bucket_count = len(system.buckets)
+        if empty_reconciliation is not None:
+            observed = system.inventory_observed_at
+            observed = observed.replace(tzinfo=UTC) if observed is not None and observed.tzinfo is None else observed
+            expected_timestamp = observed.isoformat() if observed is not None else None
+            if (
+                str(empty_reconciliation.get('system_id') or '') != str(system.id)
+                or int(empty_reconciliation.get('previous_bucket_count') or 0) != previous_bucket_count
+                or empty_reconciliation.get('previous_inventory_observed_at') != expected_timestamp
+                or previous_bucket_count == 0
+                or expected_timestamp is None
+            ):
+                raise RuntimeError(
+                    'The committed system inventory changed since empty reconciliation was authorized. '
+                    'No bucket records were removed. Review the latest snapshot and request new confirmation.'
+                )
         current_stage = 'bucket discovery'
         usage_stats_mode = (
             str(current_app.config.get('OBJECT_STORAGE_INVENTORY_USAGE_STATS_MODE', 'disabled')).strip().lower()
@@ -134,15 +154,41 @@ def sync_object_storage_inventory(
             usage_stats_mode=usage_stats_mode,
             progress_callback=progress_callback,
         )
+        reconciliation_evidence: dict[str, Any] | None = None
+        if empty_reconciliation is not None:
+            if collected.buckets or collected.warning_count:
+                raise RuntimeError(
+                    'Confirmed-empty reconciliation found bucket assets or incomplete discovery. '
+                    'Previous committed bucket evidence remains unchanged.'
+                )
+            current_stage = 'independent empty discovery confirmation'
+            confirmation = collect_instance_bucket_inventory(
+                instance, usage_stats_mode='disabled'
+            )
+            if confirmation.buckets or confirmation.warning_count:
+                raise RuntimeError(
+                    'Independent ListBuckets verification did not confirm an empty, complete result. '
+                    'Previous committed bucket evidence remains unchanged.'
+                )
+            reconciliation_evidence = {
+                'system_id': str(system.id),
+                'system_name': system.name,
+                'confirmed_by_user_id': empty_reconciliation['confirmed_by_user_id'],
+                'previous_bucket_count': previous_bucket_count,
+                'discovery_confirmations': 2,
+                'verified_at': datetime.now(UTC).isoformat(),
+                'result': 'confirmed_empty',
+            }
         current_stage = 'snapshot persistence'
         summary = commit_bucket_inventory(
             system,
             collected.buckets,
             observed_at=observed_at,
+            confirmed_empty=reconciliation_evidence is not None,
         )
         current_stage = 'commit'
         db.session.commit()
-        return {
+        result: ObjectStorageInventorySyncResult = {
             'created': summary['created'],
             'updated': summary['updated'],
             'deleted': summary['deleted'],
@@ -154,6 +200,14 @@ def sync_object_storage_inventory(
             'warning_count': collected.warning_count,
             'usage_stats_mode': collected.usage_stats_mode,
         }
+        if reconciliation_evidence is not None:
+            reconciliation_evidence['removed_bucket_count'] = summary['deleted']
+            result['empty_reconciliation_evidence'] = reconciliation_evidence
+            logger.warning(
+                'Authorized Object Storage empty reconciliation committed for system %s: %s prior assets, %s confirmations, actor %s.',
+                system.id, previous_bucket_count, 2, reconciliation_evidence['confirmed_by_user_id'],
+            )
+        return result
     except Exception:
         logger.exception(
             'Object-storage inventory synchronization failed for system %s during %s.',
