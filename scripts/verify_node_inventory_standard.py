@@ -162,10 +162,24 @@ def main() -> int:
         '<caption class="sr-only">',
         'scope="col"',
         'node.condition_summary',
+        "table_ui.title_cell(node.node_name, node.identity_supporting, 'server')",
         "technical_value.render(node.internal_ip or 'Not Reported')",
         "pagination_ui.resource_name('Nodes', pagination.total_items)",
     ):
         require(token in table_content, f'Missing compact Node table contract: {token}', errors)
+
+    require(
+        "'identity_supporting': _node_os_family(node)" in backend
+        and "node.operating_system or labels.get('kubernetes.io/os')" in backend,
+        'Node identity must display OS family from committed fields, not full OS image.',
+        errors,
+    )
+    require(
+        "detail.inspector_row('OS Image', node.os_image, nowrap=true)" in detail
+        and "detail.inspector_row('Operating System', node.operating_system_display)" in detail,
+        'Full OS image and reported OS family must remain in Node Details.',
+        errors,
+    )
 
     shared_detail = read('app/templates/components/details/_detail_content.html')
     require(
@@ -204,6 +218,7 @@ def main() -> int:
         'Kubernetes Node Inventory Standard',
         'missing values are not converted to zero',
         'Node | Cluster | Readiness | Role | Capacity | Network | Details',
+        'OS family',
     ):
         require(token in standard, f'Node Inventory documentation is missing: {token}', errors)
     require(
