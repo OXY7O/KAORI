@@ -150,7 +150,8 @@ def test_system_information_is_explicitly_read_only_and_traceable() -> None:
     assert '<details' in main
     assert '<summary' in main
     assert 'lg:grid-cols-3' in main
-    assert 'border-brand-outline' in main
+    assert 'border-t border-outline-subtle pt-5' in main
+    assert 'rounded-xl border border-brand-outline' not in main
     assert 'data-system-information-workspace-layout="full-width"' in read(
         'app/templates/settings/general/partials/_page_content.html'
     )
