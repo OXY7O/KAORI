@@ -204,7 +204,7 @@ def test_permission_catalog_detail_uses_count_free_shared_modal_hierarchy() -> N
     assert 'sm:border-r' in shared
     assert 'gap-x-6 gap-y-3' in shared
     assert "('Role Mapping', 'Mapped' if permission.role_count else 'Unassigned', '')" in detail
-    assert "('Active Usage', 'In Use' if permission.active_user_count else 'No Active Users', '')" in detail
+    assert "('Active Usage', 'In Use' if permission.active_user_count else 'No Effective Users', '')" in detail
     assert "('JIT Projection', 'Configured' if permission.jit_provider_count else 'Not Configured', '')" in detail
     assert "('Requires', 'Present' if effective_requires else 'None', '')" in detail
     assert "('Control Module', permission.module_label" not in detail
@@ -257,10 +257,46 @@ def test_permission_catalog_detail_uses_count_free_shared_modal_hierarchy() -> N
     assert '{{ role.active_user_count }}' not in detail
     assert '{{ role.jit_provider_count }}' not in detail
     assert "badge='Mapped' if role_rows else 'Unassigned'" in detail
-    assert "'In Use' if role.active_user_count else 'No Active Users'" in detail
+    assert "'In Use' if role.active_user_count else 'No Effective Users'" in detail
     assert "'Configured' if role.jit_provider_count else 'Not Configured'" in detail
     assert 'permission.key' in detail
     assert 'permission.delegation_tier' in detail
     assert 'permission.state_key' in detail
     assert 'requires' in detail and 'required_by' in detail
     assert 'Permission Catalog never mutates or synchronizes the RBAC registry during HTTP GET requests.' in detail
+
+
+def test_permission_effective_usage_excludes_inactive_role_assignments() -> None:
+    """The evidence projection must respect the inactive-role enforcement boundary."""
+    from types import SimpleNamespace
+
+    from app.access.permissions.service import _role_impact
+
+    active_user = SimpleNamespace(id=101, is_active=True)
+    assigned_to_inactive = SimpleNamespace(id=202, is_active=True)
+    suspended_user = SimpleNamespace(id=303, is_active=False)
+    active_role = SimpleNamespace(
+        id=11, is_active=True, users=[active_user, active_user, suspended_user]
+    )
+    inactive_role = SimpleNamespace(
+        id=12, is_active=False, users=[assigned_to_inactive, active_user]
+    )
+    # A configured enabled JIT default is evidence of configuration, not of
+    # effective user permission. Its projection is kept separate from usage.
+    provider = SimpleNamespace(id=55)
+
+    inactive_only = _role_impact(
+        [inactive_role], enabled_jit_providers_by_role={12: [provider]}
+    )
+    assert inactive_only == {'active_user_count': 0, 'jit_provider_count': 1}
+
+    combined = _role_impact(
+        [active_role, inactive_role], enabled_jit_providers_by_role={}
+    )
+    assert combined == {'active_user_count': 1, 'jit_provider_count': 0}
+    assert _role_impact([active_role], enabled_jit_providers_by_role={})[
+        'active_user_count'
+    ] == 1
+    assert _role_impact([], enabled_jit_providers_by_role={})[
+        'active_user_count'
+    ] == 0
