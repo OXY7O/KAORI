@@ -65,6 +65,20 @@ accepted; original spec/policy, UID, foreign ownership and preservation
 digests are revalidated. A terminal proof row lacking authenticated
 resource-specific consent or controller origin fails closed.
 
+G3→G4 receipt alignment for the minimum safe executor: a RoleBinding
+which is only provider/foreign-owned remains untouched; it does **not**
+require an invented controller-origin attestation. G4 admits the exact
+receipt `controller_origin_verified=false` only when
+`controller_generated_rbac_preserved=true`, every approved RoleBinding
+is classified as **preserve-only**, and all original RBAC resources,
+roles, subjects, UID/RV and metadata are re-read authoritatively before
+Release. If the original worklist contains any KAORI-marked RoleBinding
+candidate, G2 and G4 remain FAIL pending independent origin consent.
+The G4 finalizer also independently hashes the actual committed complete
+receipt list against the immutable terminal readback SHA and verifies the
+executor X.509 username/credential matches the acceptance and fresh
+provider authority. No synthetic controller-origin proof is accepted.
+
 Only upon complete proof does one guarded DB transaction set Tenant
 `lifecycle_status=Released` and each governed Namespace
 `provisioning_status=Released`, record generation-specific immutable
