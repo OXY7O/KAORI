@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/visualization_workspace.html" as visualization_workspace %}
 {% import "components/segmented_tabs.html" as segmented_tabs %}
 {% import "components/table_label.html" as table_label %}
@@ -353,8 +354,8 @@
                                 <th class="{{ table_ui.header_cell_classes() }}">Type</th>
                                 <th class="{{ table_ui.header_cell_classes() }}">Cluster</th>
                                 <th class="{{ table_ui.header_cell_classes() }}">Namespace</th>
-                                <th class="{{ table_ui.header_cell_classes() }}">Status</th>
-                                <th class="{{ table_ui.header_cell_classes() }}">Relationships</th>
+                                <th class="{{ table_ui.header_cell_classes() }}"><span class="inline-flex items-center gap-1">Status {{ info_tip.render('k8s-inventory-topology-status', 'Topology Resource Status', 'Operational status summarized from the latest committed resource snapshot. Unknown means evidence is insufficient, not healthy.', placement='right') }}</span></th>
+                                <th class="{{ table_ui.header_cell_classes() }}"><span class="inline-flex items-center gap-1">Relationships {{ info_tip.render('k8s-inventory-topology-relationships', 'Resource Relationships', 'Links between resources inferred from committed Kubernetes references and selectors. An absent link may reflect missing or filtered evidence.', placement='right') }}</span></th>
                                 <th class="{{ table_ui.header_cell_classes(action=true) }}">Details</th>
                             </tr>
                         </thead>
