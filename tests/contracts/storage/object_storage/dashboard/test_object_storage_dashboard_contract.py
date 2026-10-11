@@ -741,3 +741,65 @@ def test_object_storage_dashboard_bucket_reads_are_bounded_to_visible_scope() ->
     assert "dashboard['health_rows'] = _health_rows(visible_systems)" in section
     assert "bucket.object_storage_system_id.in_(system_ids)" in aggregates
     assert 'group_by(bucket.object_storage_system_id)' in aggregates
+
+
+def test_object_storage_dashboard_sql_bucket_summary_preserves_selected_scope(monkeypatch) -> None:
+    from datetime import UTC, datetime
+    from types import SimpleNamespace
+
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import Session
+
+    from app.models.object_storage import ObjectStorageBucket, ObjectStorageSystem
+    from app.storage.object_storage.dashboard import service
+    from app.storage.object_storage.inventory import aggregates
+
+    engine = create_engine('sqlite+pysqlite:///:memory:')
+    ObjectStorageSystem.__table__.create(engine)
+    ObjectStorageBucket.__table__.create(engine)
+    with Session(engine) as session:
+        monkeypatch.setattr(aggregates, 'db', SimpleNamespace(session=session))
+        monkeypatch.setattr(service, 'db', SimpleNamespace(session=session))
+        first = ObjectStorageSystem(
+            id='first', name='First', environment='test', status='ready',
+            inventory_observed_at=datetime.now(UTC),
+        )
+        second = ObjectStorageSystem(
+            id='second', name='Second', environment='test', status='ready',
+            inventory_observed_at=datetime.now(UTC),
+        )
+        session.add_all([first, second])
+        session.add_all([
+            ObjectStorageBucket(
+                id=1, object_storage_system_id='first', name='one',
+                observed_at=datetime.now(UTC), size_bytes=10, object_count=3,
+                quota_state='configured', quota_bytes=100,
+            ),
+            ObjectStorageBucket(
+                id=2, object_storage_system_id='second', name='two',
+                observed_at=datetime.now(UTC), size_bytes=20, object_count=5,
+            ),
+        ])
+        session.commit()
+
+        assert aggregates.bucket_usage_by_system(['first']) == {
+            'first': {'buckets': 1, 'stored_bytes': 10, 'stored_samples': 1}
+        }
+        selected = service._inventory_summary([first], selected=first)
+        assert (selected['buckets'], selected['stored_bytes'], selected['objects']) == (1, 10, 3)
+        assert (selected['quota_configured'], selected['usage_collected']) == (1, 1)
+        assert selected['empty_observed_systems'] == 0
+
+        fleet = service._inventory_summary([first, second])
+        assert (fleet['buckets'], fleet['stored_bytes'], fleet['objects']) == (2, 30, 8)
+        monkeypatch.setattr(service, '_snapshot_payload', lambda _system: (None, {'usable': False}))
+        monkeypatch.setattr(
+            service, '_kaori_alert_posture',
+            lambda _system: {'total': 0, 'critical': 0, 'warning': 0, 'info': 0},
+        )
+        health = service._health_rows([first])
+        assert len(health) == 1
+        assert health[0]['bucket_count'] == 1
+        assert health[0]['usage_source'] == 'Inventory'
+        assert health[0]['stored_display'] == '10 B'
+    engine.dispose()
