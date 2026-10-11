@@ -108,6 +108,9 @@ Rules:
 
 - default page size is 5; available sizes are 5/10/25/50;
 - header cells use `scope="col"`;
+- the seven existing headers use proportional widths, prioritizing Node **26%** and Cluster **22%** while retaining Readiness **11%**, Role **10%**, Capacity **12%**, Network **9%** and Details **10%**; the established `table-auto` primitive can accommodate intrinsic minimum widths;
+- maintain a **74rem** table minimum width inside the existing horizontal scroll region, never overlap name, status or action cells on smaller viewports; long Node and Cluster identities keep the shared `title` attributes and may truncate visually when space is constrained;
+- Cluster identity uses the existing shared `cluster_identity` macro with a `min-w-0 w-full` container so the full environment/name remains inspectable without forcing a wider column;
 - a screen-reader caption describes the current scope;
 - Node identity uses the shared title-cell presentation. Its supporting line shows only the **OS family** (for example, `Linux`, `Windows`, or another reported platform) from committed `operating_system`, with a `kubernetes.io/os` label fallback. Missing OS family remains `Not Reported`; do not guess from distro/image text.
 - Full OS distribution/image/version, architecture, kernel, and container runtime stay in **View Details → Runtime & Platform**, not in the compact table subtitle.
