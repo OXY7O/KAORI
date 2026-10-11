@@ -478,10 +478,20 @@ def run_now(job_key: str) -> ResponseReturnValue:
 
     try:
         recover_stale_jobs()
+        # Only the Object Storage Inventory job accepts the explicit scoped empty
+        # reconciliation form. The owning dispatcher verifies its confirmation.
+        empty_parameters = None
+        if job_key == 'object_storage.inventory.sync' and request.form.get('empty_reconciliation'):
+            empty_parameters = {
+                'empty_reconciliation': request.form.get('empty_reconciliation'),
+                'confirm_empty_system_id': request.form.get('confirm_empty_system_id'),
+                'confirmation_phrase': request.form.get('confirmation_phrase'),
+            }
         outcome = dispatch_registered_job(
             job_key=job_key,
             trigger_type='manual',
             requested_by_user_id=int(current_user.id),
+            parameters=empty_parameters,
         )
     except JobWorkerUnavailable as exc:
         rollback_job_dispatch_transaction()
