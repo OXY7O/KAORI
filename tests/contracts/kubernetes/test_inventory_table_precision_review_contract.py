@@ -19,6 +19,29 @@ def test_kubernetes_inventory_tables_keep_bounded_columns() -> None:
         assert 'table_ui.title_cell(' in content or 'table_ui.namespace_identity(' in content, family
 
 
+def test_node_identity_columns_are_prioritized_over_short_signal_columns() -> None:
+    node = read('nodes/partials/_table_content.html')
+    expected_percent = {
+        'Node': 26,
+        'Cluster': 22,
+        'Readiness': 11,
+        'Role': 10,
+        'Capacity': 12,
+        'Network': 9,
+        'Details': 10,
+    }
+    assert sum(expected_percent.values()) == 100
+    assert expected_percent['Node'] > expected_percent['Readiness']
+    assert expected_percent['Cluster'] > expected_percent['Capacity']
+    for heading, width in expected_percent.items():
+        assert f'w-[{width}%]' in node.split(f'>{heading}</th>', 1)[0].rsplit('<th', 1)[-1]
+
+    assert "table_ui.table_classes('min-w-[74rem] !table-fixed')" in node
+    assert 'overflow-x-auto overscroll-x-contain' in node
+    assert "table_ui.cluster_identity(node.cluster_name, node.cluster_environment, 'w-full min-w-0')" in node
+    assert "table_ui.title_cell(node.node_name, node.identity_supporting, 'server')" in node
+
+
 def test_storage_and_ingress_keep_full_identity_available_in_title() -> None:
     storage = read('storage/partials/_table_content.html')
     ingress = read('ingresses/partials/_table_content.html')
