@@ -40,6 +40,7 @@ class CapsuleHandoffAuditBatch(db.Model):
     __table_args__ = (
         # Conservative once-only policy: never replace or replay one plan.
         db.UniqueConstraint('batch_id', name='uq_capsule_audit_batch_global_id'),
+        db.UniqueConstraint('tenant_id', name='uq_capsule_audit_batch_tenant_once'),
         db.UniqueConstraint('tenant_id', 'plan_sha256', name='uq_capsule_audit_batch_plan_once'),
         db.UniqueConstraint(
             'batch_id', 'tenant_id', 'plan_sha256',
