@@ -282,6 +282,19 @@ def _read_full_source(
     return targets
 
 
+def _verify_preserved_foreign_namespace(*, before: Any, current: Any) -> None:
+    """Fail closed on any changed Namespace spec or provider-owned metadata."""
+    if (
+        _identity(current) != _identity(before)
+        or _labels(current) != _labels(before)
+        or capsule_preservation_digest(current) != capsule_preservation_digest(before)
+    ):
+        raise ValueError(
+            'Foreign Capsule Namespace identity, spec or retained '
+            'provider metadata changed during handoff.'
+        )
+
+
 def _write_ledger_event(
     *, plan: dict[str, Any], related: dict[str, Any],
     event: dict[str, Any], previous: dict[str, Any] | None = None,
@@ -555,8 +568,7 @@ def execute_capsule_handoff_committed(
                         )['state']
                         row['preservation_sha256'] = _digest(capsule_preservation_digest(before))
                     else:
-                        if _identity(live) != _identity(before) or _labels(live) != _labels(before):
-                            raise ValueError('Foreign Capsule Namespace changed during handoff.')
+                        _verify_preserved_foreign_namespace(before=before, current=live)
                         state = 'preserved'
                 elif ops:
                     record = next(x for x in related['resources']

@@ -9,6 +9,18 @@ Target integration: `kaori/review/staging-uat` only. No developer check,
 pytest, Ruff, pyright, CI/CD, DAST, live API UAT, promotion or deployment until
 a separate explicit instruction.
 
+## G3 foreign Namespace full-preservation correction (#1229)
+
+Complete-scope Capsule executor read-back now rejects **any** drift in a
+foreign/preserved Namespace: provider UID/resourceVersion, labels, spec,
+annotations, ownerReferences, finalizers and other retained metadata.
+`_verify_preserved_foreign_namespace` reuses the existing strict
+`capsule_preservation_digest` rather than accepting identity and labels
+alone. The corresponding regression covers all these mutation categories.
+This is a preservation check, not new permission to transfer foreign
+resources.
+
+
 ## Capsule single-attempt handoff executor — #1229 integration
 
 The actual Capsule wizard now has a second, explicit **Execute Guarded Capsule

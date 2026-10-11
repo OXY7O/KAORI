@@ -210,6 +210,42 @@ def test_capsule_related_quota_and_foreign_rolebinding_cannot_be_promoted_from_p
         )
 
 
+def test_capsule_foreign_namespace_preservation_requires_full_provider_invariants(monkeypatch):
+    from copy import deepcopy
+
+    def provider_namespace():
+        return SimpleNamespace(
+            metadata=SimpleNamespace(
+                name='external-ns', uid='ns-uid', resource_version='rv-1',
+                labels={'capsule.clastix.io/tenant': 'demo', 'foreign/owner': 'operator'},
+                annotations={'external/annotation': 'keep'},
+                owner_references=[{'uid': 'owner-uid', 'kind': 'Tenant'}],
+                finalizers=['external.io/cleanup'],
+            ),
+            spec={'finalizers': ['kubernetes']},
+        )
+
+    source = provider_namespace()
+    executor._verify_preserved_foreign_namespace(
+        before=source, current=deepcopy(source),
+    )
+    mutations = [
+        lambda obj: setattr(obj.metadata, 'resource_version', 'rv-2'),
+        lambda obj: obj.metadata.labels.update({'unexpected': 'value'}),
+        lambda obj: obj.metadata.annotations.update({'external/annotation': 'changed'}),
+        lambda obj: obj.metadata.owner_references[0].update(uid='different-owner'),
+        lambda obj: obj.metadata.finalizers.append('unknown/finalizer'),
+        lambda obj: obj.spec['finalizers'].append('unapproved'),
+    ]
+    for mutation in mutations:
+        current = deepcopy(source)
+        mutation(current)
+        with pytest.raises(ValueError, match='Foreign Capsule Namespace identity, spec'):
+            executor._verify_preserved_foreign_namespace(
+                before=source, current=current,
+            )
+
+
 def test_capsule_route_and_ui_require_exact_digest_and_separate_confirmation():
     from pathlib import Path
 
