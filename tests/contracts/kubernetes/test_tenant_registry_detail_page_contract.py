@@ -942,7 +942,7 @@ def test_release_guidance_notes_are_consistent_across_steps_without_changing_aut
         "{% elif tenant_release_step == 'approval' %}", 1
     )[0]
     step_three = detail.split('id="tenant-release-stage-approval"', 1)[1].split(
-        "{% else %}", 1
+        'id="tenant-release-stage-finalize"', 1
     )[0]
     step_four = detail.split('id="tenant-release-stage-finalize"', 1)[1].split(
         'aria-label="Release wizard previous and next"', 1
