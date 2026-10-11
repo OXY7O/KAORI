@@ -74,6 +74,12 @@ The Hero left metadata communicates domain-owned composition, permission scope a
 
 Control Boundaries expose the same authoritative posture as their source workspace instead of static architecture copy alone. This composition rule is protected by `scripts/verify_access_final_lock.py`.
 
+## Activity Audit detail review status
+
+Activity Audit Detail remains a **read-only, content-driven shared resource modal** over the Notification-backed Activity Register, not a consolidated audit store or new authority. The recorded status, title, immutable actor snapshot, target, category, timestamp, and sanitized metadata remain authoritative. The first content section for warning/error events emphasizes the **recorded outcome**, followed by recorded failure-context fields when present; the original message is retained as a separate impact note where distinct. The UI **does not infer a list of blockers from a freeform count** or claim unseen provider changes/root causes. Without failure-context fields, it says so and points readers to trace and permissioned committed source links; next-step copy is review guidance, not operational authorization.
+
+Execution evidence, recorded changes, related committed evidence and trace references remain visible and source-owned; Actor & Access plus Target Context share a compact Audit Context panel. Optional Additional Evidence and Technical Evidence use the existing collapsed-by-default View More component, never client-only discarded data. No new controller request, provider mutation, JavaScript, modal shell or persistence is introduced. Regression source contracts exist; DevContainer keyboard, focus/scroll, mobile, 200% zoom and light/dark Visual QA are required before human acceptance.
+
 ## Roles & Access review status
 
 Roles & Access uses the KAORI operational registry pattern: read-only posture overview, compact assignment flow, full-width filtered Role Registry, expandable role evidence, and a sticky impact rail on role forms. Role Registry now delegates its search/type/state filters, Clear Filters, Rows, pagination, latest-request-wins HTMX synchronization, and GET fallback to the canonical `table_registry` shared components, including exclusion of a duplicate hidden `per_page` value from the Rows form. The old page-local Role-Permission Mapping Matrix and `role_access_tabs.js` have been removed; cross-role permission coverage belongs to Permission Catalog.
