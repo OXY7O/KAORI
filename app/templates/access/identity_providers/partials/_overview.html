@@ -49,10 +49,10 @@
          aria-label="Identity Governance"
          data-kaori-idp-governance-boundaries>
         {% set boundaries = [
-            ('layers-3', 'Provider / Adapter Boundary', 'Distinct Contracts', 'Providers identify external identity authorities; adapters define authentication contracts.'),
-            ('key-round', 'Credential Ownership', 'External Secrets', 'Credential values remain external. KAORI stores only references and non-secret configuration.'),
-            ('contact-round', 'Identity Projection', 'Governed', 'External identities are linked or approved-provisioned into local accounts before authorization.'),
-            ('shield-check', 'Authorization Boundary', 'KAORI Roles', 'Authentication proves identity; active KAORI roles and account lifecycle determine access.')
+            ('layers-3', 'Provider / Adapter Boundary', 'Distinct Contracts', 'Providers define identity authority; adapters define authentication.'),
+            ('key-round', 'Credential Ownership', 'External Secrets', 'Secrets stay external; KAORI stores references and non-secret settings.'),
+            ('contact-round', 'Identity Projection', 'Governed', 'External identities are linked or approved-provisioned before KAORI authorization.'),
+            ('shield-check', 'Authorization Boundary', 'KAORI Roles', 'Authentication verifies identity; active KAORI roles and account state govern access.')
         ] %}
         <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             {% for icon, title, value, description in boundaries %}
@@ -72,14 +72,5 @@
                 </article>
             {% endfor %}
         </div>
-        <p class="mt-3 text-xs leading-5 text-content-secondary"
-           data-kaori-idp-posture-context>
-            {% if summary.total == 0 %}
-                No external provider has been registered. Local Database authentication remains separate.
-            {% else %}
-                Provider eligibility is committed configuration evidence, not live connection-health evidence.
-            {% endif %}
-            Configured means the adapter contract is complete; it does not mean the connection was tested.
-        </p>
     </div>
 </section>
