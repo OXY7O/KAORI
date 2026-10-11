@@ -174,6 +174,17 @@
     document.addEventListener('htmx:load', (event) => initialise(event.detail?.elt || document))
     document.addEventListener('htmx:oobAfterSwap', (event) => initialise(event.detail?.target || document))
 
+    window.showOperationalToast = (toast) => {
+        const stack = document.querySelector(stackSelector)
+        if (!(stack instanceof HTMLElement) || !(toast instanceof HTMLElement) || !toast.matches(toastSelector)) {
+            return false
+        }
+
+        stack.append(toast)
+        initialiseToast(toast)
+        return true
+    }
+
     window.dismissOperationalToast = (element) => dismiss(element?.closest?.(toastSelector) || element)
 
     if (document.readyState === 'loading') {
