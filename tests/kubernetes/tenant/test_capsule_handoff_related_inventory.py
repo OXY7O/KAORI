@@ -85,7 +85,7 @@ def _scope():
 
 def _observe(core, rbac, scope=None):
     return observe_capsule_related_inventory(
-        core=core, rbac=rbac, namespace_components=scope or _scope(),
+        core=core, rbac=rbac, namespace_components=scope if scope is not None else _scope(),
         tenant_id='tenant-uuid', capsule_name='demo', capsule_uid='cr-uid',
     )
 
