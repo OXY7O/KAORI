@@ -367,6 +367,110 @@ def prepare_release_handoff_plan_committed(
     return evidence
 
 
+_APPROVAL_DRIFT_LABELS = {
+    'tenant_scope': 'Tenant generation or Cluster',
+    'provider_identity': 'provider resource identity or coverage',
+    'provider_resource_version': 'provider object resourceVersion',
+    'component_scope': 'provider component coverage',
+    'ownership': 'ownership or handoff classification',
+    'capsule_spec': 'Capsule Tenant spec digest',
+    'namespaced_related': 'quota/limit/RBAC scope digest (LIST revision or object data)',
+    'cluster_quota': 'GlobalResourceQuota scope digest (LIST revision or object data)',
+    'rbac_lineage': 'Capsule RBAC lineage digest',
+    'fingerprint': 'unclassified provider fingerprint',
+}
+
+
+def _handoff_approval_drift_categories(
+    *, plan: Mapping[str, Any], fresh: Mapping[str, Any],
+) -> tuple[str, ...]:
+    """Report changed *categories* only; never expose RBAC subjects or provider policies.
+
+    Original approved SHA and every exact provider identity/fingerprint check
+    remain mandatory. Kubernetes LIST revisions can move independently from
+    object identity, but this function is diagnostic ONLY: it never declares
+    that a changed digest is harmless.
+    """
+    problems: set[str] = set()
+    if any(fresh.get(key) != plan.get(key) for key in (
+        'tenant_id', 'cluster_id', 'generation', 'provider',
+    )):
+        problems.add('tenant_scope')
+
+    def keyed(items: Any, *, scoped: bool) -> dict[tuple[str, str, str], Mapping[str, Any]] | None:
+        if not isinstance(items, list) or any(not isinstance(row, Mapping) for row in items):
+            return None
+        keys: dict[tuple[str, str, str], Mapping[str, Any]] = {}
+        for row in items:
+            kind, name = row.get('kind'), row.get('name')
+            namespace = row.get('namespace') or '' if scoped else ''
+            if not all(isinstance(value, str) for value in (namespace, kind, name)):
+                return None
+            key = (namespace, kind, name)
+            if key in keys:
+                return None
+            keys[key] = row
+        return keys
+
+    for plan_field, fresh_field, scoped in (
+        ('provider_identity', 'live_provider_identity', False),
+        ('handoff_components', 'handoff_components', True),
+    ):
+        before = keyed(plan.get(plan_field), scoped=scoped)
+        after = keyed(fresh.get(fresh_field), scoped=scoped)
+        if before is None or after is None or before.keys() != after.keys():
+            problems.add('component_scope' if scoped else 'provider_identity')
+            continue
+        for key in before:
+            first, current = before[key], after[key]
+            if first.get('uid') != current.get('uid'):
+                problems.add('provider_identity')
+            if first.get('resource_version') != current.get('resource_version'):
+                problems.add('provider_resource_version')
+            if not scoped:
+                continue
+            if any(first.get(field) != current.get(field) for field in (
+                'ownership', 'handoff', 'managed_by', 'authority',
+            )):
+                problems.add('ownership')
+            for field, category in (
+                ('capsule_spec_sha256', 'capsule_spec'),
+                ('capsule_related_resources_sha256', 'namespaced_related'),
+                ('capsule_related_resources_count', 'namespaced_related'),
+                ('capsule_shared_quota_sha256', 'cluster_quota'),
+                ('capsule_rbac_lineage_sha256', 'rbac_lineage'),
+            ):
+                if first.get(field) != current.get(field):
+                    problems.add(category)
+            if first != current and not any(category in problems for category in (
+                'provider_identity', 'provider_resource_version', 'ownership',
+                'capsule_spec', 'namespaced_related', 'cluster_quota', 'rbac_lineage',
+            )):
+                problems.add('fingerprint')
+
+    if fresh.get('handoff_fingerprint') != plan.get('handoff_fingerprint') and not problems:
+        problems.add('fingerprint')
+    return tuple(
+        _APPROVAL_DRIFT_LABELS[key] for key in _APPROVAL_DRIFT_LABELS if key in problems
+    )
+
+
+def _handoff_approval_drift_message(
+    *, plan: Mapping[str, Any], fresh: Mapping[str, Any],
+) -> str:
+    categories = _handoff_approval_drift_categories(plan=plan, fresh=fresh)
+    if not categories:
+        return 'Provider or governance evidence changed; prepare a new plan.'
+    # Only bounded code-owned labels may cross the UI/audit boundary.
+    summary = '; '.join(categories[:3])
+    if len(categories) > 3:
+        summary += '; additional scope drift'
+    return (
+        'Provider or governance evidence changed; prepare a new plan. '
+        f'Changed: {summary}.'
+    )
+
+
 def approve_release_handoff_plan_committed(
     *, tenant_id: str, actor_user_id: int, plan_sha256: str, approved: bool
 ) -> dict[str, Any]:
@@ -413,7 +517,7 @@ def approve_release_handoff_plan_committed(
         or fresh.get('handoff_fingerprint') != plan['handoff_fingerprint']
         or fresh.get('live_provider_identity') != plan['provider_identity']
     ):
-        raise ValueError('Provider or governance evidence changed; prepare a new plan.')
+        raise ValueError(_handoff_approval_drift_message(plan=plan, fresh=fresh))
     accepted = {
         'tenant_id': tenant_id,
         'plan_sha256': plan_sha256,
