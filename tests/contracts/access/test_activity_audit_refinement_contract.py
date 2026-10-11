@@ -314,7 +314,8 @@ def test_activity_audit_administrative_source_scope_is_read_only_and_permission_
     assert 'administrative_evidence.rows' in partial
     assert 'administrative_evidence.scope_options' in partial
     assert 'aria-label="Separate administrative AuditEvent register"' in partial
-    assert 'hx-target="#activity-administrative-evidence"' in partial
+    assert 'registry_ui.filter_form(' in partial
+    assert "'activity-administrative-evidence'," in partial
     assert 'No Administrative Source Evidence' in partial
     workspace = read('app/templates/access/activity_audit/partials/_audit_records_workspace.html')
     assert '{% if selected_audit_tab == \'administrative\' %}' in workspace
@@ -362,7 +363,7 @@ def test_activity_audit_inventory_hierarchy_and_shared_two_tab_workspace() -> No
     assert 'Source / Actor' in administrative
     assert 'row.actor_reference' in administrative
     assert 'Actor Reference</th>' not in administrative
-    assert "table_ui.table_classes('min-w-[52rem]')" in administrative
+    assert "table_ui.table_classes('min-w-[72rem]')" in administrative
     assert "table_label.metadata_label(row.source_label, 'database')" in administrative
     assert "page_param='admin_page'" in administrative
     assert "registry_ui.footer(" in administrative
@@ -394,11 +395,14 @@ def test_activity_audit_tab_navigation_preserves_independent_permissions_and_fal
     assert "request.headers.get('HX-History-Restore-Request') != 'true'" in routes
     assert 'if not is_htmx:' not in workspace  # server selection, no client-only tab switching
     assert "has_administrative_sources" in workspace
-    assert 'method="get"' in administrative
-    assert "action=\"{{ url_for('access.activity_audit.index') }}\"" in administrative
-    assert 'hx-push-url="true"' in administrative
-    assert 'hx-target="#activity-administrative-evidence"' in administrative
-    assert 'hx-sync="closest section:replace"' in administrative
+    registry = read('app/templates/components/table_registry.html')
+    assert 'registry_ui.filter_form(' in administrative
+    assert "form_id='administrative-evidence-filter-form'" in administrative
+    assert "aria_label='Administrative source filters'" in administrative
+    assert 'method="GET"' in registry
+    assert 'hx-push-url="true"' in registry
+    assert 'hx-target="#{{ registry_id }}"' in registry
+    assert 'hx-sync="closest section:replace"' in registry
     assert 'data-activity-evidence-source="administrative-audit-events"' in administrative
 
 
@@ -415,18 +419,27 @@ def test_activity_audit_framed_tabs_and_canonical_administrative_filters() -> No
     assert 'content_tabs.render_links(' not in workspace
     assert 'data-kaori-tab-variant="framed-workspace-v2-server"' in framed
     assert "hx_target='#activity-audit-records'" in workspace
-    assert 'data-kaori-canonical-registry-filter="activity-administrative-evidence"' in admin
-    assert 'grid w-full grid-cols-1 items-end gap-3 sm:grid-cols-2 lg:grid-cols-5' in admin
+    assert 'registry_ui.filter_form(' in admin
+    assert "'activity-administrative-evidence'," in admin
+    assert 'data-kaori-canonical-registry-filter="{{ registry_id }}"' in registry
+    assert 'table_primitives.filter_layout_classes()' in registry
+    assert "classes='w-full'" in admin
     assert "'admin_search'" in admin
     assert 'name="admin_scope"' in admin
     assert 'name="admin_outcome"' in admin
     assert 'name="admin_time_range"' in admin
-    assert 'name="admin_per_page"' in admin
+    assert "per_page_param='admin_per_page'" in admin
+    assert "page_param='admin_page'" in admin
     assert 'data-kaori-clear-filters' in registry
     assert 'registry_ui.clear_filters_action(' in admin
     assert "marker='activity-administrative-evidence'" in admin
     assert 'registry_ui.footer(' in admin
     assert "loading_bar.render('administrative-activity-loading'" in admin
+    assert '<header class="border-b border-outline-subtle px-5 py-4 sm:px-6">' in admin
+    assert 'header class="{{ table_ui.block_header_classes() }}"' not in admin
+    assert admin.index("loading_bar.render('administrative-activity-loading'") < admin.index('</header>')
+    assert 'aria-label="{{ aria_label }}"' in registry
+    assert 'hx-indicator="#{{ loading_id }}"' in registry
     assert 'kaori-loading-bar-segment' in loading
     assert "page_param='admin_page'" in admin
     assert "per_page_param='admin_per_page'" in admin

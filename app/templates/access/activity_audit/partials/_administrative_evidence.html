@@ -2,12 +2,11 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/loading_bar.html" as loading_bar %}
-{% import "components/pagination.html" as pagination_ui %}
 <section id="activity-administrative-evidence"
          class="{{ '' if embedded|default(false) else table_ui.block_classes() }}"
          data-activity-evidence-source="administrative-audit-events">
-    <header class="{{ table_ui.block_header_classes() }}">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex min-w-0 items-start gap-3">
                 <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
                     <i data-lucide="file-clock" class="h-5 w-5"></i>
@@ -44,25 +43,20 @@
         {{ loading_bar.render('administrative-activity-loading', label='Refreshing Administrative Evidence') }}
     </header>
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
-        <form id="administrative-evidence-filter-form"
-              method="get"
-              action="{{ url_for('access.activity_audit.index') }}"
-              hx-get="{{ url_for('access.activity_audit.index') }}"
-              hx-target="#activity-administrative-evidence"
-              hx-select="#activity-administrative-evidence"
-              hx-swap="outerHTML"
-              hx-push-url="true"
-              hx-trigger="change from:select, input changed delay:450ms from:input[name='admin_search']"
-              hx-indicator="#administrative-activity-loading"
-              hx-sync="closest section:replace"
-              data-kaori-canonical-registry-filter="activity-administrative-evidence"
-              aria-label="Administrative source filters"
-              class="grid w-full grid-cols-1 items-end gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        {# Canonical registry form owns GET/HTMX, debounce, loading and page reset. #}
+        {% call registry_ui.filter_form(
+            'access.activity_audit.index',
+            'activity-administrative-evidence',
+            'administrative-activity-loading',
+            administrative_evidence.pagination.per_page,
+            classes='w-full',
+            form_id='administrative-evidence-filter-form',
+            aria_label='Administrative source filters',
+            page_param='admin_page',
+            per_page_param='admin_per_page'
+        ) %}
             <input type="hidden" name="view" value="administrative">
-            <input type="hidden" name="admin_page" value="1">
-            <input type="hidden" name="admin_per_page"
-                   value="{{ administrative_evidence.pagination.per_page }}">
-            <div class="min-w-0 lg:col-span-2">
+            <div class="min-w-0 sm:min-w-80">
                 <label class="{{ table_ui.filter_label_classes() }}" for="administrative-search">
                     Search Activity
                 </label>
@@ -121,11 +115,11 @@
             <noscript>
                 <button type="submit" class="{{ table_ui.action_classes() }}">Apply Filters</button>
             </noscript>
-        </form>
+        {% endcall %}
     </div>
     {% if administrative_evidence.rows %}
         <div class="overflow-x-auto overscroll-x-contain">
-            <table class="{{ table_ui.table_classes('min-w-[52rem]') }}"
+            <table class="{{ table_ui.table_classes('min-w-[72rem]') }}"
                    aria-label="Separate administrative AuditEvent register">
                 <thead class="{{ table_ui.head_classes() }}">
                     <tr>
@@ -140,9 +134,11 @@
                     {% for row in administrative_evidence.rows %}
                         <tr class="{{ table_ui.row_classes() }}">
                             <td class="{{ table_ui.cell_classes() }}">
-                                {{ table_ui.title_cell(row.display_action, row.summary, 'file-clock') }}
-                                <p class="mt-1 max-w-sm truncate font-mono text-xs text-content-muted"
-                                   title="{{ row.action }}">Event: {{ row.action }}</p>
+                                <div class="min-w-0 max-w-xl">
+                                    {{ table_ui.title_cell(row.display_action, row.summary, 'file-clock') }}
+                                    <p class="mt-1 truncate pl-12 font-mono text-xs text-content-muted"
+                                       title="{{ row.action }}">Event: {{ row.action }}</p>
+                                </div>
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
                                 <div class="flex min-w-0 flex-col items-start gap-1.5">
