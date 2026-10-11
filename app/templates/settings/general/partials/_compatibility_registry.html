@@ -8,7 +8,7 @@
             <h3 class="text-base font-bold text-content-primary">Compatibility Registry</h3>
             <p class="mt-1 text-sm leading-6 text-content-muted">Select an integration to inspect its qualified versions, contract, support and readiness authority.</p>
         </div>
-        {{ table_label.metadata_label(compatibility_registry.total ~ ' of ' ~ system_information.compatibility_product_count ~ ' Integrations', 'blocks') }}
+        {{ table_label.metadata_label(compatibility_registry.page_size ~ ' per page', 'rows-3') }}
     </div>
     <form method="get"
           action="{{ url_for('settings.general') }}"

@@ -208,6 +208,9 @@ def test_compatibility_workspace_keeps_policy_contract_qualification_and_readine
     assert 'Reset</a>' in registry
     assert 'data-compatibility-product-detail=' not in registry
 
+    assert "compatibility_registry.page_size ~ ' per page'" in registry
+    assert 'compatibility_registry.total ~' not in registry
+    assert '{% import "components/table_label.html" as table_label %}' in results
     assert 'id="compatibility-registry-results"' in results
     assert 'data-compatibility-registry-results="partial"' in results
     assert 'data-compatibility-registry-layout="list-detail"' in results
