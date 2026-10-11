@@ -328,3 +328,49 @@ def test_registry_capacity_missing_quota_never_fakes_zero_or_full_progress() -> 
     assert used['progress_percent'] is None
     assert free['value'] == 'N/A'
     assert free['progress_percent'] is None
+
+
+def test_registry_signals_without_selected_provider_skips_cross_asset_intelligence(monkeypatch) -> None:
+    from app.artifact_registry import presentation_overview as overview
+
+    monkeypatch.setattr(
+        overview,
+        '_overview_scope_context',
+        lambda **_kwargs: ({'selected_provider': None}, [], None, [], {}),
+    )
+
+    def should_not_query(_provider) -> None:
+        raise AssertionError('Blocked Registry Signals must not query Intelligence.')
+
+    monkeypatch.setattr(overview, '_registry_alerts', should_not_query)
+    monkeypatch.setattr(overview, '_registry_recommended_actions', should_not_query)
+
+    assert overview.build_overview_section('signals') == {'selected_provider': None}
+
+
+def test_registry_selected_signals_keep_alert_cases_and_recommendations_independent(monkeypatch) -> None:
+    from app.artifact_registry import presentation_overview as overview
+
+    selected = SimpleNamespace(id=7)
+    monkeypatch.setattr(
+        overview,
+        '_overview_scope_context',
+        lambda **_kwargs: ({'selected_provider': selected}, [selected], selected, [selected], {}),
+    )
+    seen = []
+
+    def alert_cases(provider):
+        seen.append(('alerts', provider.id))
+        return {'available': True, 'total': 0, 'critical': 0, 'warning': 0, 'info': 0, 'rows': []}
+
+    def recommendations(provider):
+        seen.append(('recommendations', provider.id))
+        return [{'rule_key': 'registry.security.scan_evidence_missing', 'priority': 'P2'}]
+
+    monkeypatch.setattr(overview, '_registry_alerts', alert_cases)
+    monkeypatch.setattr(overview, '_registry_recommended_actions', recommendations)
+
+    result = overview.build_overview_section('signals')
+    assert result['alerts']['total'] == 0
+    assert len(result['recommended_actions']) == 1
+    assert seen == [('alerts', 7), ('recommendations', 7)]
