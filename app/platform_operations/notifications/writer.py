@@ -8,6 +8,7 @@ from app.extensions.db import db
 from app.models.notification import Notification
 from app.platform_operations.notifications.actors import ActivityActorSnapshot
 from app.platform_operations.notifications.event_catalog import event_category_key
+from app.platform_operations.notifications.metadata import redact_operational_metadata, redact_operational_text
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,11 +45,11 @@ def persist_notification(
     notification.actor_label = evidence.actor.label
     notification.actor_snapshot_json = evidence.actor.as_json()
     notification.status = status
-    notification.title = title
-    notification.message = message
-    notification.detail = detail
-    notification.action_url = action_url
-    notification.metadata_json = evidence.metadata
+    notification.title = redact_operational_text(title, limit=160)
+    notification.message = redact_operational_text(message, limit=255)
+    notification.detail = redact_operational_text(detail) if detail is not None else None
+    notification.action_url = redact_operational_text(action_url, limit=500) if action_url else None
+    notification.metadata_json = redact_operational_metadata(evidence.metadata)
     notification.deck_visible = bool(deck_visible)
     if not notification.deck_visible:
         notification.read_at = datetime.now(UTC)
