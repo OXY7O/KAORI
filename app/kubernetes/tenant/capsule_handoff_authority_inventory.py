@@ -42,11 +42,12 @@ def _bounded_custom_list(custom: Any) -> tuple[str, dict[str, Any]]:
         if not isinstance(meta, Mapping):
             raise ValueError('Capsule global quota LIST metadata is missing.')
         rv = meta.get('resourceVersion')
+        items = response.get('items')
         if (
             not isinstance(rv, str) or not rv
             or meta.get('continue') or meta.get('remainingItemCount')
-            or len(response.get('items', [])) > _MAX_GLOBAL_QUOTAS
-            or not isinstance(response.get('items'), list)
+            or not isinstance(items, list)
+            or len(items) > _MAX_GLOBAL_QUOTAS
         ):
             raise ValueError('Capsule global quota list is incomplete or unbounded.')
         return version, dict(response)
@@ -209,7 +210,7 @@ def _intent_bindings(spec: Mapping[str, Any], namespaces: set[str]) -> tuple[dic
                 grant=labels[_GRANT_ID], tenant=labels[_TENANT_ID],
             )
             for ns in scope:
-                key = ns + '\0' + labels[_GRANT_ID]
+                key = _digest({'namespace': ns, 'grant': labels[_GRANT_ID]})
                 if key in intents:
                     raise ValueError('Duplicate KAORI Capsule RBAC intent contract.')
                 intents[key] = signature
@@ -245,10 +246,12 @@ def inspect_capsule_role_binding_lineage(
             raise ValueError('Capsule RBAC observed object is malformed.')
         if item.get('kind') != 'RoleBinding' or item.get('origin') != 'kaori_correlated':
             continue
-        ns, key = item.get('namespace'), item.get('grant_reference')
-        if not isinstance(ns, str) or ns not in ns_set or not isinstance(key, str) or not key:
+        ns, combined = item.get('namespace'), item.get('grant_scope_sha256')
+        if (
+            not isinstance(ns, str) or ns not in ns_set
+            or not isinstance(combined, str) or len(combined) != 64
+        ):
             raise ValueError('Capsule KAORI RoleBinding has an unverifiable grant identity.')
-        combined = ns + '\0' + key
         if combined in observed:
             raise ValueError('Duplicate effective KAORI Capsule RBAC grant.')
         signature = item.get('binding_contract_sha256')
