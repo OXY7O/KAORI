@@ -157,10 +157,16 @@ def test_sql_fleet_bucket_aggregate_matches_existing_pure_posture(monkeypatch) -
         session.add(ObjectStorageSystem(id='storage-a', name='Storage A', environment='uat', status='ready'))
         samples = [
             _BucketPostureStub('configured', 'enabled', 'enabled', 'configured', 'private', 'collected'),
-            _BucketPostureStub('not_configured', 'not_collected', 'not_collected', 'not_collected', 'unknown', 'not_collected'),
+            _BucketPostureStub(
+                'not_configured', 'not_collected', 'not_collected', 'not_collected',
+                'unknown', 'not_collected',
+            ),
             _BucketPostureStub('not_collected', 'disabled', 'enabled', 'enabled', 'restricted', 'collected'),
             _BucketPostureStub('configured', 'enabled', 'enabled', 'enforced', 'public', 'not_collected'),
-            _BucketPostureStub('not_collected', 'enabled', 'not_supported', 'enabled', 'not_collected', 'not_collected'),
+            _BucketPostureStub(
+                'not_collected', 'enabled', 'not_supported', 'enabled',
+                'not_collected', 'not_collected',
+            ),
         ]
         for index, data in enumerate(samples, start=1):
             session.add(ObjectStorageBucket(

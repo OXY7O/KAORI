@@ -6,6 +6,7 @@ Inventory presentation keys and the assessed/unknown semantics of #1263.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Any
 
 from sqlalchemy import and_, case, func, or_
@@ -48,7 +49,9 @@ def bucket_fleet_posture() -> dict[str, int]:
         func.sum(case((protection_assessed, 1), else_=0)),
         func.sum(case((exposure == 'public', 1), else_=0)),
         func.sum(case((exposure.in_(('public', 'private', 'restricted')), 1), else_=0)),
-        func.sum(case((func.lower(func.trim(func.coalesce(bucket.usage_stats_state, ''))) == 'collected', 1), else_=0)),
+        func.sum(case((
+            func.lower(func.trim(func.coalesce(bucket.usage_stats_state, ''))) == 'collected', 1
+        ), else_=0)),
     ).one()
     n, quota_count = int(total or 0), int(assessed_quota or 0)
     return {
@@ -91,4 +94,27 @@ def bucket_usage_summary(*, system_id: str | None = None) -> dict[str, int]:
         'object_samples': int(object_count or 0),
         'quota_configured': int(quota or 0),
         'usage_collected': int(usage or 0),
+    }
+
+
+def bucket_usage_by_system(system_ids: Sequence[str]) -> dict[str, dict[str, int]]:
+    """Fetch health-table bucket counts/usage for only the paginated visible systems."""
+    if not system_ids:
+        return {}
+    bucket = ObjectStorageBucket
+    rows = db.session.query(
+        bucket.object_storage_system_id,
+        func.count(bucket.id),
+        func.sum(bucket.size_bytes),
+        func.count(bucket.size_bytes),
+    ).filter(
+        bucket.object_storage_system_id.in_(system_ids)
+    ).group_by(bucket.object_storage_system_id).all()
+    return {
+        system_id: {
+            'buckets': int(count or 0),
+            'stored_bytes': int(stored_bytes or 0),
+            'stored_samples': int(samples or 0),
+        }
+        for system_id, count, stored_bytes, samples in rows
     }

@@ -178,6 +178,8 @@ The dashboard web request is a projection layer over committed KAORI state. It i
 - A lazy section request builds minimal scope context plus only the evidence required by that section.
 - Section requests must not call a full-dashboard builder or project unrelated tabs before returning the requested fragment.
 - Dashboard summaries prefer bounded database operations such as `COUNT`, `SUM`, `GROUP BY`, bounded `LIMIT`, canonical pagination, and latest committed/materialized snapshot reads.
+- Object Storage Dashboard Fast Shell reads only registered system identity, scope, status, and inventory observation metadata; it does **not** eager-load all bucket ORM relations. Per-tab Inventory Snapshot and KPI totals use the domain-owned committed SQL bucket-usage aggregate; System Health first applies canonical 5/10/25/50 pagination, then batches bucket counts and committed usage only for displayed systems. Selected and fleet evidence stay separate without provider queries. Analytics/forecast materialized evidence remains worker-owned (#1367).
+
 - Do not materialize full ORM collections when the rendered result only requires aggregate values.
 - Heavy forecast, correlation, vulnerability aggregation, analytics, and similar computation remains worker/materialization owned where applicable.
 - Loading and failures remain section-owned.
