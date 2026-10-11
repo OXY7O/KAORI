@@ -26,7 +26,7 @@
                             <span>{{ label }}</span>
                         </div>
                         <p class="mt-2 break-words text-xl font-semibold tabular-nums text-content-primary">{{ value }}</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
+                        <p class="mt-1 truncate text-xs leading-5 text-content-muted" title="{{ helper }}">{{ helper }}</p>
                     </article>
                 {% endfor %}
             </div>
@@ -53,14 +53,14 @@
                 </div>
                 <div class="mt-4 grid gap-3 sm:grid-cols-3">
                     {% for label, value, helper in [
-                        ('Analytics Sources', overview.forecast.analytics_count, 'Committed provider analytics snapshots'),
+                        ('Analytics Sources', overview.forecast.analytics_count, 'Committed analytics snapshots'),
                         ('Quota Projects', overview.consumer_insights.project_count, 'Projects with quota evidence'),
-                        ('Quota Horizons', overview.consumer_insights.horizon_count, 'Projects with numeric exhaustion ETA')
+                        ('Quota Horizons', overview.consumer_insights.horizon_count, 'Projects with quota ETA')
                     ] %}
                         <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
                             <p class="text-xs text-content-muted">{{ label }}</p>
                             <p class="mt-1 text-base font-semibold tabular-nums text-content-primary">{{ value }}</p>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
+                            <p class="mt-1 truncate text-xs leading-5 text-content-muted" title="{{ helper }}">{{ helper }}</p>
                         </div>
                     {% endfor %}
                 </div>
@@ -78,8 +78,8 @@
                         <h3 class="text-sm font-semibold text-content-primary">Forecast Conclusion</h3>
                         {{ table_label.status_label(overview.forecast.risk, forecast_tone, size='detail') }}
                     </div>
-                    <p class="mt-2 text-xs leading-5 text-content-secondary">{{ overview.capacity.risk_detail }}</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ overview.forecast.detail }}</p>
+                    <p class="mt-2 truncate text-xs leading-5 text-content-secondary" title="{{ overview.capacity.risk_detail }}">{{ overview.capacity.risk_detail }}</p>
+                    <p class="mt-1 truncate text-xs leading-5 text-content-muted" title="{{ overview.forecast.detail }}">{{ overview.forecast.detail }}</p>
                 </div>
             </div>
         </div>
