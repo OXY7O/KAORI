@@ -321,15 +321,15 @@ def reset_password(user_id: int):
             ]
         else:
             return finish(
-            user_management_feedback(
-                actor=actor,
-                event_type='user_password_reset',
-                status='success',
-                title='Password reset completed',
-                message=f'A new Local Database password was set for {user.username}; existing sessions were revoked.',
-                target=user,
+                user_management_feedback(
+                    actor=actor,
+                    event_type='user_password_reset',
+                    status='success',
+                    title='Password reset completed',
+                    message=f'A new Local Database password was set for {user.username}; existing sessions were revoked.',
+                    target=user,
+                )
             )
-        )
     return render_template('access/users/reset_password.html', form=form, user=user)
 
 
