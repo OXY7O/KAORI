@@ -11,7 +11,7 @@ from types import SimpleNamespace
 import pytest
 
 from app.kubernetes.tenant.capsule_handoff_audit_envelope import (
-    inspect_capsule_audit_event_envelopes,
+    inspect_capsule_audit_event_envelopes, inspect_capsule_audit_readback_link,
 )
 from app.kubernetes.tenant.capsule_handoff_attempt_state import _event_checksum
 from app.kubernetes.tenant.capsule_handoff_readback_evidence import (
@@ -295,3 +295,75 @@ def test_missing_audit_rows_do_not_grant_execution_or_claim_stream_completeness(
     assert result['audit_stream_completeness_verified'] is False
     assert result['resume_authorized'] is False
     assert result['release_authorized'] is False
+
+
+def test_audit_readback_link_matches_count_but_never_trusts_source_or_executes():
+    plan, related, cr, ns, baseline = _inputs()
+    candidate = _readback(plan, related, cr, ns, baseline)
+    now = datetime.now(UTC)
+    started = _audit_start(plan, related, at=now)
+    observed = deepcopy(started)
+    observed.update({
+        'event_type': 'readback_candidate', 'sequence': 2,
+        'event_at': (now + timedelta(seconds=2)).isoformat(),
+        'previous_event_sha256': started['event_sha256'],
+        'outcome': 'readback_observed',
+        'readback_sha256': candidate['readback_sha256'],
+        'expected_count': candidate['expected_count'],
+        'observed_count': candidate['observed_count'],
+        'pending_count': candidate['pending_count'],
+        'transferred_count': candidate['transferred_count'],
+        'ambiguous_count': candidate['ambiguous_count'],
+    })
+    observed['event_sha256'] = _event_checksum(observed)
+    rows = [
+        {
+            'id': 80, 'actor_user_id': 30,
+            'target_type': 'kubernetes_tenant_release_capsule_handoff_execution',
+            'target_id': 'tenant-1',
+            'action': 'tenant.release.capsule_handoff_started',
+            'created_at': now + timedelta(seconds=1), 'metadata_json': started,
+        },
+        {
+            'id': 81, 'actor_user_id': 30,
+            'target_type': 'kubernetes_tenant_release_capsule_handoff_execution',
+            'target_id': 'tenant-1',
+            'action': 'tenant.release.capsule_handoff_readback_candidate',
+            'created_at': now + timedelta(seconds=3), 'metadata_json': observed,
+        },
+    ]
+    matched = inspect_capsule_audit_readback_link(
+        plan=plan, related=related, accepted_actor_user_id=30,
+        rows=rows, readback_candidate=candidate,
+    )
+    assert matched['status'] == 'readback_claim_correlated_unverified'
+    assert matched['recorded_readback_matches_candidate'] is True
+    assert matched['audit_storage_append_only_verified'] is False
+    assert matched['readback_authoritative_verified'] is False
+    assert matched['resume_authorized'] is False
+    assert matched['release_authorized'] is False
+    tampered = dict(candidate, readback_sha256='e' * 64)
+    with pytest.raises(ValueError):
+        inspect_capsule_audit_readback_link(
+            plan=plan, related=related, accepted_actor_user_id=30,
+            rows=rows, readback_candidate=tampered,
+        )
+
+
+def test_audit_readback_link_does_not_infer_completed_scope_from_started_alone():
+    plan, related, cr, ns, baseline = _inputs()
+    now = datetime.now(UTC)
+    started = _audit_start(plan, related, at=now)
+    rows = [{
+        'id': 90, 'actor_user_id': 30,
+        'target_type': 'kubernetes_tenant_release_capsule_handoff_execution',
+        'target_id': 'tenant-1',
+        'action': 'tenant.release.capsule_handoff_started',
+        'created_at': now + timedelta(seconds=1), 'metadata_json': started,
+    }]
+    result = inspect_capsule_audit_readback_link(
+        plan=plan, related=related, accepted_actor_user_id=30,
+        rows=rows, readback_candidate=_readback(plan, related, cr, ns, baseline),
+    )
+    assert result['recorded_readback_matches_candidate'] is False
+    assert result['status'] == 'no_complete_readback_claim'
