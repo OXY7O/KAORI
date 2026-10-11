@@ -4,7 +4,7 @@
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/details/_expandable_row.html" as expandable %}
 <section id="identity-provider-registry"
-         class="{{ table_ui.block_classes() }}">
+         class="{{ '' if embedded|default(false) else table_ui.block_classes() }}">
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div class="flex min-w-0 items-start gap-3">
