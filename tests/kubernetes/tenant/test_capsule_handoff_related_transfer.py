@@ -15,6 +15,8 @@ from app.kubernetes.tenant.capsule_handoff_contract import (
     classify_capsule_related_metadata_readback,
     verify_capsule_related_metadata_preview,
 )
+from app.kubernetes.tenant.capsule_handoff_dry_run import preview_capsule_related_handoff_with_provider
+
 from app.kubernetes.tenant.capsule_handoff_related_inventory import (
     classify_capsule_related_resource,
 )
@@ -299,3 +301,78 @@ def test_related_preview_and_readback_refuse_changed_namespace_metadata(kind):
         verify_capsule_related_metadata_preview(**args, preview=altered)
     with pytest.raises(ValueError):
         classify_capsule_related_metadata_readback(**args, current=altered)
+
+
+@pytest.mark.parametrize('kind', _KINDS)
+def test_related_real_server_preview_dispatch_is_nonmutating_and_per_kind(kind):
+    before = _resource(kind)
+    record = _source(kind, before)
+    args = _args(kind, before)
+    seen = []
+
+    def read(*, name, namespace, _request_timeout):
+        assert name == 'resource-1' and namespace == _NS
+        assert _request_timeout == 5
+        seen.append('GET')
+        return deepcopy(before)
+
+    def patch(*, name, namespace, body, dry_run, _content_type, _request_timeout):
+        assert (name, namespace) == ('resource-1', _NS)
+        assert dry_run == 'All'
+        assert _content_type == 'application/json-patch+json'
+        assert _request_timeout == 5
+        assert body[0] == {'op': 'test', 'path': '/metadata/uid', 'value': 'uid-1'}
+        assert body[1] == {
+            'op': 'test', 'path': '/metadata/resourceVersion', 'value': '7',
+        }
+        seen.append('dryRun=All')
+        return _after(kind, before, resource_version='7')
+
+    methods = {
+        'ResourceQuota': ('read_namespaced_resource_quota', 'patch_namespaced_resource_quota'),
+        'LimitRange': ('read_namespaced_limit_range', 'patch_namespaced_limit_range'),
+        'RoleBinding': ('read_namespaced_role_binding', 'patch_namespaced_role_binding'),
+    }
+    api = SimpleNamespace(**dict(zip(methods[kind], [read, patch])))
+    receipt = preview_capsule_related_handoff_with_provider(
+        core=api, rbac=api, record=record, namespace=_NS,
+        tenant_id=_TENANT, capsule_name=_CAPSULE, capsule_uid=_CAPSULE_UID,
+        successor_owner=_SUCCESSOR, approved_label_keys=args['approved_label_keys'],
+    )
+    assert seen == ['GET', 'dryRun=All', 'GET']
+    assert receipt['live_resource_unchanged'] is True
+    assert receipt['provider_mutation_performed'] is False
+    assert receipt['provider_execution_admitted'] is False
+    assert receipt['release_authorized'] is False
+    assert before.metadata.resource_version == '7'
+
+
+@pytest.mark.parametrize('kind', _KINDS)
+def test_related_server_preview_refuses_concurrent_mutation_after_dryrun(kind):
+    before = _resource(kind)
+    args = _args(kind, before)
+    reads = []
+
+    def read(**_kwargs):
+        reads.append(True)
+        current = deepcopy(before)
+        if len(reads) == 2:
+            current.metadata.resource_version = 'new-concurrent-rv'
+        return current
+
+    def patch(**kwargs):
+        assert kwargs['dry_run'] == 'All'
+        return _after(kind, before, resource_version='7')
+
+    methods = {
+        'ResourceQuota': ('read_namespaced_resource_quota', 'patch_namespaced_resource_quota'),
+        'LimitRange': ('read_namespaced_limit_range', 'patch_namespaced_limit_range'),
+        'RoleBinding': ('read_namespaced_role_binding', 'patch_namespaced_role_binding'),
+    }
+    api = SimpleNamespace(**dict(zip(methods[kind], [read, patch])))
+    with pytest.raises(ValueError, match='changed during dry-run'):
+        preview_capsule_related_handoff_with_provider(
+            core=api, rbac=api, record=args['record'], namespace=_NS,
+            tenant_id=_TENANT, capsule_name=_CAPSULE, capsule_uid=_CAPSULE_UID,
+            successor_owner=_SUCCESSOR, approved_label_keys=args['approved_label_keys'],
+        )
