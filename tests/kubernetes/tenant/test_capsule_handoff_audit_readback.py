@@ -575,3 +575,18 @@ def test_whole_scope_premature_transfer_without_list_revision_is_blocked():
     receipt = _full_readback(case, current=current)
     assert 'related_transfer_list_revision_not_observed' in receipt['blockers']
     assert receipt['provider_handoff_verified'] is False
+
+
+def test_whole_scope_rejects_extra_list_fields_even_with_valid_transfer_and_rehash():
+    case = _full_related_case()
+    current = deepcopy(case[2])
+    for row in current['list_snapshots']:
+        if row['kind'] == 'ResourceQuota':
+            row['unreviewed_watch_token'] = 'caller-injected'
+    current['resource_sha256'] = _digest({
+        'resources': current['resources'], 'lists': current['list_snapshots'],
+    })
+    result = _full_readback(case, current=current)
+    assert 'related_list_schema_scope_or_count_changed' in result['blockers']
+    assert result['provider_handoff_verified'] is False
+    assert 'caller-injected' not in str(result)
