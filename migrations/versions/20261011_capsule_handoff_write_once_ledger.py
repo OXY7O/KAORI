@@ -102,6 +102,12 @@ CREATE TRIGGER tr_capsule_ledger_deny_delete
 BEFORE DELETE ON {_TABLE}
 FOR EACH ROW EXECUTE FUNCTION kaori_capsule_handoff_ledger_deny_change()
 """)
+    # TRUNCATE does not invoke PostgreSQL row-level DELETE triggers.
+    op.execute(f"""
+CREATE TRIGGER tr_capsule_ledger_deny_truncate
+BEFORE TRUNCATE ON {_TABLE}
+FOR EACH STATEMENT EXECUTE FUNCTION kaori_capsule_handoff_ledger_deny_change()
+""")
 
 
 def _sqlite_guards() -> None:
@@ -207,11 +213,14 @@ def downgrade() -> None:
         f'SELECT 1 FROM {_TABLE} LIMIT 1'
     ).first():
         raise RuntimeError('Cannot drop a Capsule handoff ledger containing evidence.')
-    for name in (
+    names = [
         'tr_capsule_ledger_guard_insert',
         'tr_capsule_ledger_deny_update',
         'tr_capsule_ledger_deny_delete',
-    ):
+    ]
+    if dialect == 'postgresql':
+        names.append('tr_capsule_ledger_deny_truncate')
+    for name in names:
         op.execute(f'DROP TRIGGER {name} ON {_TABLE}' if dialect == 'postgresql'
                    else f'DROP TRIGGER {name}')
     if dialect == 'postgresql':
