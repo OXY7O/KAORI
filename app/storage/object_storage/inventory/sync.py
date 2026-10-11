@@ -58,7 +58,8 @@ def commit_bucket_inventory(
             raise RuntimeError(
                 'Provider bucket discovery returned zero assets while the last committed snapshot contains '
                 f'{len(existing)} bucket/container asset(s). KAORI preserved the previous committed snapshot. '
-                'Verify the S3 endpoint, credentials, and ListBuckets scope before retrying Object Storage Inventory Sync.'
+                'Verify the S3 endpoint, credentials, and ListBuckets scope before retrying '
+                'Object Storage Inventory Sync.'
             )
 
     created = 0
@@ -209,7 +210,8 @@ def sync_object_storage_inventory(
             reconciliation_evidence['removed_bucket_count'] = summary['deleted']
             result['empty_reconciliation_evidence'] = reconciliation_evidence
             logger.warning(
-                'Authorized Object Storage empty reconciliation committed for system %s: %s prior assets, %s confirmations, actor %s.',
+                'Authorized Object Storage empty reconciliation committed for system %s: '
+                '%s prior assets, %s confirmations, actor %s.',
                 system.id, previous_bucket_count, 2, reconciliation_evidence['confirmed_by_user_id'],
             )
         return result
