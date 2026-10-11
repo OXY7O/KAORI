@@ -294,7 +294,7 @@ def test_artifact_registry_dashboard_state_semantics_and_jinja_mapping_safety() 
     assert 'Quota balance unavailable' in capacity_snapshot
     assert 'Capacity Decision Notes' not in capacity_snapshot
     assert "'label': 'Quota Left'" in presentation
-    assert "'No quota risk within the warning window.'" in presentation
+    assert "'Committed project quota forecasts remain outside the warning threshold, with sufficient headroom for current demand.'" in presentation
     assert 'Committed analytics snapshots' in forecast
     assert 'Projects with quota ETA' in forecast
     assert "'progress_label': 'Used'" in presentation
@@ -302,7 +302,7 @@ def test_artifact_registry_dashboard_state_semantics_and_jinja_mapping_safety() 
     assert "'progress_label': 'Inventory'" in presentation
     assert '100 - quota_utilization if quota_utilization is not None else None' in presentation
     assert 'committed project quota.' not in presentation
-    assert 'Committed growth and quota evidence.' in presentation
+    assert 'Registry growth is evaluated using committed inventory changes and project quota evidence from the bound Metrics Source.' in presentation
     assert 'Artifact change per day.' in forecast
     assert 'Quota ETA with positive growth.' in forecast
     for token in (
