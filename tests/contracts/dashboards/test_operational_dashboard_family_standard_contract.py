@@ -122,6 +122,48 @@ def test_generic_summary_explanation_is_retired_from_operational_dashboards() ->
     assert 'What This Summary Means' not in combined(OBJECT_STORAGE)
 
 
+def test_data_freshness_microcopy_and_shared_family_geometry() -> None:
+    kubernetes = read('app/kubernetes/dashboard/sections/freshness.py')
+    storage = read('app/storage/object_storage/dashboard/service.py')
+    kubernetes_ui = read('app/templates/kubernetes/dashboard/partials/_data_freshness.html')
+    storage_ui = read('app/templates/storage/object_storage/dashboard/partials/_overview.html')
+    registry_ui = read('app/templates/artifact_registry/partials/_overview_operations.html')
+    shared = read('app/templates/components/operational_evidence_tile.html')
+
+    for text in (
+        'All Clusters shows committed capacity by cluster.',
+        'Select a cluster for detailed analytics.',
+        'All Clusters shows committed alerts by cluster. Select a cluster for source details.',
+        'Committed cluster snapshots',
+        'Latest Kubernetes object counts from committed inventory snapshots.',
+        'Metrics-backed cluster usage and forecasts from committed analytics snapshots.',
+    ):
+        assert text in kubernetes
+    assert kubernetes.count("'Committed cluster snapshots'") == 2
+    assert 'Available alerts from committed 24h analytics snapshots;' in storage
+    assert 'Alertmanager first, Metrics Source fallback.' in storage
+    assert "f' {alert_fallback} system(s) using fallback evidence.'" in storage
+    for retired in (
+        'All Clusters mode summarizes committed capacity snapshots by cluster.',
+        'All Clusters mode summarizes committed alert snapshots by cluster.',
+        'From committed cluster snapshots',
+        'Latest Kubernetes object counts.',
+        'Metrics-backed cluster usage and forecasts.',
+    ):
+        assert retired not in kubernetes
+    assert 'Available alert streams from usable committed 24h analytics snapshots;' not in storage
+
+    for component in (kubernetes_ui, storage_ui, registry_ui):
+        assert "'Data Freshness'" in component
+        assert "body_classes='grid gap-3 p-5 sm:grid-cols-2'" in component
+        assert 'evidence_tile.freshness(' in component
+    assert 'macro freshness(' in shared
+    assert 'status_label(status, tone=tone)' in shared
+    assert kubernetes.count('FreshnessItem(') == 4
+    assert "'label': 'Alert Evidence Fleet'" in storage
+    assert "'label': 'Security Snapshot'" in read('app/artifact_registry/presentation_overview.py')
+
+
 def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
     freshness = read('app/kubernetes/dashboard/sections/freshness.py')
     capacity = read('app/kubernetes/dashboard/sections/capacity.py')
