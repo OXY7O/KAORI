@@ -1,6 +1,7 @@
 """Role Detail unified evidence hierarchy and Roles overview copy contracts."""
 
 from pathlib import Path
+from types import SimpleNamespace
 
 from jinja2 import Environment
 
@@ -67,8 +68,10 @@ def test_role_detail_permission_directory_keeps_every_capability_visible() -> No
     assert 'data-kaori-role-permission-coverage' in template
     assert 'aria-label="Role permission coverage by module"' in template
     assert '<ul class="min-w-0 divide-y divide-outline-subtle"' in template
-    assert '<li class="grid min-w-0 gap-x-6 gap-y-3 py-3' in template
-    assert 'sm:grid-cols-[minmax(0,11rem)_minmax(0,1fr)]' in template
+    assert '<li class="min-w-0 space-y-2 py-3" data-kaori-role-module>' in template
+    assert 'sm:grid-cols-[minmax(0,11rem)_minmax(0,1fr)]' not in template
+    assert '<p class="mb-1 text-xs font-medium leading-5 text-content-muted">Capabilities</p>' in template
+    assert 'aria-label="{{ module.label }} effective capabilities"' in template
     assert 'data-kaori-role-module' in template
     assert 'module.count' in template
     assert 'aria-label="{{ module.count }} permission{{' in template
@@ -81,6 +84,49 @@ def test_role_detail_permission_directory_keeps_every_capability_visible() -> No
     assert '<details' not in template  # no hidden/partially presented evidence
     assert "detail_ui.empty_evidence('No Permissions Assigned'" in template
 
+
+
+def test_single_permission_module_renders_its_capability_below_header() -> None:
+    template = read('app/templates/access/roles/partials/_role_detail.html')
+    start = template.index('<li class="min-w-0 space-y-2 py-3" data-kaori-role-module>')
+    end = template.index('</li>', start) + len('</li>')
+    module_row = Environment(autoescape=True).from_string(template[start:end])
+
+    # Render the actual Jinja module row. One-permission modules previously
+    # appeared to have no capability in a narrow viewport because the label
+    # was rendered in a separate responsive grid column.
+    def render_module(module_label: str, module_key: str, *labels: str) -> str:
+        module = SimpleNamespace(
+            label=module_label,
+            key=module_key,
+            count=len(labels),
+            permissions=[SimpleNamespace(label=label) for label in labels],
+        )
+        labels_macro = SimpleNamespace(
+            metadata_label=lambda label, wrap=False: f'[{label}]'
+        )
+        return module_row.render(module=module, table_label=labels_macro)
+
+    for label, key, capability in (
+        ('Storage Analytics', 'storage_analytics', 'View'),
+        ('Storage Inventory', 'storage_inventory', 'Sync'),
+        ('System', 'system', 'Manage'),
+    ):
+        html = render_module(label, key, capability)
+        assert label in html
+        assert key in html
+        assert '1 permission' in html
+        assert html.count(f'[{capability}]') == 1
+        assert html.index(label) < html.index('Capabilities') < html.index(
+            f'[{capability}]'
+        )
+        assert 'data-kaori-role-module-capabilities' in html
+        assert 'sm:grid-cols-' not in html
+
+    multi = render_module('K8S Operations', 'k8s_operations', 'View', 'Sync')
+    assert '2 permissions' in multi
+    assert '[View]' in multi
+    assert '[Sync]' in multi
 
 
 def test_role_detail_preserves_committed_evidence_and_mutation_guards() -> None:

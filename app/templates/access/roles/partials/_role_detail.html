@@ -99,19 +99,24 @@
                     {% if detail.permission_modules %}
                         <ul class="min-w-0 divide-y divide-outline-subtle" aria-label="Role permission coverage by module" data-kaori-role-permission-coverage>
                             {% for module in detail.permission_modules %}
-                                <li class="grid min-w-0 gap-x-6 gap-y-3 py-3 sm:grid-cols-[minmax(0,11rem)_minmax(0,1fr)] sm:items-start" data-kaori-role-module>
-                                    <div class="flex min-w-0 items-start justify-between gap-2 sm:block">
-                                        <div class="min-w-0">
+                                <li class="min-w-0 space-y-2 py-3" data-kaori-role-module>
+                                    <div class="flex min-w-0 flex-wrap items-start justify-between gap-x-4 gap-y-2">
+                                        <div class="min-w-0 flex-1">
                                             <p class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ module.label }}</p>
                                             <p class="mt-0.5 break-all text-xs leading-5 text-content-muted">{{ module.key }}</p>
                                         </div>
-                                        <span class="shrink-0 rounded-md bg-surface-elevated px-2 py-0.5 text-xs font-semibold tabular-nums text-content-secondary sm:mt-1 sm:inline-flex"
+                                        <span class="inline-flex shrink-0 rounded-md bg-surface-elevated px-2 py-0.5 text-xs font-semibold tabular-nums text-content-secondary"
                                               aria-label="{{ module.count }} permission{{ '' if module.count == 1 else 's' }}">{{ module.count }} permission{{ '' if module.count == 1 else 's' }}</span>
                                     </div>
-                                    <div class="flex min-w-0 flex-wrap items-start gap-1.5" data-kaori-role-module-capabilities>
-                                        {% for permission in module.permissions %}
-                                            {{ table_label.metadata_label(permission.label, wrap=true) }}
-                                        {% endfor %}
+                                    {# Capabilities occupy their own full-width row, even for a single permission. #}
+                                    <div class="min-w-0" data-kaori-role-module-capabilities>
+                                        <p class="mb-1 text-xs font-medium leading-5 text-content-muted">Capabilities</p>
+                                        <div class="flex min-w-0 flex-wrap items-center gap-1.5" role="group"
+                                             aria-label="{{ module.label }} effective capabilities">
+                                            {% for permission in module.permissions %}
+                                                {{ table_label.metadata_label(permission.label, wrap=true) }}
+                                            {% endfor %}
+                                        </div>
                                     </div>
                                 </li>
                             {% endfor %}
