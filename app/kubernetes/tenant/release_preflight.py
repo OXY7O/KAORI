@@ -304,7 +304,6 @@ def review_tenant_release_preflight_committed(*, tenant_id: str, actor_user_id: 
         'dependency_counts': counts,
         'live_provider_identity': provider,
         'handoff_components': handoff_components,
-        'capsule_related_inventory': capsule_related_inventory,
         'handoff_fingerprint': handoff_fingerprint(handoff_components),
         'handoff_required_count': sum(
             item['handoff'] != 'observe_only' for item in handoff_components
@@ -316,6 +315,8 @@ def review_tenant_release_preflight_committed(*, tenant_id: str, actor_user_id: 
         'release_execution_available': False,
         'secret_material_persisted': False,
     }
+    if tenant.provider_key == 'capsule':
+        evidence['capsule_related_inventory'] = capsule_related_inventory
     db.session.add(AuditEvent(
         actor_user_id=actor_user_id, target_type=_TARGET, target_id=tenant.id,
         action='tenant.release.preflight_observed',
