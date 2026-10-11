@@ -191,6 +191,13 @@ def upgrade() -> None:
             'tenant_id', 'event_sha256', name='uq_capsule_ledger_tenant_digest',
         ),
         sa.CheckConstraint('generation > 0', name='ck_capsule_ledger_generation'),
+        sa.CheckConstraint(
+            'length(plan_sha256) = 64 AND length(handoff_fingerprint) = 64 '
+            'AND length(worklist_sha256) = 64 AND length(event_sha256) = 64 '
+            'AND (previous_event_sha256 IS NULL OR length(previous_event_sha256) = 64) '
+            'AND length(attempt_id) = 36',
+            name='ck_capsule_ledger_bound_reference_lengths',
+        ),
         sa.CheckConstraint('sequence BETWEEN 1 AND 3', name='ck_capsule_ledger_sequence'),
         sa.CheckConstraint(
             "(sequence = 1 AND event_type = 'started') OR "
