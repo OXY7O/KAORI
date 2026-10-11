@@ -176,6 +176,8 @@ def _capsule_g1_related_kaori_control_snapshot() -> dict:
         'resources': [],
     })
     cr = snapshot['handoff_components'][0]
+    cr['ownership'] = 'external_or_unattributed'
+    snapshot['handoff_components'][1]['ownership'] = 'external_or_unattributed'
     cr['capsule_related_resources_sha256'] = related['resource_sha256']
     cr['capsule_shared_quota_sha256'] = related['global_quota']['scope_sha256']
     cr['capsule_related_resources_count'] = '1'
