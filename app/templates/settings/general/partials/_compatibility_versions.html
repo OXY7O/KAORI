@@ -36,47 +36,74 @@
         </dl>
     </header>
     {% include "settings/general/partials/_compatibility_registry.html" %}
-    <section class="border-t border-outline-default px-5 py-4 sm:px-6"
+    <section class="border-t border-outline-default bg-surface-card px-5 py-4 sm:px-6"
              aria-labelledby="compatibility-policy-heading">
         <details class="group" data-compatibility-policy-reference="disclosure">
-            <summary class="flex cursor-pointer list-none items-center justify-between gap-3 rounded-md text-sm font-semibold text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                <span class="flex min-w-0 items-center gap-2">
-                    <i data-lucide="shield-ellipsis" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
-                    <span id="compatibility-policy-heading">Policy Boundary &amp; Reading the Matrix</span>
+            <summary class="flex cursor-pointer list-none items-center justify-between gap-3 rounded-lg px-2 py-2 transition hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
+                     data-compatibility-policy-toggle="accessible">
+                <span class="flex min-w-0 items-center gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                        <i data-lucide="book-open-check" class="h-4 w-4" aria-hidden="true"></i>
+                    </span>
+                    <span class="min-w-0">
+                        <span id="compatibility-policy-heading" class="block text-sm font-bold text-content-primary">Policy Boundary &amp; Reading the Matrix</span>
+                        <span class="mt-1 block text-xs leading-5 text-content-muted">How version qualification, lifecycle policy, contracts, and live evidence relate.</span>
+                    </span>
                 </span>
-                <i data-lucide="chevron-down" class="h-4 w-4 text-content-muted transition-transform group-open:rotate-180" aria-hidden="true"></i>
+                <i data-lucide="chevron-down" class="h-4 w-4 shrink-0 text-content-muted transition-transform group-open:rotate-180" aria-hidden="true"></i>
             </summary>
-            <div class="mt-4 grid gap-5 border-t border-outline-subtle pt-4 lg:grid-cols-2">
-                <div>
-                    <h3 class="text-sm font-bold text-content-primary">Reading the Matrix</h3>
-                    <ol class="mt-3 space-y-2 text-sm leading-6 text-content-secondary">
-                        <li><strong class="text-content-primary">Annual Lifecycle:</strong> Five-year policy window and end-of-life boundary.</li>
-                        <li><strong class="text-content-primary">General Contract:</strong> Core API generation changes only for breaking semantics.</li>
-                        <li><strong class="text-content-primary">Version Qualification:</strong> Per-release evidence maps to a stable contract.</li>
-                        <li><strong class="text-content-primary">Live Readiness:</strong> Provider APIs, RBAC, metrics and consumer bindings decide usability.</li>
+            <div class="mt-4 grid gap-6 border-t border-outline-subtle pt-4 lg:grid-cols-2 lg:gap-0"
+                 data-compatibility-policy-layout="structured-reference">
+                <section class="min-w-0 lg:pr-6" aria-labelledby="compatibility-guide-heading">
+                    <h3 id="compatibility-guide-heading" class="flex items-center gap-2 text-sm font-bold text-content-primary">
+                        <i data-lucide="list-ordered" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                        Reading the Matrix
+                    </h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Four distinct evidence layers, evaluated in sequence.</p>
+                    <ol class="mt-3 divide-y divide-outline-subtle"
+                        data-compatibility-policy-guide="numbered">
+                        {% for number, label, description in [
+                            ('01', 'Annual Lifecycle', 'Five-year support window and EOL boundary.'),
+                            ('02', 'General Contract', 'Core API contract generation changes only for breaking semantics.'),
+                            ('03', 'Version Qualification', 'Per-release qualifications map to stable contracts.'),
+                            ('04', 'Live Readiness', 'Provider APIs, RBAC, metrics and consumer bindings determine usability.'),
+                            ] %}
+                            <li class="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft font-mono text-xs font-bold text-kaori-primary">{{ number }}</span>
+                                <div class="min-w-0">
+                                    <h4 class="text-sm font-semibold text-content-primary">{{ label }}</h4>
+                                    <p class="mt-0.5 text-sm leading-6 text-content-secondary">{{ description }}</p>
+                                </div>
+                            </li>
+                        {% endfor %}
                     </ol>
-                </div>
-                <div>
-                    <h3 class="text-sm font-bold text-content-primary">Policy Boundary</h3>
-                    <dl class="mt-3 divide-y divide-outline-subtle text-sm leading-6">
-                        <div class="pb-2">
-                            <dt class="font-semibold text-content-primary">Annual Rollover</dt>
-                            <dd class="text-content-secondary">Policy v{{ system_information.compatibility_policy_version }}: {{ system_information.compatibility_anchor_year }} anchor; {{ system_information.compatibility_policy_year }} policy year.</dd>
+                </section>
+                <section class="min-w-0 border-t border-outline-subtle pt-5 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0"
+                         aria-labelledby="compatibility-policy-boundary-heading">
+                    <h3 id="compatibility-policy-boundary-heading" class="flex items-center gap-2 text-sm font-bold text-content-primary">
+                        <i data-lucide="shield-check" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                        Policy Boundary
+                    </h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Governance rules, separate from observed provider readiness.</p>
+                    <dl class="mt-3 divide-y divide-outline-subtle">
+                        <div class="py-3 first:pt-0">
+                            <dt class="text-sm font-semibold text-content-primary">Annual Rollover</dt>
+                            <dd class="mt-1 text-sm leading-6 text-content-secondary">Policy v{{ system_information.compatibility_policy_version }}: {{ system_information.compatibility_anchor_year }} anchor; {{ system_information.compatibility_policy_year }} current policy year.</dd>
                         </div>
-                        <div class="py-2">
-                            <dt class="font-semibold text-content-primary">General Contract Version</dt>
-                            <dd class="text-content-secondary">A core contract advances for breaking API or capability semantics, not each policy year.</dd>
+                        <div class="py-3">
+                            <dt class="text-sm font-semibold text-content-primary">General Contract Version</dt>
+                            <dd class="mt-1 text-sm leading-6 text-content-secondary">A contract advances for breaking API or capability changes, not each policy year.</dd>
                         </div>
-                        <div class="py-2">
-                            <dt class="font-semibold text-content-primary">Lifecycle Boundary</dt>
-                            <dd class="text-content-secondary">Pre-window releases are End of Life; future releases remain Unverified until qualified.</dd>
+                        <div class="py-3">
+                            <dt class="text-sm font-semibold text-content-primary">Lifecycle Boundary</dt>
+                            <dd class="mt-1 text-sm leading-6 text-content-secondary">Pre-window releases are End of Life. Future versions stay Unverified until qualified.</dd>
                         </div>
-                        <div class="pt-2">
-                            <dt class="font-semibold text-content-primary">Blocking Rule</dt>
-                            <dd class="text-content-secondary">End-of-life releases, missing mandatory capabilities, invalid provider identity or failed live validation remain blocking.</dd>
+                        <div class="pt-3">
+                            <dt class="text-sm font-semibold text-content-primary">Blocking Rule</dt>
+                            <dd class="mt-1 text-sm leading-6 text-content-secondary">End-of-life releases, missing mandatory capabilities, invalid provider identity and failed live validation remain blocking.</dd>
                         </div>
                     </dl>
-                </div>
+                </section>
             </div>
         </details>
     </section>
