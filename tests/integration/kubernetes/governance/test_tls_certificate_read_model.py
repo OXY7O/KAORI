@@ -197,3 +197,43 @@ def test_failed_tls_secret_sync_does_not_advance_collected_evidence_clock(govern
         state = db.session.get(TLSCertificateCollectionState, cluster.id)
         assert state.collected_at.replace(tzinfo=UTC) == now
         assert state.ingress_mapping_status == 'permission_unavailable'
+
+
+def test_incomplete_tls_collection_keeps_last_known_good_inventory(governance_repository_app, monkeypatch) -> None:
+    from app.kubernetes.governance.tls_certificates.collector import TLSCollectionBatch, TLSCollectionEvidence
+
+    now = datetime.now(UTC)
+    old = now - timedelta(days=3)
+    with governance_repository_app.app_context():
+        cluster = Cluster(id='failed-collector', name='Failed collector', environment='production', status='connected')
+        db.session.add_all([
+            cluster,
+            TLSCertificateInventory(
+                cluster_id=cluster.id, namespace='default', secret_name='last-good',
+                status='healthy', coverage_state='fully_covered', collected_at=old,
+            ),
+        ])
+        db.session.commit()
+
+        monkeypatch.setattr(
+            service,
+            'collect_tls_certificate_batch',
+            lambda cluster, **kwargs: TLSCollectionBatch(
+                records=[],
+                evidence=TLSCollectionEvidence(
+                    secret_collection_status='collection_failed',
+                    ingress_mapping_status='collected',
+                    secret_collection_detail='Collection incomplete.',
+                ),
+                error='Collection incomplete.',
+            ),
+        )
+        result = service.sync_tls_certificates_for_cluster(cluster)
+        assert result.fatal_error == 'Collection incomplete.'
+        assert result.collected_count == 0
+        retained = TLSCertificateInventory.query.filter_by(cluster_id=cluster.id).all()
+        assert [row.secret_name for row in retained] == ['last-good']
+        assert retained[0].collected_at.replace(tzinfo=UTC) == old
+        state = db.session.get(TLSCertificateCollectionState, cluster.id)
+        assert state.secret_collection_status == 'collection_failed'
+        assert state.collected_at is None
