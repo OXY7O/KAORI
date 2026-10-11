@@ -177,3 +177,7 @@ User Edit forms include a committed user-version token. A POST serializes the cu
 ## User lifecycle transaction recovery
 
 Activate, Deactivate, Restore, Delete, and Local Database administrative Reset Password commit the user mutation and administrative audit evidence together. Any database error rolls back the session and does not report an operation as successful; lifecycle routes render a recoverable failure notification while password reset keeps validation feedback in its secure form. Existing last-active-local-Super-Admin serialization, soft-delete/restore-inactive, permission gates, and generation-bound session revocation remain authoritative. Forced-flush/commit failure and real PostgreSQL testing are UAT gates, not inferred from source checks.
+
+## User Create/Edit database failure feedback
+
+User Create/Edit services remain the sole transaction owner and atomically persist the user with administrative audit evidence. Unique username/email conflicts retain dedicated form errors; other `SQLAlchemyError` failures are rolled back by the service and translated by the route into sanitized retry guidance on the existing form, without leaking server diagnostics or fabricating a successful account change. CSRF, role delegation, local credential ownership and the User Edit committed-version check remain unchanged.
