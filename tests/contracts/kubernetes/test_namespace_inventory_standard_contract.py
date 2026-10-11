@@ -70,6 +70,38 @@ def test_namespace_compact_table_keeps_age_in_detail_only() -> None:
     assert "('Age', namespace.age" in detail
 
 
+def test_namespace_column_widths_prioritize_long_names_without_crowding_controls() -> None:
+    table = read('app/templates/kubernetes/inventory/namespaces/partials/_table_content.html')
+    shared = read('app/templates/components/table.html')
+
+    widths = {
+        'Namespace': 24,
+        'Cluster': 21,
+        'Lifecycle': 8,
+        'Resource Controls': 18,
+        'Security Context': 19,
+        'Details': 10,
+    }
+    assert sum(widths.values()) == 100
+    for heading, percent in widths.items():
+        header = table.split(f'>{heading}</th>', 1)[0].rsplit('<th', 1)[-1]
+        assert f'w-[{percent}%]' in header
+    assert "table_ui.table_classes('min-w-[78rem] !table-fixed')" in table
+    assert 'overflow-x-auto overscroll-x-contain' in table
+    assert "table_ui.namespace_identity(namespace.namespace, 'w-full min-w-0')" in table
+    assert (
+        "table_ui.cluster_identity(namespace.cluster_name, namespace.cluster_environment, 'w-full min-w-0')"
+        in table
+    )
+    assert table.count('grid-cols-[6rem_minmax(0,1fr)]') == 2
+    assert 'grid-cols-[5rem_minmax(0,1fr)]' in table
+    for token in ('namespace.quota_display', 'namespace.limit_range_display',
+                  'namespace.network_policy_display', 'namespace.pod_security_enforce_display'):
+        assert token in table
+    assert 'title="{{ name or \'-\' }}"' in shared
+    assert 'title="{{ name }}"' in shared
+
+
 def test_namespace_resourcequota_collector_uses_configured_spec_and_evidence() -> None:
     collector = read('app/kubernetes/inventory/collectors/configuration.py')
 
