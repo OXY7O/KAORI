@@ -100,7 +100,7 @@ def build_capsule_shared_allocation_cutover_state(tenant: Tenant) -> dict[str, A
         reasons.append('Observed allocation contains unsupported dimensions.')
     if len(sources) != 1:
         reasons.append('Exactly one authoritative GlobalResourceQuota source is required.')
-    if str(global_quota.get('served_version') or '') != _REQUIRED_API_VERSION:
+    if sources and str(global_quota.get('served_version') or '') != _REQUIRED_API_VERSION:
         reasons.append('GlobalResourceQuota governance requires served capsule.clastix.io/v1beta2.')
     if _capsule_capability_state(tenant, _SHARED_CAPABILITY) != 'available':
         reasons.append('Capsule shared_global_quota capability is unavailable or degraded.')
@@ -118,8 +118,19 @@ def build_capsule_shared_allocation_cutover_state(tenant: Tenant) -> dict[str, A
             'Resolve that authority before allocation governance cutover.'
         )
 
+    authority = str(baseline.get('allocation_authority') or 'unknown')
     source = sources[0] if len(sources) == 1 else {}
+    authority_display = {
+        'capsule_global_resource_quota': 'Capsule GlobalResourceQuota',
+        'capsule_tenant_resource_quotas': 'Capsule Tenant.spec.resourceQuotas',
+        'native_namespaced': 'Namespace ResourceQuota / LimitRange',
+        'none_observed': 'No committed allocation authority',
+        'ambiguous': 'Multiple or conflicting authorities',
+    }
     return {
+        'applicable': authority == 'capsule_global_resource_quota',
+        'detected_authority': authority_display.get(authority, 'Unresolved allocation authority'),
+        'source_count': len(sources),
         'supported': not reasons,
         'state': 'adopted_observed' if not reasons else 'control_unavailable',
         'reason': 'Eligible for explicit Capsule shared allocation governance cutover.'
