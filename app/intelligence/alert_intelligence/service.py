@@ -623,7 +623,13 @@ def _asset_options(domain: str, *, clusters: list[Cluster], systems: list[Object
             .order_by(IntegrationInstance.name.asc(), IntegrationInstance.id.asc())
             .all()
         )
-        records = [row for row in providers if str(row.readiness_status or '').lower() != 'blocked']
+        records = [
+            row
+            for row in providers
+            if bool(row.enabled)
+            and str(row.lifecycle_status or '').lower() == 'active'
+            and str(row.readiness_status or '').lower() != 'blocked'
+        ]
     else:
         records = clusters if domain == 'kubernetes' else systems
     return [
