@@ -12,6 +12,13 @@ import pytest
 
 from app.kubernetes.tenant.capsule_handoff_audit_envelope import (
     inspect_capsule_audit_event_envelopes, inspect_capsule_audit_readback_link,
+    inspect_capsule_scope_g2g3_trace,
+)
+from app.kubernetes.tenant.capsule_handoff_dry_run import (
+    build_capsule_scope_patch_review, inspect_capsule_complete_dry_run_shapes,
+)
+from app.kubernetes.tenant.capsule_handoff_resource_admission import (
+    assess_capsule_resource_handoff_scope,
 )
 from app.kubernetes.tenant.capsule_handoff_attempt_state import _event_checksum
 from app.kubernetes.tenant.capsule_handoff_readback_evidence import (
@@ -590,3 +597,162 @@ def test_whole_scope_rejects_extra_list_fields_even_with_valid_transfer_and_reha
     assert 'related_list_schema_scope_or_count_changed' in result['blockers']
     assert result['provider_handoff_verified'] is False
     assert 'caller-injected' not in str(result)
+
+
+def _g2_source_case():
+    plan, related, cr, namespace, baseline = _inputs()
+    report = assess_capsule_resource_handoff_scope(plan=plan, related=related)
+    now = datetime.now(UTC).isoformat()
+    approval = {
+        'status': 'acknowledged_pending_provider_handoff',
+        'plan_sha256': plan['plan_sha256'], 'approved_by': 11,
+        'requested_by': plan['requested_by'], 'approved_at': now,
+        'provider_handoff_verified': False, 'release_authorized': False,
+    }
+    acceptance = {
+        'status': 'platform_admin_handoff_accepted', 'accepted_by': 12,
+        'reviewed_by': 11, 'plan_sha256': plan['plan_sha256'],
+        'tenant_id': plan['tenant_id'], 'cluster_id': plan['cluster_id'],
+        'generation': plan['generation'],
+        'handoff_fingerprint': plan['handoff_fingerprint'],
+        'accepted_at': now, 'consent_verified': True,
+        'provider_mutation_performed': False, 'provider_handoff_verified': False,
+        'release_authorized': False, 'secret_material_persisted': False,
+    }
+    candidates = [
+        row for row in report['resources']
+        if row['inventory_decision'] == 'candidate_kaori_metadata_handoff_review'
+    ]
+    assert len(candidates) == 1
+    target = candidates[0]
+    manifest = {
+        'contract_version': 'capsule-resource-successor-consent/v1',
+        'tenant_id': plan['tenant_id'], 'cluster_id': plan['cluster_id'],
+        'generation': plan['generation'],
+        'plan_sha256': plan['plan_sha256'],
+        'handoff_fingerprint': plan['handoff_fingerprint'],
+        'worklist_sha256': report['worklist_sha256'],
+        'resource_review_sha256': report['resource_review_sha256'],
+        'change_reference': plan['change_reference'],
+        'reviewed_by': 11, 'accepted_by': 12, 'accepted_at': now,
+        'transfer_targets': [{
+            'kind': 'Namespace', 'namespace': '', 'name': target['name'],
+            'uid': target['uid'], 'resource_version': target['resource_version'],
+            'policy_sha256': None, 'metadata_sha256': None,
+            'decision': 'proposed_metadata_labels_only',
+            'proposed_label_keys': [
+                'app.kubernetes.io/managed-by', 'kaori.io/tenant-id',
+            ],
+        }],
+    }
+    source = {
+        'plan': plan, 'related': related, 'current_capsule_cr': cr,
+        'source_namespaces': {'demo-dev': namespace},
+        'source_related_objects': {},
+        'approval': approval, 'acceptance': acceptance,
+        'consent_manifest': manifest,
+    }
+    preview = deepcopy(namespace)
+    preview.metadata.labels['app.kubernetes.io/managed-by'] = 'platform-team'
+    preview.metadata.labels.pop('kaori.io/tenant-id')
+    return source, {('', 'Namespace', 'demo-dev'): preview}, baseline
+
+
+def test_g2_complete_offline_scope_binds_only_original_namespace_and_capsule_cr():
+    source, previews, baseline = _g2_source_case()
+    review = build_capsule_scope_patch_review(**source)
+    assert review['status'] == 'complete_offline_scope_patch_review_unadmitted'
+    assert review['transfer_candidate_count'] == 1
+    assert review['complete_scope_count'] == 2
+    assert review['globally_preserved_count'] == 1
+    assert review['scope_items'][0]['operation'] == 'conditional_metadata_dry_run_candidate'
+    assert review['provider_execution_admitted'] is False
+    receipt = inspect_capsule_complete_dry_run_shapes(
+        **source, preview_objects=previews,
+    )
+    assert receipt['preview_count'] == 1
+    assert receipt['scope_items_sha256'] == review['scope_items_sha256']
+    assert receipt['server_dry_run_completed'] is False
+    assert receipt['release_authorized'] is False
+
+
+@pytest.mark.parametrize('mutation', ['missing_preview', 'extra_target', 'wrong_labels',
+                                      'stale_resource', 'missing_consent', 'foreign_raw'])
+def test_g2_offline_source_rejects_partial_preview_or_stale_consent(mutation):
+    source, previews, _ = _g2_source_case()
+    if mutation == 'missing_preview':
+        previews.clear()
+    elif mutation == 'extra_target':
+        previews[('demo-dev', 'RoleBinding', 'foreign')] = {}
+    elif mutation == 'wrong_labels':
+        previews[('', 'Namespace', 'demo-dev')].metadata.labels['foreign/changed'] = 'x'
+    elif mutation == 'stale_resource':
+        source['source_namespaces']['demo-dev'].metadata.resource_version = '11-stale'
+    elif mutation == 'missing_consent':
+        source['consent_manifest']['transfer_targets'] = []
+    else:
+        source['source_related_objects'][('demo-dev', 'RoleBinding', 'foreign')] = {}
+    with pytest.raises((ValueError, TypeError, KeyError)):
+        inspect_capsule_complete_dry_run_shapes(
+            **source, preview_objects=previews,
+        )
+
+
+def test_g2g3_trace_requires_start_and_matching_preview_readback_claim():
+    source, previews, baseline = _g2_source_case()
+    patch = build_capsule_scope_patch_review(**source)
+    dryrun = inspect_capsule_complete_dry_run_shapes(**source, preview_objects=previews)
+    plan, related = source['plan'], source['related']
+    readback = _readback(
+        plan, related, source['current_capsule_cr'],
+        source['source_namespaces']['demo-dev'], baseline,
+    )
+    now = datetime.now(UTC)
+    started = _audit_start(plan, related, at=now)
+    observed = dict(started)
+    observed.update({
+        'event_type': 'readback_candidate', 'sequence': 2,
+        'event_at': (now + timedelta(seconds=2)).isoformat(),
+        'previous_event_sha256': started['event_sha256'],
+        'outcome': 'readback_observed',
+        'readback_sha256': readback['readback_sha256'],
+        'observed_count': readback['observed_count'],
+        'pending_count': readback['pending_count'],
+        'transferred_count': readback['transferred_count'],
+        'ambiguous_count': readback['ambiguous_count'],
+    })
+    observed['event_sha256'] = _event_checksum(observed)
+    rows = [
+        {'id': 90, 'actor_user_id': 30,
+         'target_type': 'kubernetes_tenant_release_capsule_handoff_execution',
+         'target_id': plan['tenant_id'],
+         'action': 'tenant.release.capsule_handoff_started',
+         'created_at': now + timedelta(seconds=1), 'metadata_json': started},
+        {'id': 91, 'actor_user_id': 30,
+         'target_type': 'kubernetes_tenant_release_capsule_handoff_execution',
+         'target_id': plan['tenant_id'],
+         'action': 'tenant.release.capsule_handoff_readback_candidate',
+         'created_at': now + timedelta(seconds=3), 'metadata_json': observed},
+    ]
+    result = inspect_capsule_scope_g2g3_trace(
+        plan=plan, related=related, accepted_actor_user_id=30, rows=rows,
+        patch_review=patch, preview_review=dryrun, readback_candidate=readback,
+    )
+    assert result['recorded_readback_matches_candidate'] is True
+    assert result['status'] == 'incomplete_or_uncertain_g2g3_manual_recovery_required'
+    assert result['start_db_commit_verified'] is False
+    assert result['provider_execution_admitted'] is False
+    assert result['release_authorized'] is False
+    with pytest.raises(ValueError):
+        inspect_capsule_scope_g2g3_trace(
+            plan=plan, related=related, accepted_actor_user_id=30,
+            rows=rows[1:], patch_review=patch, preview_review=dryrun,
+            readback_candidate=readback,
+        )
+    with pytest.raises(ValueError, match='diverged'):
+        inspect_capsule_scope_g2g3_trace(
+            plan=plan, related=related, accepted_actor_user_id=30,
+            rows=rows, patch_review=patch,
+            preview_review={**dryrun, 'scope_items_sha256': '0'*64},
+            readback_candidate=readback,
+        )
