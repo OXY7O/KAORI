@@ -162,51 +162,47 @@ def test_permission_catalog_detail_uses_count_free_shared_modal_hierarchy() -> N
     assert 'roles|length' not in workspace
     assert 'framed_tabs.render_navigation(' in workspace
 
-    # Preserve the canonical modal and extracted shared summary boundary.
+    # Preserve the canonical content-driven modal with an extracted,
+    # nonnumeric summary. The body uses the approved single resource-sheet
+    # surface and five horizontal evidence bands, rather than stacked cards.
     assert 'data-resource-detail-header' in detail
     assert 'data-kaori-detail-variant="full-workspace-modal"' in detail
     assert 'detail_ui.summary_strip([' in detail
     assert 'data-resource-detail-summary' in shared
-    assert "('Role Mapping', 'Mapped' if permission.role_count else 'Unassigned'" in detail
-    assert "('Active Usage', 'In Use' if permission.active_user_count else 'No Active Users'" in detail
-    assert "('JIT Projection', 'Configured' if permission.jit_provider_count else 'Not Configured'" in detail
-    assert "('Requires', 'Present' if effective_requires else 'None'" in detail
+    assert "('Role Mapping', 'Mapped' if permission.role_count else 'Unassigned', '')" in detail
+    assert "('Active Usage', 'In Use' if permission.active_user_count else 'No Active Users', '')" in detail
+    assert "('JIT Projection', 'Configured' if permission.jit_provider_count else 'Not Configured', '')" in detail
+    assert "('Requires', 'Present' if effective_requires else 'None', '')" in detail
     assert "('Control Module', permission.module_label" not in detail
-    # Four evidence cards and Role Coverage are full-width siblings, not the
-    # former two-column desktop grid that constricted long authority text.
-    assert 'data-kaori-permission-detail-layout="full-width-stack"' in detail
-    assert 'flex min-w-0 flex-col gap-3 p-4 sm:gap-4 sm:p-5' in detail
+
+    assert 'data-kaori-permission-detail-layout="unified-resource-sheet"' in detail
+    assert 'detail_ui.resource_sheet()' in detail
+    assert 'data-kaori-unified-resource-sheet' in shared
+    assert 'data-kaori-inventory-section-layout="resource-sheet-band"' in shared
+    assert detail.count("detail_ui.inventory_section(") == 5
+    assert 'detail_ui.detail_card(' not in detail
+    assert 'data-kaori-permission-detail-layout="full-width-stack"' not in detail
     assert 'lg:grid-cols-2' not in detail
-    assert 'lg:col-span-2' not in detail
-    assert 'sm:grid-cols-2' in detail  # only compact identity facts use columns
-    for section_title in (
-        'Permission Identity',
-        'Dependency Contract',
-        'Delegation Boundary',
-        'Registry Boundary',
-        'Role Coverage',
-    ):
-        assert detail.count(section_title) >= 1
-    assert detail.index("detail_ui.detail_card('Permission Identity'") < detail.index(
-        "detail_ui.detail_card('Dependency Contract'"
+    expected_sections = (
+        "inventory_section('Permission Identity'",
+        "inventory_section('Dependency Contract'",
+        "inventory_section('Delegation Boundary'",
+        "inventory_section('Registry Boundary'",
+        "inventory_section('Role Coverage'",
     )
-    assert detail.index("detail_ui.detail_card('Dependency Contract'") < detail.index(
-        "detail_ui.detail_card('Delegation Boundary'"
+    assert [detail.index(marker) for marker in expected_sections] == sorted(
+        detail.index(marker) for marker in expected_sections
     )
-    assert detail.index("detail_ui.detail_card('Delegation Boundary'") < detail.index(
-        "detail_ui.detail_card('Registry Boundary'"
-    )
-    assert detail.index("detail_ui.detail_card('Registry Boundary'") < detail.index(
-        '<h4 class="text-sm font-semibold text-content-primary">Role Coverage</h4>'
-    )
+    assert 'sm:grid-cols-2' in detail  # compact identity/dependency facts only
     assert "detail_ui.stacked_detail_row('Permission Key', permission.key)" in detail
-    assert "detail_ui.stacked_detail_row('Description', permission.description" in detail
+    assert 'permission.description or' in detail
     assert "table_label.metadata_label(item.title, 'arrow-down-left', true)" in detail
     assert "table_label.metadata_label(item.title, 'arrow-up-right', true)" in detail
     assert "detail_ui.stacked_detail_row('Stored Module', permission.database_module" in detail
     assert "detail_ui.stacked_detail_row('Stored Action', permission.database_action" in detail
-    assert 'min-w-0 max-w-4xl' in detail
+    assert 'max-w-3xl' in detail
     assert 'border-t border-outline-subtle pt-3' in detail
+    assert 'aria-label="Permission role coverage"' in detail
 
     # Keep source-derived semantics, but never render count badges or numeric KPIs in the detail.
     assert 'permission.role_count ~' not in detail
@@ -215,7 +211,7 @@ def test_permission_catalog_detail_uses_count_free_shared_modal_hierarchy() -> N
     assert '{{ permission.jit_provider_count }}' not in detail
     assert '{{ role.active_user_count }}' not in detail
     assert '{{ role.jit_provider_count }}' not in detail
-    assert "table_label.status_label('Mapped' if role_rows else 'Unassigned'" in detail
+    assert "badge='Mapped' if role_rows else 'Unassigned'" in detail
     assert "'In Use' if role.active_user_count else 'No Active Users'" in detail
     assert "'Configured' if role.jit_provider_count else 'Not Configured'" in detail
     assert 'permission.key' in detail
