@@ -128,6 +128,7 @@ def test_capsule_provider_authority_verifies_cluster_scoped_cr_and_namespace_get
     (False, True, 'kubernetes-admin'),
     (True, False, 'kubernetes-admin'),
     (True, True, 'system:serviceaccount:kaori:worker'),
+    (True, True, 'system:node:kubelet'),
 ])
 def test_capsule_provider_rejects_denied_rbac_missing_x509_or_serviceaccount(
     monkeypatch, allowed, credential, username,
@@ -156,6 +157,7 @@ def test_capsule_tls_must_be_verified_before_any_provider_request():
     lambda values: values[1].update(uid=''),
     lambda values: values[1].update(kind='ResourceQuota'),
     lambda values: values[1].update(authority='native_kubernetes'),
+    lambda values: values[0].update(kind=[]),
 ])
 def test_capsule_authority_rejects_missing_unknown_or_ambiguous_scope(mutation):
     items = _components()
@@ -195,6 +197,7 @@ def test_capsule_receipt_must_be_exact_current_plan_not_a_native_or_old_acceptan
         ('accepted_by', 42),
         ('consent_verified', False),
         ('provider_credential_id', ''),
+        ('provider_credential_id', 'X509SHA256='),
         ('authenticated_provider', 'claimed_by_label'),
         ('provider_handoff_verified', True),
         ('release_authorized', True),

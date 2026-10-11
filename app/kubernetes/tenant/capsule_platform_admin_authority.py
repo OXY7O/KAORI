@@ -36,7 +36,7 @@ def _capsule_admin_scope(components: list[dict[str, Any]]) -> list[dict[str, str
             raise ValueError('Capsule handoff provider scope is malformed.')
         kind, name = item.get('kind'), item.get('name')
         if (
-            kind not in {'CapsuleTenant', 'Namespace'}
+            not isinstance(kind, str) or kind not in {'CapsuleTenant', 'Namespace'}
             or not isinstance(name, str) or not name.strip()
             or not isinstance(item.get('uid'), str) or not item['uid']
             or not isinstance(item.get('resource_version'), str) or not item['resource_version']
@@ -92,12 +92,14 @@ def verify_capsule_provider_admin_authority(
     credential_id = (
         identifiers[0]
         if isinstance(identifiers, (list, tuple)) and len(identifiers) == 1
-        and isinstance(identifiers[0], str) and identifiers[0].startswith('X509SHA256=')
+        and isinstance(identifiers[0], str)
+        and identifiers[0].startswith('X509SHA256=')
+        and len(identifiers[0]) > len('X509SHA256=')
         else ''
     )
     if (
         not isinstance(username, str) or not username
-        or username.startswith('system:serviceaccount:')
+        or username.startswith('system:')
         or not isinstance(groups, (list, tuple))
         or not all(isinstance(group, str) and group for group in groups)
         or not credential_id
