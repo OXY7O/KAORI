@@ -27,13 +27,19 @@ def test_alert_context_filters_submit_one_canonical_form_state() -> None:
     assert 'table_ui.filter_layout_classes()' in workspace
     assert 'option.label }} · {{ option.count' not in workspace
 
-    # A stale asset from the previous domain is safe because the server validates it
-    # against the newly selected domain and canonicalizes invalid values to fleet scope.
+    # Cross-domain selection retains the legacy fleet behavior for Kubernetes/Storage.
+    # Registry direct deep links are special: invalid/disabled scope must fail closed.
     assert 'domain = _selected_domain(args, clusters=clusters, systems=systems)' in service
     assert 'assets = _asset_options(domain, clusters=clusters, systems=systems)' in service
-    assert 'selected_asset_key = _selected_asset_key(args, assets)' in service
-    assert "return requested if requested in valid else 'all'" in service
+    assert 'selected_asset_key = _selected_asset_key(args, assets, domain=domain)' in service
+    assert "return _INVALID_REGISTRY_SCOPE if domain == 'registry' else 'all'" in service
     assert "{'value': 'kubernetes', 'label': 'Kubernetes'}" in service
+    assert "{'value': 'registry', 'label': 'Artifact Registry'}" in service
+    assert 'scope_invalid = selected_asset_key == _INVALID_REGISTRY_SCOPE' in service
+    assert 'scoped_cases = [] if scope_invalid else _case_rows(' in service
+    assert 'get_case(requested)' not in service
+    assert 'Select an Active Registry Provider' in workspace
+    assert "payload.domain == 'registry' and payload.tab == 'routing'" in workspace
 
 
 def test_false_positive_is_governed_closure_without_source_resolution() -> None:
