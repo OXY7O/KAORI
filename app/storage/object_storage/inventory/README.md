@@ -23,3 +23,8 @@ latency, traffic, growth, and forecast behavior belong to
 
 Do not recreate the retired `app.storage_inventory` package or forward imports
 from it.
+
+
+## Inventory Table Contextual Help
+
+The Systems and Buckets & Containers tables expose concise operator-facing explanations of technical columns (including provider release, inventory coverage, quota, protection and snapshot freshness) through the shared `components/info_tip.html` component. Help is hover/focus/touch accessible, does not modify provider facts, and never treats an unreported quota, protection control, or snapshot value as a healthy/compliant state. The existing detail workspace remains the source of full technical evidence; inventory reads stay committed-state only.
