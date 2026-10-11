@@ -158,7 +158,12 @@ def _committed_full_handoff(
         or execution.get('provider_handoff_verified') is not True
         or execution.get('whole_scope_readback_verified') is not True
         or execution.get('resource_specific_consent_verified') is not True
-        or execution.get('controller_origin_verified') is not True
+        or execution.get('controller_origin_verified') is not False
+        or execution.get('controller_generated_rbac_preserved') is not True
+        or any(
+            row['kind'] == 'RoleBinding' and row['decision'] in _TRANSFER
+            for row in work['items']
+        )
         or execution.get('provider_authority_verified') is not True
         or execution.get('source_worklist_sha256') != work['inventory_sha256']
         or execution.get('plan_sha256') != plan['plan_sha256']
@@ -166,6 +171,8 @@ def _committed_full_handoff(
         or execution.get('attempt_id') != started.attempt_id
         or execution.get('start_event_sha256') != started.event_sha256
         or execution.get('readback_sha256') != last.get('readback_sha256')
+        or _digest(execution.get('verified_components'))
+           != last.get('readback_sha256')
         or execution.get('actor_user_id') != actor_user_id
         or execution.get('errors') != []
         or execution.get('auto_retry_authorized') is not False
@@ -403,6 +410,11 @@ def release_verified_capsule_tenant_committed(
         tenant_id=tenant_id, plan=plan, related=source, work=work,
         actor_user_id=actor_user_id,
     )
+    if (
+        execution.get('provider_username') != accepted.get('provider_username')
+        or execution.get('provider_credential_id') != accepted.get('provider_credential_id')
+    ):
+        raise ValueError('Capsule handoff executor credential differs from accepted successor.')
     cluster = db.session.get(Cluster, tenant.cluster_id)
     if cluster is None:
         raise ValueError('Canonical Capsule provider cluster is unavailable.')
