@@ -1211,8 +1211,8 @@ def verify() -> None:
             'All Clusters shows committed capacity by cluster.',
             'All Clusters shows committed alerts by cluster.',
             'Committed cluster snapshots',
-            'Latest Kubernetes object counts from committed inventory snapshots.',
-            'Metrics-backed cluster usage and forecasts from committed analytics snapshots.',
+            'Latest Kubernetes object counts from committed inventory.',
+            'Metrics-backed cluster usage and forecasts from committed snapshots.',
         ),
         'Kubernetes refreshed Data Freshness copy',
     )
