@@ -4,7 +4,7 @@
 {% import "components/table_label.html" as table_label %}
 <section class="overflow-visible rounded-xl border border-kaori-primary/20 bg-kaori-soft/40 shadow-sm"
          aria-labelledby="capsule-tenant-quota-heading">
-    <header class="flex items-start justify-between gap-4 border-b border-kaori-primary/15 px-5 py-4">
+    <header class="flex min-w-0 items-start gap-4 border-b border-kaori-primary/15 px-5 py-4">
         <div class="flex min-w-0 items-start gap-3">
             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                   aria-hidden="true">
@@ -12,16 +12,10 @@
             </span>
             <div>
                 <div class="flex flex-wrap items-center gap-2">
-                    <h2 id="capsule-tenant-quota-heading"
+                    <span class="inline-flex min-w-0 items-center gap-1.5">
+                        <h2 id="capsule-tenant-quota-heading"
                         class="text-base font-semibold text-content-primary">Capsule Tenant Quota Governance</h2>
-                    {{ table_label.special_label('Tenant.spec.resourceQuotas', 'info', 'shield-check') }}
-                </div>
-                <p class="mt-1 text-sm leading-6 text-content-secondary">
-                    Govern an admitted Capsule Tenant quota directly through the authoritative Tenant CR without Native ResourceQuota bypass.
-                </p>
-            </div>
-        </div>
-        {{ info_tip.render('capsule-tenant-quota-tip',
+                        {{ info_tip.render('capsule-tenant-quota-tip',
                 'Capsule Tenant quota',
                 'KAORI preserves Capsule authority and changes only Tenant.spec.resourceQuotas after explicit governance cutover.',
                 [
@@ -29,7 +23,16 @@
                 'Provider UID/resourceVersion and the served Tenant CR schema are revalidated before mutation.',
                 'Namespace LimitRange constraints remain external observed evidence unless they are the selected allocation authority.',
                 'Every write requires provider read-back before KAORI commits effective state.'
-                ]) }}
+                ], placement='right') }}
+                    </span>
+                    {{ table_label.special_label('Tenant.spec.resourceQuotas', 'info', 'shield-check') }}
+                </div>
+                <p class="mt-1 text-sm leading-6 text-content-secondary">
+                    Govern an admitted Capsule Tenant quota directly through the authoritative Tenant CR without Native ResourceQuota bypass.
+                </p>
+            </div>
+        </div>
+
     </header>
     <div class="grid gap-5 p-5 xl:grid-cols-2">
         <form method="post"

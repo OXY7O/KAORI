@@ -25,6 +25,13 @@ Do **not** hide validation errors, destructive confirmation, security incidents,
 
 For genuinely field-specific guidance, the icon trigger may sit inline beside the field label. When two or more controls share the same source, ownership, naming, lifecycle, or selection semantics, prefer **one consolidated Info Tip in the owning form/card/section header** instead of repeating a trigger on each control.
 
+The Namespace Provisioning Allocation Change workspace applies this same
+title-adjacent Info Tip pattern to its Native Allocation Change, Native
+Governance Cutover, Capsule Tenant Quota Governance, and Capsule Shared
+Allocation Governance sections. Capsule status/authority badges remain
+independent of the help trigger; do not position the help icon in the
+far-right header action corner.
+
 For a form/card section, place the trigger **immediately beside the section title** so the same visual grammar is used across Tenant, Operations, Governance, Integrations, and future domains. The owning surface must permit visible overflow for the desktop hover preview; do not trap the preview inside an `overflow-hidden` card. Rounded visual containment should be preserved by the card/header geometry rather than by clipping the Info Tip.
 
 For a canonical registry with shared status or lifecycle vocabulary, place one icon Info Tip **beside the registry title** through the shared table-header `title_extra` slot. The registry card opts into visible overflow while the table itself stays inside its dedicated `overflow-x-auto` container. Header actions remain reserved for operational actions such as Clear Filters, Add, Create, or navigation.
