@@ -309,6 +309,7 @@ def _dashboard_kpis(systems: list[ObjectStorageSystem], selected: ObjectStorageS
 def _freshness(selected: ObjectStorageSystem | None, systems: list[ObjectStorageSystem]) -> list[dict[str, str]]:
     if selected is None:
         observed = _inventory_observation_times(systems)
+        inventory_ready = len(observed)
         analytics_ready = 0
         forecast_ready = 0
         alert_ready = 0
@@ -332,10 +333,19 @@ def _freshness(selected: ObjectStorageSystem | None, systems: list[ObjectStorage
         return [
             {
                 'label': 'Inventory Fleet',
-                'status': 'Available' if observed else 'Not Collected',
-                'tone': 'normal' if observed else 'warning',
-                'value': _human_time(max(observed)) if observed else 'No committed inventory',
-                'description': 'Most recent Object Storage Inventory observation across registered systems.',
+                'status': (
+                    'Ready' if system_count and inventory_ready == system_count
+                    else ('Partial' if inventory_ready else 'Not Collected')
+                ),
+                'tone': (
+                    'normal' if system_count and inventory_ready == system_count
+                    else ('warning' if inventory_ready else 'unknown')
+                ),
+                'value': f'{inventory_ready} / {system_count} systems',
+                'description': (
+                    f'Latest inventory {_human_time(max(observed))}; committed observations across registered systems.'
+                    if observed else 'No committed inventory observation across registered systems.'
+                ),
                 'icon': 'database',
             },
             {
@@ -398,6 +408,8 @@ def _freshness(selected: ObjectStorageSystem | None, systems: list[ObjectStorage
     forecast_state = forecast_snapshot_state(forecast_snapshot)
     payload, _state = _snapshot_payload(selected)
     stream, _posture = _alert_view(payload)
+    alert_connected = bool(stream.get('connected'))
+    alert_fallback = alert_connected and bool(stream.get('fallback_used'))
     return [
         {
             'label': 'Inventory Snapshot',
@@ -425,8 +437,8 @@ def _freshness(selected: ObjectStorageSystem | None, systems: list[ObjectStorage
         },
         {
             'label': 'Alert Evidence',
-            'status': 'Available' if stream.get('connected') else 'Unavailable',
-            'tone': 'normal' if stream.get('connected') else 'warning',
+            'status': 'Fallback' if alert_fallback else ('Available' if alert_connected else 'Unavailable'),
+            'tone': 'warning' if alert_fallback else ('normal' if alert_connected else 'unknown'),
             'value': str(stream.get('resolved_label') or stream.get('label') or 'Unavailable'),
             'description': 'Alertmanager preferred with Metrics Source fallback, resolved from the analytics snapshot.',
             'icon': 'bell-ring',
