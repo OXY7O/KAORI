@@ -259,3 +259,74 @@ def test_resource_admission_refuses_changed_digests_or_controller_claim_override
     changed = assess_capsule_resource_handoff_scope(plan=plan, related=related)
     assert baseline['resource_review_sha256'] == changed['resource_review_sha256']
     assert changed['controller_origin_verified'] is False
+
+
+def _controller_audit_claim(report, *, kind='ResourceQuota', name='quota'):
+    item = next(row for row in report['resources']
+                if row['kind'] == kind and row['name'] == name)
+    return {
+        'source': 'kubernetes_apiserver_audit',
+        'audit_id': '00000000-0000-4000-8000-000000000011',
+        'event_at': datetime.now(UTC).isoformat(),
+        'stage': 'ResponseComplete', 'verb': 'patch',
+        'cluster_id': 'cluster-1', 'tenant_id': 'tenant-1',
+        'kind': item['kind'], 'namespace': item['namespace'],
+        'name': item['name'], 'uid': item['uid'],
+        'resource_version': item['resource_version'],
+        'response_code': 200,
+        'controller_principal_sha256': 'a' * 64,
+        'policy_sha256': item['policy_sha256'],
+        'metadata_sha256': item['metadata_sha256'],
+    }
+
+
+def test_matching_apiserver_claim_still_does_not_prove_controller_or_grant_handoff():
+    plan, related = _provenance_case()
+    before = assess_capsule_resource_handoff_scope(plan=plan, related=related)
+    claim = _controller_audit_claim(before)
+    observed = assess_capsule_resource_handoff_scope(
+        plan=plan, related=related, controller_audit_claims=[claim],
+    )
+    quota = next(row for row in observed['resources'] if row['name'] == 'quota')
+    assert observed['controller_audit_claim_count'] == 1
+    assert observed['controller_audit_source_authenticated'] is False
+    assert quota['controller_audit_claim_correlated'] is True
+    assert len(quota['controller_audit_claim_sha256']) == 64
+    assert quota['controller_origin_attested'] is False
+    assert quota['metadata_only_handoff_admitted'] is False
+    assert observed['provider_execution_admitted'] is False
+    assert 'controller_principal_sha256' not in str(observed)
+
+
+@pytest.mark.parametrize('change', [
+    lambda c: c.update(tenant_id='other-tenant'),
+    lambda c: c.update(cluster_id='other-cluster'),
+    lambda c: c.update(uid='foreign-uid'),
+    lambda c: c.update(resource_version='stale'),
+    lambda c: c.update(policy_sha256='f' * 64),
+    lambda c: c.update(metadata_sha256='f' * 64),
+    lambda c: c.update(kind='GlobalResourceQuota'),
+    lambda c: c.update(stage='RequestReceived'),
+    lambda c: c.update(response_code=403),
+    lambda c: c.update(controller_principal_sha256='not-a-sha'),
+    lambda c: c.update(secret='credential-must-not-be-copied'),
+])
+def test_foreign_tampered_or_untrusted_audit_claim_fails_closed(change):
+    plan, related = _provenance_case()
+    baseline = assess_capsule_resource_handoff_scope(plan=plan, related=related)
+    claim = _controller_audit_claim(baseline)
+    change(claim)
+    with pytest.raises((TypeError, ValueError, KeyError)):
+        assess_capsule_resource_handoff_scope(
+            plan=plan, related=related, controller_audit_claims=[claim],
+        )
+
+
+def test_duplicate_apiserver_audit_id_or_resource_claim_cannot_be_replayed():
+    plan, related = _provenance_case()
+    baseline = assess_capsule_resource_handoff_scope(plan=plan, related=related)
+    claim = _controller_audit_claim(baseline)
+    with pytest.raises(ValueError):
+        assess_capsule_resource_handoff_scope(
+            plan=plan, related=related, controller_audit_claims=[claim, dict(claim)],
+        )
