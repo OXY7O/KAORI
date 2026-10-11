@@ -64,7 +64,7 @@ def _required_permission_ids(
     return {key_to_id[key] for key in required_keys if key in key_to_id}
 
 
-def _role_reference_counts() -> tuple[dict[int, int], dict[int, int]]:
+def _role_reference_counts(*, include_provider_counts: bool = True) -> tuple[dict[int, int], dict[int, int]]:
     user_counts = {
         int(role_id): int(count)
         for role_id, count in (
@@ -74,15 +74,17 @@ def _role_reference_counts() -> tuple[dict[int, int], dict[int, int]]:
             .all()
         )
     }
-    provider_counts = {
-        int(role_id): int(count)
-        for role_id, count in (
-            db.session.query(IdentityProvider.default_role_id, func.count(IdentityProvider.id))
-            .filter(IdentityProvider.default_role_id.is_not(None))
-            .group_by(IdentityProvider.default_role_id)
-            .all()
-        )
-    }
+    provider_counts: dict[int, int] = {}
+    if include_provider_counts:
+        provider_counts = {
+            int(role_id): int(count)
+            for role_id, count in (
+                db.session.query(IdentityProvider.default_role_id, func.count(IdentityProvider.id))
+                .filter(IdentityProvider.default_role_id.is_not(None))
+                .group_by(IdentityProvider.default_role_id)
+                .all()
+            )
+        }
     return user_counts, provider_counts
 
 
@@ -133,7 +135,7 @@ def build_roles_overview_summary() -> dict[str, Any]:
         .order_by(Role.is_system.desc(), Role.display_name.asc())
         .all()
     )
-    assignment_counts, _ = _role_reference_counts()
+    assignment_counts, _ = _role_reference_counts(include_provider_counts=False)
     return _build_roles_summary(
         roles, assignment_counts, role_baseline_snapshot(roles), matching=len(roles)
     )
