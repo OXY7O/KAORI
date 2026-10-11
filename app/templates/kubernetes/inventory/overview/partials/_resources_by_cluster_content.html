@@ -19,11 +19,7 @@
                 <tr class="{{ table_ui.row_classes() }}">
                     <td class="{{ table_ui.cell_classes() }}">{{ table_ui.cluster_identity(cluster.name, cluster.environment) }}</td>
                     <td class="{{ table_ui.cell_classes() }}">
-                        {% if cluster.status == 'connected' %}
-                            {{ table_label.status_indicator_label('Connected', 'normal') }}
-                        {% else %}
-                            {{ table_label.status_indicator_label('Disconnected', 'critical') }}
-                        {% endif %}
+                        {{ table_label.status_indicator_label(cluster.connection_label, cluster.connection_tone) }}
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">
                         <span class="text-sm font-semibold text-content-primary">{{ cluster.total_objects }}</span>

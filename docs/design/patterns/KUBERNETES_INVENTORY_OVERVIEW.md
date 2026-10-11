@@ -121,3 +121,14 @@ than its peers.
 
 - The drawer uses the concise source label `Committed Snapshot`, rendered with `detail_row(..., nowrap=True)`, so `Snapshot Source` stays horizontally aligned with `Last Collected` and `Freshness Window`.
 - Inventory Signals are rendered as full-width stacked callouts. Each additional signal starts on the next row; signal cards are not placed side by side.
+
+
+## Collection Coverage and Connection State
+
+A fresh `ClusterInventory.collected_at` timestamp does not establish a complete
+inventory observation. Fleet health, snapshot context, row signals, and detail
+guidance must distinguish fully `Collected` family evidence from partial, failed,
+or absent `collection_evidence`. Unknown connection status means `Not Observed`,
+not a confirmed disconnection. A zero asset count without a committed snapshot
+is not proof that zero objects were collected. All readings are committed-state
+only and use existing KAORI semantic labels.

@@ -50,10 +50,36 @@ def _is_stale_inventory(value: datetime | None) -> bool:
     return age.total_seconds() > INVENTORY_FRESHNESS_HOURS * 3600
 
 
+def _collection_evidence_complete(evidence: dict[str, Any] | None) -> bool:
+    """A timestamp alone never establishes complete resource-family collection."""
+    return bool(evidence) and all(state == 'Collected' for state in evidence.values())
+
+
+def _collection_evidence_exceptions(
+    evidence: dict[str, Any] | None, synced_at: datetime | None
+) -> list[tuple[str, str]]:
+    if synced_at is None:
+        return []
+    if not evidence:
+        return [('inventory', 'Not Reported')]
+    return [(name, str(state)) for name, state in evidence.items() if state != 'Collected']
+
+
+def _connection_presentation(value: str | None) -> tuple[str, str]:
+    key = str(value or '').strip().lower()
+    if key == 'connected':
+        return 'Connected', 'normal'
+    if key == 'failed':
+        return 'Disconnected', 'critical'
+    return 'Not Observed', 'unknown'
+
+
 def _build_inventory_signals(
     *,
     connected: bool,
     synced_at: datetime | None,
+    connection_status: str = 'unknown',
+    collection_evidence: dict[str, Any] | None = None,
     node_count: int,
     workload_count: int,
     pod_count: int,
@@ -64,11 +90,13 @@ def _build_inventory_signals(
     if not connected:
         signals.append(
             {
-                'label': 'Connection Risk',
-                'tone': 'critical',
+                'label': 'Connection Risk' if connection_status == 'failed' else 'Connection Not Observed',
+                'tone': 'critical' if connection_status == 'failed' else 'unknown',
                 'icon': 'plug-zap',
                 'description': (
-                    'The cluster connection is unavailable, so future inventory updates cannot be confirmed.'
+                    'Cluster connection is reported failed; future inventory updates cannot be confirmed.'
+                    if connection_status == 'failed'
+                    else 'Current cluster connection readiness has not been observed.'
                 ),
             }
         )
@@ -91,6 +119,16 @@ def _build_inventory_signals(
                 'description': (
                     f'The latest snapshot is older than the {INVENTORY_FRESHNESS_HOURS}-hour freshness window.'
                 ),
+            }
+        )
+
+    if _collection_evidence_exceptions(collection_evidence, synced_at):
+        signals.append(
+            {
+                'label': 'Collection Incomplete',
+                'tone': 'warning',
+                'icon': 'database-zap',
+                'description': 'Some resource families lack complete committed collection evidence.',
             }
         )
 
@@ -124,15 +162,17 @@ def _inventory_guidance(
     connected: bool,
     synced_at: datetime | None,
     signals: list[dict[str, str]],
+    connection_status: str = 'unknown',
+    collection_evidence: dict[str, Any] | None = None,
 ) -> dict[str, str]:
     if not connected:
         return {
-            'title': 'Restore Cluster Connection',
+            'title': 'Restore Cluster Connection' if connection_status == 'failed' else 'Verify Cluster Connection',
             'description': (
                 'Reconnect the cluster before relying on future inventory updates or '
                 'using this snapshot for operational decisions.'
             ),
-            'tone': 'critical',
+            'tone': 'critical' if connection_status == 'failed' else 'unknown',
             'icon': 'plug-zap',
         }
     if synced_at is None:
@@ -154,6 +194,16 @@ def _inventory_guidance(
             ),
             'tone': 'warning',
             'icon': 'refresh-cw',
+        }
+    if _collection_evidence_exceptions(collection_evidence, synced_at):
+        return {
+            'title': 'Review Collection Coverage',
+            'description': (
+                'The latest committed snapshot has missing or incomplete resource-family collection evidence. '
+                'Review synchronization results before interpreting absent assets as zero.'
+            ),
+            'tone': 'warning',
+            'icon': 'database-zap',
         }
     if signals:
         return {
@@ -249,8 +299,10 @@ def _selected_freshness_scope(
     exceptions = [
         (cluster.name, family, state)
         for cluster in selected
-        for family, state in (summary.get(cluster.id, {}).get('collection_evidence') or {}).items()
-        if state != 'Collected'
+        for family, state in _collection_evidence_exceptions(
+            summary.get(cluster.id, {}).get('collection_evidence'),
+            summary.get(cluster.id, {}).get('synced_at'),
+        )
     ]
     return selected, committed, exceptions
 
@@ -461,9 +513,13 @@ def get_inventory_overview() -> dict[str, Any]:
         total_objects = sum(counts.values())
         sync_label, sync_tone = _sync_status(synced_at)
         connected = cluster.status == 'connected'
+        collection_evidence = summary.get('collection_evidence') or {}
+        connection_label, connection_tone = _connection_presentation(cluster.status)
         signals = _build_inventory_signals(
             connected=connected,
             synced_at=synced_at,
+            connection_status=cluster.status,
+            collection_evidence=collection_evidence,
             node_count=counts['nodes'],
             workload_count=counts['workloads'],
             pod_count=counts['pods'],
@@ -486,6 +542,8 @@ def get_inventory_overview() -> dict[str, Any]:
                 'name': cluster.name,
                 'environment': cluster.environment,
                 'status': cluster.status,
+                'connection_label': connection_label,
+                'connection_tone': connection_tone,
                 'kubernetes_version': summary.get('version') or '-',
                 'synced_at': synced_at,
                 'sync_status_label': sync_label,
@@ -501,6 +559,8 @@ def get_inventory_overview() -> dict[str, Any]:
                     connected=connected,
                     synced_at=synced_at,
                     signals=signals,
+                    connection_status=cluster.status,
+                    collection_evidence=collection_evidence,
                 ),
             }
         )
@@ -601,7 +661,7 @@ def get_inventory_health() -> dict[str, Any]:
             stale_synced += 1
         else:
             fresh_synced += 1
-            if connected:
+            if connected and _collection_evidence_complete(inventory.collection_evidence):
                 healthy_clusters += 1
 
         if collected_at and (last_sync is None or collected_at > last_sync):
