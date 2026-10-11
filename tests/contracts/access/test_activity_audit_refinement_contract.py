@@ -300,7 +300,8 @@ def test_activity_audit_administrative_source_scope_is_read_only_and_permission_
     assert "response.headers['Cache-Control'] = 'no-store, max-age=0'" in routes
     assert "'automatic-jobs': {" in source
     assert "'tenant-sync': {" in source
-    assert "AuditEvent.action.startswith(specification['prefix'])" in source
+    assert "AuditEvent.action.startswith(specification['prefix'], autoescape=True)" in source
+    assert "request.headers.get('HX-History-Restore-Request') != 'true'" in routes
     assert "AuditEvent.target_type.in_(specification['target_types'])" in source
     assert 'paginate_query(query, page=page, per_page=5)' in source
     assert 'if selected not in available:' in source

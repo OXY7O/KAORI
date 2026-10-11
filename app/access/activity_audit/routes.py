@@ -23,7 +23,10 @@ def _request_int(name: str, default: int) -> int:
 @bp.get('/')
 @permission_required('activity_audit.view')
 def index() -> ResponseReturnValue:
-    is_htmx = request.headers.get('HX-Request') == 'true'
+    is_htmx = (
+        request.headers.get('HX-Request') == 'true'
+        and request.headers.get('HX-History-Restore-Request') != 'true'
+    )
     context = build_activity_audit_context(
         actor_key=request.args.get('actor_key'),
         page=_request_int('page', 1),

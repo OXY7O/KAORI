@@ -56,7 +56,7 @@ def build_administrative_evidence_context(
     query = (
         AuditEvent.query.filter(
             AuditEvent.target_type.in_(specification['target_types']),
-            AuditEvent.action.startswith(specification['prefix']),
+            AuditEvent.action.startswith(specification['prefix'], autoescape=True),
         )
         .order_by(AuditEvent.created_at.desc(), AuditEvent.id.desc())
     )
