@@ -883,6 +883,59 @@ must not be substituted for **complete** provider read-back,
 successor acknowledgment, or a verified Released finalizer.
 Regression fixtures were authored but **not run** under HOLD.
 
+## G3 — exact related-resource transitions in complete Capsule provider LISTs (source only)
+
+The existing `inspect_capsule_readback_candidate` now incorporates
+`_review_related_scope` for **all** resource candidates from the exact
+`build_capsule_handoff_worklist`: ResourceQuota, LimitRange and RoleBinding.
+It compares the complete original and current bounded canonical LIST
+inventory, preserving every protected/noncandidate resource. An optional
+`related_transfer_evidence` maps **every** candidate's
+`(namespace, kind, name)` to the original raw object, separately
+observed current object and exact reviewed KAORI label-key list.
+This raw scope must be complete—no extras, missing targets or arbitrary
+secret-bearing fields—or the comparison rejects it.
+
+Each candidate's `before` is verified against its original UID/RV,
+policy/metadata hashes and binding contract using the existing
+`classify_capsule_related_metadata_readback`. Each `current` raw
+object is independently reclassified into the **same exact current
+canonical LIST row** with the existing inventory normalizer. Only
+a complete metadata-only transfer with a *new* resourceVersion is
+structurally `provider_markers_transferred`; unchanged exact
+source and RV are `pending_provider_transfer`; wrong/missing raw
+evidence, partial transfer, unknown origin, changed subjects/roleRef,
+policy, UID, ownerReferences, annotations, finalizers, Namespace or
+foreign labels are ambiguous/FAIL. Changed provider LIST revision
+is explainable only in a Namespace/kind that actually contains such an
+exact candidate transfer, with the original object count preserved.
+Other LIST revision drift, additions/removals/replacements, any
+foreign/unadmitted row change and GlobalResourceQuota or Capsule
+CR policy drift remain blocked.
+
+A changed top-level SHA alone does **not** establish a transfer.
+Without complete raw evidence, changed candidate data becomes
+`ambiguous_recovery_required`, never success. For existing source
+callers with no transferred related resources, unmodified KAORI
+candidates may still be counted as pending, while all actual transfer
+proof is missing. Results add bounded nonsecret
+`related_resource_observations` and deterministic readback SHA/counts;
+the full G3 status remains
+`readback_candidate_recovery_review_required` and
+`provider_snapshot_authenticity_verified=false`,
+`provider_handoff_verified=false`, `auto_retry_authorized=false`,
+`release_authorized=false` **even with every object structurally
+transferred**.
+
+**Still required for G3 PASS:** an operator-authorized service
+acquiring both raw Kubernetes snapshots and complete LISTs over an
+authenticated provider connection, verified current actor SSR/SAR and
+per-object independent consent, immutable START before the first
+write, guarded conditional dry-run/PATCH, durable attempt/outcome
+evidence, unambiguous complete read-back and manual recovery for
+partial/lost-commit cases. No API call, database write, executor,
+Release or runtime test is performed by this source-only comparator.
+
 ## Required before completing #1229
 
 1. Build on the SHA-bound Namespace and cluster-scoped
