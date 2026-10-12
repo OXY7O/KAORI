@@ -296,15 +296,14 @@
                     <tbody class="{{ table_ui.body_classes() }}">
                         {% for row in analytics.alert_rows %}
                             <tr class="{{ table_ui.row_classes() }}">
-                                <td class="px-4 py-3">
-                                    <p class="font-semibold text-content-primary">{{ row.name }}</p>
-                                    <p class="mt-0.5 max-w-xl text-xs text-content-muted">{{ row.registry_name }} · {{ row.summary }}</p>
+                                <td class="{{ table_ui.cell_classes() }}">
+                                    {{ table_ui.title_cell(row.name, row.registry_name ~ ' · ' ~ row.summary) }}
                                 </td>
-                                <td class="px-4 py-3">{{ table_label.status_indicator_label(row.severity|title, row.severity if row.severity in ['critical','warning','info'] else 'unknown') }}</td>
-                                <td class="px-4 py-3">{{ table_label.status_indicator_label(row.effective_state|title, 'warning' if row.effective_state == 'pending' else ('info' if row.effective_state == 'suppressed' else 'normal') ) }}</td>
-                                <td class="px-4 py-3 text-content-secondary">{{ row.target }}</td>
-                                <td class="px-4 py-3 text-content-secondary">{{ row.starts_at_display }}</td>
-                                <td class="px-4 py-3 text-content-secondary">{{ row.source }}</td>
+                                <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(row.severity|title, row.severity if row.severity in ['critical','warning','info'] else 'unknown') }}</td>
+                                <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(row.effective_state|title, 'warning' if row.effective_state == 'pending' else ('info' if row.effective_state == 'suppressed' else 'normal') ) }}</td>
+                                <td class="{{ table_ui.cell_classes() }} text-content-secondary">{{ row.target }}</td>
+                                <td class="{{ table_ui.cell_classes() }} text-content-secondary">{{ row.starts_at_display }}</td>
+                                <td class="{{ table_ui.cell_classes() }} text-content-secondary">{{ row.source }}</td>
                             </tr>
                         {% else %}
                             <tr>
