@@ -95,7 +95,11 @@ def build_platform_operations_overview_context(
                         'Policies Enabled',
                         f'{lifecycle["enabled_domain_count"]} / {lifecycle["managed_domain_count"]}',
                     ),
-                    ('archive', 'Active Archives', lifecycle['active_archive_total']),
+                    (
+                        'archive',
+                        'Active Archives / Jobs',
+                        f'{lifecycle["active_archive_total"]} / {lifecycle["active_job_total"]}',
+                    ),
                     ('circle-x', 'Failed · 24H', lifecycle['failed_archive_24h']),
                 ),
                 'action_endpoint': 'platform_operations.data_lifecycle.index',
