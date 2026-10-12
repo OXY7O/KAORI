@@ -337,6 +337,15 @@ def build_object_storage_recommendation_findings(
                 provider_key=provider_key, provider_label=provider_label,
             ))
             for bucket in system.buckets:
+                # A recently collected system cannot make an older bucket
+                # projection a currently assessed governance or capacity risk.
+                observed = bucket.observed_at
+                if observed is None:
+                    continue
+                if observed.tzinfo is None:
+                    observed = observed.replace(tzinfo=UTC)
+                if observed < cutoff:
+                    continue
                 findings.extend(_quota_findings(
                     rules=rules, system=system, bucket=bucket,
                     provider_key=provider_key, provider_label=provider_label,
