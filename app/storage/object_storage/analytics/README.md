@@ -271,3 +271,7 @@ Prometheus `ALERTS` is a global metrics family even when its Metrics Source runt
 ## Bounded Analytics page selectors (#1391)
 
 Ordinary Analytics GET, filter updates and HTMX record fragments load only lightweight Object Storage system identity and committed inventory-observation fields for selector choices. The read path no longer eagerly loads every bucket from the entire registered fleet. Worker collection remains the only path that reads selected-system per-bucket inventory; provider calls never occur in the normal page request. Validate large-fleet SQL statement/object counts and six-page browser regressions during DevContainer UAT.
+
+## Snapshot validity and attempt-state labels (#1393)
+
+Hard expiry at `expires_at + stale_grace_minutes` takes precedence over a pending or failed refresh label. After that boundary the snapshot remains stored for audit but is `usable=False` and labeled `Expired` with explicit `Worker Failed` or `Refreshing` context. Within stale grace, failed worker attempts may still display last-good committed evidence as degraded. Freshness does not change the #1368 retry rule or JobExecution's worker-attempt status.
