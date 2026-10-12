@@ -72,48 +72,6 @@ def _governance_replication_rows(items: list[Any], identity_by_id: dict[int, Any
     ]
 
 
-def _filter_governance_rows(
-    rows: list[dict[str, Any]],
-    *,
-    active_tab: str,
-    search: str,
-    provider: str,
-    retention: str,
-    immutability: str,
-    state: str,
-) -> list[dict[str, Any]]:
-    search_key = search.strip().casefold()
-    provider_key = provider.strip().casefold()
-    filtered: list[dict[str, Any]] = []
-    for row in rows:
-        if provider_key and str(row['provider_label']).casefold() != provider_key:
-            continue
-        if active_tab == 'policies':
-            if retention and row['retention_label'].casefold().replace(' ', '_') != retention:
-                continue
-            if immutability and row['immutability_label'].casefold().replace(' ', '_') != immutability:
-                continue
-            searchable = (row['project'], row['provider_label'])
-        else:
-            enabled = row['enabled']
-            observed_state = 'enabled' if enabled is True else ('disabled' if enabled is False else 'unknown')
-            if state and observed_state != state:
-                continue
-            searchable = (
-                row['name'],
-                row['provider_label'],
-                row['trigger_type'],
-                row['source_registry'],
-                row['destination_registry'],
-                row['destination_namespace'],
-            )
-        if search_key and search_key not in ' '.join(str(value or '') for value in searchable).casefold():
-            continue
-        filtered.append(row)
-    return filtered
-
-
-
 def _governance_capability_counts(
     governance_states: dict[int, RegistryGovernanceState],
     source_ids: list[int],
