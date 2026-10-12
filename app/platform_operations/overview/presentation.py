@@ -61,8 +61,14 @@ def build_platform_operations_overview_context(
                     ('triangle-alert', 'Execution / Policy Alerts', f'{attention} / {policy_attention}'),
                     ('circle-check', 'Completed · 24H', _count_value(job_stats.get('completed_24h', 0))),
                 ),
-                'action_endpoint': 'jobs.executions',
-                'action_label': 'Open Jobs & Executions',
+                'action_endpoint': (
+                    'jobs.configuration' if policy_attention and not attention else 'jobs.executions'
+                ),
+                'action_label': (
+                    'Review Job Configuration'
+                    if policy_attention and not attention
+                    else 'Open Jobs & Executions'
+                ),
                 'boundary_label': 'Canonical execution evidence',
                 'boundary_title': 'Execution Evidence',
                 'boundary_description': (
