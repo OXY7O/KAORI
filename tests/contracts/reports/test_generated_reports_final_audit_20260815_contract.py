@@ -72,7 +72,9 @@ def test_generated_archive_transition_uses_one_canonical_status_contract() -> No
 
     assert 'ARCHIVABLE_STATUSES = (' in service
     assert "'requested',\n    'failed',\n    'ready'," in service
-    assert 'Report.status.in_(ARCHIVABLE_STATUSES)' in service
+    assert 'report.status not in ARCHIVABLE_STATUSES' in service
+    assert 'active_ids = _get_active_report_generation_ids(reports)' in service
+    assert '.with_for_update()' in service
     assert "'can_archive_report': report.status in ARCHIVABLE_STATUSES" in service
     assert 'if report.status not in ARCHIVABLE_STATUSES:' in service
     assert 'Queued reports cannot be archived' not in service

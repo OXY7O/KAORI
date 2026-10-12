@@ -146,3 +146,7 @@ Canonical Report JobExecution `integration_type` and `integration_instance_id` c
 ### Generate report naming boundary (#1545)
 
 Operator report names are optional, trimmed, and bounded at 255 Unicode code points before report persistence to match `Report.name`'s existing VARCHAR(255) contract. Over-limit names render actionable validation feedback. The wizard input uses the corresponding HTML maxlength as convenience only; server-side checks remain authoritative. No schema migration is necessary.
+
+### Generated Reports concurrent archive admission (#1557)
+
+Archive (single/bulk) and worker generation serialize against the Report row with the existing database transaction/row-lock contract. Archive rejects any report with an active canonical JobExecution for `report:<id>` even when its retained artifact makes the report lifecycle still `ready`. Bulk archive is atomic: any missing, ineligible, or active request rejects the entire selection with actionable counts. The worker rechecks archived lifecycle under a row lock after storage preflight and before committing `generating`, and failure cleanup never overwrites an archived record. The Registry reads one batched active-job query per page, not per row. Historical committed artifact and job evidence remain owned by the existing Reports/Platform Operations boundaries.
