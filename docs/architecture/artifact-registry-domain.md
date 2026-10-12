@@ -139,6 +139,12 @@ uses the same validated Registry read-contract eligibility as inventory and neve
 The default governance schedule is less frequent than inventory because policy state changes materially less
 often than artifact inventory.
 
+### Partial Governance evidence and non-destructive refresh (#1451)
+
+Governance Sync distinguishes successful provider-observed empty policy lists from unavailable collection. A failed replication API must **retain** prior committed replication records, not replace them with zero policies. Project-detail read failures are `Unavailable`, never inferred `Not Configured`; dimensions with unavailable fresh evidence retain previously committed project policy values where present, with their earlier conservative observation timestamp.
+
+A provider whose available dimensions were committed but one or more capabilities were unavailable commits a `partial` governance state with explicit capability error evidence. The fleet job reports partial success/warning rather than successful complete collection. Unsupported provider capability and valid observed-empty records are distinct from failure. This does not invoke Registry policy mutation, independent Inventory Sync, Security Sync or live UI provider reads.
+
 ### Governance Evidence Operations: Security Sync UX parity (#950)
 
 The Governance workspace follows the **same canonical sync interaction** as
