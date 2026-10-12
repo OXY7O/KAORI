@@ -574,8 +574,12 @@ def apply_template_owner_snapshot(template: ReportTemplate, user_id: int | None)
 
 
 def get_summary_cards(templates: list[dict[str, Any]]) -> list[dict[str, str]]:
-    system_templates = sum(int(template.get('_weight', 1)) for template in templates if template['ownership'] == 'system')
-    custom_templates = sum(int(template.get('_weight', 1)) for template in templates if template['ownership'] == 'custom')
+    system_templates = sum(
+        int(template.get('_weight', 1)) for template in templates if template['ownership'] == 'system'
+    )
+    custom_templates = sum(
+        int(template.get('_weight', 1)) for template in templates if template['ownership'] == 'custom'
+    )
     active_custom_templates = sum(
         int(template.get('_weight', 1))
         for template in templates if template['ownership'] == 'custom' and template['status'] == 'active'
@@ -613,15 +617,23 @@ def get_summary_cards(templates: list[dict[str, Any]]) -> list[dict[str, str]]:
 
 
 def get_template_posture(templates: list[dict[str, Any]]) -> dict[str, Any]:
-    analytics_count = sum(int(item.get('_weight', 1)) for item in templates if item.get('family') == REPORT_FAMILY_ANALYTICS)
-    inventory_count = sum(int(item.get('_weight', 1)) for item in templates if item.get('family') == REPORT_FAMILY_INVENTORY)
+    analytics_count = sum(
+        int(item.get('_weight', 1)) for item in templates if item.get('family') == REPORT_FAMILY_ANALYTICS
+    )
+    inventory_count = sum(
+        int(item.get('_weight', 1)) for item in templates if item.get('family') == REPORT_FAMILY_INVENTORY
+    )
     system_count = sum(int(item.get('_weight', 1)) for item in templates if item.get('ownership') == 'system')
     custom_count = sum(int(item.get('_weight', 1)) for item in templates if item.get('ownership') == 'custom')
     active_custom_count = sum(
-        int(item.get('_weight', 1)) for item in templates if item.get('ownership') == 'custom' and item.get('status') == 'active'
+        int(item.get('_weight', 1))
+        for item in templates
+        if item.get('ownership') == 'custom' and item.get('status') == 'active'
     )
     draft_count = sum(
-        int(item.get('_weight', 1)) for item in templates if item.get('ownership') == 'custom' and item.get('status') == 'draft'
+        int(item.get('_weight', 1))
+        for item in templates
+        if item.get('ownership') == 'custom' and item.get('status') == 'draft'
     )
     catalog_count = len(REPORT_TYPE_SPECS)
     catalog_analytics_count = sum(1 for spec in REPORT_TYPE_SPECS if spec.family == REPORT_FAMILY_ANALYTICS)
