@@ -17,3 +17,9 @@ def test_reports_queue_is_source_owned() -> None:
     source = (ROOT / 'app/reports/overview/service.py').read_text()
     assert 'get_queue_readiness(get_reports_queue_name())' in source
     assert "if not bool(worker_context.get('ready')):" in source
+
+
+def test_missing_worker_evidence_does_not_default_to_ready() -> None:
+    source = (ROOT / 'app/reports/overview/presentation.py').read_text()
+    assert "normalized.setdefault('report_engine_status', 'Unknown')" in source
+    assert "'reason': 'unverified'" in source
