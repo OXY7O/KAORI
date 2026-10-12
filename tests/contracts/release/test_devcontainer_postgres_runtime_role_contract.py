@@ -63,6 +63,8 @@ def test_devcontainer_role_provisioning_is_transactional_and_not_data_destructiv
     assert 'ON ALL TABLES IN SCHEMA public' in sql
     assert 'ON ALL SEQUENCES IN SCHEMA public' in sql
     assert 'REVOKE ALL PRIVILEGES' in sql
+    assert 'ON TABLE public.alembic_version FROM kaori_runtime' in sql
+    assert "has_table_privilege('kaori_runtime', 'public.alembic_version', 'UPDATE')" in sql
     assert 'ON TABLE public.capsule_handoff_ledger_events TO kaori_runtime' in sql
     assert 'GRANT SELECT, INSERT' in sql
     for denied in ('UPDATE', 'DELETE', 'TRUNCATE'):
@@ -155,7 +157,7 @@ def test_post_create_guides_transient_owner_bootstrap_for_empty_database() -> No
     post_create = (ROOT / '.devcontainer' / 'post-create.sh').read_text()
     assert 'docs/operations/devcontainer-postgres-fresh-bootstrap.md' in post_create
     assert 'KAORI: Initialize Fresh Database' in post_create
-    assert 'automatically by Compose' in post_create
+    assert 'prepared by Compose' in post_create
     assert 'Run "bash scripts/init_db.sh --bootstrap-admin"' not in post_create
 
 
