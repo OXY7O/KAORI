@@ -7,16 +7,20 @@ from sqlalchemy import and_, case, func
 
 from app.common.alert_case_source_state import active_alert_case_filters
 from app.common.automation_execution import execution_enabled
+from app.intelligence.verification import verification_outcome_counts
 from app.extensions.db import db
 from app.intelligence.catalog import INTELLIGENCE_CATALOG
 from app.intelligence.rule_presentation import normalize_rule
 from app.intelligence.service import get_active_recommendation_findings
 from app.models.alert_ops import AlertCase, AlertSilence
 from app.models.cluster import Cluster
+from app.models.integration import IntegrationInstance
+from app.models.inventory import ClusterInventory
 from app.models.intelligence import IntelligenceDecision, IntelligenceDecisionCandidate, IntelligenceExecutionJournal
 from app.models.knowledge import KnowledgeRunbookRevision
 from app.models.notification_channel import NotificationDelivery
 from app.models.object_storage import ObjectStorageSystem
+from app.models.registry import RegistryCollectionState
 
 
 def get_intelligence_overview_payload() -> dict[str, Any]:
@@ -27,10 +31,12 @@ def get_intelligence_overview_payload() -> dict[str, Any]:
     warning = sum(1 for item in findings if item.get('severity') == 'warning')
     active_domains = {str(item.get('domain') or '') for item in findings if item.get('domain')}
 
-    clusters = Cluster.query.count()
-    storage_systems = ObjectStorageSystem.query.count()
-    registered_assets = clusters + storage_systems
-    available_domains = int(clusters > 0) + int(storage_systems > 0)
+    coverage = _evidence_coverage()
+    clusters = coverage['kubernetes']['total']
+    storage_systems = coverage['object_storage']['total']
+    registry_instances = coverage['registry']['total']
+    registered_assets = coverage['total']
+    available_domains = sum(coverage[domain]['total'] > 0 for domain in ('kubernetes', 'object_storage', 'registry'))
 
     available_rules = sum(1 for rule in catalog if rule.get('status') == 'available')
     reserved_rules = sum(1 for rule in catalog if rule.get('status') == 'reserved')
@@ -41,6 +47,7 @@ def get_intelligence_overview_payload() -> dict[str, Any]:
     assets = {
         'kubernetes': clusters,
         'object_storage': storage_systems,
+        'registry': registry_instances,
     }
     summary = {
         'findings': len(findings),
@@ -60,29 +67,100 @@ def get_intelligence_overview_payload() -> dict[str, Any]:
         summary=summary,
         alerts=alerts,
         automation=automation,
+        evidence=coverage,
     )
 
     return {
         'posture': posture,
         'summary': summary,
         'assets': assets,
+        'evidence': coverage,
         'alerts': alerts,
         'automation': automation,
         'kpi_cards': _kpi_cards(summary=summary, alerts=alerts, automation=automation),
-        'posture_items': _posture_items(summary=summary, alerts=alerts, automation=automation),
+        'posture_items': _posture_items(summary=summary, alerts=alerts, automation=automation, evidence=coverage),
         'workspaces': _workspace_rows(summary=summary, alerts=alerts, automation=automation),
     }
 
 
+def _evidence_coverage() -> dict[str, Any]:
+    """Qualified 24-hour inventory baseline, not a claim that all evaluators are healthy.
+
+    This keeps the normal landing page committed/SQL-only. Security and analytics
+    capability availability remain owned by the originating domain.
+    """
+    now = datetime.now(UTC)
+    cutoff = now - timedelta(days=1)
+    kubernetes_total = Cluster.query.count()
+    kubernetes_current = int(
+        db.session.query(func.count(Cluster.id))
+        .filter(
+            db.session.query(ClusterInventory.id)
+            .filter(
+                ClusterInventory.cluster_id == Cluster.id,
+                ClusterInventory.collected_at >= cutoff,
+                ClusterInventory.collected_at <= now,
+            )
+            .exists()
+        )
+        .scalar() or 0
+    )
+    storage_total = ObjectStorageSystem.query.count()
+    storage_current = ObjectStorageSystem.query.filter(
+        ObjectStorageSystem.inventory_observed_at >= cutoff,
+        ObjectStorageSystem.inventory_observed_at <= now,
+    ).count()
+    registry_scope = IntegrationInstance.query.filter(
+        IntegrationInstance.integration_type == 'registry',
+        IntegrationInstance.enabled.is_(True),
+        IntegrationInstance.lifecycle_status == 'active',
+    )
+    registry_total = registry_scope.count()
+    registry_current = int(
+        registry_scope.join(
+            RegistryCollectionState,
+            RegistryCollectionState.integration_instance_id == IntegrationInstance.id,
+        ).filter(
+            RegistryCollectionState.status == 'ready',
+            RegistryCollectionState.last_committed_at >= cutoff,
+            RegistryCollectionState.last_committed_at <= now,
+        ).count()
+    )
+    by_domain = {
+        'kubernetes': {'total': kubernetes_total, 'recent': kubernetes_current},
+        'object_storage': {'total': storage_total, 'recent': storage_current},
+        'registry': {'total': registry_total, 'recent': registry_current},
+    }
+    total = sum(item['total'] for item in by_domain.values())
+    recent = sum(item['recent'] for item in by_domain.values())
+    return {
+        **by_domain,
+        'total': total,
+        'recent': recent,
+        'missing_or_stale': total - recent,
+        'complete': bool(total) and recent == total,
+        'lookback_hours': 24,
+    }
+
+
 def _automation_summary() -> dict[str, Any]:
-    pending_candidates = IntelligenceDecisionCandidate.query.filter_by(review_status='pending').count()
-    awaiting_approval = IntelligenceDecision.query.filter_by(workflow_status='pending_approval').count()
+    now = datetime.now(UTC)
+    pending_candidates = IntelligenceDecisionCandidate.query.filter(
+        IntelligenceDecisionCandidate.review_status == 'pending',
+        IntelligenceDecisionCandidate.expires_at > now,
+    ).count()
+    awaiting_approval = IntelligenceDecision.query.filter(
+        IntelligenceDecision.workflow_status == 'pending_approval',
+        IntelligenceDecision.expires_at > now,
+    ).count()
     failures = IntelligenceExecutionJournal.query.filter(
         db.or_(
             IntelligenceExecutionJournal.orchestration_status == 'dead_letter',
             IntelligenceExecutionJournal.status == 'failed',
         )
     ).count()
+    verification_failed = verification_outcome_counts()['failed']
+    failures += verification_failed
     published_runbooks = KnowledgeRunbookRevision.query.filter_by(publication_status='published').count()
     enabled = execution_enabled()
     pending_governance = pending_candidates + awaiting_approval
@@ -101,6 +179,7 @@ def _automation_summary() -> dict[str, Any]:
         'awaiting_approval': awaiting_approval,
         'pending_governance': pending_governance,
         'failures': failures,
+        'verification_failures': verification_failed,
         'published_runbooks': published_runbooks,
         'execution_enabled': enabled,
         'execution_label': 'Enabled' if enabled else 'Execution Disabled',
@@ -180,6 +259,7 @@ def _overview_posture(
     summary: dict[str, int],
     alerts: dict[str, int],
     automation: dict[str, Any],
+    evidence: dict[str, Any] | None = None,
 ) -> dict[str, str]:
     critical_total = summary['critical'] + alerts['critical']
     if critical_total:
@@ -229,10 +309,16 @@ def _overview_posture(
                 'but no managed infrastructure asset is registered yet.'
             ),
         }
+    if not evidence or not evidence['complete']:
+        return {
+            'label': 'Evidence Review Required',
+            'tone': 'warning',
+            'helper': 'No active finding is projected, but committed inventory coverage is missing or older than 24 hours.',
+        }
     return {
-        'label': 'Operationally Clear',
-        'tone': 'normal',
-        'helper': 'No current Intelligence signal requires immediate operator action.',
+        'label': 'No Active Findings',
+        'tone': 'info',
+        'helper': 'No active Intelligence finding or AlertCase is projected from the evaluated committed evidence; this is not a provider-health claim.',
     }
 
 
@@ -292,6 +378,7 @@ def _posture_items(
     summary: dict[str, int],
     alerts: dict[str, int],
     automation: dict[str, Any],
+    evidence: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     critical_total = summary['critical'] + alerts['critical']
     return [
@@ -309,10 +396,10 @@ def _posture_items(
         },
         {
             'label': 'Evidence Freshness',
-            'value': 'Committed State',
-            'supporting': 'Overview is database-backed; provider collection and refresh stay worker-owned.',
+            'value': f'{(evidence or {}).get("recent", 0)} / {(evidence or {}).get("total", 0)} Recent Inventory',
+            'supporting': '24h committed inventory baseline only; security/metrics/analytics evidence is separately qualified. Overview is database-backed; provider collection and refresh stay worker-owned.',
             'icon': 'shield-check',
-            'tone': 'info',
+            'tone': 'normal' if evidence and evidence['complete'] else 'warning',
             'href_endpoint': 'alert_intelligence.index',
         },
         {

@@ -49,6 +49,15 @@ The Overview must preserve capability ownership:
 
 The Overview may surface top recommendation priorities and lightweight control posture, but it must not duplicate alert retrieval, execute automation, or become another analytics provider client.
 
+
+### Intelligence Overview committed-evidence posture and alert semantics (#1490–#1492)
+
+- **Active AlertCase** is the source-qualified recommendation-origin condition `workflow_state != closed` **and** `source_state in (firing, unknown)`; resolved-source cases remain available in Alert Intelligence history, not Active. Critical and warning counts require **firing** evidence. Source-unknown remains an attention state and must not become false critical or green.
+- Pending Automation candidates and pending approval decisions are actionable only while `expires_at > now`. Post-action verification failures are counted in operational control attention even if resolver execution returned `succeeded`. The shared SQL-grouped verification projection is used by Intelligence Overview and Automation Control.
+- **Evidence Freshness** is a conservative **24-hour committed Inventory baseline** for managed Kubernetes, Object Storage, and enabled/active Registry instances; it is *not* a guarantee of scan/security/metrics/rule evaluator coverage. The Overview must not say `Operationally Clear` merely because no findings exist. Incomplete recent Inventory produces `Evidence Review Required`; complete inventory with no findings is `No Active Findings`, not a provider-health claim.
+- Alert notification delivery rows stay auditable. Only failed alert-operation deliveries updated during the past 24 hours affect the current Overview control-attention summary; a successful retry transitions its row to `sent`. Historic failures remain in Notification Channels.
+- The Overview remains a SQL/committed-evidence projection; there is no provider request, automatic corrective action, or parallel Intelligence rule engine on page load. Live UAT must also validate collection lag, record expiry, failed verification and source-unknown transitions before acceptance.
+
 ## Baseline lock semantics
 
 The Intelligence surface may be baseline-locked while feature delivery is still in
