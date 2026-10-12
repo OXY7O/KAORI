@@ -44,7 +44,7 @@ def _origin(value: str) -> str | None:
     if port is not None and (port < 1 or port > 65535):
         return None
     hostname = parsed.hostname.lower()
-    if hostname.endswith('.') or '%' in hostname or '\\' in hostname or not hostname.isascii():
+    if hostname.endswith('.') or ':' in hostname or '%' in hostname or '\\' in hostname or not hostname.isascii():
         return None
     # urlsplit normalizes host case; retain an explicit port when approved.
     return 'https://' + hostname + (f':{port}' if port is not None and port != 443 else '')
