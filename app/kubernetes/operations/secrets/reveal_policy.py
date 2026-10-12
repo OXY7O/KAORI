@@ -174,6 +174,7 @@ def update_cluster_reveal_readiness(
     *,
     encryption_verified: bool,
     audit_verified: bool,
+    commit: bool = True,
 ) -> Cluster:
     cluster.secret_reveal_encryption_verified = bool(encryption_verified)
     cluster.secret_reveal_audit_verified = bool(audit_verified)
@@ -185,7 +186,8 @@ def update_cluster_reveal_readiness(
             {'status': 'expired'},
             synchronize_session=False,
         )
-    db.session.commit()
+    if commit:
+        db.session.commit()
     return cluster
 
 
@@ -195,6 +197,7 @@ def set_namespace_reveal_policy(
     policy: str | None,
     *,
     actor_user_id: int | None,
+    commit: bool = True,
 ) -> NamespaceRevealPolicyChange:
     normalized_namespace = (namespace or '').strip()
     if not normalized_namespace:
@@ -225,7 +228,8 @@ def set_namespace_reveal_policy(
     if normalized_policy == 'disabled':
         if existing is not None:
             db.session.delete(existing)
-        db.session.commit()
+        if commit:
+            db.session.commit()
         return NamespaceRevealPolicyChange(
             cluster=cluster,
             namespace=normalized_namespace,
@@ -246,7 +250,8 @@ def set_namespace_reveal_policy(
         existing.policy = normalized_policy
         existing.updated_by_user_id = actor_user_id
 
-    db.session.commit()
+    if commit:
+        db.session.commit()
     return NamespaceRevealPolicyChange(
         cluster=cluster,
         namespace=normalized_namespace,
