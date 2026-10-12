@@ -367,8 +367,10 @@ def duplicate_custom_template(template_id: int, user_id: int | None) -> tuple[bo
 def get_template_form_state(
     form: MultiDict[str, str] | ImmutableMultiDict[str, str],
 ) -> dict[str, Any]:
-    report_type = normalize_report_type(form.get('report_type', 'analytics_overview'))
-    sections = sanitize_sections(report_type, form.getlist('sections'))
+    # POST values are authoritative until validated; never replace a rejected type.
+    report_type = str(form.get('report_type') or '').strip()
+    fallback_type = report_type if report_type in get_allowed_report_types() else REPORT_TYPE_SPECS[0].value
+    sections = sanitize_sections(fallback_type, form.getlist('sections'))
     if not sections:
         sections = get_default_sections(report_type)
 
@@ -376,9 +378,9 @@ def get_template_form_state(
         'name': form.get('name', '').strip(),
         'description': form.get('description', '').strip(),
         'report_type': report_type,
-        'status': normalize_template_status(form.get('status', 'draft')),
+        'status': str(form.get('status') or '').strip(),
         'sections': sections,
-        'output_format': str(form.get('output_format', get_default_output_format(report_type))).strip().lower(),
+        'output_format': str(form.get('output_format', get_default_output_format(fallback_type))).strip().lower(),
     }
 
 
@@ -394,6 +396,9 @@ def validate_template_form_state(form_state: dict[str, Any]) -> list[str]:
         errors.append('Please select a valid report type.')
     if form_state['status'] not in {'draft', 'active'}:
         errors.append('Please select a valid template status.')
+    # Invalid catalog types fail before calling helpers that require published types.
+    if form_state['report_type'] not in get_allowed_report_types():
+        return errors
     if form_state['output_format'] not in get_allowed_output_formats(form_state['report_type']):
         errors.append('Please select an output format supported by the report type.')
     if not form_state['sections']:
