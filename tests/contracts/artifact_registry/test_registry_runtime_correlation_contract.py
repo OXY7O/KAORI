@@ -211,3 +211,15 @@ def test_runtime_binding_detail_template_compiles_and_handles_optional_container
     assert "detail.inventory_technical_row('Image Reference'" in source
     assert 'Security Exposure' in source
     assert 'Correlation Evidence' in source
+
+def test_pod_inventory_refresh_preserves_runtime_binding_foreign_keys() -> None:
+    persistence = (ROOT / 'app/kubernetes/inventory/persistence.py').read_text()
+    pod_sync = persistence.split('def save_pods(', 1)[1].split('def save_services(', 1)[0]
+
+    assert 'existing_pods = {' in pod_sync
+    assert '(row.namespace, row.pod_name): row' in pod_sync
+    assert 'existing_pods.pop(key, None)' in pod_sync
+    assert 'pod_inventory.collected_at = collected_at' in pod_sync
+    assert 'for stale_pod in existing_pods.values():' in pod_sync
+    assert 'db.session.delete(stale_pod)' in pod_sync
+    assert '.delete(' not in pod_sync

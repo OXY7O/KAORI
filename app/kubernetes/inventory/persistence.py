@@ -463,11 +463,12 @@ def save_pods(
     apps_api: AppsV1Api | None = None,
     batch_api: BatchV1Api | None = None,
 ) -> None:
-    PodInventory.query.filter_by(
-        cluster_id=cluster.id,
-    ).delete(
-        synchronize_session=False,
-    )
+    # Preserve Pod primary keys across snapshots: derived Registry runtime
+    # bindings reference PodInventory and must not disappear on every sync.
+    existing_pods = {
+        (row.namespace, row.pod_name): row
+        for row in PodInventory.query.filter_by(cluster_id=cluster.id).all()
+    }
 
     pods, collection_evidence = get_pods(
         api,
@@ -482,7 +483,10 @@ def save_pods(
     cluster_inventory.collection_evidence = committed_evidence
 
     for pod in pods:
-        pod_inventory = PodInventory()
+        key = (pod['namespace'], pod['pod_name'])
+        pod_inventory = existing_pods.pop(key, None)
+        if pod_inventory is None:
+            pod_inventory = PodInventory()
         pod_inventory.collected_at = collected_at
 
         pod_inventory.cluster_id = cluster.id
@@ -548,6 +552,11 @@ def save_pods(
         pod_inventory.created_at = pod['created_at']
 
         db.session.add(pod_inventory)
+
+    # Only genuinely absent Pods are deleted; their derived bindings cascade
+    # as intended. An unchanged Pod keeps its stable FK and committed binding.
+    for stale_pod in existing_pods.values():
+        db.session.delete(stale_pod)
 
 
 def save_services(
