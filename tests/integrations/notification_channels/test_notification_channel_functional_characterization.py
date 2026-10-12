@@ -77,6 +77,9 @@ class DeliveryQueryStub:
     def filter_by(self, **_kwargs: object) -> DeliveryQueryStub:
         return self
 
+    def with_for_update(self, **_kwargs: object) -> DeliveryQueryStub:
+        return self
+
     def first(self) -> object | None:
         return self.result
 
@@ -259,7 +262,12 @@ def test_notification_delivery_failure_is_persisted_as_retryable_evidence(
     monkeypatch.setattr(service, 'db', SimpleNamespace(session=session))
     monkeypatch.setattr(service, 'event_severity_scoped', lambda _event_type: True)
     monkeypatch.setattr(service, 'notification_delivery_max_attempts', lambda: 3)
-    monkeypatch.setattr(service, '_deliver', lambda _channel, _message: DeliveryResult(False, 'provider unavailable'))
+    def provider_send(_channel: object, _message: object) -> DeliveryResult:
+        assert session.commits == 1, 'Queued intent must commit before provider side effect'
+        return DeliveryResult(False, 'provider unavailable')
+
+    monkeypatch.setattr(service, '_deliver', provider_send)
+    monkeypatch.setattr(service, 'encrypt_credential', lambda _payload: 'enc:v1:test')
 
     stats = service.dispatch_notification_event(channel_ids=[7], event=_delivery_event())
 
@@ -278,7 +286,7 @@ def test_notification_delivery_failure_is_persisted_as_retryable_evidence(
     assert channel.last_delivery_status == 'failed'
     assert channel.last_delivery_message == 'provider unavailable'
     assert session.flushes == 1
-    assert session.commits == 1
+    assert session.commits == 2  # Queued intent before sending, outcome afterward.
 
 
 def test_notification_delivery_deduplicates_already_sent_event_without_provider_call(

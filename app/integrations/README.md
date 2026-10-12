@@ -264,3 +264,34 @@ Metrics Source and Alertmanager own binding mutation for their respective source
 Metrics Source and Alertmanager are source-owned mutation workspaces. Their binding registries expose Consumer Asset, provider identity selector, Consumer Profile, Resolver Preference, Binding Validation, Effective Resolution, and Actions with canonical pagination/loading behavior. Resolver preference is safety-first. Metrics sources add query-horizon routing: eligible/healthy sources are ranked by horizon match, then `Primary → Secondary → Fallback`, then routing weight, with lower numeric priority breaking remaining ties inside the same role/weight.
 
 A saved binding starts in `Validation Required`. Selector changes clear stale binding evidence and return the record to `Validation Required`; only the explicit binding `Validate` action rebuilds consumer-specific evidence. Provider Full Validation is intentionally provider-core only and never revalidates consumer bindings implicitly. Object Storage binding validation additionally persists canonical metric-family, label-schema, and executable-query readiness so Analytics can distinguish contract gaps from current runtime reachability. Kubernetes and Object Storage inventory/lifecycle pages show the relationship read-only and link operators back to the source workspace for mutation.
+
+
+## Notification Channels — durable delivery recovery (#1431)
+
+New outbound attempts commit their `notification_deliveries` journal row as
+`queued` with `attempt_count` incremented **before any provider request**;
+the result is committed separately. An encrypted transport/message snapshot
+is embedded in the existing journal JSON field (no schema migration). The
+snapshot is encrypted using the canonical
+`INTEGRATION_CREDENTIAL_KEY` rotation contract and is not exposed in
+Delivery Activity or Activity Audit.
+
+Recovery uses the existing maintenance Celery queue with one PostgreSQL
+`SKIP LOCKED` claim at a time (maximum 25 rows per invocation).
+`NOTIFICATION_DELIVERY_RECOVERY_ENABLED=false` is the safe default during
+DevContainer review; set it to `true` only after UAT approval.
+`NOTIFICATION_DELIVERY_RECOVERY_INTERVAL_MINUTES` defaults to 1 (1–60),
+`NOTIFICATION_DELIVERY_RETRY_DELAY_SECONDS` to 180 (120–86400,
+longer than the maximum provider transport timeout), and existing
+`NOTIFICATION_DELIVERY_MAX_ATTEMPTS` remains the bounded attempt budget.
+Recovery is independent of Alert Intelligence scheduling. Legacy records
+without the committed encrypted snapshot cannot be reliably replayed; policy,
+credentials and destination are rechecked before any attempt.
+
+**Guarantee: at-least-once attempts, not exactly-once provider delivery.**
+A worker interruption after remote acceptance but before committing its result
+can still cause a duplicate provider message. A `sent` journal row and unique
+channel/event identity suppress committed duplicates, but providers are external
+authorities and may not support remote idempotency. Do not enable the recovery
+schedule until Celery worker/Beat, database crash injection, secret rotation,
+test-adapter delivery, duplicate/concurrency and human acceptance are verified.
