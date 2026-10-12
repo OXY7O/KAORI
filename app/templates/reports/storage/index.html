@@ -459,7 +459,8 @@
                                           class="mt-4">
                                         {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                                         <button type="submit"
-                                                class="inline-flex min-h-9 items-center justify-center gap-2 rounded-md border border-brand-outline bg-kaori-soft px-4 text-sm font-semibold text-kaori-primary transition hover:bg-surface-hover"><i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>Check Artifact Integrity</button>
+                                                {% if payload.integrity_execution.is_active %}disabled aria-disabled="true"{% endif %}
+                                                class="inline-flex min-h-9 items-center justify-center gap-2 rounded-md border border-brand-outline bg-kaori-soft px-4 text-sm font-semibold text-kaori-primary transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-70"><i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>{{ 'Scan Running' if payload.integrity_execution.is_active else 'Check Artifact Integrity' }}</button>
                                     </form>
                                 {% endif %}
                             </div>
@@ -492,7 +493,14 @@
                         {% endif %}
                     </section>
                     <section class="border-t border-outline-subtle pt-5"
-                             data-storage-reference-integrity="true">
+                             data-storage-reference-integrity="true"
+                             {% if payload.integrity_execution.is_active %}
+                             hx-get="{{ url_for('reports.storage', workspace='integrity') }}"
+                             hx-select="[data-storage-reference-integrity]"
+                             hx-target="this"
+                             hx-swap="outerHTML"
+                             hx-trigger="every 5s"
+                             {% endif %}>
                         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                             <div>
                                 <p class="text-xs font-semibold text-kaori-primary">Reference Integrity</p>
@@ -504,6 +512,11 @@
                                 {{ table_label.status_indicator_label('Not Scanned', 'unknown') }}
                             {% endif %}
                         </div>
+                        {% if payload.integrity_execution.is_active %}
+                            <p class="mt-2 text-xs text-content-secondary" role="status">Worker scan is running; previous results remain historical until completion.</p>
+                        {% elif payload.integrity_execution.status == 'failed' %}
+                            <p class="mt-2 text-xs text-status-warning-text" role="alert">The latest scan failed. Review the worker and retry; previous results remain historical.</p>
+                        {% endif %}
                         {% if integrity %}
                             <dl class="mt-4 grid border-y border-outline-subtle sm:grid-cols-2 xl:grid-cols-4 xl:divide-x xl:divide-outline-subtle">
                                 <div class="py-3 sm:pr-4 xl:px-4 xl:first:pl-0">

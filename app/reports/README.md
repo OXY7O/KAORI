@@ -182,3 +182,7 @@ The Templates management workspace owns draft/active lifecycle and system/custom
 ### Report Templates bounded registry query (#1563)
 
 System templates remain definition-owned and first in the mixed registry. Custom template filtering, counting, and retrieval are database-side: shared KAORI pagination selects at most the current page size (default five) and a grouped type/status query supplies all-estate KPI counts without materializing the full custom estate. Search uses committed template metadata and catalog labels, not provider-live calls. No custom pagination abstraction is introduced.
+
+### Storage integrity scan worker ownership (#1595)
+
+A bounded reference integrity scan is dispatched through canonical report-storage JobExecution and the existing maintenance worker queue. The HTTP route only creates/attaches a job; the worker owns per-artifact storage checks. The page reads committed job results with active/failed states and HTMX refresh, without live provider I/O from the browser. Strong write-confirm-delete verification remains separate.
