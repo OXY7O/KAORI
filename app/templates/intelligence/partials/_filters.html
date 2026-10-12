@@ -20,6 +20,7 @@
       class="border-b border-outline-subtle bg-surface-hover px-4 py-4 sm:px-5">
     <input type="hidden" name="page" value="1">
     <input type="hidden"
+           id="{{ resolved_scope }}-filter-page-size"
            name="per_page"
            value="{{ payload.pagination.per_page }}">
     <div class="mb-4">
