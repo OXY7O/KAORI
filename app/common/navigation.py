@@ -41,7 +41,11 @@ _ENDPOINT_LABELS: dict[str, str] = {
     'artifact_registry.overview': 'Overview',
     'artifact_registry.inventory': 'Inventory',
     'artifact_registry.security': 'Security',
+    'artifact_registry.runtime_overview': 'Overview',
     'artifact_registry.runtime': 'Runtime Usage',
+    'artifact_registry.runtime_topology': 'Topology',
+    'artifact_registry.runtime_topology_data': 'Topology',
+    'artifact_registry.runtime_binding_details': 'Runtime Usage',
     'artifact_registry.governance': 'Governance',
     'artifact_registry.analytics': 'Analytics',
     # Analytics
@@ -243,6 +247,12 @@ def build_navigation_breadcrumb(
             BreadcrumbItem(integration_owner['provider_label']),
         ]
         items = _append_workflow(items, endpoint)
+    elif endpoint.startswith('artifact_registry.runtime'):
+        items = [
+            BreadcrumbItem('Artifact Registry', 'package'),
+            BreadcrumbItem('Runtime', 'waypoints'),
+            BreadcrumbItem(_leaf(endpoint, 'Overview')),
+        ]
     elif endpoint.startswith('artifact_registry.'):
         items = [
             BreadcrumbItem('Artifact Registry', 'package'),
