@@ -2,13 +2,14 @@ from __future__ import annotations
 
 from typing import TypedDict
 
+from sqlalchemy.orm import joinedload
+
 from app.integrations.observability.metrics_source.application.resolver import (
     _evaluate_binding,
     resolve_metrics_sources,
 )
-from app.models.metrics_source import MetricsSource
-from sqlalchemy.orm import joinedload
 from app.models.integration import IntegrationBinding, IntegrationInstance
+from app.models.metrics_source import MetricsSource
 
 
 class RegistryMetricsReadiness(TypedDict):
