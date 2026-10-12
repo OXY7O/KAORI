@@ -171,6 +171,16 @@ governed release pipeline      -> /var/lib/kaori/deploy-state/release.env
 
 The server deploy adapter merges `compose.production.yml` and `deploy/server/compose.server.yml`, injecting the immutable image digest and exact release identity. The governed GitHub deployment workflow owns **pre-migration backup → environment validation → migration → all application workers/Beat → verification**. Do not run `docker compose -f compose.production.yml up` alone: it bypasses the server overlay and split environment contract.
 
+If authentication schema or database connectivity is unavailable during server
+startup, the public **Database Setup Required** screen is a **read-only**
+readiness/administrator-notification surface (HTTP 503), not an operator CLI.
+It intentionally provides no DevContainer commands or production SQL/migration
+instructions. Diagnose and recover through the authorized `deploy/server`
+process and its logs, using DBA-managed operations where appropriate.
+Migration role separation, guarded first-admin provisioning and external
+PostgreSQL lifecycle remain tracked under #621/#1439/#1440; do not infer
+their completion from the UI.
+
 After deployment, inspect the existing server runtime through its supported verification entry point:
 
 ```bash

@@ -171,6 +171,22 @@ Shared ownership is mandatory:
 
 The setup page must not introduce authenticated Hero geometry, an oversized/nested workspace frame, a permanent troubleshooting rail, boxed peer cards for the primary action path, duplicate readiness summaries, page-local terminal chrome, arbitrary typography, custom CSS, provider calls, or database mutation from presentation code.
 
+**Production/non-development setup (issue #744, coordinated with #621/#1439):**
+Reuse the same single-H1, compact Violet canvas, status rail, semantic labels,
+neutral primary panel and read-only Retry Setup Check, but replace all
+DevContainer operator terminals with a concise administrator-action message.
+The anonymous production view **never exposes migration commands**,
+development host paths, database credentials, encryption variable names,
+migration role names, detailed missing-schema objects or privileged recovery
+operations. This applies both when the database is reachable but authentication
+schema is missing, and when PostgreSQL connectivity fails. Do not render
+Advanced Setup, terminal commands, encryption preflight or initialization steps
+for production; these belong in the governed server/DBA operator runbooks and
+deployment logs. Production first-admin/bootstrap, split migration identity,
+external-DB lifecycle and backup/rollback remain owned by #621/#1439/#1440,
+not by this presentation surface. Server readiness stays fail-closed (HTTP 503);
+the browser never starts a DB operation.
+
 ## Locked Security Contract
 
 - Login is rate-limited and Flask-WTF owns CSRF validation.

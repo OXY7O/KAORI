@@ -9,24 +9,18 @@
 {% block content %}
     {% set devcontainer_setup = config.get('APP_ENV') == 'development' and not config.get('TESTING', false) %}
     {% if devcontainer_setup %}
+        {# Development-only commands: never render them for an anonymous production request. #}
         {% set bootstrap_command = "docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml run --rm db-bootstrap" %}
         {% set manual_bootstrap_commands -%}
             # Host terminal: migrations require the one-shot kaori_migrator
             docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml run --rm db-bootstrap
         {%- endset %}
-    {% else %}
-        {# Preserve the established server/non-DevContainer recovery guidance. #}
-        {% set bootstrap_command = "bash scripts/init_db.sh --bootstrap-admin" %}
-        {% set manual_bootstrap_commands -%}
-            flask --app run:app db upgrade
-            flask --app run:app seed-rbac
+        {% set database_checks -%}
+            docker compose ps
+            pg_isready -h db -p 5432
         {%- endset %}
+        {% set initialization_flow_rows = [[('key-round', 'Confirm the Encryption Boundary', 'Preserve INTEGRATION_CREDENTIAL_KEY.'), ('database-zap', 'Run the Initial KAORI Database Bootstrap', 'Create schema, grants, and admin.'), ('refresh-cw', 'Return to the Readiness Check', 'Refresh the page, then sign in when ready.')]] %}
     {% endif %}
-    {% set database_checks -%}
-        docker compose ps
-        pg_isready -h db -p 5432
-    {%- endset %}
-    {% set initialization_flow_rows = [[('key-round', 'Confirm the Encryption Boundary', 'Preserve INTEGRATION_CREDENTIAL_KEY.'), ('database-zap', 'Run the Initial KAORI Database Bootstrap', 'Create schema, grants, and admin.'), ('refresh-cw', 'Return to the Readiness Check', 'Refresh the page, then sign in when ready.')]] %}
     <main class="min-h-screen bg-surface-page px-3 py-3 sm:px-4 sm:py-4">
         <div class="mx-auto w-full max-w-4xl rounded-xl border border-outline-subtle bg-surface-card px-4 py-4 shadow-sm sm:px-5 sm:py-5 lg:px-6"
              data-kaori-setup-workspace="release-v4"
@@ -52,9 +46,17 @@
                         class="text-lg font-semibold leading-6 text-content-primary">Database Setup Required</h1>
                     <p class="mt-1 max-w-2xl text-xs leading-5 text-content-muted">
                         {% if readiness.setup_required %}
-                            PostgreSQL is ready. Run setup to enable sign-in and background jobs.
+                            {% if devcontainer_setup %}
+                                PostgreSQL is ready. Run setup to enable sign-in and background jobs.
+                            {% else %}
+                                Application initialization is pending. Contact your deployment administrator.
+                            {% endif %}
                         {% else %}
-                            KAORI cannot reach PostgreSQL. Restore the database connection before continuing.
+                            {% if devcontainer_setup %}
+                                KAORI cannot reach PostgreSQL. Restore the database connection before continuing.
+                            {% else %}
+                                Database service is unavailable. Contact your deployment administrator.
+                            {% endif %}
                         {% endif %}
                     </p>
                 </div>
@@ -99,7 +101,7 @@
                 </div>
             </dl>
 
-            {% if readiness.setup_required %}
+            {% if readiness.setup_required and devcontainer_setup %}
                 <section class="mt-4 overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
                          data-kaori-setup-console
                          data-kaori-setup-primary-action
@@ -193,7 +195,25 @@
                         </div>
                     {% endcall %}
                 </div>
-            {% else %}
+            {% elif readiness.setup_required %}
+                {# Public production readiness must never expose DDL/bootstrap commands or schema details. #}
+                <section class="mt-4 overflow-hidden rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm sm:p-5"
+                         data-kaori-setup-console
+                         data-kaori-setup-primary-action
+                         data-kaori-setup-production-guidance
+                         aria-labelledby="production-initialization-title">
+                    <p class="text-xs font-semibold text-content-secondary">Administrator action required</p>
+                    <h2 id="production-initialization-title"
+                        class="mt-1 text-sm font-semibold leading-5 text-content-primary">Complete Authorized Database Initialization</h2>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">
+                        An authorized operator must complete database initialization through the approved deployment process.
+                    </p>
+                    <p class="mt-2 flex items-start gap-2 text-xs leading-5 text-content-muted">
+                        <i data-lucide="shield-check" class="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true"></i>
+                        <span>This page cannot run database operations. Contact your deployment administrator if setup remains pending.</span>
+                    </p>
+                </section>
+            {% elif devcontainer_setup %}
                 <section class="mt-4 overflow-hidden rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm sm:p-5"
                          data-kaori-setup-console
                          data-kaori-setup-primary-action
@@ -212,6 +232,19 @@
                                             tone="critical",
                                             variant="semantic") }}
                 </div>
+            {% else %}
+                <section class="mt-4 overflow-hidden rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm sm:p-5"
+                         data-kaori-setup-console
+                         data-kaori-setup-primary-action
+                         data-kaori-setup-production-guidance
+                         aria-labelledby="production-connectivity-title">
+                    <p class="text-xs font-semibold text-status-critical-text">Administrator action required</p>
+                    <h2 id="production-connectivity-title"
+                        class="mt-1 text-sm font-semibold leading-5 text-content-primary">Database Connection Unavailable</h2>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">
+                        A deployment administrator must restore database connectivity before sign-in can resume.
+                    </p>
+                </section>
             {% endif %}
 
             <footer class="mt-4 flex flex-col gap-2 border-t border-outline-default pt-3 sm:flex-row sm:items-center sm:justify-between">

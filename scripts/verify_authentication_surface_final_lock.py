@@ -211,6 +211,22 @@ def main() -> int:
         'Setup Required manual bootstrap must use full-width advanced content',
         errors,
     )
+    require(
+        "bash scripts/init_db.sh --bootstrap-admin" not in setup
+        and "flask --app run:app db upgrade" not in setup
+        and "flask --app run:app seed-rbac" not in setup,
+        'Production setup must not render obsolete direct migration commands',
+        errors,
+    )
+    require(
+        'data-kaori-setup-production-guidance' in setup
+        and 'Complete Authorized Database Initialization' in setup
+        and 'Database Connection Unavailable' in setup
+        and 'if devcontainer_setup' in setup
+        and 'else' in setup,
+        'Production setup must provide safe, read-only administrator guidance',
+        errors,
+    )
     require('Readiness Summary' not in setup, 'Setup Required must not duplicate readiness in a summary panel', errors)
     require(
         'components/info_flow.html' not in setup,
