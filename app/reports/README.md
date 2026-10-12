@@ -194,3 +194,7 @@ Reports Storage's Generated Reports link is visible only with destination `repor
 ### Process readiness fingerprint (#1597)
 
 Process storage readiness cache keys use the canonical hashed configuration fingerprint from `storage/state.py`, including credential, S3 addressing and backend changes without exposing secrets. Stale cache identities can no longer be reused after a configuration change.
+
+### Local footprint read performance (#1596)
+
+Routine Reports Storage GETs only check local path availability and writability. The Local References card counts committed report metadata; physical filesystem footprint is not claimed or recursively re-enumerated from an HTTP request.

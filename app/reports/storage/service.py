@@ -748,7 +748,7 @@ def get_report_storage_payload(*, workspace: str | None = None) -> dict[str, Any
         'integrity_actions_enabled': bool(backend_status.get('read_available', False)),
         'readiness_monitor': readiness_monitor,
         'storage_posture': storage_posture,
-        'local': build_local_storage_health() if backend_name == 'local' else None,
+        'local': build_local_storage_health(include_artifact_inventory=False) if backend_name == 'local' else None,
         's3': build_s3_storage_health() if backend_name == 's3' else None,
         'artifact_summary': artifact_summary,
         'retention_policy': retention_policy,
