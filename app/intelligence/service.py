@@ -57,7 +57,6 @@ from app.intelligence.rule_presentation import (
     domain_label,
     matches,
     normalize_rule,
-    provider_keys,
     provider_label,
     to_int,
 )
@@ -674,7 +673,6 @@ def classify_recommendation_readiness(
 
 def get_recommendations_payload(args: MultiDict[str, str], *, page_mode: str = 'recommendations') -> dict[str, Any]:
     payload = _base_payload(args, page_mode=page_mode)
-    catalog = payload['catalog']
     findings = payload['recommendation_findings'] if page_mode != 'catalog' else []
 
     if page_mode == 'catalog':
