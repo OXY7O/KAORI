@@ -13,6 +13,7 @@ from app.storage.object_storage.analytics.alert_sources import _metrics_source_r
         {'status': 'success'},
         {'status': 'success', 'data': {'result': None}},
         {'status': 'success', 'data': {'result': {}}},
+        {'status': 'success', 'data': {'resultType': 'matrix', 'result': []}},
         {'status': 'success', 'data': {'result': [{'metric': 'broken'}]}},
         {'status': 'success', 'data': {'result': [{'metric': {'alertname': 'A'}}]}},
         {
