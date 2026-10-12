@@ -170,3 +170,7 @@ Custom Template POST preserves Analytics section keys, including empty/invalid s
 ### Historical custom Templates without catalog compatibility aliases (#1566)
 
 The registry must remain readable if a persisted custom template references a removed report type, unsupported format, invalid sections or lifecycle status. Such records are presented with Needs Review evidence; Generate and Duplicate are guarded until corrected using current catalog types through the existing Edit workspace. Historical record identity, source snapshot and ownership are never silently rewritten or removed on registry read.
+
+### Report Templates validation recovery (#1565)
+
+Invalid custom-template create/edit submissions render the same existing native modal with submitted values and an accessible server-owned validation summary (`422`). No unbounded session or cross-user flash store is introduced; the safe registry query/pagination return boundary remains intact. Valid mutations still perform canonical feedback and redirect to the edited template. The externally owned form JavaScript under merged #394/#435 remains unchanged.

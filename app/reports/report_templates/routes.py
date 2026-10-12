@@ -9,6 +9,7 @@ from flask import (
 )
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
+from werkzeug.datastructures import MultiDict
 from werkzeug.exceptions import HTTPException
 
 from app.access.authentication.session import safe_next_url
@@ -20,6 +21,8 @@ from app.reports.report_templates.service import (
     duplicate_custom_template,
     duplicate_system_template,
     get_report_templates_payload,
+    get_template_form_context,
+    get_template_form_state,
     update_custom_template,
 )
 from app.reports.web import render_reports_unavailable
@@ -90,6 +93,26 @@ def _record_template_feedback(
     )
 
 
+def _render_invalid_template_form(
+    registry_return_url: str,
+    form_state: dict[str, object],
+    errors: list[str],
+    *,
+    template_id: int | None = None,
+) -> ResponseReturnValue:
+    """Reopen the existing native modal with rejected operator input."""
+    registry_query = MultiDict(parse_qsl(urlsplit(registry_return_url).query, keep_blank_values=True))
+    payload = get_report_templates_payload(registry_query)
+    submitted = {**get_template_form_context(), **form_state}
+    submitted['id'] = template_id
+    if template_id is None:
+        payload['create_form'] = submitted
+    else:
+        payload['edit_template'] = submitted
+    payload['form_errors'] = errors
+    return render_template('reports/report_templates/index.html', payload=payload), 422
+
+
 @permission_required('reports.manage_templates')
 def report_templates() -> ResponseReturnValue:
     try:
@@ -123,7 +146,7 @@ def create_report_template() -> ResponseReturnValue:
         return redirect(_template_edit_url(registry_return_url, template.id))
 
     _queue_template_validation(errors)
-    return redirect(registry_return_url)
+    return _render_invalid_template_form(registry_return_url, get_template_form_state(request.form), errors)
 
 
 @permission_required('reports.manage_templates')
@@ -142,7 +165,9 @@ def update_report_template(template_id: int) -> ResponseReturnValue:
         return redirect(_template_edit_url(registry_return_url, template.id))
 
     _queue_template_validation(errors)
-    return redirect(_template_edit_url(registry_return_url, template_id))
+    return _render_invalid_template_form(
+        registry_return_url, get_template_form_state(request.form), errors, template_id=template_id
+    )
 
 
 @permission_required('reports.manage_templates')
