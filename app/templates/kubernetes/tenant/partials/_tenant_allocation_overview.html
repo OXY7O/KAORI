@@ -140,6 +140,74 @@
                     </section>
                 {% endfor %}
             </div>
+            {% if selected.limit_exposure %}
+                {% set exposure = selected.limit_exposure %}
+                {% set exposure_tone = 'normal' if exposure.state == 'Healthy' else ('critical' if exposure.state == 'Overcommitted' else 'warning') %}
+                <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+                         aria-labelledby="tenant-limit-exposure-heading">
+                    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3">
+                        <div class="flex min-w-0 items-start gap-3">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
+                                <i data-lucide="gauge" class="h-4 w-4"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <h3 id="tenant-limit-exposure-heading" class="text-sm font-semibold text-content-primary">
+                                    CPU &amp; Memory Limit Exposure
+                                </h3>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">
+                                    Maximum declared ResourceQuota limits · Not actual utilization or guaranteed capacity.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            {{ table_label.status_label('Enforce' if exposure.mode == 'enforce' else 'Observe',
+                                                        'warning' if exposure.mode == 'enforce' else 'info') }}
+                            {{ table_label.status_label(exposure.state, exposure_tone) }}
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full min-w-[36rem] table-fixed text-left text-xs">
+                            <caption class="sr-only">Operator Limit Exposure compared to committed planning thresholds</caption>
+                            <thead class="border-b border-outline-subtle bg-surface-elevated text-content-secondary">
+                                <tr>
+                                    <th scope="col" class="w-[28%] px-4 py-3 font-semibold">Resource</th>
+                                    <th scope="col" class="w-[24%] px-4 py-3 font-semibold">Committed Limits</th>
+                                    <th scope="col" class="w-[28%] px-4 py-3 font-semibold">Planning Threshold</th>
+                                    <th scope="col" class="w-[20%] px-4 py-3 font-semibold">Ratio</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-outline-subtle">
+                                {% for label, field, ratio, source in [
+                                    ('CPU Limits', 'cpu', exposure.cpu_ratio, 'cpu'),
+                                    ('Memory Limits', 'memory', exposure.memory_ratio, 'memory')
+                                ] %}
+                                    <tr class="hover:bg-surface-elevated">
+                                        <th scope="row" class="px-4 py-3 font-medium text-content-primary">{{ label }}</th>
+                                        <td class="px-4 py-3 font-semibold text-content-primary">
+                                            {{ exposure.display[field ~ '_committed'] }}
+                                        </td>
+                                        <td class="px-4 py-3 text-content-secondary">
+                                            {{ exposure.display[field ~ '_threshold'] }}
+                                        </td>
+                                        <td class="px-4 py-3 text-kaori-primary">{{ ratio }}×</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="border-t border-outline-subtle bg-surface-elevated px-4 py-3">
+                        <p class="text-xs leading-5 {{ 'text-status-warning-text' if exposure.state == 'Unknown' else 'text-content-muted' }}">
+                            {{ exposure.reason }}
+                            {% if exposure.mode == 'observe' %}Observe never blocks Resource Profile admission.{% endif %}
+                        </p>
+                        <p class="mt-1 text-xs text-content-muted">
+                            Ratios multiply the governed Tenant budget after reserve, unmanaged commitment, and safety headroom.
+                            Request Commitment above remains the admission baseline.
+                        </p>
+                    </div>
+                </section>
+            {% endif %}
             <details class="group rounded-xl border border-outline-subtle bg-surface-elevated">
                 <summary class="flex cursor-pointer list-none items-center gap-3 px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus [&::-webkit-details-marker]:hidden">
                     <i data-lucide="info" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
