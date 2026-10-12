@@ -10,7 +10,7 @@ from sqlalchemy import func, select
 from app.common.presentation import present_key_label, present_user_datetime
 from app.extensions.db import db
 from app.integrations.asset_owner_sources import build_bound_observability_source_rows
-from app.integrations.contracts import IntegrationNotRegistered
+from app.integrations.contracts import IntegrationInstanceNotFound, IntegrationNotRegistered
 from app.integrations.coverage import (
     bound_source_for_scope,
     build_provider_coverage,
@@ -851,7 +851,17 @@ def build_integration_runtime_detail(integration_type: str, instance_id: str) ->
             module = get_integration(integration_type)
         except IntegrationNotRegistered:
             return None
-        observation = _latest_runtime_observation(integration_type, str(target_id))
-        latest = {(integration_type, str(target_id)): observation} if observation is not None else {}
+        # Detail URLs for generic providers identify the canonical integration.
+        # Runtime observations still identify the provider-owned record; never
+        # assume those independent primary-key sequences are identical.
+        try:
+            record = module.get_record_for_canonical(target_id)
+        except (IntegrationInstanceNotFound, IntegrationNotRegistered):
+            return None
+        if record is None:
+            return None
+        provider_record_id = str(record.id)
+        observation = _latest_runtime_observation(integration_type, provider_record_id)
+        latest = {(integration_type, provider_record_id): observation} if observation is not None else {}
         rows = module.build_runtime_overview_rows(latest, target_id)
     return rows[0] if rows else None
