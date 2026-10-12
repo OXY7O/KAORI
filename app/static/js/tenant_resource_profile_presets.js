@@ -260,38 +260,37 @@
 
         const currentProfile = form.querySelector('[data-tenant-allocation-current-profile]')
         const proposedProfile = form.querySelector('[data-tenant-allocation-proposed-profile]')
-        const tabs = Array.from(form.querySelectorAll('[data-tenant-allocation-diff-tab]'))
-        const panels = Array.from(form.querySelectorAll('[data-tenant-allocation-diff-panel]'))
+        const detailTabs = Array.from(form.querySelectorAll('[data-tenant-allocation-detail-tab]'))
+        const detailPanels = Array.from(form.querySelectorAll('[data-tenant-allocation-detail-panel]'))
 
-        const selectTab = (name, focus = false) => {
-            tabs.forEach((button) => {
-                const active = button.dataset.tenantAllocationDiffTab === name
-                button.setAttribute('aria-selected', String(active))
-                button.tabIndex = active ? 0 : -1
-                button.classList.toggle('border-kaori-primary', active)
-                button.classList.toggle('text-kaori-primary', active)
-                button.classList.toggle('border-transparent', !active)
-                button.classList.toggle('text-content-muted', !active)
-                if (active && focus) button.focus()
+        const selectDetail = (name, focus = false) => {
+            detailTabs.forEach((button) => {
+                const selected = button.dataset.tenantAllocationDetailTab === name
+                button.setAttribute('aria-selected', String(selected))
+                button.tabIndex = selected ? 0 : -1
+                button.classList.toggle('border-kaori-primary', selected)
+                button.classList.toggle('text-kaori-primary', selected)
+                button.classList.toggle('border-transparent', !selected)
+                button.classList.toggle('text-content-muted', !selected)
+                if (selected && focus) button.focus()
             })
-            panels.forEach((panel) => {
-                panel.hidden = panel.dataset.tenantAllocationDiffPanel !== name
+            detailPanels.forEach((panel) => {
+                panel.hidden = panel.dataset.tenantAllocationDetailPanel !== name
             })
         }
-
-        tabs.forEach((button, index) => {
-            button.addEventListener('click', () => selectTab(button.dataset.tenantAllocationDiffTab))
+        detailTabs.forEach((button, index) => {
+            button.addEventListener('click', () => selectDetail(button.dataset.tenantAllocationDetailTab))
             button.addEventListener('keydown', (event) => {
-                const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0
-                if (!direction && event.key !== 'Home' && event.key !== 'End') return
+                const move = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0
+                if (!move && event.key !== 'Home' && event.key !== 'End') return
                 event.preventDefault()
                 const next = event.key === 'Home' ? 0
-                    : event.key === 'End' ? tabs.length - 1
-                      : (index + direction + tabs.length) % tabs.length
-                selectTab(tabs[next].dataset.tenantAllocationDiffTab, true)
+                    : event.key === 'End' ? detailTabs.length - 1
+                      : (index + move + detailTabs.length) % detailTabs.length
+                selectDetail(detailTabs[next].dataset.tenantAllocationDetailTab, true)
             })
         })
-        selectTab('changes')
+        selectDetail('objects')
 
         const contractValue = (contract, source, key) => {
             if (!contract) return null
@@ -395,46 +394,71 @@
             return prior === next ? null : 'Changed'
         }
 
-        const renderContractDiff = (current, proposed) => {
-            const summary = form.querySelector('[data-tenant-allocation-diff-summary]')
-            const empty = form.querySelector('[data-tenant-allocation-diff-empty]')
-            const classes = {}
-            let changes = 0
-            form.querySelectorAll('[data-tenant-allocation-diff-row]').forEach((row) => {
-                const source = row.dataset.tenantAllocationDiffSource
-                const key = row.dataset.tenantAllocationDiffKey
+        const highlightDimensions = [
+            ['CPU Limits', 'quota', 'limits.cpu'],
+            ['Memory Limits', 'quota', 'limits.memory'],
+            ['Total Storage', 'quota', 'requests.storage'],
+            ['CPU Requests', 'quota', 'requests.cpu'],
+            ['Memory Requests', 'quota', 'requests.memory'],
+            ['Pods', 'quota', 'pods'],
+            ['Min PVC Size', 'storage_policy', 'min'],
+            ['Max PVC Size', 'storage_policy', 'max'],
+            ['PVCs', 'quota', 'persistentvolumeclaims'],
+            ['Services', 'quota', 'services'],
+            ['ConfigMaps', 'quota', 'configmaps'],
+            ['Secrets', 'quota', 'secrets'],
+            ['Default CPU Request', 'limits', 'default_request.cpu'],
+            ['Default CPU Limit', 'limits', 'default.cpu'],
+            ['Default Memory Request', 'limits', 'default_request.memory'],
+            ['Default Memory Limit', 'limits', 'default.memory'],
+        ]
+
+        const renderContractPreview = (current, proposed) => {
+            form.querySelectorAll('[data-tenant-allocation-metric-side]').forEach((cell) => {
+                const selected = cell.dataset.tenantAllocationMetricSide === 'current' ? current : proposed
+                const source = cell.dataset.tenantAllocationMetricSource
+                const key = cell.dataset.tenantAllocationMetricKey
+                cell.textContent = selected ? displayValue(source, key, contractValue(selected, source, key)) : '—'
+            })
+            form.querySelectorAll('[data-tenant-allocation-tech-current]').forEach((cell) => {
+                const [source, ...parts] = cell.dataset.tenantAllocationTechCurrent.split('.')
+                const key = parts.join('.')
+                cell.textContent = current ? displayValue(source, key, contractValue(current, source, key)) : '—'
+            })
+            form.querySelectorAll('[data-tenant-allocation-tech-proposed]').forEach((cell) => {
+                const [source, ...parts] = cell.dataset.tenantAllocationTechProposed.split('.')
+                const key = parts.join('.')
+                cell.textContent = proposed ? displayValue(source, key, contractValue(proposed, source, key)) : '—'
+            })
+
+            const changed = current && proposed ? highlightDimensions.flatMap(([label, source, key]) => {
                 const before = contractValue(current, source, key)
                 const after = contractValue(proposed, source, key)
-                const direction = current && proposed ? classifyChange(before, after) : null
-                const mode = row.dataset.tenantAllocationDiffMode
-                row.hidden = mode === 'changes' && !direction
-                const beforeCell = row.querySelector('[data-tenant-allocation-diff-current]')
-                const afterCell = row.querySelector('[data-tenant-allocation-diff-proposed]')
-                const directionCell = row.querySelector('[data-tenant-allocation-diff-direction]')
-                if (beforeCell) beforeCell.textContent = current ? displayValue(source, key, before) : '—'
-                if (afterCell) afterCell.textContent = proposed ? displayValue(source, key, after) : '—'
-                if (directionCell) directionCell.textContent = direction || (current && proposed ? 'Unchanged' : '—')
-                row.classList.toggle('bg-kaori-soft/50', mode === 'full' && !!direction)
-                if (mode === 'changes' && direction) {
-                    changes += 1
-                    classes[direction] = (classes[direction] || 0) + 1
-                }
+                return classifyChange(before, after) ? [{ label, source, key, before, after }] : []
+            }) : []
+
+            const count = form.querySelector('[data-tenant-allocation-highlight-count]')
+            if (count) count.textContent = !current || !proposed
+                ? 'Choose contracts' : changed.length === 0
+                  ? 'No changes' : `${changed.length} changes`
+
+            const rows = Array.from(form.querySelectorAll('[data-tenant-allocation-highlight-item]'))
+            rows.forEach((row, index) => {
+                const diff = changed[index]
+                row.hidden = !diff
+                if (!diff) return
+                const label = row.querySelector('[data-tenant-allocation-highlight-label]')
+                const from = row.querySelector('[data-tenant-allocation-highlight-from]')
+                const to = row.querySelector('[data-tenant-allocation-highlight-to]')
+                if (label) label.textContent = diff.label
+                if (from) from.textContent = displayValue(diff.source, diff.key, diff.before)
+                if (to) to.textContent = displayValue(diff.source, diff.key, diff.after)
             })
-            if (summary) {
-                const breakdown = ['Reduced', 'Increased', 'Now defined', 'No longer defined', 'Changed']
-                    .filter((status) => classes[status])
-                    .map((status) => `${classes[status]} ${status.toLowerCase()}`)
-                    .join(' · ')
-                summary.textContent = !current || !proposed
-                    ? 'Select a Namespace and Resource Profile to compare.'
-                    : changes === 0 ? 'No contract changes'
-                      : `${changes} changes · ${breakdown}`
-            }
-            if (empty) {
-                empty.hidden = changes > 0
-                empty.textContent = !current || !proposed
-                    ? 'Select a Namespace and Resource Profile to compare.'
-                    : 'No differences across the recorded ResourceQuota, PVC and LimitRange dimensions.'
+            const more = form.querySelector('[data-tenant-allocation-highlight-more]')
+            if (more) {
+                const extra = Math.max(0, changed.length - rows.length)
+                more.hidden = extra === 0
+                more.textContent = extra ? `+ ${extra} additional changes in the selected contract` : ''
             }
         }
 
@@ -458,7 +482,8 @@
                     ? `${current.profile_name} · v${current.profile_version || '—'}`
                     : '—'
             }
-            renderContractDiff(current, proposed)
+            if (proposedProfile) proposedProfile.textContent = proposed ? proposedLabel : '—'
+            renderContractPreview(current, proposed)
             renderAdvancedComparison(current, proposed, namespaceSelect?.value, profileSelect?.value)
         }
 
