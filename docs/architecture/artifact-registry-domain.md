@@ -676,3 +676,7 @@ provider-neutral Artifact Registry contracts.
 ### Operational Overview active scope (#1403)
 
 `Artifact Registry → Overview` includes only enabled Registry `IntegrationInstance` records with active lifecycle in its operational selector, fleet evidence denominators and selected-provider scope. Disabled and retired providers retain their committed historical Registry records but are **not** part of active operational health. A bookmark with an unknown/disabled/retired `provider_id` fails closed with HTTP 404 instead of silently widening to `All Registry Providers`. The worker's independent inventory-contract eligibility remains authoritative for collection; no user-facing GET triggers a provider query.
+
+### Overview analytics snapshot freshness (#1402)
+
+Provider-scoped and fleet Analytics Snapshot freshness now use the same committed evidence validity check: `status=ready`, a materialized dict payload, valid generated/expiry timestamps and unexpired `expires_at`. A retained expired snapshot remains **Stale** evidence, not fleet `Ready`. Mixed current and missing/stale fleet rows produce `Partial`, an all-stale fleet produces `Stale`, and no usable or stale evidence produces `Required`. The latest generated timestamp remains visible as evidence age; no GET path fetches live Registry metrics or reruns a worker. Metrics Source *binding readiness* is independent.
