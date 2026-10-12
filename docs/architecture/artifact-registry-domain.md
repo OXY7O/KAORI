@@ -698,3 +698,8 @@ The Harbor adapter must reject malformed list member envelopes and projects with
 ### Committed Inventory Overview asset counts (#1408)
 
 Registry Inventory Hero, Fleet, and Project/Repository/Artifact Asset Catalog counts must use the same explicit list of enabled active providers with committed RegistryCollectionState evidence as the Overview operational read model. A missing provider, never-collected provider or disabled/retired historical record does not contribute to these active-scope totals. The safe `_overview_kpi_values([])` zero result is preserved; passing `None` is not a request to count all inventory. A valid observed-empty inventory is a different evidence state from never collected.
+
+
+### Registry Inventory fleet membership (#1410)
+
+The operational Registry Inventory fleet uses the same enabled/active provider identities and committed RegistryCollectionState membership as Overview. Project visibility numerators, project/repository/artifact resource tables, source/environment selectors, and resource posture are filtered to those committed provider IDs; disabled/retired or never-observed historical rows stay stored but do not silently inflate the operational fleet. An observed-empty provider remains in coverage with zero assets. This does not implement a historical inventory browser or delete data.
