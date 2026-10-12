@@ -41,22 +41,22 @@ The root view intentionally stays product-level. Runtime boundaries, data author
 ## Quick Start
 
 The supported development path is the VS Code Dev Container described in
-[`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md). On Windows, launch VS Code
-**from Ubuntu/WSL** (`code .` within the repository's WSL path) and
-confirm **WSL: Ubuntu** before selecting **Reopen in Container**.
-Opening the same repository as a native `C:\\Users\\...` VS Code folder
-is not equivalent: the first-run host bootstrap currently requires WSL
-Python and the Linux `$HOME` secret boundary.
+[`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md). Open the project
+normally in **VS Code Windows**, ensure Docker Desktop is running Linux
+containers, and select **Dev Containers: Rebuild and Reopen in Container**.
+The first-run initializer executes Python inside a disposable Docker
+container, **not on your Windows host or WSL**.
 
 ```bash
 # Optional before first open: cp .env.example .env
-# The DevContainer WSL host initializer creates .env when missing,
-# generates a runtime kaori_runtime DATABASE_URL and private app keys,
-# and writes PostgreSQL admin/migrator secrets OUTSIDE the repository:
-# ~/.config/kaori/devcontainer/postgres-{bootstrap,migrate}.env
+# The Docker-based initializer creates .env when missing and generates
+# runtime kaori_runtime DATABASE_URL and application development keys.
+# postgres and migrator passwords persist outside the repo in two
+# private Docker volumes: kaori-dev-pg-admin-secrets and
+# kaori-dev-pg-migrator-secrets.
 # Reopen in Container starts PostgreSQL, Redis, workspace and workers/Beat.
 # Press F5: an empty database shows Database Setup Required.
-# Run the copied command from the WSL HOST terminal after setup review:
+# Run the copied command from Windows PowerShell on the host:
 docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml run --rm db-bootstrap
 # Refresh /auth/login and use the private .env ADMIN_* application account.
 ```
