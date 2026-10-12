@@ -95,6 +95,65 @@
                     {% endfor %}
                 </div>
             </section>
+            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-elevated"
+                     aria-labelledby="tenant-limit-exposure-policy-heading">
+                <div class="border-b border-outline-subtle px-4 py-3">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="gauge" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                        <h3 id="tenant-limit-exposure-policy-heading"
+                            class="text-sm font-semibold text-content-primary">Limit Exposure Policy</h3>
+                        {{ info_tip.render('tenant-limit-exposure-policy-tip',
+                            'Limit Exposure planning',
+                            'ResourceQuota CPU and memory limits are planning ceilings, separate from request-based admission.',
+                            [
+                                'CPU ratio multiplies the governed Tenant CPU budget; 1.50 means 150% of that budget.',
+                                'Memory defaults to 1.00 to avoid routinely promising overcommitted physical RAM.',
+                                'Observe reports exposure only. Enforce additionally blocks unsafe positive allocations.',
+                                'Unbounded or missing limits remain Unknown, not zero or free headroom.'
+                            ],
+                            placement='right') }}
+                    </div>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">
+                        Compare declared maximum ceilings with operator policy. Requests still govern Kubernetes scheduling capacity.
+                    </p>
+                </div>
+                <div class="grid gap-4 p-4 md:grid-cols-3">
+                    <label class="block">
+                        {{ form_field.label_row("Exposure Mode") }}
+                        <select name="limit_exposure_mode"
+                                data-capacity-policy-field="limit_exposure_mode"
+                                data-default-value="observe"
+                                class="{{ form_field.select_classes() }}">
+                            <option value="observe">Observe · Planning only</option>
+                            <option value="enforce">Enforce · Additional admission gate</option>
+                        </select>
+                    </label>
+                    <label class="block">
+                        {{ form_field.label_row("CPU Limit Ratio") }}
+                        <input name="cpu_limit_ratio" type="number" min="1" max="4" step="0.05"
+                               required inputmode="decimal" value="1.50"
+                               data-capacity-policy-field="cpu_limit_ratio"
+                               data-default-value="1.50"
+                               aria-describedby="tenant-cpu-limit-ratio-help"
+                               class="{{ form_field.input_classes() }}">
+                        <p id="tenant-cpu-limit-ratio-help" class="mt-1 text-xs text-content-muted">
+                            Default 1.50× · controlled CPU overcommit
+                        </p>
+                    </label>
+                    <label class="block">
+                        {{ form_field.label_row("Memory Limit Ratio") }}
+                        <input name="memory_limit_ratio" type="number" min="1" max="2" step="0.05"
+                               required inputmode="decimal" value="1.00"
+                               data-capacity-policy-field="memory_limit_ratio"
+                               data-default-value="1.00"
+                               aria-describedby="tenant-memory-limit-ratio-help"
+                               class="{{ form_field.input_classes() }}">
+                        <p id="tenant-memory-limit-ratio-help" class="mt-1 text-xs text-content-muted">
+                            Default 1.00× · conservative memory exposure
+                        </p>
+                    </label>
+                </div>
+            </section>
             <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-elevated">
                 <div class="border-b border-outline-subtle px-4 py-3">
                     <span class="inline-flex min-h-6 items-center gap-1.5">

@@ -1706,3 +1706,51 @@ def test_allocation_change_section_heading_icons_follow_kaori_hierarchy() -> Non
     assert 'Preflight &amp; Apply' in template
     assert 'grid gap-4 p-4 sm:p-5 lg:grid-cols-2' in template
     assert '<p class="mt-3 text-sm font-semibold text-content-primary">{{ title }}</p>' in template
+
+def test_capacity_operator_limit_exposure_remains_separate_from_request_commitment() -> None:
+    from jinja2 import Environment
+
+    form = read('app/templates/kubernetes/tenant/partials/_capacity_governance.html')
+    overview = read('app/templates/kubernetes/tenant/partials/_tenant_allocation_overview.html')
+    script = read('app/static/js/tenant_resource_profile_presets.js')
+    backend = read('app/kubernetes/tenant/capacity_governance.py')
+    policy = read('app/kubernetes/tenant/capacity_governance_support.py')
+    model = read('app/models/tenant.py')
+    migration = read('migrations/versions/20261013_limit_exposure.py')
+
+    Environment(autoescape=True).parse(form)
+    Environment(autoescape=True).parse(overview)
+
+    for key, default in (
+        ('limit_exposure_mode', 'observe'),
+        ('cpu_limit_ratio', '1.50'),
+        ('memory_limit_ratio', '1.00'),
+    ):
+        assert f'name="{key}"' in form
+        assert f'data-capacity-policy-field="{key}"' in form
+        assert f'data-default-value="{default}"' in form
+        assert f"'{key}':" in policy
+        assert key in model
+        assert key in migration
+
+    assert '<option value="observe">Observe · Planning only</option>' in form
+    assert '<option value="enforce">Enforce · Additional admission gate</option>' in form
+    assert 'tenant-limit-exposure-policy-tip' in form
+    assert 'data-capacity-policy-cluster' in form
+    assert 'name="csrf_token"' in form
+    assert "url_for('tenant.update_capacity_policy_route')" in form
+    assert "const policies = readJson('tenant-capacity-policy-state')" in script
+    assert 'input.value = policy?.[name] ?? fallback' in script
+    assert 'CPU &amp; Memory Limit Exposure' in overview
+    assert 'Maximum declared ResourceQuota limits' in overview
+    assert 'selected.limit_exposure' in overview
+    assert 'exposure.display[field ~ \'_committed\']' in overview
+    assert 'exposure.display[field ~ \'_threshold\']' in overview
+    assert 'exposure.mode == \'enforce\'' in overview
+    assert 'exposure.state == \'Overcommitted\'' in overview
+    assert 'Request Commitment above remains the admission baseline.' in overview
+    assert "limit_mode == 'enforce'" in backend
+    assert 'replace_namespace=request.replacement_namespace' in backend
+    assert 'quota_vector_factory=quota_limit_vector' in backend
+    assert 'def _operator_limit_ratio(' in backend
+    assert "down_revision = '20261012_capsule_handback_guard'" in migration
