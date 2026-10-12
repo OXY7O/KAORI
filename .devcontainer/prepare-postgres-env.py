@@ -10,6 +10,7 @@ import base64
 import json
 import os
 import secrets
+import stat
 import subprocess
 from pathlib import Path
 from urllib.parse import quote
@@ -84,7 +85,31 @@ def write_private(path: Path, content: str) -> None:
         stream.write(content)
 
 
+def verify_private_paths() -> None:
+    """Prevent following external-secret symlinks or adopting world-readable files."""
+    if APP_ENV.is_symlink():
+        fail('application .env must not be a symlink')
+    if SECRET_DIR.is_symlink() or SECRET_DIR.resolve().is_relative_to(ROOT.resolve()):
+        fail('PostgreSQL secrets directory must be outside the source workspace')
+    if SECRET_DIR.exists():
+        if not SECRET_DIR.is_dir():
+            fail('PostgreSQL secrets path is not a directory')
+        info = SECRET_DIR.stat()
+        if info.st_uid != os.getuid() or stat.S_IMODE(info.st_mode) != 0o700:
+            fail('PostgreSQL secret directory must be owned by developer and mode 0700')
+    for path in (DB_SECRETS, MIGRATOR_SECRETS):
+        if path.is_symlink():
+            fail('PostgreSQL credential files must not be symlinks')
+        if path.exists():
+            if not path.is_file():
+                fail('PostgreSQL credential path is not a file')
+            info = path.stat()
+            if info.st_uid != os.getuid() or stat.S_IMODE(info.st_mode) != 0o600:
+                fail('PostgreSQL credential files must be developer-owned and mode 0600')
+
+
 def main() -> None:
+    verify_private_paths()
     if not APP_ENV.exists():
         if database_volume_exists():
             fail('application .env is missing for an existing database; restore it, do not rotate encryption/admin secrets')
