@@ -14,16 +14,55 @@ containers. A host `.venv` is not required.
 - Git.
 - Python 3 on the WSL host (DevContainer `initializeCommand` prepares private first-run credentials before Compose).
 
-## First setup
+## First setup — new DevContainer PostgreSQL volume
 
-1. Copy `.env.example` to `.env`.
-   The canonical variable contract is documented in `docs/deployment/ENVIRONMENT_CONFIGURATION.md`.
-2. Review `ADMIN_*` and development secret values.
-3. Open the repository in VS Code.
-4. Run `Dev Containers: Rebuild and Reopen in Container`.
-5. Press F5 to open **Database Setup Required**. Copy its migration command and run it in a **WSL host terminal** from the repo root; never use Flask runtime DB rights for Alembic.
-6. After the Dev Container reports frontend assets are ready, allow VS Code **Automatic Tasks** for this trusted workspace. The existing `KAORI: Watch Tailwind CSS` task starts on folder open, with at most one instance. If disabled, start it from **Terminal → Run Task**.
-7. Press `F5` and select `KAORI: Flask Debug`.
+1. Open the project from **WSL** in VS Code. The host needs Python 3,
+   Docker/Compose, and the Dev Containers extension. No host virtualenv or
+   manual `docker compose up` is required.
+2. Optionally copy `.env.example` to ignored `.env` to set your intended
+   `ADMIN_EMAIL`, `ADMIN_USERNAME`, or other development configuration
+   **before the first application administrator is created**.
+   If `.env` is missing, the DevContainer host initializer creates it
+   automatically. It generates a secure runtime `DATABASE_URL`, application
+   encryption keys and `ADMIN_PASSWORD` when those have placeholders.
+   **Do not copy in real PostgreSQL bootstrap/migrator passwords.**
+3. Choose **Dev Containers → Reopen in Container**. Host
+   `initializeCommand` creates or validates the two external WSL
+   credential files and private `.env`. The normal Compose startup
+   automatically creates PostgreSQL, Redis, workspace, ten workers and Beat.
+   PostgreSQL creates non-superuser `kaori_migrator` and `kaori_runtime`
+   on an empty volume, but does **not** run Alembic or create KAORI admin.
+4. Select **KAORI: Flask Debug** (F5) and open
+   `http://localhost:5000/auth/login`. Empty schema should show
+   **HTTP 503 Database Setup Required / Initialization Required**.
+5. Copy the bootstrap command on that page, then run it from a **WSL
+   HOST terminal at the repository root**, not from the DevContainer terminal:
+
+   ```bash
+   docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml run --rm db-bootstrap
+   ```
+
+   The one-off job receives the separate migrator credential, migrates the
+   schema, refreshes runtime grants, and creates the first KAORI admin
+   after grants succeed. The 10 workers and Beat unblock only after
+   Alembic head, runtime-privilege/immutable-ledger and administrator
+   admission pass.
+6. Refresh the browser, log in as the `ADMIN_USERNAME` configured in
+   private `.env`, and verify first-run/worker evidence. For the frontend
+   watcher, allow **Automatic Tasks** for this trusted workspace;
+   otherwise launch **KAORI: Watch Tailwind CSS** from VS Code Tasks.
+
+**Three-file environment contract:**
+`<repo>/.env` (app runtime only, including `DATABASE_URL` as
+`kaori_runtime`), `~/.config/kaori/devcontainer/postgres-bootstrap.env`
+(local PostgreSQL `postgres` + runtime-role setup) and
+`~/.config/kaori/devcontainer/postgres-migrate.env`
+(`kaori_migrator`). The two latter files are generated on the WSL host
+**outside the repository** and must never be mounted into Flask/workers/Beat.
+See [Environment Configuration](deployment/ENVIRONMENT_CONFIGURATION.md)
+and [the first-run runbook](operations/devcontainer-postgres-first-run.md).
+Reopening an initialized DevContainer does not re-create accounts, rotate
+secrets, or automatically run schema migrations.
 
 A fresh or reset `kaori_node_modules` volume must complete `npm ci` and frontend verification before the watcher can work. The `postCreate` lifecycle no longer forces an unconditional global npm upgrade, and `postStart` avoids rebuilding unchanged assets. If lifecycle startup fails, resolve that failure before treating the watcher as ready.
 
