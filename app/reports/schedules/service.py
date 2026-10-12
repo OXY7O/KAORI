@@ -306,7 +306,7 @@ def build_default_schedule_form_state() -> dict[str, Any]:
 def get_form_state_from_schedule_form(
     form: MultiDict[str, str] | ImmutableMultiDict[str, str],
 ) -> dict[str, Any]:
-    report_form_state = get_form_state_from_form(form)
+    report_form_state = get_form_state_from_form(form, for_submission=True)
     state = build_default_schedule_form_state()
     state.update(report_form_state)
     state.update(
