@@ -7,11 +7,20 @@
 {% import "components/view_more_content.html" as view_more_content %}
 {% block title %}Database Setup Required · KAORI{% endblock title %}
 {% block content %}
-    {% set bootstrap_command = "bash scripts/init_db.sh --bootstrap-admin" %}
-    {% set manual_bootstrap_commands -%}
-        flask --app run:app db upgrade
-        flask --app run:app seed-rbac
-    {%- endset %}
+    {# Development setup uses the existing explicit owner-only VS Code task;
+       keep production's approved recovery copy unchanged until #621/#622. #}
+    {% if config["APP_ENV"] == "development" %}
+        {% set bootstrap_command = "python -m scripts.devcontainer.initialize_database --bootstrap-admin" %}
+        {% set manual_bootstrap_commands -%}
+            python -m scripts.devcontainer.initialize_database
+        {%- endset %}
+    {% else %}
+        {% set bootstrap_command = "bash scripts/init_db.sh --bootstrap-admin" %}
+        {% set manual_bootstrap_commands -%}
+            flask --app run:app db upgrade
+            flask --app run:app seed-rbac
+        {%- endset %}
+    {% endif %}
     {% set database_checks -%}
         docker compose ps
         pg_isready -h db -p 5432
