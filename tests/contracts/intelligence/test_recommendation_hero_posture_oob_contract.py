@@ -19,3 +19,10 @@ def test_recommendation_hero_and_summary_update_together_on_htmx_filters() -> No
     assert 'payload.summary.actionable' in hero
     assert 'payload.posture.label' in hero
     assert 'page_hero.context_card' in hero
+
+
+def test_recommendation_hero_posture_is_responsive_grid_child() -> None:
+    hero = read('app/templates/intelligence/partials/_recommendation_hero_posture.html')
+    shared_hero = read('app/templates/components/page_hero.html')
+    assert 'id="recommendation-hero-posture"\n     class="{{ page_hero.aside_classes() }}"' in hero
+    assert 'xl:col-span-5' in shared_hero

@@ -4,6 +4,7 @@
     ('shield-alert', 'Critical', payload.summary.critical, 'Matching critical')
 ] %}
 <div id="recommendation-hero-posture"
+     class="{{ page_hero.aside_classes() }}"
      {% if recommendation_summary_oob|default(false) %}hx-swap-oob="outerHTML"{% endif %}>
     {{ page_hero.context_card(
         'Recommendation posture',
