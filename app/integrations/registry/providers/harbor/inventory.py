@@ -58,6 +58,11 @@ def _artifact_record(raw_artifact: dict[str, Any]) -> ArtifactRecord | None:
     digest = str(raw_artifact.get('digest') or '').strip()
     if not digest:
         raise HarborResponseError('Harbor artifact discovery contained a record without a digest.')
+    if 'tags' not in raw_artifact:
+        raise HarborResponseError(
+            f'Harbor artifact {digest} omitted the requested tag inventory; '
+            'refusing to erase previously committed tag references.'
+        )
     return ArtifactRecord(
         digest=digest,
         provider_native_id=str(raw_artifact.get('id') or '') or None,
@@ -98,6 +103,11 @@ def _repository_record(client: Any, project_name: str, raw_repo: dict[str, Any])
         artifact = _artifact_record(raw_artifact)
         if artifact is not None:
             repository.artifacts.append(artifact)
+    if repository.artifact_count is not None and len(repository.artifacts) < repository.artifact_count:
+        raise HarborResponseError(
+            f'Harbor artifact discovery for {project_name}/{repo_name} returned '
+            f'{len(repository.artifacts)} of {repository.artifact_count} provider-reported artifacts.'
+        )
     return repository
 
 
@@ -122,6 +132,11 @@ def _project_record(client: Any, raw_project: dict[str, Any]) -> ProjectRecord |
         repository = _repository_record(client, project_name, raw_repo)
         if repository is not None:
             project.repositories.append(repository)
+    if project.repository_count is not None and len(project.repositories) < project.repository_count:
+        raise HarborResponseError(
+            f'Harbor project {project_name} returned {len(project.repositories)} of '
+            f'{project.repository_count} provider-reported repositories.'
+        )
     return project
 
 
