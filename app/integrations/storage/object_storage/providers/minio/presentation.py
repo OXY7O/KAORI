@@ -30,6 +30,11 @@ def _runtime_row(instance: MinioInstance, observation: Any | None) -> dict[str, 
     enabled_bindings = [binding for binding in instance.integration_instance.bindings if binding.enabled]
     latency_ms = observation.latency_ms if observation else None
     canonical = instance.integration_instance
+    readiness = (
+        (instance.readiness_status or 'validation_required')
+        if canonical.enabled and canonical.lifecycle_status == 'active'
+        else 'blocked'
+    )
     provider = provider_kind('object_storage', canonical.provider_key)
     return {
         'integration_type': 'object_storage',
@@ -45,7 +50,7 @@ def _runtime_row(instance: MinioInstance, observation: Any | None) -> dict[str, 
         'connection_status': instance.last_status or 'not_observed',
         'health_status': observation.health_status if observation else 'not_observed',
         'health_score': observation.health_score if observation else None,
-        'readiness': instance.readiness_status or 'validation_required',
+        'readiness': readiness,
         'observed_at': observation.observed_at if observation else None,
         'observed_at_display': present_user_datetime(
             observation.observed_at if observation else None,

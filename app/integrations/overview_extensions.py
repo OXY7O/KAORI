@@ -12,6 +12,26 @@ from app.models.runtime import IntegrationRuntimeObservation
 SPECIALIZED_OVERVIEW_TYPES = frozenset({'container_orchestrator', 'metrics_source', 'alert_source'})
 
 
+def canonical_operational(record: Any, *, kubernetes: bool = False) -> bool:
+    """Canonical active lifecycle and effective source switch gate Ready."""
+    canonical = (
+        record.integration_instance if kubernetes else
+        getattr(record, 'integration_instance', record)
+    )
+    return bool(
+        getattr(record, 'enabled', True)
+        and getattr(canonical, 'enabled', False)
+        and getattr(canonical, 'lifecycle_status', 'active') == 'active'
+    )
+
+
+def effective_runtime_readiness(record: Any, *, kubernetes: bool = False) -> str:
+    if not canonical_operational(record, kubernetes=kubernetes):
+        return 'blocked'
+    return str(record.readiness_status or 'validation_required')
+
+
+
 def build_overview_stats(
     *,
     kubernetes_connections: list[KubernetesConnection],
@@ -21,18 +41,18 @@ def build_overview_stats(
 ) -> dict[str, int]:
     target_states = [
         *(
-            (True, bool(connection.integration_instance.enabled), connection.readiness_status or 'validation_required')
+            (True, canonical_operational(connection, kubernetes=True), connection.readiness_status or 'validation_required')
             for connection in kubernetes_connections
         ),
         *(
-            (bool(item.endpoint), bool(item.enabled), item.readiness_status or 'validation_required')
+            (bool(item.endpoint), canonical_operational(item), item.readiness_status or 'validation_required')
             for item in metrics_sources
         ),
         *(
-            (bool(item.endpoint), bool(item.enabled), item.readiness_status or 'validation_required')
+            (bool(item.endpoint), canonical_operational(item), item.readiness_status or 'validation_required')
             for item in alertmanager_instances
         ),
-        *((True, bool(item.enabled), item.readiness_status or 'validation_required') for item in extension_instances),
+        *((True, canonical_operational(item), item.readiness_status or 'validation_required') for item in extension_instances),
     ]
     total = len(target_states)
     configured = sum(1 for is_configured, _, _ in target_states if is_configured)
@@ -139,21 +159,21 @@ def build_provider_portfolio_counts(
     counts = {
         'container_orchestrator': portfolio_counts(
             [
-                (True, bool(item.integration_instance.enabled), item.readiness_status or 'validation_required')
+                (True, canonical_operational(item, kubernetes=True), item.readiness_status or 'validation_required')
                 for item in kubernetes_connections
             ]
         ),
         'metrics_source': portfolio_counts(
-            [(bool(item.endpoint), bool(item.enabled), item.readiness_status) for item in metrics_sources]
+            [(bool(item.endpoint), canonical_operational(item), item.readiness_status) for item in metrics_sources]
         ),
         'alert_source': portfolio_counts(
-            [(bool(item.endpoint), bool(item.enabled), item.readiness_status) for item in alertmanager_instances]
+            [(bool(item.endpoint), canonical_operational(item), item.readiness_status) for item in alertmanager_instances]
         ),
     }
     for integration_type in {item.integration_type for item in extension_instances}:
         targets = [item for item in extension_instances if item.integration_type == integration_type]
         counts[integration_type] = portfolio_counts(
-            [(True, bool(item.enabled), item.readiness_status) for item in targets]
+            [(True, canonical_operational(item), item.readiness_status) for item in targets]
         )
     return counts
 
