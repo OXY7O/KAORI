@@ -114,3 +114,7 @@ Scheduled Reports use Integrations → Notification Channels. Schedules store se
 ### Reports Overview conservative runtime posture (#1530)
 
 The Overview Hero posture comes from the same Reports queue-worker evidence and shared storage readiness consumed by Runtime Health. Storage unavailable takes precedence over queue unavailable/unknown, followed by historical failed requests. A missing worker/queue observation must never produce a Ready Hero; previously generated artifacts remain separately readable through their existing guarded routes. No new provider probe or report worker execution is owned by the Overview route.
+
+### Reports Overview permission-aware navigation (#1531)
+
+Overview is readable by `reports.view`, but links to Generate, Templates, Schedules, and Storage are displayed only for users with the corresponding existing target-route permissions. The Hero falls back to the readable Generated Reports registry when the user cannot access the relevant action. Server-side decorators remain authoritative; navigation never grants permissions. Legacy/partial operation payloads with no permission key are rendered without actionable links.
