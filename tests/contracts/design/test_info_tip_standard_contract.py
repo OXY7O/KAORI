@@ -67,7 +67,9 @@ def test_guide_variant_renders_compact_label_and_reuses_existing_popover() -> No
     assert 'data-kaori-info-tip-variant="guide"' in guide
     assert 'data-lucide="info"' in guide
     assert '<span>Guide</span>' in guide
-    assert 'rounded-full' in guide and 'bg-kaori-soft' in guide
+    assert 'rounded-md border border-brand-outline' in guide
+    assert 'rounded-full border border-brand-outline' not in guide
+    assert 'bg-kaori-soft' in guide
     assert 'border-brand-outline' in guide and 'focus-visible:ring-2' in guide
     assert 'aria-controls="example-guide-tooltip"' in guide
     assert 'aria-expanded="false"' in guide
@@ -92,3 +94,37 @@ def test_title_level_guides_share_existing_portal_controller() -> None:
     assert 'field-level' in doc
     assert 'document.body.appendChild(preview)' in script
     assert "document.addEventListener('htmx:beforeSwap'" in script
+
+
+def test_shared_info_tip_geometry_and_readable_popover_contract() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')), autoescape=True)
+    render = env.get_template('components/info_tip.html').module.render
+    icon = str(render('info-compact', 'Tenant Registry status', 'Committed Tenant lifecycle.', items=[
+        'Ready — Tenant governance is active.',
+        'Blocked — Tenant stays valid while an action fails closed.',
+    ]))
+    guide = str(render('info-guide', 'Tenant Registry status', 'Committed Tenant lifecycle.', items=[
+        'Ready — Tenant governance is active.',
+    ], variant='guide'))
+
+    assert 'w-96' in icon
+    assert 'w-[26rem]' in guide
+
+    for markup in (icon, guide):
+        assert 'max-w-[calc(100vw-2rem)]' in markup
+        assert 'max-h-[calc(100dvh-2rem)]' in markup
+        assert 'overflow-y-auto rounded-lg border border-outline-default' in markup
+        assert 'bg-surface-elevated text-left shadow-lg' in markup
+        assert 'border-b border-outline-subtle bg-surface-card' in markup
+        assert 'rounded-md bg-kaori-soft text-kaori-primary' in markup
+        assert 'text-sm font-semibold leading-5 text-content-primary' in markup
+        assert 'text-sm leading-5 text-content-secondary' in markup
+        assert 'divide-y divide-outline-subtle' in markup
+        assert 'min-w-0 flex-1 break-words' in markup
+        assert 'Ready — Tenant governance is active.' in markup
+
+    doc = read('docs/design/components/INFO_TIP.md')
+    assert 'compact label geometry (`rounded-md`' in doc
+    assert '384px for icon help and 416px for Guide help' in doc
