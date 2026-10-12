@@ -48,5 +48,8 @@ def _security_snapshot_context(
         'scope_label': active_scope_label,
         'coverage_label': f'{coverage_count} of {artifact_total} artifacts',
         'coverage_supporting': coverage_supporting,
-        'coverage_tone': 'normal' if artifact_total and coverage_count == artifact_total else 'warning',
+        'coverage_tone': (
+            'info' if evidence['snapshot']['status'] == 'No Artifacts'
+            else 'normal' if artifact_total and coverage_count == artifact_total else 'warning'
+        ),
     }
