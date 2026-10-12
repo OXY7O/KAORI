@@ -65,11 +65,25 @@ OVERVIEW_SECTION_TEMPLATES = {
 }
 
 
+def _overview_provider_id() -> int | None:
+    """Treat malformed explicit scope IDs as unavailable, not All Providers."""
+    raw = request.args.get('provider_id')
+    if raw is None or not raw.strip():
+        return None
+    try:
+        provider_id = int(raw)
+    except (TypeError, ValueError):
+        abort(404)
+    if provider_id < 1:
+        abort(404)
+    return provider_id
+
+
 @artifact_registry_bp.get('/')
 @permission_required('artifact_registry.view')
 def overview() -> ResponseReturnValue:
     context = build_overview(
-        provider_id=request.args.get('provider_id', type=int),
+        provider_id=_overview_provider_id(),
         active_tab=normalize_operational_tab(request.args.get('tab', 'overview', type=str)),
         provider_health_page=request.args.get('provider_health_page', 1),
         provider_health_per_page=normalize_dashboard_page_size(request.args.get('provider_health_per_page')),
@@ -90,7 +104,7 @@ def overview_section(section: str) -> ResponseReturnValue:
         abort(404)
     context = build_overview_section(
         section,
-        provider_id=request.args.get('provider_id', type=int),
+        provider_id=_overview_provider_id(),
         provider_health_page=request.args.get('provider_health_page', 1),
         provider_health_per_page=normalize_dashboard_page_size(request.args.get('provider_health_per_page')),
     )
