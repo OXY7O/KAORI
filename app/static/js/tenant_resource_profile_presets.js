@@ -335,6 +335,67 @@
             if (empty) empty.hidden = visible > 0
         }
 
+        // Classify only parseable Kubernetes quantities. Missing or unknown
+        // quantities must not masquerade as capacity gains or approvals.
+        const parsedQuantity = (raw) => {
+            const match = /^(\\d+(?:\\.\\d+)?)(m|Ki|Mi|Gi|Ti|Pi|Ei|k|K|M|G|T|P|E)?$/.exec(String(raw).trim())
+            if (!match) return null
+            const multipliers = {
+                m: 0.001,
+                k: 1e3, K: 1e3, M: 1e6, G: 1e9, T: 1e12, P: 1e15, E: 1e18,
+                Ki: 2 ** 10, Mi: 2 ** 20, Gi: 2 ** 30,
+                Ti: 2 ** 40, Pi: 2 ** 50, Ei: 2 ** 60,
+            }
+            const value = Number(match[1]) * (multipliers[match[2]] ?? 1)
+            return Number.isFinite(value) ? value : null
+        }
+
+        const classifyChange = (before, after) => {
+            const prior = before == null || before === '' ? null : String(before)
+            const next = after == null || after === '' ? null : String(after)
+            if (prior == null && next == null) return null
+            if (prior == null) return 'Now defined'
+            if (next == null) return 'No longer defined'
+            const left = parsedQuantity(prior)
+            const right = parsedQuantity(next)
+            if (left != null && right != null) {
+                if (left === right) return null
+                return right > left ? 'Increased' : 'Reduced'
+            }
+            return prior === next ? null : 'Changed'
+        }
+
+        const renderChangeSummary = (current, proposed) => {
+            const count = form.querySelector('[data-tenant-allocation-change-count]')
+            const empty = form.querySelector('[data-tenant-allocation-change-empty]')
+            let changed = 0
+            form.querySelectorAll('[data-tenant-allocation-change-row]').forEach((row) => {
+                const source = row.dataset.tenantAllocationChangeSource
+                const key = row.dataset.tenantAllocationChangeKey
+                const before = current?.[source]?.[key]
+                const after = proposed?.[source]?.[key]
+                const classification = current && proposed ? classifyChange(before, after) : null
+                row.hidden = classification === null
+                if (!classification) return
+                changed += 1
+                const beforeCell = row.querySelector('[data-tenant-allocation-change-before]')
+                const afterCell = row.querySelector('[data-tenant-allocation-change-after]')
+                const direction = row.querySelector('[data-tenant-allocation-change-direction]')
+                if (beforeCell) beforeCell.textContent = before == null || before === '' ? 'Unbounded' : String(before)
+                if (afterCell) afterCell.textContent = after == null || after === '' ? 'Unbounded' : String(after)
+                if (direction) direction.textContent = classification
+            })
+            if (count) count.textContent = !current || !proposed
+                ? 'Choose contracts'
+                : changed === 0 ? 'No changes' : `${changed} of 8 dimensions changed`
+            if (empty) {
+                empty.hidden = changed > 0
+                empty.textContent = !current || !proposed
+                    ? 'Choose a Namespace and Resource Profile to compare.'
+                    : 'No differences in the eight displayed ResourceQuota and PVC dimensions.'
+            }
+        }
+
         const renderAllocationChange = ({ preferCurrentProfile = false } = {}) => {
             const current = namespaces[namespaceSelect?.value] || null
 
@@ -378,6 +439,20 @@
             form.querySelectorAll('[data-tenant-allocation-detail-proposed]').forEach((cell) => {
                 cell.textContent = detailValue(proposed, cell.dataset.tenantAllocationDetailProposed)
             })
+            form.querySelectorAll('[data-tenant-allocation-detail-row]').forEach((row) => {
+                const currentCell = row.querySelector('[data-tenant-allocation-detail-current]')
+                const proposedCell = row.querySelector('[data-tenant-allocation-detail-proposed]')
+                const currentValue = currentCell?.textContent?.trim()
+                const proposedValue = proposedCell?.textContent?.trim()
+                row.classList.toggle(
+                    'bg-kaori-soft/50',
+                    !!current && !!proposed && classifyChange(
+                        currentValue === 'Not declared' ? null : currentValue,
+                        proposedValue === 'Not declared' ? null : proposedValue
+                    ) !== null
+                )
+            })
+            renderChangeSummary(current, proposed)
             renderAdvancedComparison(current, proposed, namespaceSelect?.value, profileSelect?.value)
         }
 
