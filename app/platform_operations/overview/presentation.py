@@ -112,14 +112,10 @@ def build_platform_operations_overview_context(
         ready_count = _count_value(kubernetes.get('ready_cluster_count', 0))
         protected_namespaces = _count_value(kubernetes.get('enabled_namespace_count', 0))
         global_enabled = bool(kubernetes['global_reveal_enabled'])
-        if cluster_count == 0:
-            status_label, status_tone = 'No Clusters', 'unknown'
-        elif not global_enabled:
-            status_label, status_tone = 'Global Gate Disabled', 'warning'
-        elif ready_count < cluster_count:
-            status_label, status_tone = 'Readiness Review', 'warning'
-        else:
-            status_label, status_tone = 'Ready', 'normal'
+        # Kubernetes Administration is authoritative for protected-reveal
+        # prerequisites. Do not infer Ready from cluster counts alone.
+        status_label = str(kubernetes['administration_status_label'])
+        status_tone = str(kubernetes['administration_status_tone'])
         workspaces.append(
             {
                 'key': 'kubernetes',
