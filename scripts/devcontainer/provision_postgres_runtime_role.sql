@@ -28,7 +28,7 @@ BEGIN
        OR to_regclass('public.audit_events') IS NULL
        OR to_regclass('public.alembic_version') IS NULL
     THEN
-        RAISE EXCEPTION 'Apply current KAORI schema migrations as DB owner first; existing ledger/audit tables required';
+        RAISE EXCEPTION 'Apply current KAORI schema migrations as kaori_migrator first; ledger/audit tables required';
     END IF;
 
     IF current_user <> 'kaori_migrator'
@@ -69,6 +69,12 @@ GRANT SELECT, INSERT, UPDATE, DELETE
 GRANT USAGE, SELECT
     ON ALL SEQUENCES IN SCHEMA public TO kaori_runtime;
 
+-- Alembic version is committed migration authority, NOT mutable app state.
+-- Runtime requires SELECT for worker head admission and no DML privileges.
+REVOKE ALL PRIVILEGES
+    ON TABLE public.alembic_version FROM kaori_runtime;
+GRANT SELECT ON TABLE public.alembic_version TO kaori_runtime;
+
 -- Revoke all blanket table grants inherited from the preceding statement,
 -- then add back only append-only operations needed by the START ledger.
 REVOKE ALL PRIVILEGES
@@ -86,6 +92,11 @@ BEGIN
        OR NOT has_table_privilege('kaori_runtime', 'public.capsule_handoff_ledger_events', 'SELECT')
        OR NOT has_table_privilege('kaori_runtime', 'public.capsule_handoff_ledger_events', 'INSERT')
        OR has_table_privilege('kaori_runtime', 'public.audit_events', 'TRUNCATE')
+       OR NOT has_table_privilege('kaori_runtime', 'public.alembic_version', 'SELECT')
+       OR has_table_privilege('kaori_runtime', 'public.alembic_version', 'INSERT')
+       OR has_table_privilege('kaori_runtime', 'public.alembic_version', 'UPDATE')
+       OR has_table_privilege('kaori_runtime', 'public.alembic_version', 'DELETE')
+       OR has_table_privilege('kaori_runtime', 'public.alembic_version', 'TRUNCATE')
        OR has_schema_privilege('kaori_runtime', 'public', 'CREATE')
     THEN
         RAISE EXCEPTION 'Runtime role grants violate immutable evidence or schema isolation; transaction rolled back';
