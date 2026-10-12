@@ -3,6 +3,11 @@
 {% import "components/table_registry.html" as registry_ui %}
 {% import 'intelligence/components/_pagination.html' as intelligence_pagination %}
 {% if request.headers.get('HX-Request') == 'true' %}
+    <input type="hidden"
+           id="catalog-filter-page-size"
+           name="per_page"
+           value="{{ payload.pagination.per_page }}"
+           hx-swap-oob="outerHTML">
     <div id="catalog-summary-section" hx-swap-oob="outerHTML">
         {% include 'intelligence/partials/_catalog_summary.html' %}
     </div>
