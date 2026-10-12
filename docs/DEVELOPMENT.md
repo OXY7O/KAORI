@@ -17,12 +17,12 @@ containers. A host `.venv` is not required.
 
 1. Copy `.env.example` to `.env`.
    The canonical variable contract is documented in `docs/deployment/ENVIRONMENT_CONFIGURATION.md`.
-2. Review `ADMIN_*` and development secret values.
+2. Review `ADMIN_*` and development secret values. Put the separate `postgres_admin_password` and `migrator_password` secret files under the ignored **external WSL host directory** configured by `KAORI_DEV_DB_SECRETS_DIR`; see the [fresh install runbook](operations/devcontainer-postgres-fresh-bootstrap.md). Do not keep PostgreSQL privileged passwords in the application `.env`.
 3. Open the repository in VS Code.
 4. Run `Dev Containers: Rebuild and Reopen in Container`. **VS Code starts PostgreSQL, Redis, workspace, all ten Celery workers and Beat automatically**. Compose also runs a one-shot `db-role-bootstrap` dependency that creates/adopts the restricted `kaori_runtime` login for a fresh bundled PostgreSQL database. No Docker commands or manual role setup are needed during normal opening.
 5. After the Dev Container reports frontend assets are ready, allow VS Code **Automatic Tasks** for this trusted workspace. The existing `KAORI: Watch Tailwind CSS` task starts on folder open, with at most one instance.
 6. Press `F5` and select `KAORI: Flask Debug`. A newly created database with no KAORI schema displays the existing **Database Setup Required** page. This is read-only and is expected before first initialization.
-7. **Only on the first empty database**, choose **Terminal → Run Task → `KAORI: Initialize Fresh Database`**. This single deliberate task performs owner-only migrations, RBAC/admin setup, refreshes runtime grants and verifies the Capsule ledger guard. Then refresh the browser to reach normal sign-in. Later DevContainer reopen/start operations require **no database initialization task**.
+7. **Only on the first empty database**, choose **Terminal → Run Task → `KAORI: Initialize Fresh Database`**. This single deliberate task performs non-superuser `kaori_migrator` migrations/RBAC seed, restricted runtime grants, application-admin bootstrap and verifies the Capsule ledger guard. Then refresh the browser to reach normal sign-in. Later DevContainer reopen/start operations require **no database initialization task**.
 
 A fresh or reset `kaori_node_modules` volume must complete `npm ci` and frontend verification before the watcher can work. The `postCreate` lifecycle no longer forces an unconditional global npm upgrade, and `postStart` avoids rebuilding unchanged assets. If lifecycle startup fails, resolve that failure before treating the watcher as ready.
 
@@ -32,13 +32,17 @@ The application is available at `http://localhost:5000`.
 
 Capsule Release's immutable ledger requires Flask, Celery workers and Beat
 to connect as **non-owner** `kaori_runtime`, using only canonical
-`DATABASE_URL`. The PostgreSQL `POSTGRES_*` settings belong to the
-bootstrap owner; schema migrations/RBAC/admin bootstrap use a distinct
-temporary `KAORI_DB_MIGRATION_URL` passed only to `scripts/init_db.sh`.
-Never persist owner migration authority in `.env`.
+`DATABASE_URL`. The DevContainer PostgreSQL bootstrap administrator `postgres` and
+non-superuser schema owner `kaori_migrator` have separate secrets
+outside the source workspace. The app `.env` owns only the
+`kaori_runtime` connection, not `POSTGRES_PASSWORD`.
+The explicit VS Code task prompts for the migrator password, then
+passes `KAORI_DB_MIGRATION_URL` to a child schema-migration process.
+After grants, the first KAORI administrator is created using runtime.
+Never persist elevated PostgreSQL credentials in `.env`.
 
 - Existing data: use the [data-preserving runtime-role cutover](operations/devcontainer-postgres-runtime-role.md) for grants/login, guard, backup and rollback.
-- Explicitly disposable local data only: use the [guarded PostgreSQL-only fresh bootstrap](operations/devcontainer-postgres-fresh-bootstrap.md), which resets **only** the identified `kaori-dev` Postgres volume, runs migrations as owner, and provisions restricted runtime before services resume.
+- Fresh installation: use the [three-identity first-run guide](operations/devcontainer-postgres-fresh-bootstrap.md). VS Code creates all services; the one-shot bootstrap creates PostgreSQL principals **without** running Alembic, then the operator chooses the explicit migration task. The guarded PostgreSQL-only volume reset documented there is a recovery/testing option, **never a required first-run action**.
 
 No source-level owner runtime fallback is admitted. Neither runbook
 authorizes production/staging reset or Kubernetes provider mutation.
@@ -65,8 +69,9 @@ only when the developer explicitly authorizes local data destruction.
 
 On a fresh database, VS Code already starts all services through its
 existing `runServices` list. The new one-shot Compose service creates only
-the non-owner runtime login; **it never runs Alembic or creates an app
-administrator**. Workers and Beat are started by DevContainer, but their
+the non-superuser schema owner `kaori_migrator` and non-owner runtime
+login `kaori_runtime`, while PostgreSQL itself initializes `postgres`.
+It **never runs Alembic or creates an app administrator**. Workers and Beat are started by DevContainer, but their
 existing `WAIT_FOR_SCHEMA=true` gate plus DevContainer-only
 `WAIT_FOR_RUNTIME_GRANTS=true` keeps task consumption disabled until the
 schema reaches the current Alembic head **and** restricted Capsule ledger
@@ -89,7 +94,7 @@ only after changing the Dockerfile or Python dependency files.
 
 Useful VS Code tasks:
 
-- `KAORI: Initialize Fresh Database` (one-time explicit fresh schema/RBAC/admin task; owner-only migration context is transient)\n- `KAORI: Database Upgrade` (owner-only migration and restricted-grant refresh)
+- `KAORI: Initialize Fresh Database` (one-time explicit fresh schema/RBAC/admin task; non-superuser migrator context is transient)\n- `KAORI: Database Upgrade` (migrator-only migration and restricted-grant refresh)
 - `KAORI: Database Current`
 - `KAORI: Ruff Check`
 - `KAORI: djLint Check`
