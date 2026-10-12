@@ -126,14 +126,20 @@ def main() -> None:
 
     source = APP_ENV.read_text(encoding='utf-8')
     values = existing_values(source)
+    if values.get('APP_ENV', 'development') != 'development':
+        fail('host-side PostgreSQL first-run is only authorized for APP_ENV=development')
+    for key in (
+        'KAORI_MIGRATOR_PASSWORD', 'KAORI_RUNTIME_PASSWORD',
+        'KAORI_DB_MIGRATION_URL', 'PGPASSWORD', 'POSTGRES_PASSWORD_FILE',
+    ):
+        if key in values:
+            fail(f'{key} must not be stored in the shared application .env')
     if database_volume_exists():
         for key in ('SECRET_KEY', 'INTEGRATION_CREDENTIAL_KEY', 'ADMIN_PASSWORD'):
             if not values.get(key) or values[key].startswith('replace-'):
                 fail(f'{key} missing for existing database; restore the original secret, do not regenerate')
     if values.get('POSTGRES_DB', 'kaori') != 'kaori':
         fail('local DB must be kaori; do not target another environment')
-    if values.get('KAORI_DB_MIGRATION_URL'):
-        fail('do not persist KAORI_DB_MIGRATION_URL in the application .env')
     if DB_SECRETS.exists() != MIGRATOR_SECRETS.exists():
         fail('only one bootstrap secret file exists; restore the matched pair, do not rotate')
     first_secrets = not DB_SECRETS.exists()
