@@ -12,6 +12,7 @@ from app.integrations.registry.contracts import (
     RepositoryRecord,
 )
 from app.integrations.registry.providers.harbor.client_factory import build_client
+from app.integrations.registry.providers.harbor.exceptions import HarborResponseError
 from app.models.harbor import HarborInstance
 
 
@@ -42,10 +43,21 @@ def _repository_name(project_name: str, value: Any) -> str:
     return name[len(prefix) :] if name.startswith(prefix) else name
 
 
+def _validated_tags(value: Any, *, digest: str) -> list[dict[str, Any]]:
+    if value is None:
+        return []
+    if not isinstance(value, list) or any(
+        not isinstance(tag, dict) or not str(tag.get('name') or '').strip()
+        for tag in value
+    ):
+        raise HarborResponseError(f'Harbor artifact {digest} has malformed tag inventory.')
+    return value
+
+
 def _artifact_record(raw_artifact: dict[str, Any]) -> ArtifactRecord | None:
     digest = str(raw_artifact.get('digest') or '').strip()
     if not digest:
-        return None
+        raise HarborResponseError('Harbor artifact discovery contained a record without a digest.')
     return ArtifactRecord(
         digest=digest,
         provider_native_id=str(raw_artifact.get('id') or '') or None,
@@ -54,7 +66,7 @@ def _artifact_record(raw_artifact: dict[str, Any]) -> ArtifactRecord | None:
         size_bytes=_as_int(raw_artifact.get('size')),
         push_time=_parse_datetime(raw_artifact.get('push_time')),
         pull_time=_parse_datetime(raw_artifact.get('pull_time')),
-        tags=[tag for tag in (raw_artifact.get('tags') or []) if isinstance(tag, dict)],
+        tags=_validated_tags(raw_artifact.get('tags'), digest=digest),
         provider_metadata={
             key: raw_artifact.get(key)
             for key in ('manifest_media_type', 'project_id', 'repository_id', 'extra_attrs')
@@ -66,7 +78,7 @@ def _artifact_record(raw_artifact: dict[str, Any]) -> ArtifactRecord | None:
 def _repository_record(client: Any, project_name: str, raw_repo: dict[str, Any]) -> RepositoryRecord | None:
     repo_name = _repository_name(project_name, raw_repo.get('name'))
     if not repo_name:
-        return None
+        raise HarborResponseError(f'Harbor repository discovery in {project_name} contained an unnamed record.')
     repository = RepositoryRecord(
         name=repo_name,
         provider_native_id=str(raw_repo.get('id') or '') or None,
@@ -81,6 +93,8 @@ def _repository_record(client: Any, project_name: str, raw_repo: dict[str, Any])
         project_name_or_id=project_name,
         repository_name=repo_name,
     ):
+        if not isinstance(raw_artifact, dict):
+            raise HarborResponseError(f'Harbor artifact discovery in {project_name}/{repo_name} is malformed.')
         artifact = _artifact_record(raw_artifact)
         if artifact is not None:
             repository.artifacts.append(artifact)
@@ -90,7 +104,7 @@ def _repository_record(client: Any, project_name: str, raw_repo: dict[str, Any])
 def _project_record(client: Any, raw_project: dict[str, Any]) -> ProjectRecord | None:
     project_name = str(raw_project.get('name') or '').strip()
     if not project_name:
-        return None
+        raise HarborResponseError('Harbor project discovery contained an unnamed record.')
     project = ProjectRecord(
         name=project_name,
         provider_native_id=str(raw_project.get('project_id') or '') or None,
@@ -103,6 +117,8 @@ def _project_record(client: Any, raw_project: dict[str, Any]) -> ProjectRecord |
         },
     )
     for raw_repo in client.list_all_repositories(project_name_or_id=project_name):
+        if not isinstance(raw_repo, dict):
+            raise HarborResponseError(f'Harbor repository discovery in {project_name} contains a non-object.')
         repository = _repository_record(client, project_name, raw_repo)
         if repository is not None:
             project.repositories.append(repository)
@@ -119,6 +135,8 @@ def collect_harbor_inventory(
     if progress_callback is not None:
         progress_callback(0, 0, 'Project Discovery')
     raw_projects = client.list_all_projects()
+    if any(not isinstance(item, dict) for item in raw_projects):
+        raise HarborResponseError('Harbor project discovery contains non-object entries.')
     repository_hint = sum(max(_as_int(project.get('repo_count')) or 0, 0) for project in raw_projects)
     repository_processed = 0
     if progress_callback is not None:
