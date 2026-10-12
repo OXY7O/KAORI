@@ -90,7 +90,9 @@ def test_read_only_governance_sync_poll_preserves_mutating_sync_permission() -> 
     sync = routes.split("def governance_sync() -> ResponseReturnValue:", 1)[0]
     poll = routes.split("def governance_sync_status(public_id: str) -> ResponseReturnValue:", 1)[0]
     assert "@artifact_registry_bp.post('/governance/sync')" in sync
-    assert "@permission_required('artifact_registry.sync')" in sync.rsplit("@artifact_registry_bp.post('/governance/sync')", 1)[1]
+    assert "@permission_required('artifact_registry.sync')" in sync.rsplit(
+        "@artifact_registry_bp.post('/governance/sync')", 1
+    )[1]
     assert "@artifact_registry_bp.get('/governance/sync/status/<string:public_id>')" in poll
     assert "@permission_required('artifact_registry.view')" in poll.rsplit(
         "@artifact_registry_bp.get('/governance/sync/status/<string:public_id>')", 1
@@ -205,7 +207,8 @@ def test_governance_evidence_tabs_are_badgeless_full_kaori_tables() -> None:
     assert 'No Policy Evidence Collected' in workspace
     assert 'governance.replication_empty.title' in workspace
     assert 'governance.replication_empty.description' in workspace
-    assert 'No Replication Evidence Collected' in (ROOT / 'app/artifact_registry/presentation_governance.py').read_text()
+    presenter = (ROOT / 'app/artifact_registry/presentation_governance.py').read_text()
+    assert 'No Replication Evidence Collected' in presenter
     assert 'row.retention_tone' in workspace and 'row.immutability_tone' in workspace
     assert "row.enabled is not none else 'Unknown'" in workspace
     assert "row.destination_namespace" in workspace
