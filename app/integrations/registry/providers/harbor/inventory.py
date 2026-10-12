@@ -182,7 +182,11 @@ def collect_harbor_inventory(
             'provider_key': 'harbor',
             'source': 'harbor_api_v2',
             'provider_record_id': int(instance.id),
-            'registry_host': (parsed.hostname or '').lower() or None,
+            'registry_host': (
+                f'{parsed.hostname.lower()}:{parsed.port}'
+                if parsed.hostname and parsed.port not in (None, 443)
+                else (parsed.hostname or '').lower() or None
+            ),
             'registry_scheme': parsed.scheme or None,
         },
     )
