@@ -283,7 +283,10 @@ def prepare_tenant_governance(
     )
     findings = integer(summary.get('governance_findings'))
     drift = integer(summary.get('drift_or_failure'))
-    readout = _readout(findings=findings, drift=drift)
+    readout = (
+        _readout(findings=findings, drift=drift)
+        + ' Audit evidence is a latest-250 scoped sample; this worksheet includes at most 100 events.'
+    )
     tables = (
         _tenant_table(_table_rows(payload, 'tenant_inventory')),
         _namespace_table(_table_rows(payload, 'namespace_inventory')),

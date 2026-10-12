@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.artifact_registry.presentation import build_overview
+from app.artifact_registry.presentation import build_overview_section
 from app.extensions.db import db
 from app.models.integration import IntegrationInstance
 from app.models.registry import (
@@ -128,8 +128,23 @@ def get_report_artifact_registry_analysis_payload(report: Report) -> dict[str, A
     if error is not None or instance_id is None or instance is None:
         return {'_error': error or 'The selected Artifact Registry integration no longer exists.'}
 
-    overview = build_overview(provider_id=instance_id)
     state = db.session.get(RegistryCollectionState, instance_id)
+    if state is None or state.last_committed_at is None:
+        return {'_error': 'Selected Artifact Registry has no committed inventory evidence.'}
+
+    # The Fast Shell no longer includes committed dashboard sections.
+    # Reports resolve the established source-scoped projections explicitly.
+    overview = build_overview_section('overview', provider_id=instance_id)
+    capacity_view = build_overview_section('capacity', provider_id=instance_id)
+    signals_view = build_overview_section('signals', provider_id=instance_id)
+    overview = {
+        **overview,
+        'capacity': capacity_view.get('capacity') or {},
+        'forecast': capacity_view.get('forecast') or {},
+        'top_consumers': capacity_view.get('top_consumers') or [],
+        'alerts': signals_view.get('alerts') or {},
+        'recommended_actions': signals_view.get('recommended_actions') or [],
+    }
     artifacts = _query_artifacts(instance_id)
     capacity = dict(overview.get('capacity') or {})
     alerts = dict(overview.get('alerts') or {})

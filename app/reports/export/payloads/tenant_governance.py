@@ -4,6 +4,8 @@ from collections.abc import Iterable
 from datetime import UTC, datetime
 from typing import Any
 
+from sqlalchemy import or_
+
 from app.intelligence.service import get_active_recommendation_findings
 from app.models import (
     Cluster,
@@ -100,12 +102,28 @@ def recommendation_row(finding: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _tenant_findings() -> list[dict[str, Any]]:
+def _tenant_findings(
+    cluster_id: str,
+    *,
+    namespace: str | None = None,
+    tenant_ids: set[str] | None = None,
+) -> list[dict[str, Any]]:
+    """Publish only findings belonging to this report's canonical asset scope."""
     rows: list[dict[str, Any]] = []
-    for finding in get_active_recommendation_findings(domain='kubernetes'):
+    for finding in get_active_recommendation_findings(domain='kubernetes', asset_key=cluster_id):
         rule_key = str(finding.get('rule_key') or '')
-        if rule_key.startswith('kubernetes.tenant.'):
-            rows.append(recommendation_row(finding))
+        if not rule_key.startswith('kubernetes.tenant.'):
+            continue
+        row = recommendation_row(finding)
+        if namespace:
+            # Only structured committed scope identities can establish membership.
+            if row['namespace'] and row['namespace'] != namespace:
+                continue
+            if row['tenant_id'] and row['tenant_id'] not in (tenant_ids or set()):
+                continue
+            if not row['namespace'] and not row['tenant_id']:
+                continue
+        rows.append(row)
     return rows
 
 
@@ -121,7 +139,41 @@ def _tenant_scope(report: Report, cluster_id: str) -> tuple[list[Tenant], list[T
     return [row for row in tenants if row.id in selected_tenant_ids], namespaces
 
 
-def _related_records(tenant_ids: list[str], cluster_id: str) -> dict[str, list[Any]]:
+def _scoped_audit_evidence(
+    tenant_ids: list[str],
+    cluster_id: str,
+    *,
+    namespace: str | None,
+    namespace_ids: set[int],
+) -> list[TenantAuditEvidence]:
+    query = TenantAuditEvidence.query.filter(
+        TenantAuditEvidence.cluster_id == cluster_id,
+        TenantAuditEvidence.tenant_id.in_(tenant_ids),
+    )
+    if namespace:
+        # Limit the SQL candidate set BEFORE retaining the most recent 250 events.
+        # Unscoped cluster/tenant activity is allowed; another namespace is not.
+        matching_namespace = or_(
+            TenantAuditEvidence.kubernetes_namespace.is_(None),
+            TenantAuditEvidence.kubernetes_namespace == namespace,
+        )
+        query = query.filter(
+            matching_namespace,
+            or_(
+                TenantAuditEvidence.tenant_namespace_id.in_(namespace_ids),
+                TenantAuditEvidence.tenant_namespace_id.is_(None),
+            ),
+        )
+    return query.order_by(TenantAuditEvidence.event_at.desc()).limit(250).all()
+
+
+def _related_records(
+    tenant_ids: list[str],
+    cluster_id: str,
+    *,
+    namespace: str | None = None,
+    namespace_ids: set[int] | None = None,
+) -> dict[str, list[Any]]:
     if not tenant_ids:
         return {
             'environments': [],
@@ -163,13 +215,9 @@ def _related_records(tenant_ids: list[str], cluster_id: str) -> dict[str, list[A
         )
         .order_by(TenantAdvancedCapabilityIntent.tenant_id.asc(), TenantAdvancedCapabilityIntent.id.asc())
         .all(),
-        'audit_evidence': TenantAuditEvidence.query.filter(
-            TenantAuditEvidence.cluster_id == cluster_id,
-            TenantAuditEvidence.tenant_id.in_(tenant_ids),
-        )
-        .order_by(TenantAuditEvidence.event_at.desc())
-        .limit(250)
-        .all(),
+        'audit_evidence': _scoped_audit_evidence(
+            tenant_ids, cluster_id, namespace=namespace, namespace_ids=namespace_ids or set()
+        ),
     }
 
 
@@ -205,15 +253,10 @@ def _namespace_scoped_records(
 
 
 def _capacity_decisions(report: Report, cluster_id: str) -> list[TenantCapacityDecision]:
-    rows = (
-        TenantCapacityDecision.query.filter(TenantCapacityDecision.cluster_id == cluster_id)
-        .order_by(TenantCapacityDecision.created_at.desc())
-        .limit(250)
-        .all()
-    )
+    query = TenantCapacityDecision.query.filter(TenantCapacityDecision.cluster_id == cluster_id)
     if report.namespace:
-        rows = [row for row in rows if row.namespace == report.namespace]
-    return rows
+        query = query.filter(TenantCapacityDecision.namespace == report.namespace)
+    return query.order_by(TenantCapacityDecision.created_at.desc()).limit(250).all()
 
 
 def _tenant_inventory(
@@ -517,13 +560,18 @@ def get_report_tenant_governance_payload(report: Report) -> dict[str, Any]:
 
     tenants, namespaces = _tenant_scope(report, cluster_id)
     tenant_ids = [row.id for row in tenants]
-    records = _namespace_scoped_records(report, namespaces, _related_records(tenant_ids, cluster_id))
+    records = _namespace_scoped_records(report, namespaces, _related_records(
+            tenant_ids,
+            cluster_id,
+            namespace=report.namespace,
+            namespace_ids={row.id for row in namespaces},
+        ))
     decisions = _capacity_decisions(report, cluster_id)
     environments = records['environments']
     tenant_by_id = {row.id: row for row in tenants}
     environment_by_id = {row.id: row for row in environments}
     namespace_by_id = {row.id: row for row in namespaces}
-    findings = _tenant_findings()
+    findings = _tenant_findings(cluster_id, namespace=report.namespace, tenant_ids=set(tenant_ids))
 
     all_rows = [
         *tenants,
@@ -551,6 +599,9 @@ def get_report_tenant_governance_payload(report: Report) -> dict[str, Any]:
         'intelligence_evidence': 'Available' if findings else 'No Active Findings',
         'provider_evidence': 'Available' if provider_posture else 'Not Available',
         'secret_material_persisted': False,
+        'audit_evidence_window': 'Latest 250 scoped events; bounded sample, not complete history',
+        'xlsx_audit_window': 'Latest 100 scoped events in Governance sheet',
+        'capacity_decision_window': 'Latest 250 scoped capacity decisions',
     }
     recommendations = [
         {
