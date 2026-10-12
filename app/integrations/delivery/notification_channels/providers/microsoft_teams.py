@@ -31,12 +31,16 @@ class _NoWorkflowRedirects(HTTPRedirectHandler):
 def _is_approved_workflow_url(value: str) -> bool:
     parsed = urlparse(value)
     hostname = str(parsed.hostname or '').lower()
+    try:
+        port = parsed.port
+    except ValueError:
+        return False
     return bool(
         parsed.scheme == 'https'
         and hostname
         and parsed.username is None
         and parsed.password is None
-        and parsed.port in (None, 443)
+        and port in (None, 443)
         and any(hostname.endswith(suffix) for suffix in _TEAMS_WORKFLOW_SUFFIXES)
     )
 
