@@ -9,8 +9,11 @@
                     <i data-lucide="file-text" class="h-5 w-5"></i>
                 </span>
                 <div class="min-w-0">
-                    <h2 id="recent-reports-title"
-                        class="{{ table_ui.block_title_classes() }}">Recent Generated Reports</h2>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 id="recent-reports-title"
+                            class="{{ table_ui.block_title_classes() }}">Recent Generated Reports</h2>
+                        {{ table_label.result_count(payload.recent_reports|length) }}
+                    </div>
                     <p class="{{ table_ui.block_description_classes() }}">Latest artifact records across governed cluster scopes.</p>
                 </div>
             </div>
