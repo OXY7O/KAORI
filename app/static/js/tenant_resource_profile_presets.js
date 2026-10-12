@@ -338,7 +338,7 @@
         // Classify only parseable Kubernetes quantities. Missing or unknown
         // quantities must not masquerade as capacity gains or approvals.
         const parsedQuantity = (raw) => {
-            const match = /^(\\d+(?:\\.\\d+)?)(m|Ki|Mi|Gi|Ti|Pi|Ei|k|K|M|G|T|P|E)?$/.exec(String(raw).trim())
+            const match = /^(\d+(?:\.\d+)?)(m|Ki|Mi|Gi|Ti|Pi|Ei|k|K|M|G|T|P|E)?$/.exec(String(raw).trim())
             if (!match) return null
             const multipliers = {
                 m: 0.001,
