@@ -85,6 +85,9 @@ def test_registry_renderer_adopts_kubernetes_graph_semantics() -> None:
     assert "badgeImage(node.data())" in renderer
     assert "transform: (_node, position) => ({ x: position.y, y: position.x })" in renderer
     assert "'line-style': (edge) => edge.data('relationship') === 'contains'" in renderer
+    assert "selector: 'edge[relationship = \"contains\"]'" in renderer
+    assert "'curve-style': 'taxi'" in renderer
+    assert "'taxi-direction': 'horizontal'" in renderer
     assert "selector: 'edge.edge-label-visible'" in renderer
     assert "selector: 'edge.edge-hovered'" in renderer
     assert "cy.on('mouseover', 'edge'" in renderer
