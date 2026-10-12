@@ -9,6 +9,7 @@ from app.extensions.db import db
 from app.models.object_storage import ObjectStorageSystem
 from app.models.report import Report
 from app.reports.catalog import require_object_storage_system, validate_report_instance
+from app.storage.object_storage.analytics.materialization import read_analytics_snapshot
 from app.storage.object_storage.analytics.service import get_object_storage_analytics_context
 
 
@@ -113,15 +114,36 @@ def get_report_object_storage_analysis_payload(report: Report) -> dict[str, Any]
             ('source', 'auto'),
         ]
     )
-    overview = get_object_storage_analytics_context('overview', args)
-    performance = get_object_storage_analytics_context('performance', args)
-    alerts = get_object_storage_analytics_context('alerts', args)
+    # Freeze one committed analytics generation across Overview, Performance, and Alerts.
+    # Reporting must never enqueue a provider/worker refresh while rendering.
+    snapshot_payload, snapshot_state = read_analytics_snapshot(
+        system_id=system_id, time_range=report.period or '30d'
+    )
+    if snapshot_payload is None:
+        return {'_error': 'Object Storage analytics evidence is unavailable or expired; refresh materialization first.'}
+    shared_snapshot = (snapshot_payload, snapshot_state)
+    overview = get_object_storage_analytics_context('overview', args, committed_snapshot=shared_snapshot)
+    performance = get_object_storage_analytics_context('performance', args, committed_snapshot=shared_snapshot)
+    alerts = get_object_storage_analytics_context('alerts', args, committed_snapshot=shared_snapshot)
+    if any(context.get('dependency_blocker') for context in (overview, performance, alerts)):
+        return {'_error': 'Object Storage committed analytics evidence is incomplete for the requested report.'}
 
     metrics = _mapping(overview.get('metrics'))
     performance_metrics = _mapping(performance.get('metrics'))
     alert_rows = _alert_rows(alerts)
     bucket_rows = list(metrics.get('bucket_rows') or [])
-    evidence_boundary = _evidence_boundary(system, overview, alerts)
+    evidence_boundary = {
+        **_evidence_boundary(system, overview, alerts),
+        'analytics_cutoff': snapshot_state.get('generated_at'),
+        'analytics_stale': bool(snapshot_state.get('stale')),
+        'analytics_status': snapshot_state.get('label') or 'Unknown',
+        'analytics_time_range': report.period or '30d',
+    }
+    source_status = _source_status(overview)
+    if snapshot_state.get('stale'):
+        source_status['label'] = 'Stale'
+        source_status['status'] = 'Stale'
+        source_status['description'] = 'Latest committed analytics evidence is stale; refresh before relying on current posture.'
     now = datetime.now(UTC)
 
     return {
@@ -158,10 +180,10 @@ def get_report_object_storage_analysis_payload(report: Report) -> dict[str, Any]
         'operational_posture': metrics.get('operational_posture') or {},
         'alerts': alert_rows,
         'alert_posture': alerts.get('alert_posture') or {},
-        'source_status': _source_status(overview),
+        'source_status': source_status,
         'metrics_source': overview.get('metrics_source') or {},
         'metrics_readiness': overview.get('metrics_readiness') or {},
         'evidence_boundary': evidence_boundary,
-        'data_cutoff': system.inventory_observed_at or now,
+        'data_cutoff': snapshot_state.get('generated_at'),
         'generated_at': now,
     }
