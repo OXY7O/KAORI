@@ -195,8 +195,8 @@ def get_active_registry_options() -> list[dict[str, str]]:
     ]
 
 
-def get_report_namespace_options_by_cluster() -> dict[str, list[str]]:
-    """Return current-inventory namespace choices keyed by Kubernetes cluster id."""
+def get_report_namespace_options_by_cluster(cluster_id: str | None = None) -> dict[str, list[str]]:
+    """Return current-generation namespaces; callers should scope to one cluster."""
     query = db.session.query(
         NamespaceInventory.cluster_id,
         NamespaceInventory.namespace,
@@ -205,6 +205,8 @@ def get_report_namespace_options_by_cluster() -> dict[str, list[str]]:
         query,
         NamespaceInventory,
     )
+    if cluster_id:
+        query = query.filter(NamespaceInventory.cluster_id == cluster_id)
     rows = query.order_by(
         NamespaceInventory.cluster_id.asc(),
         NamespaceInventory.namespace.asc(),

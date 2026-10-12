@@ -126,3 +126,7 @@ The landing page reads selected-backend shared storage readiness and never walks
 ### Reports Overview metric cohorts (#1533)
 
 Requests This Month counts Report records whose created_at belongs to the half-open current **UTC calendar-month** interval [month start, next month start). Completion Rate is deliberately **all-time**, calculated from Ready + Archived as successful resolved requests over Ready + Archived + Failed; requested/generating records are not in this denominator. Empty resolved cohorts display unavailable (—), not a fabricated 100% or 0% success. UI copy names the distinct temporal cohorts; neither metric is a current-provider health signal.
+
+### Generate bounded namespace choices (#1543)
+
+Reports Generate bootstraps current committed namespace choices for only the selected Kubernetes cluster. On cluster switch, its existing wizard requests an authorized lightweight `GET /reports/generate/namespaces?cluster_id=...` list with `reports.generate` permission, then renders options only when response cluster identity still matches selection. Object Storage and Registry report types do not query Kubernetes namespace inventory on page load; registered asset option lists remain available for the existing in-wizard contract switcher. The server independently validates namespace membership within the selected cluster before report persistence. No live provider request or custom cache architecture is introduced.
