@@ -15,10 +15,6 @@ from urllib3.exceptions import HTTPError as Urllib3HTTPError
 from app.common.pagination import PER_PAGE_OPTIONS, build_pagination_window, paginate_query, pagination_payload
 from app.common.kubernetes_secrets import scrub_mapping_values, scrub_secret_payload
 from app.extensions.db import db
-from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver import (
-    tls_policy_for_cluster,
-)
-from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls import weak_tls_context
 from app.kubernetes.operations.secrets.live_service import (
     LiveSecretSnapshot,
     best_effort_inventory_id,
@@ -690,12 +686,11 @@ def reveal_secret_value(request_id: str, *, user_id: int) -> RevealedSecretValue
     secret_object = None
     secret_data: dict[str, str] = {}
     try:
-        with weak_tls_context(enabled=tls_policy_for_cluster(cluster)[1]):
-            secret_object = core_api(cluster).read_namespaced_secret(
-                name=record.secret_name,
-                namespace=record.namespace,
-                _request_timeout=10,
-            )
+        secret_object = core_api(cluster).read_namespaced_secret(
+            name=record.secret_name,
+            namespace=record.namespace,
+            _request_timeout=10,
+        )
         live_metadata = getattr(secret_object, 'metadata', None)
         live_uid = str(getattr(live_metadata, 'uid', None) or '').strip()
         approved_uid = str(record.secret_uid or '').strip()
