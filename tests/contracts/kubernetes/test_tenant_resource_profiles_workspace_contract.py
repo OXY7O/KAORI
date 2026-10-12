@@ -395,12 +395,15 @@ def test_namespace_allocation_dialog_renders_resourcequota_limits_not_container_
     end = source.index('</dl>', begin) + len('</dl>')
     render = Environment(autoescape=True).from_string(source[begin:end]).render
 
-    observed = render(quota={
-        'limits.cpu': '4',
-        'limits.memory': '8Gi',
-        'pods': '10',
-        'requests.storage': '1Gi',
-    })
+    observed = render(
+        quota={
+            'limits.cpu': '4',
+            'limits.memory': '8Gi',
+            'pods': '10',
+            'requests.storage': '1Gi',
+        },
+        limit_defaults={'default': {'cpu': '250m', 'memory': '512Mi'}},
+    )
     expected = (
         ('CPU Requests', 'Not declared'),
         ('CPU Limits', '4'),
@@ -410,7 +413,7 @@ def test_namespace_allocation_dialog_renders_resourcequota_limits_not_container_
         ('Logical Storage', '1Gi'),
     )
     for label, value in expected:
-        pattern = rf'>{re.escape(label)}</dt>\\s*<dd[^>]*>\\s*{re.escape(value)}\\s*</dd>'
+        pattern = rf'>{re.escape(label)}</dt>\s*<dd[^>]*>\s*{re.escape(value)}\s*</dd>'
         assert re.search(pattern, observed)
 
     # Container default LimitRange values must not appear as quota limits.
