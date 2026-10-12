@@ -34,6 +34,14 @@ A positive allocation change fails closed when the required snapshot is missing,
 
 One policy is committed per cluster.
 
+The Storage Budget (GiB) form is deliberately **empty by default**:
+an instructional placeholder is not a configured or persisted budget.
+Operators must type a positive GiB amount and save (for example, input
+`2048` commits `2048Gi`) to enable logical storage governance. Submitting
+the optional field empty leaves storage `Not Governed`; no implicit
+2048 GiB ceiling or physical-backend capacity should be inferred.
+Selecting a cluster should reload its committed numeric GiB amount.
+
 The policy records:
 
 - platform/system CPU reserve;
