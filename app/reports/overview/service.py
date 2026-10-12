@@ -455,8 +455,13 @@ def get_report_type_coverage() -> dict[str, Any]:
 
 def get_storage_context() -> dict[str, Any]:
     backend_name = get_configured_storage_backend_name()
-    local_health = build_local_storage_health()
-    s3_health = build_s3_storage_health()
+    # Overview only needs selected-backend readiness; Storage owns the full census.
+    local_health = (
+        build_local_storage_health(include_artifact_inventory=False)
+        if backend_name == 'local'
+        else None
+    )
+    s3_health = build_s3_storage_health() if backend_name == 's3' else None
     backend_status = get_report_storage_backend_status(backend_name)
     is_ready = bool(backend_status.get('write_available', False))
     state = str(backend_status.get('state') or 'unknown')

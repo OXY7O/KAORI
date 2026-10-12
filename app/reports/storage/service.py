@@ -325,7 +325,7 @@ def get_report_storage_backend_status(
 
     previous_shared_status = storage_check.get_stale_shared_storage_status(normalized_backend)
     if normalized_backend == 'local':
-        health = build_local_storage_health()
+        health = build_local_storage_health(include_artifact_inventory=False)
         readable = bool(health.get('root_exists', False))
         writable = bool(health.get('root_writable', False))
         available = readable and writable
