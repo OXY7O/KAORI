@@ -49,6 +49,20 @@ def quota_request_vector(quota: Mapping[str, object]) -> CapacityVector:
     )
 
 
+def quota_limit_vector(quota: Mapping[str, object]) -> CapacityVector:
+    """ResourceQuota limit ceilings, not Kubernetes scheduling commitments.
+
+    Missing limits are unknown, never an implicit 0 or unlimited capacity
+    available for tenant planning.
+    """
+    return CapacityVector(
+        cpu=_quantity_or_none(quota.get('limits.cpu')),
+        memory_bytes=_quantity_or_none(quota.get('limits.memory')),
+        pods=_ZERO,
+        storage_bytes=_ZERO,
+    )
+
+
 def build_tenant_allocation_budget(
     *,
     allocatable: CapacityVector,
