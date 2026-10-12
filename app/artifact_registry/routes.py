@@ -120,11 +120,25 @@ def inventory() -> ResponseReturnValue:
     )
 
 
+def _inventory_source_id() -> int | None:
+    """An invalid explicit Registry source filter must not expand to all providers."""
+    raw = request.args.get('source_id')
+    if raw is None or not raw.strip():
+        return None
+    try:
+        source_id = int(raw)
+    except (TypeError, ValueError):
+        abort(404)
+    if source_id < 1:
+        abort(404)
+    return source_id
+
+
 def _inventory_resource_response(resource: str) -> ResponseReturnValue:
     context = build_inventory(
         resource=resource,
         search=request.args.get('q', '', type=str),
-        source_id=request.args.get('source_id', type=int),
+        source_id=_inventory_source_id(),
         environment=request.args.get('environment', '', type=str),
         visibility=request.args.get('visibility', '', type=str),
         page=request.args.get('page', 1, type=int) or 1,
