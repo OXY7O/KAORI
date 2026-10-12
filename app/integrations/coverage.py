@@ -358,25 +358,32 @@ def bound_sources_for_scopes(
         provider_by_instance[binding.integration_instance_id] = provider
         candidates.setdefault((provider, str(binding.asset_key)), []).append(binding)
 
+    # Hydrate only the preferred binding for each *visible* asset, not every
+    # failover candidate or every registered Metrics/Alert source in the fleet.
+    winners: dict[tuple[str, str], IntegrationBinding] = {}
+    for key, options in candidates.items():
+        winners[key] = min(
+            options,
+            key=lambda item: (_role_rank(item.binding_role), item.priority, item.id),
+        )
+    selected_ids = {
+        provider: {
+            binding.integration_instance_id
+            for binding in winners.values()
+            if provider_by_instance.get(binding.integration_instance_id) == provider
+        }
+        for provider in normalized_providers
+    }
     source_maps = {
         provider: {
             instance.integration_instance_id: instance
-            for instance in _instances(
-                provider,
-                canonical_ids={
-                    binding.integration_instance_id
-                    for binding in bindings
-                    if provider_by_instance.get(binding.integration_instance_id) == provider
-                },
-            )
+            for instance in _instances(provider, canonical_ids=selected_ids[provider])
             if instance.integration_instance_id is not None
         }
         for provider in normalized_providers
     }
     resolved: dict[tuple[str, str], tuple[Any | None, IntegrationBinding | None]] = {}
-    for key, options in candidates.items():
-        options.sort(key=lambda item: (_role_rank(item.binding_role), item.priority, item.id))
-        binding = options[0]
+    for key, binding in winners.items():
         provider = provider_by_instance.get(binding.integration_instance_id, key[0])
         source = source_maps.get(provider, {}).get(binding.integration_instance_id)
         resolved[key] = (source, binding)

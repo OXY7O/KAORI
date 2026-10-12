@@ -204,7 +204,8 @@ def page_connection_ids(
     if search:
         term = f'%{search}%'
         searchable = [
-            fleet.c.cluster_name, fleet.c.environment, fleet.c.server,
+            fleet.c.cluster_name, fleet.c.environment,
+            func.coalesce(fleet.c.server, 'Not discovered'),
         ]
         if coverage:
             searchable.extend((
