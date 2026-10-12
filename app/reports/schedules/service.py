@@ -19,6 +19,7 @@ from app.common.pagination import PER_PAGE_OPTIONS, paginate_select, paginate_se
 from app.extensions.db import db
 from app.models.cluster import Cluster
 from app.models.integration import IntegrationInstance
+from app.models.job import JobPolicy
 from app.models.object_storage import ObjectStorageSystem
 from app.models.report import Report, ReportSchedule, ReportScheduleRun
 from app.models.user import User
@@ -381,6 +382,8 @@ def toggle_report_schedule(schedule_id: int) -> tuple[bool, str]:
     schedule.is_enabled = not bool(schedule.is_enabled)
     if schedule.is_enabled:
         schedule.next_run_at = calculate_next_run_at(schedule)
+    else:
+        schedule.next_run_at = None
     db.session.commit()
 
     status = 'enabled' if schedule.is_enabled else 'paused'
@@ -702,6 +705,32 @@ def get_automation_posture(
             'execution_tone': worker_tone if worker_tone in {'warning', 'critical', 'unknown'} else 'warning',
         }
 
+    dispatcher_enabled = db.session.scalar(
+        select(JobPolicy.enabled).where(JobPolicy.job_key == 'reports.schedule.dispatch')
+    )
+    if not dispatcher_enabled:
+        return {
+            'status_label': 'Dispatcher Disabled',
+            'status_tone': 'warning',
+            'title': 'Automatic Dispatch Is Disabled',
+            'description': 'Enable the Report Schedule Dispatcher in Job Configuration before unattended reporting.',
+            'execution_label': 'Disabled',
+            'execution_tone': 'warning',
+        }
+
+    enabled_schedules = db.session.scalar(
+        select(func.count(ReportSchedule.id)).where(ReportSchedule.is_enabled.is_(True))
+    ) or 0
+    if not enabled_schedules:
+        return {
+            'status_label': 'Waiting For Schedule',
+            'status_tone': 'warning',
+            'title': 'No Active Report Schedules',
+            'description': 'Create or enable at least one recurring definition before unattended reporting.',
+            'execution_label': 'Waiting',
+            'execution_tone': 'warning',
+        }
+
     return {
         'status_label': 'Automation Ready',
         'status_tone': 'normal',
@@ -813,6 +842,7 @@ def _get_run_registry(
         statement = statement.where(
             or_(
                 func.lower(func.coalesce(ReportSchedule.name, 'deleted schedule')).like(pattern),
+                func.lower(func.cast(ReportScheduleRun.schedule_snapshot, db.String)).like(pattern),
                 func.lower(func.coalesce(ReportScheduleRun.error_message, '')).like(pattern),
             )
         )
