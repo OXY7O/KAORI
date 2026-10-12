@@ -245,11 +245,16 @@ def build_custom_template_item(template: ReportTemplate) -> dict[str, Any]:
 
 def get_template_form_context(template: ReportTemplate | None = None) -> dict[str, Any]:
     report_type = template.report_type if template else 'analytics_overview'
-    sections = (
-        (sanitize_sections(report_type, template.sections_as_list()) if report_type in get_allowed_report_types()
-         else template.sections_as_list())
-        if template else get_default_sections(report_type)
-    )
+    if template is None:
+        sections = get_default_sections(report_type)
+    else:
+        # Historical JSON may contain nested values; the Edit form must remain usable.
+        historical_sections = [item for item in template.sections_as_list() if isinstance(item, str)]
+        sections = (
+            sanitize_sections(report_type, historical_sections)
+            if report_type in get_allowed_report_types()
+            else historical_sections
+        )
     return {
         'id': template.id if template else None,
         'name': template.name if template else '',
