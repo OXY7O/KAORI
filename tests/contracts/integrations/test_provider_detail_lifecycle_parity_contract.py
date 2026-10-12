@@ -154,7 +154,8 @@ def test_asset_owner_lifecycle_status_and_actions_match_locked_contract() -> Non
 
     assert 'inventory_status_label' in minio
     assert 'instance.readiness_status' not in minio
-    assert "'Committed Snapshot' if inventory_observed_at else 'No Committed Inventory'" in minio_presentation
+    assert "'inventory_source_changed': source_changed" in minio_presentation
+    assert "'inventory_current': inventory_current" in minio_presentation
     assert 'Manage Inventory Jobs' not in minio
     assert "url_for('jobs.configuration', job_key='object_storage.inventory.sync')" not in minio
 
