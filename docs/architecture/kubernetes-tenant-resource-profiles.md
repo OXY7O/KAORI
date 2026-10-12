@@ -410,19 +410,21 @@ means admission approval. If there are no changes, the counter reads `No changes
 Missing and unknown quantities are not treated as zero: absent governed quotas
 and PVC bounds are `Unbounded`; object limits and defaults are `Not declared`.
 
-**Technical Details** uses one compact shared-workspace category switch
+**Technical Details** keeps one three-category read-only workspace
 (`Object Limits / Container Defaults / Advanced Controls`) instead of
-three accordion tiles. Only the selected category's short, read-only
-Current/Proposed table appears. The #1660 presentation refinement uses a
-quiet, icon-labelled, segmented category selector with a clearly selected
-KAORI Violet state, a constrained-width three-column comparison table with
-subtle row separators and distinct **Current · Frozen** /
-**Proposed · Profile** headings. Proposed text receives subtle violet
-emphasis only when the committed versus selected value actually differs;
-a displayed difference is not an admission decision. The same control
-evidence, empty-state semantics, and responsive light/dark design tokens
-remain authoritative. Category tabs use native button/ARIA tab
-patterns and keyboard Left/Right/Home/End navigation. Advanced Control
+accordion tiles. The #1662 layout refinement corrects the narrow,
+centered technical table observed at desktop UAT: the workspace now uses
+available horizontal space and a compact **vertical category rail** beside
+one short Current/Proposed table; it stacks naturally on narrow screens.
+Selected category uses the existing KAORI Violet soft surface and border,
+without extra nested cards. The aligned three-column table has readable
+row spacing, subtle dividers and distinct **Current · Frozen** /
+**Proposed · Profile** headings. Proposed text gains restrained violet
+emphasis only where the committed and selected values differ, never implying
+admission, execution or provider read-back. All category tabs retain native
+button/tab-panel ARIA, now with vertical orientation and Up/Down alongside
+Left/Right/Home/End keyboard navigation. The same frozen evidence, empty
+state and light/dark tokens remain authoritative. Advanced Control
 states remain `Recorded` capability evaluation or `Supported`/
 `Unavailable` preflight, with no implied execution or verified read-back.
 Its no-controls state is a brief informative line. Current/proposed
