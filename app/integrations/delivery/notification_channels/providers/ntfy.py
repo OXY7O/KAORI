@@ -82,7 +82,7 @@ def send_ntfy_message(
     if endpoint is None or not _valid_topic(destination):
         return DeliveryResult(False, 'ntfy endpoint/topic is not approved for delivery.')
     token = str(credentials.get('access_token') or '')
-    if '\r' in token or '\n' in token:
+    if any(ord(ch) < 33 or ord(ch) == 127 for ch in token):
         return DeliveryResult(False, 'ntfy access token is invalid.')
     header = {
         'Content-Type': 'text/plain; charset=utf-8',
@@ -91,10 +91,17 @@ def send_ntfy_message(
     }
     if token:
         header['Authorization'] = f'Bearer {token}'
-    if message.action_url:
-        link = urlsplit(message.action_url)
-        if link.scheme in {'http', 'https'} and link.hostname and not link.username:
-            header['X-Click'] = message.action_url[:1000]
+    if message.action_url and len(message.action_url) <= 1000:
+        try:
+            link = urlsplit(message.action_url)
+            if (
+                link.scheme in {'http', 'https'} and link.hostname
+                and link.username is None and link.password is None
+                and not any(ord(ch) < 33 or ord(ch) == 127 for ch in message.action_url)
+            ):
+                header['X-Click'] = message.action_url
+        except ValueError:
+            pass
     body = unescape(message.body) if message.content_format == 'html' else message.body
     body = body.strip()[:_BODY_LIMIT]
     request = Request(
@@ -145,7 +152,7 @@ def validate_form(data: NotificationChannelFormInput) -> list[str]:
         errors.append('ntfy topic must contain 1–64 letters, digits, underscores or hyphens.')
     if _approved_origin(str(data.provider_config.get('base_url') or '')) is None:
         errors.append('ntfy HTTPS server must match a configured approved origin.')
-    if '\r' in data.credentials.get('access_token', '') or '\n' in data.credentials.get('access_token', ''):
+    if any(ord(ch) < 33 or ord(ch) == 127 for ch in data.credentials.get('access_token', '')):
         errors.append('ntfy access token contains invalid characters.')
     return errors
 
