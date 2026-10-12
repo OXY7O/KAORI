@@ -14,9 +14,9 @@
                         <h1 class="{{ page_hero.title_classes() }}">Kubernetes Admin</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">Manage Kubernetes administration with validation and audit evidence.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label('server', cluster_count ~ ' Registered Clusters') }}
-                            {{ page_hero.meta_label('badge-check', ready_cluster_count ~ ' Prerequisites Configured') }}
-                            {{ page_hero.meta_label('boxes', enabled_namespace_count ~ ' Protected Namespaces') }}
+                            <span id="kubernetes-admin-hero-registered">{{ page_hero.meta_label('server', cluster_count ~ ' Registered Clusters') }}</span>
+                            <span id="kubernetes-admin-hero-configured">{{ page_hero.meta_label('badge-check', ready_cluster_count ~ ' Prerequisites Configured') }}</span>
+                            <span id="kubernetes-admin-hero-protected">{{ page_hero.meta_label('boxes', enabled_namespace_count ~ ' Protected Namespaces') }}</span>
                         </div>
                     {% endcall %}
                 </div>
@@ -28,9 +28,9 @@
                                                 'server-cog') }}
                         <div class="{{ page_hero.context_panel_metrics_classes() }}">
                             {{ page_hero.context_metric('blocks', 'Managed Controls', 1, 'Protected administration workspace') }}
-                            {{ page_hero.context_metric('badge-check', 'Configured Clusters', ready_cluster_count ~ ' / ' ~ cluster_count, 'Attestations and canonical binding present') }}
+                            <span id="kubernetes-admin-context-ready">{{ page_hero.context_metric('badge-check', 'Configured Clusters', ready_cluster_count ~ ' / ' ~ cluster_count, 'Attestations and canonical binding present') }}</span>
                         </div>
-                        {{ page_hero.context_info('shield-check' if administration_status_tone == 'normal' else 'shield-alert', 'Control Status: ' ~ administration_status_label) }}
+                        <span id="kubernetes-admin-context-status">{{ page_hero.context_info('shield-check' if administration_status_tone == 'normal' else 'shield-alert', 'Control Status: ' ~ administration_status_label) }}</span>
                     </div>
                 </aside>
             </div>
@@ -49,7 +49,7 @@
                         <p class="mt-1 text-sm leading-6 text-content-secondary">Current administrative coverage and readiness across connected Kubernetes clusters.</p>
                     </div>
                 </div>
-                {{ table_label.status_indicator_label(administration_status_label, administration_status_tone) }}
+                <span id="kubernetes-admin-overview-status">{{ table_label.status_indicator_label(administration_status_label, administration_status_tone) }}</span>
             </header>
             <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
                 {% set metrics = [
@@ -63,7 +63,7 @@
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">
                                 <p class="text-xs font-semibold text-content-muted">{{ label }}</p>
-                                <p class="mt-1 text-2xl font-semibold tracking-tight text-content-primary">{{ value }}</p>
+                                <p id="kubernetes-admin-overview-metric-{{ loop.index }}" class="mt-1 text-2xl font-semibold tracking-tight text-content-primary">{{ value }}</p>
                             </div>
                             <i data-lucide="{{ icon }}"
                                class="h-4 w-4 shrink-0 text-kaori-primary"
